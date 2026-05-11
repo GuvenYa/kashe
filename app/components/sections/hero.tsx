@@ -1,5 +1,5 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
-import { WaitlistForm } from "./waitlist-form";
+import { WaitlistForm } from "@/app/components/sections/waitlist-form";
 
 export function Hero() {
   return (
@@ -9,7 +9,8 @@ export function Hero() {
         aria-hidden
         className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full pointer-events-none"
         style={{
-          background: "radial-gradient(circle, rgba(200, 68, 42, 0.12) 0%, transparent 70%)",
+          background:
+            "radial-gradient(circle, rgba(200, 68, 42, 0.12) 0%, transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -18,7 +19,9 @@ export function Hero() {
         <div className="max-w-3xl">
           {/* Eyebrow */}
           <div className="mb-8">
-            <Eyebrow variant="pill">Türkiye'nin etkinlik pazaryeri · Erken erişim</Eyebrow>
+            <Eyebrow variant="pill">
+              Türkiye'nin etkinlik pazaryeri · Erken erişim
+            </Eyebrow>
           </div>
 
           {/* Hero headline */}
@@ -30,8 +33,8 @@ export function Hero() {
 
           {/* Lede */}
           <p className="text-lg md:text-xl text-ink-72 leading-[1.55] mb-10 max-w-2xl">
-            Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu. Türkiye'de etkinlik ve
-            yetenek hizmetlerini ajanssız, şeffaf fiyatla ve güvenli ödeme ile
+            Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu. Türkiye'de etkinlik
+            ve yetenek hizmetlerini ajanssız, şeffaf fiyatla ve güvenli ödeme ile
             buluşturuyoruz.
           </p>
 
