@@ -2,6 +2,7 @@ import { TopNav } from "@/app/components/sections/top-nav";
 import { Hero } from "@/app/components/sections/hero";
 import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
+import { B2BSection } from "@/app/components/sections/b2b-section";
 
 export default function Home() {
   return (
@@ -11,6 +12,7 @@ export default function Home() {
         <Hero />
         <Categories />
         <HowItWorks />
+        <B2BSection />
       </main>
     </>
   );
