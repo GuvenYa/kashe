@@ -3,11 +3,10 @@ import { Fraunces, Geist, DM_Mono } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
-  variable: "--font-fraunces",
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
+  variable: "--font-fraunces",
   display: "swap",
+  style: ["normal", "italic"],
 });
 
 const geist = Geist({

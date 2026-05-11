@@ -29,7 +29,6 @@ export function Footer() {
               Türkiye'nin etkinlik ve yetenek pazaryeri. Doğru kişiye direkt, ajanssız.
             </p>
           </div>
-
           <div>
             <h4 className="font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta mb-4">
               Ürün
@@ -44,7 +43,6 @@ export function Footer() {
               ))}
             </ul>
           </div>
-
           <div>
             <h4 className="font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta mb-4">
               Yasal
@@ -60,10 +58,9 @@ export function Footer() {
             </ul>
           </div>
         </div>
-
         <div className="pt-8 border-t border-line flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <p className="font-mono text-[11px] text-ink-50">
-            © 2026 Kashe. Tüm hakları saklıdır.
+            @2026 Kashe. Tüm hakları saklıdır.
           </p>
           <p className="font-mono text-[11px] text-ink-50">
             Türkiye'de tasarlandı ve geliştirildi.
