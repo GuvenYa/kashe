@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* === Zemin renkleri (Light Mode) === */
+  --color-paper: #FAF7F0;
+  --color-paper-2: #F0EBDD;
+  --color-card: #FFFFFF;
+
+  /* === İnk = ana metin/koyu zemin === */
+  --color-ink: #1A120E;
+  --color-ink-2: #2D1F18;
+
+  /* === Metin opasiteli === */
+  --color-ink-72: rgba(26, 18, 14, 0.72);
+  --color-ink-50: rgba(26, 18, 14, 0.50);
+  --color-ink-32: rgba(26, 18, 14, 0.32);
+  --color-ink-20: rgba(26, 18, 14, 0.20);
+  --color-ink-12: rgba(26, 18, 14, 0.12);
+
+  --color-paper-72: rgba(250, 247, 240, 0.72);
+  --color-paper-50: rgba(250, 247, 240, 0.50);
+  --color-paper-24: rgba(250, 247, 240, 0.24);
+  --color-paper-14: rgba(250, 247, 240, 0.14);
+
+  /* === Aksan === */
+  --color-terracotta: #C8442A;
+  --color-terracotta-soft: #E08266;
+  --color-terracotta-08: rgba(200, 68, 42, 0.08);
+  --color-terracotta-12: rgba(200, 68, 42, 0.12);
+  /* === Çizgi & sınır === */
+  --color-line: rgba(26, 18, 14, 0.12);
+  --color-line-strong: rgba(26, 18, 14, 0.20);
+  --color-plum: #6B2E5C;
+  --color-moss: #3F6B47;
+  --color-ember: #A8341E;
+
+  /* === Fontlar === */
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-geist);
+  --font-mono: var(--font-dm-mono);
+
+  /* === Radius === */
+  --radius-pill: 9999px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* === Body varsayılan === */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* === Italic Fraunces aksan rengi otomatik === */
+em,
+i {
+  color: var(--color-terracotta);
+  font-style: italic;
+  font-variation-settings: "SOFT" 100, "opsz" 144;
+}
+
+/* === Seçim rengi === */
+::selection {
+  background: var(--color-terracotta);
+  color: var(--color-paper);
+}
+
+/* === Dark section helper (B2B bölümü için) === */
+.dark-section {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.dark-section em,
+.dark-section i {
+  color: var(--color-terracotta);
 }
