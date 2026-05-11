@@ -3,6 +3,7 @@ import { Hero } from "@/app/components/sections/hero";
 import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
 import { B2BSection } from "@/app/components/sections/b2b-section";
+import { TrustSection } from "@/app/components/sections/trust-section";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
         <Categories />
         <HowItWorks />
         <B2BSection />
+        <TrustSection />
       </main>
     </>
   );
