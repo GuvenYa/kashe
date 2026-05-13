@@ -2,7 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { DuzenleForm } from './duzenle-form';
-import type { Profile, TurkishCity } from '@/app/lib/types';
+import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Profili düzenle — Kashe',
@@ -19,9 +19,14 @@ export default async function ProfilDuzenlePage() {
     redirect('/giris');
   }
 
-  const [{ data: profile }, { data: cities }] = await Promise.all([
+  const [{ data: profile }, { data: cities }, { data: categories }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('turkish_cities').select('*').order('name'),
+    supabase
+      .from('service_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order'),
   ]);
 
   if (!profile) {
@@ -49,6 +54,7 @@ export default async function ProfilDuzenlePage() {
           <DuzenleForm
             profile={profile as Profile}
             cities={(cities || []) as TurkishCity[]}
+            categories={(categories || []) as ServiceCategory[]}
           />
         </div>
       </main>

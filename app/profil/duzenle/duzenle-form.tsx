@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateProfile } from './actions';
 import { AvatarUpload } from './avatar-upload';
-import type { Profile, TurkishCity } from '@/app/lib/types';
+import { isProfessional, isBusiness } from '@/app/lib/profile-helpers';
+import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
 type Props = {
   profile: Profile;
   cities: TurkishCity[];
+  categories: ServiceCategory[];
 };
 
-export function DuzenleForm({ profile, cities }: Props) {
+export function DuzenleForm({ profile, cities, categories }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,13 @@ export function DuzenleForm({ profile, cities }: Props) {
   const [cityId, setCityId] = useState<string>(
     profile.city_id ? String(profile.city_id) : ''
   );
+  const [primaryCategoryId, setPrimaryCategoryId] = useState<string>(
+    profile.primary_category_id ? String(profile.primary_category_id) : ''
+  );
+  const [companyName, setCompanyName] = useState(profile.company_name || '');
+
+  const showProfessionalFields = isProfessional(profile);
+  const showBusinessFields = isBusiness(profile);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,6 +44,8 @@ export function DuzenleForm({ profile, cities }: Props) {
     formData.append('bio', bio);
     formData.append('phone', phone);
     formData.append('city_id', cityId);
+    formData.append('primary_category_id', primaryCategoryId);
+    formData.append('company_name', companyName);
 
     startTransition(async () => {
       const result = await updateProfile(formData);
@@ -82,6 +93,49 @@ export function DuzenleForm({ profile, cities }: Props) {
             placeholder="Adın Soyadın"
           />
         </div>
+
+        {showBusinessFields && (
+          <div>
+            <label htmlFor="company_name" className={labelClass}>
+              Şirket adı <span className="text-terracotta">*</span>
+            </label>
+            <input
+              id="company_name"
+              name="company_name"
+              type="text"
+              maxLength={200}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={inputClass}
+              placeholder="Şirketinin tam adı"
+            />
+          </div>
+        )}
+
+        {showProfessionalFields && (
+          <div>
+            <label htmlFor="primary_category_id" className={labelClass}>
+              Ana hizmet kategorisi <span className="text-terracotta">*</span>
+            </label>
+            <select
+              id="primary_category_id"
+              name="primary_category_id"
+              value={primaryCategoryId}
+              onChange={(e) => setPrimaryCategoryId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Bir kategori seç</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.emoji ? `${cat.emoji} ${cat.name_tr}` : cat.name_tr}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-ink-72 mt-1.5">
+              Ekstra hizmetlerini ileride profil sayfanda ekleyebilirsin.
+            </p>
+          </div>
+        )}
 
         <div>
           <label htmlFor="email" className={labelClass}>
@@ -147,7 +201,13 @@ export function DuzenleForm({ profile, cities }: Props) {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             className={`${inputClass} resize-none`}
-            placeholder="Kendinden, deneyimlerinden bahset..."
+            placeholder={
+              showProfessionalFields
+                ? 'Deneyimlerinden, sunduğun hizmetin özelliklerinden bahset...'
+                : showBusinessFields
+                ? 'Şirketinden, ne tür etkinlikler düzenlediğinizden bahset...'
+                : 'Kendinden, ilgi alanlarından bahset...'
+            }
           />
           <p className="text-xs text-ink-72 mt-1.5">
             {bio.length}/500 karakter
