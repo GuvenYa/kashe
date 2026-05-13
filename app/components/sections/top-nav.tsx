@@ -12,6 +12,7 @@ export function TopNav() {
             Kashe
           </span>
         </a>
+
         <div className="hidden md:flex items-center gap-8">
           <a href="#hizmetler" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Hizmetler
@@ -26,11 +27,20 @@ export function TopNav() {
             Hakkımızda
           </a>
         </div>
-        <a href="/uye-ol">
-  <Button variant="primary" size="md">
-    Üye ol
-  </Button>
-</a>
+
+        <div className="flex items-center gap-4">
+           <a 
+            href="/giris"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+          >
+            Giriş yap
+          </a>
+          <a href="/uye-ol">
+            <Button variant="primary" size="md">
+              Üye ol
+            </Button>
+          </a>
+        </div>
       </div>
     </nav>
   );
