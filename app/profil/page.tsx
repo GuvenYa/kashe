@@ -32,23 +32,41 @@ export default async function ProfilPage() {
 
   const cityName = profile?.turkish_cities?.name as string | undefined;
 
+  const initials = (profile?.full_name || '')
+    .split(' ')
+    .map((s: string) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
     <>
       <TopNav />
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-start justify-between mb-12 gap-4">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Profilim
-              </p>
-              <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
-                Merhaba,{' '}
-                <em className="text-terracotta not-italic italic font-medium">
-                  {profile?.full_name || 'kullanıcı'}
-                </em>
-                .
-              </h1>
+            <div className="flex items-center gap-5">
+              {profile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.full_name || 'Avatar'}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-line"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl">
+                  {initials || '?'}
+                </div>
+              )}
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
+                  Profilim
+                </p>
+                <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
+                  {profile?.full_name || 'Kullanıcı'}
+                </h1>
+              </div>
             </div>
             <Link
               href="/profil/duzenle"
@@ -117,8 +135,7 @@ export default async function ProfilPage() {
               Yakında
             </p>
             <p className="text-ink-72">
-              Avatar yükleme, hizmet kalemleri, portföy galerisi ve daha fazlası
-              burada olacak.
+              Hizmet kalemleri, portföy galerisi ve daha fazlası burada olacak.
             </p>
           </div>
         </div>
