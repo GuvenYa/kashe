@@ -1,6 +1,13 @@
 import { Button } from "@/app/components/ui/button";
+import { createClient } from "@/app/lib/supabase-server";
+import { LogoutButton } from "./logout-button";
 
-export function TopNav() {
+export async function TopNav() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <nav className="w-full border-b border-line bg-paper sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 flex items-center justify-between">
@@ -14,32 +21,46 @@ export function TopNav() {
         </a>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="#hizmetler" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+          <a href="/#hizmetler" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Hizmetler
           </a>
-          <a href="#nasil-calisir" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+          <a href="/#nasil-calisir" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Nasıl çalışır
           </a>
-          <a href="#kurumsal" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+          <a href="/#kurumsal" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Kurumsal
           </a>
-          <a href="#hakkimizda" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+          <a href="/#hakkimizda" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Hakkımızda
           </a>
         </div>
 
         <div className="flex items-center gap-4">
-           <a 
-            href="/giris"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-          >
-            Giriş yap
-          </a>
-          <a href="/uye-ol">
-            <Button variant="primary" size="md">
-              Üye ol
-            </Button>
-          </a>
+          {user ? (
+            <>
+              <a
+                href="/profil"
+                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+              >
+                Profilim
+              </a>
+              <LogoutButton />
+            </>
+          ) : (
+            <>
+              <a
+                href="/giris"
+                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+              >
+                Giriş yap
+              </a>
+              <a href="/uye-ol">
+                <Button variant="primary" size="md">
+                  Üye ol
+                </Button>
+              </a>
+            </>
+          )}
         </div>
       </div>
     </nav>
