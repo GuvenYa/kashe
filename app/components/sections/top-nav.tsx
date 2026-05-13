@@ -26,9 +26,11 @@ export function TopNav() {
             Hakkımızda
           </a>
         </div>
-        <Button variant="primary" size="md">
-          Üye ol
-        </Button>
+        <a href="/uye-ol">
+  <Button variant="primary" size="md">
+    Üye ol
+  </Button>
+</a>
       </div>
     </nav>
   );

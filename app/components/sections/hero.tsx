@@ -1,5 +1,5 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
-import { WaitlistForm } from "@/app/components/sections/waitlist-form";
+import { Button } from "@/app/components/ui/button";
 
 export function Hero() {
   return (
@@ -20,7 +20,7 @@ export function Hero() {
           {/* Eyebrow */}
           <div className="mb-8">
             <Eyebrow variant="pill">
-              Türkiye'nin etkinlik pazaryeri · Erken erişim
+              Türkiye'nin etkinlik pazaryeri
             </Eyebrow>
           </div>
 
@@ -38,12 +38,23 @@ export function Hero() {
             buluşturuyoruz.
           </p>
 
-          {/* Waitlist form */}
-          <WaitlistForm />
+          {/* İki CTA buton */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a href="/uye-ol?rol=profesyonel">
+              <Button variant="primary" size="lg">
+                Hizmet ver →
+              </Button>
+            </a>
+            <a href="/uye-ol?rol=musteri">
+              <Button variant="secondary" size="lg">
+                Hizmet ara
+              </Button>
+            </a>
+          </div>
 
-          {/* Lansman teaser */}
-          <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-terracotta">
-            → İlk 500 kayıt için lansman gününde %50 komisyon indirimi
+          {/* Alt info */}
+          <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-50">
+            Ücretsiz kayıt · Komisyon sadece iş tamamlanınca
           </p>
         </div>
       </div>

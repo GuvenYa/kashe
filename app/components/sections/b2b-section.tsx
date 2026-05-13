@@ -1,5 +1,4 @@
 import { Button } from "@/app/components/ui/button";
-import { Eyebrow } from "@/app/components/ui/eyebrow";
 
 type Feature = {
   number: string;
@@ -36,7 +35,6 @@ export function B2BSection() {
       id="kurumsal"
       className="dark-section bg-ink relative overflow-hidden"
     >
-      {/* Atmosferik terracotta glow */}
       <div
         aria-hidden
         className="absolute top-1/4 -left-32 w-[400px] h-[400px] rounded-full pointer-events-none"
@@ -58,7 +56,6 @@ export function B2BSection() {
 
       <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Sol kolon — içerik */}
           <div>
             <div className="mb-6">
               <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta">
@@ -93,15 +90,15 @@ export function B2BSection() {
               ))}
             </div>
 
-            <Button variant="primary" size="lg">
-              Kurumsal hesap aç →
-            </Button>
+            <a href="/uye-ol?rol=kurumsal">
+              <Button variant="primary" size="lg">
+                Kurumsal hesap aç →
+              </Button>
+            </a>
           </div>
 
-          {/* Sağ kolon — mockup */}
           <div className="relative">
             <div className="bg-ink-2 border border-paper-14 p-6 md:p-8">
-              {/* Mockup üst bar */}
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-paper-14">
                 <span className="font-display text-base text-paper">
                   İlan #4231 · Hilton İstanbul
@@ -111,7 +108,6 @@ export function B2BSection() {
                 </span>
               </div>
 
-              {/* Mockup satırları */}
               <div className="space-y-4">
                 <MockupRow label="Etkinlik" value="Yıllık iftar daveti" />
                 <MockupRow label="Tarih" value="22 Mart 2026" />
@@ -123,7 +119,6 @@ export function B2BSection() {
               </div>
             </div>
 
-            {/* Mockup altı: ince Vercel-style bilgi */}
             <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-paper-50 text-center">
               ↑ Örnek bir kurumsal ilan kartı
             </p>
@@ -154,11 +149,6 @@ function MockupRow({
             ? "font-display italic text-2xl text-terracotta"
             : "text-paper font-medium text-base"
         }`}
-        style={
-          highlight
-            ? { fontVariationSettings: '"SOFT" 100' }
-            : undefined
-        }
       >
         {value}
       </span>
