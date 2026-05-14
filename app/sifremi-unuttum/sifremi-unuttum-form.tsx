@@ -25,7 +25,7 @@ export function SifremiUnuttumForm() {
     setHata(null);
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/sifre-sifirla`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=/sifre-sifirla`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo,

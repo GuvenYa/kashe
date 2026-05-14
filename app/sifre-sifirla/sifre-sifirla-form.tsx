@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-browser';
@@ -28,29 +28,6 @@ export function SifreSifirlaForm() {
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [recoverySession, setRecoverySession] = useState<
-    'checking' | 'valid' | 'invalid'
-  >('checking');
-
-  // Recovery session kontrolü
-  useEffect(() => {
-    const supabase = createClient();
-
-    // Supabase recovery URL'sini otomatik handle eder ve session açar.
-    // Kısa bir gecikme ekleyerek session'ın yüklenmesini bekle.
-    const timer = setTimeout(async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setRecoverySession('valid');
-      } else {
-        setRecoverySession('invalid');
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,52 +56,10 @@ export function SifreSifirlaForm() {
     setSuccess(true);
     setLoading(false);
 
-    // 1.5 saniye sonra profile yönlendir
     setTimeout(() => {
       router.push('/profil');
       router.refresh();
     }, 1500);
-  }
-
-  if (recoverySession === 'checking') {
-    return (
-      <div className="text-center">
-        <div className="w-12 h-12 border-2 border-line border-t-terracotta rounded-full animate-spin mx-auto mb-4" />
-        <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-          Kontrol ediliyor
-        </p>
-      </div>
-    );
-  }
-
-  if (recoverySession === 'invalid') {
-    return (
-      <div className="text-center">
-        <Link href="/" className="inline-block mb-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-terracotta rounded flex items-center justify-center">
-              <span className="font-serif text-paper text-xl font-bold">k</span>
-            </div>
-            <span className="font-serif text-ink text-2xl font-bold">Kashe</span>
-          </div>
-        </Link>
-
-        <h1 className="font-display text-3xl text-ink mb-4 tracking-tight">
-          Bağlantı geçersiz.
-        </h1>
-        <p className="text-ink-72 leading-relaxed mb-8">
-          Şifre sıfırlama bağlantın geçersiz veya süresi dolmuş olabilir. Yeni
-          bir sıfırlama isteği gönder.
-        </p>
-
-        <Link
-          href="/sifremi-unuttum"
-          className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
-        >
-          Yeni bağlantı iste
-        </Link>
-      </div>
-    );
   }
 
   if (success) {
@@ -143,7 +78,6 @@ export function SifreSifirlaForm() {
     );
   }
 
-  // recoverySession === 'valid'
   return (
     <div>
       <div className="text-center mb-10">
