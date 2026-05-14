@@ -28,7 +28,7 @@ export function SifreSifirlaForm() {
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [recoverySession, setRecoverySession] = useState
+  const [recoverySession, setRecoverySession] = useState<
     'checking' | 'valid' | 'invalid'
   >('checking');
 
