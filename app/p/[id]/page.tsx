@@ -7,7 +7,7 @@ import {
   formatDuration,
   getRoleLabel,
 } from '@/app/lib/profile-helpers';
-import type { ServiceWithCategory } from '@/app/lib/types';
+import type { ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 
 type PublicProfile = {
   id: string;
@@ -78,22 +78,28 @@ export default async function PublicProfilePage({
 
   const profile = profileData as unknown as PublicProfile;
 
-  // RLS profiles_read_published ile published olmayanlar zaten gelmemeli,
-  // ama defansif olarak kontrol et
   if (!profile.is_published) {
     notFound();
   }
 
-  // Aktif hizmetleri çek
-  const { data: servicesData } = await supabase
-    .from('services')
-    .select('*, service_categories(name_tr, emoji)')
-    .eq('profile_id', profile.id)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false });
+  // Hizmetler + Portföy paralel
+  const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
+    supabase
+      .from('services')
+      .select('*, service_categories(name_tr, emoji)')
+      .eq('profile_id', profile.id)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('portfolio_items')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .order('created_at', { ascending: false }),
+  ]);
 
   const services = (servicesData || []) as ServiceWithCategory[];
+  const portfolioItems = (portfolioData || []) as PortfolioItem[];
 
   const displayName =
     profile.role === 'business' && profile.company_name
@@ -154,25 +160,9 @@ export default async function PublicProfilePage({
                 )}
                 {cityName && (
                   <p className="text-sm text-ink-72 mt-2 flex items-center gap-1.5">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M7 12.25C7 12.25 11.375 8.4375 11.375 5.6875C11.375 3.27258 9.41492 1.3125 7 1.3125C4.58508 1.3125 2.625 3.27258 2.625 5.6875C2.625 8.4375 7 12.25 7 12.25Z"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                      />
-                      <circle
-                        cx="7"
-                        cy="5.6875"
-                        r="1.3125"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                      />
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7 12.25C7 12.25 11.375 8.4375 11.375 5.6875C11.375 3.27258 9.41492 1.3125 7 1.3125C4.58508 1.3125 2.625 3.27258 2.625 5.6875C2.625 8.4375 7 12.25 7 12.25Z" stroke="currentColor" strokeWidth="1" />
+                      <circle cx="7" cy="5.6875" r="1.3125" stroke="currentColor" strokeWidth="1" />
                     </svg>
                     {cityName}
                   </p>
@@ -186,6 +176,33 @@ export default async function PublicProfilePage({
               </p>
             )}
           </div>
+
+          {/* PORTFÖY GALERİ */}
+          {portfolioItems.length > 0 && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <h2 className="font-display text-2xl text-ink mb-6">Portföy</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {portfolioItems.map((item) => (
+                  <div key={item.id} className="space-y-2">
+                    <div className="aspect-square bg-paper rounded-lg overflow-hidden border border-line">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.media_url}
+                        alt={item.caption || 'Portfolio'}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+                    {item.caption && (
+                      <p className="text-xs text-ink-72 leading-relaxed line-clamp-2">
+                        {item.caption}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* HİZMETLER */}
           {services.length > 0 && (
@@ -205,10 +222,7 @@ export default async function PublicProfilePage({
                     ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
                     : '';
                   return (
-                    <div
-                      key={service.id}
-                      className="border-l-2 border-terracotta pl-5 py-1"
-                    >
+                    <div key={service.id} className="border-l-2 border-terracotta pl-5 py-1">
                       <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
                         {catLabel}
                       </p>
@@ -216,9 +230,7 @@ export default async function PublicProfilePage({
                         {service.title}
                       </h3>
                       <p className="text-sm text-ink-72 mb-2">
-                        {[durationLabel, priceLabel]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        {[durationLabel, priceLabel].filter(Boolean).join(' · ')}
                       </p>
                       {service.description && (
                         <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap">
@@ -238,8 +250,7 @@ export default async function PublicProfilePage({
               İletişime geçmek ister misin?
             </h2>
             <p className="text-ink-72 text-sm mb-4">
-              Müşteri-profesyonel mesajlaşma yakında. Şimdilik iletişim
-              bilgilerini görebilirsin.
+              Müşteri-profesyonel mesajlaşma yakında. Şimdilik iletişim bilgilerini görebilirsin.
             </p>
             <div className="space-y-2">
               {profile.phone && (

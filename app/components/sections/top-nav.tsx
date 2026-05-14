@@ -63,6 +63,14 @@ export async function TopNav() {
                   Hizmetlerim
                 </a>
               )}
+              {isProfessional && (
+                <a
+                  href="/profil/portfoy"
+                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                >
+                  Portföyüm
+                </a>
+              )}
               <a
                 href="/profil"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"

@@ -14,7 +14,7 @@ import {
   formatPriceRange,
   formatDuration,
 } from '@/app/lib/profile-helpers';
-import type { Profile, Service, ServiceWithCategory } from '@/app/lib/types';
+import type { Profile, ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -52,16 +52,26 @@ export default async function ProfilPage() {
   const isClientUser = isClient(profile);
   const isBusinessUser = isBusiness(profile);
 
-  // Profesyonel ise hizmetlerini de çek
+  // Profesyonel ise hizmetleri + portfolio'yu da çek
   let services: ServiceWithCategory[] = [];
+  let portfolioItems: PortfolioItem[] = [];
   if (isPro) {
-    const { data: servicesData } = await supabase
-      .from('services')
-      .select('*, service_categories(name_tr, emoji)')
-      .eq('profile_id', user.id)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false });
+    const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
+      supabase
+        .from('services')
+        .select('*, service_categories(name_tr, emoji)')
+        .eq('profile_id', user.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('portfolio_items')
+        .select('*')
+        .eq('profile_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(4),
+    ]);
     services = (servicesData || []) as ServiceWithCategory[];
+    portfolioItems = (portfolioData || []) as PortfolioItem[];
   }
 
   const cityName = profile.turkish_cities?.name;
@@ -85,8 +95,6 @@ export default async function ProfilPage() {
     isBusinessUser && profile.company_name
       ? profile.company_name
       : profile.full_name || 'Kullanıcı';
-
-  const activeServices = services.filter((s) => s.is_active);
 
   return (
     <>
@@ -203,7 +211,7 @@ export default async function ProfilPage() {
             )}
           </div>
 
-          {/* PROFESYONEL: Gerçek Hizmetler listesi */}
+          {/* PROFESYONEL: Hizmetler */}
           {isPro && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
@@ -218,8 +226,7 @@ export default async function ProfilPage() {
 
               {services.length === 0 ? (
                 <p className="text-ink-72">
-                  Henüz hizmet eklemedin. Yayınlamak için en az 1 aktif hizmet
-                  gerekli.
+                  Henüz hizmet eklemedin. Yayınlamak için en az 1 aktif hizmet gerekli.
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -266,18 +273,43 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* PROFESYONEL: Portföy placeholder (sonraki adıma) */}
+          {/* PROFESYONEL: Portföy */}
           {isPro && (
             <div className="mt-6 bg-white border border-line rounded-lg p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
                 <h2 className="font-display text-2xl text-ink">Portföy</h2>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
-                  Yakında
-                </span>
+                <Link
+                  href="/profil/portfoy"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {portfolioItems.length === 0
+                    ? 'Fotoğraf ekle →'
+                    : 'Tümünü yönet →'}
+                </Link>
               </div>
-              <p className="text-ink-72">
-                Önceki işlerinden fotoğraflar, videolar ekleyebileceksin.
-              </p>
+
+              {portfolioItems.length === 0 ? (
+                <p className="text-ink-72">
+                  Henüz portföy fotoğrafı eklemedin.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {portfolioItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="aspect-square bg-paper rounded-lg overflow-hidden border border-line"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.media_url}
+                        alt={item.caption || 'Portfolio'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -293,8 +325,7 @@ export default async function ProfilPage() {
                 </span>
               </div>
               <p className="text-ink-72">
-                Düzenleyeceğin etkinlikleri ilan olarak yayınla, profesyoneller
-                seninle iletişime geçsin.
+                Düzenleyeceğin etkinlikleri ilan olarak yayınla, profesyoneller seninle iletişime geçsin.
               </p>
             </div>
           )}
@@ -309,8 +340,7 @@ export default async function ProfilPage() {
                 </span>
               </div>
               <p className="text-ink-72">
-                Beğendiğin profesyonelleri favorilerine ekle, daha sonra kolayca
-                bulabilesin.
+                Beğendiğin profesyonelleri favorilerine ekle, daha sonra kolayca bulabilesin.
               </p>
             </div>
           )}
