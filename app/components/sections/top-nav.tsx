@@ -72,6 +72,12 @@ export async function TopNav() {
                 </a>
               )}
               <a
+                href="/mesajlar"
+                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+              >
+                Mesajlar
+              </a>
+              <a
                 href="/profil"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
               >

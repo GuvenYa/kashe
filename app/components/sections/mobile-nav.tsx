@@ -106,6 +106,21 @@ export function MobileNav({ isLoggedIn, isProfessional }: Props) {
                       Hizmetlerim
                     </a>
                   )}
+                  {isProfessional && (
+                <a
+                      href="/profil/portfoy"
+                      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                    >
+                      Portföyüm
+                    </a>
+                  )}
+                  <a
+                href="/mesajlar"
+                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+              >
+                Mesajlar
+              </a>
+              
                   <a href="/profil" className={linkClass}>
                     Profilim
                   </a>

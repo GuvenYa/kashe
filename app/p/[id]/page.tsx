@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { IletisimButton } from './iletisim-button';
 import {
   formatPriceRange,
   formatDuration,
@@ -19,8 +20,6 @@ type PublicProfile = {
   company_name: string | null;
   role: string;
   is_published: boolean;
-  phone: string | null;
-  email: string;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null } | null;
 };
@@ -64,7 +63,7 @@ export default async function PublicProfilePage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, phone, email,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji)
     `
@@ -82,7 +81,7 @@ export default async function PublicProfilePage({
     notFound();
   }
 
-  // Hizmetler + Portföy paralel
+  // Hizmetler + Portföy
   const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
     supabase
       .from('services')
@@ -100,6 +99,25 @@ export default async function PublicProfilePage({
 
   const services = (servicesData || []) as ServiceWithCategory[];
   const portfolioItems = (portfolioData || []) as PortfolioItem[];
+
+  // Mevcut kullanıcı bilgisi
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let currentUserRole: string | null = null;
+  if (user) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    currentUserRole = currentProfile?.role ?? null;
+  }
+
+  const isLoggedIn = !!user;
+  const isOwnProfile = user?.id === profile.id;
+  const currentUserIsProfessional = currentUserRole === 'professional';
 
   const displayName =
     profile.role === 'business' && profile.company_name
@@ -129,7 +147,7 @@ export default async function PublicProfilePage({
             href="/kesfet"
             className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-6"
           >
-            ← Keşfet'e dön
+            ← Keşfet&apos;e dön
           </Link>
 
           {/* HEADER */}
@@ -244,31 +262,14 @@ export default async function PublicProfilePage({
             </div>
           )}
 
-          {/* İLETİŞİM */}
-          <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
-            <h2 className="font-display text-xl text-ink mb-2">
-              İletişime geçmek ister misin?
-            </h2>
-            <p className="text-ink-72 text-sm mb-4">
-              Müşteri-profesyonel mesajlaşma yakında. Şimdilik iletişim bilgilerini görebilirsin.
-            </p>
-            <div className="space-y-2">
-              {profile.phone && (
-                <p className="text-ink">
-                  <span className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mr-2">
-                    Telefon
-                  </span>
-                  {profile.phone}
-                </p>
-              )}
-              <p className="text-ink">
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mr-2">
-                  Email
-                </span>
-                {profile.email}
-              </p>
-            </div>
-          </div>
+          {/* İLETİŞİM BUTONU */}
+          <IletisimButton
+            professionalId={profile.id}
+            professionalName={displayName}
+            isLoggedIn={isLoggedIn}
+            currentUserIsProfessional={currentUserIsProfessional}
+            isOwnProfile={isOwnProfile}
+          />
         </div>
       </main>
     </>
