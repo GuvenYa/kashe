@@ -1,0 +1,319 @@
+'use client';
+
+import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { createService, updateService, type ServiceFormData } from './actions';
+import type { Service, ServiceCategory } from '@/app/lib/types';
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  categories: ServiceCategory[];
+  service?: Service | null; // edit mode için
+  defaultCategoryId?: number | null;
+};
+
+export function ServiceModal({
+  open,
+  onClose,
+  categories,
+  service,
+  defaultCategoryId,
+}: Props) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const [categoryId, setCategoryId] = useState<string>('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priceOnRequest, setPriceOnRequest] = useState(false);
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [durationHours, setDurationHours] = useState('');
+
+  const isEdit = !!service;
+
+  // Modal açıldığında alanları doldur (edit) veya sıfırla (create)
+  useEffect(() => {
+    if (!open) return;
+    setError(null);
+    if (service) {
+      setCategoryId(String(service.category_id));
+      setTitle(service.title);
+      setDescription(service.description || '');
+      setPriceOnRequest(service.price_on_request);
+      setPriceMin(service.price_min !== null ? String(service.price_min) : '');
+      setPriceMax(service.price_max !== null ? String(service.price_max) : '');
+      setDurationHours(
+        service.duration_hours !== null ? String(service.duration_hours) : ''
+      );
+    } else {
+      setCategoryId(defaultCategoryId ? String(defaultCategoryId) : '');
+      setTitle('');
+      setDescription('');
+      setPriceOnRequest(false);
+      setPriceMin('');
+      setPriceMax('');
+      setDurationHours('');
+    }
+  }, [open, service, defaultCategoryId]);
+
+  // ESC ile kapatma
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  // Modal açıkken body scroll kapat
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  function parseNumber(s: string): number | null {
+    const cleaned = s.trim().replace(/\./g, '').replace(',', '.');
+    if (cleaned === '') return null;
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const data: ServiceFormData = {
+      category_id: parseInt(categoryId, 10),
+      title: title.trim(),
+      description: description.trim() || null,
+      price_on_request: priceOnRequest,
+      price_min: priceOnRequest ? null : parseNumber(priceMin),
+      price_max: priceOnRequest ? null : parseNumber(priceMax),
+      duration_hours: parseNumber(durationHours),
+    };
+
+    startTransition(async () => {
+      const result = isEdit
+        ? await updateService(service!.id, data)
+        : await createService(data);
+
+      if (result.success) {
+        router.refresh();
+        onClose();
+      } else {
+        setError(result.error || 'Bir hata oluştu.');
+      }
+    });
+  }
+
+  const inputClass =
+    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+
+  const labelClass =
+    'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden="true" />
+
+      {/* Modal */}
+      <div
+        className="relative bg-paper rounded-lg shadow-xl max-w-xl w-full my-8 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="font-display text-xl text-ink">
+            {isEdit ? 'Hizmeti düzenle' : 'Yeni hizmet ekle'}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-ink-72 hover:text-ink p-2 -mr-2 transition-colors"
+            aria-label="Kapat"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 5L15 15M5 15L15 5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label htmlFor="modal-category" className={labelClass}>
+              Kategori <span className="text-terracotta">*</span>
+            </label>
+            <select
+              id="modal-category"
+              required
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Kategori seç</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.emoji ? `${cat.emoji} ${cat.name_tr}` : cat.name_tr}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="modal-title" className={labelClass}>
+              Başlık <span className="text-terracotta">*</span>
+            </label>
+            <input
+              id="modal-title"
+              type="text"
+              required
+              maxLength={100}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={inputClass}
+              placeholder="Örn: Düğün Sunuculuğu Paketi"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="modal-description" className={labelClass}>
+              Açıklama
+            </label>
+            <textarea
+              id="modal-description"
+              rows={3}
+              maxLength={1000}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={`${inputClass} resize-none`}
+              placeholder="Bu hizmette neler yapıyorsun, neyi kapsıyor..."
+            />
+            <p className="text-xs text-ink-72 mt-1.5">{description.length}/1000</p>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={priceOnRequest}
+                onChange={(e) => setPriceOnRequest(e.target.checked)}
+                className="w-4 h-4 accent-terracotta"
+              />
+              <span className="text-sm text-ink">
+                Fiyatı talep üzerine paylaş
+              </span>
+            </label>
+            <p className="text-xs text-ink-72 mt-1.5 ml-7">
+              Müşteri seni mesajla aradığında fiyatı sen verirsin.
+            </p>
+          </div>
+
+          {!priceOnRequest && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="modal-price-min" className={labelClass}>
+                  Min fiyat (₺) <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  id="modal-price-min"
+                  type="text"
+                  inputMode="decimal"
+                  required={!priceOnRequest}
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  className={inputClass}
+                  placeholder="5000"
+                />
+              </div>
+              <div>
+                <label htmlFor="modal-price-max" className={labelClass}>
+                  Max fiyat (₺) <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  id="modal-price-max"
+                  type="text"
+                  inputMode="decimal"
+                  required={!priceOnRequest}
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  className={inputClass}
+                  placeholder="15000"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="modal-duration" className={labelClass}>
+              Süre (saat)
+            </label>
+            <input
+              id="modal-duration"
+              type="text"
+              inputMode="decimal"
+              value={durationHours}
+              onChange={(e) => setDurationHours(e.target.value)}
+              className={inputClass}
+              placeholder="4"
+            />
+            <p className="text-xs text-ink-72 mt-1.5">
+              Boş bırakabilirsin. Ondalık için virgül kullan (örn: 2,5).
+            </p>
+          </div>
+
+          {error && (
+            <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="px-5 py-2.5 text-ink-72 hover:text-ink font-display font-medium transition-colors disabled:opacity-50"
+            >
+              İptal
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isPending
+                ? 'Kaydediliyor...'
+                : isEdit
+                ? 'Kaydet'
+                : 'Hizmet ekle'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

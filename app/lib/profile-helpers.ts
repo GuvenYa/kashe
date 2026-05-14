@@ -1,4 +1,4 @@
-import type { Profile } from './types';
+import type { Profile, Service } from './types';
 
 export function isProfessional(profile: Profile | null | undefined): boolean {
   return profile?.role === 'professional';
@@ -24,8 +24,14 @@ export function getRoleLabel(role: string | null | undefined): string {
 /**
  * Profil hangi alanların eksik olduğunu döndürür.
  * Yayınlama için gerekli minimum alanlar.
+ * 
+ * @param profile - Kullanıcı profili
+ * @param services - Profesyonel için hizmet listesi (varsa). Aktif hizmet kontrolü için.
  */
-export function getMissingPublishFields(profile: Profile): string[] {
+export function getMissingPublishFields(
+  profile: Profile,
+  services?: Service[] | null
+): string[] {
   const missing: string[] = [];
 
   // Tüm roller için gerekli
@@ -50,6 +56,11 @@ export function getMissingPublishFields(profile: Profile): string[] {
     if (!profile.primary_category_id) {
       missing.push('Ana hizmet kategorisi');
     }
+    // En az 1 aktif hizmet
+    const activeServices = (services || []).filter((s) => s.is_active);
+    if (activeServices.length === 0) {
+      missing.push('En az 1 aktif hizmet');
+    }
   }
 
   // Kurumsal için ekstra
@@ -62,14 +73,17 @@ export function getMissingPublishFields(profile: Profile): string[] {
   return missing;
 }
 
-export function canPublish(profile: Profile): boolean {
-  return getMissingPublishFields(profile).length === 0;
+export function canPublish(profile: Profile, services?: Service[] | null): boolean {
+  return getMissingPublishFields(profile, services).length === 0;
 }
 
 /**
  * 0-100 arası tamlık yüzdesi (UI'da progress bar için)
  */
-export function getCompletenessPercent(profile: Profile): number {
+export function getCompletenessPercent(
+  profile: Profile,
+  services?: Service[] | null
+): number {
   const checks: boolean[] = [
     !!profile.full_name,
     !!profile.avatar_url,
@@ -80,6 +94,8 @@ export function getCompletenessPercent(profile: Profile): number {
 
   if (profile.role === 'professional') {
     checks.push(!!profile.primary_category_id);
+    const activeServices = (services || []).filter((s) => s.is_active);
+    checks.push(activeServices.length > 0);
   }
   if (profile.role === 'business') {
     checks.push(!!profile.company_name);
@@ -87,4 +103,46 @@ export function getCompletenessPercent(profile: Profile): number {
 
   const completed = checks.filter(Boolean).length;
   return Math.round((completed / checks.length) * 100);
+}
+
+/**
+ * Fiyat formatlama: 5000 → "5.000 ₺"
+ */
+export function formatPrice(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return '';
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+/**
+ * Fiyat aralığı: 5000, 15000 → "5.000 – 15.000 ₺"
+ * Talep üzerine ise farklı string.
+ */
+export function formatPriceRange(
+  min: number | null | undefined,
+  max: number | null | undefined,
+  onRequest: boolean
+): string {
+  if (onRequest) return 'Talep üzerine';
+  if (min === null || min === undefined || max === null || max === undefined) {
+    return '';
+  }
+  if (min === max) return formatPrice(min);
+  const minFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(min);
+  const maxFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(max);
+  return `${minFmt} – ${maxFmt} ₺`;
+}
+
+/**
+ * Süre formatlama: 4 → "4 saat", 2.5 → "2,5 saat"
+ */
+export function formatDuration(hours: number | null | undefined): string {
+  if (hours === null || hours === undefined) return '';
+  const formatted = new Intl.NumberFormat('tr-TR', {
+    maximumFractionDigits: 1,
+  }).format(hours);
+  return `${formatted} saat`;
 }

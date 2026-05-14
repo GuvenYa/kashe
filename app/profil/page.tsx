@@ -11,8 +11,10 @@ import {
   getMissingPublishFields,
   canPublish,
   getCompletenessPercent,
+  formatPriceRange,
+  formatDuration,
 } from '@/app/lib/profile-helpers';
-import type { Profile } from '@/app/lib/types';
+import type { Profile, Service, ServiceWithCategory } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -46,18 +48,30 @@ export default async function ProfilPage() {
     service_categories: { name_tr: string; emoji: string | null } | null;
   };
 
+  const isPro = isProfessional(profile);
+  const isClientUser = isClient(profile);
+  const isBusinessUser = isBusiness(profile);
+
+  // Profesyonel ise hizmetlerini de çek
+  let services: ServiceWithCategory[] = [];
+  if (isPro) {
+    const { data: servicesData } = await supabase
+      .from('services')
+      .select('*, service_categories(name_tr, emoji)')
+      .eq('profile_id', user.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    services = (servicesData || []) as ServiceWithCategory[];
+  }
+
   const cityName = profile.turkish_cities?.name;
   const categoryLabel = profile.service_categories
     ? `${profile.service_categories.emoji || ''} ${profile.service_categories.name_tr}`.trim()
     : null;
 
-  const isPro = isProfessional(profile);
-  const isClientUser = isClient(profile);
-  const isBusinessUser = isBusiness(profile);
-
-  const missingFields = getMissingPublishFields(profile);
-  const canPub = canPublish(profile);
-  const completeness = getCompletenessPercent(profile);
+  const missingFields = getMissingPublishFields(profile, services);
+  const canPub = canPublish(profile, services);
+  const completeness = getCompletenessPercent(profile, services);
 
   const initials = (profile.full_name || '')
     .split(' ')
@@ -67,11 +81,12 @@ export default async function ProfilPage() {
     .join('')
     .toUpperCase();
 
-  // Display name: business kullanıcı için company_name öncelikli
   const displayName =
     isBusinessUser && profile.company_name
       ? profile.company_name
       : profile.full_name || 'Kullanıcı';
+
+  const activeServices = services.filter((s) => s.is_active);
 
   return (
     <>
@@ -118,7 +133,7 @@ export default async function ProfilPage() {
             </Link>
           </div>
 
-          {/* PUBLISH TOGGLE — sadece Pro & Business için */}
+          {/* PUBLISH TOGGLE */}
           {(isPro || isBusinessUser) && (
             <div className="mb-8">
               <PublishToggle
@@ -129,7 +144,7 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* COMPLETENESS BAR — sadece tamlık %100 değilse göster */}
+          {/* COMPLETENESS BAR */}
           {completeness < 100 && (
             <div className="mb-8 bg-white border border-line rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
@@ -188,26 +203,70 @@ export default async function ProfilPage() {
             )}
           </div>
 
-          {/* ROLE-SPECIFIC SECTIONS */}
-
-          {/* PROFESYONEL: Hizmetler placeholder */}
+          {/* PROFESYONEL: Gerçek Hizmetler listesi */}
           {isPro && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
                 <h2 className="font-display text-2xl text-ink">Hizmetlerim</h2>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
-                  Yakında
-                </span>
+                <Link
+                  href="/profil/hizmetlerim"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {services.length === 0 ? 'Hizmet ekle →' : 'Tümünü yönet →'}
+                </Link>
               </div>
-              <p className="text-ink-72">
-                Sunduğun hizmetleri, fiyat aralıklarını ve süreleri burada
-                ekleyeceksin. Müşteriler keşfet sayfasından bu bilgilerle seni
-                bulacak.
-              </p>
+
+              {services.length === 0 ? (
+                <p className="text-ink-72">
+                  Henüz hizmet eklemedin. Yayınlamak için en az 1 aktif hizmet
+                  gerekli.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {services.slice(0, 3).map((service) => {
+                    const priceLabel = formatPriceRange(
+                      service.price_min,
+                      service.price_max,
+                      service.price_on_request
+                    );
+                    const durationLabel = formatDuration(service.duration_hours);
+                    return (
+                      <div
+                        key={service.id}
+                        className={`border-l-2 pl-4 py-1 ${
+                          service.is_active
+                            ? 'border-terracotta'
+                            : 'border-line opacity-60'
+                        }`}
+                      >
+                        <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
+                          {service.service_categories
+                            ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
+                            : ''}
+                          {!service.is_active && (
+                            <span className="ml-2 text-terracotta">· Pasif</span>
+                          )}
+                        </p>
+                        <p className="font-display text-base text-ink">
+                          {service.title}
+                        </p>
+                        <p className="text-sm text-ink-72 mt-0.5">
+                          {[durationLabel, priceLabel].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {services.length > 3 && (
+                    <p className="text-sm text-ink-72 pt-2">
+                      ve {services.length - 3} hizmet daha...
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* PROFESYONEL: Portföy placeholder */}
+          {/* PROFESYONEL: Portföy placeholder (sonraki adıma) */}
           {isPro && (
             <div className="mt-6 bg-white border border-line rounded-lg p-8">
               <div className="flex items-center justify-between mb-4">
@@ -222,7 +281,7 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* KURUMSAL: İhtiyaçlar placeholder */}
+          {/* KURUMSAL */}
           {isBusinessUser && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
               <div className="flex items-center justify-between mb-4">
@@ -240,7 +299,7 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* MÜŞTERİ: Geçmiş aramalar / favoriler placeholder */}
+          {/* MÜŞTERİ */}
           {isClientUser && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
               <div className="flex items-center justify-between mb-4">
@@ -256,7 +315,7 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* USER ID — küçük detay olarak en altta */}
+          {/* USER ID */}
           <div className="mt-12 pt-8 border-t border-line">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72/60 mb-1">
               Kullanıcı ID
