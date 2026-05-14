@@ -1,0 +1,110 @@
+import Link from 'next/link';
+import { formatPriceRange } from '@/app/lib/profile-helpers';
+
+type Props = {
+  profile: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+    company_name: string | null;
+    role: string;
+    turkish_cities: { name: string } | null;
+    service_categories: { name_tr: string; emoji: string | null } | null;
+  };
+  services: {
+    price_min: number | null;
+    price_max: number | null;
+    price_on_request: boolean;
+  }[];
+};
+
+export function ProfileCard({ profile, services }: Props) {
+  const displayName =
+    profile.role === 'business' && profile.company_name
+      ? profile.company_name
+      : profile.full_name || 'İsimsiz';
+
+  const initials = (profile.full_name || profile.company_name || 'K')
+    .split(' ')
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const categoryLabel = profile.service_categories
+    ? `${profile.service_categories.emoji || ''} ${profile.service_categories.name_tr}`.trim()
+    : null;
+
+  const cityName = profile.turkish_cities?.name;
+
+  // Fiyat aralığı: tüm aktif hizmetlerden min/max çek
+  const numericServices = services.filter((s) => !s.price_on_request && s.price_min !== null && s.price_max !== null);
+  let priceLabel: string | null = null;
+
+  if (services.length > 0) {
+    if (numericServices.length === 0) {
+      priceLabel = 'Talep üzerine';
+    } else {
+      const allMins = numericServices.map((s) => s.price_min as number);
+      const allMaxs = numericServices.map((s) => s.price_max as number);
+      const overallMin = Math.min(...allMins);
+      const overallMax = Math.max(...allMaxs);
+      priceLabel = formatPriceRange(overallMin, overallMax, false);
+    }
+  }
+
+  return (
+    <Link
+      href={`/p/${profile.id}`}
+      className="group bg-white border border-line rounded-lg p-6 hover:border-terracotta hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+    >
+      <div className="flex items-start gap-4">
+        {profile.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.avatar_url}
+            alt={displayName}
+            className="w-16 h-16 rounded-full object-cover border-2 border-line shrink-0"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xl shrink-0">
+            {initials}
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          {categoryLabel && (
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
+              {categoryLabel}
+            </p>
+          )}
+          <h3 className="font-display text-xl text-ink group-hover:text-terracotta transition-colors truncate">
+            {displayName}
+          </h3>
+          {cityName && (
+            <p className="text-sm text-ink-72 mt-0.5">{cityName}</p>
+          )}
+        </div>
+      </div>
+
+      {profile.bio && (
+        <p className="text-sm text-ink-72 mt-4 leading-relaxed line-clamp-2">
+          {profile.bio}
+        </p>
+      )}
+
+      {priceLabel && (
+        <div className="mt-4 pt-4 border-t border-line flex items-center justify-between">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
+            Fiyat aralığı
+          </p>
+          <p className="text-ink font-display font-semibold text-sm">
+            {priceLabel}
+          </p>
+        </div>
+      )}
+    </Link>
+  );
+}

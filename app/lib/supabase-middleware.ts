@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Korumalı sayfalar — giriş gerekli
-  const protectedPaths = ['/profil', '/kesfet'];
+  const protectedPaths = ['/profil'];
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );

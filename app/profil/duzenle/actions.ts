@@ -99,7 +99,20 @@ export async function togglePublish(publish: boolean): Promise<UpdateProfileResu
       return { success: false, error: 'Profil bulunamadı.' };
     }
 
-    const missing = getMissingPublishFields(profile as Profile);
+    // Profesyonel için aktif hizmetleri de çek (yayın şartı)
+    let services: { is_active: boolean }[] = [];
+    if ((profile as Profile).role === 'professional') {
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('is_active')
+        .eq('profile_id', user.id);
+      services = servicesData || [];
+    }
+
+    const missing = getMissingPublishFields(
+      profile as Profile,
+      services as never
+    );
     if (missing.length > 0) {
       return {
         success: false,
