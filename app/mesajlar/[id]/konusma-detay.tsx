@@ -55,7 +55,12 @@ export function KonusmaDetay({
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [isOtherOnline, setIsOtherOnline] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const channelRef = useRef<any>(null);
 
   const otherName =
     other.role === 'business' && other.company_name
@@ -82,17 +87,23 @@ export function KonusmaDetay({
       );
     });
   }, [initialMessages]);
-// Mount'ta okunmamış mesajları işaretle (eski page.tsx render-time call yerine)
+
+  // Mount'ta okunmamış mesajları işaretle
   useEffect(() => {
     markConversationRead(conversationId).catch(() => {
       // sessiz fail
     });
   }, [conversationId]);
-  // Realtime: bu konuşmaya gelen yeni mesajları dinle
+
+  // Realtime: yeni mesaj + presence (typing, online)
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
+    const channel = supabase.channel(`messages:${conversationId}`, {
+      config: { presence: { key: currentUserId } },
+    });
+    channelRef.current = channel;
+
+    channel
       .on(
         'postgres_changes',
         {
@@ -107,25 +118,50 @@ export function KonusmaDetay({
             if (prev.some((m) => m.id === newMessage.id)) return prev;
             return [...prev, newMessage];
           });
-          // Karşı taraftan geldi ve sayfa açık → okundu işaretle
           if (newMessage.sender_id !== currentUserId) {
-            markConversationRead(conversationId).catch(() => {
-              // sessiz fail; UX'i bozmasın
-            });
+            markConversationRead(conversationId).catch(() => {});
           }
         }
       )
-      .subscribe();
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const otherStates = state[other.id];
+        setIsOtherOnline(!!(otherStates && otherStates.length > 0));
+      })
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        const data = payload.payload as { userId: string; isTyping: boolean };
+        if (data.userId !== currentUserId) {
+          setIsOtherTyping(data.isTyping);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({});
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, other.id]);
 
   // Yeni mesajda en alta scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  // Textarea değişince typing state'ini broadcast et
+  function broadcastTyping(isTyping: boolean) {
+    if (!channelRef.current) return;
+    channelRef.current
+      .send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: currentUserId, isTyping },
+      })
+      .catch(() => {});
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -138,7 +174,10 @@ export function KonusmaDetay({
       const result = await sendMessage(conversationId, text);
       if (result.success) {
         setBody('');
-        // Mesaj realtime ile state'e düşecek; router.refresh failsafe
+        broadcastTyping(false);
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
         router.refresh();
       } else {
         setError(result.error || 'Gönderilemedi.');
@@ -151,28 +190,42 @@ export function KonusmaDetay({
       {/* HEADER */}
       <div className="border-b border-line p-4 flex items-center gap-3 bg-paper">
         <Link href={`/p/${other.id}`} className="flex items-center gap-3 group">
-          {other.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={other.avatar_url}
-              alt={otherName}
-              className="w-10 h-10 rounded-full object-cover border border-line"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-sm">
-              {initials}
-            </div>
-          )}
+          <div className="relative shrink-0">
+            {other.avatar_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={other.avatar_url}
+                alt={otherName}
+                className="w-10 h-10 rounded-full object-cover border border-line"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-sm">
+                {initials}
+              </div>
+            )}
+            {isOtherOnline && (
+              <span
+                className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-paper"
+                aria-label="Çevrimiçi"
+              />
+            )}
+          </div>
           <div>
             <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors">
               {otherName}
             </p>
-            {(eventType || eventDate) && (
-              <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.1em]">
-                {eventType}
-                {eventType && eventDate && ' · '}
-                {eventDate && new Date(eventDate).toLocaleDateString('tr-TR')}
+            {isOtherTyping ? (
+              <p className="text-xs text-terracotta font-mono uppercase tracking-[0.1em] italic">
+                yazıyor...
               </p>
+            ) : (
+              (eventType || eventDate) && (
+                <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.1em]">
+                  {eventType}
+                  {eventType && eventDate && ' · '}
+                  {eventDate && new Date(eventDate).toLocaleDateString('tr-TR')}
+                </p>
+              )
             )}
           </div>
         </Link>
@@ -225,7 +278,20 @@ export function KonusmaDetay({
         <div className="flex items-end gap-2">
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setBody(newValue);
+              const hasContent = newValue.trim().length > 0;
+              broadcastTyping(hasContent);
+              if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+              }
+              if (hasContent) {
+                typingTimeoutRef.current = setTimeout(() => {
+                  broadcastTyping(false);
+                }, 1500);
+              }
+            }}
             placeholder="Mesajını yaz..."
             rows={1}
             maxLength={2000}
@@ -239,7 +305,7 @@ export function KonusmaDetay({
           />
           <button
             type="submit"
-            disabled={isPending || !body.trim()}
+            disabled={isPending || body.trim().length === 0}
             className="px-5 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
           >
             {isPending ? '...' : 'Gönder'}
