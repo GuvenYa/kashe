@@ -3,7 +3,6 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { KonusmaDetay } from './konusma-detay';
-import { markConversationRead } from '../actions';
 import type { Message } from '@/app/lib/types';
 
 type ConversationRow = {
@@ -82,9 +81,6 @@ export default async function KonusmaPage({
     .order('created_at', { ascending: true });
 
   const messages = (messagesData || []) as Message[];
-
-  // Bu konuşmadaki okunmamış mesajları işaretle
-  await markConversationRead(id);
 
   return (
     <>

@@ -190,8 +190,7 @@ export async function markConversationRead(
     return { success: false, error: error.message };
   }
 
-  // revalidatePath burada çağrılmıyor çünkü Server Component render'ı sırasında çağrılıyor.
-  // Liste sayfasına dönüş zaten fresh fetch yapacak.
+  revalidatePath('/mesajlar');
   return { success: true };
 }
 export async function getUnreadMessageCount(): Promise<number> {

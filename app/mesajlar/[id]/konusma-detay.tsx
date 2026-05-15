@@ -82,7 +82,12 @@ export function KonusmaDetay({
       );
     });
   }, [initialMessages]);
-
+// Mount'ta okunmamış mesajları işaretle (eski page.tsx render-time call yerine)
+  useEffect(() => {
+    markConversationRead(conversationId).catch(() => {
+      // sessiz fail
+    });
+  }, [conversationId]);
   // Realtime: bu konuşmaya gelen yeni mesajları dinle
   useEffect(() => {
     const supabase = createClient();
