@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { sendMessage } from '../actions';
+import { sendMessage, markConversationRead } from '../actions';
+import { createClient } from '@/app/lib/supabase-browser';
 import type { Message } from '@/app/lib/types';
 
 type OtherUser = {
@@ -53,6 +54,7 @@ export function KonusmaDetay({
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const otherName =
@@ -68,10 +70,57 @@ export function KonusmaDetay({
     .join('')
     .toUpperCase();
 
-  // Yeni mesaj geldiğinde en alta scroll
+  // Prop'tan yeni mesajlar gelirse (router.refresh fallback) dedup ile state'e merge et
+  useEffect(() => {
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const incoming = initialMessages.filter((m) => !existingIds.has(m.id));
+      if (incoming.length === 0) return prev;
+      return [...prev, ...incoming].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, [initialMessages]);
+
+  // Realtime: bu konuşmaya gelen yeni mesajları dinle
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+          // Karşı taraftan geldi ve sayfa açık → okundu işaretle
+          if (newMessage.sender_id !== currentUserId) {
+            markConversationRead(conversationId).catch(() => {
+              // sessiz fail; UX'i bozmasın
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, currentUserId]);
+
+  // Yeni mesajda en alta scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [initialMessages.length]);
+  }, [messages.length]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,6 +133,7 @@ export function KonusmaDetay({
       const result = await sendMessage(conversationId, text);
       if (result.success) {
         setBody('');
+        // Mesaj realtime ile state'e düşecek; router.refresh failsafe
         router.refresh();
       } else {
         setError(result.error || 'Gönderilemedi.');
@@ -125,12 +175,12 @@ export function KonusmaDetay({
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-paper/30">
-        {initialMessages.length === 0 ? (
+        {messages.length === 0 ? (
           <p className="text-center text-ink-72 text-sm py-8">
             Bu konuşmada henüz mesaj yok.
           </p>
         ) : (
-          initialMessages.map((msg) => {
+          messages.map((msg) => {
             const isMine = msg.sender_id === currentUserId;
             return (
               <div
