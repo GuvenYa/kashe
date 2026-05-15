@@ -1,0 +1,78 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/app/lib/supabase-browser';
+import { getUnreadMessageCount } from '@/app/mesajlar/actions';
+
+type Props = {
+  userId: string;
+};
+
+export function UnreadBadge({ userId }: Props) {
+  const [count, setCount] = useState<number>(0);
+
+  // İlk fetch
+  useEffect(() => {
+    getUnreadMessageCount().then(setCount).catch(() => setCount(0));
+  }, []);
+
+  // Realtime: INSERT artırır, UPDATE (read_at set) sayıyı re-sync
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`unread-badge:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const newMessage = payload.new as {
+            sender_id: string;
+            read_at: string | null;
+          };
+          // RLS bizi sadece kendi konuşmalarımızdaki mesajlara sınırlar.
+          // Kendi mesajlarımızı sayma.
+          if (newMessage.sender_id !== userId && !newMessage.read_at) {
+            setCount((c) => c + 1);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          // read_at güncellendi → fresh sayıyı çek
+          getUnreadMessageCount().then(setCount).catch(() => {});
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  // Tab focus'a geri dönünce drift'i temizle
+  useEffect(() => {
+    function onFocus() {
+      getUnreadMessageCount().then(setCount).catch(() => {});
+    }
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  if (count === 0) return null;
+
+  return (
+    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-terracotta text-paper rounded-full text-[10px] font-display font-semibold leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}

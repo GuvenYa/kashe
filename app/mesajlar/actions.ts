@@ -194,3 +194,26 @@ export async function markConversationRead(
   // Liste sayfasına dönüş zaten fresh fetch yapacak.
   return { success: true };
 }
+export async function getUnreadMessageCount(): Promise<number> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return 0;
+
+  // Bana gelen + henüz okumadığım mesajlar
+  const { count, error } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+
+  if (error) {
+    console.error('getUnreadMessageCount error:', error);
+    return 0;
+  }
+
+  return count ?? 0;
+}

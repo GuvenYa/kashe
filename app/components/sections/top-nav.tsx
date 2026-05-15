@@ -2,6 +2,7 @@ import { Button } from "@/app/components/ui/button";
 import { createClient } from "@/app/lib/supabase-server";
 import { LogoutButton } from "./logout-button";
 import { MobileNav } from "./mobile-nav";
+import { UnreadBadge } from "./unread-badge";
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -76,6 +77,7 @@ export async function TopNav() {
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
               >
                 Mesajlar
+                <UnreadBadge userId={user.id} />
               </a>
               <a
                 href="/profil"
@@ -103,7 +105,7 @@ export async function TopNav() {
         </div>
 
         {/* Mobile hamburger */}
-        <MobileNav isLoggedIn={!!user} isProfessional={isProfessional} />
+        <MobileNav isLoggedIn={!!user} isProfessional={isProfessional} userId={user?.id ?? null} />
       </div>
     </nav>
   );

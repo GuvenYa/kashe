@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
+import { UnreadBadge } from './unread-badge';
 
 type Props = {
   isLoggedIn: boolean;
   isProfessional: boolean;
+  userId: string | null;
 };
 
-export function MobileNav({ isLoggedIn, isProfessional }: Props) {
+export function MobileNav({ isLoggedIn, isProfessional, userId }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -116,9 +118,10 @@ export function MobileNav({ isLoggedIn, isProfessional }: Props) {
                   )}
                   <a
                 href="/mesajlar"
-                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center"
               >
                 Mesajlar
+                {userId && <UnreadBadge userId={userId} />}
               </a>
               
                   <a href="/profil" className={linkClass}>
