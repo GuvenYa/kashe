@@ -19,9 +19,23 @@ export function UnreadBadge({ userId }: Props) {
   // Realtime: INSERT artırır, UPDATE (read_at set) sayıyı re-sync
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`unread-badge:${userId}`)
-      .on(
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isCancelled = false;
+
+    async function setupChannel() {
+      // Auth context'i realtime'a manuel ilet (race condition'ı önle)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+
+      if (isCancelled) return;
+
+      channel = supabase
+        .channel(`unread-badge:${userId}`)
+        .on(
         'postgres_changes',
         {
           event: 'INSERT',
@@ -53,9 +67,15 @@ export function UnreadBadge({ userId }: Props) {
         }
       )
       .subscribe();
+    }
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isCancelled = true;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [userId]);
 

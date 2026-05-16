@@ -61,9 +61,23 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
   // Realtime: messages INSERT/UPDATE
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`mesajlar-listesi:${currentUserId}`)
-      .on(
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isCancelled = false;
+
+    async function setupChannel() {
+      // Auth context'i realtime'a manuel ilet (race condition'ı önle)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+
+      if (isCancelled) return;
+
+      channel = supabase
+        .channel(`mesajlar-listesi:${currentUserId}`)
+        .on(
         'postgres_changes',
         {
           event: 'INSERT',
@@ -125,9 +139,15 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
         }
       )
       .subscribe();
+    }
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isCancelled = true;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [currentUserId]);
 
