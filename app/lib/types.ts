@@ -104,3 +104,27 @@ export type ConversationWithOther = Conversation & {
   } | null;
   unread_count: number;
 };
+export type Review = {
+  id: string;
+  conversation_id: string;
+  customer_id: string;
+  professional_id: string;
+  rating: number;
+  body: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewReply = {
+  id: string;
+  review_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfessionalRatingSummary = {
+  professional_id: string;
+  review_count: number;
+  average_rating: number;
+};

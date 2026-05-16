@@ -17,9 +17,13 @@ type Props = {
     price_max: number | null;
     price_on_request: boolean;
   }[];
+  rating: {
+    count: number;
+    average: number;
+  } | null;
 };
 
-export function ProfileCard({ profile, services }: Props) {
+export function ProfileCard({ profile, services, rating }: Props) {
   const displayName =
     profile.role === 'business' && profile.company_name
       ? profile.company_name
@@ -85,6 +89,29 @@ export function ProfileCard({ profile, services }: Props) {
           </h3>
           {cityName && (
             <p className="text-sm text-ink-72 mt-0.5">{cityName}</p>
+          )}
+          {rating && rating.count > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="var(--color-terracotta)"
+                stroke="var(--color-terracotta)"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
+              <span className="font-display font-semibold text-sm text-ink">
+                {rating.average}
+              </span>
+              <span className="text-xs text-ink-72">
+                ({rating.count})
+              </span>
+            </div>
           )}
         </div>
       </div>

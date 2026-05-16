@@ -107,6 +107,26 @@ export default async function KesfetPage({
     });
   }
 
+  // Rating özetlerini topla
+  const ratingsByProfile: Record<
+    string,
+    { count: number; average: number }
+  > = {};
+
+  if (profileIds.length > 0) {
+    const { data: ratingsData } = await supabase
+      .from('professional_rating_summary')
+      .select('professional_id, review_count, average_rating')
+      .in('professional_id', profileIds);
+
+    (ratingsData || []).forEach((r) => {
+      ratingsByProfile[r.professional_id] = {
+        count: r.review_count,
+        average: r.average_rating,
+      };
+    });
+  }
+
   const hasFilters = !!(categoryId || cityId || searchQuery);
 
   return (
@@ -179,6 +199,7 @@ export default async function KesfetPage({
                     key={profile.id}
                     profile={profile}
                     services={servicesByProfile[profile.id] || []}
+                    rating={ratingsByProfile[profile.id] || null}
                   />
                 ))}
               </div>

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
+import { YorumButton } from './yorum-button';
+import { ReviewCard } from '@/app/yorumlar/review-card';
 import {
   formatPriceRange,
   formatDuration,
@@ -119,6 +121,103 @@ export default async function PublicProfilePage({
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
 
+  // Yorum sistemi için: mesajlaşma var mı + mevcut yorum
+  let hasConversation = false;
+  let existingReview: {
+    id: string;
+    rating: number;
+    body: string | null;
+  } | null = null;
+
+  const canReview =
+    isLoggedIn && !isOwnProfile && currentUserRole === 'client';
+
+  if (canReview) {
+    const [{ data: convData }, { data: reviewData }] = await Promise.all([
+      supabase
+        .from('conversations')
+        .select('id')
+        .eq('customer_id', user!.id)
+        .eq('professional_id', profile.id)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('reviews')
+        .select('id, rating, body')
+        .eq('customer_id', user!.id)
+        .eq('professional_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    hasConversation = !!convData;
+    existingReview = reviewData ?? null;
+  }
+
+  // Yorumlar listesi + ortalama puan + profesyonel yanıtları + müşteri profilleri
+  const [
+    { data: ratingData },
+    { data: recentReviewsData },
+  ] = await Promise.all([
+    supabase
+      .from('professional_rating_summary')
+      .select('review_count, average_rating')
+      .eq('professional_id', profile.id)
+      .maybeSingle(),
+    supabase
+      .from('reviews')
+      .select('id, rating, body, created_at, customer_id')
+      .eq('professional_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(3),
+  ]);
+
+  const reviewCount = ratingData?.review_count ?? 0;
+  const averageRating = ratingData?.average_rating ?? 0;
+  const recentReviews = recentReviewsData ?? [];
+
+  // Müşteri profilleri + yanıtları toplu çek
+  type CustomerMini = {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  type ReplyMini = {
+    id: string;
+    review_id: string;
+    body: string;
+    created_at: string;
+    updated_at: string;
+  };
+
+  let customerMap = new Map<string, CustomerMini>();
+  let replyMap = new Map<string, ReplyMini>();
+
+  if (recentReviews.length > 0) {
+    const customerIds = recentReviews.map((r) => r.customer_id);
+    const reviewIds = recentReviews.map((r) => r.id);
+
+    const [{ data: customers }, { data: replies }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', customerIds),
+      supabase
+        .from('review_replies')
+        .select('id, review_id, body, created_at, updated_at')
+        .in('review_id', reviewIds),
+    ]);
+
+    (customers ?? []).forEach((c) => {
+      customerMap.set(c.id, c as CustomerMini);
+    });
+    (replies ?? []).forEach((r) => {
+      replyMap.set(r.review_id, r as ReplyMini);
+    });
+  }
+
+  const isOwnedByProfessional = user?.id === profile.id;
   const displayName =
     profile.role === 'business' && profile.company_name
       ? profile.company_name
@@ -184,6 +283,24 @@ export default async function PublicProfilePage({
                     </svg>
                     {cityName}
                   </p>
+                )}
+                {reviewCount > 0 && (
+                  <Link
+                    href={`/p/${profile.id}/yorumlar`}
+                    className="inline-flex items-center gap-2 mt-3 group"
+                  >
+                    <span className="flex items-center gap-1">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-terracotta)" stroke="var(--color-terracotta)" strokeWidth="1.5" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                      </svg>
+                      <span className="font-display font-semibold text-ink">
+                        {averageRating}
+                      </span>
+                    </span>
+                    <span className="text-sm text-ink-72 group-hover:text-terracotta transition-colors">
+                      ({reviewCount} yorum)
+                    </span>
+                  </Link>
                 )}
               </div>
             </div>
@@ -261,15 +378,58 @@ export default async function PublicProfilePage({
               </div>
             </div>
           )}
+{/* YORUMLAR (varsa) */}
+          {recentReviews.length > 0 && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <h2 className="font-display text-2xl text-ink">
+                  Yorumlar
+                </h2>
+                {reviewCount > 3 && (
+                  <Link
+                    href={`/p/${profile.id}/yorumlar`}
+                    className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                  >
+                    Tümünü gör ({reviewCount}) →
+                  </Link>
+                )}
+              </div>
+              <div className="space-y-4">
+                {recentReviews.map((r) => (
+                  <ReviewCard
+                    key={r.id}
+                    review={{
+                      id: r.id,
+                      rating: r.rating,
+                      body: r.body,
+                      created_at: r.created_at,
+                    }}
+                    customer={customerMap.get(r.customer_id) ?? null}
+                    reply={replyMap.get(r.id) ?? null}
+                    isOwnedByProfessional={isOwnedByProfessional}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* İLETİŞİM BUTONU */}
-          <IletisimButton
-            professionalId={profile.id}
-            professionalName={displayName}
-            isLoggedIn={isLoggedIn}
-            currentUserIsProfessional={currentUserIsProfessional}
-            isOwnProfile={isOwnProfile}
-          />
+          {/* İLETİŞİM & YORUM BUTONLARI */}
+          <div className="flex flex-col gap-3">
+            <IletisimButton
+              professionalId={profile.id}
+              professionalName={displayName}
+              isLoggedIn={isLoggedIn}
+              currentUserIsProfessional={currentUserIsProfessional}
+              isOwnProfile={isOwnProfile}
+            />
+            <YorumButton
+              professionalId={profile.id}
+              professionalName={displayName}
+              hasConversation={hasConversation}
+              existingReview={existingReview}
+              enabled={canReview}
+            />
+          </div>
         </div>
       </main>
     </>
