@@ -98,12 +98,27 @@ export function KonusmaDetay({
   // Realtime: yeni mesaj + presence (typing, online)
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase.channel(`messages:${conversationId}`, {
-      config: { presence: { key: currentUserId } },
-    });
-    channelRef.current = channel;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isCancelled = false;
 
-    channel
+    async function setupChannel() {
+      // Auth context'i realtime'a manuel ilet (race condition'ı önle)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+
+      // Effect cleanup oldu mu kontrol et
+      if (isCancelled) return;
+
+      channel = supabase.channel(`messages:${conversationId}`, {
+        config: { presence: { key: currentUserId } },
+      });
+      channelRef.current = channel;
+
+      channel
       .on(
         'postgres_changes',
         {
@@ -124,7 +139,7 @@ export function KonusmaDetay({
         }
       )
       .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
+        const state = channel!.presenceState();
         const otherStates = state[other.id];
         setIsOtherOnline(!!(otherStates && otherStates.length > 0));
       })
@@ -135,13 +150,19 @@ export function KonusmaDetay({
         }
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === 'SUBSCRIBED' && channel) {
           await channel.track({});
         }
       });
+    }
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isCancelled = true;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       channelRef.current = null;
     };
   }, [conversationId, currentUserId, other.id]);
