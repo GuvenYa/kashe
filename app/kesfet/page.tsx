@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from './profile-card';
 import { KesfetFilters } from './kesfet-filters';
+import { SortDropdown } from './sort-dropdown';
 import type {
   ServiceCategory,
   TurkishCity,
@@ -35,6 +36,7 @@ type SearchParams = {
   kategori?: string;
   sehir?: string;
   q?: string;
+  sirala?: 'yeni' | 'puan';
 };
 
 export default async function KesfetPage({
@@ -48,6 +50,7 @@ export default async function KesfetPage({
   const categoryId = params.kategori ? parseInt(params.kategori, 10) : null;
   const cityId = params.sehir ? parseInt(params.sehir, 10) : null;
   const searchQuery = params.q?.trim() || '';
+  const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
     supabase
@@ -127,6 +130,21 @@ export default async function KesfetPage({
     });
   }
 
+  // Puana göre sırala (yüksekten alçağa). Yorumu olmayanlar sona.
+  // Aynı puanlı profiller arasında daha çok yorumu olan üstte.
+  if (sortBy === 'puan') {
+    profiles.sort((a, b) => {
+      const ra = ratingsByProfile[a.id];
+      const rb = ratingsByProfile[b.id];
+      const avgA = ra?.average ?? -1;
+      const avgB = rb?.average ?? -1;
+      if (avgA !== avgB) return avgB - avgA;
+      const countA = ra?.count ?? 0;
+      const countB = rb?.count ?? 0;
+      return countB - countA;
+    });
+  }
+
   const hasFilters = !!(categoryId || cityId || searchQuery);
 
   return (
@@ -190,9 +208,12 @@ export default async function KesfetPage({
             </div>
           ) : (
             <>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mt-8 mb-4">
-                {profiles.length} sonuç
-              </p>
+              <div className="flex items-center justify-between gap-3 flex-wrap mt-8 mb-4">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
+                  {profiles.length} sonuç
+                </p>
+                <SortDropdown currentSort={sortBy} />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {profiles.map((profile) => (
                   <ProfileCard
