@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { PublishToggle } from './publish-toggle';
+import { getUserFavorites } from '@/app/favoriler/actions';
 import {
   isProfessional,
   isClient,
@@ -51,6 +52,27 @@ export default async function ProfilPage() {
   const isPro = isProfessional(profile);
   const isClientUser = isClient(profile);
   const isBusinessUser = isBusiness(profile);
+
+  // Müşteri ise favorilerini çek (en yeni 4 + toplam sayı için)
+  type FavoritePreview = {
+    id: string;
+    professional: {
+      id: string;
+      full_name: string | null;
+      avatar_url: string | null;
+      role: string;
+      company_name: string | null;
+    } | null;
+  };
+
+  let favoritesPreview: FavoritePreview[] = [];
+  let favoritesTotal = 0;
+
+  if (isClientUser) {
+    const { favorites } = await getUserFavorites();
+    favoritesTotal = favorites.length;
+    favoritesPreview = favorites.slice(0, 4) as unknown as FavoritePreview[];
+  }
 
   // Profesyonel ise hizmetleri + portfolio'yu da çek
   let services: ServiceWithCategory[] = [];
@@ -330,18 +352,73 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* MÜŞTERİ */}
+          {/* MÜŞTERİ: Favorilerim */}
           {isClientUser && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
                 <h2 className="font-display text-2xl text-ink">Favorilerim</h2>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
-                  Yakında
-                </span>
+                <Link
+                  href="/favoriler"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {favoritesTotal === 0 ? 'Keşfet\'e git →' : 'Tümünü gör →'}
+                </Link>
               </div>
-              <p className="text-ink-72">
-                Beğendiğin profesyonelleri favorilerine ekle, daha sonra kolayca bulabilesin.
-              </p>
+
+              {favoritesTotal === 0 ? (
+                <p className="text-ink-72">
+                  Henüz favorin yok. Beğendiğin profesyonelleri favorilerine ekle,
+                  buradan kolayca ulaş.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {favoritesPreview.map((fav) => {
+                      const pro = fav.professional;
+                      if (!pro) return null;
+                      const displayName =
+                        pro.role === 'business' && pro.company_name
+                          ? pro.company_name
+                          : pro.full_name || 'İsimsiz';
+                      const proInitials = (displayName || 'K')
+                        .split(' ')
+                        .map((s) => s[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase();
+                      return (
+                        <Link
+                          key={fav.id}
+                          href={`/p/${pro.id}`}
+                          className="group flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-paper transition-colors"
+                        >
+                          {pro.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={pro.avatar_url}
+                              alt={displayName}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-line group-hover:border-terracotta transition-colors"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-lg">
+                              {proInitials}
+                            </div>
+                          )}
+                          <p className="font-display text-sm text-ink text-center line-clamp-1 group-hover:text-terracotta transition-colors">
+                            {displayName}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  {favoritesTotal > 4 && (
+                    <p className="text-sm text-ink-72 mt-3">
+                      ve {favoritesTotal - 4} favori daha...
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
 

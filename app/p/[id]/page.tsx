@@ -41,7 +41,11 @@ export async function generateMetadata({
     .eq('id', id)
     .single();
 
-  if (!data || !data.is_published) {
+  if (
+    !data ||
+    !data.is_published ||
+    (data.role !== 'professional' && data.role !== 'business')
+  ) {
     return { title: 'Profil bulunamadı — Kashe' };
   }
 
@@ -81,7 +85,12 @@ export default async function PublicProfilePage({
 
   const profile = profileData as unknown as PublicProfile;
 
+  // Kamu profili sadece profesyonel ve kurumsal için açık
+  // Müşteri profilleri kapalı — sadece mesajlaşma sayfasındaki panel üzerinden görünür
   if (!profile.is_published) {
+    notFound();
+  }
+  if (profile.role !== 'professional' && profile.role !== 'business') {
     notFound();
   }
 
