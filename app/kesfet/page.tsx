@@ -4,6 +4,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from './profile-card';
 import { KesfetFilters } from './kesfet-filters';
 import { SortDropdown } from './sort-dropdown';
+import { getFavoritedIds } from '@/app/favoriler/actions';
 import type {
   ServiceCategory,
   TurkishCity,
@@ -147,6 +148,29 @@ export default async function KesfetPage({
 
   const hasFilters = !!(categoryId || cityId || searchQuery);
 
+  // Mevcut kullanıcı + favori ID'leri (sadece müşteri rolünde anlamlı)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let currentUserRole: string | null = null;
+  let favoritedIds = new Set<string>();
+
+  if (user) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    currentUserRole = currentProfile?.role ?? null;
+
+    if (currentUserRole === 'client') {
+      favoritedIds = await getFavoritedIds();
+    }
+  }
+
+  const isLoggedIn = !!user;
+
   return (
     <>
       <TopNav />
@@ -221,6 +245,9 @@ export default async function KesfetPage({
                     profile={profile}
                     services={servicesByProfile[profile.id] || []}
                     rating={ratingsByProfile[profile.id] || null}
+                    isFavorited={favoritedIds.has(profile.id)}
+                    isLoggedIn={isLoggedIn}
+                    currentUserRole={currentUserRole}
                   />
                 ))}
               </div>

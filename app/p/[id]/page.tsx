@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
 import { YorumButton } from './yorum-button';
+import FavoriteButton from '@/app/components/FavoriteButton';
+import { isFavorited as checkIsFavorited } from '@/app/favoriler/actions';
 import { ReviewCard } from '@/app/yorumlar/review-card';
 import {
   formatPriceRange,
@@ -120,6 +122,14 @@ export default async function PublicProfilePage({
   const isLoggedIn = !!user;
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
+
+  // Favori durumu — sadece başkasının profesyonel profilinde anlamlı
+  const showFavoriteButton =
+    !isOwnProfile && profile.role === 'professional';
+  let initialFavorited = false;
+  if (showFavoriteButton && isLoggedIn && currentUserRole === 'client') {
+    initialFavorited = await checkIsFavorited(profile.id);
+  }
 
   // Yorum sistemi için: mesajlaşma var mı + mevcut yorum
   let hasConversation = false;
@@ -250,7 +260,18 @@ export default async function PublicProfilePage({
           </Link>
 
           {/* HEADER */}
-          <div className="bg-white border border-line rounded-lg p-8 mb-6">
+          <div className="bg-white border border-line rounded-lg p-8 mb-6 relative">
+            {showFavoriteButton && (
+              <div className="absolute top-6 right-6 z-10">
+                <FavoriteButton
+                  professionalId={profile.id}
+                  initialFavorited={initialFavorited}
+                  isLoggedIn={isLoggedIn}
+                  userRole={currentUserRole}
+                  variant="detail"
+                />
+              </div>
+            )}
             <div className="flex items-start gap-6 flex-wrap">
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
