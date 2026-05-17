@@ -9,10 +9,11 @@ import { UnreadBadge } from './unread-badge';
 type Props = {
   isLoggedIn: boolean;
   isProfessional: boolean;
+  isClient: boolean;
   userId: string | null;
 };
 
-export function MobileNav({ isLoggedIn, isProfessional, userId }: Props) {
+export function MobileNav({ isLoggedIn, isProfessional, isClient, userId }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -116,6 +117,12 @@ export function MobileNav({ isLoggedIn, isProfessional, userId }: Props) {
                       Portföyüm
                     </a>
                   )}
+                  {isClient && (
+                    <a href="/favoriler" className={linkClass}>
+                      Favoriler
+                    </a>
+                  )}
+
                   <a
                 href="/mesajlar"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center"

@@ -133,18 +133,21 @@ export async function getUserFavorites() {
   }
 
   // JOIN ile favori + profil bilgisini tek sorguda al
+  // FK adı yerine kolon adı (professional_id) ile referans → Supabase auto-resolve
   const { data, error } = await supabase
     .from('favorites')
     .select(
       `
       id,
       created_at,
-      professional:profiles!favorites_professional_id_fkey (
+      professional:professional_id (
         id,
         full_name,
         avatar_url,
         bio,
-        city,
+        company_name,
+        city_id,
+        primary_category_id,
         is_published,
         role
       )

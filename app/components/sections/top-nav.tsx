@@ -22,6 +22,7 @@ export async function TopNav() {
   }
 
   const isProfessional = role === 'professional';
+  const isClient = role === 'client';
 
   return (
     <nav className="w-full border-b border-line bg-paper sticky top-0 z-50">
@@ -72,6 +73,15 @@ export async function TopNav() {
                   Portföyüm
                 </a>
               )}
+              
+                {isClient && (
+                <a
+                  href="/favoriler"
+                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                >
+                  Favoriler
+                </a>
+              )}
               <a
                 href="/mesajlar"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
@@ -104,8 +114,9 @@ export async function TopNav() {
           )}
         </div>
 
+        
         {/* Mobile hamburger */}
-        <MobileNav isLoggedIn={!!user} isProfessional={isProfessional} userId={user?.id ?? null} />
+        <MobileNav isLoggedIn={!!user} isProfessional={isProfessional} isClient={isClient} userId={user?.id ?? null} />
       </div>
     </nav>
   );
