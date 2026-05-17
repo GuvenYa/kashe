@@ -3,6 +3,8 @@ import { createClient } from "@/app/lib/supabase-server";
 import { LogoutButton } from "./logout-button";
 import { MobileNav } from "./mobile-nav";
 import { UnreadBadge } from "./unread-badge";
+import { NotificationBell } from "./notification-bell";
+import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -23,6 +25,9 @@ export async function TopNav() {
 
   const isProfessional = role === 'professional';
   const isClient = role === 'client';
+
+  // Bildirim sayacı — sadece giriş yapmışlar için
+  const notificationCount = user ? await getUnreadNotificationCount() : 0;
 
   return (
     <nav className="w-full border-b border-line bg-paper sticky top-0 z-50">
@@ -89,6 +94,8 @@ export async function TopNav() {
                 Mesajlar
                 <UnreadBadge userId={user.id} />
               </a>
+              <NotificationBell userId={user.id} initialCount={notificationCount} />
+              
               <a
                 href="/profil"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
@@ -116,7 +123,14 @@ export async function TopNav() {
 
         
         {/* Mobile hamburger */}
-        <MobileNav isLoggedIn={!!user} isProfessional={isProfessional} isClient={isClient} userId={user?.id ?? null} />
+        <MobileNav
+          isLoggedIn={!!user}
+          isProfessional={isProfessional}
+          isClient={isClient}
+          userId={user?.id ?? null}
+          notificationCount={notificationCount}
+        />
+
       </div>
     </nav>
   );

@@ -11,9 +11,16 @@ type Props = {
   isProfessional: boolean;
   isClient: boolean;
   userId: string | null;
+  notificationCount: number;
 };
 
-export function MobileNav({ isLoggedIn, isProfessional, isClient, userId }: Props) {
+export function MobileNav({
+  isLoggedIn,
+  isProfessional,
+  isClient,
+  userId,
+  notificationCount,
+}: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -53,6 +60,9 @@ export function MobileNav({ isLoggedIn, isProfessional, isClient, userId }: Prop
 
   const linkClass =
     'block py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors';
+
+  const linkClassInlineBadge =
+    'py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors inline-flex items-center gap-2';
 
   return (
     <>
@@ -110,10 +120,7 @@ export function MobileNav({ isLoggedIn, isProfessional, isClient, userId }: Prop
                     </a>
                   )}
                   {isProfessional && (
-                <a
-                      href="/profil/portfoy"
-                      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                    >
+                    <a href="/profil/portfoy" className={linkClass}>
                       Portföyüm
                     </a>
                   )}
@@ -123,14 +130,20 @@ export function MobileNav({ isLoggedIn, isProfessional, isClient, userId }: Prop
                     </a>
                   )}
 
-                  <a
-                href="/mesajlar"
-                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center"
-              >
-                Mesajlar
-                {userId && <UnreadBadge userId={userId} />}
-              </a>
-              
+                  <a href="/mesajlar" className={linkClassInlineBadge}>
+                    Mesajlar
+                    {userId && <UnreadBadge userId={userId} />}
+                  </a>
+
+                  <a href="/bildirimler" className={linkClassInlineBadge}>
+                    Bildirimler
+                    {notificationCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1.5 bg-terracotta text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none">
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </span>
+                    )}
+                  </a>
+
                   <a href="/profil" className={linkClass}>
                     Profilim
                   </a>
