@@ -2,6 +2,12 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import {
+  EVENT_TYPE_KEYS,
+  BUDGET_RANGE_KEYS,
+  type EventTypeKey,
+  type BudgetRangeKey,
+} from './data';
 
 export type MessagingActionResult = {
   success: boolean;
@@ -13,7 +19,10 @@ export type StartConversationData = {
   professional_id: string;
   message: string;
   event_date: string | null;
-  event_type: string | null;
+  event_type: EventTypeKey | null;
+  location: string | null;
+  guest_count: number | null;
+  budget_range: BudgetRangeKey | null;
 };
 
 /**
@@ -42,6 +51,30 @@ export async function startConversation(
   }
   if (data.professional_id === user.id) {
     return { success: false, error: 'Kendine mesaj gönderemezsin.' };
+  }
+
+  // Brief alanları validation
+  if (data.event_type && !EVENT_TYPE_KEYS.includes(data.event_type)) {
+    return { success: false, error: 'Geçersiz etkinlik türü.' };
+  }
+  if (data.budget_range && !BUDGET_RANGE_KEYS.includes(data.budget_range)) {
+    return { success: false, error: 'Geçersiz bütçe aralığı.' };
+  }
+  if (data.location && data.location.length > 200) {
+    return { success: false, error: 'Lokasyon 200 karakterden uzun olamaz.' };
+  }
+  if (data.guest_count !== null && (data.guest_count < 0 || data.guest_count > 100000)) {
+    return { success: false, error: 'Kişi sayısı 0 ile 100.000 arasında olmalı.' };
+  }
+
+  // Etkinlik tarihi geçmişte olamaz (opsiyonel ama mantıklı guard)
+  if (data.event_date) {
+    const eventDate = new Date(data.event_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (eventDate < today) {
+      return { success: false, error: 'Etkinlik tarihi geçmişte olamaz.' };
+    }
   }
 
   // Profesyonel gerçekten var ve published mı?
@@ -82,7 +115,10 @@ export async function startConversation(
         customer_id: user.id,
         professional_id: data.professional_id,
         event_date: data.event_date,
-        event_type: data.event_type?.trim() || null,
+        event_type: data.event_type,
+        location: data.location?.trim() || null,
+        guest_count: data.guest_count,
+        budget_range: data.budget_range,
       })
       .select('id')
       .single();

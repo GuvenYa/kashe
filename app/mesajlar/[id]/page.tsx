@@ -23,6 +23,9 @@ type ConversationRow = {
   professional_id: string;
   event_date: string | null;
   event_type: string | null;
+  location: string | null;
+  guest_count: number | null;
+  budget_range: string | null;
   customer: ConversationParticipant | null;
   professional: ConversationParticipant | null;
 };
@@ -47,7 +50,8 @@ export default async function KonusmaPage({
     .from('conversations')
     .select(
       `
-      id, customer_id, professional_id, event_date, event_type,
+      id, customer_id, professional_id,
+      event_date, event_type, location, guest_count, budget_range,
       customer:customer_id (
         id, full_name, avatar_url, company_name, role, bio, phone,
         turkish_cities(name)
@@ -114,6 +118,9 @@ export default async function KonusmaPage({
                 }}
                 eventDate={conv.event_date}
                 eventType={conv.event_type}
+                location={conv.location}
+                guestCount={conv.guest_count}
+                budgetRange={conv.budget_range}
                 initialMessages={messages}
               />
             </div>

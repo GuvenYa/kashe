@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { sendMessage, markConversationRead } from '../actions';
+import { getEventTypeLabel, getBudgetRangeLabel } from '../data';
 import { createClient } from '@/app/lib/supabase-browser';
 import type { Message } from '@/app/lib/types';
 
@@ -21,6 +22,9 @@ type Props = {
   other: OtherUser;
   eventDate: string | null;
   eventType: string | null;
+  location: string | null;
+  guestCount: number | null;
+  budgetRange: string | null;
   initialMessages: Message[];
 };
 
@@ -48,6 +52,9 @@ export function KonusmaDetay({
   other,
   eventDate,
   eventType,
+  location,
+  guestCount,
+  budgetRange,
   initialMessages,
 }: Props) {
   const router = useRouter();
@@ -240,17 +247,66 @@ export function KonusmaDetay({
                 yazıyor...
               </p>
             ) : (
-              (eventType || eventDate) && (
+              isOtherOnline && (
                 <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.1em]">
-                  {eventType}
-                  {eventType && eventDate && ' · '}
-                  {eventDate && new Date(eventDate).toLocaleDateString('tr-TR')}
+                  Çevrimiçi
                 </p>
               )
             )}
           </div>
         </Link>
       </div>
+
+      {/* BRIEF KARTI (eğer en az 1 alan dolu ise) */}
+      {(eventType || eventDate || location || guestCount !== null || budgetRange) && (
+        <div className="border-b border-line bg-terracotta/5 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+            Etkinlik özeti
+          </p>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
+            {eventType && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-ink-72 font-mono uppercase tracking-[0.1em]">Tür:</span>
+                <span className="text-ink font-medium">
+                  {getEventTypeLabel(eventType) ?? eventType}
+                </span>
+              </span>
+            )}
+            {eventDate && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-ink-72 font-mono uppercase tracking-[0.1em]">Tarih:</span>
+                <span className="text-ink font-medium">
+                  {new Date(eventDate).toLocaleDateString('tr-TR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </span>
+            )}
+            {location && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-ink-72 font-mono uppercase tracking-[0.1em]">Lokasyon:</span>
+                <span className="text-ink font-medium">{location}</span>
+              </span>
+            )}
+            {guestCount !== null && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-ink-72 font-mono uppercase tracking-[0.1em]">Kişi:</span>
+                <span className="text-ink font-medium">{guestCount}</span>
+              </span>
+            )}
+            {budgetRange && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-ink-72 font-mono uppercase tracking-[0.1em]">Bütçe:</span>
+                <span className="text-ink font-medium">
+                  {getBudgetRangeLabel(budgetRange) ?? budgetRange}
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-paper/30">
