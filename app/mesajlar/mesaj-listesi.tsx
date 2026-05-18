@@ -48,6 +48,23 @@ function formatRelativeTime(isoDate: string): string {
   return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
 }
 
+type DateGroup = 'today' | 'week' | 'older';
+
+function getDateGroup(iso: string): DateGroup {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+  if (diffDays < 1) return 'today';
+  if (diffDays < 7) return 'week';
+  return 'older';
+}
+
+const GROUP_LABELS: Record<DateGroup, string> = {
+  today: 'Bugün',
+  week: 'Bu hafta',
+  older: 'Daha eski',
+};
+
 export function MesajListesi({ currentUserId, initialConversations }: Props) {
   const [conversations, setConversations] = useState<ConversationItem[]>(
     initialConversations
@@ -170,85 +187,109 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
     );
   }
 
+  // Konuşmaları tarih gruplarına böl. Sıra korunur — state hep last_message_at DESC sıralı.
+  const groups: Record<DateGroup, ConversationItem[]> = {
+    today: [],
+    week: [],
+    older: [],
+  };
+  conversations.forEach((conv) => {
+    groups[getDateGroup(conv.last_message_at)].push(conv);
+  });
+
   return (
-    <div className="space-y-3">
-      {conversations.map((conv) => {
-        const other = conv.other;
-        const otherName =
-          other.role === 'business' && other.company_name
-            ? other.company_name
-            : other.full_name || 'İsimsiz';
-
-        const initials = (other.full_name || other.company_name || 'K')
-          .split(' ')
-          .map((s) => s[0])
-          .filter(Boolean)
-          .slice(0, 2)
-          .join('')
-          .toUpperCase();
-
-        const lastMessage = conv.last_message;
-        const unreadCount = conv.unread_count;
+    <div className="space-y-8">
+      {(['today', 'week', 'older'] as const).map((groupKey) => {
+        const items = groups[groupKey];
+        if (items.length === 0) return null;
 
         return (
-          <Link
-            key={conv.id}
-            href={`/mesajlar/${conv.id}`}
-            className="block bg-white border border-line rounded-lg p-5 hover:border-terracotta transition-colors"
-          >
-            <div className="flex items-start gap-4">
-              {other.avatar_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={other.avatar_url}
-                  alt={otherName}
-                  className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
-                  {initials}
-                </div>
-              )}
+          <div key={groupKey}>
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
+              {GROUP_LABELS[groupKey]}
+            </p>
+            <div className="space-y-3">
+              {items.map((conv) => {
+                const other = conv.other;
+                const otherName =
+                  other.role === 'business' && other.company_name
+                    ? other.company_name
+                    : other.full_name || 'İsimsiz';
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="font-display font-semibold text-ink truncate">
-                    {otherName}
-                  </p>
-                  <p className="text-xs text-ink-72 shrink-0">
-                    {formatRelativeTime(conv.last_message_at)}
-                  </p>
-                </div>
+                const initials = (other.full_name || other.company_name || 'K')
+                  .split(' ')
+                  .map((s) => s[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase();
 
-                {lastMessage && (
-                  <p
-                    className={`text-sm truncate ${
-                      unreadCount > 0
-                        ? 'text-ink font-medium'
-                        : 'text-ink-72'
-                    }`}
+                const lastMessage = conv.last_message;
+                const unreadCount = conv.unread_count;
+
+                return (
+                  <Link
+                    key={conv.id}
+                    href={`/mesajlar/${conv.id}`}
+                    className="block bg-white border border-line rounded-lg p-5 hover:border-terracotta transition-colors"
                   >
-                    {lastMessage.sender_id === currentUserId && 'Sen: '}
-                    {lastMessage.body}
-                  </p>
-                )}
+                    <div className="flex items-start gap-4">
+                      {other.avatar_url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={other.avatar_url}
+                          alt={otherName}
+                          className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+                          {initials}
+                        </div>
+                      )}
 
-                {conv.event_type && (
-                  <p className="text-xs text-ink-72 mt-1 font-mono uppercase tracking-[0.1em]">
-                    {conv.event_type}
-                    {conv.event_date &&
-                      ` · ${new Date(conv.event_date).toLocaleDateString('tr-TR')}`}
-                  </p>
-                )}
-              </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="font-display font-semibold text-ink truncate">
+                            {otherName}
+                          </p>
+                          <p className="text-xs text-ink-72 shrink-0">
+                            {formatRelativeTime(conv.last_message_at)}
+                          </p>
+                        </div>
 
-              {unreadCount > 0 && (
-                <div className="shrink-0 min-w-[24px] h-6 px-2 bg-terracotta text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
-                  {unreadCount}
-                </div>
-              )}
+                        {lastMessage && (
+                          <p
+                            className={`text-sm truncate ${
+                              unreadCount > 0
+                                ? 'text-ink font-medium'
+                                : 'text-ink-72'
+                            }`}
+                          >
+                            {lastMessage.sender_id === currentUserId && 'Sen: '}
+                            {lastMessage.body}
+                          </p>
+                        )}
+
+                        {conv.event_type && (
+                          <p className="text-xs text-ink-72 mt-1 font-mono uppercase tracking-[0.1em]">
+                            {conv.event_type}
+                            {conv.event_date &&
+                              ` · ${new Date(conv.event_date).toLocaleDateString('tr-TR')}`}
+                          </p>
+                        )}
+                      </div>
+
+                      {unreadCount > 0 && (
+                        <div className="shrink-0 min-w-[24px] h-6 px-2 bg-terracotta text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
+                          {unreadCount}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-          </Link>
+          </div>
         );
       })}
     </div>
