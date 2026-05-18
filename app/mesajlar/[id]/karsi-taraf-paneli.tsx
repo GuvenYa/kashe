@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatLastSeen, getLastSeenTone } from '@/app/lib/profile-helpers';
 
 type OtherUser = {
   id: string;
@@ -9,6 +10,7 @@ type OtherUser = {
   bio: string | null;
   phone: string | null;
   city: string | null;
+  last_seen_at: string | null;
 };
 
 type Props = {
@@ -68,6 +70,28 @@ export function KarsiTarafPaneli({ other, viewerRole }: Props) {
         <p className="font-display text-lg text-ink leading-tight">
           {displayName}
         </p>
+        {(() => {
+          const lastSeenText = formatLastSeen(other.last_seen_at);
+          const tone = getLastSeenTone(other.last_seen_at);
+          if (!lastSeenText) return null;
+
+          const dotColor =
+            tone === 'active'
+              ? 'bg-green-500'
+              : tone === 'recent'
+                ? 'bg-amber-500'
+                : 'bg-ink-72/40';
+
+          return (
+            <p className="text-xs text-ink-72 mt-2 flex items-center gap-1.5">
+              <span
+                className={`w-2 h-2 rounded-full ${dotColor}`}
+                aria-hidden="true"
+              />
+              {lastSeenText}
+            </p>
+          );
+        })()}
       </div>
 
       {/* Şehir + Telefon (varsa) */}

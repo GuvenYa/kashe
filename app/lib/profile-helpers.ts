@@ -146,3 +146,57 @@ export function formatDuration(hours: number | null | undefined): string {
   }).format(hours);
   return `${formatted} saat`;
 }
+
+/**
+ * Son aktiflik için kullanıcı dostu metin döner.
+ * - null/undefined → null (göstermeme sinyali)
+ * - < 2 dakika → "Az önce aktifti" (online'a yakın anlamda)
+ * - < 60 dakika → "X dakika önce aktifti"
+ * - < 24 saat → "X saat önce aktifti"
+ * - < 7 gün → "X gün önce aktifti"
+ * - < 30 gün → "1 haftadan uzun süre önce aktifti"
+ * - > 30 gün → null (uzun süredir inaktif, gösterme; mesaj atan kullanıcıyı caydırır)
+ */
+export function formatLastSeen(
+  lastSeenAt: string | null | undefined
+): string | null {
+  if (!lastSeenAt) return null;
+
+  const date = new Date(lastSeenAt);
+  if (isNaN(date.getTime())) return null;
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  // Negatif olursa (clock skew, future tarih) az önce gibi davran
+  if (diffMin < 0 || diffMin < 2) return 'Az önce aktifti';
+  if (diffMin < 60) return `${diffMin} dakika önce aktifti`;
+  if (diffHour < 24) return `${diffHour} saat önce aktifti`;
+  if (diffDay < 7) return `${diffDay} gün önce aktifti`;
+  if (diffDay < 30) return '1 haftadan uzun süre önce aktifti';
+
+  return null;
+}
+
+/**
+ * Son aktiflik rozetinin görsel tonu.
+ * - 'active' → çok yakın zamanda (5 dk içinde) — terracotta vurgu
+ * - 'recent' → 1 saat içinde — orta ton
+ * - 'idle' → 1 saatten uzun — sade
+ */
+export function getLastSeenTone(
+  lastSeenAt: string | null | undefined
+): 'active' | 'recent' | 'idle' | null {
+  if (!lastSeenAt) return null;
+
+  const date = new Date(lastSeenAt);
+  if (isNaN(date.getTime())) return null;
+
+  const diffMin = (Date.now() - date.getTime()) / 60000;
+  if (diffMin < 5) return 'active';
+  if (diffMin < 60) return 'recent';
+  return 'idle';
+}

@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// last_seen_at güncelleme aralığı: 5 dakika
+const LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
+const LAST_SEEN_COOKIE = 'kashe_lsu'; // last seen update timestamp
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -33,6 +37,33 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // last_seen_at: 5 dakikada bir güncelle (cookie-based throttle, serverless-friendly)
+  if (user) {
+    const lastUpdateStr = request.cookies.get(LAST_SEEN_COOKIE)?.value;
+    const lastUpdate = lastUpdateStr ? parseInt(lastUpdateStr, 10) : 0;
+    const now = Date.now();
+
+    if (!lastUpdate || now - lastUpdate > LAST_SEEN_THROTTLE_MS) {
+      // Fire-and-forget — request'i bloklamasın
+      // Sonuç gelmesini beklemiyoruz, sessizce başarısız olabilir (ör. yarış durumu)
+      supabase
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', user.id)
+        .then(() => {
+          /* sessiz başarı */
+        });
+
+      // Cookie'yi şimdi set et — gerçek update DB'ye giderken cookie zaten yolda
+      supabaseResponse.cookies.set(LAST_SEEN_COOKIE, String(now), {
+        maxAge: 60 * 60 * 24 * 30, // 30 gün
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
+  }
 
   const pathname = request.nextUrl.pathname;
 

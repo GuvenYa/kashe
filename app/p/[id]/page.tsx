@@ -11,6 +11,8 @@ import {
   formatPriceRange,
   formatDuration,
   getRoleLabel,
+  formatLastSeen,
+  getLastSeenTone,
 } from '@/app/lib/profile-helpers';
 import type { ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 
@@ -24,6 +26,7 @@ type PublicProfile = {
   company_name: string | null;
   role: string;
   is_published: boolean;
+  last_seen_at: string | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null } | null;
 };
@@ -71,7 +74,7 @@ export default async function PublicProfilePage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji)
     `
@@ -314,6 +317,32 @@ export default async function PublicProfilePage({
                     {cityName}
                   </p>
                 )}
+                {(() => {
+                  const lastSeenText = formatLastSeen(profile.last_seen_at);
+                  const tone = getLastSeenTone(profile.last_seen_at);
+                  if (!lastSeenText) return null;
+
+                  const dotColor =
+                    tone === 'active'
+                      ? 'bg-green-500'
+                      : tone === 'recent'
+                        ? 'bg-amber-500'
+                        : 'bg-ink-72/40';
+                  const textColor =
+                    tone === 'active' ? 'text-ink' : 'text-ink-72';
+
+                  return (
+                    <p
+                      className={`text-xs ${textColor} mt-1.5 flex items-center gap-1.5`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${dotColor}`}
+                        aria-hidden="true"
+                      />
+                      {lastSeenText}
+                    </p>
+                  );
+                })()}
                 {reviewCount > 0 && (
                   <Link
                     href={`/p/${profile.id}/yorumlar`}
