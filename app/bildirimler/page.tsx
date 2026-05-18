@@ -1,6 +1,8 @@
 import { createClient } from '@/app/lib/supabase-server';
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { EmptyState } from '@/app/components/EmptyState';
 import { getNotifications } from './actions';
 import { BildirimListesi } from './bildirim-listesi';
 
@@ -102,15 +104,11 @@ export default async function BildirimlerPage() {
                 .
               </h1>
             </div>
-            <div className="bg-white border border-line rounded-lg p-12 text-center">
-              <p className="font-display text-xl text-ink mb-3">
-                Burası şimdilik sessiz.
-              </p>
-              <p className="text-ink-72 max-w-md mx-auto">
-                Yeni mesaj geldiğinde, yorum aldığında veya yorumlarına yanıt
-                gönderildiğinde burada görünecek.
-              </p>
-            </div>
+            <EmptyState
+              icon={Bell}
+              title="Burası şimdilik sessiz"
+              description="Yeni mesaj geldiğinde, yorum aldığında veya yorumlarına yanıt gönderildiğinde burada görünecek."
+            />
           </div>
         </main>
       </>

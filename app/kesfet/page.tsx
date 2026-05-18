@@ -1,9 +1,11 @@
 import { createClient } from '@/app/lib/supabase-server';
 import Link from 'next/link';
+import { SearchX, Users } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from './profile-card';
 import { KesfetFilters } from './kesfet-filters';
 import { SortDropdown } from './sort-dropdown';
+import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import type {
   ServiceCategory,
@@ -207,28 +209,21 @@ export default async function KesfetPage({
               </p>
             </div>
           ) : profiles.length === 0 ? (
-            <div className="bg-white border border-line rounded-lg p-12 text-center mt-8">
-              <p className="font-display text-2xl text-ink mb-3">
-                {hasFilters
-                  ? 'Bu kriterlere uygun profesyonel bulunamadı.'
-                  : 'Henüz yayında profesyonel yok.'}
-              </p>
-              <p className="text-ink-72 max-w-md mx-auto">
-                {hasFilters ? (
-                  <>
-                    Filtreleri değiştirip tekrar dene.{' '}
-                    <Link
-                      href="/kesfet"
-                      className="text-terracotta hover:underline"
-                    >
-                      Tüm filtreleri temizle
-                    </Link>
-                    .
-                  </>
-                ) : (
-                  'İlk profesyoneller kayıt sürecinde. Yakında burada olacaklar.'
-                )}
-              </p>
+            <div className="mt-8">
+              {hasFilters ? (
+                <EmptyState
+                  icon={SearchX}
+                  title="Bu kriterlere uygun profesyonel bulunamadı"
+                  description="Filtreleri değiştirip tekrar dene veya tüm filtreleri temizle."
+                  action={{ label: 'Filtreleri temizle', href: '/kesfet' }}
+                />
+              ) : (
+                <EmptyState
+                  icon={Users}
+                  title="Henüz yayında profesyonel yok"
+                  description="İlk profesyoneller kayıt sürecinde. Yakında burada olacaklar."
+                />
+              )}
             </div>
           ) : (
             <>

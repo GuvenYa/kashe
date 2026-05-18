@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { MessageCircle } from 'lucide-react';
 import { createClient } from '@/app/lib/supabase-browser';
+import { EmptyState } from '@/app/components/EmptyState';
 import { getEventTypeLabel } from './data';
 
 type OtherUserMini = {
@@ -171,20 +173,12 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
 
   if (conversations.length === 0) {
     return (
-      <div className="bg-white border border-line rounded-lg p-12 text-center">
-        <p className="font-display text-2xl text-ink mb-3">
-          Henüz mesajın yok.
-        </p>
-        <p className="text-ink-72 max-w-md mx-auto mb-6">
-          Keşfet sayfasından bir profesyonele mesaj göndererek başlayabilirsin.
-        </p>
-        <Link
-          href="/kesfet"
-          className="inline-block px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
-        >
-          Profesyonelleri keşfet
-        </Link>
-      </div>
+      <EmptyState
+        icon={MessageCircle}
+        title="Henüz mesajın yok"
+        description="Keşfet sayfasından bir profesyonele mesaj göndererek başlayabilirsin."
+        action={{ label: 'Profesyonelleri keşfet', href: '/kesfet' }}
+      />
     );
   }
 

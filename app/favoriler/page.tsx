@@ -1,7 +1,9 @@
 import { createClient } from '@/app/lib/supabase-server';
 import Link from 'next/link';
+import { Heart } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from '../kesfet/profile-card';
+import { EmptyState } from '@/app/components/EmptyState';
 import { getUserFavorites, getFavoritedIds } from './actions';
 
 export const metadata = {
@@ -164,21 +166,12 @@ export default async function FavorilerPage() {
                 .
               </h1>
             </div>
-            <div className="bg-white border border-line rounded-lg p-12 text-center">
-              <p className="font-display text-xl text-ink mb-3">
-                Profesyonelleri keşfetmeye başla.
-              </p>
-              <p className="text-ink-72 max-w-md mx-auto mb-6">
-                Beğendiğin profillerin sağ üstündeki kalp simgesine
-                tıklayarak buraya kaydedebilirsin.
-              </p>
-              <Link
-                href="/kesfet"
-                className="inline-block px-6 py-3 bg-terracotta text-paper font-mono text-xs uppercase tracking-[0.16em] rounded hover:bg-terracotta/90 transition-colors"
-              >
-                Keşfet&apos;e git
-              </Link>
-            </div>
+            <EmptyState
+              icon={Heart}
+              title="Profesyonelleri keşfetmeye başla"
+              description="Beğendiğin profillerin sağ üstündeki kalp simgesine tıklayarak buraya kaydedebilirsin."
+              action={{ label: "Keşfet'e git", href: '/kesfet' }}
+            />
           </div>
         </main>
       </>
