@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-browser';
+import { getEventTypeLabel } from './data';
 
 type OtherUserMini = {
   id: string;
@@ -270,11 +271,13 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                           </p>
                         )}
 
-                        {conv.event_type && (
+                        {(conv.event_type || conv.event_date) && (
                           <p className="text-xs text-ink-72 mt-1 font-mono uppercase tracking-[0.1em]">
-                            {conv.event_type}
+                            {conv.event_type &&
+                              (getEventTypeLabel(conv.event_type) ?? conv.event_type)}
+                            {conv.event_type && conv.event_date && ' · '}
                             {conv.event_date &&
-                              ` · ${new Date(conv.event_date).toLocaleDateString('tr-TR')}`}
+                              new Date(conv.event_date).toLocaleDateString('tr-TR')}
                           </p>
                         )}
                       </div>
