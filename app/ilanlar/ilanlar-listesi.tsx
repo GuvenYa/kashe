@@ -1,0 +1,278 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
+import { EmptyState } from '@/app/components/EmptyState';
+import { SearchX, Briefcase, MapPin, Calendar, Users } from 'lucide-react';
+import {
+  formatBudgetRange,
+  formatListingAge,
+  getEventTypeLabel,
+  type ListingWithRelations,
+} from './listings-data';
+
+type Category = {
+  id: number;
+  slug: string;
+  name_tr: string;
+  emoji: string | null;
+};
+
+type City = {
+  id: number;
+  name: string;
+};
+
+type Filters = {
+  kategori: string | null;
+  sehir: string | null;
+  etkinlik: string | null;
+};
+
+type Props = {
+  listings: ListingWithRelations[];
+  categories: Category[];
+  cities: City[];
+  activeFilters: Filters;
+};
+
+const EVENT_TYPE_OPTIONS = [
+  { key: 'wedding', label: 'Düğün' },
+  { key: 'engagement', label: 'Nişan' },
+  { key: 'birthday', label: 'Doğum günü' },
+  { key: 'baby_shower', label: 'Baby shower' },
+  { key: 'graduation', label: 'Mezuniyet' },
+  { key: 'circumcision', label: 'Sünnet' },
+  { key: 'corporate', label: 'Kurumsal' },
+  { key: 'other', label: 'Diğer' },
+];
+
+export function IlanlarListesi({
+  listings,
+  categories,
+  cities,
+  activeFilters,
+}: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  function setFilter(key: string, value: string | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === null || value === '') {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    const qs = params.toString();
+    startTransition(() => {
+      router.push(qs ? `/ilanlar?${qs}` : '/ilanlar');
+    });
+  }
+
+  function clearAllFilters() {
+    startTransition(() => {
+      router.push('/ilanlar');
+    });
+  }
+
+  const hasActiveFilters =
+    !!activeFilters.kategori ||
+    !!activeFilters.sehir ||
+    !!activeFilters.etkinlik;
+
+  return (
+    <div>
+      {/* Filtreler */}
+      <div className="bg-white border border-line rounded-lg p-5 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+            Filtrele
+          </p>
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              disabled={isPending}
+              className="text-xs text-terracotta hover:underline font-mono uppercase tracking-[0.1em]"
+            >
+              Temizle
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Kategori */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1.5">
+              Kategori
+            </label>
+            <select
+              value={activeFilters.kategori ?? ''}
+              onChange={(e) =>
+                setFilter('kategori', e.target.value || null)
+              }
+              disabled={isPending}
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            >
+              <option value="">Tümü</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.slug}>
+                  {cat.emoji ? `${cat.emoji} ` : ''}
+                  {cat.name_tr}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Şehir */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1.5">
+              Şehir
+            </label>
+            <select
+              value={activeFilters.sehir ?? ''}
+              onChange={(e) => setFilter('sehir', e.target.value || null)}
+              disabled={isPending}
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            >
+              <option value="">Tümü</option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Etkinlik türü */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1.5">
+              Etkinlik türü
+            </label>
+            <select
+              value={activeFilters.etkinlik ?? ''}
+              onChange={(e) =>
+                setFilter('etkinlik', e.target.value || null)
+              }
+              disabled={isPending}
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            >
+              <option value="">Tümü</option>
+              {EVENT_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Sonuç sayısı */}
+      <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-72 mb-6">
+        {listings.length} ilan
+      </p>
+
+      {/* İlan listesi */}
+      {listings.length === 0 ? (
+        <EmptyState
+          icon={hasActiveFilters ? SearchX : Briefcase}
+          title={
+            hasActiveFilters
+              ? 'Bu filtrelere uygun ilan yok'
+              : 'Henüz ilan açılmamış'
+          }
+          description={
+            hasActiveFilters
+              ? 'Farklı filtreler dene veya tümünü temizle.'
+              : 'İlk ilan eklendiğinde burada görünecek.'
+          }
+          action={
+            hasActiveFilters
+              ? { label: 'Filtreleri temizle', href: '/ilanlar' }
+              : undefined
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {listings.map((listing) => (
+            <IlanCard key={listing.id} listing={listing} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IlanCard({ listing }: { listing: ListingWithRelations }) {
+  const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
+  const cityName = listing.turkish_cities?.name;
+  const eventTypeLabel = listing.event_type
+    ? getEventTypeLabel(listing.event_type)
+    : null;
+  const budgetText = formatBudgetRange(
+    listing.budget_min,
+    listing.budget_max,
+    listing.currency
+  );
+
+  return (
+    <Link
+      href={`/ilanlar/${listing.id}`}
+      className="block bg-white border border-line rounded-lg p-5 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+    >
+      {/* Kategori + tarih */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
+          {listing.service_categories?.emoji && (
+            <span className="text-xs">
+              {listing.service_categories.emoji}
+            </span>
+          )}
+          {categoryLabel}
+        </span>
+        <span className="text-[10px] font-mono text-ink-72">
+          {formatListingAge(listing.published_at)}
+        </span>
+      </div>
+
+      {/* Başlık */}
+      <h3 className="font-display text-lg text-ink leading-snug mb-3 line-clamp-2">
+        {listing.title}
+      </h3>
+
+      {/* Meta */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-72 mb-3">
+        {eventTypeLabel && (
+          <span className="flex items-center gap-1">
+            <Calendar size={12} strokeWidth={1.75} />
+            {eventTypeLabel}
+          </span>
+        )}
+        {cityName && (
+          <span className="flex items-center gap-1">
+            <MapPin size={12} strokeWidth={1.75} />
+            {cityName}
+          </span>
+        )}
+        {listing.guest_count !== null && (
+          <span className="flex items-center gap-1">
+            <Users size={12} strokeWidth={1.75} />
+            {listing.guest_count} kişi
+          </span>
+        )}
+      </div>
+
+      {/* Bütçe */}
+      <div className="border-t border-line pt-3 mt-3 flex items-center justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+          Bütçe
+        </span>
+        <span className="font-display text-base text-ink font-medium">
+          {budgetText}
+        </span>
+      </div>
+    </Link>
+  );
+}

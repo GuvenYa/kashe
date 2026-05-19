@@ -47,6 +47,9 @@ export async function TopNav() {
           <a href="/kesfet" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Keşfet
           </a>
+          <a href="/ilanlar" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+            İlanlar
+          </a>
           <a href="/#hizmetler" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
             Hizmetler
           </a>

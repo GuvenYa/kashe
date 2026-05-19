@@ -100,6 +100,9 @@ export function MobileNav({
               <a href="/kesfet" className={linkClass}>
                 Keşfet
               </a>
+              <a href="/ilanlar" className={linkClass}>
+                İlanlar
+              </a>
               <a href="/#hizmetler" className={linkClass}>
                 Hizmetler
               </a>
