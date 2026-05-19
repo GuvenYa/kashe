@@ -45,6 +45,7 @@ import {
   acceptApplication,
   rejectApplication,
 } from '../listings-actions';
+import { ApplyModal } from './apply-modal';
 
 type Props = {
   listing: ListingWithRelations;
@@ -67,6 +68,7 @@ export function IlanDetay({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
 
   const statusTone = getListingStatusTone(listing.status);
   const statusLabel = getListingStatusLabel(listing.status);
@@ -373,9 +375,7 @@ export function IlanDetay({
                 mesajın ve (varsa) fiyat teklifini iletilir.
               </p>
               <button
-                onClick={() =>
-                  alert("Başvuru modal Faz 9 Parça 3'te geliyor 🚀")
-                }
+                onClick={() => setApplyModalOpen(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
                 <Send size={14} strokeWidth={1.75} />
@@ -460,10 +460,20 @@ export function IlanDetay({
                   />
                 ))}
               </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
+      )}
       </div>
+
+      {/* Apply Modal */}
+      {isProfessional && !isOwner && !myApplication && (
+        <ApplyModal
+          listingId={listing.id}
+          listingTitle={listing.title}
+          open={applyModalOpen}
+          onClose={() => setApplyModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -634,7 +644,10 @@ function ApplicationCard({
             {confirming === 'reject' ? 'Onayla' : 'Reddet'}
           </button>
         )}
-      </div>
-    </div>
+      </div> 
+      
+</div>
   );
+
+
 }

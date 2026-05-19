@@ -35,6 +35,7 @@ type Props = {
   categories: Category[];
   cities: City[];
   activeFilters: Filters;
+  canCreateListing: boolean;
 };
 
 const EVENT_TYPE_OPTIONS = [
@@ -53,6 +54,7 @@ export function IlanlarListesi({
   categories,
   cities,
   activeFilters,
+  canCreateListing,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -84,6 +86,19 @@ export function IlanlarListesi({
 
   return (
     <div>
+      {/* CTA — Yeni ilan aç (sadece client/business görür) */}
+      {canCreateListing && (
+        <div className="flex justify-end mb-6">
+          <Link
+            href="/ilanlar/yeni"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+          >
+            <span className="text-base leading-none">+</span>
+            Yeni ilan aç
+          </Link>
+        </div>
+      )}
+
       {/* Filtreler */}
       <div className="bg-white border border-line rounded-lg p-5 mb-8">
         <div className="flex items-center justify-between mb-4">

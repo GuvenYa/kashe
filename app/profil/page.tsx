@@ -335,19 +335,49 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* KURUMSAL */}
-          {isBusinessUser && (
+          {/* KURUMSAL / MÜŞTERİ: İlanlarım */}
+          {(isBusinessUser || isClientUser) && (
             <div className="mt-8 bg-white border border-line rounded-lg p-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-2xl text-ink">
-                  İlanlarım & Etkinliklerim
-                </h2>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
-                  Yakında
-                </span>
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">İlanlarım</h2>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href="/ilanlarim"
+                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                  >
+                    Tümünü yönet →
+                  </Link>
+                  <Link
+                    href="/ilanlar/yeni"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                  >
+                    <span className="text-base leading-none">+</span>
+                    Yeni ilan aç
+                  </Link>
+                </div>
               </div>
-              <p className="text-ink-72">
-                Düzenleyeceğin etkinlikleri ilan olarak yayınla, profesyoneller seninle iletişime geçsin.
+              <p className="text-ink-72 text-sm">
+                Etkinliğin için açtığın ilanlara gelen başvuruları görüntüle, kısa
+                liste yap, ilanlarını yönet.
+              </p>
+            </div>
+          )}
+
+          {/* PROFESYONEL: Başvurularım */}
+          {isPro && (
+            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">Başvurularım</h2>
+                <Link
+                  href="/basvurularim"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  Tümünü gör →
+                </Link>
+              </div>
+              <p className="text-ink-72 text-sm">
+                İlan tahtasından başvurduğun ilanları ve başvuru durumlarını
+                buradan takip et.
               </p>
             </div>
           )}

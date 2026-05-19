@@ -2,6 +2,20 @@ import { createClient } from '@/app/lib/supabase-server';
 import { IlanlarListesi } from './ilanlar-listesi';
 import type { ListingWithRelations } from './listings-data';
 
+async function getUserRole(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  return profile?.role ?? null;
+}
+
 type SearchParams = Promise<{
   kategori?: string;
   sehir?: string;
@@ -15,6 +29,10 @@ export default async function IlanlarPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
+
+  // Kullanıcı rolü (CTA için)
+  const userRole = await getUserRole();
+  const canCreateListing = userRole === 'client' || userRole === 'business';
 
   // Kategorileri ve şehirleri filtreler için çek
   const [categoriesResult, citiesResult] = await Promise.all([
@@ -102,6 +120,7 @@ export default async function IlanlarPage({
             sehir: params.sehir ?? null,
             etkinlik: params.etkinlik ?? null,
           }}
+          canCreateListing={canCreateListing}
         />
       </div>
     </div>
