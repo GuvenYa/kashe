@@ -201,6 +201,14 @@ export async function sendMessage(
 /**
  * Konuşmadaki okunmamış mesajları "okundu" olarak işaretle.
  */
+/**
+ * Konuşmadaki okunmamış mesajları + bu konuşmayla ilgili bildirimleri
+ * "okundu" olarak işaretle.
+ *
+ * İki ayrı UPDATE yapıyoruz:
+ *  1. messages tablosu — sohbet içindeki "mavi tik" mantığı için
+ *  2. notifications tablosu — TopNav zil sayacı + bildirim merkezi için
+ */
 export async function markConversationRead(
   conversationId: string
 ): Promise<MessagingActionResult> {
@@ -214,19 +222,36 @@ export async function markConversationRead(
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
-  // Karşı tarafın gönderdiği okunmamış mesajları işaretle
-  const { error } = await supabase
+  const nowIso = new Date().toISOString();
+
+  // 1. Karşı tarafın gönderdiği okunmamış mesajları işaretle
+  const { error: msgError } = await supabase
     .from('messages')
-    .update({ read_at: new Date().toISOString() })
+    .update({ read_at: nowIso })
     .eq('conversation_id', conversationId)
     .neq('sender_id', user.id)
     .is('read_at', null);
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (msgError) {
+    return { success: false, error: msgError.message };
+  }
+
+  // 2. Bu konuşmayla ilgili okunmamış bildirimleri de işaretle
+  // (link alanı '/mesajlar/{id}' formatında — Faz 5/8 trigger'larında böyle yazıldı)
+  const { error: notifError } = await supabase
+    .from('notifications')
+    .update({ read_at: nowIso })
+    .eq('user_id', user.id)
+    .eq('link', `/mesajlar/${conversationId}`)
+    .is('read_at', null);
+
+  if (notifError) {
+    // Bildirimler güncellenememesi kritik değil — log ve devam
+    console.error('Notification mark-read failed:', notifError);
   }
 
   revalidatePath('/mesajlar');
+  revalidatePath('/bildirimler');
   return { success: true };
 }
 export async function getUnreadMessageCount(): Promise<number> {
