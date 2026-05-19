@@ -86,6 +86,9 @@ export type Message = {
   body: string;
   read_at: string | null;
   created_at: string;
+  // Faz 8: Quote system
+  message_type: 'text' | 'quote' | 'system';
+  quote_id: string | null;
 };
 
 // Konuşma listesi için: karşı tarafın bilgileriyle birlikte

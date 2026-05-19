@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { KonusmaDetay } from './konusma-detay';
 import { KarsiTarafPaneli } from './karsi-taraf-paneli';
 import type { Message } from '@/app/lib/types';
+import type { Quote } from '../quotes-data';
 
 type ConversationParticipant = {
   id: string;
@@ -93,6 +94,26 @@ export default async function KonusmaPage({
 
   const messages = (messagesData || []) as Message[];
 
+  // Quote'ları çek — sadece bu konuşmadaki, message_type='quote' olanlar zaten quote_id taşıyor
+  const quoteIds = messages
+    .filter((m) => m.message_type === 'quote' && m.quote_id)
+    .map((m) => m.quote_id as string);
+
+  const quotesById: Record<string, Quote> = {};
+  if (quoteIds.length > 0) {
+    const { data: quotesData } = await supabase
+      .from('quotes')
+      .select('*')
+      .in('id', quoteIds);
+
+    (quotesData || []).forEach((q) => {
+      quotesById[q.id] = q as Quote;
+    });
+  }
+
+  // Profesyonel mi tespit et
+  const isProfessional = conv.professional_id === user.id;
+
   return (
     <>
       <TopNav />
@@ -110,6 +131,7 @@ export default async function KonusmaPage({
               <KonusmaDetay
                 conversationId={conv.id}
                 currentUserId={user.id}
+                isProfessional={isProfessional}
                 other={{
                   id: other.id,
                   full_name: other.full_name,
@@ -123,6 +145,7 @@ export default async function KonusmaPage({
                 guestCount={conv.guest_count}
                 budgetRange={conv.budget_range}
                 initialMessages={messages}
+                initialQuotes={quotesById}
               />
             </div>
 

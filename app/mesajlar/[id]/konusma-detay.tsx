@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { sendMessage, markConversationRead } from '../actions';
 import { getEventTypeLabel, getBudgetRangeLabel } from '../data';
+import type { Quote } from '../quotes-data';
+import { QuoteModal } from './quote-modal';
+import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
 import type { Message } from '@/app/lib/types';
 
@@ -19,6 +22,7 @@ type OtherUser = {
 type Props = {
   conversationId: string;
   currentUserId: string;
+  isProfessional: boolean;
   other: OtherUser;
   eventDate: string | null;
   eventType: string | null;
@@ -26,6 +30,7 @@ type Props = {
   guestCount: number | null;
   budgetRange: string | null;
   initialMessages: Message[];
+  initialQuotes: Record<string, Quote>;
 };
 
 function formatMessageTime(isoDate: string): string {
@@ -49,6 +54,7 @@ function formatMessageTime(isoDate: string): string {
 export function KonusmaDetay({
   conversationId,
   currentUserId,
+  isProfessional,
   other,
   eventDate,
   eventType,
@@ -56,14 +62,18 @@ export function KonusmaDetay({
   guestCount,
   budgetRange,
   initialMessages,
+  initialQuotes,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [quotesById, setQuotesById] =
+    useState<Record<string, Quote>>(initialQuotes);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isOtherOnline, setIsOtherOnline] = useState(false);
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,6 +104,11 @@ export function KonusmaDetay({
       );
     });
   }, [initialMessages]);
+
+  // Quote'lar prop'tan değişirse state'i tazele (yeni quote, status değişikliği)
+  useEffect(() => {
+    setQuotesById(initialQuotes);
+  }, [initialQuotes]);
 
   // Mount'ta okunmamış mesajları işaretle
   useEffect(() => {
@@ -316,6 +331,40 @@ export function KonusmaDetay({
           </p>
         ) : (
           messages.map((msg) => {
+            // Quote tipinde mesaj — Quote kartı render et
+            if (msg.message_type === 'quote' && msg.quote_id) {
+              const quote = quotesById[msg.quote_id];
+              if (!quote) {
+                // Quote henüz state'e gelmemiş (Realtime race) — placeholder
+                return (
+                  <div key={msg.id} className="flex justify-center my-2">
+                    <p className="text-xs text-ink-72 font-mono">
+                      Teklif yükleniyor...
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <QuoteCard
+                  key={msg.id}
+                  quote={quote}
+                  currentUserId={currentUserId}
+                />
+              );
+            }
+
+            // Sistem mesajı — sade ortalı satır
+            if (msg.message_type === 'system') {
+              return (
+                <SystemMessage
+                  key={msg.id}
+                  body={msg.body}
+                  createdAt={msg.created_at}
+                />
+              );
+            }
+
+            // Normal text mesaj (mevcut bubble)
             const isMine = msg.sender_id === currentUserId;
             return (
               <div
@@ -349,6 +398,16 @@ export function KonusmaDetay({
 
       {/* INPUT */}
       <form onSubmit={handleSubmit} className="border-t border-line p-4 bg-paper">
+        {isProfessional && (
+          <button
+            type="button"
+            onClick={() => setQuoteModalOpen(true)}
+            className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 bg-[#1E3A5F]/8 hover:bg-[#1E3A5F]/15 text-[#1E3A5F] rounded-lg text-xs font-mono uppercase tracking-[0.1em] transition"
+          >
+            <span className="text-base leading-none">+</span>
+            Teklif gönder
+          </button>
+        )}
         {error && (
           <p className="text-xs text-terracotta mb-2">{error}</p>
         )}
@@ -389,6 +448,14 @@ export function KonusmaDetay({
           </button>
         </div>
       </form>
+
+      {isProfessional && (
+        <QuoteModal
+          conversationId={conversationId}
+          open={quoteModalOpen}
+          onClose={() => setQuoteModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
