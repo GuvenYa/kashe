@@ -170,7 +170,8 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
 
-        {isDraft && (
+        {(listing.status === 'draft' ||
+          listing.status === 'published') && (
           <Link
             href={`/ilanlar/${listing.id}/duzenle`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"

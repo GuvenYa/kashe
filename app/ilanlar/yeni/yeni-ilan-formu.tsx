@@ -3,8 +3,12 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
-import { createListing } from '../listings-actions';
-import { BUDGET_PRESETS, type BudgetPresetKey } from '../listings-data';
+import { createListing, updateListing } from '../listings-actions';
+import {
+  BUDGET_PRESETS,
+  type BudgetPresetKey,
+  type Listing,
+} from '../listings-data';
 
 type Category = {
   id: number;
@@ -20,6 +24,7 @@ type City = {
 type Props = {
   categories: Category[];
   cities: City[];
+  initialData?: Listing | null;
 };
 
 const EVENT_TYPE_OPTIONS = [
@@ -33,24 +38,59 @@ const EVENT_TYPE_OPTIONS = [
   { key: 'other', label: 'Diğer' },
 ];
 
-export function YeniIlanFormu({ categories, cities }: Props) {
+export function YeniIlanFormu({ categories, cities, initialData }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [categoryId, setCategoryId] = useState<number | ''>('');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [requirements, setRequirements] = useState('');
-  const [eventDate, setEventDate] = useState('');
-  const [eventType, setEventType] = useState<string>('');
-  const [location, setLocation] = useState('');
-  const [cityId, setCityId] = useState<number | ''>('');
-  const [guestCount, setGuestCount] = useState('');
-  const [budgetPreset, setBudgetPreset] = useState<BudgetPresetKey>('open');
-  const [budgetMin, setBudgetMin] = useState('');
-  const [budgetMax, setBudgetMax] = useState('');
+  const isEditMode = !!initialData;
+
+  // Mevcut bütçeyi BUDGET_PRESETS ile eşleştir, yoksa custom
+  function detectBudgetPreset(): BudgetPresetKey {
+    if (!initialData) return 'open';
+    const { budget_min: min, budget_max: max } = initialData;
+    if (min === null && max === null) return 'open';
+    const match = BUDGET_PRESETS.find(
+      (p) => p.min === min && p.max === max
+    );
+    return (match?.key as BudgetPresetKey) ?? 'custom';
+  }
+
+  // Form state — initialData varsa onunla initialize
+  const [categoryId, setCategoryId] = useState<number | ''>(
+    initialData?.category_id ?? ''
+  );
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [requirements, setRequirements] = useState(
+    initialData?.requirements ?? ''
+  );
+  const [eventDate, setEventDate] = useState(initialData?.event_date ?? '');
+  const [eventType, setEventType] = useState<string>(
+    initialData?.event_type ?? ''
+  );
+  const [location, setLocation] = useState(initialData?.location ?? '');
+  const [cityId, setCityId] = useState<number | ''>(
+    initialData?.city_id ?? ''
+  );
+  const [guestCount, setGuestCount] = useState(
+    initialData?.guest_count !== null && initialData?.guest_count !== undefined
+      ? String(initialData.guest_count)
+      : ''
+  );
+  const [budgetPreset, setBudgetPreset] = useState<BudgetPresetKey>(
+    detectBudgetPreset()
+  );
+  const [budgetMin, setBudgetMin] = useState(
+    initialData?.budget_min !== null && initialData?.budget_min !== undefined
+      ? String(initialData.budget_min)
+      : ''
+  );
+  const [budgetMax, setBudgetMax] = useState(
+    initialData?.budget_max !== null && initialData?.budget_max !== undefined
+      ? String(initialData.budget_max)
+      : ''
+  );
   const [publishImmediately, setPublishImmediately] = useState(true);
 
   function handleSubmit(e: React.FormEvent) {
@@ -112,25 +152,50 @@ export function YeniIlanFormu({ categories, cities }: Props) {
     }
 
     startTransition(async () => {
-      const result = await createListing({
-        category_id: categoryId,
-        title: title.trim(),
-        description: description.trim(),
-        requirements: requirements.trim() || null,
-        event_date: eventDate || null,
-        event_type: eventType || null,
-        location: location.trim() || null,
-        city_id: cityId === '' ? null : cityId,
-        guest_count: finalGuestCount,
-        budget_min: finalMin,
-        budget_max: finalMax,
-        publish_immediately: publishImmediately,
-      });
+      if (isEditMode && initialData) {
+        // EDIT MODE
+        const result = await updateListing({
+          id: initialData.id,
+          category_id: categoryId,
+          title: title.trim(),
+          description: description.trim(),
+          requirements: requirements.trim() || null,
+          event_date: eventDate || null,
+          event_type: eventType || null,
+          location: location.trim() || null,
+          city_id: cityId === '' ? null : cityId,
+          guest_count: finalGuestCount,
+          budget_min: finalMin,
+          budget_max: finalMax,
+        });
 
-      if (result.success && result.data) {
-        router.push(`/ilanlar/${result.data.id}`);
-      } else if (!result.success) {
-        setError(result.error);
+        if (result.success) {
+          router.push(`/ilanlar/${initialData.id}`);
+        } else {
+          setError(result.error);
+        }
+      } else {
+        // CREATE MODE
+        const result = await createListing({
+          category_id: categoryId,
+          title: title.trim(),
+          description: description.trim(),
+          requirements: requirements.trim() || null,
+          event_date: eventDate || null,
+          event_type: eventType || null,
+          location: location.trim() || null,
+          city_id: cityId === '' ? null : cityId,
+          guest_count: finalGuestCount,
+          budget_min: finalMin,
+          budget_max: finalMax,
+          publish_immediately: publishImmediately,
+        });
+
+        if (result.success && result.data) {
+          router.push(`/ilanlar/${result.data.id}`);
+        } else if (!result.success) {
+          setError(result.error);
+        }
       }
     });
   }
@@ -400,7 +465,8 @@ export function YeniIlanFormu({ categories, cities }: Props) {
         </div>
       </section>
 
-      {/* Bölüm 4: Yayınla / Taslak */}
+      {/* Bölüm 4: Yayınla / Taslak — sadece create mode */}
+      {!isEditMode && (
       <section className="bg-white border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
           Durum
@@ -454,6 +520,7 @@ export function YeniIlanFormu({ categories, cities }: Props) {
           </label>
         </div>
       </section>
+      )}
 
       {error && (
         <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-4 py-3">
@@ -471,9 +538,11 @@ export function YeniIlanFormu({ categories, cities }: Props) {
           <Send size={14} strokeWidth={1.75} />
           {isPending
             ? 'Kaydediliyor...'
-            : publishImmediately
-              ? 'Yayınla'
-              : 'Taslak olarak kaydet'}
+            : isEditMode
+              ? 'Değişiklikleri kaydet'
+              : publishImmediately
+                ? 'Yayınla'
+                : 'Taslak olarak kaydet'}
         </button>
       </div>
     </form>
