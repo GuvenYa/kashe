@@ -1,5 +1,5 @@
 // Auth user role
-export type UserRole = 'professional' | 'client' | 'business';
+export type UserRole = 'professional' | 'client' | 'business' | 'agency';
 
 // Database tables
 export type Profile = {
