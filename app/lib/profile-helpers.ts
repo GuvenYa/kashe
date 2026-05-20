@@ -12,11 +12,16 @@ export function isBusiness(profile: Profile | null | undefined): boolean {
   return profile?.role === 'business';
 }
 
+export function isAgency(profile: Profile | null | undefined): boolean {
+  return profile?.role === 'agency';
+}
+
 export function getRoleLabel(role: string | null | undefined): string {
   const labels: Record<string, string> = {
     professional: 'Profesyonel',
     client: 'Müşteri',
     business: 'Kurumsal',
+    agency: 'Ajans',
   };
   return labels[role || ''] || 'Belirtilmemiş';
 }
@@ -70,6 +75,13 @@ export function getMissingPublishFields(
     }
   }
 
+  // Ajans için ekstra
+  if (profile.role === 'agency') {
+    if (!profile.company_name || profile.company_name.trim().length === 0) {
+      missing.push('Ajans adı');
+    }
+  }
+
   return missing;
 }
 
@@ -98,6 +110,9 @@ export function getCompletenessPercent(
     checks.push(activeServices.length > 0);
   }
   if (profile.role === 'business') {
+    checks.push(!!profile.company_name);
+  }
+  if (profile.role === 'agency') {
     checks.push(!!profile.company_name);
   }
 

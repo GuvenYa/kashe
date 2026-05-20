@@ -8,6 +8,7 @@ import {
   isProfessional,
   isClient,
   isBusiness,
+  isAgency,
   getRoleLabel,
   getMissingPublishFields,
   canPublish,
@@ -52,6 +53,26 @@ export default async function ProfilPage() {
   const isPro = isProfessional(profile);
   const isClientUser = isClient(profile);
   const isBusinessUser = isBusiness(profile);
+  const isAgencyUser = isAgency(profile);
+
+  // Ajans ise: üye sayısı + bekleyen davet sayısı
+  let agencyMemberCount = 0;
+  let pendingInvitationCount = 0;
+  if (isAgencyUser) {
+    const [membersCountResult, invitationsCountResult] = await Promise.all([
+      supabase
+        .from('agency_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('agency_id', user.id),
+      supabase
+        .from('agency_invitations')
+        .select('id', { count: 'exact', head: true })
+        .eq('agency_id', user.id)
+        .eq('status', 'pending'),
+    ]);
+    agencyMemberCount = membersCountResult.count ?? 0;
+    pendingInvitationCount = invitationsCountResult.count ?? 0;
+  }
 
   // Müşteri ise favorilerini çek (en yeni 4 + toplam sayı için)
   type FavoritePreview = {
@@ -332,6 +353,66 @@ export default async function ProfilPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* AJANS: Ekibim */}
+          {isAgencyUser && (
+            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">
+                  Ekibim{' '}
+                  <span className="text-ink-72 text-lg">
+                    ({agencyMemberCount})
+                  </span>
+                </h2>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href="/profil/ekibim"
+                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                  >
+                    {agencyMemberCount === 0
+                      ? 'İlk üyeyi davet et →'
+                      : 'Tümünü yönet →'}
+                  </Link>
+                </div>
+              </div>
+              {agencyMemberCount === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Ajansının altında henüz profesyonel yok. Profesyonelleri
+                  email ile davet et, kabul edince ekibinde yer alsınlar.
+                </p>
+              ) : (
+                <p className="text-ink-72 text-sm">
+                  Ekibindeki profesyonelleri yönet, yeni üyeler davet et,
+                  rolleri ayarla.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* AJANS: Bekleyen davetler */}
+          {isAgencyUser && pendingInvitationCount > 0 && (
+            <div className="mt-6 bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
+                    Bekleyen davet
+                  </p>
+                  <p className="font-display text-lg text-ink">
+                    <span className="text-[#1E3A5F] font-medium">
+                      {pendingInvitationCount}
+                    </span>{' '}
+                    davet cevap bekliyor
+                  </p>
+                </div>
+                <Link
+                  href="/profil/ekibim"
+                  className="text-sm font-display font-medium text-[#1E3A5F] hover:underline"
+                >
+                  İncele →
+                </Link>
+              </div>
             </div>
           )}
 
