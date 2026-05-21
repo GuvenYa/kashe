@@ -74,6 +74,35 @@ export default async function ProfilPage() {
     pendingInvitationCount = invitationsCountResult.count ?? 0;
   }
 
+  // Profesyonel ise: üye olduğu ajanslar
+  type MyAgency = {
+    id: string;
+    member_role: string;
+    agency: {
+      id: string;
+      full_name: string | null;
+      company_name: string | null;
+      avatar_url: string | null;
+    } | null;
+  };
+  let myAgencies: MyAgency[] = [];
+  if (isPro) {
+    const { data: myAgenciesData } = await supabase
+      .from('agency_members')
+      .select(
+        `
+        id, member_role,
+        agency:profiles!agency_members_agency_id_fkey (
+          id, full_name, company_name, avatar_url
+        )
+      `
+      )
+      .eq('professional_id', user.id)
+      .order('joined_at', { ascending: false });
+
+    myAgencies = (myAgenciesData ?? []) as unknown as MyAgency[];
+  }
+
   // Müşteri ise favorilerini çek (en yeni 4 + toplam sayı için)
   type FavoritePreview = {
     id: string;
@@ -253,6 +282,84 @@ export default async function ProfilPage() {
               </div>
             )}
           </div>
+
+          {/* PROFESYONEL: Hizmetler */}
+          {/* PROFESYONEL: Üye olduğum ajanslar */}
+          {isPro && (
+            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">
+                  Üye olduğum ajanslar{' '}
+                  <span className="text-ink-72 text-lg">
+                    ({myAgencies.length})
+                  </span>
+                </h2>
+                <Link
+                  href="/davetlerim"
+                  className="text-sm font-display font-medium text-[#1E3A5F] hover:underline"
+                >
+                  Davetlerim →
+                </Link>
+              </div>
+
+              {myAgencies.length === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Henüz bir ajansa üye değilsin. Bir ajans seni davet ettiğinde{' '}
+                  <Link
+                    href="/davetlerim"
+                    className="text-terracotta hover:underline"
+                  >
+                    Davetlerim
+                  </Link>{' '}
+                  sayfasından kabul edebilirsin.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {myAgencies.map((m) => {
+                    const ag = m.agency;
+                    if (!ag) return null;
+                    const agName =
+                      ag.company_name || ag.full_name || 'İsimsiz ajans';
+                    const agInitials = agName
+                      .split(' ')
+                      .map((s) => s[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+                    return (
+                      <Link
+                        key={m.id}
+                        href={`/p/${ag.id}`}
+                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-[#1E3A5F] hover:shadow-[3px_3px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                      >
+                        {ag.avatar_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={ag.avatar_url}
+                            alt={agName}
+                            className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-display font-semibold shrink-0">
+                            {agInitials}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display font-semibold text-ink group-hover:text-[#1E3A5F] transition-colors truncate">
+                            {agName}
+                          </p>
+                          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+                            Ajans
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* PROFESYONEL: Hizmetler */}
           {isPro && (

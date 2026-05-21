@@ -136,6 +136,34 @@ export default async function PublicProfilePage({
 
     agencyTeam = (teamData ?? []) as unknown as AgencyTeamMember[];
   }
+
+  // Profesyonel ise: temsil eden ajanslar
+  type RepresentingAgency = {
+    id: string;
+    agency: {
+      id: string;
+      full_name: string | null;
+      company_name: string | null;
+      avatar_url: string | null;
+    } | null;
+  };
+  let representingAgencies: RepresentingAgency[] = [];
+  if (profile.role === 'professional') {
+    const { data: repData } = await supabase
+      .from('agency_members')
+      .select(
+        `
+        id,
+        agency:profiles!agency_members_agency_id_fkey (
+          id, full_name, company_name, avatar_url
+        )
+      `
+      )
+      .eq('professional_id', profile.id)
+      .order('joined_at', { ascending: false });
+
+    representingAgencies = (repData ?? []) as unknown as RepresentingAgency[];
+  }
   // Hizmetler + Portföy
   const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
     supabase
@@ -477,6 +505,59 @@ export default async function PublicProfilePage({
               )}
             </div>
           )}
+
+          {/* TEMSİL EDEN AJANSLAR (profesyonel) */}
+          {profile.role === 'professional' &&
+            representingAgencies.length > 0 && (
+              <div className="bg-[#1E3A5F]/5 border border-[#1E3A5F]/15 rounded-lg p-6 mb-6">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-3">
+                  Ajans temsili
+                </p>
+                <p className="text-sm text-ink-72 mb-4">
+                  Bu profesyonel şu ajans
+                  {representingAgencies.length > 1 ? 'lar' : ''} tarafından
+                  temsil ediliyor:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {representingAgencies.map((r) => {
+                    const ag = r.agency;
+                    if (!ag) return null;
+                    const agName =
+                      ag.company_name || ag.full_name || 'İsimsiz ajans';
+                    const agInitials = agName
+                      .split(' ')
+                      .map((s) => s[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+                    return (
+                      <Link
+                        key={r.id}
+                        href={`/p/${ag.id}`}
+                        className="inline-flex items-center gap-2 bg-white border border-[#1E3A5F]/20 rounded-full pl-1.5 pr-4 py-1.5 hover:border-[#1E3A5F] hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                      >
+                        {ag.avatar_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={ag.avatar_url}
+                            alt={agName}
+                            className="w-7 h-7 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-display font-semibold text-xs shrink-0">
+                            {agInitials}
+                          </div>
+                        )}
+                        <span className="font-display font-medium text-sm text-ink group-hover:text-[#1E3A5F] transition-colors">
+                          {agName}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
           {/* PORTFÖY GALERİ */}
           {portfolioItems.length > 0 && (
