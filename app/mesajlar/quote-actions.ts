@@ -64,10 +64,10 @@ export async function createQuote(
     return { success: false, error: 'Geçersiz süre seçimi' };
   }
 
-  // Konuşmadaki profesyonel mi kontrol et
+  // Konuşmadaki profesyonel mi kontrol et (owner ajans VEYA atanan pro)
   const { data: conv } = await supabase
     .from('conversations')
-    .select('professional_id, customer_id')
+    .select('professional_id, customer_id, assigned_professional_id')
     .eq('id', input.conversationId)
     .single();
 
@@ -75,12 +75,19 @@ export async function createQuote(
     return { success: false, error: 'Konuşma bulunamadı' };
   }
 
-  if (conv.professional_id !== user.id) {
+  const isOwner = conv.professional_id === user.id;
+  const isAssignedPro = conv.assigned_professional_id === user.id;
+
+  if (!isOwner && !isAssignedPro) {
     return {
       success: false,
       error: 'Sadece profesyonel teklif gönderebilir',
     };
   }
+
+  // Teklif her zaman konuşma sahibinin (ajans/profesyonel) adına gider.
+  // Atanan pro teklif oluştursa bile sender_id = konuşmanın professional_id.
+  const quoteSenderId = conv.professional_id;
 
   // expires_at hesapla
   const expiresAt = new Date(
@@ -92,7 +99,7 @@ export async function createQuote(
     .from('quotes')
     .insert({
       conversation_id: input.conversationId,
-      sender_id: user.id,
+      sender_id: quoteSenderId,
       total_amount: input.totalAmount,
       services_description: input.servicesDescription.trim(),
       cancellation_policy: input.cancellationPolicy?.trim() || null,
@@ -103,6 +110,7 @@ export async function createQuote(
     .single();
 
   if (quoteError || !quote) {
+    console.log('QUOTE INSERT ERROR FULL:', JSON.stringify(quoteError, null, 2));
     return {
       success: false,
       error: 'Teklif oluşturulamadı: ' + (quoteError?.message ?? 'bilinmeyen'),

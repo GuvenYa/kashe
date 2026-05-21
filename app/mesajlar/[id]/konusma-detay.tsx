@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { sendMessage, markConversationRead } from '../actions';
+import {
+  sendMessage,
+  markConversationRead,
+  assignConversation,
+  unassignConversation,
+} from '../actions';
 import { getEventTypeLabel, getBudgetRangeLabel } from '../data';
 import type { Quote } from '../quotes-data';
 import { QuoteModal } from './quote-modal';
@@ -23,6 +28,11 @@ type Props = {
   conversationId: string;
   currentUserId: string;
   isProfessional: boolean;
+  isAssignedPro: boolean;
+  isOwnerAgency: boolean;
+  assignedProfessionalId: string | null;
+  teamMembers: { id: string; full_name: string | null }[];
+ senderNames: Record<string, { name: string; agencyTag: string | null }>;
   other: OtherUser;
   eventDate: string | null;
   eventType: string | null;
@@ -52,9 +62,14 @@ function formatMessageTime(isoDate: string): string {
 }
 
 export function KonusmaDetay({
-  conversationId,
+ conversationId,
   currentUserId,
   isProfessional,
+  isAssignedPro,
+  isOwnerAgency,
+  assignedProfessionalId,
+  teamMembers,
+  senderNames,
   other,
   eventDate,
   eventType,
@@ -74,10 +89,59 @@ export function KonusmaDetay({
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isOtherOnline, setIsOtherOnline] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [assignedId, setAssignedId] = useState<string | null>(
+    assignedProfessionalId
+  );
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [isAssigning, startAssignTransition] = useTransition();
+
+  const assignedName =
+    teamMembers.find((m) => m.id === assignedId)?.full_name || 'Bir üye';
+
+  function handleAssign(professionalId: string) {
+    setError(null);
+    startAssignTransition(async () => {
+      const result = await assignConversation(conversationId, professionalId);
+      if (result.success) {
+        setAssignedId(professionalId);
+        setAssignOpen(false);
+        router.refresh();
+      } else {
+        setError(result.error || 'Atama başarısız.');
+      }
+    });
+  }
+
+  function handleUnassign() {
+    setError(null);
+    startAssignTransition(async () => {
+      const result = await unassignConversation(conversationId);
+      if (result.success) {
+        setAssignedId(null);
+        setAssignOpen(false);
+        router.refresh();
+      } else {
+        setError(result.error || 'Atama kaldırılamadı.');
+      }
+    });
+  }
+
+  // Dropdown dışına tıklanınca kapat
+  useEffect(() => {
+    if (!assignOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
+        setAssignOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [assignOpen]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null);
+  const assignRef = useRef<HTMLDivElement>(null);
 
   const otherName =
     other.role === 'business' && other.company_name
@@ -228,6 +292,14 @@ export function KonusmaDetay({
     });
   }
 
+  // Konuşmada ikiden fazla benzersiz gönderen varsa balonlarda isim göster
+  const distinctSenders = new Set(
+    messages
+      .filter((m) => m.message_type !== 'system')
+      .map((m) => m.sender_id)
+  );
+  const showSenderNames = distinctSenders.size > 2;
+
   return (
     <div className="bg-white border border-line rounded-lg overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[500px]">
       {/* HEADER */}
@@ -270,6 +342,66 @@ export function KonusmaDetay({
             )}
           </div>
         </Link>
+
+        {isOwnerAgency && (
+          <div className="ml-auto relative" ref={assignRef}>
+            {assignedId ? (
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs font-mono uppercase tracking-[0.1em] text-moss">
+                  {assignedName} · atandı
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAssignOpen((v) => !v)}
+                  disabled={isAssigning}
+                  className="text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta transition-colors disabled:opacity-50"
+                >
+                  Değiştir
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUnassign}
+                  disabled={isAssigning}
+                  className="text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-ember transition-colors disabled:opacity-50"
+                >
+                  Kaldır
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAssignOpen((v) => !v)}
+                disabled={isAssigning || teamMembers.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-plum/8 hover:bg-plum/15 text-plum rounded-lg text-xs font-mono uppercase tracking-[0.1em] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Ekibe ata
+              </button>
+            )}
+
+            {assignOpen && (
+              <div className="absolute right-0 top-full mt-2 z-10 w-56 bg-white border border-line rounded-lg shadow-lg py-1.5">
+                {teamMembers.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-ink-72">
+                    Ekibinde henüz üye yok.
+                  </p>
+                ) : (
+                  teamMembers.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleAssign(m.id)}
+                      disabled={isAssigning || m.id === assignedId}
+                      className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-paper transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {m.full_name || 'İsimsiz'}
+                      {m.id === assignedId ? ' ✓' : ''}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* BRIEF KARTI (eğer en az 1 alan dolu ise) */}
@@ -378,6 +510,16 @@ export function KonusmaDetay({
                       : 'bg-white border border-line text-ink rounded-bl-sm'
                   }`}
                 >
+                  {!isMine && showSenderNames && (
+                    <p className="text-[11px] font-mono uppercase tracking-[0.08em] text-plum mb-1">
+                      {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
+                      {senderNames[msg.sender_id]?.agencyTag && (
+                        <span className="text-ink-72">
+                          {' '}• {senderNames[msg.sender_id]!.agencyTag}
+                        </span>
+                      )}
+                    </p>
+                  )}
                   <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                     {msg.body}
                   </p>
@@ -398,7 +540,7 @@ export function KonusmaDetay({
 
       {/* INPUT */}
       <form onSubmit={handleSubmit} className="border-t border-line p-4 bg-paper">
-        {isProfessional && (
+        {(isProfessional || isAssignedPro) && (
           <button
             type="button"
             onClick={() => setQuoteModalOpen(true)}
@@ -449,7 +591,7 @@ export function KonusmaDetay({
         </div>
       </form>
 
-      {isProfessional && (
+      {(isProfessional || isAssignedPro) && (
         <QuoteModal
           conversationId={conversationId}
           open={quoteModalOpen}

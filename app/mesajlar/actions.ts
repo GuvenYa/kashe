@@ -178,11 +178,16 @@ export async function sendMessage(
   // Kullanıcı bu konuşmaya katılımcı mı? (defensive — RLS de kontrol ediyor)
   const { data: conv } = await supabase
     .from('conversations')
-    .select('customer_id, professional_id')
+    .select('customer_id, professional_id, assigned_professional_id')
     .eq('id', conversationId)
     .single();
 
-  if (!conv || (conv.customer_id !== user.id && conv.professional_id !== user.id)) {
+  if (
+    !conv ||
+    (conv.customer_id !== user.id &&
+      conv.professional_id !== user.id &&
+      conv.assigned_professional_id !== user.id)
+  ) {
     return { success: false, error: 'Bu konuşmaya erişimin yok.' };
   }
 
@@ -279,4 +284,98 @@ export async function getUnreadMessageCount(): Promise<number> {
   }
 
   return count ?? 0;
+}
+/**
+ * Konuşmayı ajansın bir ekip üyesine ata.
+ * Sadece sahibi ajans çağırabilir; trigger sistem mesajını otomatik düşürür.
+ */
+export async function assignConversation(
+  conversationId: string,
+  professionalId: string
+): Promise<MessagingActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Oturum bulunamadı.' };
+  }
+
+  // Bu konuşmanın sahibi ajans ben miyim?
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('professional_id')
+    .eq('id', conversationId)
+    .single();
+
+  if (!conv || conv.professional_id !== user.id) {
+    return { success: false, error: 'Bu konuşmayı atama yetkin yok.' };
+  }
+
+  // Hedef profesyonel gerçekten bu ajansın üyesi mi?
+  const { data: member } = await supabase
+    .from('agency_members')
+    .select('id')
+    .eq('agency_id', user.id)
+    .eq('professional_id', professionalId)
+    .maybeSingle();
+
+  if (!member) {
+    return { success: false, error: 'Bu profesyonel ekibinde değil.' };
+  }
+
+  const { error } = await supabase
+    .from('conversations')
+    .update({ assigned_professional_id: professionalId })
+    .eq('id', conversationId);
+
+  if (error) {
+    return { success: false, error: 'Atama yapılamadı: ' + error.message };
+  }
+
+  revalidatePath('/mesajlar');
+  revalidatePath(`/mesajlar/${conversationId}`);
+  return { success: true, conversationId };
+}
+
+/**
+ * Atamayı kaldır — konuşma yeniden ajansın kendisine döner.
+ */
+export async function unassignConversation(
+  conversationId: string
+): Promise<MessagingActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Oturum bulunamadı.' };
+  }
+
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('professional_id')
+    .eq('id', conversationId)
+    .single();
+
+  if (!conv || conv.professional_id !== user.id) {
+    return { success: false, error: 'Bu konuşmayı yönetme yetkin yok.' };
+  }
+
+  const { error } = await supabase
+    .from('conversations')
+    .update({ assigned_professional_id: null })
+    .eq('id', conversationId);
+
+  if (error) {
+    return { success: false, error: 'Atama kaldırılamadı: ' + error.message };
+  }
+
+  revalidatePath('/mesajlar');
+  revalidatePath(`/mesajlar/${conversationId}`);
+  return { success: true, conversationId };
 }

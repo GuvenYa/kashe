@@ -11,6 +11,7 @@ type ConversationRow = {
   id: string;
   customer_id: string;
   professional_id: string;
+  assigned_professional_id: string | null;
   event_date: string | null;
   event_type: string | null;
   last_message_at: string;
@@ -46,18 +47,21 @@ export default async function MesajlarPage() {
     .from('conversations')
     .select(
       `
-      id, customer_id, professional_id, event_date, event_type, last_message_at,
+      id, customer_id, professional_id, assigned_professional_id, event_date, event_type, last_message_at,
       customer:customer_id (id, full_name, avatar_url, company_name, role),
       professional:professional_id (id, full_name, avatar_url, company_name, role)
       `
     )
-    .or(`customer_id.eq.${user.id},professional_id.eq.${user.id}`)
+    .or(
+      `customer_id.eq.${user.id},professional_id.eq.${user.id},assigned_professional_id.eq.${user.id}`
+    )
     .order('last_message_at', { ascending: false });
 
   type RawRow = {
     id: string;
     customer_id: string;
     professional_id: string;
+    assigned_professional_id: string | null;
     event_date: string | null;
     event_type: string | null;
     last_message_at: string;

@@ -23,6 +23,7 @@ type ConversationRow = {
   id: string;
   customer_id: string;
   professional_id: string;
+  assigned_professional_id: string | null;
   event_date: string | null;
   event_type: string | null;
   location: string | null;
@@ -52,7 +53,7 @@ export default async function KonusmaPage({
     .from('conversations')
     .select(
       `
-      id, customer_id, professional_id,
+      id, customer_id, professional_id, assigned_professional_id,
       event_date, event_type, location, guest_count, budget_range,
       customer:customer_id (
         id, full_name, avatar_url, company_name, role, bio, phone, last_seen_at,
@@ -73,8 +74,14 @@ export default async function KonusmaPage({
 
   const conv = convData as unknown as ConversationRow;
 
-  // Erişim kontrolü
-  if (conv.customer_id !== user.id && conv.professional_id !== user.id) {
+  const isAssignedPro = conv.assigned_professional_id === user.id;
+
+  // Erişim kontrolü — sahibi ajans, müşteri veya atanan profesyonel
+  if (
+    conv.customer_id !== user.id &&
+    conv.professional_id !== user.id &&
+    !isAssignedPro
+  ) {
     notFound();
   }
 
@@ -94,6 +101,65 @@ export default async function KonusmaPage({
 
   const messages = (messagesData || []) as Message[];
 
+  // Gönderen isim haritası — mesajlarda GERÇEKTEN görünen tüm gönderenleri kapsar
+  // (geçmişte atanmış ama sonradan ayrılmış profesyoneller dahil).
+  // Değer: { name, agencyTag } — agencyTag, ajans adına yazan pro'larda dolu.
+  const senderNames: Record<
+    string,
+    { name: string; agencyTag: string | null }
+  > = {};
+
+  function profileName(p: {
+    full_name: string | null;
+    company_name: string | null;
+    role: string;
+  }): string {
+    return p.role === 'business' && p.company_name
+      ? p.company_name
+      : p.full_name || 'İsimsiz';
+  }
+
+  // Konuşma sahibi ajans mı? Etiket olarak adını kullanacağız.
+  const ownerIsAgency = conv.professional?.role === 'agency';
+  const agencyLabel = ownerIsAgency ? profileName(conv.professional!) : null;
+
+  // Önce elimizdeki katılımcıları ekle (ekstra sorgu gerektirmez)
+  for (const p of [conv.customer, conv.professional]) {
+    if (p) {
+      senderNames[p.id] = { name: profileName(p), agencyTag: null };
+    }
+  }
+
+  // Mesajlardaki benzersiz gönderenlerden haritada olmayanları topla
+  const missingSenderIds = Array.from(
+    new Set(
+      messages
+        .filter((m) => m.message_type !== 'system')
+        .map((m) => m.sender_id)
+    )
+  ).filter((sid) => !senderNames[sid]);
+
+  if (missingSenderIds.length > 0) {
+    const { data: extraProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name, role')
+      .in('id', missingSenderIds);
+
+    (extraProfiles ?? []).forEach((p) => {
+      senderNames[p.id] = { name: profileName(p), agencyTag: null };
+    });
+  }
+
+  // Ajans etiketi (Seçenek A): konuşma sahibi ajanssa, müşteri ve ajansın
+  // kendisi dışındaki tüm gönderenler ajans adına yazan pro'lardır.
+  if (ownerIsAgency && agencyLabel) {
+    for (const sid of Object.keys(senderNames)) {
+      if (sid !== conv.customer_id && sid !== conv.professional_id) {
+        senderNames[sid].agencyTag = agencyLabel;
+      }
+    }
+  }
+
   // Quote'ları çek — sadece bu konuşmadaki, message_type='quote' olanlar zaten quote_id taşıyor
   const quoteIds = messages
     .filter((m) => m.message_type === 'quote' && m.quote_id)
@@ -111,8 +177,28 @@ export default async function KonusmaPage({
     });
   }
 
-  // Profesyonel mi tespit et
+  // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
+
+  // Sahibi ajans mı? (atama dropdown'ı sadece ona görünür)
+  const isOwnerAgency =
+    conv.professional_id === user.id && conv.professional?.role === 'agency';
+
+  // Owner ajansın ekip üyeleri (atama dropdown'ı için)
+  let teamMembers: { id: string; full_name: string | null }[] = [];
+  if (isOwnerAgency) {
+    const { data: membersData } = await supabase
+      .from('agency_members')
+      .select(
+        'professional:profiles!agency_members_professional_id_fkey (id, full_name)'
+      )
+      .eq('agency_id', user.id);
+
+    teamMembers = (membersData ?? [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((m) => (m as any).professional)
+      .filter(Boolean) as { id: string; full_name: string | null }[];
+  }
 
   return (
     <>
@@ -132,6 +218,11 @@ export default async function KonusmaPage({
                 conversationId={conv.id}
                 currentUserId={user.id}
                 isProfessional={isProfessional}
+                isAssignedPro={isAssignedPro}
+                isOwnerAgency={isOwnerAgency}
+                assignedProfessionalId={conv.assigned_professional_id}
+                teamMembers={teamMembers}
+                senderNames={senderNames}
                 other={{
                   id: other.id,
                   full_name: other.full_name,
