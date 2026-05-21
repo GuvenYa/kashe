@@ -40,6 +40,7 @@ type SearchParams = {
   sehir?: string;
   q?: string;
   sirala?: 'yeni' | 'puan';
+  tip?: 'profesyonel' | 'ajans';
 };
 
 export default async function KesfetPage({
@@ -54,6 +55,10 @@ export default async function KesfetPage({
   const cityId = params.sehir ? parseInt(params.sehir, 10) : null;
   const searchQuery = params.q?.trim() || '';
   const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
+  const typeFilter: 'profesyonel' | 'ajans' | null =
+    params.tip === 'profesyonel' || params.tip === 'ajans'
+      ? params.tip
+      : null;
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
     supabase
@@ -74,7 +79,15 @@ export default async function KesfetPage({
     `
     )
     .eq('is_published', true)
+    .in('role', ['professional', 'agency'])
     .order('updated_at', { ascending: false });
+
+  // Tip filtresi (profesyonel / ajans)
+  if (typeFilter === 'profesyonel') {
+    query = query.eq('role', 'professional');
+  } else if (typeFilter === 'ajans') {
+    query = query.eq('role', 'agency');
+  }
 
   if (categoryId) {
     query = query.eq('primary_category_id', categoryId);
@@ -202,6 +215,39 @@ export default async function KesfetPage({
             currentSearch={searchQuery}
           />
 
+          {/* Tip filtresi: Hepsi / Profesyoneller / Ajanslar */}
+          <div className="flex gap-2 mt-6">
+            {[
+              { key: null, label: 'Hepsi' },
+              { key: 'profesyonel', label: 'Profesyoneller' },
+              { key: 'ajans', label: 'Ajanslar' },
+            ].map((opt) => {
+              const isActive = typeFilter === opt.key;
+              const sp = new URLSearchParams();
+              if (categoryId) sp.set('kategori', String(categoryId));
+              if (cityId) sp.set('sehir', String(cityId));
+              if (searchQuery) sp.set('q', searchQuery);
+              if (sortBy === 'puan') sp.set('sirala', 'puan');
+              if (opt.key) sp.set('tip', opt.key);
+              const href = sp.toString()
+                ? `/kesfet?${sp.toString()}`
+                : '/kesfet';
+              return (
+                <Link
+                  key={opt.label}
+                  href={href}
+                  className={`px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-[0.1em] border transition ${
+                    isActive
+                      ? 'bg-ink text-paper border-ink'
+                      : 'bg-transparent text-ink-72 border-line hover:border-ink'
+                  }`}
+                >
+                  {opt.label}
+                </Link>
+              );
+            })}
+          </div>
+
           {error ? (
             <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6 mt-8">
               <p className="text-terracotta text-sm">
@@ -213,15 +259,15 @@ export default async function KesfetPage({
               {hasFilters ? (
                 <EmptyState
                   icon={SearchX}
-                  title="Bu kriterlere uygun profesyonel bulunamadı"
+                  title="Bu kriterlere uygun sonuç bulunamadı"
                   description="Filtreleri değiştirip tekrar dene veya tüm filtreleri temizle."
                   action={{ label: 'Filtreleri temizle', href: '/kesfet' }}
                 />
               ) : (
                 <EmptyState
                   icon={Users}
-                  title="Henüz yayında profesyonel yok"
-                  description="İlk profesyoneller kayıt sürecinde. Yakında burada olacaklar."
+                  title="Henüz yayında profil yok"
+                  description="İlk profesyoneller ve ajanslar kayıt sürecinde. Yakında burada olacaklar."
                 />
               )}
             </div>

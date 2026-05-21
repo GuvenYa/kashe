@@ -35,8 +35,11 @@ export function ProfileCard({
   isLoggedIn,
   currentUserRole,
 }: Props) {
+  const isAgencyCard = profile.role === 'agency';
+
   const displayName =
-    profile.role === 'business' && profile.company_name
+    (profile.role === 'business' || profile.role === 'agency') &&
+    profile.company_name
       ? profile.company_name
       : profile.full_name || 'İsimsiz';
 
@@ -90,16 +93,26 @@ export function ProfileCard({
               className="w-16 h-16 rounded-full object-cover border-2 border-line shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xl shrink-0">
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center text-paper font-display font-semibold text-xl shrink-0 ${
+                isAgencyCard ? 'bg-[#1E3A5F]' : 'bg-terracotta'
+              }`}
+            >
               {initials}
             </div>
           )}
 
           <div className="flex-1 min-w-0">
-            {categoryLabel && (
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
-                {categoryLabel}
-              </p>
+            {isAgencyCard ? (
+              <span className="inline-block font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] bg-[#1E3A5F]/10 px-2 py-0.5 rounded mb-1.5">
+                Ajans
+              </span>
+            ) : (
+              categoryLabel && (
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
+                  {categoryLabel}
+                </p>
+              )
             )}
             <h3 className="font-display text-xl text-ink group-hover:text-terracotta transition-colors truncate">
               {displayName}

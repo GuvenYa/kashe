@@ -47,13 +47,15 @@ export async function generateMetadata({
   if (
     !data ||
     !data.is_published ||
-    (data.role !== 'professional' && data.role !== 'business')
+    (data.role !== 'professional' &&
+      data.role !== 'business' &&
+      data.role !== 'agency')
   ) {
     return { title: 'Profil bulunamadı — Kashe' };
   }
 
   const name =
-    data.role === 'business' && data.company_name
+    (data.role === 'business' || data.role === 'agency') && data.company_name
       ? data.company_name
       : data.full_name || 'Profil';
 
@@ -93,10 +95,47 @@ export default async function PublicProfilePage({
   if (!profile.is_published) {
     notFound();
   }
-  if (profile.role !== 'professional' && profile.role !== 'business') {
+  if (
+    profile.role !== 'professional' &&
+    profile.role !== 'business' &&
+    profile.role !== 'agency'
+  ) {
     notFound();
   }
 
+  const isAgencyProfile = profile.role === 'agency';
+
+  // Ajans ise: barındırdığı profesyonelleri çek
+  type AgencyTeamMember = {
+    id: string;
+    member_role: string;
+    professional: {
+      id: string;
+      full_name: string | null;
+      avatar_url: string | null;
+      bio: string | null;
+      service_categories: { name_tr: string; emoji: string | null } | null;
+    } | null;
+  };
+
+  let agencyTeam: AgencyTeamMember[] = [];
+  if (isAgencyProfile) {
+    const { data: teamData } = await supabase
+      .from('agency_members')
+      .select(
+        `
+        id, member_role,
+        professional:profiles!agency_members_professional_id_fkey (
+          id, full_name, avatar_url, bio,
+          service_categories!profiles_primary_category_id_fkey (name_tr, emoji)
+        )
+      `
+      )
+      .eq('agency_id', profile.id)
+      .order('joined_at', { ascending: false });
+
+    agencyTeam = (teamData ?? []) as unknown as AgencyTeamMember[];
+  }
   // Hizmetler + Portföy
   const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
     supabase
@@ -241,7 +280,8 @@ export default async function PublicProfilePage({
 
   const isOwnedByProfessional = user?.id === profile.id;
   const displayName =
-    profile.role === 'business' && profile.company_name
+    (profile.role === 'business' || profile.role === 'agency') &&
+    profile.company_name
       ? profile.company_name
       : profile.full_name || 'İsimsiz';
 
@@ -293,7 +333,11 @@ export default async function PublicProfilePage({
                   className="w-28 h-28 rounded-full object-cover border-2 border-line shrink-0"
                 />
               ) : (
-                <div className="w-28 h-28 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-4xl shrink-0">
+                <div
+                  className={`w-28 h-28 rounded-full flex items-center justify-center text-paper font-display font-semibold text-4xl shrink-0 ${
+                    isAgencyProfile ? 'bg-[#1E3A5F]' : 'bg-terracotta'
+                  }`}
+                >
                   {initials}
                 </div>
               )}
@@ -370,6 +414,69 @@ export default async function PublicProfilePage({
               </p>
             )}
           </div>
+
+          {/* EKİBİMİZ (ajans) */}
+          {isAgencyProfile && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <h2 className="font-display text-2xl text-ink mb-1">Ekibimiz</h2>
+              <p className="text-sm text-ink-72 mb-6">
+                Bu ajansın çatısı altındaki profesyoneller.
+              </p>
+              {agencyTeam.length === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Bu ajans henüz ekibini oluşturuyor.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {agencyTeam.map((member) => {
+                    const pro = member.professional;
+                    if (!pro) return null;
+                    const proName = pro.full_name || 'İsimsiz';
+                    const proInitials = proName
+                      .split(' ')
+                      .map((s) => s[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+                    const proCategoryLabel = pro.service_categories
+                      ? `${pro.service_categories.emoji || ''} ${pro.service_categories.name_tr}`.trim()
+                      : null;
+                    return (
+                      <Link
+                        key={member.id}
+                        href={`/p/${pro.id}`}
+                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-terracotta hover:shadow-[3px_3px_0_var(--color-terracotta)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                      >
+                        {pro.avatar_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={pro.avatar_url}
+                            alt={proName}
+                            className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+                            {proInitials}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors truncate">
+                            {proName}
+                          </p>
+                          {proCategoryLabel && (
+                            <p className="text-xs text-ink-72 truncate">
+                              {proCategoryLabel}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* PORTFÖY GALERİ */}
           {portfolioItems.length > 0 && (

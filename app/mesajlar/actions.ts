@@ -87,7 +87,10 @@ export async function startConversation(
   if (!targetProfile) {
     return { success: false, error: 'Profil bulunamadı.' };
   }
-  if (targetProfile.role !== 'professional') {
+  if (
+    targetProfile.role !== 'professional' &&
+    targetProfile.role !== 'agency'
+  ) {
     return { success: false, error: 'Bu kullanıcıya mesaj gönderilemez.' };
   }
   if (!targetProfile.is_published) {
