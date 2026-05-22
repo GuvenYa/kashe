@@ -23,7 +23,6 @@ type ConversationRow = {
   id: string;
   customer_id: string;
   professional_id: string;
-  assigned_professional_id: string | null;
   event_date: string | null;
   event_type: string | null;
   location: string | null;
@@ -53,7 +52,7 @@ export default async function KonusmaPage({
     .from('conversations')
     .select(
       `
-      id, customer_id, professional_id, assigned_professional_id,
+      id, customer_id, professional_id,
       event_date, event_type, location, guest_count, budget_range,
       customer:customer_id (
         id, full_name, avatar_url, company_name, role, bio, phone, last_seen_at,
@@ -74,7 +73,14 @@ export default async function KonusmaPage({
 
   const conv = convData as unknown as ConversationRow;
 
-  const isAssignedPro = conv.assigned_professional_id === user.id;
+  // Bu konuşmaya atanmış profesyoneller (junction)
+  const { data: assigneeRows } = await supabase
+    .from('conversation_assignees')
+    .select('professional_id')
+    .eq('conversation_id', id);
+
+  const assignedIds = (assigneeRows ?? []).map((r) => r.professional_id);
+  const isAssignedPro = assignedIds.includes(user.id);
 
   // Erişim kontrolü — sahibi ajans, müşteri veya atanan profesyonel
   if (
@@ -220,7 +226,7 @@ export default async function KonusmaPage({
                 isProfessional={isProfessional}
                 isAssignedPro={isAssignedPro}
                 isOwnerAgency={isOwnerAgency}
-                assignedProfessionalId={conv.assigned_professional_id}
+                assignedIds={assignedIds}
                 teamMembers={teamMembers}
                 senderNames={senderNames}
                 other={{

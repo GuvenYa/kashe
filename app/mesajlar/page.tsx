@@ -11,7 +11,6 @@ type ConversationRow = {
   id: string;
   customer_id: string;
   professional_id: string;
-  assigned_professional_id: string | null;
   event_date: string | null;
   event_type: string | null;
   last_message_at: string;
@@ -42,26 +41,40 @@ export default async function MesajlarPage() {
     redirect('/giris');
   }
 
-  // Tüm konuşmalarımı çek (hem müşteri hem profesyonel olarak)
+  // Atandığım konuşma id'lerini junction'dan çek
+  const { data: myAssignments } = await supabase
+    .from('conversation_assignees')
+    .select('conversation_id')
+    .eq('professional_id', user.id);
+
+  const assignedConvIds = (myAssignments ?? []).map((r) => r.conversation_id);
+
+  // .or() filtresi için atanan id'leri ekle (varsa)
+  const orFilter = [
+    `customer_id.eq.${user.id}`,
+    `professional_id.eq.${user.id}`,
+    ...(assignedConvIds.length > 0
+      ? [`id.in.(${assignedConvIds.join(',')})`]
+      : []),
+  ].join(',');
+
+  // Tüm konuşmalarımı çek (müşteri, owner ajans/pro, veya atanan pro)
   const { data: conversationsData } = await supabase
     .from('conversations')
     .select(
       `
-      id, customer_id, professional_id, assigned_professional_id, event_date, event_type, last_message_at,
+      id, customer_id, professional_id, event_date, event_type, last_message_at,
       customer:customer_id (id, full_name, avatar_url, company_name, role),
       professional:professional_id (id, full_name, avatar_url, company_name, role)
       `
     )
-    .or(
-      `customer_id.eq.${user.id},professional_id.eq.${user.id},assigned_professional_id.eq.${user.id}`
-    )
+    .or(orFilter)
     .order('last_message_at', { ascending: false });
 
   type RawRow = {
     id: string;
     customer_id: string;
     professional_id: string;
-    assigned_professional_id: string | null;
     event_date: string | null;
     event_type: string | null;
     last_message_at: string;

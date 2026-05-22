@@ -178,16 +178,26 @@ export async function sendMessage(
   // Kullanıcı bu konuşmaya katılımcı mı? (defensive — RLS de kontrol ediyor)
   const { data: conv } = await supabase
     .from('conversations')
-    .select('customer_id, professional_id, assigned_professional_id')
+    .select('customer_id, professional_id')
     .eq('id', conversationId)
     .single();
 
-  if (
-    !conv ||
-    (conv.customer_id !== user.id &&
-      conv.professional_id !== user.id &&
-      conv.assigned_professional_id !== user.id)
-  ) {
+  let hasAccess =
+    !!conv &&
+    (conv.customer_id === user.id || conv.professional_id === user.id);
+
+  // Owner/müşteri değilse, atanan pro mu? (junction)
+  if (conv && !hasAccess) {
+    const { data: assignee } = await supabase
+      .from('conversation_assignees')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    hasAccess = !!assignee;
+  }
+
+  if (!conv || !hasAccess) {
     return { success: false, error: 'Bu konuşmaya erişimin yok.' };
   }
 
@@ -326,13 +336,20 @@ export async function assignConversation(
     return { success: false, error: 'Bu profesyonel ekibinde değil.' };
   }
 
+  // Junction'a ekle (zaten varsa unique constraint'e takılır → tekrar eklemez)
   const { error } = await supabase
-    .from('conversations')
-    .update({ assigned_professional_id: professionalId })
-    .eq('id', conversationId);
+    .from('conversation_assignees')
+    .insert({
+      conversation_id: conversationId,
+      professional_id: professionalId,
+      assigned_by: user.id,
+    });
 
   if (error) {
-    return { success: false, error: 'Atama yapılamadı: ' + error.message };
+    // 23505 = unique violation (zaten atanmış) — sessiz geç
+    if (error.code !== '23505') {
+      return { success: false, error: 'Atama yapılamadı: ' + error.message };
+    }
   }
 
   revalidatePath('/mesajlar');
@@ -341,10 +358,13 @@ export async function assignConversation(
 }
 
 /**
- * Atamayı kaldır — konuşma yeniden ajansın kendisine döner.
+ * Bir profesyoneli konuşmadan çıkar (junction'dan sil).
+ * RLS sadece owner ajansın silmesine izin verir; trigger son pro çıkınca
+ * "yeniden ajans" mesajını otomatik düşürür.
  */
 export async function unassignConversation(
-  conversationId: string
+  conversationId: string,
+  professionalId: string
 ): Promise<MessagingActionResult> {
   const supabase = await createClient();
 
@@ -367,9 +387,10 @@ export async function unassignConversation(
   }
 
   const { error } = await supabase
-    .from('conversations')
-    .update({ assigned_professional_id: null })
-    .eq('id', conversationId);
+    .from('conversation_assignees')
+    .delete()
+    .eq('conversation_id', conversationId)
+    .eq('professional_id', professionalId);
 
   if (error) {
     return { success: false, error: 'Atama kaldırılamadı: ' + error.message };

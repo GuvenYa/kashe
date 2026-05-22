@@ -67,7 +67,7 @@ export async function createQuote(
   // Konuşmadaki profesyonel mi kontrol et (owner ajans VEYA atanan pro)
   const { data: conv } = await supabase
     .from('conversations')
-    .select('professional_id, customer_id, assigned_professional_id')
+    .select('professional_id, customer_id')
     .eq('id', input.conversationId)
     .single();
 
@@ -76,7 +76,17 @@ export async function createQuote(
   }
 
   const isOwner = conv.professional_id === user.id;
-  const isAssignedPro = conv.assigned_professional_id === user.id;
+
+  let isAssignedPro = false;
+  if (!isOwner) {
+    const { data: assignee } = await supabase
+      .from('conversation_assignees')
+      .select('id')
+      .eq('conversation_id', input.conversationId)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    isAssignedPro = !!assignee;
+  }
 
   if (!isOwner && !isAssignedPro) {
     return {

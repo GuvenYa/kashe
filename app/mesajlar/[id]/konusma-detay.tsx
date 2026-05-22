@@ -30,7 +30,7 @@ type Props = {
   isProfessional: boolean;
   isAssignedPro: boolean;
   isOwnerAgency: boolean;
-  assignedProfessionalId: string | null;
+  assignedIds: string[];
   teamMembers: { id: string; full_name: string | null }[];
  senderNames: Record<string, { name: string; agencyTag: string | null }>;
   other: OtherUser;
@@ -67,7 +67,7 @@ export function KonusmaDetay({
   isProfessional,
   isAssignedPro,
   isOwnerAgency,
-  assignedProfessionalId,
+  assignedIds,
   teamMembers,
   senderNames,
   other,
@@ -89,39 +89,33 @@ export function KonusmaDetay({
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isOtherOnline, setIsOtherOnline] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
-  const [assignedId, setAssignedId] = useState<string | null>(
-    assignedProfessionalId
-  );
+  const [assigned, setAssigned] = useState<string[]>(assignedIds);
   const [assignOpen, setAssignOpen] = useState(false);
   const [isAssigning, startAssignTransition] = useTransition();
 
-  const assignedName =
-    teamMembers.find((m) => m.id === assignedId)?.full_name || 'Bir üye';
+  // Prop değişirse (router.refresh sonrası) state'i tazele
+  useEffect(() => {
+    setAssigned(assignedIds);
+  }, [assignedIds]);
 
-  function handleAssign(professionalId: string) {
+  const assignedMembers = teamMembers.filter((m) => assigned.includes(m.id));
+
+  function handleToggleAssign(professionalId: string) {
     setError(null);
+    const isCurrentlyAssigned = assigned.includes(professionalId);
     startAssignTransition(async () => {
-      const result = await assignConversation(conversationId, professionalId);
+      const result = isCurrentlyAssigned
+        ? await unassignConversation(conversationId, professionalId)
+        : await assignConversation(conversationId, professionalId);
       if (result.success) {
-        setAssignedId(professionalId);
-        setAssignOpen(false);
+        setAssigned((prev) =>
+          isCurrentlyAssigned
+            ? prev.filter((id) => id !== professionalId)
+            : [...prev, professionalId]
+        );
         router.refresh();
       } else {
-        setError(result.error || 'Atama başarısız.');
-      }
-    });
-  }
-
-  function handleUnassign() {
-    setError(null);
-    startAssignTransition(async () => {
-      const result = await unassignConversation(conversationId);
-      if (result.success) {
-        setAssignedId(null);
-        setAssignOpen(false);
-        router.refresh();
-      } else {
-        setError(result.error || 'Atama kaldırılamadı.');
+        setError(result.error || 'İşlem başarısız.');
       }
     });
   }
@@ -345,38 +339,23 @@ export function KonusmaDetay({
 
         {isOwnerAgency && (
           <div className="ml-auto relative" ref={assignRef}>
-            {assignedId ? (
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5">
+              {assignedMembers.length > 0 && (
                 <span className="text-xs font-mono uppercase tracking-[0.1em] text-moss">
-                  {assignedName} · atandı
+                  {assignedMembers.length === 1
+                    ? `${assignedMembers[0].full_name || 'Bir üye'} · atandı`
+                    : `${assignedMembers.length} kişi atandı`}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setAssignOpen((v) => !v)}
-                  disabled={isAssigning}
-                  className="text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta transition-colors disabled:opacity-50"
-                >
-                  Değiştir
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUnassign}
-                  disabled={isAssigning}
-                  className="text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-ember transition-colors disabled:opacity-50"
-                >
-                  Kaldır
-                </button>
-              </div>
-            ) : (
+              )}
               <button
                 type="button"
                 onClick={() => setAssignOpen((v) => !v)}
                 disabled={isAssigning || teamMembers.length === 0}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-plum/8 hover:bg-plum/15 text-plum rounded-lg text-xs font-mono uppercase tracking-[0.1em] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Ekibe ata
+                {assignedMembers.length > 0 ? 'Düzenle' : 'Ekibe ata'}
               </button>
-            )}
+            </div>
 
             {assignOpen && (
               <div className="absolute right-0 top-full mt-2 z-10 w-56 bg-white border border-line rounded-lg shadow-lg py-1.5">
@@ -385,18 +364,29 @@ export function KonusmaDetay({
                     Ekibinde henüz üye yok.
                   </p>
                 ) : (
-                  teamMembers.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => handleAssign(m.id)}
-                      disabled={isAssigning || m.id === assignedId}
-                      className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-paper transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {m.full_name || 'İsimsiz'}
-                      {m.id === assignedId ? ' ✓' : ''}
-                    </button>
-                  ))
+                  teamMembers.map((m) => {
+                    const isOn = assigned.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleToggleAssign(m.id)}
+                        disabled={isAssigning}
+                        className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-paper transition-colors disabled:opacity-50 flex items-center justify-between gap-2"
+                      >
+                        <span>{m.full_name || 'İsimsiz'}</span>
+                        <span
+                          className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
+                            isOn
+                              ? 'bg-plum border-plum text-paper'
+                              : 'border-line'
+                          }`}
+                        >
+                          {isOn ? '✓' : ''}
+                        </span>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             )}
