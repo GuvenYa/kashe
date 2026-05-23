@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
@@ -63,6 +64,15 @@ type RoleKey = keyof typeof roleConfig;
 
 export function UyeOlForm({ initialRole }: { initialRole: string }) {
   const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Güvenlik: sadece site-içi yollara izin
+  const rawRedirect = searchParams.get("redirect");
+  const redirectTo =
+    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/profil";
 
   const startingRole: RoleKey =
     initialRole === "profesyonel" || initialRole === "kurumsal"
@@ -98,7 +108,11 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
       });
 
       if (error) throw error;
-      setSuccess(true);
+      // Email doğrulama kapalı — kayıt sonrası oturum anında açılır.
+      // Success ekranı yerine doğrudan hedefe yönlendir.
+      router.push(redirectTo);
+      router.refresh();
+      return;
     } catch (err: unknown) {
       const rawMessage = err instanceof Error ? err.message : "Bir hata oluştu";
       setError(translateError(rawMessage));
@@ -241,7 +255,17 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
       </form>
 
       <p className="mt-8 text-center text-sm text-ink-72">
-        Zaten üye misin? <a href="/giris" className="text-terracotta hover:text-ink font-medium">Giriş yap</a>
+        Zaten üye misin?{" "}
+        <a
+          href={
+            rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+              ? `/giris?redirect=${encodeURIComponent(rawRedirect)}`
+              : "/giris"
+          }
+          className="text-terracotta hover:text-ink font-medium"
+        >
+          Giriş yap
+        </a>
       </p>
       <p className="mt-2 text-center text-sm text-ink-72">
         Ajans mı yönetiyorsun?{" "}

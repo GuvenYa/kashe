@@ -18,11 +18,14 @@ export type MessagingActionResult = {
 export type StartConversationData = {
   professional_id: string;
   message: string;
+  // Legacy sabit kolonlar (mevcut "etkinlik özeti" kartı bunları okur)
   event_date: string | null;
-  event_type: EventTypeKey | null;
+  event_type: string | null;
   location: string | null;
   guest_count: number | null;
-  budget_range: BudgetRangeKey | null;
+  budget_range: string | null;
+  // Dinamik brief cevapları (kategoriye göre değişen tüm alanlar)
+  brief_data?: Record<string, string> | null;
 };
 
 /**
@@ -53,13 +56,6 @@ export async function startConversation(
     return { success: false, error: 'Kendine mesaj gönderemezsin.' };
   }
 
-  // Brief alanları validation
-  if (data.event_type && !EVENT_TYPE_KEYS.includes(data.event_type)) {
-    return { success: false, error: 'Geçersiz etkinlik türü.' };
-  }
-  if (data.budget_range && !BUDGET_RANGE_KEYS.includes(data.budget_range)) {
-    return { success: false, error: 'Geçersiz bütçe aralığı.' };
-  }
   if (data.location && data.location.length > 200) {
     return { success: false, error: 'Lokasyon 200 karakterden uzun olamaz.' };
   }
@@ -122,6 +118,7 @@ export async function startConversation(
         location: data.location?.trim() || null,
         guest_count: data.guest_count,
         budget_range: data.budget_range,
+        brief_data: data.brief_data ?? null,
       })
       .select('id')
       .single();

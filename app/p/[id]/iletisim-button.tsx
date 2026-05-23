@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { startConversation } from '@/app/mesajlar/actions';
 import {
-  EVENT_TYPES,
-  BUDGET_RANGES,
-  type EventTypeKey,
-  type BudgetRangeKey,
-} from '@/app/mesajlar/data';
+  getBriefFields,
+  getBriefIntro,
+  type BriefField,
+} from '@/app/lib/brief-config';
 
 type Props = {
   professionalId: string;
   professionalName: string;
+  categorySlug: string | null;
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
@@ -22,6 +22,7 @@ type Props = {
 export function IletisimButton({
   professionalId,
   professionalName,
+  categorySlug,
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
@@ -33,11 +34,16 @@ export function IletisimButton({
 
   // Form state
   const [message, setMessage] = useState('');
-  const [eventDate, setEventDate] = useState('');
-  const [eventType, setEventType] = useState<EventTypeKey | ''>('');
-  const [location, setLocation] = useState('');
-  const [guestCount, setGuestCount] = useState('');
-  const [budgetRange, setBudgetRange] = useState<BudgetRangeKey | ''>('');
+  // Dinamik brief cevapları: { [field.key]: value }
+  const [briefValues, setBriefValues] = useState<Record<string, string>>({});
+
+  // Bu profesyonelin kategorisine göre alanlar (config-driven)
+  const briefFields: BriefField[] = getBriefFields(categorySlug);
+  const briefIntro = getBriefIntro(categorySlug);
+
+  function setField(key: string, value: string) {
+    setBriefValues((prev) => ({ ...prev, [key]: value }));
+  }
 
   // Body scroll lock
   useEffect(() => {
@@ -62,26 +68,152 @@ export function IletisimButton({
   // Bugünün tarihi — date input'un min değeri için
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // MODEL A — Otomatik gönderim:
+  // Kullanıcı anonimken brief doldurup kayda yönlendirildiyse, kayıt/giriş
+  // sonrası bu profile döndüğünde sessionStorage'daki brief'i otomatik gönder.
+  useEffect(() => {
+    // Sadece giriş yapmış müşteri için çalışır
+    if (!isLoggedIn || currentUserIsProfessional || isOwnProfile) return;
+
+    const key = `kashe_pending_brief_${professionalId}`;
+    let stored: string | null = null;
+    try {
+      stored = sessionStorage.getItem(key);
+    } catch {
+      return;
+    }
+    if (!stored) return;
+
+    let payload: Parameters<typeof startConversation>[0] | null = null;
+    try {
+      payload = JSON.parse(stored);
+    } catch {
+      // Bozuk veri — temizle ve çık
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        /* yoksay */
+      }
+      return;
+    }
+
+    // Güvenlik: payload'daki professional_id bu sayfayla eşleşmeli
+    if (!payload || payload.professional_id !== professionalId) return;
+
+    // Tekrar gönderimi önlemek için ÖNCE temizle, sonra gönder
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      /* yoksay */
+    }
+
+    startTransition(async () => {
+      const result = await startConversation(payload!);
+      if (result.success && result.conversationId) {
+        router.push(`/mesajlar/${result.conversationId}`);
+      } else {
+        // Gönderim başarısızsa modalı açıp kullanıcıya göster —
+        // veri kaybı olmasın diye brief'i forma geri yükle
+        if (payload!.brief_data) {
+          setBriefValues(payload!.brief_data as Record<string, string>);
+        }
+        setMessage(payload!.message || '');
+        setError(
+          result.error ||
+            'Talebin otomatik gönderilemedi. Lütfen tekrar dene.'
+        );
+        setModalOpen(true);
+      }
+    });
+    // professionalId değişmez (sayfa başına sabit), sadece mount'ta çalışsın
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, professionalId]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const guestCountNum = guestCount.trim() ? parseInt(guestCount, 10) : null;
-    if (guestCountNum !== null && (isNaN(guestCountNum) || guestCountNum < 0)) {
-      setError('Kişi sayısı geçersiz.');
+    // Zorunlu alan kontrolü (config'de required: true olanlar)
+    for (const f of briefFields) {
+      if (f.required && !(briefValues[f.key] && briefValues[f.key].trim())) {
+        setError(`"${f.label}" alanı zorunlu.`);
+        return;
+      }
+    }
+
+    // Legacy kolonları config'deki legacyColumn işaretine göre ayır
+    let legacyEventType: string | null = null;
+    let legacyEventDate: string | null = null;
+    let legacyLocation: string | null = null;
+    let legacyGuestCount: number | null = null;
+    let legacyBudget: string | null = null;
+
+    for (const f of briefFields) {
+      const raw = briefValues[f.key]?.trim();
+      if (!raw || !f.legacyColumn) continue;
+      switch (f.legacyColumn) {
+        case 'event_type':
+          legacyEventType = raw;
+          break;
+        case 'event_date':
+          legacyEventDate = raw;
+          break;
+        case 'location':
+          legacyLocation = raw;
+          break;
+        case 'guest_count': {
+          const n = parseInt(raw, 10);
+          if (isNaN(n) || n < 0) {
+            setError('Kişi sayısı geçersiz.');
+            return;
+          }
+          legacyGuestCount = n;
+          break;
+        }
+        case 'budget_range':
+          legacyBudget = raw;
+          break;
+      }
+    }
+
+    // brief_data: boş olmayan tüm cevaplar
+    const cleanBrief: Record<string, string> = {};
+    for (const f of briefFields) {
+      const raw = briefValues[f.key]?.trim();
+      if (raw) cleanBrief[f.key] = raw;
+    }
+
+    // Brief payload — hem giriş yapan hem anonim için aynı veri
+    const payload = {
+      professional_id: professionalId,
+      message: message.trim(),
+      event_date: legacyEventDate,
+      event_type: legacyEventType,
+      location: legacyLocation,
+      guest_count: legacyGuestCount,
+      budget_range: legacyBudget,
+      brief_data: Object.keys(cleanBrief).length > 0 ? cleanBrief : null,
+    };
+
+    // ANONİM AKIŞ (Model A): brief'i sessionStorage'a yaz, kayda yönlendir.
+    // Kayıt/giriş sonrası profil sayfasına dönünce otomatik gönderilecek (Adım 4).
+    if (!isLoggedIn) {
+      try {
+        sessionStorage.setItem(
+          `kashe_pending_brief_${professionalId}`,
+          JSON.stringify(payload)
+        );
+      } catch {
+        // sessionStorage erişilemezse sessizce devam — kayıt sonrası kullanıcı
+        // brief'i tekrar doldurur (graceful degradation).
+      }
+      router.push(`/uye-ol?redirect=/p/${professionalId}`);
       return;
     }
 
+    // GİRİŞ YAPMIŞ AKIŞ: doğrudan gönder
     startTransition(async () => {
-      const result = await startConversation({
-        professional_id: professionalId,
-        message: message.trim(),
-        event_date: eventDate || null,
-        event_type: eventType || null,
-        location: location.trim() || null,
-        guest_count: guestCountNum,
-        budget_range: budgetRange || null,
-      });
+      const result = await startConversation(payload);
 
       if (result.success && result.conversationId) {
         router.push(`/mesajlar/${result.conversationId}`);
@@ -113,31 +245,7 @@ export function IletisimButton({
     );
   }
 
-  // Giriş yapmamış
-  if (!isLoggedIn) {
-    return (
-      <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6">
-        <h2 className="font-display text-xl text-ink mb-2">İletişime geç</h2>
-        <p className="text-ink-72 text-sm mb-4">
-          Mesaj göndermek için Kashe&apos;ye üye olman veya giriş yapman gerekiyor.
-        </p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href={`/giris?redirect=/p/${professionalId}`}
-            className="px-5 py-2.5 border border-ink text-ink rounded-lg font-display font-medium hover:bg-ink hover:text-paper transition-colors"
-          >
-            Giriş yap
-          </Link>
-          <Link
-            href={`/uye-ol?redirect=/p/${professionalId}`}
-            className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
-          >
-            Üye ol
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  
 
   // Login + müşteri → İletişim butonu
   return (
@@ -193,94 +301,96 @@ export function IletisimButton({
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
                   Etkinlik detayları
                 </p>
+                {briefIntro && (
+                  <p className="text-sm text-ink-72 mb-4 -mt-1">{briefIntro}</p>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label htmlFor="event-type" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                      Etkinlik türü
-                    </label>
-                    <select
-                      id="event-type"
-                      value={eventType}
-                      onChange={(e) => setEventType(e.target.value as EventTypeKey | '')}
-                      className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                    >
-                      <option value="">Seç...</option>
-                      {EVENT_TYPES.map((et) => (
-                        <option key={et.key} value={et.key}>
-                          {et.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="event-date" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                      Etkinlik tarihi
-                    </label>
-                    <input
-                      id="event-date"
-                      type="date"
-                      min={todayStr}
-                      value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                    />
-                  </div>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {briefFields.map((field) => {
+                    const value = briefValues[field.key] ?? '';
+                    const labelEl = (
+                      <label
+                        htmlFor={`brief-${field.key}`}
+                        className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
+                      >
+                        {field.label}
+                        {field.required && (
+                          <span className="text-terracotta"> *</span>
+                        )}
+                      </label>
+                    );
+                    const inputClass =
+                      'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label htmlFor="location" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                      Lokasyon
-                    </label>
-                    <input
-                      id="location"
-                      type="text"
-                      maxLength={200}
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                      placeholder="Beşiktaş, İstanbul"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="guest-count" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                      Kişi sayısı (yaklaşık)
-                    </label>
-                    <input
-                      id="guest-count"
-                      type="number"
-                      min={0}
-                      max={100000}
-                      value={guestCount}
-                      onChange={(e) => setGuestCount(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                      placeholder="örn. 80"
-                    />
-                  </div>
-                </div>
+                    // textarea tam satır kaplasın
+                    const wrapperClass =
+                      field.type === 'textarea' ? 'md:col-span-2' : '';
 
-                <div>
-                  <label htmlFor="budget-range" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                    Bütçe aralığı
-                  </label>
-                  <select
-                    id="budget-range"
-                    value={budgetRange}
-                    onChange={(e) => setBudgetRange(e.target.value as BudgetRangeKey | '')}
-                    className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                  >
-                    <option value="">Seç...</option>
-                    {BUDGET_RANGES.map((br) => (
-                      <option key={br.key} value={br.key}>
-                        {br.label}
-                      </option>
-                    ))}
-                  </select>
+                    return (
+                      <div key={field.key} className={wrapperClass}>
+                        {labelEl}
+                        {field.type === 'select' ? (
+                          <select
+                            id={`brief-${field.key}`}
+                            value={value}
+                            onChange={(e) => setField(field.key, e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="">Seç...</option>
+                            {field.options?.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : field.type === 'textarea' ? (
+                          <textarea
+                            id={`brief-${field.key}`}
+                            rows={3}
+                            maxLength={1000}
+                            value={value}
+                            onChange={(e) => setField(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={`${inputClass} resize-none`}
+                          />
+                        ) : field.type === 'date' ? (
+                          <input
+                            id={`brief-${field.key}`}
+                            type="date"
+                            min={todayStr}
+                            value={value}
+                            onChange={(e) => setField(field.key, e.target.value)}
+                            className={inputClass}
+                          />
+                        ) : field.type === 'number' ? (
+                          <input
+                            id={`brief-${field.key}`}
+                            type="number"
+                            min={0}
+                            max={100000}
+                            value={value}
+                            onChange={(e) => setField(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <input
+                            id={`brief-${field.key}`}
+                            type="text"
+                            maxLength={200}
+                            value={value}
+                            onChange={(e) => setField(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={inputClass}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <p className="text-xs text-ink-72 mt-3">
-                  Tüm alanlar opsiyonel — sadece bildiklerini doldur.
+                  Yıldızlı (*) alanlar zorunlu — diğerlerini bildiğin kadar doldur.
                 </p>
               </div>
 

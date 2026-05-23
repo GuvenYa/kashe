@@ -18,7 +18,11 @@ function translateError(message: string): string {
   return message;
 }
 
-export default function GirisForm() {
+export default function GirisForm({
+  redirectTo = '/profil',
+}: {
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sifre, setSifre] = useState('');
@@ -42,7 +46,7 @@ export default function GirisForm() {
       return;
     }
 
-    router.push('/profil');
+    router.push(redirectTo);
     router.refresh();
   }
 

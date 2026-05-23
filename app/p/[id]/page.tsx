@@ -28,7 +28,7 @@ type PublicProfile = {
   is_published: boolean;
   last_seen_at: string | null;
   turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string; emoji: string | null } | null;
+  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
 
 export async function generateMetadata({
@@ -78,7 +78,7 @@ export default async function PublicProfilePage({
       `
       id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at,
       turkish_cities(name),
-      service_categories!profiles_primary_category_id_fkey(name_tr, emoji)
+      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
     )
     .eq('id', id)
@@ -665,6 +665,7 @@ export default async function PublicProfilePage({
             <IletisimButton
               professionalId={profile.id}
               professionalName={displayName}
+              categorySlug={profile.service_categories?.slug ?? null}
               isLoggedIn={isLoggedIn}
               currentUserIsProfessional={currentUserIsProfessional}
               isOwnProfile={isOwnProfile}
