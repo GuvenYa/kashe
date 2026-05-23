@@ -1,7 +1,22 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Button } from "@/app/components/ui/button";
+import { createClient } from "@/app/lib/supabase-server";
+import { QuickSearch } from "./quick-search";
 
-export function Hero() {
+export async function Hero() {
+  const supabase = await createClient();
+  const [{ data: categoriesData }, { data: citiesData }] = await Promise.all([
+    supabase
+      .from("service_categories")
+      .select("id, name_tr")
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase.from("turkish_cities").select("id, name").order("name"),
+  ]);
+
+  const categories = categoriesData || [];
+  const cities = citiesData || [];
+
   return (
     <section className="relative overflow-hidden bg-paper">
       {/* Atmosferik terracotta glow — sağ üst */}
@@ -19,9 +34,7 @@ export function Hero() {
         <div className="max-w-3xl">
           {/* Eyebrow */}
           <div className="mb-8">
-            <Eyebrow variant="pill">
-              Türkiye'nin etkinlik pazaryeri
-            </Eyebrow>
+            <Eyebrow variant="pill">Türkiye&apos;nin etkinlik pazaryeri</Eyebrow>
           </div>
 
           {/* Hero headline */}
@@ -33,10 +46,15 @@ export function Hero() {
 
           {/* Lede */}
           <p className="text-lg md:text-xl text-ink-72 leading-[1.55] mb-10 max-w-2xl">
-            Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu. Türkiye'de etkinlik
-            ve yetenek hizmetlerini ajanssız, şeffaf fiyatla ve güvenli ödeme ile
-            buluşturuyoruz.
+            Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu. Türkiye&apos;de
+            etkinlik ve yetenek hizmetlerini ajanssız, şeffaf fiyatla ve güvenli
+            ödeme ile buluşturuyoruz.
           </p>
+
+          {/* QUICK SEARCH widget */}
+          <div className="mb-8 max-w-2xl">
+            <QuickSearch categories={categories} cities={cities} />
+          </div>
 
           {/* İki CTA buton */}
           <div className="flex flex-col sm:flex-row gap-3">

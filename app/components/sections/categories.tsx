@@ -1,34 +1,31 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
-import {
-  Music,
-  Camera,
-  Film,
-  Disc,
-  Mic2,
-  Users,
-  Wine,
-  Smile,
-  type LucideIcon,
-} from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/app/lib/supabase-server";
 
-type Category = {
-  icon: LucideIcon;
-  name: string;
-  description: string;
+type CategoryRow = {
+  id: number;
+  slug: string;
+  name_tr: string;
 };
 
-const categories: Category[] = [
-  { icon: Music, name: "Müzisyenler", description: "Solo, grup, orkestra ve daha fazlası" },
-  { icon: Camera, name: "Fotoğrafçılar", description: "Düğün, doğum günü, etkinlik çekimi" },
-  { icon: Film, name: "Oyuncular", description: "Tiyatro, reklam, film, dizi ve sahne" },
-  { icon: Disc, name: "DJ'ler", description: "Profesyonel DJ, ekipman ve ışık" },
-  { icon: Mic2, name: "Sunucular", description: "Etkinlik, organizasyon ve sunum" },
-  { icon: Users, name: "Hostesler", description: "Karşılama, tanıtım, davet organizasyonu" },
-  { icon: Wine, name: "Barmenler", description: "Profesyonel bar, kokteyl servisi" },
-  { icon: Smile, name: "Palyaçolar", description: "Çocuk etkinlikleri, animasyon" },
-];
+// İkon eşleme — ikonlar public/icons/ klasörüne eklenince burası dolacak.
+// Şimdilik null döndürür; kart placeholder (baş harf) gösterir.
+// Görsel hazır olunca: return `/icons/${slug}.svg` (veya .gif / .webp / .json)
+function getCategoryIcon(slug: string): string | null {
+  void slug;
+  return null;
+}
 
-export function Categories() {
+export async function Categories() {
+  const supabase = await createClient();
+  const { data: categoriesData } = await supabase
+    .from("service_categories")
+    .select("id, slug, name_tr")
+    .eq("is_active", true)
+    .order("sort_order");
+
+  const categories = (categoriesData || []) as CategoryRow[];
+
   return (
     <section id="hizmetler" className="bg-paper border-t border-line">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
@@ -45,35 +42,47 @@ export function Categories() {
         {/* Categories grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {categories.map((cat) => {
-            const Icon = cat.icon;
+            const iconUrl = getCategoryIcon(cat.slug);
+            const initials = cat.name_tr
+              .split(" ")
+              .map((s) => s[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join("")
+              .toUpperCase();
+
             return (
-              <div
-                key={cat.name}
-                className="group bg-card border border-line p-6 transition-all duration-200 hover:border-terracotta hover:-translate-y-0.5 cursor-pointer"
+              <Link
+                key={cat.id}
+                href={`/kesfet?kategori=${cat.id}`}
+                className="group bg-card border border-line p-6 transition-all duration-200 hover:border-terracotta hover:-translate-y-0.5"
               >
-                {/* Icon container */}
-                <div className="w-12 h-12 bg-terracotta-08 flex items-center justify-center mb-5 transition-colors group-hover:bg-terracotta-12">
-                  <Icon
-                    className="w-6 h-6 text-terracotta"
-                    strokeWidth={1.5}
-                  />
+                {/* Icon / placeholder container */}
+                <div className="w-12 h-12 bg-terracotta-08 flex items-center justify-center mb-5 transition-colors group-hover:bg-terracotta-12 overflow-hidden">
+                  {iconUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={iconUrl}
+                      alt={cat.name_tr}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="font-display font-medium text-terracotta text-lg">
+                      {initials}
+                    </span>
+                  )}
                 </div>
 
                 {/* Title */}
                 <h3 className="font-display font-medium text-xl text-ink mb-2 leading-tight">
-                  {cat.name}
+                  {cat.name_tr}
                 </h3>
 
-                {/* Description */}
-                <p className="text-sm text-ink-72 leading-[1.5] mb-4">
-                  {cat.description}
-                </p>
-
                 {/* Link */}
-                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 mt-2">
                   Keşfet →
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

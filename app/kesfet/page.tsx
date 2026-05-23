@@ -96,9 +96,29 @@ export default async function KesfetPage({
     query = query.eq('city_id', cityId);
   }
   if (searchQuery) {
-    query = query.or(
-      `full_name.ilike.%${searchQuery}%,company_name.ilike.%${searchQuery}%`
-    );
+    // Serbest metin: isim + firma adı + kategori adında ara.
+    // Kategori adı eşleşmesini önce kategori listesinde bulup, eşleşen
+    // kategori id'lerini sorguya ekliyoruz (ilişkili-tablo ilike'ından kaçınmak için).
+    const lowerQuery = searchQuery.toLocaleLowerCase('tr');
+    const matchedCategoryIds = (categories || [])
+      .filter((c) =>
+        c.name_tr.toLocaleLowerCase('tr').includes(lowerQuery)
+      )
+      .map((c) => c.id);
+
+    const orConditions = [
+      `full_name.ilike.%${searchQuery}%`,
+      `company_name.ilike.%${searchQuery}%`,
+    ];
+
+    if (matchedCategoryIds.length > 0) {
+      // primary_category_id IN (...) — profiles'ın kendi kolonu, join gerektirmez
+      orConditions.push(
+        `primary_category_id.in.(${matchedCategoryIds.join(',')})`
+      );
+    }
+
+    query = query.or(orConditions.join(','));
   }
 
   const { data: profilesData, error } = await query;
