@@ -8,7 +8,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="/" className="flex items-center gap-2.5 mb-4">
-              <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xl leading-none">
+              <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none">
                 k
               </span>
               <span className="font-display font-semibold text-2xl text-paper tracking-tight">

@@ -28,6 +28,7 @@ export default function GirisForm({
   const [sifre, setSifre] = useState('');
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
+  const [showSifre, setShowSifre] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +59,7 @@ export default function GirisForm({
             <div className="w-10 h-10 bg-[#C8442A] rounded flex items-center justify-center">
               <span className="font-serif text-[#FAF7F0] text-xl font-bold">k</span>
             </div>
-            <span className="font-serif text-[#1A120E] text-2xl font-bold">Kashe</span>
+            <span className="font-serif text-[#1A120E] text-2xl font-bold italic">Kashe</span>
           </div>
         </Link>
         <h1 className="font-serif text-3xl md:text-4xl text-[#1A120E] mb-3">
@@ -102,16 +103,38 @@ export default function GirisForm({
               Şifremi unuttum
             </Link>
           </div>
-          <input
-            id="sifre"
-            type="password"
-            required
-            value={sifre}
-            onChange={(e) => setSifre(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-[#1A120E]/15 rounded-lg text-[#1A120E] placeholder:text-[#1A120E]/30 focus:outline-none focus:border-[#C8442A] focus:ring-2 focus:ring-[#C8442A]/20 transition"
-            placeholder="••••••••"
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <input
+              id="sifre"
+              type={showSifre ? 'text' : 'password'}
+              required
+              value={sifre}
+              onChange={(e) => setSifre(e.target.value)}
+              className="w-full px-4 py-3 pr-12 bg-white border border-[#1A120E]/15 rounded-lg text-[#1A120E] placeholder:text-[#1A120E]/30 focus:outline-none focus:border-[#C8442A] focus:ring-2 focus:ring-[#C8442A]/20 transition"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSifre((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A120E]/40 hover:text-[#1A120E]/70 transition-colors"
+              aria-label={showSifre ? 'Şifreyi gizle' : 'Şifreyi göster'}
+            >
+              {showSifre ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                  <line x1="2" y1="2" x2="22" y2="22" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         {hata && (

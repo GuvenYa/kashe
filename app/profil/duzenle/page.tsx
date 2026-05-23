@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { DuzenleForm } from './duzenle-form';
+import { orderCities } from '@/app/lib/city-order';
 import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
 export const metadata = {
@@ -53,7 +54,7 @@ export default async function ProfilDuzenlePage() {
 
           <DuzenleForm
             profile={profile as Profile}
-            cities={(cities || []) as TurkishCity[]}
+            cities={orderCities((cities || []) as TurkishCity[])}
             categories={(categories || []) as ServiceCategory[]}
           />
         </div>

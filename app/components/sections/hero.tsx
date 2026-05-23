@@ -1,6 +1,7 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Button } from "@/app/components/ui/button";
 import { createClient } from "@/app/lib/supabase-server";
+import { orderCities } from "@/app/lib/city-order";
 import { QuickSearch } from "./quick-search";
 
 export async function Hero() {
@@ -15,7 +16,7 @@ export async function Hero() {
   ]);
 
   const categories = categoriesData || [];
-  const cities = citiesData || [];
+  const cities = orderCities(citiesData || []);
 
   return (
     <section className="relative overflow-hidden bg-paper">

@@ -141,7 +141,7 @@ export function MobileNav({
                   <a href="/bildirimler" className={linkClassInlineBadge}>
                     Bildirimler
                     {notificationCount > 0 && (
-                      <span className="min-w-[18px] h-[18px] px-1.5 bg-terracotta text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none">
+                      <span className="min-w-[18px] h-[18px] px-1.5 bg-terracotta text-paper text-[10px] font-mono font-bold italic rounded-full flex items-center justify-center leading-none">
                         {notificationCount > 99 ? '99+' : notificationCount}
                       </span>
                     )}

@@ -7,6 +7,7 @@ import { KesfetFilters } from './kesfet-filters';
 import { SortDropdown } from './sort-dropdown';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
+import { orderCities } from '@/app/lib/city-order';
 import type {
   ServiceCategory,
   TurkishCity,
@@ -229,7 +230,7 @@ export default async function KesfetPage({
 
           <KesfetFilters
             categories={(categories || []) as ServiceCategory[]}
-            cities={(cities || []) as TurkishCity[]}
+            cities={orderCities((cities || []) as TurkishCity[])}
             currentCategory={categoryId}
             currentCity={cityId}
             currentSearch={searchQuery}

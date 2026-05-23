@@ -83,11 +83,38 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Telefon: kullanıcı sadece "5XX XXX XX XX" girer, +90 sabit prefix.
+  // DB'ye +905XXXXXXXXX olarak gider.
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const config = roleConfig[role];
+
+  // Telefon maskeleme: ham rakamları "5XX XXX XX XX" formatına çevir
+  function formatPhone(raw: string): string {
+    // Sadece rakamları al, baştaki 0/90'ı temizle, max 10 hane (5XXXXXXXXX)
+    let digits = raw.replace(/\D/g, "");
+    // Kullanıcı 0 ya da 90 ile başlarsa temizle
+    if (digits.startsWith("90")) digits = digits.slice(2);
+    if (digits.startsWith("0")) digits = digits.slice(1);
+    digits = digits.slice(0, 10); // 5XX XXX XX XX = 10 hane
+
+    // Formatla: 5XX XXX XX XX
+    const parts: string[] = [];
+    if (digits.length > 0) parts.push(digits.slice(0, 3));
+    if (digits.length > 3) parts.push(digits.slice(3, 6));
+    if (digits.length > 6) parts.push(digits.slice(6, 8));
+    if (digits.length > 8) parts.push(digits.slice(8, 10));
+    return parts.join(" ");
+  }
+
+  // Maskeli görünümden ham haneleri çıkar (DB için)
+  function phoneDigits(masked: string): string {
+    return masked.replace(/\D/g, "").slice(0, 10);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +122,10 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
     setLoading(true);
 
     try {
+      // Telefon opsiyonel: doluysa +90 dahil tam format, boşsa null
+      const digits = phoneDigits(phone);
+      const fullPhone = digits.length === 10 ? `+90${digits}` : null;
+
       const { error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
@@ -103,6 +134,7 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
           data: {
             full_name: fullName.trim(),
             role: config.role,
+            phone: fullPhone,
           },
         },
       });
@@ -221,17 +253,65 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
 
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+            Telefon <span className="text-ink-50 normal-case tracking-normal">(opsiyonel)</span>
+          </label>
+          <div className="flex items-stretch gap-2">
+            <span className="inline-flex items-center px-3 bg-white border border-line rounded-lg text-ink font-mono text-sm select-none">
+              +90
+            </span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              placeholder="5XX XXX XX XX"
+              disabled={loading}
+              className="flex-1 w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            />
+          </div>
+          {phone && phoneDigits(phone).length > 0 && phoneDigits(phone).length < 10 && (
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ember">
+              Numara eksik görünüyor (10 hane: 5XX XXX XX XX)
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
             Şifre
           </label>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Güçlü bir şifre seç"
-            required
-            minLength={8}
-            disabled={loading}
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Güçlü bir şifre seç"
+              required
+              minLength={8}
+              disabled={loading}
+              className="pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-50 hover:text-ink-72 transition-colors"
+              aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+            >
+              {showPassword ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                  <line x1="2" y1="2" x2="22" y2="22" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
           <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
             En az 8 karakter · Yaygın şifreleri kullanma
           </p>
