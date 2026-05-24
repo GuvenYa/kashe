@@ -213,8 +213,64 @@ export default async function ProfilPage() {
             </Link>
           </div>
 
-          {/* PUBLISH TOGGLE */}
-          {(isPro || isBusinessUser) && (
+          {/* ONAY DURUMU GÖSTERGESİ — client hariç */}
+          {!isClientUser && profile.approval_status !== 'approved' && (
+            <div className="mb-8">
+              {profile.approval_status === 'pending' && (
+                <div className="bg-white border border-line rounded-lg p-5 flex items-start gap-3">
+                  <span className="mt-0.5 w-2.5 h-2.5 rounded-full bg-terracotta shrink-0 animate-pulse" />
+                  <div>
+                    <p className="font-display text-base text-ink">
+                      Profilin onay bekliyor
+                    </p>
+                    <p className="text-sm text-ink-72 mt-1">
+                      Ekibimiz profilini inceliyor. Onaylandığında otomatik olarak
+                      yayına alınacak. Bu sırada bilgilerini düzenlemeye devam
+                      edebilirsin.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {profile.approval_status === 'revision' && (
+                <div className="bg-terracotta/5 border border-terracotta/30 rounded-lg p-5">
+                  <p className="font-display text-base text-ink mb-1">
+                    Revizyon istendi
+                  </p>
+                  <p className="text-sm text-ink-72">
+                    Profilin yayına alınabilmesi için bazı düzenlemeler gerekiyor:
+                  </p>
+                  {profile.approval_note && (
+                    <p className="text-sm text-ink mt-2 p-3 bg-white border border-line rounded">
+                      {profile.approval_note}
+                    </p>
+                  )}
+                  <p className="text-sm text-ink-72 mt-3">
+                    Düzenlemeleri yaptıktan sonra profilin tekrar incelenecek.
+                  </p>
+                </div>
+              )}
+
+              {profile.approval_status === 'rejected' && (
+                <div className="bg-ember/5 border border-ember/40 rounded-lg p-5">
+                  <p className="font-display text-base text-ink mb-1">
+                    Profil reddedildi
+                  </p>
+                  {profile.approval_note && (
+                    <p className="text-sm text-ink mt-2 p-3 bg-white border border-line rounded">
+                      {profile.approval_note}
+                    </p>
+                  )}
+                  <p className="text-sm text-ink-72 mt-3">
+                    Sorularınız için destek ekibiyle iletişime geçebilirsin.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PUBLISH TOGGLE — sadece approved profiller yayın kontrolü görür */}
+          {(isPro || isBusinessUser) && profile.approval_status === 'approved' && (
             <div className="mb-8">
               <PublishToggle
                 isPublished={profile.is_published}

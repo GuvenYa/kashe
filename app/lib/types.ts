@@ -13,6 +13,11 @@ export type Profile = {
   city_id: number | null;
   slug: string | null;
   is_published: boolean;
+  approval_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'revision';
+  approval_note: string | null;
+  approved_at: string | null;
+  kvkk_approved_at: string | null;
+  is_admin: boolean;
   primary_category_id: number | null;
   company_name: string | null;
   created_at: string;

@@ -21,6 +21,15 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
+  // Mevcut onay durumunu al (revision ise kaydetme sonrası tekrar pending'e çekeceğiz)
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('approval_status')
+    .eq('id', user.id)
+    .single();
+  const currentApproval = (currentProfile as { approval_status?: string } | null)
+    ?.approval_status;
+
   const fullName = formData.get('full_name')?.toString().trim() || '';
   const bio = formData.get('bio')?.toString().trim() || null;
   const phone = formData.get('phone')?.toString().trim() || null;
@@ -52,16 +61,25 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     return { success: false, error: 'Şirket adı 200 karakterden uzun olamaz.' };
   }
 
+  // Model 3: Sadece revision durumundaki profil, düzenlenince tekrar pending'e döner
+  // (otomatik "tekrar incele"). approved/rejected/pending'e dokunulmaz.
+  const updatePayload: Record<string, unknown> = {
+    full_name: fullName,
+    bio,
+    phone,
+    city_id: cityId,
+    primary_category_id: primaryCategoryId,
+    company_name: companyName,
+  };
+
+  if (currentApproval === 'revision') {
+    updatePayload.approval_status = 'pending';
+    updatePayload.approval_note = null; // eski revizyon notunu temizle
+  }
+
   const { error } = await supabase
     .from('profiles')
-    .update({
-      full_name: fullName,
-      bio,
-      phone,
-      city_id: cityId,
-      primary_category_id: primaryCategoryId,
-      company_name: companyName,
-    })
+    .update(updatePayload)
     .eq('id', user.id);
 
   if (error) {
@@ -70,6 +88,8 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
 
   revalidatePath('/profil');
   revalidatePath('/profil/duzenle');
+  revalidatePath('/admin/profiller');
+  revalidatePath('/admin');
   return { success: true };
 }
 
@@ -97,6 +117,19 @@ export async function togglePublish(publish: boolean): Promise<UpdateProfileResu
 
     if (!profile) {
       return { success: false, error: 'Profil bulunamadı.' };
+    }
+
+    // Model B: Sadece admin onayı (approved) almış profiller yayınlanabilir.
+    // client onaysız çalışır (zaten yayınlanmıyor ama güvenlik için kontrol dışı).
+    if (
+      (profile as Profile).role !== 'client' &&
+      (profile as { approval_status?: string }).approval_status !== 'approved'
+    ) {
+      return {
+        success: false,
+        error:
+          'Profilin yayınlanabilmesi için önce admin onayı gerekiyor. Onay durumunu profil sayfanda görebilirsin.',
+      };
     }
 
     // Profesyonel için aktif hizmetleri de çek (yayın şartı)
