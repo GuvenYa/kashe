@@ -18,6 +18,9 @@ type Props = {
 
 const STATUS_TABS: { key: ListingStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Tümü' },
+  { key: 'pending_approval', label: 'Onay Bekleyen' },
+  { key: 'revision', label: 'Revizyonda' },
+  { key: 'rejected', label: 'Reddedilen' },
   { key: 'published', label: 'Yayında' },
   { key: 'draft', label: 'Taslak' },
   { key: 'closed', label: 'Kapatılan' },

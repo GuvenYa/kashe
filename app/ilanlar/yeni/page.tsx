@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
+import { orderCities } from '@/app/lib/city-order';
 import { YeniIlanFormu } from './yeni-ilan-formu';
 
 export default async function YeniIlanPage() {
@@ -95,7 +96,7 @@ export default async function YeniIlanPage() {
 
         <YeniIlanFormu
           categories={categoriesResult.data || []}
-          cities={citiesResult.data || []}
+          cities={orderCities(citiesResult.data || [])}
         />
       </div>
     </div>

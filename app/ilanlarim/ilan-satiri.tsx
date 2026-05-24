@@ -100,7 +100,6 @@ export function IlanSatiri({ listing }: Props) {
       {/* Header: kategori + status */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
-          {categoryEmoji && <span>{categoryEmoji}</span>}
           {categoryName}
         </span>
         <span
@@ -141,6 +140,30 @@ export function IlanSatiri({ listing }: Props) {
         </span>
       </div>
 
+      {/* Admin notu — revizyon veya red durumunda */}
+      {(listing.status === 'revision' || listing.status === 'rejected') &&
+        listing.approval_note && (
+          <div
+            className={`mb-4 p-3 rounded-lg border text-sm ${
+              listing.status === 'revision'
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-terracotta/5 border-terracotta/30 text-ink'
+            }`}
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] mb-1">
+              {listing.status === 'revision'
+                ? 'Revizyon istendi'
+                : 'Reddedildi'}
+            </p>
+            <p>{listing.approval_note}</p>
+            {listing.status === 'revision' && (
+              <p className="text-xs mt-2 opacity-80">
+                Düzenleyip kaydedince ilan tekrar onaya gönderilir.
+              </p>
+            )}
+          </div>
+        )}
+
       {error && (
         <p className="text-xs text-terracotta mb-2">{error}</p>
       )}
@@ -171,7 +194,9 @@ export function IlanSatiri({ listing }: Props) {
         )}
 
         {(listing.status === 'draft' ||
-          listing.status === 'published') && (
+          listing.status === 'published' ||
+          listing.status === 'revision' ||
+          listing.status === 'rejected') && (
           <Link
             href={`/ilanlar/${listing.id}/duzenle`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"

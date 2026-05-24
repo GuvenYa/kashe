@@ -38,6 +38,98 @@ const EVENT_TYPE_OPTIONS = [
   { key: 'other', label: 'Diğer' },
 ];
 
+// Kategori adına göre örnek başlık/açıklama placeholder'ı.
+// name_tr'nin içinde geçen anahtar kelimeye göre eşleşir (slug bağımsız).
+function getPlaceholders(categoryName: string | undefined): {
+  title: string;
+  description: string;
+} {
+  const name = (categoryName || '').toLocaleLowerCase('tr');
+  const map: { match: string; title: string; description: string }[] = [
+    {
+      match: 'fotoğraf',
+      title: "Örn: Düğünümüz için profesyonel fotoğrafçı arıyoruz",
+      description:
+        'Örn: 15 Haziran düğünümüz için dış çekim + tören + after party fotoğrafı çekecek, kıvrak ve deneyimli bir fotoğrafçı arıyoruz. Yaklaşık 6 saatlik çekim, 2 hafta içinde teslim bekliyoruz.',
+    },
+    {
+      match: 'videograf',
+      title: "Örn: Nişan töreni için videograf arıyoruz",
+      description:
+        'Örn: Nişan törenimizi 4K kalitede çekip kısa bir kurgu video hazırlayacak bir videograf arıyoruz. Drone çekimi tercihimiz. Etkinlik 3 saat sürecek.',
+    },
+    {
+      match: 'dj',
+      title: "Örn: Doğum günü partisi için DJ arıyoruz",
+      description:
+        'Örn: 50 kişilik açık hava doğum günü için 4 saatlik performans verecek, ekipmanını getiren bir DJ arıyoruz. Pop ve remix ağırlıklı bir set bekliyoruz.',
+    },
+    {
+      match: 'müzisyen',
+      title: "Örn: Akşam yemeği için canlı müzik arıyoruz",
+      description:
+        'Örn: 30 kişilik özel davette 2 saatlik akustik performans verecek bir müzisyen/grup arıyoruz. Türkçe ve yabancı slow repertuvar tercihimiz.',
+    },
+    {
+      match: 'sunucu',
+      title: "Örn: Kurumsal lansman için sunucu arıyoruz",
+      description:
+        'Örn: 200 kişilik kurumsal lansman etkinliğimizde akışı yönetecek, deneyimli ve diksiyon sahibi bir sunucu arıyoruz. Etkinlik yaklaşık 3 saat.',
+    },
+    {
+      match: 'hostes',
+      title: "Örn: Fuar standımız için hostes arıyoruz",
+      description:
+        'Örn: 3 gün sürecek fuar için standımızda karşılama ve yönlendirme yapacak 2 hostes arıyoruz. İngilizce bilen, sunum yeteneği güçlü kişiler tercih edilir.',
+    },
+    {
+      match: 'oyuncu',
+      title: "Örn: Reklam filmi için oyuncu arıyoruz",
+      description:
+        'Örn: Marka reklam filmimiz için 25-35 yaş arası, kameraya hakim bir oyuncu arıyoruz. 1 günlük çekim, İstanbul. Showreel paylaşmanızı rica ederiz.',
+    },
+    {
+      match: 'model',
+      title: "Örn: Katalog çekimi için model arıyoruz",
+      description:
+        'Örn: Yeni sezon koleksiyonumuzun katalog çekimi için model arıyoruz. 1 günlük stüdyo çekimi. Ölçü ve portfolyo bilgisi paylaşmanızı bekliyoruz.',
+    },
+    {
+      match: 'palyaço',
+      title: "Örn: Çocuk doğum günü için palyaço arıyoruz",
+      description:
+        'Örn: 6 yaş doğum günü partisi için 1 saatlik gösteri yapacak, balon ve animasyon içeren bir palyaço arıyoruz. 15 çocuk olacak.',
+    },
+    {
+      match: 'illüzyon',
+      title: "Örn: Etkinlik için illüzyonist arıyoruz",
+      description:
+        'Örn: Kurumsal gala yemeğimizde masalar arası ve sahne gösterisi yapacak bir illüzyonist arıyoruz. Yaklaşık 1 saatlik performans.',
+    },
+    {
+      match: 'organizasyon',
+      title: "Örn: Düğün organizasyonu için ajans arıyoruz",
+      description:
+        'Örn: 300 kişilik düğünümüzün baştan sona organizasyonunu üstlenecek bir ekip arıyoruz. Mekan, ikram, dekor ve koordinasyon dahil komple hizmet.',
+    },
+    {
+      match: 'ses',
+      title: "Örn: Konser için ses & ışık ekibi arıyoruz",
+      description:
+        'Örn: 500 kişilik açık hava etkinliğimiz için ses ve ışık sistemini kuracak, operasyonunu yönetecek teknik ekip arıyoruz. Mekan keşfi yapılabilir.',
+    },
+  ];
+
+  const found = map.find((m) => name.includes(m.match));
+  return (
+    found ?? {
+      title: 'Örn: Etkinliğim için profesyonel arıyorum',
+      description:
+        'Etkinliğin detayları, neye ihtiyacın olduğu, beklediğin sonuç. Net yazılan ilan kaliteli başvuru çeker.',
+    }
+  );
+}
+
 export function YeniIlanFormu({ categories, cities, initialData }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -101,12 +193,12 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       setError('Kategori seçmelisin');
       return;
     }
-    if (title.trim().length < 10) {
-      setError('Başlık en az 10 karakter olmalı');
+    if (title.trim().length < 3) {
+      setError('Başlık en az 3 karakter olmalı');
       return;
     }
-    if (description.trim().length < 30) {
-      setError('Açıklama en az 30 karakter olmalı');
+    if (description.trim().length < 10) {
+      setError('Açıklama en az 10 karakter olmalı');
       return;
     }
 
@@ -200,6 +292,12 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
     });
   }
 
+  // Seçili kategorinin adına göre dinamik placeholder
+  const selectedCategoryName = categories.find(
+    (c) => c.id === categoryId
+  )?.name_tr;
+  const placeholders = getPlaceholders(selectedCategoryName);
+
   const showCustomBudget = budgetPreset === 'custom';
   const showPresetInfo = budgetPreset !== 'open' && budgetPreset !== 'custom';
   const selectedPreset = BUDGET_PRESETS.find((p) => p.key === budgetPreset);
@@ -232,7 +330,6 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               <option value="">Kategori seç...</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.emoji ? `${cat.emoji} ` : ''}
                   {cat.name_tr}
                 </option>
               ))}
@@ -251,13 +348,13 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Örn: Maltepe'de düğün için fotoğrafçı"
+              placeholder={placeholders.title}
               maxLength={200}
               required
               className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
-              {title.length} / 200 karakter (en az 10)
+              {title.length} / 200 karakter (en az 3)
             </p>
           </div>
 
@@ -269,14 +366,14 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Etkinliğin detayları, neye ihtiyacın olduğu, beklediğin sonuç. Net yazılan ilan kaliteli başvuru çeker."
+              placeholder={placeholders.description}
               rows={6}
               maxLength={5000}
               required
               className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
-              {description.length} / 5000 karakter (en az 30)
+              {description.length} / 5000 karakter (en az 10)
             </p>
           </div>
 
@@ -487,9 +584,10 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 className="mt-1 accent-terracotta"
               />
               <div>
-                <p className="font-medium text-ink text-sm">Hemen yayınla</p>
+                <p className="font-medium text-ink text-sm">Yayınla</p>
                 <p className="text-xs text-ink-72 mt-0.5">
-                  İlan anında ilan tahtasında görünür, başvuru kabul eder.
+                  İlan admin onayına gönderilir. Onaylandıktan sonra ilan
+                  tahtasında görünür ve başvuru kabul eder.
                 </p>
               </div>
             </div>

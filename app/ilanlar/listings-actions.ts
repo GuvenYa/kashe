@@ -107,7 +107,8 @@ export async function createListing(
       guest_count: input.guest_count,
       budget_min: input.budget_min,
       budget_max: input.budget_max,
-      status: input.publish_immediately ? 'published' : 'draft',
+      // Yayınla = admin onayına gönder (pending_approval). Aksi halde taslak.
+      status: input.publish_immediately ? 'pending_approval' : 'draft',
     })
     .select('id')
     .single();
@@ -157,6 +158,12 @@ export async function updateListing(
     return { success: false, error: 'Bu ilan artık düzenlenemez' };
   }
 
+  // Model 3: revision veya rejected ilan düzenlenince tekrar onaya gider (pending_approval).
+  // published düzenlenince published kalır (karar a). draft draft kalır.
+  const currentStatus = existing.status as ListingStatus;
+  const shouldResubmit =
+    currentStatus === 'revision' || currentStatus === 'rejected';
+
   // Yalnızca verilen alanları güncelle
   const updateData: Record<string, unknown> = {};
   if (input.title !== undefined) updateData.title = input.title.trim();
@@ -194,6 +201,12 @@ export async function updateListing(
     }
   }
 
+  // Revision/rejected ilan düzenlenince tekrar onaya gönder + eski notu temizle
+  if (shouldResubmit) {
+    updateData.status = 'pending_approval';
+    updateData.approval_note = null;
+  }
+
   const { error } = await supabase
     .from('listings')
     .update(updateData)
@@ -206,16 +219,19 @@ export async function updateListing(
   revalidatePath('/ilanlar');
   revalidatePath('/ilanlarim');
   revalidatePath(`/ilanlar/${input.id}`);
+  revalidatePath('/admin/ilanlar');
+  revalidatePath('/admin');
   return { success: true };
 }
 
 /**
- * Draft → published geçişi.
+ * Yayınla → admin onayına gönder (draft/revision/rejected → pending_approval).
+ * Admin onaylayınca published olur.
  */
 export async function publishListing(
   listingId: string
 ): Promise<ActionResult> {
-  return updateListingStatus(listingId, 'published', canPublishListing);
+  return updateListingStatus(listingId, 'pending_approval', canPublishListing);
 }
 
 /**

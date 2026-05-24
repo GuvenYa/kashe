@@ -11,6 +11,9 @@ import { EVENT_TYPES, type EventTypeKey } from '../mesajlar/data';
 
 export type ListingStatus =
   | 'draft'
+  | 'pending_approval'
+  | 'revision'
+  | 'rejected'
   | 'published'
   | 'closed'
   | 'filled'
@@ -48,6 +51,7 @@ export type Listing = {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  approval_note: string | null;
 };
 
 export type Application = {
@@ -96,6 +100,9 @@ export type ApplicationWithRelations = Application & {
 
 export const LISTING_STATUS_OPTIONS: { key: ListingStatus; label: string }[] = [
   { key: 'draft', label: 'Taslak' },
+  { key: 'pending_approval', label: 'Onay bekliyor' },
+  { key: 'revision', label: 'Revizyon istendi' },
+  { key: 'rejected', label: 'Reddedildi' },
   { key: 'published', label: 'Yayında' },
   { key: 'closed', label: 'Kapatıldı' },
   { key: 'filled', label: 'Dolduruldu' },
@@ -158,6 +165,11 @@ export function getListingStatusTone(
   switch (status) {
     case 'draft':
       return 'neutral';
+    case 'pending_approval':
+    case 'revision':
+      return 'pending';
+    case 'rejected':
+      return 'danger';
     case 'published':
       return 'success';
     case 'closed':
@@ -291,10 +303,10 @@ export function validateListingInput(input: {
   category_id: number | null;
 }): string | null {
   if (!input.category_id) return 'Kategori seçmelisin';
-  if (input.title.trim().length < 10) return 'Başlık en az 10 karakter olmalı';
+  if (input.title.trim().length < 3) return 'Başlık en az 3 karakter olmalı';
   if (input.title.length > 200) return 'Başlık 200 karakteri geçemez';
-  if (input.description.trim().length < 30)
-    return 'Açıklama en az 30 karakter olmalı';
+  if (input.description.trim().length < 10)
+    return 'Açıklama en az 10 karakter olmalı';
   if (input.description.length > 5000)
     return 'Açıklama 5000 karakteri geçemez';
   return null;
@@ -320,8 +332,9 @@ export function validateApplicationInput(input: {
  * Status'e göre transition izinleri.
  * UI'da action butonları gösterirken kullan.
  */
+// Kullanıcı "yayınla"ya basabilir mi? draft veya revision/rejected'tan tekrar gönderebilir.
 export function canPublishListing(status: ListingStatus): boolean {
-  return status === 'draft';
+  return status === 'draft' || status === 'revision' || status === 'rejected';
 }
 
 export function canCloseListing(status: ListingStatus): boolean {
@@ -329,13 +342,26 @@ export function canCloseListing(status: ListingStatus): boolean {
 }
 
 export function canCancelListing(status: ListingStatus): boolean {
-  return status === 'draft' || status === 'published';
+  return (
+    status === 'draft' ||
+    status === 'published' ||
+    status === 'pending_approval' ||
+    status === 'revision'
+  );
 }
 
+// Düzenlenebilir: yayında değilken serbest. published de düzenlenebilir (karar a, yeniden onaya girmez).
 export function canEditListing(status: ListingStatus): boolean {
-  return status === 'draft' || status === 'published';
+  return (
+    status === 'draft' ||
+    status === 'published' ||
+    status === 'revision' ||
+    status === 'rejected' ||
+    status === 'pending_approval'
+  );
 }
 
+// Başvuru sadece yayında ilana yapılır
 export function canApplyToListing(status: ListingStatus): boolean {
   return status === 'published';
 }

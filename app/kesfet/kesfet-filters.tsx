@@ -78,7 +78,7 @@ export function KesfetFilters({
           <option value="">Tüm kategoriler</option>
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
-              {cat.emoji ? `${cat.emoji} ${cat.name_tr}` : cat.name_tr}
+              {cat.name_tr}
             </option>
           ))}
         </select>
