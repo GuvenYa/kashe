@@ -193,7 +193,7 @@ export default async function FavorilerPage() {
       `
       id, city_id, primary_category_id,
       turkish_cities(name),
-      service_categories!profiles_primary_category_id_fkey(name_tr, emoji)
+      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
     )
     .in('id', professionalIds);
@@ -202,7 +202,7 @@ export default async function FavorilerPage() {
     string,
     {
       turkish_cities: { name: string } | null;
-      service_categories: { name_tr: string; emoji: string | null } | null;
+      service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
     }
   >();
 
