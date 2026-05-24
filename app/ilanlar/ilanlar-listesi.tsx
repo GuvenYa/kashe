@@ -11,6 +11,7 @@ import {
   getEventTypeLabel,
   type ListingWithRelations,
 } from './listings-data';
+import { getCategoryIcon } from '@/app/lib/category-icon';
 
 type Category = {
   id: number;
@@ -133,7 +134,6 @@ export function IlanlarListesi({
               <option value="">Tümü</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.slug}>
-                  {cat.emoji ? `${cat.emoji} ` : ''}
                   {cat.name_tr}
                 </option>
               ))}
@@ -222,6 +222,7 @@ export function IlanlarListesi({
 
 function IlanCard({ listing }: { listing: ListingWithRelations }) {
   const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
+  const categoryIcon = getCategoryIcon(listing.service_categories?.slug);
   const cityName = listing.turkish_cities?.name;
   const eventTypeLabel = listing.event_type
     ? getEventTypeLabel(listing.event_type)
@@ -239,11 +240,15 @@ function IlanCard({ listing }: { listing: ListingWithRelations }) {
     >
       {/* Kategori + tarih */}
       <div className="flex items-center justify-between mb-3">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
-          {listing.service_categories?.emoji && (
-            <span className="text-xs">
-              {listing.service_categories.emoji}
-            </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
+          {categoryIcon && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={categoryIcon}
+              alt=""
+              className="w-5 h-5 object-contain"
+              aria-hidden="true"
+            />
           )}
           {categoryLabel}
         </span>

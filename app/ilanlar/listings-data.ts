@@ -66,7 +66,7 @@ export type Application = {
 // Joined types (UI'da kullanılan)
 
 export type ListingWithRelations = Listing & {
-  service_categories: { name_tr: string; emoji: string | null } | null;
+  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
   turkish_cities: { name: string } | null;
   creator: {
     id: string;

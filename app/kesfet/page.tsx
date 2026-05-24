@@ -27,7 +27,7 @@ type PublishedProfile = {
   company_name: string | null;
   role: string;
   turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string; emoji: string | null } | null;
+  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
 
 type ServicePriceInfo = {
@@ -76,7 +76,7 @@ export default async function KesfetPage({
       `
       id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role,
       turkish_cities(name),
-      service_categories!profiles_primary_category_id_fkey(name_tr, emoji)
+      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
     )
     .eq('is_published', true)

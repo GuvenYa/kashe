@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatPriceRange } from '@/app/lib/profile-helpers';
 import FavoriteButton from '@/app/components/FavoriteButton';
+import { getCategoryIcon } from '@/app/lib/category-icon';
 
 type Props = {
   profile: {
@@ -11,7 +12,7 @@ type Props = {
     company_name: string | null;
     role: string;
     turkish_cities: { name: string } | null;
-    service_categories: { name_tr: string; emoji: string | null } | null;
+    service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
   };
   services: {
     price_min: number | null;
@@ -51,9 +52,8 @@ export function ProfileCard({
     .join('')
     .toUpperCase();
 
-  const categoryLabel = profile.service_categories
-    ? `${profile.service_categories.emoji || ''} ${profile.service_categories.name_tr}`.trim()
-    : null;
+  const categoryName = profile.service_categories?.name_tr ?? null;
+  const categoryIcon = getCategoryIcon(profile.service_categories?.slug);
 
   const cityName = profile.turkish_cities?.name;
 
@@ -108,9 +108,18 @@ export function ProfileCard({
                 Ajans
               </span>
             ) : (
-              categoryLabel && (
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
-                  {categoryLabel}
+              categoryName && (
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1 flex items-center gap-1.5">
+                  {categoryIcon && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={categoryIcon}
+                      alt=""
+                      className="w-4 h-4 object-contain"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {categoryName}
                 </p>
               )
             )}

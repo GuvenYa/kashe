@@ -56,7 +56,7 @@ export default async function IlanlarPage({
     .select(
       `
       *,
-      service_categories (name_tr, emoji),
+      service_categories (name_tr, emoji, slug),
       turkish_cities (name),
       creator:profiles!listings_creator_id_fkey (
         id, full_name, avatar_url, company_name, role

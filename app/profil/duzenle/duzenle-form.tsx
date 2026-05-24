@@ -8,6 +8,30 @@ import { AvatarUpload } from './avatar-upload';
 import { isProfessional, isBusiness } from '@/app/lib/profile-helpers';
 import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
+// Telefon yardımcıları (kayıt formuyla tutarlı)
+function formatPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('90')) digits = digits.slice(2);
+  if (digits.startsWith('0')) digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  const parts: string[] = [];
+  if (digits.length > 0) parts.push(digits.slice(0, 3));
+  if (digits.length > 3) parts.push(digits.slice(3, 6));
+  if (digits.length > 6) parts.push(digits.slice(6, 8));
+  if (digits.length > 8) parts.push(digits.slice(8, 10));
+  return parts.join(' ');
+}
+
+function phoneDigits(masked: string): string {
+  return masked.replace(/\D/g, '').slice(0, 10);
+}
+
+// DB'deki +905XXXXXXXXX (veya eski/serbest format) → maskeli 5XX XXX XX XX
+function maskFromStored(stored: string | null): string {
+  if (!stored) return '';
+  return formatPhone(stored);
+}
+
 type Props = {
   profile: Profile;
   cities: TurkishCity[];
@@ -22,7 +46,8 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
 
   const [fullName, setFullName] = useState(profile.full_name || '');
   const [bio, setBio] = useState(profile.bio || '');
-  const [phone, setPhone] = useState(profile.phone || '');
+  // Telefon: DB'de +905XXXXXXXXX formatında. Maskeli görünüme (5XX XXX XX XX) çevirip göster.
+  const [phone, setPhone] = useState(maskFromStored(profile.phone));
   const [cityId, setCityId] = useState<string>(
     profile.city_id ? String(profile.city_id) : ''
   );
@@ -42,7 +67,10 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
     const formData = new FormData();
     formData.append('full_name', fullName);
     formData.append('bio', bio);
-    formData.append('phone', phone);
+    // Telefon: doluysa +90 dahil tam format, eksik/boşsa boş string
+    const digits = phoneDigits(phone);
+    const fullPhone = digits.length === 10 ? `+90${digits}` : '';
+    formData.append('phone', fullPhone);
     formData.append('city_id', cityId);
     formData.append('primary_category_id', primaryCategoryId);
     formData.append('company_name', companyName);
@@ -157,16 +185,25 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
           <label htmlFor="phone" className={labelClass}>
             Telefon
           </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            maxLength={20}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className={inputClass}
-            placeholder="0555 555 55 55"
-          />
+          <div className="flex items-stretch gap-2">
+            <span className="inline-flex items-center px-3 bg-white border border-line rounded-lg text-ink font-mono text-sm select-none">
+              +90
+            </span>
+            <input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              className={`${inputClass} flex-1`}
+              placeholder="5XX XXX XX XX"
+            />
+          </div>
+          {phone && phoneDigits(phone).length > 0 && phoneDigits(phone).length < 10 && (
+            <p className="text-xs text-terracotta mt-1.5">
+              Numara eksik görünüyor (10 hane: 5XX XXX XX XX)
+            </p>
+          )}
         </div>
 
         <div>

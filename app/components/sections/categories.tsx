@@ -1,20 +1,13 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
+import { getCategoryIcon } from "@/app/lib/category-icon";
 
 type CategoryRow = {
   id: number;
   slug: string;
   name_tr: string;
 };
-
-// İkon eşleme — ikonlar public/icons/ klasörüne eklenince burası dolacak.
-// Şimdilik null döndürür; kart placeholder (baş harf) gösterir.
-// Görsel hazır olunca: return `/icons/${slug}.svg` (veya .gif / .webp / .json)
-function getCategoryIcon(slug: string): string | null {
-  void slug;
-  return null;
-}
 
 export async function Categories() {
   const supabase = await createClient();
@@ -58,16 +51,16 @@ export async function Categories() {
                 className="group bg-card border border-line p-6 transition-all duration-200 hover:border-terracotta hover:-translate-y-0.5"
               >
                 {/* Icon / placeholder container */}
-                <div className="w-12 h-12 bg-terracotta-08 flex items-center justify-center mb-5 transition-colors group-hover:bg-terracotta-12 overflow-hidden">
+                <div className="w-20 h-20 bg-terracotta-08 flex items-center justify-center mb-5 rounded-lg transition-colors group-hover:bg-terracotta-12 overflow-hidden">
                   {iconUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={iconUrl}
                       alt={cat.name_tr}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain p-1"
                     />
                   ) : (
-                    <span className="font-display font-medium text-terracotta text-lg">
+                    <span className="font-display font-medium text-terracotta text-2xl">
                       {initials}
                     </span>
                   )}
