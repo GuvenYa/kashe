@@ -7,12 +7,17 @@ export default async function AdminDashboard() {
   // Hızlı sayaçlar — onay bekleyenler
   const [
     { count: pendingProfiles },
+    { count: pendingListings },
     { count: totalUsers },
   ] = await Promise.all([
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('approval_status', 'pending'),
+    supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending_approval'),
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
   ]);
 
@@ -21,6 +26,11 @@ export default async function AdminDashboard() {
       label: 'Onay bekleyen profiller',
       value: pendingProfiles ?? 0,
       href: '/admin/profiller',
+    },
+    {
+      label: 'Onay bekleyen ilanlar',
+      value: pendingListings ?? 0,
+      href: '/admin/ilanlar',
     },
     {
       label: 'Toplam kullanıcı',
