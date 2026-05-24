@@ -62,7 +62,15 @@ const roleConfig = {
 
 type RoleKey = keyof typeof roleConfig;
 
-export function UyeOlForm({ initialRole }: { initialRole: string }) {
+type CityOption = { id: number; name: string };
+
+export function UyeOlForm({
+  initialRole,
+  cities,
+}: {
+  initialRole: string;
+  cities: CityOption[];
+}) {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,6 +94,8 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
   // Telefon: kullanıcı sadece "5XX XXX XX XX" girer, +90 sabit prefix.
   // DB'ye +905XXXXXXXXX olarak gider.
   const [phone, setPhone] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [kvkk, setKvkk] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -122,9 +132,28 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
     setLoading(true);
 
     try {
-      // Telefon opsiyonel: doluysa +90 dahil tam format, boşsa null
+      // Telefon ZORUNLU: 10 hane değilse hata
       const digits = phoneDigits(phone);
-      const fullPhone = digits.length === 10 ? `+90${digits}` : null;
+      if (digits.length !== 10) {
+        setError("Geçerli bir telefon numarası gir (5XX XXX XX XX).");
+        setLoading(false);
+        return;
+      }
+      const fullPhone = `+90${digits}`;
+
+      // Şehir ZORUNLU
+      if (!cityId) {
+        setError("Lütfen şehrini seç.");
+        setLoading(false);
+        return;
+      }
+
+      // KVKK ZORUNLU
+      if (!kvkk) {
+        setError("Devam etmek için KVKK ve kullanım şartlarını onaylamalısın.");
+        setLoading(false);
+        return;
+      }
 
       const { error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
@@ -135,6 +164,8 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
             full_name: fullName.trim(),
             role: config.role,
             phone: fullPhone,
+            city_id: cityId,
+            kvkk_approved: "true",
           },
         },
       });
@@ -253,7 +284,7 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
 
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
-            Telefon <span className="text-ink-50 normal-case tracking-normal">(opsiyonel)</span>
+            Telefon <span className="text-terracotta">*</span>
           </label>
           <div className="flex items-stretch gap-2">
             <span className="inline-flex items-center px-3 bg-white border border-line rounded-lg text-ink font-mono text-sm select-none">
@@ -315,6 +346,42 @@ export function UyeOlForm({ initialRole }: { initialRole: string }) {
           <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
             En az 8 karakter · Yaygın şifreleri kullanma
           </p>
+        </div>
+
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+            Şehir <span className="text-terracotta">*</span>
+          </label>
+          <select
+            value={cityId}
+            onChange={(e) => setCityId(e.target.value)}
+            disabled={loading}
+            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition appearance-none cursor-pointer"
+          >
+            <option value="">Şehrini seç</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-start gap-3 pt-1">
+          <input
+            id="kvkk"
+            type="checkbox"
+            checked={kvkk}
+            onChange={(e) => setKvkk(e.target.checked)}
+            disabled={loading}
+            className="mt-0.5 w-4 h-4 shrink-0 accent-terracotta cursor-pointer"
+          />
+          <label htmlFor="kvkk" className="text-sm text-ink-72 leading-snug cursor-pointer">
+            <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">KVKK Aydınlatma Metni</a>
+            {"'ni ve "}
+            <a href="/kullanim-sartlari" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">Kullanım Şartları</a>
+            {"'nı okudum, onaylıyorum."}
+          </label>
         </div>
 
         {error && (
