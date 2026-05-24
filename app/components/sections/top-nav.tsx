@@ -25,6 +25,12 @@ export async function TopNav() {
 
   const isProfessional = role === 'professional';
   const isClient = role === 'client';
+  const isAgency = role === 'agency';
+  const isBusiness = role === 'business';
+  // Teklif alan (gelen kutusu): professional + agency
+  const canReceiveOffers = isProfessional || isAgency;
+  // Teklif toplayan: client + business
+  const canCollectOffers = isClient || isBusiness;
 
   // Bildirim sayacı — sadece giriş yapmışlar için
   const notificationCount = user ? await getUnreadNotificationCount() : 0;
@@ -90,7 +96,24 @@ export async function TopNav() {
                   Favoriler
                 </a>
               )}
-              <a
+              
+                {canReceiveOffers && (
+                <a                
+                  href="/teklif-talepleri"
+                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                >
+                  Teklif Talepleri
+                </a>
+              )}
+              {canCollectOffers && (
+                <a
+                  href="/teklif-topla"
+                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                >
+                  Teklif Topla
+                </a>
+              )}
+              <a              
                 href="/mesajlar"
                 className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
               >
