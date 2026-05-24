@@ -139,6 +139,20 @@ export async function createQuoteRequest(
     };
   }
 
+  // Her recipient profesyonele bildirim — SECURITY DEFINER fonksiyon (RLS bypass)
+  const { error: notifError } = await supabase.rpc(
+    'notify_quote_request_recipients',
+    {
+      recipient_ids: selectedIds,
+      notif_link: '/teklif-talepleri',
+    }
+  );
+
+  if (notifError) {
+    // Bildirim atılamazsa talep yine de oluştu — kritik değil, log
+    console.error('Quote request notification failed:', notifError);
+  }
+
   revalidatePath('/teklif-taleplerim');
   return {
     success: true,

@@ -10,6 +10,8 @@ type Props = {
   isLoggedIn: boolean;
   isProfessional: boolean;
   isClient: boolean;
+  canReceiveOffers: boolean;
+  canCollectOffers: boolean;
   userId: string | null;
   notificationCount: number;
 };
@@ -18,6 +20,8 @@ export function MobileNav({
   isLoggedIn,
   isProfessional,
   isClient,
+  canReceiveOffers,
+  canCollectOffers,
   userId,
   notificationCount,
 }: Props) {
@@ -130,6 +134,16 @@ export function MobileNav({
                   {isClient && (
                     <a href="/favoriler" className={linkClass}>
                       Favoriler
+                    </a>
+                  )}
+                  {canReceiveOffers && (
+                    <a href="/teklif-talepleri" className={linkClass}>
+                      Teklif Talepleri
+                    </a>
+                  )}
+                  {canCollectOffers && (
+                    <a href="/teklif-topla" className={linkClass}>
+                      Teklif Topla
                     </a>
                   )}
 

@@ -153,6 +153,8 @@ export async function TopNav() {
           isLoggedIn={!!user}
           isProfessional={isProfessional}
           isClient={isClient}
+          canReceiveOffers={canReceiveOffers}
+          canCollectOffers={canCollectOffers}
           userId={user?.id ?? null}
           notificationCount={notificationCount}
         />

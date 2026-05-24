@@ -78,6 +78,24 @@ export default async function TeklifKarsilastirPage({
     });
   }
 
+  // Profesyonel puanlarını ayrı sorguyla çek (nested join satır eliyordu)
+  const proIds = recipients
+    .map((r: any) => r.professional?.id)
+    .filter(Boolean);
+  let ratingByPro: Record<string, { avg: number; count: number }> = {};
+  if (proIds.length > 0) {
+    const { data: ratings } = await supabase
+      .from('professional_rating_summary')
+      .select('professional_id, average_rating, total_reviews')
+      .in('professional_id', proIds);
+    (ratings || []).forEach((r: any) => {
+      ratingByPro[r.professional_id] = {
+        avg: Number(r.average_rating),
+        count: r.total_reviews,
+      };
+    });
+  }
+
   const categoryName = (request.service_categories as any)?.name_tr;
   const cityName = (request.turkish_cities as any)?.name;
 
@@ -95,11 +113,7 @@ export default async function TeklifKarsilastirPage({
   return (
     <div className="bg-paper min-h-screen">
       <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
-        {/* GEÇİCİ DEBUG */}
-        <div className="bg-yellow-100 border border-yellow-400 p-3 mb-4 text-xs font-mono">
-          DEBUG: recipients={recipients.length} | conversationIds=
-          {JSON.stringify(conversationIds)} | offers={offers.length}
-        </div>
+        
         <Link
           href="/teklif-taleplerim"
           className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta mb-8 transition-colors"
@@ -146,7 +160,6 @@ export default async function TeklifKarsilastirPage({
               const pro = recipient.professional;
               const proName =
                 pro?.company_name || pro?.full_name || 'Profesyonel';
-              const rating = (pro?.professional_rating_summary as any) || null;
               const isCheapest = quote.total_amount === cheapest;
               const expired = new Date(quote.expires_at) < new Date();
 
@@ -183,10 +196,10 @@ export default async function TeklifKarsilastirPage({
                             </span>
                           )}
                         </div>
-                        {rating && rating.total_reviews > 0 && (
+                        {pro?.id && ratingByPro[pro.id] && ratingByPro[pro.id].count > 0 && (
                           <p className="text-xs text-ink-72 mt-0.5">
-                            ★ {Number(rating.average_rating).toFixed(1)} (
-                            {rating.total_reviews} değerlendirme)
+                            ★ {ratingByPro[pro.id].avg.toFixed(1)} (
+                            {ratingByPro[pro.id].count} değerlendirme)
                           </p>
                         )}
                         {pro?.slug && (

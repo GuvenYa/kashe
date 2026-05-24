@@ -179,7 +179,9 @@ export function TeklifToplaFormu({
             <p className="text-sm text-ink-72 mb-4 -mt-1">{briefIntro}</p>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {briefFields.map((field) => {
+            {briefFields
+              .filter((field) => field.legacyColumn !== 'location')
+              .map((field) => {
               const value = briefValues[field.key] ?? '';
               const wrapperClass =
                 field.type === 'textarea' ? 'md:col-span-2' : '';
