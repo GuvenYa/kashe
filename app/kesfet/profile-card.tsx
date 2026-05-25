@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { formatPriceRange } from '@/app/lib/profile-helpers';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { getCategoryIcon } from '@/app/lib/category-icon';
+import { getFilterFields } from '@/app/lib/filter-config';
 
 type Props = {
   profile: {
@@ -11,6 +12,7 @@ type Props = {
     bio: string | null;
     company_name: string | null;
     role: string;
+    attributes?: Record<string, string | string[]> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
   };
@@ -56,6 +58,24 @@ export function ProfileCard({
   const categoryIcon = getCategoryIcon(profile.service_categories?.slug);
 
   const cityName = profile.turkish_cities?.name;
+
+  // Kategoriye özel özelliklerden özet etiketler (ilk multi alanın ilk 3 değeri)
+  const categorySlug = profile.service_categories?.slug ?? null;
+  let attrTags: string[] = [];
+  if (categorySlug && profile.attributes) {
+    const fields = getFilterFields(categorySlug);
+    const firstMulti = fields.find((f) => f.type === 'multi');
+    if (firstMulti) {
+      const raw = profile.attributes[firstMulti.key];
+      const vals = Array.isArray(raw) ? raw : [];
+      attrTags = vals
+        .slice(0, 3)
+        .map(
+          (v) =>
+            firstMulti.options.find((o) => o.value === v)?.label ?? v
+        );
+    }
+  }
 
   // Fiyat aralığı: tüm aktif hizmetlerden min/max çek
   const numericServices = services.filter(
@@ -157,6 +177,19 @@ export function ProfileCard({
           <p className="text-sm text-ink-72 mt-4 leading-relaxed line-clamp-2">
             {profile.bio}
           </p>
+        )}
+
+        {attrTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-4">
+            {attrTags.map((tag) => (
+              <span
+                key={tag}
+                className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-72 bg-paper border border-line px-2 py-1 rounded"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
 
         {priceLabel && (

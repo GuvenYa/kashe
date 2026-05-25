@@ -22,6 +22,7 @@ export type Profile = {
   company_name: string | null;
   created_at: string;
   updated_at: string;
+  attributes?: Record<string, string | string[]> | null;
 };
 export type ServiceCategory = {
   id: number;

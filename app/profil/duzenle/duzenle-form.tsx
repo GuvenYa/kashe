@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateProfile } from './actions';
 import { AvatarUpload } from './avatar-upload';
+import { AttributesEditor } from './attributes-editor';
 import { isProfessional, isBusiness } from '@/app/lib/profile-helpers';
+import { getFilterFields } from '@/app/lib/filter-config';
 import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
 // Telefon yardımcıları (kayıt formuyla tutarlı)
@@ -56,8 +58,22 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
   );
   const [companyName, setCompanyName] = useState(profile.company_name || '');
 
+ const initialAttributes: Record<string, string | string[]> =
+    (profile.attributes as Record<string, string | string[]>) || {};
+  const [attributes, setAttributes] = useState(initialAttributes);
+
   const showProfessionalFields = isProfessional(profile);
   const showBusinessFields = isBusiness(profile);
+
+  // Seçili kategorinin slug'ını bul (filter-config slug'a göre çalışır)
+  const selectedCategorySlug = primaryCategoryId
+    ? categories.find((c) => String(c.id) === primaryCategoryId)?.slug ?? null
+    : null;
+  const filterFields = getFilterFields(selectedCategorySlug);
+
+  function handleAttrChange(key: string, value: string | string[]) {
+    setAttributes((prev) => ({ ...prev, [key]: value }));
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,6 +90,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
     formData.append('city_id', cityId);
     formData.append('primary_category_id', primaryCategoryId);
     formData.append('company_name', companyName);
+    formData.append('attributes', JSON.stringify(attributes));
 
     startTransition(async () => {
       const result = await updateProfile(formData);
@@ -163,6 +180,14 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
               Ekstra hizmetlerini ileride profil sayfanda ekleyebilirsin.
             </p>
           </div>
+        )}
+
+        {showProfessionalFields && filterFields.length > 0 && (
+          <AttributesEditor
+            fields={filterFields}
+            values={attributes}
+            onChange={handleAttrChange}
+          />
         )}
 
         <div>

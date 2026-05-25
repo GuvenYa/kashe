@@ -15,6 +15,7 @@ import {
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
 import type { ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
+import { getFilterFields } from '@/app/lib/filter-config';
 
 type PublicProfile = {
   id: string;
@@ -27,6 +28,7 @@ type PublicProfile = {
   role: string;
   is_published: boolean;
   last_seen_at: string | null;
+  attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
@@ -76,7 +78,7 @@ export default async function PublicProfilePage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -327,6 +329,22 @@ export default async function PublicProfilePage({
 
   const cityName = profile.turkish_cities?.name;
 
+  // Kategoriye özel özellikleri grupla (gösterim için)
+  const categorySlug = profile.service_categories?.slug ?? null;
+  const attrGroups: { label: string; values: string[] }[] = [];
+  if (categorySlug && profile.attributes) {
+    const fields = getFilterFields(categorySlug);
+    for (const field of fields) {
+      const raw = profile.attributes[field.key];
+      const vals = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      if (vals.length === 0) continue;
+      const labels = vals.map(
+        (v) => field.options.find((o) => o.value === v)?.label ?? v
+      );
+      attrGroups.push({ label: field.label, values: labels });
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -442,6 +460,32 @@ export default async function PublicProfilePage({
               </p>
             )}
           </div>
+
+          {/* KATEGORİYE ÖZEL ÖZELLİKLER */}
+          {attrGroups.length > 0 && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <h2 className="font-display text-2xl text-ink mb-6">Özellikler</h2>
+              <div className="space-y-5">
+                {attrGroups.map((group) => (
+                  <div key={group.label}>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+                      {group.label}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.values.map((val) => (
+                        <span
+                          key={val}
+                          className="text-sm text-ink bg-paper border border-line px-3 py-1.5 rounded-lg"
+                        >
+                          {val}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* EKİBİMİZ (ajans) */}
           {isAgencyProfile && (

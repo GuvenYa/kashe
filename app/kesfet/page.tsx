@@ -8,6 +8,7 @@ import { SortDropdown } from './sort-dropdown';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
+import { getFilterFields } from '@/app/lib/filter-config';
 import type {
   ServiceCategory,
   TurkishCity,
@@ -26,6 +27,7 @@ type PublishedProfile = {
   primary_category_id: number | null;
   company_name: string | null;
   role: string;
+  attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
@@ -42,6 +44,8 @@ type SearchParams = {
   q?: string;
   sirala?: 'yeni' | 'puan';
   tip?: 'profesyonel' | 'ajans';
+  // kategoriye özel filtreler: ?attr_music_style=pop,electronic gibi
+  [key: `attr_${string}`]: string | undefined;
 };
 
 export default async function KesfetPage({
@@ -74,7 +78,7 @@ export default async function KesfetPage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -123,7 +127,48 @@ export default async function KesfetPage({
   }
 
   const { data: profilesData, error } = await query;
-  const profiles = (profilesData || []) as unknown as PublishedProfile[];
+  let profiles = (profilesData || []) as unknown as PublishedProfile[];
+
+  // Kategoriye özel attribute filtreleri (JS tarafında).
+  // Sadece bir kategori seçiliyse anlamlı (o kategorinin alanları).
+  // Mantık: aynı alanda çok değer = OR; farklı alanlar arası = AND.
+  let selectedCategorySlug: string | null = null;
+  if (categoryId) {
+    selectedCategorySlug =
+      (categories || []).find((c) => c.id === categoryId)?.slug ?? null;
+  }
+
+  // URL'den attr_* filtrelerini topla: { music_style: ['pop','electronic'], ... }
+  const activeAttrFilters: Record<string, string[]> = {};
+  if (selectedCategorySlug) {
+    const fields = getFilterFields(selectedCategorySlug);
+    for (const field of fields) {
+      const raw = params[`attr_${field.key}`];
+      if (raw && typeof raw === 'string') {
+        const vals = raw.split(',').map((v) => v.trim()).filter(Boolean);
+        if (vals.length > 0) activeAttrFilters[field.key] = vals;
+      }
+    }
+  }
+
+  const hasAttrFilters = Object.keys(activeAttrFilters).length > 0;
+
+  if (hasAttrFilters) {
+    profiles = profiles.filter((p) => {
+      const attrs = p.attributes || {};
+      // Her seçili alan için: profilin değeri seçilenlerden EN AZ BİRİYLE eşleşmeli (OR)
+      // Tüm alanlar bu testi geçmeli (AND)
+      return Object.entries(activeAttrFilters).every(([key, wantedVals]) => {
+        const profileVal = attrs[key];
+        if (profileVal === undefined || profileVal === null) return false;
+        const profileArr = Array.isArray(profileVal)
+          ? profileVal
+          : [profileVal];
+        // kesişim var mı?
+        return wantedVals.some((w) => profileArr.includes(w));
+      });
+    });
+  }
 
   const profileIds = profiles.map((p) => p.id);
   const servicesByProfile: Record<string, ServicePriceInfo[]> = {};
@@ -182,7 +227,7 @@ export default async function KesfetPage({
     });
   }
 
-  const hasFilters = !!(categoryId || cityId || searchQuery);
+  const hasFilters = !!(categoryId || cityId || searchQuery || hasAttrFilters);
 
   // Mevcut kullanıcı + favori ID'leri (sadece müşteri rolünde anlamlı)
   const {
@@ -234,6 +279,7 @@ export default async function KesfetPage({
             currentCategory={categoryId}
             currentCity={cityId}
             currentSearch={searchQuery}
+            currentAttrs={activeAttrFilters}
           />
 
           {/* Tip filtresi: Hepsi / Profesyoneller / Ajanslar */}

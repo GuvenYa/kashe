@@ -44,6 +44,20 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
 
   const companyName = formData.get('company_name')?.toString().trim() || null;
 
+  // Kategoriye özel özellikler (attributes jsonb)
+  let attributes: Record<string, unknown> = {};
+  const attributesRaw = formData.get('attributes')?.toString();
+  if (attributesRaw) {
+    try {
+      const parsed = JSON.parse(attributesRaw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        attributes = parsed;
+      }
+    } catch {
+      // bozuk json — boş bırak
+    }
+  }
+
   // Validation
   if (!fullName) {
     return { success: false, error: 'Ad Soyad boş olamaz.' };
@@ -70,6 +84,7 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     city_id: cityId,
     primary_category_id: primaryCategoryId,
     company_name: companyName,
+    attributes,
   };
 
   if (currentApproval === 'revision') {
