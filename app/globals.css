@@ -307,3 +307,53 @@ i {
   .kashe-page-fade { animation: none; }
   .kashe-field-line { transition: none; }
 }
+/* ============ GRUP 3: KUTLAMA ANLARI ============ */
+
+/* Kalp patlaması — favoriye eklerken */
+@keyframes kasheHeartPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.35); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.kashe-heart-pop {
+  animation: kasheHeartPop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Konfeti/parçacık — saçılma */
+@keyframes kasheConfetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--kashe-cx), var(--kashe-cy)) scale(0.3) rotate(var(--kashe-cr));
+  }
+}
+.kashe-confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: kasheConfetti 0.7s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-heart-pop { animation: none; }
+  .kashe-confetti-piece { display: none; }
+}
+/* ============ GRUP 2: EĞLENCELİ DURUMLAR ============ */
+
+/* Yükleme halkası dönüşü */
+@keyframes kasheSpin {
+  to { transform: rotate(360deg); }
+}
+.kashe-spin {
+  animation: kasheSpin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-spin { animation-duration: 2s; }
+}

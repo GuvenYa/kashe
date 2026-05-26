@@ -78,8 +78,6 @@ export async function addFavorite(
   }
 
   revalidatePath('/favoriler');
-  revalidatePath('/kesfet');
-  revalidatePath(`/p/${professionalId}`);
 
   return { success: true };
 }

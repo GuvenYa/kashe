@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { TopNav } from '@/app/components/sections/top-nav';
 import { IlanlarListesi } from './ilanlar-listesi';
 import type { ListingWithRelations } from './listings-data';
 
@@ -91,6 +92,8 @@ export default async function IlanlarPage({
   const listings = (listingsData ?? []) as unknown as ListingWithRelations[];
 
   return (
+    <>
+    <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
         {/* Header */}
@@ -124,5 +127,6 @@ export default async function IlanlarPage({
         />
       </div>
     </div>
+    </>
   );
 }

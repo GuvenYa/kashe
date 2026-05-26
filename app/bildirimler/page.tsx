@@ -106,8 +106,8 @@ export default async function BildirimlerPage() {
             </div>
             <EmptyState
               icon={Bell}
-              title="Burası şimdilik sessiz"
-              description="Yeni mesaj geldiğinde, yorum aldığında veya yorumlarına yanıt gönderildiğinde burada görünecek."
+              title="Ortalık sakin"
+              description="Yeni bir şey olduğunda — mesaj, yorum, yanıt — sahne arkasından sana haber vereceğiz."
             />
           </div>
         </main>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { Heart } from 'lucide-react';
 import { addFavorite, removeFavorite } from '@/app/favoriler/actions';
+import { burstConfetti } from '@/app/lib/confetti';
 
 type FavoriteButtonProps = {
   professionalId: string;
@@ -22,6 +23,8 @@ export default function FavoriteButton({
   const [favorited, setFavorited] = useState(initialFavorited);
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<string | null>(null);
+  const [popping, setPopping] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   function showToast(message: string) {
     setToast(message);
@@ -49,6 +52,16 @@ export default function FavoriteButton({
     const newFavorited = !favorited;
     setFavorited(newFavorited);
 
+    // Sadece EKLEME anında kutlama: kalp patlar + konfeti saçılır
+    if (newFavorited) {
+      setPopping(true);
+      setTimeout(() => setPopping(false), 450);
+      if (btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect();
+        burstConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
+    }
+
     startTransition(async () => {
       const result = newFavorited
         ? await addFavorite(professionalId)
@@ -72,9 +85,9 @@ export default function FavoriteButton({
   return (
     <>
       <button
+        ref={btnRef}
         type="button"
         onClick={handleClick}
-        disabled={isPending}
         aria-label={favorited ? 'Favorilerden çıkar' : 'Favorilere ekle'}
         aria-pressed={favorited}
         style={{
@@ -88,9 +101,9 @@ export default function FavoriteButton({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: isPending ? 'wait' : 'pointer',
+          cursor: 'pointer',
           transition: 'transform 0.15s ease, background-color 0.15s ease',
-          opacity: isPending ? 0.6 : 1,
+          opacity: 1,
           padding: 0,
         }}
         onMouseEnter={(e) => {
@@ -101,6 +114,7 @@ export default function FavoriteButton({
         }}
       >
         <Heart
+          className={popping ? 'kashe-heart-pop' : ''}
           size={icon}
           strokeWidth={2}
           fill={favorited ? '#C8442A' : 'none'}

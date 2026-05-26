@@ -168,8 +168,8 @@ export default async function FavorilerPage() {
             </div>
             <EmptyState
               icon={Heart}
-              title="Profesyonelleri keşfetmeye başla"
-              description="Beğendiğin profillerin sağ üstündeki kalp simgesine tıklayarak buraya kaydedebilirsin."
+              title="Beğeni listen boş"
+              description="Beğendiğin yetenekleri burada topla. Bir profilin kalbine dokun, favorilerinde belirsin."
               action={{ label: "Keşfet'e git", href: '/kesfet' }}
             />
           </div>

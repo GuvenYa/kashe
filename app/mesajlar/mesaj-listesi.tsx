@@ -175,8 +175,8 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
     return (
       <EmptyState
         icon={MessageCircle}
-        title="Henüz mesajın yok"
-        description="Keşfet sayfasından bir profesyonele mesaj göndererek başlayabilirsin."
+        title="Sahne henüz sessiz"
+        description="Bir profesyonelle konuşmaya başladığında mesajların burada görünecek. İlk repliği vermek sana kalmış."
         action={{ label: 'Profesyonelleri keşfet', href: '/kesfet' }}
       />
     );

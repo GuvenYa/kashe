@@ -326,15 +326,15 @@ export default async function KesfetPage({
               {hasFilters ? (
                 <EmptyState
                   icon={SearchX}
-                  title="Bu kriterlere uygun sonuç bulunamadı"
-                  description="Filtreleri değiştirip tekrar dene veya tüm filtreleri temizle."
+                  title="Bu sahnede kimse yok"
+                  description="Aradığın kriterlere uyan profil çıkmadı. Filtreleri biraz gevşet, daha fazla yetenek görünsün."
                   action={{ label: 'Filtreleri temizle', href: '/kesfet' }}
                 />
               ) : (
                 <EmptyState
                   icon={Users}
-                  title="Henüz yayında profil yok"
-                  description="İlk profesyoneller ve ajanslar kayıt sürecinde. Yakında burada olacaklar."
+                  title="Perde yeni açılıyor"
+                  description="İlk yetenekler kayıt sürecinde. Çok yakında bu sahne dolacak."
                 />
               )}
             </div>
