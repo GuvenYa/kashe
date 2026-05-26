@@ -1,5 +1,4 @@
 import { createClient } from '@/app/lib/supabase-server';
-import Link from 'next/link';
 import { SearchX, Users } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from './profile-card';
@@ -9,10 +8,7 @@ import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
 import { getFilterFields } from '@/app/lib/filter-config';
-import type {
-  ServiceCategory,
-  TurkishCity,
-} from '@/app/lib/types';
+import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Keşfet — Kashe',
@@ -44,7 +40,6 @@ type SearchParams = {
   q?: string;
   sirala?: 'yeni' | 'puan';
   tip?: 'profesyonel' | 'ajans';
-  // kategoriye özel filtreler: ?attr_music_style=pop,electronic gibi
   [key: `attr_${string}`]: string | undefined;
 };
 
@@ -56,14 +51,18 @@ export default async function KesfetPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const categoryId = params.kategori ? parseInt(params.kategori, 10) : null;
+  // Çoklu kategori: "5,12,3" → [5,12,3]
+  const categoryIds = params.kategori
+    ? params.kategori
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => !isNaN(n))
+    : [];
   const cityId = params.sehir ? parseInt(params.sehir, 10) : null;
   const searchQuery = params.q?.trim() || '';
   const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
   const typeFilter: 'profesyonel' | 'ajans' | null =
-    params.tip === 'profesyonel' || params.tip === 'ajans'
-      ? params.tip
-      : null;
+    params.tip === 'profesyonel' || params.tip === 'ajans' ? params.tip : null;
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
     supabase
@@ -87,58 +86,47 @@ export default async function KesfetPage({
     .in('role', ['professional', 'agency'])
     .order('updated_at', { ascending: false });
 
-  // Tip filtresi (profesyonel / ajans)
   if (typeFilter === 'profesyonel') {
     query = query.eq('role', 'professional');
   } else if (typeFilter === 'ajans') {
     query = query.eq('role', 'agency');
   }
 
-  if (categoryId) {
-    query = query.eq('primary_category_id', categoryId);
+  // Çoklu kategori: tek seçim → eq, çoklu → in
+  if (categoryIds.length === 1) {
+    query = query.eq('primary_category_id', categoryIds[0]);
+  } else if (categoryIds.length > 1) {
+    query = query.in('primary_category_id', categoryIds);
   }
   if (cityId) {
     query = query.eq('city_id', cityId);
   }
   if (searchQuery) {
-    // Serbest metin: isim + firma adı + kategori adında ara.
-    // Kategori adı eşleşmesini önce kategori listesinde bulup, eşleşen
-    // kategori id'lerini sorguya ekliyoruz (ilişkili-tablo ilike'ından kaçınmak için).
     const lowerQuery = searchQuery.toLocaleLowerCase('tr');
     const matchedCategoryIds = (categories || [])
-      .filter((c) =>
-        c.name_tr.toLocaleLowerCase('tr').includes(lowerQuery)
-      )
+      .filter((c) => c.name_tr.toLocaleLowerCase('tr').includes(lowerQuery))
       .map((c) => c.id);
 
     const orConditions = [
       `full_name.ilike.%${searchQuery}%`,
       `company_name.ilike.%${searchQuery}%`,
     ];
-
     if (matchedCategoryIds.length > 0) {
-      // primary_category_id IN (...) — profiles'ın kendi kolonu, join gerektirmez
-      orConditions.push(
-        `primary_category_id.in.(${matchedCategoryIds.join(',')})`
-      );
+      orConditions.push(`primary_category_id.in.(${matchedCategoryIds.join(',')})`);
     }
-
     query = query.or(orConditions.join(','));
   }
 
   const { data: profilesData, error } = await query;
   let profiles = (profilesData || []) as unknown as PublishedProfile[];
 
-  // Kategoriye özel attribute filtreleri (JS tarafında).
-  // Sadece bir kategori seçiliyse anlamlı (o kategorinin alanları).
-  // Mantık: aynı alanda çok değer = OR; farklı alanlar arası = AND.
+  // Detaylı filtreler SADECE tam 1 kategori seçiliyken (A kararı)
   let selectedCategorySlug: string | null = null;
-  if (categoryId) {
+  if (categoryIds.length === 1) {
     selectedCategorySlug =
-      (categories || []).find((c) => c.id === categoryId)?.slug ?? null;
+      (categories || []).find((c) => c.id === categoryIds[0])?.slug ?? null;
   }
 
-  // URL'den attr_* filtrelerini topla: { music_style: ['pop','electronic'], ... }
   const activeAttrFilters: Record<string, string[]> = {};
   if (selectedCategorySlug) {
     const fields = getFilterFields(selectedCategorySlug);
@@ -156,15 +144,10 @@ export default async function KesfetPage({
   if (hasAttrFilters) {
     profiles = profiles.filter((p) => {
       const attrs = p.attributes || {};
-      // Her seçili alan için: profilin değeri seçilenlerden EN AZ BİRİYLE eşleşmeli (OR)
-      // Tüm alanlar bu testi geçmeli (AND)
       return Object.entries(activeAttrFilters).every(([key, wantedVals]) => {
         const profileVal = attrs[key];
         if (profileVal === undefined || profileVal === null) return false;
-        const profileArr = Array.isArray(profileVal)
-          ? profileVal
-          : [profileVal];
-        // kesişim var mı?
+        const profileArr = Array.isArray(profileVal) ? profileVal : [profileVal];
         return wantedVals.some((w) => profileArr.includes(w));
       });
     });
@@ -192,11 +175,7 @@ export default async function KesfetPage({
     });
   }
 
-  // Rating özetlerini topla
-  const ratingsByProfile: Record<
-    string,
-    { count: number; average: number }
-  > = {};
+  const ratingsByProfile: Record<string, { count: number; average: number }> = {};
 
   if (profileIds.length > 0) {
     const { data: ratingsData } = await supabase
@@ -212,8 +191,6 @@ export default async function KesfetPage({
     });
   }
 
-  // Puana göre sırala (yüksekten alçağa). Yorumu olmayanlar sona.
-  // Aynı puanlı profiller arasında daha çok yorumu olan üstte.
   if (sortBy === 'puan') {
     profiles.sort((a, b) => {
       const ra = ratingsByProfile[a.id];
@@ -227,9 +204,14 @@ export default async function KesfetPage({
     });
   }
 
-  const hasFilters = !!(categoryId || cityId || searchQuery || hasAttrFilters);
+  const hasFilters = !!(
+    categoryIds.length > 0 ||
+    cityId ||
+    searchQuery ||
+    typeFilter ||
+    hasAttrFilters
+  );
 
-  // Mevcut kullanıcı + favori ID'leri (sadece müşteri rolünde anlamlı)
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -255,9 +237,9 @@ export default async function KesfetPage({
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-10">
+      <main className="min-h-screen bg-paper px-6 md:px-12 py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
               Keşfet
             </p>
@@ -273,94 +255,72 @@ export default async function KesfetPage({
             </p>
           </div>
 
-          <KesfetFilters
-            categories={(categories || []) as ServiceCategory[]}
-            cities={orderCities((cities || []) as TurkishCity[])}
-            currentCategory={categoryId}
-            currentCity={cityId}
-            currentSearch={searchQuery}
-            currentAttrs={activeAttrFilters}
-          />
+          {/* İki sütun: sol sidebar (filtreler) + sağ sonuçlar */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sol — filtre sidebar (mobilde drawer) */}
+            <aside className="lg:w-64 lg:shrink-0">
+              <KesfetFilters
+                categories={(categories || []) as ServiceCategory[]}
+                cities={orderCities((cities || []) as TurkishCity[])}
+                currentCategories={categoryIds}
+                currentCity={cityId}
+                currentSearch={searchQuery}
+                currentAttrs={activeAttrFilters}
+                currentType={typeFilter}
+                resultCount={profiles.length}
+              />
+            </aside>
 
-          {/* Tip filtresi: Hepsi / Profesyoneller / Ajanslar */}
-          <div className="flex gap-2 mt-6">
-            {[
-              { key: null, label: 'Hepsi' },
-              { key: 'profesyonel', label: 'Profesyoneller' },
-              { key: 'ajans', label: 'Ajanslar' },
-            ].map((opt) => {
-              const isActive = typeFilter === opt.key;
-              const sp = new URLSearchParams();
-              if (categoryId) sp.set('kategori', String(categoryId));
-              if (cityId) sp.set('sehir', String(cityId));
-              if (searchQuery) sp.set('q', searchQuery);
-              if (sortBy === 'puan') sp.set('sirala', 'puan');
-              if (opt.key) sp.set('tip', opt.key);
-              const href = sp.toString()
-                ? `/kesfet?${sp.toString()}`
-                : '/kesfet';
-              return (
-                <Link
-                  key={opt.label}
-                  href={href}
-                  className={`px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-[0.1em] border transition ${
-                    isActive
-                      ? 'bg-ink text-paper border-ink'
-                      : 'bg-transparent text-ink-72 border-line hover:border-ink'
-                  }`}
-                >
-                  {opt.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {error ? (
-            <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6 mt-8">
-              <p className="text-terracotta text-sm">
-                Bir sorun oluştu, lütfen sayfayı yenile.
-              </p>
-            </div>
-          ) : profiles.length === 0 ? (
-            <div className="mt-8">
-              {hasFilters ? (
-                <EmptyState
-                  icon={SearchX}
-                  title="Bu sahnede kimse yok"
-                  description="Aradığın kriterlere uyan profil çıkmadı. Filtreleri biraz gevşet, daha fazla yetenek görünsün."
-                  action={{ label: 'Filtreleri temizle', href: '/kesfet' }}
-                />
+            {/* Sağ — sonuçlar */}
+            <div className="flex-1 min-w-0">
+              {error ? (
+                <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6">
+                  <p className="text-terracotta text-sm">
+                    Bir sorun oluştu, lütfen sayfayı yenile.
+                  </p>
+                </div>
+              ) : profiles.length === 0 ? (
+                <div>
+                  {hasFilters ? (
+                    <EmptyState
+                      icon={SearchX}
+                      title="Bu sahnede kimse yok"
+                      description="Aradığın kriterlere uyan profil çıkmadı. Filtreleri biraz gevşet, daha fazla yetenek görünsün."
+                      action={{ label: 'Filtreleri temizle', href: '/kesfet' }}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={Users}
+                      title="Perde yeni açılıyor"
+                      description="İlk yetenekler kayıt sürecinde. Çok yakında bu sahne dolacak."
+                    />
+                  )}
+                </div>
               ) : (
-                <EmptyState
-                  icon={Users}
-                  title="Perde yeni açılıyor"
-                  description="İlk yetenekler kayıt sürecinde. Çok yakında bu sahne dolacak."
-                />
+                <>
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                    <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
+                      {profiles.length} sonuç
+                    </p>
+                    <SortDropdown currentSort={sortBy} />
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {profiles.map((profile) => (
+                      <ProfileCard
+                        key={profile.id}
+                        profile={profile}
+                        services={servicesByProfile[profile.id] || []}
+                        rating={ratingsByProfile[profile.id] || null}
+                        isFavorited={favoritedIds.has(profile.id)}
+                        isLoggedIn={isLoggedIn}
+                        currentUserRole={currentUserRole}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between gap-3 flex-wrap mt-8 mb-4">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-                  {profiles.length} sonuç
-                </p>
-                <SortDropdown currentSort={sortBy} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {profiles.map((profile) => (
-                  <ProfileCard
-                    key={profile.id}
-                    profile={profile}
-                    services={servicesByProfile[profile.id] || []}
-                    rating={ratingsByProfile[profile.id] || null}
-                    isFavorited={favoritedIds.has(profile.id)}
-                    isLoggedIn={isLoggedIn}
-                    currentUserRole={currentUserRole}
-                  />
-                ))}
-              </div>
-            </>
-          )}
+          </div>
         </div>
       </main>
     </>

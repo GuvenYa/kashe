@@ -1,7 +1,16 @@
+import { LoadingMessage } from "@/app/components/sections/loading-message";
+
 export default function KesfetLoading() {
   return (
     <div className="min-h-screen bg-paper px-6 md:px-12 py-16">
       <div className="max-w-5xl mx-auto">
+        <LoadingMessage
+          messages={[
+            "Sahne hazırlanıyor...",
+            "Yetenekler toplanıyor...",
+            "Profiller diziliyor...",
+          ]}
+        />
         {/* Header */}
         <div className="mb-10">
           <div className="h-3 w-20 bg-line rounded animate-pulse mb-3" />

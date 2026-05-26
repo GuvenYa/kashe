@@ -357,3 +357,19 @@ i {
 @media (prefers-reduced-motion: reduce) {
   .kashe-spin { animation-duration: 2s; }
 }
+/* Filtre drawer — sağdan kayma */
+@keyframes kasheDrawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.kashe-drawer {
+  animation: kasheDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kashe-drawer { animation: none; }
+}
+@keyframes kasheDrawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.kashe-drawer { animation: kasheDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
