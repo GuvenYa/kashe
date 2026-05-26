@@ -1,9 +1,9 @@
 import { Button } from "@/app/components/ui/button";
 import { createClient } from "@/app/lib/supabase-server";
-import { LogoutButton } from "./logout-button";
 import { MobileNav } from "./mobile-nav";
 import { UnreadBadge } from "./unread-badge";
 import { NotificationBell } from "./notification-bell";
+import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 
 export async function TopNav() {
@@ -12,35 +12,60 @@ export async function TopNav() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Login varsa profilden role bilgisi al (TopNav'da Hizmetlerim linki için)
   let role: string | null = null;
+  let fullName: string | null = null;
+  let avatarUrl: string | null = null;
   if (user) {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("role, full_name, avatar_url")
+      .eq("id", user.id)
       .single();
     role = profile?.role ?? null;
+    fullName = profile?.full_name ?? null;
+    avatarUrl = profile?.avatar_url ?? null;
   }
 
-  const isProfessional = role === 'professional';
-  const isClient = role === 'client';
-  const isAgency = role === 'agency';
-  const isBusiness = role === 'business';
-  // Teklif alan (gelen kutusu): professional + agency
+  const isProfessional = role === "professional";
+  const isClient = role === "client";
+  const isAgency = role === "agency";
+  const isBusiness = role === "business";
   const canReceiveOffers = isProfessional || isAgency;
-  // Teklif toplayan: client + business
   const canCollectOffers = isClient || isBusiness;
 
-  // Bildirim sayacı — sadece giriş yapmışlar için
   const notificationCount = user ? await getUnreadNotificationCount() : 0;
 
+  // Avatar baş harfleri
+  const initials = (fullName || user?.email || "K")
+    .split(" ")
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  // Avatar menüsüne giden kişisel linkler (role göre)
+  const menuLinks: { href: string; label: string }[] = [
+    { href: "/profil", label: "Profilim" },
+  ];
+  if (isProfessional) {
+    menuLinks.push({ href: "/profil/hizmetlerim", label: "Hizmetlerim" });
+    menuLinks.push({ href: "/profil/portfoy", label: "Portföyüm" });
+  }
+  if (isClient) {
+    menuLinks.push({ href: "/favoriler", label: "Favoriler" });
+  }
+  menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
+
+  const navLinkClass =
+    "font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors";
+
   return (
-    <nav className="w-full border-b border-line bg-paper sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 flex items-center justify-between">
+    <nav className="w-full border-b border-line bg-paper/90 backdrop-blur-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2.5">
-          <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none">
+        <a href="/" className="flex items-center gap-2.5 shrink-0">
+          <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded-md">
             k
           </span>
           <span className="font-display font-semibold text-2xl text-ink tracking-tight">
@@ -48,94 +73,60 @@ export async function TopNav() {
           </span>
         </a>
 
-        {/* Desktop center nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href="/kesfet" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+        {/* Orta nav */}
+        <div className="hidden md:flex items-center gap-7">
+          <a href="/kesfet" className={navLinkClass}>
             Keşfet
           </a>
-          <a href="/ilanlar" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
+          <a href="/ilanlar" className={navLinkClass}>
             İlanlar
           </a>
-          <a href="/#hizmetler" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
-            Hizmetler
-          </a>
-          <a href="/#nasil-calisir" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
-            Nasıl çalışır
-          </a>
-          <a href="/#kurumsal" className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors">
-            Kurumsal
-          </a>
-        </div>
-
-        {/* Desktop right side */}
-        <div className="hidden md:flex items-center gap-4">
           {user ? (
             <>
-              {isProfessional && (
-                <a
-                  href="/profil/hizmetlerim"
-                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                >
-                  Hizmetlerim
-                </a>
-              )}
-              {isProfessional && (
-                <a
-                  href="/profil/portfoy"
-                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                >
-                  Portföyüm
-                </a>
-              )}
-              
-                {isClient && (
-                <a
-                  href="/favoriler"
-                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                >
-                  Favoriler
-                </a>
-              )}
-              
-                {canReceiveOffers && (
-                <a                
-                  href="/teklif-talepleri"
-                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                >
+              {canReceiveOffers && (
+                <a href="/teklif-talepleri" className={navLinkClass}>
                   Teklif Talepleri
                 </a>
               )}
               {canCollectOffers && (
-                <a
-                  href="/teklif-topla"
-                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-                >
+                <a href="/teklif-topla" className={navLinkClass}>
                   Teklif Topla
                 </a>
               )}
-              <a              
-                href="/mesajlar"
-                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-              >
+            </>
+          ) : (
+            <>
+              <a href="/#hizmetler" className={navLinkClass}>
+                Hizmetler
+              </a>
+              <a href="/#nasil-calisir" className={navLinkClass}>
+                Nasıl çalışır
+              </a>
+              <a href="/#kurumsal" className={navLinkClass}>
+                Kurumsal
+              </a>
+            </>
+          )}
+        </div>
+
+        {/* Sağ */}
+        <div className="hidden md:flex items-center gap-4 shrink-0">
+          {user ? (
+            <>
+              <a href="/mesajlar" className={navLinkClass + " inline-flex items-center gap-1.5"}>
                 Mesajlar
                 <UnreadBadge userId={user.id} />
               </a>
               <NotificationBell userId={user.id} initialCount={notificationCount} />
-              
-              <a
-                href="/profil"
-                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-              >
-                Profilim
-              </a>
-              <LogoutButton />
+              <UserMenu
+                initials={initials}
+                avatarUrl={avatarUrl}
+                links={menuLinks}
+              />
             </>
           ) : (
             <>
-              <a
-                href="/giris"
-                className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
-              >
+              <a href="/giris" className={navLinkClass}>
                 Giriş yap
               </a>
               <a href="/uye-ol">
@@ -147,8 +138,7 @@ export async function TopNav() {
           )}
         </div>
 
-        
-        {/* Mobile hamburger */}
+        {/* Mobil */}
         <MobileNav
           isLoggedIn={!!user}
           isProfessional={isProfessional}
@@ -158,7 +148,6 @@ export async function TopNav() {
           userId={user?.id ?? null}
           notificationCount={notificationCount}
         />
-
       </div>
     </nav>
   );

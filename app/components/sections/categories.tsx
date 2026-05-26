@@ -57,7 +57,7 @@ export async function Categories() {
                     <img
                       src={iconUrl}
                       alt={cat.name_tr}
-                      className="w-full h-full object-contain p-1"
+                      className="w-full h-full object-contain p-1 kashe-icon-pop"
                     />
                   ) : (
                     <span className="font-display font-medium text-terracotta text-2xl">

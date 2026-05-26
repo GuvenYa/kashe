@@ -1,4 +1,5 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
+import { Reveal } from "./reveal";
 
 type Step = {
   number: string;
@@ -51,8 +52,9 @@ export function HowItWorks() {
         {/* Steps grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 border-t border-line">
           {steps.map((step, index) => (
-            <div
+            <Reveal
               key={step.number}
+              delay={index * 180}
               className={`p-8 md:p-10 ${
                 index < steps.length - 1 ? "md:border-r border-line" : ""
               } ${index < steps.length - 1 ? "border-b md:border-b-0 border-line" : ""}`}
@@ -73,7 +75,7 @@ export function HowItWorks() {
               <p className="text-base text-ink-72 leading-[1.55]">
                 {step.description}
               </p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

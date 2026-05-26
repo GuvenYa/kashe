@@ -84,3 +84,155 @@ i {
     transform: translateX(-50%) translateY(0);
   }
 }
+/* === Hero animasyonları === */
+@keyframes kasheRise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kasheFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kasheFloat {
+  0%, 100% {
+    transform: translateY(0) var(--kashe-rot, rotate(0deg));
+  }
+  50% {
+    transform: translateY(-14px) var(--kashe-rot, rotate(0deg));
+  }
+}
+
+.kashe-rise {
+  opacity: 0;
+  animation: kasheRise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.kashe-fade {
+  opacity: 0;
+  animation: kasheFade 1s ease forwards;
+}
+
+.kashe-float {
+  animation: kasheFloat 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-rise,
+  .kashe-fade,
+  .kashe-float {
+    animation: none;
+    opacity: 1;
+  }
+}
+/* === Hero animasyonları === */
+@keyframes kasheRise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kasheFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kasheFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.kashe-rise {
+  opacity: 0;
+  animation: kasheRise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.kashe-fade {
+  opacity: 0;
+  animation: kasheFade 1s ease forwards;
+}
+
+.kashe-float {
+  animation: kasheFloat 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-rise,
+  .kashe-fade,
+  .kashe-float {
+    animation: none;
+    opacity: 1;
+  }
+}
+/* === Kayan bant (marquee) === */
+@keyframes kasheMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.kashe-marquee {
+  animation: kasheMarquee 30s linear infinite;
+}
+
+.kashe-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-marquee {
+    animation: none;
+  }
+}
+/* ============ CANLILIK DOKUNUŞLARI ============ */
+
+/* 1 & Categories: hover'da ikon zıplama */
+@keyframes kasheIconPop {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+.group:hover .kashe-icon-pop {
+  animation: kasheIconPop 0.5s ease;
+}
+
+/* 3: canlı rozet — yanıp sönen nokta */
+@keyframes kashePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+.kashe-pulse {
+  animation: kashePulse 2s ease-in-out infinite;
+}
+
+/* 5: scroll-reveal — kaydırınca belirme */
+.kashe-reveal {
+  opacity: 0;
+  transform: translateY(100px);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kashe-reveal.kashe-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-icon-pop,
+  .kashe-pulse { animation: none; }
+  .kashe-reveal { opacity: 1; transform: none; transition: none; }
+}
