@@ -236,3 +236,74 @@ i {
   .kashe-pulse { animation: none; }
   .kashe-reveal { opacity: 1; transform: none; transition: none; }
 }
+/* ============ GRUP 1: GLOBAL MİKRO-ETKİLEŞİMLER ============ */
+
+/* 1. Buton tık hissi — her butona uygulanabilir */
+.kashe-tap {
+  transition: transform 0.12s ease;
+}
+.kashe-tap:active {
+  transform: scale(0.97);
+}
+
+/* 2. Yıldız parıltısı — hover'da hafif ışıldama */
+@keyframes kasheStarShine {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  50% { transform: scale(1.25) rotate(8deg); filter: brightness(1.3); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+.kashe-star {
+  transition: transform 0.2s ease;
+}
+.group:hover .kashe-star,
+.kashe-star:hover {
+  animation: kasheStarShine 0.6s ease;
+}
+
+/* 4. Form alanı odak animasyonu — label yukarı kayar/renklenir */
+.kashe-field {
+  position: relative;
+}
+.kashe-field input:focus ~ .kashe-field-line,
+.kashe-field textarea:focus ~ .kashe-field-line {
+  transform: scaleX(1);
+}
+.kashe-field-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-terracotta);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 7. Logo canlanması — hover'da "k" zıplar/döner */
+@keyframes kasheLogoWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  30% { transform: rotate(-8deg) scale(1.1); }
+  60% { transform: rotate(6deg) scale(1.08); }
+}
+.kashe-logo-mark {
+  transition: transform 0.2s ease;
+}
+.kashe-logo:hover .kashe-logo-mark {
+  animation: kasheLogoWiggle 0.5s ease;
+}
+
+/* 13. Sayfa geçişi fade — içerik girişinde yumuşak belirme */
+@keyframes kashePageFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.kashe-page-fade {
+  animation: kashePageFade 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kashe-tap, .kashe-star, .kashe-logo-mark { animation: none !important; transition: none; }
+  .kashe-page-fade { animation: none; }
+  .kashe-field-line { transition: none; }
+}

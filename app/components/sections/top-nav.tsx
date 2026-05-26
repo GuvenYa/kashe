@@ -64,8 +64,8 @@ export async function TopNav() {
     <nav className="w-full border-b border-line bg-paper/90 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded-md">
+        <a href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
+          <span className="kashe-logo-mark w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded-md">
             k
           </span>
           <span className="font-display font-semibold text-2xl text-ink tracking-tight">
