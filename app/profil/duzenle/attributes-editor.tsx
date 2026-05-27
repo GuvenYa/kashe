@@ -19,82 +19,115 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
     onChange(key, next);
   }
 
-  const labelClass =
-    'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
-
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-xl text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
 
   return (
-    <div className="bg-white border border-line rounded-lg p-6 space-y-6">
-      <div>
-        <p className="font-display text-lg text-ink">Kategorine özel bilgiler</p>
-        <p className="text-xs text-ink-72 mt-1">
-          Bu bilgiler, müşterilerin seni keşfederken filtrelemesini sağlar. Ne
-          kadar doldurursan o kadar görünür olursun.
+    <div className="bg-card border border-line rounded-2xl p-7 md:p-8">
+      {/* Bölüm başlığı */}
+      <div className="mb-7 pb-5 border-b border-line">
+        <p className="font-display text-xl text-ink">Kategorine özel bilgiler</p>
+        <p className="text-sm text-ink-72 mt-1.5 leading-relaxed">
+          Bu bilgiler müşterilerin seni keşfederken doğru filtrelemesini sağlar.
+          Ne kadar doldurursan o kadar görünür olursun.
         </p>
       </div>
 
-      {fields.map((field) => {
-        if (field.type === 'multi') {
-          const selected = Array.isArray(values[field.key])
-            ? (values[field.key] as string[])
-            : [];
-          return (
-            <div key={field.key}>
-              <label className={labelClass}>{field.label}</label>
-              {field.hint && (
-                <p className="text-xs text-ink-72 mb-2 -mt-1">{field.hint}</p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {field.options.map((opt) => {
-                  const isOn = selected.includes(opt.value);
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => toggleMulti(field.key, opt.value)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition ${
-                        isOn
-                          ? 'bg-terracotta text-paper border-terracotta'
-                          : 'bg-transparent text-ink-72 border-line hover:border-ink'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
+      <div className="space-y-7">
+        {fields.map((field, idx) => {
+          if (field.type === 'multi') {
+            const selected = Array.isArray(values[field.key])
+              ? (values[field.key] as string[])
+              : [];
+            return (
+              <div
+                key={field.key}
+                className={idx > 0 ? 'pt-7 border-t border-line/60' : ''}
+              >
+                {/* Başlık + seçili sayısı */}
+                <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
+                  <p className="font-display text-base text-ink">
+                    {field.label}
+                  </p>
+                  {selected.length > 0 && (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta-08 px-2 py-0.5 rounded-full">
+                      {selected.length} seçili
+                    </span>
+                  )}
+                </div>
+                {field.hint && (
+                  <p className="text-sm text-ink-72 mb-4 leading-relaxed">
+                    {field.hint}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {field.options.map((opt) => {
+                    const isOn = selected.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => toggleMulti(field.key, opt.value)}
+                        className={`kashe-tap px-3.5 py-1.5 rounded-full text-sm border transition-colors ${
+                          isOn
+                            ? 'bg-terracotta text-paper border-terracotta'
+                            : 'bg-transparent text-ink-72 border-line hover:border-ink hover:text-ink'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+            );
+          }
+
+          // single → dropdown
+          const current =
+            typeof values[field.key] === 'string'
+              ? (values[field.key] as string)
+              : '';
+          return (
+            <div
+              key={field.key}
+              className={idx > 0 ? 'pt-7 border-t border-line/60' : ''}
+            >
+              <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
+                <label
+                  htmlFor={`attr_${field.key}`}
+                  className="font-display text-base text-ink"
+                >
+                  {field.label}
+                </label>
+                {current && (
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta-08 px-2 py-0.5 rounded-full">
+                    Seçili
+                  </span>
+                )}
+              </div>
+              {field.hint && (
+                <p className="text-sm text-ink-72 mb-4 leading-relaxed">
+                  {field.hint}
+                </p>
+              )}
+              <select
+                id={`attr_${field.key}`}
+                value={current}
+                onChange={(e) => onChange(field.key, e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Seç...</option>
+                {field.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           );
-        }
-
-        // single → dropdown
-        const current =
-          typeof values[field.key] === 'string'
-            ? (values[field.key] as string)
-            : '';
-        return (
-          <div key={field.key}>
-            <label htmlFor={`attr_${field.key}`} className={labelClass}>
-              {field.label}
-            </label>
-            <select
-              id={`attr_${field.key}`}
-              value={current}
-              onChange={(e) => onChange(field.key, e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Seç...</option>
-              {field.options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
-      })}
+        })}
+      </div>
     </div>
   );
 }
