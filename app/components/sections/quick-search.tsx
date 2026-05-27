@@ -74,7 +74,7 @@ export function QuickSearch({
   return (
     <form
       onSubmit={handleSearch}
-      className="relative z-40 bg-card border-2 border-ink rounded-2xl shadow-[6px_6px_0_var(--color-terracotta)] p-2 flex flex-col md:flex-row md:items-stretch gap-1.5"
+      className="relative z-40 bg-card border-2 border-ink rounded-2xl shadow-[3px_3px_0_var(--color-terracotta)] md:shadow-[6px_6px_0_var(--color-terracotta)] p-2 flex flex-col md:flex-row md:items-stretch gap-1.5"
     >
       {/* Serbest metin + autocomplete */}
       <div className="relative flex-[1.4]" ref={containerRef}>

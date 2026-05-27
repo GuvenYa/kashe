@@ -75,6 +75,11 @@ export function HeroStats({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Mobilde direkt göster — observer mobilde takılabiliyor
+    if (window.innerWidth < 768) {
+      el.classList.add('kashe-revealed');
+      return;
+    }
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

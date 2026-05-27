@@ -66,7 +66,7 @@ export function MobileNav({
     'block py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors';
 
   const linkClassInlineBadge =
-    'py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors inline-flex items-center gap-2';
+    'flex py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors items-center gap-2';
 
   return (
     <>

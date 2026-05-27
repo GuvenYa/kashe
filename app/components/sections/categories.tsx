@@ -42,7 +42,7 @@ export async function Categories() {
         </div>
 
         {/* Categories grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {categories.map((cat, i) => {
             const iconUrl = getCategoryIcon(cat.slug);
             const tone = TONES[i % TONES.length];

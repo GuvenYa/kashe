@@ -99,10 +99,10 @@ export function ProfileCard({
   const showFavoriteButton = profile.role === 'professional';
 
   return (
-    <div className="relative group transition-all hover:-translate-y-0.5">
+    <div className="relative group transition-all duration-300 hover:-translate-y-1">
       <Link
         href={`/p/${profile.id}`}
-        className="block bg-white border border-line rounded-lg p-6 group-hover:border-terracotta group-hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+        className="block bg-card border border-line rounded-2xl p-6 group-hover:border-terracotta group-hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] transition-all duration-300"
       >
         <div className="flex items-start gap-4 pr-12">
           {profile.avatar_url ? (
@@ -207,7 +207,7 @@ export function ProfileCard({
 
       {/* Kalp ikonu — Link DIŞINDA, üst-sağda absolute */}
       {showFavoriteButton && (
-        <div className="absolute top-5 right-5 z-10">
+        <div className="absolute top-4 right-4 z-10">
           <FavoriteButton
             professionalId={profile.id}
             initialFavorited={isFavorited}
