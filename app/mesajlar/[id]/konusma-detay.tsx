@@ -58,21 +58,40 @@ function pickTone(id: string) {
 }
 
 function formatMessageTime(isoDate: string): string {
+  return new Date(isoDate).toLocaleTimeString('tr-TR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDayLabel(isoDate: string): string {
   const date = new Date(isoDate);
   const now = new Date();
-  const isSameDay = date.toDateString() === now.toDateString();
-  if (isSameDay) {
-    return date.toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit',
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (dateOnly.getTime() === today.getTime()) return 'Bugün';
+  if (dateOnly.getTime() === yesterday.getTime()) return 'Dün';
+
+  // Bu yıl içinde mi?
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
     });
   }
   return date.toLocaleDateString('tr-TR', {
     day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
+    month: 'long',
+    year: 'numeric',
   });
+}
+
+function getDateKey(isoDate: string): string {
+  const d = new Date(isoDate);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
 export function KonusmaDetay({
@@ -474,43 +493,58 @@ export function KonusmaDetay({
             </p>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, idx) => {
+            // Tarih grubu pill — gün değişiminde göster (ilk mesaj dahil)
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const showDayLabel =
+              !prevMsg ||
+              getDateKey(prevMsg.created_at) !== getDateKey(msg.created_at);
+            const dayLabelEl = showDayLabel ? (
+              <div className="flex justify-center my-4">
+                <span className="inline-flex items-center bg-line/40 border border-line/50 px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.16em] text-ink-72">
+                  {formatDayLabel(msg.created_at)}
+                </span>
+              </div>
+            ) : null;
+
+            // Quote tipinde mesaj — Quote kartı render et
             if (msg.message_type === 'quote' && msg.quote_id) {
               const quote = quotesById[msg.quote_id];
               if (!quote) {
                 return (
-                  <div key={msg.id} className="flex justify-center my-2">
-                    <p className="text-xs text-ink-50 font-mono">
-                      Teklif yükleniyor...
-                    </p>
+                  <div key={msg.id}>
+                    {dayLabelEl}
+                    <div className="flex justify-center my-2">
+                      <p className="text-xs text-ink-50 font-mono">
+                        Teklif yükleniyor...
+                      </p>
+                    </div>
                   </div>
                 );
               }
               return (
-                <QuoteCard
-                  key={msg.id}
-                  quote={quote}
-                  currentUserId={currentUserId}
-                />
+                <div key={msg.id}>
+                  {dayLabelEl}
+                  <QuoteCard quote={quote} currentUserId={currentUserId} />
+                </div>
               );
             }
 
             if (msg.message_type === 'system') {
               return (
-                <SystemMessage
-                  key={msg.id}
-                  body={msg.body}
-                  createdAt={msg.created_at}
-                />
+                <div key={msg.id}>
+                  {dayLabelEl}
+                  <SystemMessage body={msg.body} createdAt={msg.created_at} />
+                </div>
               );
             }
 
             const isMine = msg.sender_id === currentUserId;
             return (
               <div
-                key={msg.id}
-                className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
-              >
+              key={msg.id}>
+                {dayLabelEl}
+                <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 ${
                     isMine
@@ -538,6 +572,7 @@ export function KonusmaDetay({
                   >
                     {formatMessageTime(msg.created_at)}
                   </p>
+                </div>
                 </div>
               </div>
             );
