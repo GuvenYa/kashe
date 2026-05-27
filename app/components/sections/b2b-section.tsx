@@ -98,7 +98,7 @@ export function B2BSection() {
           </div>
 
           <div className="relative">
-            <div className="bg-ink-2 border border-paper-14 p-6 md:p-8">
+            <div className="bg-ink-2 border border-paper-14 rounded-2xl p-6 md:p-8">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-paper-14">
                 <span className="font-display text-base text-paper">
                   İlan #4231 · Hilton İstanbul

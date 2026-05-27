@@ -28,6 +28,22 @@ export async function Categories() {
 
   const categories = (categoriesData || []) as CategoryRow[];
 
+  // Her kategoride kaç yayında profesyonel var (id -> count)
+  const profileCountByCat: Record<number, number> = {};
+  if (categories.length > 0) {
+    const { data: profileRows } = await supabase
+      .from("profiles")
+      .select("primary_category_id")
+      .eq("is_published", true)
+      .in("role", ["professional", "agency"]);
+    (profileRows || []).forEach((r) => {
+      if (r.primary_category_id) {
+        profileCountByCat[r.primary_category_id] =
+          (profileCountByCat[r.primary_category_id] || 0) + 1;
+      }
+    });
+  }
+
   return (
     <section id="hizmetler" className="bg-paper border-t border-line">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
@@ -92,10 +108,17 @@ export async function Categories() {
                     {cat.name_tr}
                   </h3>
 
-                  {/* Link */}
-                  <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta inline-flex items-center gap-1 mt-2 transition-transform duration-200 group-hover:translate-x-1">
-                    Keşfet
-                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                  {/* Link + (boşsa) Yakında etiketi */}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta inline-flex items-center gap-1 transition-transform duration-200 group-hover:translate-x-1">
+                      Keşfet
+                      <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                    </div>
+                    {(profileCountByCat[cat.id] || 0) === 0 && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-50 bg-paper-2 border border-line px-1.5 py-0.5 rounded">
+                        Yakında
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>

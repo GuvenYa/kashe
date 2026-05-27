@@ -5,6 +5,7 @@ import { FeaturedProfiles } from "@/app/components/sections/featured-profiles";
 import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
 import { B2BSection } from "@/app/components/sections/b2b-section";
+import { ProCtaSection } from "@/app/components/sections/pro-cta-section";
 import { TrustSection } from "@/app/components/sections/trust-section";
 import { Testimonials } from "@/app/components/sections/testimonials";
 import { FooterCTA } from "@/app/components/sections/footer-cta";
@@ -27,6 +28,9 @@ export default function Home() {
         <HowItWorks />
         <Reveal>
           <B2BSection />
+        </Reveal>
+        <Reveal>
+          <ProCtaSection />
         </Reveal>
         <Reveal>
           <TrustSection />
