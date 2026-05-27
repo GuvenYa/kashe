@@ -12,6 +12,7 @@ type Props = {
     bio: string | null;
     company_name: string | null;
     role: string;
+    created_at?: string | null;
     attributes?: Record<string, string | string[]> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -98,6 +99,14 @@ export function ProfileCard({
   // Kalp ikonu sadece profesyonel profillerinde gösterilir
   const showFavoriteButton = profile.role === 'professional';
 
+  // "Yeni" rozeti: profil son 30 günde oluşturulduysa
+  const isNew = (() => {
+    if (!profile.created_at) return false;
+    const created = new Date(profile.created_at).getTime();
+    const days = (Date.now() - created) / (1000 * 60 * 60 * 24);
+    return days <= 30;
+  })();
+
   return (
     <div className="relative group transition-all duration-300 hover:-translate-y-1">
       <Link
@@ -129,7 +138,7 @@ export function ProfileCard({
               </span>
             ) : (
               categoryName && (
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1 flex items-center gap-1.5">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1 flex items-center gap-1.5 flex-wrap">
                   {categoryIcon && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
@@ -140,6 +149,11 @@ export function ProfileCard({
                     />
                   )}
                   {categoryName}
+                  {isNew && (
+                    <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-moss bg-moss/10 border border-moss/30 px-1.5 py-0.5 rounded">
+                      Yeni
+                    </span>
+                  )}
                 </p>
               )
             )}

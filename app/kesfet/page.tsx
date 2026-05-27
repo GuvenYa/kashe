@@ -23,6 +23,7 @@ type PublishedProfile = {
   primary_category_id: number | null;
   company_name: string | null;
   role: string;
+  created_at: string | null;
   attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -77,7 +78,7 @@ export default async function KesfetPage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `

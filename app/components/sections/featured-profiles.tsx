@@ -31,6 +31,7 @@ type FeaturedProfile = {
   rating: number | null;
   reviewCount: number;
   priceFrom: number | null;
+  isNew: boolean;
 };
 
 function formatPrice(n: number): string {
@@ -49,7 +50,7 @@ export async function FeaturedProfiles() {
     .from("profiles")
     .select(
       `
-      id, full_name, avatar_url, company_name, role,
+      id, full_name, avatar_url, company_name, role, created_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, slug)
     `
@@ -65,6 +66,7 @@ export async function FeaturedProfiles() {
     avatar_url: string | null;
     company_name: string | null;
     role: string;
+    created_at: string | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; slug: string } | null;
   }>;
@@ -103,19 +105,27 @@ export async function FeaturedProfiles() {
     }
   });
 
-  const featured: FeaturedProfile[] = list.map((p) => ({
-    id: p.id,
-    full_name: p.full_name,
-    avatar_url: p.avatar_url,
-    company_name: p.company_name,
-    role: p.role,
-    city: p.turkish_cities?.name ?? null,
-    category: p.service_categories?.name_tr ?? null,
-    categorySlug: p.service_categories?.slug ?? null,
-    rating: ratingsByProfile[p.id]?.average ?? null,
-    reviewCount: ratingsByProfile[p.id]?.count ?? 0,
-    priceFrom: priceFromByProfile[p.id] ?? null,
-  }));
+  const featured: FeaturedProfile[] = list.map((p) => {
+    let isNew = false;
+    if (p.created_at) {
+      const days = (Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      isNew = days <= 30;
+    }
+    return {
+      id: p.id,
+      full_name: p.full_name,
+      avatar_url: p.avatar_url,
+      company_name: p.company_name,
+      role: p.role,
+      city: p.turkish_cities?.name ?? null,
+      category: p.service_categories?.name_tr ?? null,
+      categorySlug: p.service_categories?.slug ?? null,
+      rating: ratingsByProfile[p.id]?.average ?? null,
+      reviewCount: ratingsByProfile[p.id]?.count ?? 0,
+      priceFrom: priceFromByProfile[p.id] ?? null,
+      isNew,
+    };
+  });
 
   return (
     <section className="bg-paper border-t border-line">
@@ -210,9 +220,16 @@ export async function FeaturedProfiles() {
                   <h3 className="font-display text-lg text-ink leading-tight truncate group-hover:text-terracotta transition-colors">
                     {displayName}
                   </h3>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-1.5">
-                    {p.category ?? "Profesyonel"}
-                    {p.city ? ` · ${p.city}` : ""}
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span>
+                      {p.category ?? "Profesyonel"}
+                      {p.city ? ` · ${p.city}` : ""}
+                    </span>
+                    {p.isNew && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-moss bg-moss/10 border border-moss/30 px-1.5 py-0.5 rounded">
+                        Yeni
+                      </span>
+                    )}
                   </p>
 
                   <div className="mt-4 pt-4 border-t border-line flex items-center justify-between">
