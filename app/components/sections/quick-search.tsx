@@ -81,7 +81,7 @@ export function QuickSearch({
         <div className="px-4 py-2.5 rounded-xl hover:bg-paper-2/40 transition-colors h-full flex flex-col justify-center">
           <label
             htmlFor="qs-query"
-            className="block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-0.5"
+            className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta mb-1"
           >
             Ne arıyorsun?
           </label>
@@ -120,7 +120,11 @@ export function QuickSearch({
         )}
       </div>
 
-      <div className="hidden md:block w-px bg-line self-stretch my-2" />
+      <div className="hidden md:flex flex-col items-center justify-center self-stretch my-2 px-1" aria-hidden="true">
+        <div className="flex-1 w-px bg-terracotta/20" />
+        <div className="w-1 h-1 rounded-full bg-terracotta/40 my-1" />
+        <div className="flex-1 w-px bg-terracotta/20" />
+      </div>
 
       {/* Şehir */}
       <div className="flex-1">

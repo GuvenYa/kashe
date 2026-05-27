@@ -77,7 +77,7 @@ export function CitySelect({
         onClick={() => setOpen((v) => !v)}
         className="w-full text-left px-4 py-2.5 rounded-xl hover:bg-paper-2/40 transition-colors h-full flex flex-col justify-center"
       >
-        <span className="block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-0.5">
+        <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta mb-1">
           Nerede?
         </span>
         <span className="flex items-center justify-between">
