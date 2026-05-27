@@ -60,7 +60,8 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
                     {field.hint}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-2">
+                {/* İki sütunlu liste + checkbox */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
                   {field.options.map((opt) => {
                     const isOn = selected.includes(opt.value);
                     return (
@@ -68,13 +69,40 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
                         key={opt.value}
                         type="button"
                         onClick={() => toggleMulti(field.key, opt.value)}
-                        className={`kashe-tap px-3.5 py-1.5 rounded-full text-sm border transition-colors ${
+                        aria-pressed={isOn}
+                        className={`kashe-tap group flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                           isOn
-                            ? 'bg-terracotta text-paper border-terracotta'
-                            : 'bg-transparent text-ink-72 border-line hover:border-ink hover:text-ink'
+                            ? 'bg-terracotta-08 text-ink'
+                            : 'bg-transparent text-ink-72 hover:bg-paper-2 hover:text-ink'
                         }`}
                       >
-                        {opt.label}
+                        <span
+                          className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                            isOn
+                              ? 'bg-terracotta border-terracotta'
+                              : 'bg-card border-line group-hover:border-ink-72'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {isOn && (
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M5 12l4 4 10-10"
+                                stroke="var(--color-paper)"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="text-sm leading-tight">{opt.label}</span>
                       </button>
                     );
                   })}
