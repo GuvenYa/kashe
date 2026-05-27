@@ -23,8 +23,7 @@ const trustItems: TrustItem[] = [
   {
     icon: CreditCard,
     title: "Güvenli ödeme",
-    description:
-      "iyzico altyapısıyla PCI-DSS uyumlu kart bilgileri korunur.",
+    description: "iyzico altyapısıyla PCI-DSS uyumlu kart bilgileri korunur.",
   },
   {
     icon: FileCheck2,
@@ -38,6 +37,14 @@ const trustItems: TrustItem[] = [
     description:
       "Her adımda yanındayız. Sorularınız için bize her zaman yazabilirsiniz.",
   },
+];
+
+// İkon zeminleri için renk rotasyonu (Kashe paleti) — Categories ile tutarlı.
+const TONES = [
+  { bg: "rgba(200,68,42,0.10)", fg: "#C8442A" }, // terracotta
+  { bg: "rgba(107,46,92,0.10)", fg: "#6B2E5C" }, // plum
+  { bg: "rgba(63,107,71,0.10)", fg: "#3F6B47" }, // moss
+  { bg: "rgba(168,52,30,0.10)", fg: "#A8341E" }, // ember
 ];
 
 export function TrustSection() {
@@ -55,23 +62,40 @@ export function TrustSection() {
         </div>
 
         {/* Trust grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {trustItems.map((item) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {trustItems.map((item, i) => {
             const Icon = item.icon;
+            const tone = TONES[i % TONES.length];
             return (
               <div
                 key={item.title}
-                className="bg-card border border-line p-6 md:p-7"
+                className="group relative bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
               >
-                <div className="w-10 h-10 bg-terracotta-08 flex items-center justify-center mb-5">
-                  <Icon className="w-5 h-5 text-terracotta" strokeWidth={1.5} />
+                {/* Hover renk yıkaması */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                  style={{ background: tone.bg }}
+                  aria-hidden="true"
+                />
+                <div className="relative">
+                  {/* İkon — renk rotasyonlu zemin */}
+                  <div
+                    className="w-16 h-16 flex items-center justify-center mb-5 rounded-xl transition-transform duration-300 group-hover:scale-105"
+                    style={{ background: tone.bg }}
+                  >
+                    <Icon
+                      className="w-7 h-7"
+                      strokeWidth={1.5}
+                      style={{ color: tone.fg }}
+                    />
+                  </div>
+                  <h3 className="font-display font-medium text-lg text-ink mb-2 leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-ink-72 leading-[1.55]">
+                    {item.description}
+                  </p>
                 </div>
-                <h3 className="font-display font-medium text-lg text-ink mb-2 leading-tight">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-ink-72 leading-[1.55]">
-                  {item.description}
-                </p>
               </div>
             );
           })}
