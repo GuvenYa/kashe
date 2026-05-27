@@ -209,11 +209,11 @@ export default async function KonusmaPage({
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-8 md:py-12">
+      <main className="min-h-screen bg-paper px-4 md:px-12 py-4 md:py-8">
         <div className="max-w-6xl mx-auto">
           <Link
             href="/mesajlar"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-6"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-3 md:mb-4"
           >
             ← Tüm mesajlar
           </Link>

@@ -334,9 +334,9 @@ export function KonusmaDetay({
   const canSend = body.trim().length > 0 && !isPending;
 
   return (
-    <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[500px]">
+    <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
       {/* HEADER */}
-      <div className="border-b border-line px-5 py-4 flex items-center gap-4 bg-card">
+      <div className="border-b border-line px-4 md:px-5 py-3 md:py-4 flex items-center gap-3 md:gap-4 bg-card">
         <Link
           href={`/p/${other.id}`}
           className="flex items-center gap-3 group min-w-0 flex-1"
@@ -442,7 +442,7 @@ export function KonusmaDetay({
 
       {/* ETKİNLİK ÖZETİ ÇITASI — kompakt tek satır, scroll edilebilir */}
       {hasBrief && (
-        <div className="border-b border-line bg-terracotta/[0.04] px-5 py-2.5">
+        <div className="border-b border-line bg-terracotta/[0.04] px-4 md:px-5 py-2">
           <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap kashe-no-scrollbar">
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta shrink-0">
               Etkinlik
@@ -549,22 +549,23 @@ export function KonusmaDetay({
       {/* INPUT */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-line p-4 md:p-5 bg-card"
+        className="border-t border-line p-3 md:p-4 bg-card"
       >
-        {(isProfessional || isAssignedPro) && (
-          <button
-            type="button"
-            onClick={() => setQuoteModalOpen(true)}
-            className="kashe-tap mb-3 inline-flex items-center gap-2 px-3 py-1.5 bg-plum/10 hover:bg-plum/15 text-plum rounded-full text-[10px] font-mono uppercase tracking-[0.14em] transition"
-          >
-            <span className="text-base leading-none">+</span>
-            Teklif gönder
-          </button>
-        )}
         {error && (
           <p className="text-xs text-terracotta mb-2">{error}</p>
         )}
         <div className="flex items-end gap-2 md:gap-3">
+          {(isProfessional || isAssignedPro) && (
+            <button
+              type="button"
+              onClick={() => setQuoteModalOpen(true)}
+              aria-label="Teklif gönder"
+              title="Teklif gönder"
+              className="kashe-tap shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl border border-plum/30 bg-plum/8 text-plum hover:bg-plum/15 hover:border-plum/50 transition flex items-center justify-center font-display text-xl leading-none"
+            >
+              +
+            </button>
+          )}
           <textarea
             value={body}
             onChange={(e) => {
