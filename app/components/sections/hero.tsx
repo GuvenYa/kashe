@@ -60,6 +60,9 @@ export async function Hero() {
     { data: citiesData },
     { count: proCount },
     { count: cityCount },
+    {
+      data: { user },
+    },
   ] = await Promise.all([
     supabase
       .from("service_categories")
@@ -73,7 +76,9 @@ export async function Hero() {
       .eq("is_published", true)
       .in("role", ["professional", "agency"]),
     supabase.from("turkish_cities").select("id", { count: "exact", head: true }),
+    supabase.auth.getUser(),
   ]);
+  const isLoggedIn = !!user;
 
   const categories = categoriesData || [];
   const cities = orderCities(citiesData || []);
@@ -140,21 +145,38 @@ export async function Hero() {
               <QuickSearch categories={categories} cities={cities} />
             </div>
 
-            {/* CTA — Hizmet ara birincil (sol), Hizmet ver ikincil (sağ) */}
+            {/* CTA — girişli/girişsiz durumuna göre */}
             <div
               className="kashe-rise relative z-0 flex flex-col sm:flex-row gap-3"
               style={{ animationDelay: "320ms" }}
             >
-              <a href="/uye-ol?rol=musteri">
-                <Button variant="primary" size="lg">
-                  Hizmet ara →
-                </Button>
-              </a>
-              <a href="/uye-ol?rol=profesyonel">
-                <Button variant="secondary" size="lg">
-                  Hizmet ver
-                </Button>
-              </a>
+              {isLoggedIn ? (
+                <>
+                  <a href="/kesfet">
+                    <Button variant="primary" size="lg">
+                      Profesyonelleri keşfet →
+                    </Button>
+                  </a>
+                  <a href="/ilanlar">
+                    <Button variant="secondary" size="lg">
+                      İlanlara göz at
+                    </Button>
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a href="/uye-ol?rol=musteri">
+                    <Button variant="primary" size="lg">
+                      Hizmet ara →
+                    </Button>
+                  </a>
+                  <a href="/uye-ol?rol=profesyonel">
+                    <Button variant="secondary" size="lg">
+                      Hizmet ver
+                    </Button>
+                  </a>
+                </>
+              )}
             </div>
           </div>
 
