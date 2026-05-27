@@ -358,7 +358,18 @@ export default async function PublicProfilePage({
           </Link>
 
           {/* HEADER */}
-          <div className="bg-white border border-line rounded-lg p-8 mb-6 relative">
+          <div className="bg-card border border-line rounded-2xl p-8 mb-6 relative overflow-hidden">
+            {/* Atmosferik zemin — hero diliyle */}
+            <div
+              aria-hidden
+              className="absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full pointer-events-none opacity-50"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(200, 68, 42, 0.10) 0%, transparent 70%)",
+                filter: "blur(60px)",
+              }}
+            />
+            <div className="relative">
             {showFavoriteButton && (
               <div className="absolute top-6 right-6 z-10">
                 <FavoriteButton
@@ -459,6 +470,7 @@ export default async function PublicProfilePage({
                 {profile.bio}
               </p>
             )}
+            </div>
           </div>
 
           {/* KATEGORİYE ÖZEL ÖZELLİKLER */}
