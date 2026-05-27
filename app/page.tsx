@@ -8,6 +8,7 @@ import { B2BSection } from "@/app/components/sections/b2b-section";
 import { ProCtaSection } from "@/app/components/sections/pro-cta-section";
 import { TrustSection } from "@/app/components/sections/trust-section";
 import { Testimonials } from "@/app/components/sections/testimonials";
+import { FaqSection } from "@/app/components/sections/faq-section";
 import { FooterCTA } from "@/app/components/sections/footer-cta";
 import { Footer } from "@/app/components/sections/footer";
 import { Reveal } from "@/app/components/sections/reveal";
@@ -37,6 +38,9 @@ export default function Home() {
         </Reveal>
         <Reveal>
           <Testimonials />
+        </Reveal>
+        <Reveal>
+          <FaqSection />
         </Reveal>
         <Reveal>
           <FooterCTA />
