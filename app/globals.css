@@ -373,3 +373,10 @@ i {
   to { transform: translateX(0); }
 }
 .kashe-drawer { animation: kasheDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.kashe-no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge eski */
+}
+.kashe-no-scrollbar::-webkit-scrollbar {
+  display: none; /* WebKit (Chrome, Safari, mobile Chrome) */
+}
