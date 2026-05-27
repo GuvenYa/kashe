@@ -6,6 +6,7 @@ import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
 import { B2BSection } from "@/app/components/sections/b2b-section";
 import { TrustSection } from "@/app/components/sections/trust-section";
+import { Testimonials } from "@/app/components/sections/testimonials";
 import { FooterCTA } from "@/app/components/sections/footer-cta";
 import { Footer } from "@/app/components/sections/footer";
 import { Reveal } from "@/app/components/sections/reveal";
@@ -29,6 +30,9 @@ export default function Home() {
         </Reveal>
         <Reveal>
           <TrustSection />
+        </Reveal>
+        <Reveal>
+          <Testimonials />
         </Reveal>
         <Reveal>
           <FooterCTA />

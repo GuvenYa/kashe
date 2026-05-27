@@ -141,8 +141,37 @@ export async function Hero() {
               yetenek hizmetlerini ajanssız, şeffaf fiyatla buluşturuyoruz.
             </p>
 
-            <div className="kashe-rise relative z-30 mb-6" style={{ animationDelay: "240ms" }}>
+            <div className="kashe-rise relative z-30 mb-4" style={{ animationDelay: "240ms" }}>
               <QuickSearch categories={categories} cities={cities} />
+            </div>
+
+            {/* Popüler hızlı linkler */}
+            <div
+              className="kashe-rise flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm"
+              style={{ animationDelay: "280ms" }}
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
+                Popüler:
+              </span>
+              {[
+                { label: "Düğün fotoğrafçısı", slug: "fotografci" },
+                { label: "DJ", slug: "dj" },
+                { label: "Sunucu", slug: "sunucu" },
+                { label: "Müzisyen", slug: "muzisyen" },
+                { label: "Hostes", slug: "hostes" },
+              ].map((link) => {
+                const cat = categories.find((c) => c.slug === link.slug);
+                if (!cat) return null;
+                return (
+                  <a
+                    key={link.slug}
+                    href={`/kesfet?kategori=${cat.id}`}
+                    className="text-ink-72 hover:text-terracotta transition-colors underline-offset-4 hover:underline"
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
             </div>
 
             {/* CTA — girişli/girişsiz durumuna göre */}
