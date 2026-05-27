@@ -1,6 +1,7 @@
 import { TopNav } from "@/app/components/sections/top-nav";
 import { Hero } from "@/app/components/sections/hero";
 import { CategoryMarquee } from "@/app/components/sections/category-marquee";
+import { FeaturedProfiles } from "@/app/components/sections/featured-profiles";
 import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
 import { B2BSection } from "@/app/components/sections/b2b-section";
@@ -16,6 +17,9 @@ export default function Home() {
       <main>
         <Hero />
         <CategoryMarquee />
+        <Reveal>
+          <FeaturedProfiles />
+        </Reveal>
         <Reveal>
           <Categories />
         </Reveal>

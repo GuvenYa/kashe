@@ -120,10 +120,16 @@ export function QuickSearch({
         )}
       </div>
 
+      {/* Ayırıcı — masaüstü dikey, mobil yatay */}
       <div className="hidden md:flex flex-col items-center justify-center self-stretch my-2 px-1" aria-hidden="true">
         <div className="flex-1 w-px bg-terracotta/20" />
         <div className="w-1 h-1 rounded-full bg-terracotta/40 my-1" />
         <div className="flex-1 w-px bg-terracotta/20" />
+      </div>
+      <div className="flex md:hidden items-center justify-center mx-4" aria-hidden="true">
+        <div className="flex-1 h-px bg-terracotta/20" />
+        <div className="w-1 h-1 rounded-full bg-terracotta/40 mx-2" />
+        <div className="flex-1 h-px bg-terracotta/20" />
       </div>
 
       {/* Şehir */}
