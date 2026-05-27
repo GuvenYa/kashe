@@ -45,6 +45,11 @@ export function KesfetFilters({
   // İlk render'da otomatik uygulama yapma (sadece kullanıcı etkileşiminde)
   const isFirst = useRef(true);
 
+  // Sayfa açılır açılmaz başa kaydır (FeaturedProfiles/popüler linklerden gelirken)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Anlık filtreleme — state değişince debounce'lu URL push
   useEffect(() => {
     if (isFirst.current) {

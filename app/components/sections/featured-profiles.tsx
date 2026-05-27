@@ -5,7 +5,7 @@ import { getCategoryIcon } from "@/app/lib/category-icon";
 
 // Üst filtre çıtası için popüler kategoriler (slug'larla)
 const TOP_CATEGORIES = [
-  { slug: "fotografci", label: "Fotoğraf" },
+  { slug: "fotografci", label: "Fotoğrafçı" },
   { slug: "dj", label: "DJ" },
   { slug: "muzisyen", label: "Müzisyen" },
   { slug: "sunucu", label: "Sunucu" },
@@ -44,6 +44,16 @@ function formatPrice(n: number): string {
 
 export async function FeaturedProfiles() {
   const supabase = await createClient();
+
+  // Kategorileri çek — filtre çıtası için slug → id eşlemesi
+  const { data: categoriesData } = await supabase
+    .from("service_categories")
+    .select("id, slug")
+    .eq("is_active", true);
+  const slugToId: Record<string, number> = {};
+  (categoriesData || []).forEach((c) => {
+    slugToId[c.slug] = c.id;
+  });
 
   // Top 6 profil: rating ortalamasına göre, yoksa en yeni
   const { data: profiles } = await supabase
@@ -156,15 +166,19 @@ export async function FeaturedProfiles() {
           >
             Tümü
           </Link>
-          {TOP_CATEGORIES.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/kesfet?kategori=${c.slug}`}
-              className="kashe-tap px-4 py-2 rounded-full text-xs font-mono uppercase tracking-[0.14em] bg-transparent text-ink-72 border border-line hover:border-ink hover:text-ink transition-colors"
-            >
-              {c.label}
-            </Link>
-          ))}
+          {TOP_CATEGORIES.map((c) => {
+            const catId = slugToId[c.slug];
+            if (!catId) return null;
+            return (
+              <Link
+                key={c.slug}
+                href={`/kesfet?kategori=${catId}`}
+                className="kashe-tap px-4 py-2 rounded-full text-xs font-mono uppercase tracking-[0.14em] bg-transparent text-ink-72 border border-line hover:border-ink hover:text-ink transition-colors"
+              >
+                {c.label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Profil kartları — 3'lü grid */}
