@@ -11,13 +11,14 @@ import {
 import {
   validateMessageContent,
   formatViolationMessage,
+  type ViolationType,
 } from '@/app/lib/message-validation';
 
 export type MessagingActionResult = {
   success: boolean;
   error?: string;
   conversationId?: string;
-  violation?: boolean; // güvenlik ihlali sebebiyle engellendi mi
+  violation?: boolean;
 };
 
 export type StartConversationData = {
@@ -31,9 +32,17 @@ export type StartConversationData = {
   brief_data?: Record<string, string> | null;
 };
 
+// Sliding window: kullanıcının son N mesajını içeren süre (dakika)
+const SLIDING_WINDOW_MINUTES = 5;
+const SLIDING_WINDOW_MAX_MESSAGES = 5;
+
 /**
- * Mesaj içeriği güvenlik kontrolünü yapar.
- * İhlal varsa veritabanına log atar (sadece tip+zaman — KVKK güvenli, içerik yok).
+ * Mesaj içeriği güvenlik kontrolü.
+ * İki katmanlı kontrol:
+ *  1. Yeni mesajın kendisi
+ *  2. Yeni mesaj + kullanıcının son N mesajının birleşimi (bölünmüş bypass yakalama)
+ *
+ * İhlal varsa veritabanına log atar (tip+zaman, KVKK güvenli).
  * Döner: ihlal yoksa null, varsa kullanıcı dostu uyarı metni.
  */
 async function checkContentSecurity(
@@ -43,30 +52,100 @@ async function checkContentSecurity(
   conversationId: string | null,
   body: string
 ): Promise<string | null> {
-  const result = validateMessageContent(body);
-  if (result.ok) return null;
-
-  // İhlal log'u — sadece tip + zaman, MESAJ İÇERİĞİ KAYDEDİLMEZ (KVKK güvenli)
-  // conversationId null olabilir (startConversation öncesi) — log atmıyoruz o durumda
-  if (conversationId) {
-    for (const v of result.violations) {
-      // sessiz fail — log başarısız olsa bile engelleme devam etsin
-      await supabase
-        .from('message_violations')
-        .insert({
-          user_id: userId,
-          conversation_id: conversationId,
-          violation_type: v,
-        })
-        .then(() => {})
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((e: any) => {
-          console.error('Violation log failed (non-blocking):', e);
-        });
-    }
+  // 1. Tek mesaj kontrolü
+  const singleResult = validateMessageContent(body);
+  if (!singleResult.ok) {
+    await logViolations(supabase, userId, conversationId, singleResult.violations);
+    return formatViolationMessage(singleResult.violations);
   }
 
-  return formatViolationMessage(result.violations);
+  // 2. Sliding window kontrolü — sadece mevcut konuşmada anlamlı (yeni konuşmada
+  // henüz mesaj yok, kontrol gereksiz)
+  if (!conversationId) return null;
+
+  const sinceIso = new Date(
+    Date.now() - SLIDING_WINDOW_MINUTES * 60 * 1000
+  ).toISOString();
+
+  const { data: recentMessages } = await supabase
+    .from('messages')
+    .select('body')
+    .eq('conversation_id', conversationId)
+    .eq('sender_id', userId)
+    // message_type filtresi yok - tüm mesajlar window'a dahil
+    .gte('created_at', sinceIso)
+    .order('created_at', { ascending: false })
+    .limit(SLIDING_WINDOW_MAX_MESSAGES);
+
+  if (!recentMessages || recentMessages.length === 0) return null;
+
+  // Son mesajlar + yeni mesaj birleşimi
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const combinedText =
+    recentMessages
+      .map((m: any) => m.body)
+      .reverse() // en eskiden yeniye sırala
+      .join(' ') +
+    ' ' +
+    body;
+
+  const combinedResult = validateMessageContent(combinedText);
+  if (!combinedResult.ok) {
+    await logViolations(
+      supabase,
+      userId,
+      conversationId,
+      combinedResult.violations
+    );
+    // Bölme bypass'ı için ayrı uyarı — kullanıcı durumu anlasın
+    return formatSplitViolationMessage(combinedResult.violations);
+  }
+
+  return null;
+}
+
+async function logViolations(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  conversationId: string | null,
+  violations: ViolationType[]
+): Promise<void> {
+  if (!conversationId) return;
+  for (const v of violations) {
+    await supabase
+      .from('message_violations')
+      .insert({
+        user_id: userId,
+        conversation_id: conversationId,
+        violation_type: v,
+      })
+      .then(() => {})
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .catch((e: any) => {
+        console.error('Violation log failed (non-blocking):', e);
+      });
+  }
+}
+
+const VIOLATION_LABELS: Record<ViolationType, string> = {
+  phone: 'telefon numarası',
+  iban: 'IBAN',
+  email: 'e-posta adresi',
+};
+
+function formatSplitViolationMessage(violations: ViolationType[]): string {
+  if (violations.length === 0) return '';
+  const labels = violations.map((v) => VIOLATION_LABELS[v]);
+  let joined: string;
+  if (labels.length === 1) {
+    joined = labels[0];
+  } else if (labels.length === 2) {
+    joined = `${labels[0]} ve ${labels[1]}`;
+  } else {
+    joined = `${labels.slice(0, -1).join(', ')} ve ${labels[labels.length - 1]}`;
+  }
+  return `Son mesajlarınla birlikte değerlendirildiğinde ${joined} paylaşıldığını gördük. İletişim Kashe içinde kalsın — bilgileri tek tek de yazmak güvenli değil.`;
 }
 
 export async function startConversation(
@@ -114,8 +193,7 @@ export async function startConversation(
     }
   }
 
-  // GÜVENLİK KONTROLÜ — telefon/IBAN/e-posta paylaşımını engelle
-  // conversationId henüz yok, log konuşma oluşunca atılır (aşağıda)
+  // GÜVENLİK — startConversation'da conversationId yok, sadece tek mesaj kontrolü
   const securityCheck = await checkContentSecurity(
     supabase,
     user.id,
@@ -219,8 +297,7 @@ export async function sendMessage(
     return { success: false, error: 'Mesaj 2000 karakterden uzun olamaz.' };
   }
 
-  // GÜVENLİK KONTROLÜ — telefon/IBAN/e-posta paylaşımını engelle
-  // İhlal varsa log atılır (sadece tip, içerik değil), kullanıcıya yumuşak uyarı döner
+  // GÜVENLİK — tek mesaj + sliding window (kullanıcının son 5 mesajı, 5 dk içi)
   const securityCheck = await checkContentSecurity(
     supabase,
     user.id,

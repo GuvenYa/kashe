@@ -6,8 +6,10 @@
  * Müşterinin profesyoneli platform dışına çıkarması önlenir
  * (komisyon kaybı + güvenlik).
  *
- * Regex'ler 25+ gerçek senaryoda test edildi —
- * para aralıkları, tarihler, saatler false positive vermemeli.
+ * Tasarım: kullanıcı mesajı parça parça (bypass) gönderebilir; bu yüzden
+ * regex'ler harf/cümle sınırlarına bakmıyor, ardışık digit bloklarını
+ * "telefon imzalı substring" için tarıyor. Sliding window kontrolü
+ * (actions.ts) ile birlikte birden fazla mesaja yayılmış paylaşımı yakalar.
  */
 
 export type ViolationType = 'phone' | 'iban' | 'email';
@@ -18,60 +20,75 @@ export type MessageValidation = {
 };
 
 function hasPhone(text: string): boolean {
-  // 10-15 rakam içeren, ayırıcılı veya bitişik dizileri tara
-  const matches = text.match(/(?:\+?\d[\d\s\-\.\(\)]{8,}\d)/g);
-  if (!matches) return false;
+  // Text'i digit ve digit-ayırıcı olmayan karakterlerle parçala.
+  // Her token'da 10+ hane içinde "telefon imzalı" alt-dizi var mı tara.
+  const tokens = text.split(/[^\d\s\-\.\(\)\+]+/);
+  for (const token of tokens) {
+    const digits = token.replace(/\D/g, '');
+    if (digits.length < 10) continue;
 
-  for (const m of matches) {
-    const trimmed = m.trim();
-    const digits = trimmed.replace(/\D/g, '');
-    if (digits.length < 10 || digits.length > 15) continue;
+    const trimmed = token.trim();
 
-    // Para formatı — 1.250.000 veya 15.000,50 gibi
+    // Para formatı kontrolü (1.250.000, 15.000,50)
     if (/^\d{1,3}([\.,]\d{3})+([\.,]\d+)?$/.test(trimmed)) continue;
 
-    // Sayısal aralık — "15000-30000" veya "15.000-30.000"
+    // Sayısal aralık (15000-30000)
     if (/^\d+\s*-\s*\d+$/.test(trimmed)) continue;
     if (/^\d{1,3}([\.,]\d{3})+\s*-\s*\d{1,3}([\.,]\d{3})+$/.test(trimmed))
       continue;
 
-    // ISO tarih + saat (2026-05-29 21:07)
+    // ISO tarih
     if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) continue;
 
-    // Telefon imzası: + ile başla veya 0/90/5 ile devam et
-    const digitsStart = digits.slice(0, 2);
-    const startsWithPhoneSig =
-      /^\+?\d/.test(trimmed) &&
-      (digits.startsWith('0') ||
-        digits.startsWith('90') ||
-        digitsStart.startsWith('5'));
-    if (!startsWithPhoneSig) continue;
-
-    return true;
+    // Telefon imzalı alt-dizi tarama: 10-13 hane, 0/5/90 ile başlar
+    for (let i = 0; i < digits.length; i++) {
+      const remaining = digits.length - i;
+      const maxLen = Math.min(13, remaining);
+      for (let len = 10; len <= maxLen; len++) {
+        const slice = digits.slice(i, i + len);
+        if (
+          slice[0] === '0' ||
+          slice[0] === '5' ||
+          (slice[0] === '9' && slice[1] === '0')
+        ) {
+          return true;
+        }
+      }
+    }
   }
   return false;
 }
 
 function hasIban(text: string): boolean {
-  // Türk IBAN: TR + 24 hane (boşluklu da olabilir)
+  // 1. Türk IBAN: TR + 24 hane
   const trMatch = text.match(/\bTR[\s]?[\d\s]{24,34}\b/i);
   if (trMatch) {
     const digits = trMatch[0].replace(/\D/g, '');
     if (digits.length >= 24 && digits.length <= 26) return true;
   }
 
-  // Genel IBAN: 2 harf ülke + 2 hane + en az 11 hane
+  // 2. Genel IBAN: ülke prefix + hane
   const genericMatch = text.match(/\b[A-Z]{2}\d{2}[\s\d]{11,32}\b/);
   if (genericMatch) {
     const digits = genericMatch[0].replace(/\D/g, '');
     if (digits.length >= 13 && digits.length <= 32) return true;
   }
+
+  // 3. Prefix'siz uzun digit dizisi (IBAN bypass)
+  const longDigitMatches = text.match(/(?:\d[\s\-]?){22,30}\d/g);
+  if (longDigitMatches) {
+    for (const m of longDigitMatches) {
+      const digits = m.replace(/\D/g, '');
+      if (digits.length >= 22 && digits.length <= 32) return true;
+    }
+  }
+
   return false;
 }
 
 function hasEmail(text: string): boolean {
-  // @ etrafında 0-3 boşluk olabilir — bypass dene yakalansın
-  return /[a-zA-Z0-9._%+-]+[\s]{0,3}@[\s]{0,3}[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(
+  // @ ve TLD önündeki nokta etrafında boşluk toleransı
+  return /[a-zA-Z0-9._%+-]+[\s]{0,3}@[\s]{0,3}[a-zA-Z0-9.-]+[\s]{0,2}\.[\s]{0,2}[a-zA-Z]{2,}/.test(
     text
   );
 }
