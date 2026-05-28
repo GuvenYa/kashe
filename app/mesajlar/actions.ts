@@ -8,30 +8,67 @@ import {
   type EventTypeKey,
   type BudgetRangeKey,
 } from './data';
+import {
+  validateMessageContent,
+  formatViolationMessage,
+} from '@/app/lib/message-validation';
 
 export type MessagingActionResult = {
   success: boolean;
   error?: string;
   conversationId?: string;
+  violation?: boolean; // güvenlik ihlali sebebiyle engellendi mi
 };
 
 export type StartConversationData = {
   professional_id: string;
   message: string;
-  // Legacy sabit kolonlar (mevcut "etkinlik özeti" kartı bunları okur)
   event_date: string | null;
   event_type: string | null;
   location: string | null;
   guest_count: number | null;
   budget_range: string | null;
-  // Dinamik brief cevapları (kategoriye göre değişen tüm alanlar)
   brief_data?: Record<string, string> | null;
 };
 
 /**
- * Bir profesyonelle yeni konuşma başlat veya mevcut konuşmaya devam et.
- * İlk mesajı da gönderir.
+ * Mesaj içeriği güvenlik kontrolünü yapar.
+ * İhlal varsa veritabanına log atar (sadece tip+zaman — KVKK güvenli, içerik yok).
+ * Döner: ihlal yoksa null, varsa kullanıcı dostu uyarı metni.
  */
+async function checkContentSecurity(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  conversationId: string | null,
+  body: string
+): Promise<string | null> {
+  const result = validateMessageContent(body);
+  if (result.ok) return null;
+
+  // İhlal log'u — sadece tip + zaman, MESAJ İÇERİĞİ KAYDEDİLMEZ (KVKK güvenli)
+  // conversationId null olabilir (startConversation öncesi) — log atmıyoruz o durumda
+  if (conversationId) {
+    for (const v of result.violations) {
+      // sessiz fail — log başarısız olsa bile engelleme devam etsin
+      await supabase
+        .from('message_violations')
+        .insert({
+          user_id: userId,
+          conversation_id: conversationId,
+          violation_type: v,
+        })
+        .then(() => {})
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .catch((e: any) => {
+          console.error('Violation log failed (non-blocking):', e);
+        });
+    }
+  }
+
+  return formatViolationMessage(result.violations);
+}
+
 export async function startConversation(
   data: StartConversationData
 ): Promise<MessagingActionResult> {
@@ -45,7 +82,6 @@ export async function startConversation(
     return { success: false, error: 'Mesaj göndermek için giriş yapmalısın.' };
   }
 
-  // Validation
   if (!data.message || data.message.trim().length === 0) {
     return { success: false, error: 'Mesaj boş olamaz.' };
   }
@@ -59,11 +95,16 @@ export async function startConversation(
   if (data.location && data.location.length > 200) {
     return { success: false, error: 'Lokasyon 200 karakterden uzun olamaz.' };
   }
-  if (data.guest_count !== null && (data.guest_count < 0 || data.guest_count > 100000)) {
-    return { success: false, error: 'Kişi sayısı 0 ile 100.000 arasında olmalı.' };
+  if (
+    data.guest_count !== null &&
+    (data.guest_count < 0 || data.guest_count > 100000)
+  ) {
+    return {
+      success: false,
+      error: 'Kişi sayısı 0 ile 100.000 arasında olmalı.',
+    };
   }
 
-  // Etkinlik tarihi geçmişte olamaz (opsiyonel ama mantıklı guard)
   if (data.event_date) {
     const eventDate = new Date(data.event_date);
     const today = new Date();
@@ -73,7 +114,18 @@ export async function startConversation(
     }
   }
 
-  // Profesyonel gerçekten var ve published mı?
+  // GÜVENLİK KONTROLÜ — telefon/IBAN/e-posta paylaşımını engelle
+  // conversationId henüz yok, log konuşma oluşunca atılır (aşağıda)
+  const securityCheck = await checkContentSecurity(
+    supabase,
+    user.id,
+    null,
+    data.message
+  );
+  if (securityCheck) {
+    return { success: false, error: securityCheck, violation: true };
+  }
+
   const { data: targetProfile } = await supabase
     .from('profiles')
     .select('id, role, is_published')
@@ -93,7 +145,6 @@ export async function startConversation(
     return { success: false, error: 'Bu profil yayında değil.' };
   }
 
-  // Mevcut konuşma var mı?
   const { data: existing } = await supabase
     .from('conversations')
     .select('id')
@@ -105,9 +156,7 @@ export async function startConversation(
 
   if (existing) {
     conversationId = existing.id;
-    // Event bilgileri güncellenebilir mi? Şimdilik dokunmuyoruz, ilk konuşmadakiler kalsın
   } else {
-    // Yeni konuşma oluştur
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
       .insert({
@@ -126,13 +175,14 @@ export async function startConversation(
     if (convError || !newConv) {
       return {
         success: false,
-        error: 'Konuşma başlatılamadı: ' + (convError?.message || 'bilinmeyen hata'),
+        error:
+          'Konuşma başlatılamadı: ' +
+          (convError?.message || 'bilinmeyen hata'),
       };
     }
     conversationId = newConv.id;
   }
 
-  // Mesajı ekle
   const { error: msgError } = await supabase.from('messages').insert({
     conversation_id: conversationId,
     sender_id: user.id,
@@ -148,9 +198,6 @@ export async function startConversation(
   return { success: true, conversationId };
 }
 
-/**
- * Mevcut bir konuşmaya yanıt yaz.
- */
 export async function sendMessage(
   conversationId: string,
   body: string
@@ -172,7 +219,18 @@ export async function sendMessage(
     return { success: false, error: 'Mesaj 2000 karakterden uzun olamaz.' };
   }
 
-  // Kullanıcı bu konuşmaya katılımcı mı? (defensive — RLS de kontrol ediyor)
+  // GÜVENLİK KONTROLÜ — telefon/IBAN/e-posta paylaşımını engelle
+  // İhlal varsa log atılır (sadece tip, içerik değil), kullanıcıya yumuşak uyarı döner
+  const securityCheck = await checkContentSecurity(
+    supabase,
+    user.id,
+    conversationId,
+    body
+  );
+  if (securityCheck) {
+    return { success: false, error: securityCheck, violation: true };
+  }
+
   const { data: conv } = await supabase
     .from('conversations')
     .select('customer_id, professional_id')
@@ -183,7 +241,6 @@ export async function sendMessage(
     !!conv &&
     (conv.customer_id === user.id || conv.professional_id === user.id);
 
-  // Owner/müşteri değilse, atanan pro mu? (junction)
   if (conv && !hasAccess) {
     const { data: assignee } = await supabase
       .from('conversation_assignees')
@@ -213,17 +270,6 @@ export async function sendMessage(
   return { success: true, conversationId };
 }
 
-/**
- * Konuşmadaki okunmamış mesajları "okundu" olarak işaretle.
- */
-/**
- * Konuşmadaki okunmamış mesajları + bu konuşmayla ilgili bildirimleri
- * "okundu" olarak işaretle.
- *
- * İki ayrı UPDATE yapıyoruz:
- *  1. messages tablosu — sohbet içindeki "mavi tik" mantığı için
- *  2. notifications tablosu — TopNav zil sayacı + bildirim merkezi için
- */
 export async function markConversationRead(
   conversationId: string
 ): Promise<MessagingActionResult> {
@@ -239,7 +285,6 @@ export async function markConversationRead(
 
   const nowIso = new Date().toISOString();
 
-  // 1. Karşı tarafın gönderdiği okunmamış mesajları işaretle
   const { error: msgError } = await supabase
     .from('messages')
     .update({ read_at: nowIso })
@@ -251,8 +296,6 @@ export async function markConversationRead(
     return { success: false, error: msgError.message };
   }
 
-  // 2. Bu konuşmayla ilgili okunmamış bildirimleri de işaretle
-  // (link alanı '/mesajlar/{id}' formatında — Faz 5/8 trigger'larında böyle yazıldı)
   const { error: notifError } = await supabase
     .from('notifications')
     .update({ read_at: nowIso })
@@ -261,7 +304,6 @@ export async function markConversationRead(
     .is('read_at', null);
 
   if (notifError) {
-    // Bildirimler güncellenememesi kritik değil — log ve devam
     console.error('Notification mark-read failed:', notifError);
   }
 
@@ -269,6 +311,7 @@ export async function markConversationRead(
   revalidatePath('/bildirimler');
   return { success: true };
 }
+
 export async function getUnreadMessageCount(): Promise<number> {
   const supabase = await createClient();
 
@@ -278,7 +321,6 @@ export async function getUnreadMessageCount(): Promise<number> {
 
   if (!user) return 0;
 
-  // Bana gelen + henüz okumadığım mesajlar
   const { count, error } = await supabase
     .from('messages')
     .select('id', { count: 'exact', head: true })
@@ -292,10 +334,7 @@ export async function getUnreadMessageCount(): Promise<number> {
 
   return count ?? 0;
 }
-/**
- * Konuşmayı ajansın bir ekip üyesine ata.
- * Sadece sahibi ajans çağırabilir; trigger sistem mesajını otomatik düşürür.
- */
+
 export async function assignConversation(
   conversationId: string,
   professionalId: string
@@ -310,7 +349,6 @@ export async function assignConversation(
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
-  // Bu konuşmanın sahibi ajans ben miyim?
   const { data: conv } = await supabase
     .from('conversations')
     .select('professional_id')
@@ -321,7 +359,6 @@ export async function assignConversation(
     return { success: false, error: 'Bu konuşmayı atama yetkin yok.' };
   }
 
-  // Hedef profesyonel gerçekten bu ajansın üyesi mi?
   const { data: member } = await supabase
     .from('agency_members')
     .select('id')
@@ -333,17 +370,13 @@ export async function assignConversation(
     return { success: false, error: 'Bu profesyonel ekibinde değil.' };
   }
 
-  // Junction'a ekle (zaten varsa unique constraint'e takılır → tekrar eklemez)
-  const { error } = await supabase
-    .from('conversation_assignees')
-    .insert({
-      conversation_id: conversationId,
-      professional_id: professionalId,
-      assigned_by: user.id,
-    });
+  const { error } = await supabase.from('conversation_assignees').insert({
+    conversation_id: conversationId,
+    professional_id: professionalId,
+    assigned_by: user.id,
+  });
 
   if (error) {
-    // 23505 = unique violation (zaten atanmış) — sessiz geç
     if (error.code !== '23505') {
       return { success: false, error: 'Atama yapılamadı: ' + error.message };
     }
@@ -354,11 +387,6 @@ export async function assignConversation(
   return { success: true, conversationId };
 }
 
-/**
- * Bir profesyoneli konuşmadan çıkar (junction'dan sil).
- * RLS sadece owner ajansın silmesine izin verir; trigger son pro çıkınca
- * "yeniden ajans" mesajını otomatik düşürür.
- */
 export async function unassignConversation(
   conversationId: string,
   professionalId: string

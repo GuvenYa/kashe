@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -15,6 +15,10 @@ import { QuoteModal } from './quote-modal';
 import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
 import type { Message } from '@/app/lib/types';
+import {
+  validateMessageContent,
+  formatViolationMessage,
+} from '@/app/lib/message-validation';
 
 type OtherUser = {
   id: string;
@@ -43,7 +47,6 @@ type Props = {
   initialQuotes: Record<string, Quote>;
 };
 
-// Renk tonları — hero/featured-profiles ile aynı dil
 const TONES = [
   { bg: 'rgba(200,68,42,0.12)', fg: '#C8442A' },
   { bg: 'rgba(107,46,92,0.12)', fg: '#6B2E5C' },
@@ -75,7 +78,6 @@ function formatDayLabel(isoDate: string): string {
   if (dateOnly.getTime() === today.getTime()) return 'Bugün';
   if (dateOnly.getTime() === yesterday.getTime()) return 'Dün';
 
-  // Bu yıl içinde mi?
   if (date.getFullYear() === now.getFullYear()) {
     return date.toLocaleDateString('tr-TR', {
       day: 'numeric',
@@ -205,7 +207,6 @@ export function KonusmaDetay({
     markConversationRead(conversationId).catch(() => {});
   }, [conversationId]);
 
-  // Realtime: yeni mesaj + presence (typing, online)
   useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -274,7 +275,6 @@ export function KonusmaDetay({
     };
   }, [conversationId, currentUserId, other.id]);
 
-  // Yeni mesajda mesaj listesinin altına scroll (sadece liste içi, sayfa scroll'una dokunma)
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -292,12 +292,28 @@ export function KonusmaDetay({
       .catch(() => {});
   }
 
+  // GÜVENLİK — telefon/IBAN/e-posta için anlık client-side kontrol
+  // Sunucu da aynı kontrolü yapar; bu sadece UX (kullanıcı bilinçli olur)
+  const securityWarning = useMemo(() => {
+    const trimmed = body.trim();
+    if (trimmed.length < 6) return null; // çok kısa metin için kontrol gereksiz
+    const v = validateMessageContent(trimmed);
+    if (v.ok) return null;
+    return formatViolationMessage(v.violations);
+  }, [body]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
     const text = body.trim();
     if (!text) return;
+
+    // Client-side son kontrol — eğer güvenlik uyarısı varsa gönderme
+    if (securityWarning) {
+      setError(securityWarning);
+      return;
+    }
 
     startTransition(async () => {
       const result = await sendMessage(conversationId, text);
@@ -321,10 +337,12 @@ export function KonusmaDetay({
   );
   const showSenderNames = distinctSenders.size > 2;
 
-  // Etkinlik özeti çıtası için tek satır
   const briefBits: { label: string; value: string }[] = [];
   if (eventType) {
-    briefBits.push({ label: 'Tür', value: getEventTypeLabel(eventType) ?? eventType });
+    briefBits.push({
+      label: 'Tür',
+      value: getEventTypeLabel(eventType) ?? eventType,
+    });
   }
   if (eventDate) {
     briefBits.push({
@@ -350,7 +368,7 @@ export function KonusmaDetay({
   }
   const hasBrief = briefBits.length > 0;
 
-  const canSend = body.trim().length > 0 && !isPending;
+  const canSend = body.trim().length > 0 && !isPending && !securityWarning;
 
   return (
     <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
@@ -441,10 +459,14 @@ export function KonusmaDetay({
                         disabled={isAssigning}
                         className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-paper-2 transition-colors disabled:opacity-50 flex items-center justify-between gap-2"
                       >
-                        <span className="truncate">{m.full_name || 'İsimsiz'}</span>
+                        <span className="truncate">
+                          {m.full_name || 'İsimsiz'}
+                        </span>
                         <span
                           className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
-                            isOn ? 'bg-plum border-plum text-paper' : 'border-line'
+                            isOn
+                              ? 'bg-plum border-plum text-paper'
+                              : 'border-line'
                           }`}
                         >
                           {isOn ? '✓' : ''}
@@ -459,7 +481,7 @@ export function KonusmaDetay({
         )}
       </div>
 
-      {/* ETKİNLİK ÖZETİ ÇITASI — kompakt tek satır, scroll edilebilir */}
+      {/* ETKİNLİK ÖZETİ ÇITASI */}
       {hasBrief && (
         <div className="border-b border-line bg-terracotta/[0.04] px-4 md:px-5 py-2">
           <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap kashe-no-scrollbar">
@@ -474,7 +496,9 @@ export function KonusmaDetay({
                 <span className="text-[11px] text-ink-72 font-mono uppercase tracking-[0.12em]">
                   {b.label}:
                 </span>
-                <span className="text-[12px] text-ink font-medium">{b.value}</span>
+                <span className="text-[12px] text-ink font-medium">
+                  {b.value}
+                </span>
               </span>
             ))}
           </div>
@@ -494,7 +518,6 @@ export function KonusmaDetay({
           </div>
         ) : (
           messages.map((msg, idx) => {
-            // Tarih grubu pill — gün değişiminde göster (ilk mesaj dahil)
             const prevMsg = idx > 0 ? messages[idx - 1] : null;
             const showDayLabel =
               !prevMsg ||
@@ -507,7 +530,6 @@ export function KonusmaDetay({
               </div>
             ) : null;
 
-            // Quote tipinde mesaj — Quote kartı render et
             if (msg.message_type === 'quote' && msg.quote_id) {
               const quote = quotesById[msg.quote_id];
               if (!quote) {
@@ -541,38 +563,40 @@ export function KonusmaDetay({
 
             const isMine = msg.sender_id === currentUserId;
             return (
-              <div
-              key={msg.id}>
+              <div key={msg.id}>
                 {dayLabelEl}
-                <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                    isMine
-                      ? 'bg-terracotta text-paper rounded-br-md shadow-[0_4px_12px_-4px_rgba(200,68,42,0.35)]'
-                      : 'bg-card border border-line text-ink rounded-bl-md shadow-sm'
-                  }`}
+                  className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
                 >
-                  {!isMine && showSenderNames && (
-                    <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-plum mb-1">
-                      {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
-                      {senderNames[msg.sender_id]?.agencyTag && (
-                        <span className="text-ink-72">
-                          {' '}• {senderNames[msg.sender_id]!.agencyTag}
-                        </span>
-                      )}
-                    </p>
-                  )}
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                    {msg.body}
-                  </p>
-                  <p
-                    className={`text-[10px] mt-1 ${
-                      isMine ? 'text-paper/70' : 'text-ink-50'
+                  <div
+                    className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                      isMine
+                        ? 'bg-terracotta text-paper rounded-br-md shadow-[0_4px_12px_-4px_rgba(200,68,42,0.35)]'
+                        : 'bg-card border border-line text-ink rounded-bl-md shadow-sm'
                     }`}
                   >
-                    {formatMessageTime(msg.created_at)}
-                  </p>
-                </div>
+                    {!isMine && showSenderNames && (
+                      <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-plum mb-1">
+                        {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
+                        {senderNames[msg.sender_id]?.agencyTag && (
+                          <span className="text-ink-72">
+                            {' '}
+                            • {senderNames[msg.sender_id]!.agencyTag}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {msg.body}
+                    </p>
+                    <p
+                      className={`text-[10px] mt-1 ${
+                        isMine ? 'text-paper/70' : 'text-ink-50'
+                      }`}
+                    >
+                      {formatMessageTime(msg.created_at)}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
@@ -586,9 +610,43 @@ export function KonusmaDetay({
         onSubmit={handleSubmit}
         className="border-t border-line p-3 md:p-4 bg-card"
       >
-        {error && (
+        {/* Güvenlik uyarısı — anlık */}
+        {securityWarning && (
+          <div className="mb-3 flex items-start gap-2 bg-terracotta-08 border border-terracotta/25 rounded-xl px-3 py-2.5">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="shrink-0 mt-0.5"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="var(--color-terracotta)"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M12 8v4"
+                stroke="var(--color-terracotta)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy="16" r="1" fill="var(--color-terracotta)" />
+            </svg>
+            <p className="text-[12px] leading-relaxed text-ink">
+              {securityWarning}
+            </p>
+          </div>
+        )}
+
+        {error && !securityWarning && (
           <p className="text-xs text-terracotta mb-2">{error}</p>
         )}
+
         <div className="flex items-end gap-2 md:gap-3">
           {(isProfessional || isAssignedPro) && (
             <button
@@ -626,7 +684,11 @@ export function KonusmaDetay({
                 handleSubmit(e);
               }
             }}
-            className="flex-1 px-4 py-3 bg-paper border border-line rounded-xl text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none text-sm"
+            className={`flex-1 px-4 py-3 bg-paper border rounded-xl text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition resize-none text-sm ${
+              securityWarning
+                ? 'border-terracotta/50 focus:border-terracotta focus:ring-terracotta/20'
+                : 'border-line focus:border-terracotta focus:ring-terracotta/20'
+            }`}
           />
           <button
             type="submit"
