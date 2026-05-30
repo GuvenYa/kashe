@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, DM_Mono } from "next/font/google";
 import "./globals.css";
+import { CerezBanner } from "@/app/components/cerez-banner";
 
 const fraunces = Fraunces({
   subsets: ["latin", "latin-ext"],
@@ -39,7 +40,10 @@ export default function RootLayout({
       lang="tr"
       className={`${fraunces.variable} ${geist.variable} ${dmMono.variable}`}
     >
-      <body className="font-body antialiased">{children}</body>
+      <body className="font-body antialiased">
+        {children}
+        <CerezBanner />
+      </body>
     </html>
   );
 }

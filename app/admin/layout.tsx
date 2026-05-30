@@ -1,74 +1,57 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getAdminUser } from '@/app/lib/admin';
+import { createClient } from '@/app/lib/supabase-server';
+import { AdminNav } from './admin-nav';
 
 export const metadata = {
   title: 'Admin — Kashe',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
+/**
+ * Admin layout — erişim koruması burada yapılır.
+ * /admin/* altındaki tüm sayfalar bu layout'tan geçer.
+ *
+ * Sadece is_admin=true olan kullanıcılar erişebilir.
+ * Diğerleri /'a yönlendirilir (404 yerine sessiz yönlendirme —
+ * admin sayfasının varlığını dışarıya sızdırmamak için).
+ */
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAdmin } = await getAdminUser();
+  const supabase = await createClient();
 
-  // Admin değilse anasayfaya yönlendir (admin paneli varlığını gizle)
-  if (!isAdmin) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     redirect('/');
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin, full_name, avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    redirect('/');
+  }
+
+  const adminName = profile.full_name || user.email || 'Admin';
+
   return (
     <div className="min-h-screen bg-paper">
-      {/* Admin üst bar */}
-      <header className="border-b border-line bg-white sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="flex items-center gap-2">
-              <span className="w-7 h-7 bg-ink flex items-center justify-center text-paper font-display font-semibold italic text-base leading-none rounded">
-                k
-              </span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink">
-                Admin Panel
-              </span>
-            </Link>
-            <nav className="hidden md:flex items-center gap-5">
-              <Link
-                href="/admin"
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 hover:text-terracotta transition-colors"
-              >
-                Genel
-              </Link>
-              <Link
-                href="/admin/profiller"
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 hover:text-terracotta transition-colors"
-              >
-                Profil Onayları
-              </Link>
-              <Link
-                href="/admin/ilanlar"
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 hover:text-terracotta transition-colors"
-              >
-                İlan Onayları
-              </Link>
-              <Link
-                href="/admin/kullanicilar"
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 hover:text-terracotta transition-colors"
-              >
-                Kullanıcılar
-              </Link>
-            </nav>
-          </div>
-          <Link
-            href="/"
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 hover:text-ink transition-colors"
-          >
-            ← Siteye dön
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 md:px-12 py-10">{children}</main>
+      <AdminNav adminName={adminName} avatarUrl={profile.avatar_url ?? null} />
+      <main className="px-6 md:px-12 py-8 md:py-10">
+        <div className="max-w-7xl mx-auto">{children}</div>
+      </main>
     </div>
   );
 }
