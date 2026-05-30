@@ -13,6 +13,15 @@ import {
   formatViolationMessage,
   type ViolationType,
 } from '@/app/lib/message-validation';
+import {
+  sendNotificationEmail,
+  getUserEmail,
+} from '@/app/lib/email/send-email';
+import {
+  newMessageEmail,
+  newConversationEmail,
+} from '@/app/lib/email/templates';
+import { getEventTypeLabel } from './data';
 
 export type MessagingActionResult = {
   success: boolean;
@@ -32,19 +41,9 @@ export type StartConversationData = {
   brief_data?: Record<string, string> | null;
 };
 
-// Sliding window: kullanıcının son N mesajını içeren süre (dakika)
 const SLIDING_WINDOW_MINUTES = 5;
 const SLIDING_WINDOW_MAX_MESSAGES = 5;
 
-/**
- * Mesaj içeriği güvenlik kontrolü.
- * İki katmanlı kontrol:
- *  1. Yeni mesajın kendisi
- *  2. Yeni mesaj + kullanıcının son N mesajının birleşimi (bölünmüş bypass yakalama)
- *
- * İhlal varsa veritabanına log atar (tip+zaman, KVKK güvenli).
- * Döner: ihlal yoksa null, varsa kullanıcı dostu uyarı metni.
- */
 async function checkContentSecurity(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -52,15 +51,12 @@ async function checkContentSecurity(
   conversationId: string | null,
   body: string
 ): Promise<string | null> {
-  // 1. Tek mesaj kontrolü
   const singleResult = validateMessageContent(body);
   if (!singleResult.ok) {
     await logViolations(supabase, userId, conversationId, singleResult.violations);
     return formatViolationMessage(singleResult.violations);
   }
 
-  // 2. Sliding window kontrolü — sadece mevcut konuşmada anlamlı (yeni konuşmada
-  // henüz mesaj yok, kontrol gereksiz)
   if (!conversationId) return null;
 
   const sinceIso = new Date(
@@ -72,19 +68,17 @@ async function checkContentSecurity(
     .select('body')
     .eq('conversation_id', conversationId)
     .eq('sender_id', userId)
-    // message_type filtresi yok - tüm mesajlar window'a dahil
     .gte('created_at', sinceIso)
     .order('created_at', { ascending: false })
     .limit(SLIDING_WINDOW_MAX_MESSAGES);
 
   if (!recentMessages || recentMessages.length === 0) return null;
 
-  // Son mesajlar + yeni mesaj birleşimi
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const combinedText =
     recentMessages
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((m: any) => m.body)
-      .reverse() // en eskiden yeniye sırala
+      .reverse()
       .join(' ') +
     ' ' +
     body;
@@ -97,7 +91,6 @@ async function checkContentSecurity(
       conversationId,
       combinedResult.violations
     );
-    // Bölme bypass'ı için ayrı uyarı — kullanıcı durumu anlasın
     return formatSplitViolationMessage(combinedResult.violations);
   }
 
@@ -148,6 +141,139 @@ function formatSplitViolationMessage(violations: ViolationType[]): string {
   return `Son mesajlarınla birlikte değerlendirildiğinde ${joined} paylaşıldığını gördük. İletişim Kashe içinde kalsın — bilgileri tek tek de yazmak güvenli değil.`;
 }
 
+/**
+ * Karşı tarafa "yeni mesaj" e-postası tetikle — sessiz fail (kritik akışı bozma)
+ */
+async function notifyNewMessage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  conversationId: string,
+  senderId: string,
+  messageBody: string
+): Promise<void> {
+  try {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('customer_id, professional_id')
+      .eq('id', conversationId)
+      .single();
+    if (!conv) return;
+
+    const recipientId =
+      conv.customer_id === senderId ? conv.professional_id : conv.customer_id;
+    if (!recipientId) return;
+
+    const [{ data: senderProfile }, { data: recipientProfile }, toEmail] =
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', senderId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', recipientId)
+          .single(),
+        getUserEmail(supabase, recipientId),
+      ]);
+
+    if (!toEmail) return;
+
+    const senderName =
+      senderProfile?.role === 'business' && senderProfile?.company_name
+        ? senderProfile.company_name
+        : senderProfile?.full_name || 'Biri';
+
+    const recipientName =
+      recipientProfile?.role === 'business' && recipientProfile?.company_name
+        ? recipientProfile.company_name
+        : recipientProfile?.full_name || '';
+
+    const template = newMessageEmail({
+      recipientName,
+      senderName,
+      preview: messageBody,
+      conversationId,
+    });
+
+    await sendNotificationEmail({
+      supabase,
+      toUserId: recipientId,
+      toEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      conversationId,
+      eventType: 'new_message',
+    });
+  } catch (err) {
+    console.error('[email] notifyNewMessage error:', err);
+  }
+}
+
+async function notifyNewConversation(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  conversationId: string,
+  customerId: string,
+  professionalId: string,
+  messageBody: string,
+  eventType: string | null
+): Promise<void> {
+  try {
+    const [{ data: senderProfile }, { data: recipientProfile }, toEmail] =
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', customerId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', professionalId)
+          .single(),
+        getUserEmail(supabase, professionalId),
+      ]);
+
+    if (!toEmail) return;
+
+    const senderName =
+      senderProfile?.role === 'business' && senderProfile?.company_name
+        ? senderProfile.company_name
+        : senderProfile?.full_name || 'Biri';
+
+    const recipientName =
+      recipientProfile?.role === 'business' && recipientProfile?.company_name
+        ? recipientProfile.company_name
+        : recipientProfile?.full_name || '';
+
+    const eventLabel = eventType ? getEventTypeLabel(eventType) : null;
+
+    const template = newConversationEmail({
+      recipientName,
+      senderName,
+      preview: messageBody,
+      conversationId,
+      eventType: eventLabel,
+    });
+
+    await sendNotificationEmail({
+      supabase,
+      toUserId: professionalId,
+      toEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      conversationId,
+      eventType: 'new_conversation',
+    });
+  } catch (err) {
+    console.error('[email] notifyNewConversation error:', err);
+  }
+}
+
 export async function startConversation(
   data: StartConversationData
 ): Promise<MessagingActionResult> {
@@ -193,7 +319,6 @@ export async function startConversation(
     }
   }
 
-  // GÜVENLİK — startConversation'da conversationId yok, sadece tek mesaj kontrolü
   const securityCheck = await checkContentSecurity(
     supabase,
     user.id,
@@ -231,6 +356,7 @@ export async function startConversation(
     .maybeSingle();
 
   let conversationId: string;
+  const isNewConversation = !existing;
 
   if (existing) {
     conversationId = existing.id;
@@ -271,6 +397,25 @@ export async function startConversation(
     return { success: false, error: 'Mesaj gönderilemedi: ' + msgError.message };
   }
 
+  // E-POSTA: yeni konuşma ise "new_conversation", değilse "new_message"
+  if (isNewConversation) {
+    notifyNewConversation(
+      supabase,
+      conversationId,
+      user.id,
+      data.professional_id,
+      data.message.trim(),
+      data.event_type
+    ).catch(() => {});
+  } else {
+    notifyNewMessage(
+      supabase,
+      conversationId,
+      user.id,
+      data.message.trim()
+    ).catch(() => {});
+  }
+
   revalidatePath('/mesajlar');
   revalidatePath(`/mesajlar/${conversationId}`);
   return { success: true, conversationId };
@@ -297,7 +442,6 @@ export async function sendMessage(
     return { success: false, error: 'Mesaj 2000 karakterden uzun olamaz.' };
   }
 
-  // GÜVENLİK — tek mesaj + sliding window (kullanıcının son 5 mesajı, 5 dk içi)
   const securityCheck = await checkContentSecurity(
     supabase,
     user.id,
@@ -341,6 +485,11 @@ export async function sendMessage(
   if (error) {
     return { success: false, error: 'Mesaj gönderilemedi: ' + error.message };
   }
+
+  // E-POSTA: karşı tarafa yeni mesaj bildirimi
+  notifyNewMessage(supabase, conversationId, user.id, body.trim()).catch(
+    () => {}
+  );
 
   revalidatePath('/mesajlar');
   revalidatePath(`/mesajlar/${conversationId}`);
