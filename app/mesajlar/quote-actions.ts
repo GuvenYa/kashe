@@ -2,7 +2,19 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
-import { QUOTE_EXPIRY_OPTIONS, type QuoteExpiryKey } from './quotes-data';
+import {
+  QUOTE_EXPIRY_OPTIONS,
+  formatQuoteAmount,
+  type QuoteExpiryKey,
+} from './quotes-data';
+import {
+  sendNotificationEmail,
+  getUserEmail,
+} from '@/app/lib/email/send-email';
+import {
+  newQuoteEmail,
+  quoteAcceptedEmail,
+} from '@/app/lib/email/templates';
 
 type CreateQuoteInput = {
   conversationId: string;
@@ -16,7 +28,7 @@ type ActionResult = { success: true } | { success: false; error: string };
 
 /**
  * Profesyonel yeni teklif gönderir + messages tablosuna 'quote' tipinde
- * referans mesaj ekler.
+ * referans mesaj ekler. Müşteriye e-posta gönderilir.
  */
 export async function createQuote(
   input: CreateQuoteInput
@@ -31,7 +43,6 @@ export async function createQuote(
     return { success: false, error: 'Giriş yapmalısın' };
   }
 
-  // Validation
   if (input.totalAmount < 0) {
     return { success: false, error: 'Fiyat negatif olamaz' };
   }
@@ -64,7 +75,6 @@ export async function createQuote(
     return { success: false, error: 'Geçersiz süre seçimi' };
   }
 
-  // Konuşmadaki profesyonel mi kontrol et (owner ajans VEYA atanan pro)
   const { data: conv } = await supabase
     .from('conversations')
     .select('professional_id, customer_id')
@@ -95,16 +105,12 @@ export async function createQuote(
     };
   }
 
-  // Teklif her zaman konuşma sahibinin (ajans/profesyonel) adına gider.
-  // Atanan pro teklif oluştursa bile sender_id = konuşmanın professional_id.
   const quoteSenderId = conv.professional_id;
 
-  // expires_at hesapla
   const expiresAt = new Date(
     Date.now() + expiryOption.hours * 60 * 60 * 1000
   ).toISOString();
 
-  // 1. Quote oluştur
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
     .insert({
@@ -116,7 +122,7 @@ export async function createQuote(
       expires_at: expiresAt,
       status: 'pending',
     })
-    .select('id')
+    .select('id, total_amount, currency')
     .single();
 
   if (quoteError || !quote) {
@@ -127,8 +133,6 @@ export async function createQuote(
     };
   }
 
-  // 2. messages tablosuna 'quote' tipinde mesaj kaydı ekle
-  // (UI'da timeline'a düşmesi için)
   const { error: msgError } = await supabase.from('messages').insert({
     conversation_id: input.conversationId,
     sender_id: user.id,
@@ -138,16 +142,26 @@ export async function createQuote(
   });
 
   if (msgError) {
-    // Quote oluştu ama mesaj atılamadı — kritik değil, sessiz log
     console.error('Quote message insert failed:', msgError);
   }
+
+  // E-POSTA: müşteriye yeni teklif bildirimi
+  notifyNewQuote(
+    supabase,
+    input.conversationId,
+    conv.customer_id,
+    conv.professional_id,
+    quote.total_amount,
+    quote.currency ?? 'TRY'
+  ).catch(() => {});
 
   revalidatePath(`/mesajlar/${input.conversationId}`);
   return { success: true };
 }
 
 /**
- * Müşteri teklifi onaylar — trigger booking oluşturur + sistem mesajı atılır
+ * Müşteri teklifi onaylar — trigger booking oluşturur + sistem mesajı atılır.
+ * Profesyonele e-posta gönderilir.
  */
 export async function acceptQuote(quoteId: string): Promise<ActionResult> {
   const supabase = await createClient();
@@ -158,10 +172,9 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  // Quote'u getir + yetki ve durum kontrolü
   const { data: quote } = await supabase
     .from('quotes')
-    .select('id, conversation_id, sender_id, status, expires_at')
+    .select('id, conversation_id, sender_id, status, expires_at, total_amount, currency')
     .eq('id', quoteId)
     .single();
 
@@ -173,10 +186,9 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     return { success: false, error: 'Teklif süresi dolmuş' };
   }
 
-  // Müşteri mi kontrol et (conversation'dan)
   const { data: conv } = await supabase
     .from('conversations')
-    .select('customer_id')
+    .select('customer_id, professional_id')
     .eq('id', quote.conversation_id)
     .single();
 
@@ -184,7 +196,6 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     return { success: false, error: 'Bu teklifi onaylama yetkisi yok' };
   }
 
-  // Status güncelle → trigger booking oluşturur + sistem mesajı atılır
   const { error } = await supabase
     .from('quotes')
     .update({ status: 'accepted' })
@@ -194,13 +205,20 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     return { success: false, error: 'Onaylama başarısız: ' + error.message };
   }
 
+  // E-POSTA: profesyonele "teklifin onaylandı" bildirimi
+  notifyQuoteAccepted(
+    supabase,
+    quote.conversation_id,
+    conv.customer_id,
+    conv.professional_id,
+    quote.total_amount,
+    quote.currency ?? 'TRY'
+  ).catch(() => {});
+
   revalidatePath(`/mesajlar/${quote.conversation_id}`);
   return { success: true };
 }
 
-/**
- * Müşteri teklifi reddeder
- */
 export async function declineQuote(quoteId: string): Promise<ActionResult> {
   const supabase = await createClient();
 
@@ -244,9 +262,6 @@ export async function declineQuote(quoteId: string): Promise<ActionResult> {
   return { success: true };
 }
 
-/**
- * Profesyonel kendi teklifini geri çeker (pending durumdayken)
- */
 export async function withdrawQuote(quoteId: string): Promise<ActionResult> {
   const supabase = await createClient();
 
@@ -287,4 +302,128 @@ export async function withdrawQuote(quoteId: string): Promise<ActionResult> {
 
   revalidatePath(`/mesajlar/${quote.conversation_id}`);
   return { success: true };
+}
+
+// ----- E-POSTA HELPER'LARI -----
+
+async function notifyNewQuote(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  conversationId: string,
+  customerId: string,
+  professionalId: string,
+  totalAmount: number,
+  currency: string
+): Promise<void> {
+  try {
+    const [{ data: customerProfile }, { data: proProfile }, toEmail] =
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', customerId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', professionalId)
+          .single(),
+        getUserEmail(supabase, customerId),
+      ]);
+
+    if (!toEmail) return;
+
+    const senderName =
+      proProfile?.role === 'business' && proProfile?.company_name
+        ? proProfile.company_name
+        : proProfile?.full_name || 'Bir profesyonel';
+
+    const recipientName =
+      customerProfile?.role === 'business' && customerProfile?.company_name
+        ? customerProfile.company_name
+        : customerProfile?.full_name || '';
+
+    const formattedAmount = formatQuoteAmount(totalAmount, currency);
+
+    const template = newQuoteEmail({
+      recipientName,
+      senderName,
+      amount: formattedAmount,
+      conversationId,
+    });
+
+    await sendNotificationEmail({
+      supabase,
+      toUserId: customerId,
+      toEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      conversationId,
+      eventType: 'new_quote',
+    });
+  } catch (err) {
+    console.error('[email] notifyNewQuote error:', err);
+  }
+}
+
+async function notifyQuoteAccepted(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  conversationId: string,
+  customerId: string,
+  professionalId: string,
+  totalAmount: number,
+  currency: string
+): Promise<void> {
+  try {
+    const [{ data: customerProfile }, { data: proProfile }, toEmail] =
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', customerId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', professionalId)
+          .single(),
+        getUserEmail(supabase, professionalId),
+      ]);
+
+    if (!toEmail) return;
+
+    const customerName =
+      customerProfile?.role === 'business' && customerProfile?.company_name
+        ? customerProfile.company_name
+        : customerProfile?.full_name || 'Müşteri';
+
+    const recipientName =
+      proProfile?.role === 'business' && proProfile?.company_name
+        ? proProfile.company_name
+        : proProfile?.full_name || '';
+
+    const formattedAmount = formatQuoteAmount(totalAmount, currency);
+
+    const template = quoteAcceptedEmail({
+      recipientName,
+      customerName,
+      amount: formattedAmount,
+      conversationId,
+    });
+
+    await sendNotificationEmail({
+      supabase,
+      toUserId: professionalId,
+      toEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      conversationId,
+      eventType: 'quote_accepted',
+    });
+  } catch (err) {
+    console.error('[email] notifyQuoteAccepted error:', err);
+  }
 }
