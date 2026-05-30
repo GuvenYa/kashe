@@ -48,6 +48,14 @@ export async function TopNav() {
   const menuLinks: { href: string; label: string }[] = [
     { href: "/profil", label: "Profilim" },
   ];
+  // Profesyonel/ajans → Takvimim, profilim'in hemen ardına
+  if (isProfessional || isAgency) {
+    menuLinks.push({ href: "/takvimim", label: "Takvimim" });
+  }
+  // Müşteri/işletme → Rezervasyonlarım, profilim'in hemen ardına
+  if (isClient || isBusiness) {
+    menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
+  }
   if (isProfessional) {
     menuLinks.push({ href: "/profil/hizmetlerim", label: "Hizmetlerim" });
     menuLinks.push({ href: "/profil/portfoy", label: "Portföyüm" });
@@ -143,6 +151,8 @@ export async function TopNav() {
           isLoggedIn={!!user}
           isProfessional={isProfessional}
           isClient={isClient}
+          isAgency={isAgency}
+          isBusiness={isBusiness}
           canReceiveOffers={canReceiveOffers}
           canCollectOffers={canCollectOffers}
           userId={user?.id ?? null}

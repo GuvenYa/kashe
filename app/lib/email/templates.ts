@@ -10,6 +10,7 @@ const COLORS = {
   ink50: 'rgba(26, 18, 14, 0.5)',
   terracotta: '#C8442A',
   ember: '#A8341E',
+  moss: '#3F6B47',
   line: 'rgba(26, 18, 14, 0.12)',
 };
 
@@ -27,14 +28,28 @@ function truncate(text: string, max: number): string {
   return text.slice(0, max - 1).trim() + '…';
 }
 
+function formatEventDate(iso: string | null): string {
+  if (!iso) return 'Tarih belirlenmemiş';
+  const d = new Date(iso);
+  return d.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 function baseLayout(opts: {
   preheader: string;
   eyebrow: string;
+  eyebrowColor?: string;
   title: string;
   bodyHtml: string;
   ctaText: string;
   ctaUrl: string;
+  ctaColor?: string;
 }): string {
+  const eyebrowColor = opts.eyebrowColor || COLORS.terracotta;
+  const ctaColor = opts.ctaColor || COLORS.terracotta;
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -64,7 +79,7 @@ function baseLayout(opts: {
         <!-- Eyebrow -->
         <tr>
           <td style="padding:28px 32px 0 32px;">
-            <p style="margin:0;font-size:11px;font-family:'SFMono-Regular',Consolas,monospace;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.terracotta};">${escapeHtml(opts.eyebrow)}</p>
+            <p style="margin:0;font-size:11px;font-family:'SFMono-Regular',Consolas,monospace;letter-spacing:0.18em;text-transform:uppercase;color:${eyebrowColor};">${escapeHtml(opts.eyebrow)}</p>
           </td>
         </tr>
         <!-- Title -->
@@ -84,7 +99,7 @@ function baseLayout(opts: {
           <td style="padding:24px 32px 0 32px;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
               <tr>
-                <td style="background-color:${COLORS.terracotta};border-radius:10px;">
+                <td style="background-color:${ctaColor};border-radius:10px;">
                   <a href="${opts.ctaUrl}" style="display:inline-block;padding:12px 22px;color:${COLORS.paper};text-decoration:none;font-size:15px;font-weight:600;">${escapeHtml(opts.ctaText)}</a>
                 </td>
               </tr>
@@ -180,7 +195,7 @@ export function newConversationEmail(opts: {
 export function newQuoteEmail(opts: {
   recipientName: string;
   senderName: string;
-  amount: string; // önceden formatlanmış (örn. "₺22.000")
+  amount: string;
   conversationId: string;
 }) {
   const url = `${SITE_URL}/mesajlar/${opts.conversationId}`;
@@ -233,5 +248,116 @@ export function quoteAcceptedEmail(opts: {
       ctaUrl: url,
     }),
     text: `Selam ${opts.recipientName},\n\n${opts.customerName} teklifini onayladı.\n\nTutar: ${opts.amount}\n\nKonuşmayı aç: ${url}\n\n— Kashe`,
+  };
+}
+
+// ---------- Rezervasyon iptal: müşteriden geliyor ----------
+// (profesyonele e-posta — "müşteri iptal etti")
+export function bookingCancelledByCustomerEmail(opts: {
+  recipientName: string;
+  cancellerName: string;
+  bookingId: string;
+  eventDate: string | null;
+  reason: string | null;
+}) {
+  const url = `${SITE_URL}/rezervasyon/${opts.bookingId}`;
+  const eventLine = opts.eventDate
+    ? `<p style="margin:0 0 18px 0;font-size:13px;color:${COLORS.ink50};text-transform:uppercase;letter-spacing:0.12em;font-family:'SFMono-Regular',Consolas,monospace;">Etkinlik · ${escapeHtml(formatEventDate(opts.eventDate))}</p>`
+    : '';
+  const reasonBlock = opts.reason
+    ? `
+    <div style="background-color:${COLORS.paper2};border-radius:10px;padding:14px 18px;margin:0 0 6px 0;">
+      <p style="margin:0 0 4px 0;font-size:11px;font-family:'SFMono-Regular',Consolas,monospace;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ink50};">Belirtilen sebep</p>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:${COLORS.ink};">${escapeHtml(opts.reason)}</p>
+    </div>
+  `
+    : '';
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">Selam ${escapeHtml(opts.recipientName)},</p>
+    <p style="margin:0 0 18px 0;"><strong style="color:${COLORS.ink};">${escapeHtml(opts.cancellerName)}</strong> rezervasyonunu iptal etti.</p>
+    ${eventLine}
+    ${reasonBlock}
+  `;
+  return {
+    subject: `${opts.cancellerName} rezervasyonu iptal etti`,
+    html: baseLayout({
+      preheader: `Rezervasyon iptal · ${opts.cancellerName}`,
+      eyebrow: 'Rezervasyon iptal',
+      title: 'Müşteri iptal etti.',
+      bodyHtml,
+      ctaText: 'Detayları gör →',
+      ctaUrl: url,
+    }),
+    text: `Selam ${opts.recipientName},\n\n${opts.cancellerName} rezervasyonu iptal etti.${opts.reason ? `\n\nSebep: ${opts.reason}` : ''}\n\nDetayları gör: ${url}\n\n— Kashe`,
+  };
+}
+
+// ---------- Rezervasyon iptal: profesyonelden geliyor ----------
+// (müşteriye e-posta — "profesyonel iptal etti", biraz daha özürlü/açıklayıcı ton)
+export function bookingCancelledByProfessionalEmail(opts: {
+  recipientName: string;
+  cancellerName: string;
+  bookingId: string;
+  eventDate: string | null;
+  reason: string | null;
+}) {
+  const url = `${SITE_URL}/rezervasyon/${opts.bookingId}`;
+  const eventLine = opts.eventDate
+    ? `<p style="margin:0 0 18px 0;font-size:13px;color:${COLORS.ink50};text-transform:uppercase;letter-spacing:0.12em;font-family:'SFMono-Regular',Consolas,monospace;">Etkinlik · ${escapeHtml(formatEventDate(opts.eventDate))}</p>`
+    : '';
+  const reasonBlock = opts.reason
+    ? `
+    <div style="background-color:${COLORS.paper2};border-radius:10px;padding:14px 18px;margin:0 0 6px 0;">
+      <p style="margin:0 0 4px 0;font-size:11px;font-family:'SFMono-Regular',Consolas,monospace;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ink50};">Belirtilen sebep</p>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:${COLORS.ink};">${escapeHtml(opts.reason)}</p>
+    </div>
+  `
+    : '';
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">Selam ${escapeHtml(opts.recipientName)},</p>
+    <p style="margin:0 0 14px 0;">Üzgünüz — <strong style="color:${COLORS.ink};">${escapeHtml(opts.cancellerName)}</strong> rezervasyonunu iptal etmek zorunda kaldı.</p>
+    <p style="margin:0 0 18px 0;">Etkinliğin için yeni bir profesyonel arıyorsan Kashe'de keşfetmeye devam edebilirsin.</p>
+    ${eventLine}
+    ${reasonBlock}
+  `;
+  return {
+    subject: `Rezervasyonun iptal edildi — ${opts.cancellerName}`,
+    html: baseLayout({
+      preheader: `Rezervasyon iptal · ${opts.cancellerName}`,
+      eyebrow: 'Rezervasyon iptal',
+      title: 'Rezervasyonun iptal edildi.',
+      bodyHtml,
+      ctaText: 'Detayları gör →',
+      ctaUrl: url,
+    }),
+    text: `Selam ${opts.recipientName},\n\nÜzgünüz — ${opts.cancellerName} rezervasyonu iptal etmek zorunda kaldı.${opts.reason ? `\n\nSebep: ${opts.reason}` : ''}\n\nDetayları gör: ${url}\n\n— Kashe`,
+  };
+}
+
+// ---------- Rezervasyon tamamlandı ----------
+// (müşteriye e-posta — yorum bırakma CTA'lı)
+export function bookingCompletedEmail(opts: {
+  recipientName: string;
+  proName: string;
+  professionalId: string;
+}) {
+  const url = `${SITE_URL}/p/${opts.professionalId}`;
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">Selam ${escapeHtml(opts.recipientName)},</p>
+    <p style="margin:0 0 18px 0;"><strong style="color:${COLORS.ink};">${escapeHtml(opts.proName)}</strong> işinizi tamamlandı olarak işaretledi. Umarız her şey istediğin gibi gitmiştir.</p>
+    <p style="margin:0 0 18px 0;">Deneyimini paylaşırsan hem ${escapeHtml(opts.proName)} hem de gelecekteki müşteriler için değerli olur.</p>
+  `;
+  return {
+    subject: `${opts.proName} ile çalışmanı değerlendir`,
+    html: baseLayout({
+      preheader: 'Yorum bırakma zamanı',
+      eyebrow: 'Tamamlandı',
+      eyebrowColor: COLORS.moss,
+      title: 'İş tamamlandı.',
+      bodyHtml,
+      ctaText: 'Yorum bırak →',
+      ctaUrl: url,
+    }),
+    text: `Selam ${opts.recipientName},\n\n${opts.proName} işinizi tamamlandı olarak işaretledi.\n\nDeneyimini paylaşmak için: ${url}\n\n— Kashe`,
   };
 }

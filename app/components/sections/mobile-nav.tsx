@@ -10,6 +10,8 @@ type Props = {
   isLoggedIn: boolean;
   isProfessional: boolean;
   isClient: boolean;
+  isAgency: boolean;
+  isBusiness: boolean;
   canReceiveOffers: boolean;
   canCollectOffers: boolean;
   userId: string | null;
@@ -20,6 +22,8 @@ export function MobileNav({
   isLoggedIn,
   isProfessional,
   isClient,
+  isAgency,
+  isBusiness,
   canReceiveOffers,
   canCollectOffers,
   userId,
@@ -29,12 +33,10 @@ export function MobileNav({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Sayfa değişince menüyü kapat
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // ESC ile kapat
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -44,7 +46,6 @@ export function MobileNav({
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  // Açıkken body scroll kapat
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -88,19 +89,17 @@ export function MobileNav({
         )}
       </button>
 
-      {/* Slide-down panel */}
       {open && (
         <>
-          {/* Backdrop */}
           <div
             className="md:hidden fixed inset-0 top-[73px] bg-ink/20 z-40"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Panel */}
           <div className="md:hidden fixed top-[73px] left-0 right-0 bg-paper border-b border-line z-50 shadow-lg">
             <nav className="px-6 py-4">
+              {/* PUBLIC NAV */}
               <a href="/kesfet" className={linkClass}>
                 Keşfet
               </a>
@@ -121,6 +120,20 @@ export function MobileNav({
 
               {isLoggedIn ? (
                 <>
+                  {/* PROFİL GRUBU */}
+                  <a href="/profil" className={linkClass}>
+                    Profilim
+                  </a>
+                  {(isProfessional || isAgency) && (
+                    <a href="/takvimim" className={linkClass}>
+                      Takvimim
+                    </a>
+                  )}
+                  {(isClient || isBusiness) && (
+                    <a href="/rezervasyonlarim" className={linkClass}>
+                      Rezervasyonlarım
+                    </a>
+                  )}
                   {isProfessional && (
                     <a href="/profil/hizmetlerim" className={linkClass}>
                       Hizmetlerim
@@ -136,6 +149,10 @@ export function MobileNav({
                       Favoriler
                     </a>
                   )}
+
+                  <div className="border-t border-line my-3" />
+
+                  {/* İŞLEMLER GRUBU */}
                   {canReceiveOffers && (
                     <a href="/teklif-talepleri" className={linkClass}>
                       Teklif Talepleri
@@ -161,9 +178,8 @@ export function MobileNav({
                     )}
                   </a>
 
-                  <a href="/profil" className={linkClass}>
-                    Profilim
-                  </a>
+                  <div className="border-t border-line my-3" />
+
                   <button
                     type="button"
                     onClick={handleLogout}
