@@ -45,7 +45,7 @@ export function YorumButton({
         disabled={!canWrite}
         title={
           !canWrite
-            ? 'Yorum yazmak için önce profesyonelle mesajlaşmalısın.'
+            ? 'Yorum bırakabilmek için tamamlanmış bir rezervasyonun olmalı.'
             : undefined
         }
         className={`px-5 py-3 rounded-lg font-display font-semibold text-sm border-2 transition-all ${
@@ -59,7 +59,7 @@ export function YorumButton({
 
       {!canWrite && (
         <p className="text-xs text-ink-72 mt-2 font-mono uppercase tracking-[0.12em]">
-          Yorum yazmak için önce mesajlaşmalısın
+          Tamamlanan rezervasyon sonrası yorum bırakabilirsin
         </p>
       )}
 

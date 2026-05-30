@@ -2,6 +2,7 @@ import { Eyebrow } from "@/app/components/ui/eyebrow";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { getCategoryIcon } from "@/app/lib/category-icon";
+import { KategoriTalepCta } from "@/app/components/kategori-talep-cta";
 
 type CategoryRow = {
   id: number;
@@ -20,6 +21,13 @@ const TONES = [
 
 export async function Categories() {
   const supabase = await createClient();
+
+  // Kategori önerisi CTA'sı için kullanıcı durumu
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   const { data: categoriesData } = await supabase
     .from("service_categories")
     .select("id, slug, name_tr")
@@ -124,6 +132,11 @@ export async function Categories() {
               </Link>
             );
           })}
+        </div>
+
+        {/* Kategori öneri CTA — grid altında, sade inline */}
+        <div className="mt-10 flex justify-center">
+          <KategoriTalepCta isLoggedIn={isLoggedIn} variant="inline" />
         </div>
       </div>
     </section>

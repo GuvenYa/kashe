@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
+import { KategoriTalepCta } from '@/app/components/kategori-talep-cta';
 
 type Props = {
   categories: ServiceCategory[];
@@ -14,6 +15,7 @@ type Props = {
   currentAttrs: Record<string, string[]>;
   currentType: 'profesyonel' | 'ajans' | null;
   resultCount: number;
+  isLoggedIn: boolean;
 };
 
 export function KesfetFilters({
@@ -25,6 +27,7 @@ export function KesfetFilters({
   currentAttrs,
   currentType,
   resultCount,
+  isLoggedIn,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -388,6 +391,11 @@ export function KesfetFilters({
           Tüm filtreleri temizle ({activeCount})
         </button>
       )}
+
+      {/* Kategori öneri CTA — sidebar'ın sonunda vurgulu kart */}
+      <div className="pt-6 border-t border-line">
+        <KategoriTalepCta isLoggedIn={isLoggedIn} variant="block" />
+      </div>
     </div>
   );
 

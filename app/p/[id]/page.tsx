@@ -213,7 +213,11 @@ export default async function PublicProfilePage({
   }
 
   // Yorum sistemi için: mesajlaşma var mı + mevcut yorum
-  let hasConversation = false;
+  // Yorum sistemi için: tamamlanmış rezervasyon var mı + mevcut yorum
+  // Eski: hasConversation (sadece mesajlaşma yeterdi). Yeni: hasCompletedBooking.
+  // Mevcut yorumlar veritabanında korunur (recentReviews listesinde görünmeye devam eder),
+  // ama yeni yorum bırakma akışı tamamlanmış iş şartına bağlandı — daha güvenilir.
+  let hasCompletedBooking = false;
   let existingReview: {
     id: string;
     rating: number;
@@ -224,12 +228,13 @@ export default async function PublicProfilePage({
     isLoggedIn && !isOwnProfile && currentUserRole === 'client';
 
   if (canReview) {
-    const [{ data: convData }, { data: reviewData }] = await Promise.all([
+    const [{ data: bookingData }, { data: reviewData }] = await Promise.all([
       supabase
-        .from('conversations')
+        .from('bookings')
         .select('id')
         .eq('customer_id', user!.id)
         .eq('professional_id', profile.id)
+        .eq('status', 'completed')
         .limit(1)
         .maybeSingle(),
       supabase
@@ -242,7 +247,7 @@ export default async function PublicProfilePage({
         .maybeSingle(),
     ]);
 
-    hasConversation = !!convData;
+    hasCompletedBooking = !!bookingData;
     existingReview = reviewData ?? null;
   }
 
@@ -729,7 +734,7 @@ export default async function PublicProfilePage({
             <YorumButton
               professionalId={profile.id}
               professionalName={displayName}
-              hasConversation={hasConversation}
+              hasConversation={hasCompletedBooking}
               existingReview={existingReview}
               enabled={canReview}
             />

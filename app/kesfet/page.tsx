@@ -269,6 +269,7 @@ export default async function KesfetPage({
                 currentAttrs={activeAttrFilters}
                 currentType={typeFilter}
                 resultCount={profiles.length}
+                isLoggedIn={isLoggedIn}
               />
             </aside>
 
