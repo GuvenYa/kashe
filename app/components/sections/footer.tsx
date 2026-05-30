@@ -71,7 +71,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@kashe.app" className="text-paper/80 hover:text-paper transition-colors">
+                <a href="mailto:kasheofficial@gmail.com" className="text-paper/80 hover:text-paper transition-colors">
                   İletişim
                 </a>
               </li>
@@ -82,10 +82,10 @@ export function Footer() {
         <div className="border-t border-paper/15 mt-12 pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-sm text-paper/50">
           <p>© {year} Kashe. Tüm hakları saklıdır.</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-paper transition-colors">
+            <a href="/gizlilik" className="hover:text-paper transition-colors">
               Gizlilik
             </a>
-            <a href="#" className="hover:text-paper transition-colors">
+            <a href="/kullanim-kosullari" className="hover:text-paper transition-colors">
               Kullanım koşulları
             </a>
           </div>
