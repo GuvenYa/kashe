@@ -372,3 +372,208 @@ export async function requestProfileRevision(
   revalidatePath('/admin/profiller');
   return { success: true };
 }
+// ============================================================
+// KATEGORİ TALEP ONAY (category request approval)
+// ============================================================
+
+export async function markCategoryRequestReviewing(
+  requestId: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
+    .from('category_requests')
+    .update({
+      status: 'reviewing',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('[admin] mark category reviewing error:', updateError);
+    return {
+      success: false,
+      error: 'Talep güncellenemedi: ' + updateError.message,
+    };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'review_category_request',
+    'category_request',
+    requestId
+  );
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/kategori-talepleri');
+  return { success: true };
+}
+
+export async function approveCategoryRequest(
+  requestId: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
+    .from('category_requests')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('[admin] approve category error:', updateError);
+    return {
+      success: false,
+      error: 'Talep onaylanamadı: ' + updateError.message,
+    };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'approve_category_request',
+    'category_request',
+    requestId
+  );
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/kategori-talepleri');
+  return { success: true };
+}
+
+export async function declineCategoryRequest(
+  requestId: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
+    .from('category_requests')
+    .update({
+      status: 'declined',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('[admin] decline category error:', updateError);
+    return {
+      success: false,
+      error: 'Talep reddedilemedi: ' + updateError.message,
+    };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'decline_category_request',
+    'category_request',
+    requestId
+  );
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/kategori-talepleri');
+  return { success: true };
+}
+// ============================================================
+// YORUM MODERASYON (review moderation) — sert silme
+// ============================================================
+
+export async function removeReview(
+  reviewId: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  // Silmeden önce yorumun professional_id'sini al (revalidate için)
+  const { data: review } = await supabase
+    .from('reviews')
+    .select('professional_id')
+    .eq('id', reviewId)
+    .single();
+
+  if (!review) {
+    return { success: false, error: 'Yorum bulunamadı.' };
+  }
+
+  // Yanıtları da silinsin (foreign key cascade yoksa manuel)
+  await supabase.from('review_replies').delete().eq('review_id', reviewId);
+
+  const { error: deleteError } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('id', reviewId);
+
+  if (deleteError) {
+    console.error('[admin] remove review error:', deleteError);
+    return {
+      success: false,
+      error: 'Yorum silinemedi: ' + deleteError.message,
+    };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'remove_review',
+    'review',
+    reviewId
+  );
+
+  revalidatePath('/admin/yorumlar');
+  revalidatePath(`/p/${review.professional_id}`);
+  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  return { success: true };
+}
+
+export async function removeReviewReply(
+  reviewId: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  // Yanıtı bul (var mı + professional_id için)
+  const { data: review } = await supabase
+    .from('reviews')
+    .select('professional_id')
+    .eq('id', reviewId)
+    .single();
+
+  if (!review) {
+    return { success: false, error: 'Yorum bulunamadı.' };
+  }
+
+  const { error: deleteError } = await supabase
+    .from('review_replies')
+    .delete()
+    .eq('review_id', reviewId);
+
+  if (deleteError) {
+    console.error('[admin] remove review reply error:', deleteError);
+    return {
+      success: false,
+      error: 'Yanıt silinemedi: ' + deleteError.message,
+    };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'remove_review_reply',
+    'review',
+    reviewId
+  );
+
+  revalidatePath('/admin/yorumlar');
+  revalidatePath(`/p/${review.professional_id}`);
+  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  return { success: true };
+}
