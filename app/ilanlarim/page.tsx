@@ -27,12 +27,16 @@ export default async function IlanlarimPage({
     redirect('/giris?redirect=/ilanlarim');
   }
 
-  // Rol kontrolü
+  // Rol + suspension kontrolü
+  // Rol + suspension kontrolü
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü — askıdaki kullanıcı ilanlarını yönetemez
+  if (profile?.suspended_at) redirect('/askiya-alindi');
 
   console.log('[ilanlarim] role:', profile?.role);
 

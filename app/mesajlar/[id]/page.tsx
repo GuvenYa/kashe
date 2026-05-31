@@ -48,6 +48,14 @@ export default async function KonusmaPage({
     redirect('/giris');
   }
 
+  // Suspension kontrolü — askıdaki kullanıcı mesajlaşamaz
+  const { data: suspensionCheck } = await supabase
+    .from('profiles')
+    .select('suspended_at')
+    .eq('id', user.id)
+    .single();
+  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+
   const { data: convData } = await supabase
     .from('conversations')
     .select(

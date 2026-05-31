@@ -36,7 +36,7 @@ export default function GirisForm({
     setHata(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: sifre,
     });
@@ -45,6 +45,21 @@ export default function GirisForm({
       setHata(translateError(error.message));
       setLoading(false);
       return;
+    }
+
+    // Suspension kontrolü — askıdaki kullanıcı /askiya-alindi'ya yönlendirilir
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('suspended_at')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile?.suspended_at) {
+        router.push('/askiya-alindi');
+        router.refresh();
+        return;
+      }
     }
 
     router.push(redirectTo);

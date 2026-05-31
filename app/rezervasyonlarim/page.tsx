@@ -48,6 +48,14 @@ export default async function RezervasyonlarimPage() {
     redirect('/giris');
   }
 
+  // Suspension kontrolü — askıdaki kullanıcı rezervasyon göremez
+  const { data: suspensionCheck } = await supabase
+    .from('profiles')
+    .select('suspended_at')
+    .eq('id', user.id)
+    .single();
+  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+
   const { data: bookingsData } = await supabase
     .from('bookings')
     .select(

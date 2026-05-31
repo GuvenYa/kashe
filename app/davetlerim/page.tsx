@@ -20,12 +20,15 @@ export default async function DavetlerimPage() {
     redirect('/giris?redirect=/davetlerim');
   }
 
-  // Mevcut kullanıcının email'i (davetleri email ile eşleştirmek için)
+  // Mevcut kullanıcının email'i + suspension kontrolü
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, role')
+    .select('email, role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü — askıdaki kullanıcı davetleri göremez
+  if (profile?.suspended_at) redirect('/askiya-alindi');
 
   if (!profile) {
     redirect('/profil');

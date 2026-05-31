@@ -1,174 +1,374 @@
 'use server';
 
 import { createClient } from '@/app/lib/supabase-server';
-import { getAdminUser } from '@/app/lib/admin';
 import { revalidatePath } from 'next/cache';
 
-export type AdminActionResult = { success: boolean; error?: string };
+type ActionResult = { success: true } | { success: false; error: string };
 
-// Profili onayla → approved + otomatik yayın (is_published = true)
-export async function approveProfile(
-  profileId: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
-
+/**
+ * Admin yetkisi doğrulama yardımcısı.
+ * Bütün admin aksiyonlarının başında çağrılır.
+ */
+async function requireAdmin() {
   const supabase = await createClient();
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      approval_status: 'approved',
-      approved_at: new Date().toISOString(),
-      is_published: true, // Approved = otomatik yayın (karar)
-      approval_note: null,
-    })
-    .eq('id', profileId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (error) return { success: false, error: error.message };
-
-  revalidatePath('/admin/profiller');
-  revalidatePath('/admin');
-  return { success: true };
-}
-
-// Profili reddet → rejected + yayından kaldır
-export async function rejectProfile(
-  profileId: string,
-  note: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
-
-  if (!note.trim()) {
-    return { success: false, error: 'Red gerekçesi zorunlu.' };
+  if (!user) {
+    return { supabase, adminId: null, error: 'Giriş yapmalısın.' };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
-    .update({
-      approval_status: 'rejected',
-      is_published: false,
-      approval_note: note.trim(),
-    })
-    .eq('id', profileId);
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
 
-  if (error) return { success: false, error: error.message };
-
-  revalidatePath('/admin/profiller');
-  revalidatePath('/admin');
-  return { success: true };
-}
-
-// Revizyon iste → revision + yayından kaldır + not
-export async function requestProfileRevision(
-  profileId: string,
-  note: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
-
-  if (!note.trim()) {
-    return { success: false, error: 'Revizyon notu zorunlu.' };
+  if (!profile?.is_admin) {
+    return { supabase, adminId: null, error: 'Bu işlem için yetkin yok.' };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
+  return { supabase, adminId: user.id, error: null };
+}
+
+/**
+ * Audit log'a kayıt — her admin aksiyonu izlenir.
+ */
+async function logAction(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  adminId: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+  notes?: string
+) {
+  try {
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminId,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      notes: notes ?? null,
+    });
+  } catch (err) {
+    console.error('[admin-audit] log error:', err);
+  }
+}
+
+// ============================================================
+// SUSPENSION (askıya alma) — A planı: login engellenir
+// ============================================================
+
+export async function banUser(
+  userId: string,
+  reason: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  if (userId === adminId) {
+    return { success: false, error: 'Kendi hesabını askıya alamazsın.' };
+  }
+
+  const { data: target } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', userId)
+    .single();
+
+  if (target?.is_admin) {
+    return {
+      success: false,
+      error: 'Admin kullanıcıları askıya alamazsın. Önce admin yetkisini kaldır.',
+    };
+  }
+
+  const trimmedReason = reason.trim();
+  if (trimmedReason.length < 5) {
+    return { success: false, error: 'Askıya alma sebebi en az 5 karakter olmalı.' };
+  }
+  if (trimmedReason.length > 500) {
+    return { success: false, error: 'Askıya alma sebebi en fazla 500 karakter olabilir.' };
+  }
+
+  const { error: updateError } = await supabase
     .from('profiles')
     .update({
-      approval_status: 'revision',
-      is_published: false,
-      approval_note: note.trim(),
+      suspended_at: new Date().toISOString(),
+      suspension_reason: trimmedReason,
+      suspended_by: adminId,
     })
-    .eq('id', profileId);
+    .eq('id', userId);
 
-  if (error) return { success: false, error: error.message };
+  if (updateError) {
+    console.error('[admin] ban error:', updateError);
+    return { success: false, error: 'Askıya alınamadı: ' + updateError.message };
+  }
 
-  revalidatePath('/admin/profiller');
+  await logAction(supabase, adminId, 'ban_user', 'user', userId, trimmedReason);
+
   revalidatePath('/admin');
+  revalidatePath('/admin/kullanicilar');
   return { success: true };
 }
-// =============================================================================
-// İLAN ONAY AKSİYONLARI
-// =============================================================================
 
-// İlanı onayla → published + published_at set
-export async function approveListing(
-  listingId: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
+export async function unbanUser(userId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      suspended_at: null,
+      suspension_reason: null,
+      suspended_by: null,
+    })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('[admin] unban error:', updateError);
+    return { success: false, error: 'Askı kaldırılamadı: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'unban_user', 'user', userId);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/kullanicilar');
+  return { success: true };
+}
+
+// ============================================================
+// ADMIN YETKİSİ
+// ============================================================
+
+export async function makeAdmin(userId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  if (userId === adminId) {
+    return { success: false, error: 'Zaten adminsin.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ is_admin: true })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('[admin] make admin error:', updateError);
+    return { success: false, error: 'Admin yapılamadı: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'make_admin', 'user', userId);
+
+  revalidatePath('/admin/kullanicilar');
+  return { success: true };
+}
+
+export async function removeAdmin(userId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  if (userId === adminId) {
+    return { success: false, error: 'Kendi admin yetkini kaldıramazsın.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ is_admin: false })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('[admin] remove admin error:', updateError);
+    return { success: false, error: 'Admin yetkisi kaldırılamadı: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'remove_admin', 'user', userId);
+
+  revalidatePath('/admin/kullanicilar');
+  return { success: true };
+}
+
+// ============================================================
+// İLAN ONAY (listing approval)
+// ============================================================
+
+export async function approveListing(listingId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
     .from('listings')
     .update({
       status: 'published',
-      published_at: new Date().toISOString(),
       approval_note: null,
+      published_at: new Date().toISOString(),
     })
     .eq('id', listingId);
 
-  if (error) return { success: false, error: error.message };
+  if (updateError) {
+    console.error('[admin] approve listing error:', updateError);
+    return { success: false, error: 'İlan onaylanamadı: ' + updateError.message };
+  }
 
-  revalidatePath('/admin/ilanlar');
+  await logAction(supabase, adminId, 'approve_listing', 'listing', listingId);
+
   revalidatePath('/admin');
+  revalidatePath('/admin/ilanlar');
   revalidatePath('/ilanlar');
   return { success: true };
 }
 
-// İlanı reddet → rejected + not
 export async function rejectListing(
   listingId: string,
   note: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
-  if (!note.trim()) {
-    return { success: false, error: 'Red gerekçesi zorunlu.' };
+  const trimmedNote = note.trim();
+  if (trimmedNote.length < 5) {
+    return { success: false, error: 'Red sebebi en az 5 karakter olmalı.' };
+  }
+  if (trimmedNote.length > 1000) {
+    return { success: false, error: 'Red sebebi en fazla 1000 karakter olabilir.' };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from('listings')
-    .update({
-      status: 'rejected',
-      approval_note: note.trim(),
-    })
+    .update({ status: 'rejected', approval_note: trimmedNote })
     .eq('id', listingId);
 
-  if (error) return { success: false, error: error.message };
+  if (updateError) {
+    console.error('[admin] reject listing error:', updateError);
+    return { success: false, error: 'İlan reddedilemedi: ' + updateError.message };
+  }
 
-  revalidatePath('/admin/ilanlar');
+  await logAction(supabase, adminId, 'reject_listing', 'listing', listingId, trimmedNote);
+
   revalidatePath('/admin');
+  revalidatePath('/admin/ilanlar');
   return { success: true };
 }
 
-// İlana revizyon iste → revision + not
 export async function requestListingRevision(
   listingId: string,
   note: string
-): Promise<AdminActionResult> {
-  const { isAdmin } = await getAdminUser();
-  if (!isAdmin) return { success: false, error: 'Yetkisiz.' };
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
-  if (!note.trim()) {
-    return { success: false, error: 'Revizyon notu zorunlu.' };
+  const trimmedNote = note.trim();
+  if (trimmedNote.length < 5) {
+    return { success: false, error: 'Revizyon notu en az 5 karakter olmalı.' };
+  }
+  if (trimmedNote.length > 1000) {
+    return { success: false, error: 'Revizyon notu en fazla 1000 karakter olabilir.' };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from('listings')
-    .update({
-      status: 'revision',
-      approval_note: note.trim(),
-    })
+    .update({ status: 'revision', approval_note: trimmedNote })
     .eq('id', listingId);
 
-  if (error) return { success: false, error: error.message };
+  if (updateError) {
+    console.error('[admin] request listing revision error:', updateError);
+    return { success: false, error: 'Revizyon istenemedi: ' + updateError.message };
+  }
 
-  revalidatePath('/admin/ilanlar');
+  await logAction(supabase, adminId, 'request_listing_revision', 'listing', listingId, trimmedNote);
+
   revalidatePath('/admin');
+  revalidatePath('/admin/ilanlar');
+  return { success: true };
+}
+
+// ============================================================
+// PROFİL ONAY (profile approval)
+// ============================================================
+
+export async function approveProfile(profileId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ approval_status: 'approved', approval_note: null })
+    .eq('id', profileId);
+
+  if (updateError) {
+    console.error('[admin] approve profile error:', updateError);
+    return { success: false, error: 'Profil onaylanamadı: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'approve_profile', 'user', profileId);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/profiller');
+  return { success: true };
+}
+
+export async function rejectProfile(
+  profileId: string,
+  note: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const trimmedNote = note.trim();
+  if (trimmedNote.length < 5) {
+    return { success: false, error: 'Red sebebi en az 5 karakter olmalı.' };
+  }
+  if (trimmedNote.length > 1000) {
+    return { success: false, error: 'Red sebebi en fazla 1000 karakter olabilir.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ approval_status: 'rejected', approval_note: trimmedNote })
+    .eq('id', profileId);
+
+  if (updateError) {
+    console.error('[admin] reject profile error:', updateError);
+    return { success: false, error: 'Profil reddedilemedi: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'reject_profile', 'user', profileId, trimmedNote);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/profiller');
+  return { success: true };
+}
+
+export async function requestProfileRevision(
+  profileId: string,
+  note: string
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const trimmedNote = note.trim();
+  if (trimmedNote.length < 5) {
+    return { success: false, error: 'Revizyon notu en az 5 karakter olmalı.' };
+  }
+  if (trimmedNote.length > 1000) {
+    return { success: false, error: 'Revizyon notu en fazla 1000 karakter olabilir.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ approval_status: 'revision', approval_note: trimmedNote })
+    .eq('id', profileId);
+
+  if (updateError) {
+    console.error('[admin] request profile revision error:', updateError);
+    return { success: false, error: 'Revizyon istenemedi: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'request_profile_revision', 'user', profileId, trimmedNote);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/profiller');
   return { success: true };
 }

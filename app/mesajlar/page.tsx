@@ -41,6 +41,14 @@ export default async function MesajlarPage() {
     redirect('/giris');
   }
 
+  // Suspension kontrolü — askıdaki kullanıcı mesajlaşamaz
+  const { data: suspensionCheck } = await supabase
+    .from('profiles')
+    .select('suspended_at')
+    .eq('id', user.id)
+    .single();
+  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+
   // Atandığım konuşma id'lerini junction'dan çek
   const { data: myAssignments } = await supabase
     .from('conversation_assignees')

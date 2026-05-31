@@ -42,7 +42,7 @@ export default function RootLayout({
     >
       <body className="font-body antialiased">
         {children}
-        <CerezBanner />
+        {/* <CerezBanner /> */}
       </body>
     </html>
   );

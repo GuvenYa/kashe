@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
+import { isUserSuspended } from '@/app/lib/check-suspension';
 import {
   sendNotificationEmail,
   getUserEmail,
@@ -33,6 +34,11 @@ export async function cancelBooking(
 
   if (!user) {
     return { success: false, error: 'Giriş yapmalısın' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   // Rezervasyonu çek + yetki kontrol
@@ -148,6 +154,11 @@ export async function completeBooking(
 
   if (!user) {
     return { success: false, error: 'Giriş yapmalısın' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   const { data: booking } = await supabase

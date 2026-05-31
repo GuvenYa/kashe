@@ -14,12 +14,16 @@ export default async function TeklifTalepleriPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/giris?redirect=/teklif-talepleri');
 
-  // Rol kontrolü — sadece professional/agency
+  // Rol + suspension kontrolü — sadece professional/agency
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü
+  if (profile?.suspended_at) redirect('/askiya-alindi');
+
   if (profile?.role !== 'professional' && profile?.role !== 'agency') {
     redirect('/profil');
   }

@@ -15,12 +15,15 @@ export default async function YeniIlanPage() {
     redirect('/giris?redirect=/ilanlar/yeni');
   }
 
-  // Rol kontrolü — sadece client/business açabilir
+  // Rol + suspension kontrolü — sadece client/business açabilir
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü — askıdaki kullanıcı yeni ilan açamaz
+  if (profile?.suspended_at) redirect('/askiya-alindi');
 
   const role = profile?.role;
   const canCreate = role === 'client' || role === 'business';

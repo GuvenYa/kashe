@@ -21,12 +21,15 @@ export default async function BasvurularimPage({
     redirect('/giris?redirect=/basvurularim');
   }
 
-  // Rol kontrolü
+  // Rol + suspension kontrolü
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü — askıdaki kullanıcı başvurularını yönetemez
+  if (profile?.suspended_at) redirect('/askiya-alindi');
 
   if (profile?.role !== 'professional') {
     redirect('/profil');

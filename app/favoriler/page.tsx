@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
@@ -83,14 +84,18 @@ export default async function FavorilerPage() {
     );
   }
 
-  // Kullanıcı rolünü çek
+  // Kullanıcı rolü + suspension kontrolü
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
 
+  // Suspension kontrolü — askıdaki kullanıcı favorileri göremez
+  if (profile?.suspended_at) redirect('/askiya-alindi');
+
   const userRole = profile?.role ?? null;
+
 
   // Durum 2: Müşteri değil
   if (userRole !== 'client') {

@@ -21,6 +21,14 @@ export default async function TeklifTaleplerimPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/giris?redirect=/teklif-taleplerim');
 
+  // Suspension kontrolü — askıdaki kullanıcı teklif taleplerini göremez
+  const { data: suspensionCheck } = await supabase
+    .from('profiles')
+    .select('suspended_at')
+    .eq('id', user.id)
+    .single();
+  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+
   // Kendi taleplerim + her birinin recipient'ları (teklif sayısı için)
   const { data: requests } = await supabase
     .from('quote_requests')

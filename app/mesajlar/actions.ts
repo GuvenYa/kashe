@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import { isUserSuspended } from '@/app/lib/check-suspension';
 import {
   EVENT_TYPE_KEYS,
   BUDGET_RANGE_KEYS,
@@ -287,6 +288,11 @@ export async function startConversation(
     return { success: false, error: 'Mesaj göndermek için giriş yapmalısın.' };
   }
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+  }
+
   if (!data.message || data.message.trim().length === 0) {
     return { success: false, error: 'Mesaj boş olamaz.' };
   }
@@ -435,6 +441,11 @@ export async function sendMessage(
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+  }
+
   if (!body || body.trim().length === 0) {
     return { success: false, error: 'Mesaj boş olamaz.' };
   }
@@ -575,6 +586,11 @@ export async function assignConversation(
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+  }
+
   const { data: conv } = await supabase
     .from('conversations')
     .select('professional_id')
@@ -625,6 +641,11 @@ export async function unassignConversation(
 
   if (!user) {
     return { success: false, error: 'Oturum bulunamadı.' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   const { data: conv } = await supabase

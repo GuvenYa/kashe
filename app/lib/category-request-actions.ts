@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import { isUserSuspended } from '@/app/lib/check-suspension';
 
 export type CategoryRequestInput = {
   categoryName: string;
@@ -31,6 +32,11 @@ export async function createCategoryRequest(
       success: false,
       error: 'Öneri göndermek için giriş yapmalısın.',
     };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   // Validation

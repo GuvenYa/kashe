@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
@@ -63,6 +64,14 @@ export default async function BildirimlerPage() {
       </>
     );
   }
+
+  // Suspension kontrolü — askıdaki kullanıcı bildirim göremez
+  const { data: suspensionCheck } = await supabase
+    .from('profiles')
+    .select('suspended_at')
+    .eq('id', user.id)
+    .single();
+  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
 
   // Bildirimleri çek
   const { notifications, error } = await getNotifications();

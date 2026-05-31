@@ -45,6 +45,11 @@ export default async function ProfilPage() {
     redirect('/giris');
   }
 
+  // Suspension kontrolü — askıdaki kullanıcı profile gelmemeli
+  if (profileData.suspended_at) {
+    redirect('/askiya-alindi');
+  }
+
   const profile = profileData as Profile & {
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null } | null;

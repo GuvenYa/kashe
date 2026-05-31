@@ -74,7 +74,7 @@ export function Footer() {
                 <a href="/yardim" className="text-paper/80 hover:text-paper transition-colors">
                   Yardım
                 </a>
-              </li>
+                </li>
               <li>
                 <a href="mailto:kasheofficial@gmail.com" className="text-paper/80 hover:text-paper transition-colors">
                   İletişim

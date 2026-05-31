@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import { isUserSuspended } from '@/app/lib/check-suspension';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -34,6 +35,11 @@ export async function createOrUpdateReview(params: {
 
   if (!user) {
     return { success: false, error: 'Giriş yapmalısın.' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   // Müşteri ile profesyonel arasındaki konuşmayı bul (en sonuncu)
@@ -123,6 +129,11 @@ export async function deleteReview(reviewId: string): Promise<ActionResult> {
     return { success: false, error: 'Giriş yapmalısın.' };
   }
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+  }
+
   // Silmeden önce profesyonel id'yi al (revalidate için)
   const { data: review } = await supabase
     .from('reviews')
@@ -172,6 +183,11 @@ export async function createOrUpdateReply(params: {
 
   if (!user) {
     return { success: false, error: 'Giriş yapmalısın.' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   // Yanıtladığı yorumun gerçekten kendisine ait olduğunu RLS zaten kontrol edecek,
@@ -233,6 +249,11 @@ export async function deleteReply(reviewId: string): Promise<ActionResult> {
 
   if (!user) {
     return { success: false, error: 'Giriş yapmalısın.' };
+  }
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
   const { data: review } = await supabase

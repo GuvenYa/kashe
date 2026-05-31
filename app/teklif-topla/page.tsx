@@ -19,12 +19,15 @@ export default async function TeklifToplaPage() {
     redirect('/giris?redirect=/teklif-topla');
   }
 
-  // Rol kontrolü — sadece client/business teklif toplayabilir
+  // Rol + suspension kontrolü — sadece client/business teklif toplayabilir
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
+
+  // Suspension kontrolü
+  if (profile?.suspended_at) redirect('/askiya-alindi');
 
   const role = profile?.role;
   if (role !== 'client' && role !== 'business') {
