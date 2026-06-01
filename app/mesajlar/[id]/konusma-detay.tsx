@@ -19,6 +19,10 @@ import {
   validateMessageContent,
   formatViolationMessage,
 } from '@/app/lib/message-validation';
+import {
+  getChatTemplates,
+  type TemplateRole,
+} from '@/app/lib/message-templates';
 
 type OtherUser = {
   id: string;
@@ -38,6 +42,8 @@ type Props = {
   teamMembers: { id: string; full_name: string | null }[];
   senderNames: Record<string, { name: string; agencyTag: string | null }>;
   other: OtherUser;
+  categorySlug: string | null;
+  viewerRole: TemplateRole;
   eventDate: string | null;
   eventType: string | null;
   location: string | null;
@@ -106,6 +112,8 @@ export function KonusmaDetay({
   teamMembers,
   senderNames,
   other,
+  categorySlug,
+  viewerRole,
   eventDate,
   eventType,
   location,
@@ -368,6 +376,18 @@ export function KonusmaDetay({
   }
   const hasBrief = briefBits.length > 0;
 
+  const chatTemplates = useMemo(
+    () => getChatTemplates(viewerRole, categorySlug),
+    [viewerRole, categorySlug]
+  );
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+
+  function applyTemplate(text: string) {
+    // Mevcut metin varsa araya boşlukla ekle, yoksa direkt yaz
+    setBody((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+    setTemplatesOpen(false);
+  }
+
   const canSend = body.trim().length > 0 && !isPending && !securityWarning;
 
   return (
@@ -610,6 +630,34 @@ export function KonusmaDetay({
         onSubmit={handleSubmit}
         className="border-t border-line p-3 md:p-4 bg-card"
       >
+        {/* Hazır mesaj şablonları */}
+        {chatTemplates.length > 0 && (
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setTemplatesOpen((v) => !v)}
+              className="kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+            >
+              Hazır mesajlar
+              <span aria-hidden="true">{templatesOpen ? '×' : '+'}</span>
+            </button>
+            {templatesOpen && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {chatTemplates.map((tpl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => applyTemplate(tpl)}
+                    className="kashe-tap text-left text-[12px] leading-snug text-ink bg-paper border border-line rounded-lg px-2.5 py-1.5 hover:border-terracotta hover:bg-terracotta/[0.04] transition max-w-full"
+                  >
+                    {tpl}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Güvenlik uyarısı — anlık */}
         {securityWarning && (
           <div className="mb-3 flex items-start gap-2 bg-terracotta-08 border border-terracotta/25 rounded-xl px-3 py-2.5">

@@ -57,11 +57,12 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     userRole = profile?.role ?? null;
   }
 
-  const isProfessional = userRole === 'professional';
+  // Başvurabilen roller: profesyonel + ajans
+  const canApply = userRole === 'professional' || userRole === 'agency';
 
-  // Profesyonel ise: bu ilana başvurusu var mı?
+  // Başvurabilen kullanıcı ise: bu ilana başvurusu var mı?
   let myApplication: Application | null = null;
-  if (user && isProfessional) {
+  if (user && canApply) {
     const { data: app } = await supabase
       .from('applications')
       .select('*')
@@ -101,7 +102,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
       listing={listing}
       currentUserId={user?.id ?? null}
       isOwner={isOwner}
-      isProfessional={isProfessional}
+      isProfessional={canApply}
       myApplication={myApplication}
       applications={applications}
     />

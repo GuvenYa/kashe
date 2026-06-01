@@ -69,14 +69,16 @@ export function ProfileCard({
     if (firstMulti) {
       const raw = profile.attributes[firstMulti.key];
       const vals = Array.isArray(raw) ? raw : [];
-      attrTags = vals
-        .slice(0, 3)
-        .map(
-          (v) =>
-            firstMulti.options.find((o) => o.value === v)?.label ?? v
-        );
+      attrTags = vals.map(
+        (v) => firstMulti.options.find((o) => o.value === v)?.label ?? v
+      );
     }
   }
+
+  // Kartta en fazla 2 chip göster, kalanı "+N" rozeti olarak özetle
+  const MAX_VISIBLE_TAGS = 2;
+  const visibleTags = attrTags.slice(0, MAX_VISIBLE_TAGS);
+  const hiddenTagCount = attrTags.length - visibleTags.length;
 
   // Fiyat aralığı: tüm aktif hizmetlerden min/max çek
   const numericServices = services.filter(
@@ -99,6 +101,12 @@ export function ProfileCard({
   // Kalp ikonu sadece profesyonel profillerinde gösterilir
   const showFavoriteButton = profile.role === 'professional';
 
+  // Teklif isteyebilen roller: hizmet alan hesaplar (client / business)
+  // Bu kartlar zaten sadece professional/agency profillerini gösterir,
+  // yani kendi kartı sorunu oluşmaz. Sadece görüntüleyenin rolüne bakıyoruz.
+  const canRequestQuote =
+    currentUserRole === 'client' || currentUserRole === 'business';
+
   // "Yeni" rozeti: profil son 30 günde oluşturulduysa
   const isNew = (() => {
     if (!profile.created_at) return false;
@@ -108,22 +116,22 @@ export function ProfileCard({
   })();
 
   return (
-    <div className="relative group transition-all duration-300 hover:-translate-y-1">
+    <div className="relative group h-full transition-all duration-300 hover:-translate-y-1">
       <Link
         href={`/p/${profile.id}`}
-        className="block bg-card border border-line rounded-2xl p-6 group-hover:border-terracotta group-hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] transition-all duration-300"
+        className="flex flex-col h-full bg-card border border-line rounded-xl p-4 group-hover:border-terracotta group-hover:shadow-[0_12px_28px_-14px_rgba(26,18,14,0.20)] transition-all duration-300"
       >
-        <div className="flex items-start gap-4 pr-12">
+        <div className="flex items-start gap-3 pr-9">
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={profile.avatar_url}
               alt={displayName}
-              className="w-16 h-16 rounded-full object-cover border-2 border-line shrink-0"
+              className="w-12 h-12 rounded-full object-cover border-2 border-line shrink-0"
             />
           ) : (
             <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center text-paper font-display font-semibold text-xl shrink-0 ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-paper font-display font-semibold text-base shrink-0 ${
                 isAgencyCard ? 'bg-[#1E3A5F]' : 'bg-terracotta'
               }`}
             >
@@ -157,11 +165,11 @@ export function ProfileCard({
                 </p>
               )
             )}
-            <h3 className="font-display text-xl text-ink group-hover:text-terracotta transition-colors truncate">
+            <h3 className="font-display text-lg text-ink group-hover:text-terracotta transition-colors truncate leading-tight">
               {displayName}
             </h3>
             {cityName && (
-              <p className="text-sm text-ink-72 mt-0.5">{cityName}</p>
+              <p className="text-xs text-ink-72 mt-0.5">{cityName}</p>
             )}
             {rating && rating.count > 0 && (
               <div className="flex items-center gap-1.5 mt-1.5">
@@ -189,39 +197,59 @@ export function ProfileCard({
         </div>
 
         {profile.bio && (
-          <p className="text-sm text-ink-72 mt-4 leading-relaxed line-clamp-2">
+          <p className="text-sm text-ink-72 mt-3 leading-relaxed line-clamp-1">
             {profile.bio}
           </p>
         )}
 
-        {attrTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-4">
-            {attrTags.map((tag) => (
+        {visibleTags.length > 0 && (
+          <div className="flex gap-1.5 mt-3 overflow-hidden h-[26px]">
+            {visibleTags.map((tag) => (
               <span
                 key={tag}
-                className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-72 bg-paper border border-line px-2 py-1 rounded"
+                className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-72 bg-paper border border-line px-2 py-1 rounded whitespace-nowrap shrink-0 truncate max-w-[120px]"
               >
                 {tag}
               </span>
             ))}
+            {hiddenTagCount > 0 && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-terracotta bg-terracotta/8 border border-terracotta/25 px-2 py-1 rounded whitespace-nowrap shrink-0">
+                +{hiddenTagCount}
+              </span>
+            )}
           </div>
         )}
 
         {priceLabel && (
-          <div className="mt-4 pt-4 border-t border-line flex items-center justify-between">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-              Fiyat aralığı
+          <div className="mt-auto pt-3 border-t border-line flex items-center justify-between">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+              Fiyat
             </p>
-            <p className="text-ink font-display font-semibold text-sm">
-              {priceLabel}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-ink font-display font-semibold text-sm">
+                {priceLabel}
+              </p>
+              {canRequestQuote && (
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta flex items-center gap-1 group-hover:gap-1.5 transition-all">
+                  Teklif al
+                  <span aria-hidden="true">→</span>
+                </span>
+              )}
+            </div>
           </div>
+        )}
+
+        {!priceLabel && canRequestQuote && (
+          <p className="mt-auto pt-3 border-t border-line font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta flex items-center justify-end gap-1 group-hover:gap-1.5 transition-all">
+            Teklif al
+            <span aria-hidden="true">→</span>
+          </p>
         )}
       </Link>
 
       {/* Kalp ikonu — Link DIŞINDA, üst-sağda absolute */}
       {showFavoriteButton && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-3 right-3 z-10">
           <FavoriteButton
             professionalId={profile.id}
             initialFavorited={isFavorited}
@@ -231,6 +259,7 @@ export function ProfileCard({
           />
         </div>
       )}
-    </div>
+
+      </div>
   );
 }

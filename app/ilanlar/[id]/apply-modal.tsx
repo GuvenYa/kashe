@@ -4,15 +4,18 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { applyToListing } from '../listings-actions';
+import { getApplicationTemplates } from '@/app/lib/message-templates';
 
 type Props = {
   listingId: string;
   listingTitle: string;
+  categorySlug: string | null;
   open: boolean;
   onClose: () => void;
 };
 
-export function ApplyModal({ listingId, listingTitle, open, onClose }: Props) {
+export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClose }: Props) {
+  const templates = getApplicationTemplates(categorySlug);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +109,23 @@ export function ApplyModal({ listingId, listingTitle, open, onClose }: Props) {
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
               Başvuru mesajın
             </label>
+            {templates.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-ink-72 w-full mb-0.5">
+                  Hazır taslak (tıkla, sonra düzenle)
+                </span>
+                {templates.map((tpl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCoverMessage(tpl)}
+                    className="text-left text-[11px] leading-snug text-ink bg-white border border-line rounded-lg px-2.5 py-1.5 hover:border-[#1E3A5F] hover:bg-[#1E3A5F]/[0.04] transition max-w-full line-clamp-2"
+                  >
+                    {tpl}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               value={coverMessage}
               onChange={(e) => setCoverMessage(e.target.value)}

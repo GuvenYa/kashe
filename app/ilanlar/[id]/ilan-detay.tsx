@@ -21,7 +21,8 @@ import {
 import {
   formatBudgetRange,
   formatListingAge,
-  formatExpiresIn,
+  formatApplicationDeadline,
+  isApplicationOpen,
   getEventTypeLabel,
   getListingStatusLabel,
   getListingStatusTone,
@@ -92,7 +93,11 @@ export function IlanDetay({
       })
     : null;
 
-  const expiresLabel = formatExpiresIn(listing.expires_at);
+  const deadlineInfo = formatApplicationDeadline(listing.application_deadline);
+  const applicationOpen = isApplicationOpen(
+    listing.status,
+    listing.application_deadline
+  );
 
   // Action handlers
   function withConfirm(actionKey: string, action: () => Promise<void>) {
@@ -168,16 +173,20 @@ export function IlanDetay({
               <Clock size={12} strokeWidth={1.75} />
               {formatListingAge(listing.published_at)}
             </span>
-            {expiresLabel && (
-              <span className="flex items-center gap-1">
-                <Tag size={12} strokeWidth={1.75} />
-                {expiresLabel}
-              </span>
-            )}
             <span className="flex items-center gap-1">
               <Eye size={12} strokeWidth={1.75} />
               {listing.views_count} görüntülenme
             </span>
+            {deadlineInfo && (
+              <span
+                className={`flex items-center gap-1 ${
+                  deadlineInfo.passed ? 'text-terracotta' : ''
+                }`}
+              >
+                <Clock size={12} strokeWidth={1.75} />
+                {deadlineInfo.label}
+              </span>
+            )}
           </div>
         </header>
 
@@ -368,7 +377,7 @@ export function IlanDetay({
           )}
 
           {/* PROFESYONEL — BAŞVURMAMIŞ */}
-          {isProfessional && !isOwner && !myApplication && canApplyToListing(listing.status) && (
+          {isProfessional && !isOwner && !myApplication && applicationOpen && (
             <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5">
               <p className="text-sm text-ink mb-4">
                 Bu ilana başvurmak ister misin? İlan sahibine başvuru
@@ -424,10 +433,12 @@ export function IlanDetay({
           {isProfessional &&
             !isOwner &&
             !myApplication &&
-            !canApplyToListing(listing.status) && (
+            !applicationOpen && (
               <div className="bg-ink-72/5 border border-line rounded-lg p-5 text-center">
                 <p className="text-sm text-ink-72">
-                  Bu ilan artık başvuru kabul etmiyor.
+                  {deadlineInfo?.passed
+                    ? 'Bu ilanın başvuru süresi doldu.'
+                    : 'Bu ilan artık başvuru kabul etmiyor.'}
                 </p>
               </div>
             )}

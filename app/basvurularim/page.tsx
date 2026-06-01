@@ -31,7 +31,7 @@ export default async function BasvurularimPage({
   // Suspension kontrolü — askıdaki kullanıcı başvurularını yönetemez
   if (profile?.suspended_at) redirect('/askiya-alindi');
 
-  if (profile?.role !== 'professional') {
+  if (profile?.role !== 'professional' && profile?.role !== 'agency') {
     redirect('/profil');
   }
 

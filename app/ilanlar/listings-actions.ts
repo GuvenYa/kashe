@@ -10,6 +10,7 @@ import {
   canCancelListing,
   canEditListing,
   canApplyToListing,
+  isDeadlinePassed,
   canWithdrawApplication,
   canShortlistApplication,
   canAcceptApplication,
@@ -42,6 +43,7 @@ type CreateListingInput = {
   guest_count: number | null;
   budget_min: number | null;
   budget_max: number | null;
+  application_deadline: string | null;
   // Eğer true, status = 'published'; false, status = 'draft'
   publish_immediately: boolean;
 };
@@ -107,6 +109,7 @@ export async function createListing(
       guest_count: input.guest_count,
       budget_min: input.budget_min,
       budget_max: input.budget_max,
+      application_deadline: input.application_deadline,
       // Yayınla = admin onayına gönder (pending_approval). Aksi halde taslak.
       status: input.publish_immediately ? 'pending_approval' : 'draft',
     })
@@ -180,6 +183,8 @@ export async function updateListing(
     updateData.guest_count = input.guest_count;
   if (input.budget_min !== undefined) updateData.budget_min = input.budget_min;
   if (input.budget_max !== undefined) updateData.budget_max = input.budget_max;
+  if (input.application_deadline !== undefined)
+    updateData.application_deadline = input.application_deadline;
   if (input.category_id !== undefined)
     updateData.category_id = input.category_id;
 
@@ -376,7 +381,7 @@ export async function applyToListing(
   });
   if (validationError) return { success: false, error: validationError };
 
-  // Rol kontrolü — sadece profesyonel başvurabilir
+  // Rol kontrolü — profesyonel veya ajans başvurabilir
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, is_published')
@@ -384,10 +389,10 @@ export async function applyToListing(
     .single();
 
   if (!profile) return { success: false, error: 'Profil bulunamadı' };
-  if (profile.role !== 'professional') {
+  if (profile.role !== 'professional' && profile.role !== 'agency') {
     return {
       success: false,
-      error: 'Sadece profesyonel hesaplar başvurabilir',
+      error: 'Sadece profesyonel ve ajans hesapları başvurabilir',
     };
   }
   if (!profile.is_published) {
@@ -397,16 +402,19 @@ export async function applyToListing(
     };
   }
 
-  // İlan published mı kontrol et
+  // İlan published mı + başvuru süresi geçmemiş mi kontrol et
   const { data: listing } = await supabase
     .from('listings')
-    .select('id, creator_id, status')
+    .select('id, creator_id, status, application_deadline')
     .eq('id', input.listing_id)
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı' };
   if (!canApplyToListing(listing.status as ListingStatus)) {
     return { success: false, error: 'Bu ilana artık başvurulamıyor' };
+  }
+  if (isDeadlinePassed(listing.application_deadline)) {
+    return { success: false, error: 'Bu ilanın başvuru süresi doldu' };
   }
   if (listing.creator_id === user.id) {
     return { success: false, error: 'Kendi ilanına başvuramazsın' };

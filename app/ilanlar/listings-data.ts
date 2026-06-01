@@ -46,6 +46,7 @@ export type Listing = {
   budget_max: number | null;
   currency: string;
   status: ListingStatus;
+  application_deadline: string | null;
   expires_at: string | null;
   views_count: number;
   created_at: string;
@@ -364,6 +365,42 @@ export function canEditListing(status: ListingStatus): boolean {
 // Başvuru sadece yayında ilana yapılır
 export function canApplyToListing(status: ListingStatus): boolean {
   return status === 'published';
+}
+
+// Son başvuru tarihi geçmiş mi? (null = süresiz, hiç geçmez)
+export function isDeadlinePassed(deadline: string | null): boolean {
+  if (!deadline) return false;
+  return new Date(deadline).getTime() < Date.now();
+}
+
+// Başvuru gerçekten açık mı? Hem status hem deadline'ı birlikte değerlendirir.
+export function isApplicationOpen(
+  status: ListingStatus,
+  deadline: string | null
+): boolean {
+  return canApplyToListing(status) && !isDeadlinePassed(deadline);
+}
+
+// Son başvuru tarihini "kalan süre" olarak formatla
+export function formatApplicationDeadline(
+  deadline: string | null
+): { label: string; passed: boolean } | null {
+  if (!deadline) return null;
+  const date = new Date(deadline);
+  const diffMs = date.getTime() - Date.now();
+  const dateLabel = date.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  if (diffMs < 0) return { label: `Başvurular kapandı (${dateLabel})`, passed: true };
+
+  const diffDay = Math.floor(diffMs / 86400000);
+  const diffHour = Math.floor(diffMs / 3600000);
+  if (diffDay >= 1) return { label: `Son başvuru: ${dateLabel} (${diffDay} gün)`, passed: false };
+  if (diffHour >= 1) return { label: `Son başvuru: bugün (${diffHour} saat)`, passed: false };
+  return { label: 'Son başvuru: birazdan kapanıyor', passed: false };
 }
 
 export function canWithdrawApplication(status: ApplicationStatus): boolean {

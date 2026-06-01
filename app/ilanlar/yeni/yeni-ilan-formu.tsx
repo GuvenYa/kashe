@@ -184,6 +184,11 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       : ''
   );
   const [publishImmediately, setPublishImmediately] = useState(true);
+  const [applicationDeadline, setApplicationDeadline] = useState(
+    initialData?.application_deadline
+      ? initialData.application_deadline.split('T')[0]
+      : ''
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -259,6 +264,9 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           guest_count: finalGuestCount,
           budget_min: finalMin,
           budget_max: finalMax,
+          application_deadline: applicationDeadline
+            ? new Date(applicationDeadline + 'T23:59:59').toISOString()
+            : null,
         });
 
         if (result.success) {
@@ -280,6 +288,9 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           guest_count: finalGuestCount,
           budget_min: finalMin,
           budget_max: finalMax,
+          application_deadline: applicationDeadline
+            ? new Date(applicationDeadline + 'T23:59:59').toISOString()
+            : null,
           publish_immediately: publishImmediately,
         });
 
@@ -490,6 +501,22 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               max={100000}
               className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
             />
+          </div>
+
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
+              Son başvuru tarihi
+            </label>
+            <input
+              type="date"
+              value={applicationDeadline}
+              onChange={(e) => setApplicationDeadline(e.target.value)}
+              min={today}
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            />
+            <p className="text-[10px] text-ink-72 mt-1 font-mono">
+              Boş bırakırsan başvurular süresiz açık kalır. Bu tarih geçince yeni başvuru alınmaz.
+            </p>
           </div>
         </div>
       </section>
