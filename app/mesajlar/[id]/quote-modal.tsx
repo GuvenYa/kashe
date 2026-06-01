@@ -8,14 +8,17 @@ import {
   type QuoteExpiryKey,
 } from '../quotes-data';
 import { createQuote } from '../quote-actions';
+import { getQuoteTemplates } from '@/app/lib/message-templates';
 
 type Props = {
   conversationId: string;
+  categorySlug: string | null;
   open: boolean;
   onClose: () => void;
 };
 
-export function QuoteModal({ conversationId, open, onClose }: Props) {
+export function QuoteModal({ conversationId, categorySlug, open, onClose }: Props) {
+  const quoteTemplates = getQuoteTemplates(categorySlug);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +143,23 @@ export function QuoteModal({ conversationId, open, onClose }: Props) {
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
               Hizmet kapsamı
             </label>
+            {quoteTemplates.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-ink-72 w-full mb-0.5">
+                  Hazır taslak (tıkla, sonra düzenle)
+                </span>
+                {quoteTemplates.map((tpl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setDescription(tpl)}
+                    className="text-left text-[11px] leading-snug text-ink bg-white border border-line rounded-lg px-2.5 py-1.5 hover:border-terracotta hover:bg-terracotta/[0.04] transition max-w-full line-clamp-2"
+                  >
+                    {tpl}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

@@ -481,6 +481,7 @@ export function IlanDetay({
         <ApplyModal
           listingId={listing.id}
           listingTitle={listing.title}
+          categorySlug={listing.service_categories?.slug ?? null}
           open={applyModalOpen}
           onClose={() => setApplyModalOpen(false)}
         />

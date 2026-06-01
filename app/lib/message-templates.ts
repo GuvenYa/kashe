@@ -229,3 +229,61 @@ export function getApplicationTemplates(categorySlug: string | null): string[] {
     (categorySlug && APPLICATION_BY_CATEGORY[categorySlug]) || [];
   return [...categorySpecific, ...APPLICATION_GENERAL];
 }
+
+// ============================================================================
+// TEKLİF ŞABLONLARI — hizmet kapsamı odaklı (quote-modal "Hizmet kapsamı")
+// Fiyat değil, NE sunulduğunu tarif eder. Profesyonel doldurup düzenler.
+// ============================================================================
+
+const QUOTE_GENERAL: string[] = [
+  'Etkinliğiniz için tam kapsamlı hizmet sunuyorum. Süre, içerik ve teslimat detaylarını ihtiyacınıza göre netleştirebiliriz. Fiyata tüm hizmet dahildir, sürpriz ek ücret yoktur.',
+];
+
+const QUOTE_BY_CATEGORY: Record<string, string[]> = {
+  dj: [
+    '4 saatlik canlı DJ performansı. Profesyonel ses ve ışık ekipmanı dahildir. Etkinliğin akışına uygun set hazırlanır, istek parça listesi alınır. Kurulum ve toplama dahildir.',
+  ],
+  muzisyen: [
+    '2 set halinde toplam 2 saatlik canlı müzik performansı. Türkçe ve yabancı repertuvar. Kendi enstrümanlarımla gelirim; sahne ses sistemi ihtiyacı önceden netleştirilir.',
+  ],
+  fotografci: [
+    'Etkinlik boyunca fotoğraf çekimi (yaklaşık 6 saat). Dış çekim, tören ve after party dahil. Renk düzenlemesi yapılmış yüksek çözünürlüklü kareler, dijital teslimat. Teslim süresi ~2 hafta.',
+  ],
+  videograf: [
+    '4K çözünürlükte etkinlik çekimi ve profesyonel kurgu. Kısa özet video + tam versiyon teslimi. Talep halinde drone çekimi eklenebilir. Teslim süresi ~3 hafta.',
+  ],
+  sunucu: [
+    'Etkinliğin baştan sona akış yönetimi ve sunuculuğu (yaklaşık 3 saat). Akış senaryosu önceden birlikte hazırlanır. Diksiyon ve sahne hakimiyetiyle programınız sorunsuz yürür.',
+  ],
+  hostes: [
+    'Etkinlik süresince karşılama ve yönlendirme hizmeti. Kıyafet ve sunum standardına uygun ekip. İhtiyaç halinde İngilizce iletişim. Ekip sayısı talebinize göre ayarlanır.',
+  ],
+  oyuncu: [
+    '1 günlük çekim için oyunculuk performansı. Provalar ve yönetmen yönlendirmesine tam uyum. Showreel ve önceki çalışmalar paylaşılır. Lokasyon ve süre önceden netleştirilir.',
+  ],
+  model: [
+    '1 günlük stüdyo/katalog çekimi için modellik. Poz çeşitliliği ve marka yönlendirmesine uyum. Ölçü ve portföy bilgisi paylaşılır.',
+  ],
+  palyaco: [
+    '1 saatlik çocuk gösterisi: animasyon, balon ve interaktif oyunlar. Yaş grubuna uygun içerik. Tüm malzemeler dahildir.',
+  ],
+  illuzyonist: [
+    'Sahne ve masalar arası illüzyon gösterisi (yaklaşık 1 saat). Etkinlik konseptine uygun program. Tüm gösteri ekipmanı dahildir.',
+  ],
+  organizasyon: [
+    'Etkinliğin komple organizasyonu: mekan, ikram, dekor ve koordinasyon dahil. Planlama, tedarikçi yönetimi ve gün boyu saha koordinasyonu tarafımızdan yürütülür.',
+  ],
+  'ses-isik': [
+    'Etkinlik için ses ve ışık sistemi kurulumu ve operasyonu. Mekan keşfi, kurulum, gün boyu teknik operasyon ve toplama dahildir.',
+  ],
+};
+
+/**
+ * Teklif modalı "Hizmet kapsamı" alanı için taslaklar.
+ * @param categorySlug - teklifi veren profesyonelin/konuşmanın kategorisi
+ */
+export function getQuoteTemplates(categorySlug: string | null): string[] {
+  const categorySpecific =
+    (categorySlug && QUOTE_BY_CATEGORY[categorySlug]) || [];
+  return [...categorySpecific, ...QUOTE_GENERAL];
+}

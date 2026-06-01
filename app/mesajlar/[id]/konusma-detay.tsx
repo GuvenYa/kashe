@@ -755,6 +755,7 @@ export function KonusmaDetay({
       {(isProfessional || isAssignedPro) && (
         <QuoteModal
           conversationId={conversationId}
+          categorySlug={categorySlug}
           open={quoteModalOpen}
           onClose={() => setQuoteModalOpen(false)}
         />
