@@ -14,10 +14,11 @@ import {
   formatLastSeen,
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
-import type { ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
+import type { ServiceWithCategory, PortfolioItem, ServicePackage } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
 import { getBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
+import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 
 type PublicProfile = {
   id: string;
@@ -170,8 +171,13 @@ export default async function PublicProfilePage({
 
     representingAgencies = (repData ?? []) as unknown as RepresentingAgency[];
   }
-  // Hizmetler + Portföy
-  const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
+  // Hizmetler + Portföy + Paketler + Müsaitlik
+  const [
+    { data: servicesData },
+    { data: portfolioData },
+    { data: packagesData },
+    { data: blocksData },
+  ] = await Promise.all([
     supabase
       .from('services')
       .select('*, service_categories(name_tr, emoji)')
@@ -184,10 +190,25 @@ export default async function PublicProfilePage({
       .select('*')
       .eq('profile_id', profile.id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('service_packages')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('availability_blocks')
+      .select('blocked_date')
+      .eq('profile_id', profile.id),
   ]);
 
   const services = (servicesData || []) as ServiceWithCategory[];
   const portfolioItems = (portfolioData || []) as PortfolioItem[];
+  const packages = (packagesData || []) as ServicePackage[];
+  const blockedDates = (blocksData || []).map(
+    (b) => b.blocked_date as string
+  );
 
   // Mevcut kullanıcı bilgisi
   const {
@@ -670,6 +691,78 @@ export default async function PublicProfilePage({
             </div>
           )}
 
+          {/* PAKETLER */}
+          {packages.length > 0 && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <h2 className="font-display text-2xl text-ink mb-1">Paketler</h2>
+              <p className="text-sm text-ink-72 mb-6">
+                Hazır paketler — ihtiyacına en yakınını seçip doğrudan iletişime
+                geç.
+              </p>
+              <div className="space-y-4">
+                {packages.map((pkg) => {
+                  const pkgPrice = formatPriceRange(
+                    pkg.price_min,
+                    pkg.price_max,
+                    pkg.price_on_request
+                  );
+                  return (
+                    <div
+                      key={pkg.id}
+                      className="border border-line rounded-xl p-5 hover:border-terracotta/40 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
+                        <h3 className="font-display text-xl text-ink">
+                          {pkg.title}
+                        </h3>
+                        {pkgPrice && (
+                          <span className="font-display font-semibold text-terracotta text-lg shrink-0">
+                            {pkgPrice}
+                          </span>
+                        )}
+                      </div>
+                      {pkg.description && (
+                        <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap mb-3">
+                          {pkg.description}
+                        </p>
+                      )}
+                      {pkg.includes && pkg.includes.length > 0 && (
+                        <ul className="space-y-1.5 mb-4">
+                          {pkg.includes.map((item, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-2 text-sm text-ink"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5 text-moss" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {!isOwnProfile && (
+                        <IletisimButton
+                          professionalId={profile.id}
+                          professionalName={displayName}
+                          categorySlug={profile.service_categories?.slug ?? null}
+                          isLoggedIn={isLoggedIn}
+                          currentUserIsProfessional={currentUserIsProfessional}
+                          isOwnProfile={isOwnProfile}
+                          packageContext={{
+                            title: pkg.title,
+                            price: pkgPrice,
+                          }}
+                          variant="package"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* HİZMETLER */}
           {services.length > 0 && (
             <div className="bg-white border border-line rounded-lg p-8 mb-6">
@@ -709,7 +802,22 @@ export default async function PublicProfilePage({
               </div>
             </div>
           )}
-{/* YORUMLAR (varsa) */}
+{/* MÜSAİTLİK (varsa) — salt görüntüleme */}
+          {blockedDates.length > 0 && (
+            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+              <h2 className="font-display text-2xl text-ink mb-1">Müsaitlik</h2>
+              <p className="text-sm text-ink-72 mb-6">
+                İşaretli günler dolu. Diğer günler için iletişime geçebilirsin.
+              </p>
+              <AvailabilityCalendar
+                blockedDates={blockedDates}
+                bookedDates={[]}
+                editable={false}
+              />
+            </div>
+          )}
+
+          {/* YORUMLAR (varsa) */}
           {recentReviews.length > 0 && (
             <div className="bg-white border border-line rounded-lg p-8 mb-6">
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

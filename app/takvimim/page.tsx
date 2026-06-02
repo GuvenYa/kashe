@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
+import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 
 type BookingRow = {
   id: string;
@@ -75,6 +76,27 @@ export default async function TakvimimPage() {
 
   const bookings = (bookingsData ?? []) as unknown as BookingRow[];
 
+  // Manuel bloklu günler
+  const { data: blocksData } = await supabase
+    .from('availability_blocks')
+    .select('blocked_date')
+    .eq('profile_id', user.id);
+  const blockedDates = (blocksData ?? []).map((b) => b.blocked_date as string);
+
+  // Onaylı/aktif booking günleri (iptal/tamamlanan hariç — sadece confirmed gelecek işler dolu sayılır)
+  const bookedDates = bookings
+    .filter((b) => b.status === 'confirmed' && b.event_date)
+    .map((b) => b.event_date as string);
+
+  // Bu ay manuel dolu işaretlenen gün sayısı (panel özeti için)
+  const nowDate = new Date();
+  const thisMonthPrefix = `${nowDate.getFullYear()}-${String(
+    nowDate.getMonth() + 1
+  ).padStart(2, '0')}`;
+  const blockedThisMonth = blockedDates.filter((d) =>
+    d.startsWith(thisMonthPrefix)
+  ).length;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -109,9 +131,103 @@ export default async function TakvimimPage() {
               <em>Takvimim</em>.
             </h1>
             <p className="text-base text-ink-72 mt-3 max-w-xl leading-relaxed">
-              Onaylanan rezervasyonların ve geçmiş işlerin burada.
+              Müsaitliğini yönet, onaylanan rezervasyonlarını ve geçmiş işlerini gör.
             </p>
           </div>
+
+          {/* MÜSAİTLİK TAKVİMİ */}
+          <section className="mb-12">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-72 mb-5">
+              Müsaitlik takvimi
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6 items-start">
+              <AvailabilityCalendar
+                blockedDates={blockedDates}
+                bookedDates={bookedDates}
+                editable={true}
+              />
+
+              {/* Sağ panel — özet + yaklaşan işler */}
+              <div className="space-y-4">
+                {/* Özet kartı */}
+                <div className="bg-white border border-line rounded-2xl p-5">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
+                    Bu ay
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-display text-3xl text-terracotta leading-none">
+                        {blockedThisMonth}
+                      </p>
+                      <p className="text-xs text-ink-72 mt-1.5">
+                        dolu işaretledin
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-display text-3xl text-ink leading-none">
+                        {upcoming.length}
+                      </p>
+                      <p className="text-xs text-ink-72 mt-1.5">
+                        yaklaşan rezervasyon
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-ink-72 mt-4 pt-4 border-t border-line leading-relaxed">
+                    Müşteriler profilinde bu takvimi görüyor — müsait olmadığın
+                    günleri işaretle, boşuna teklif gelmesin.
+                  </p>
+                </div>
+
+                {/* Yaklaşan işler mini listesi */}
+                {upcoming.length > 0 && (
+                  <div className="bg-white border border-line rounded-2xl p-5">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                      Sıradaki işler
+                    </p>
+                    <ul className="space-y-2.5">
+                      {upcoming.slice(0, 4).map((b) => {
+                        const customerName =
+                          b.customer?.company_name ||
+                          b.customer?.full_name ||
+                          'Müşteri';
+                        const dateLabel = b.event_date
+                          ? new Date(b.event_date).toLocaleDateString('tr-TR', {
+                              day: 'numeric',
+                              month: 'long',
+                            })
+                          : 'Tarih yok';
+                        return (
+                          <li
+                            key={b.id}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-ink font-medium truncate">
+                                {customerName}
+                              </p>
+                              <p className="text-xs text-ink-72 truncate">
+                                {[b.event_type, b.location]
+                                  .filter(Boolean)
+                                  .join(' · ') || 'Detay yok'}
+                              </p>
+                            </div>
+                            <span className="font-mono text-xs text-terracotta shrink-0">
+                              {dateLabel}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {upcoming.length > 4 && (
+                      <p className="text-xs text-ink-72 mt-3 pt-3 border-t border-line">
+                        +{upcoming.length - 4} rezervasyon daha aşağıda
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
 
           {bookings.length === 0 ? (
             <EmptyState

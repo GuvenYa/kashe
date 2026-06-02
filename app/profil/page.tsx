@@ -133,23 +133,30 @@ export default async function ProfilPage() {
   // Profesyonel ise hizmetleri + portfolio'yu da çek
   let services: ServiceWithCategory[] = [];
   let portfolioItems: PortfolioItem[] = [];
+  let packageCount = 0;
   if (isPro) {
-    const [{ data: servicesData }, { data: portfolioData }] = await Promise.all([
-      supabase
-        .from('services')
-        .select('*, service_categories(name_tr, emoji)')
-        .eq('profile_id', user.id)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('portfolio_items')
-        .select('*')
-        .eq('profile_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(4),
-    ]);
+    const [{ data: servicesData }, { data: portfolioData }, { count: pkgCount }] =
+      await Promise.all([
+        supabase
+          .from('services')
+          .select('*, service_categories(name_tr, emoji)')
+          .eq('profile_id', user.id)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('portfolio_items')
+          .select('*')
+          .eq('profile_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(4),
+        supabase
+          .from('service_packages')
+          .select('id', { count: 'exact', head: true })
+          .eq('profile_id', user.id),
+      ]);
     services = (servicesData || []) as ServiceWithCategory[];
     portfolioItems = (portfolioData || []) as PortfolioItem[];
+    packageCount = pkgCount ?? 0;
   }
 
   const cityName = profile.turkish_cities?.name;
@@ -517,6 +524,35 @@ export default async function ProfilPage() {
                     </p>
                   )}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* PROFESYONEL: Paketler */}
+          {isPro && (
+            <div className="mt-6 bg-white border border-line rounded-lg p-8">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">
+                  Paketlerim{' '}
+                  <span className="text-ink-72 text-lg">({packageCount})</span>
+                </h2>
+                <Link
+                  href="/profil/paketler"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {packageCount === 0 ? 'Paket oluştur →' : 'Tümünü yönet →'}
+                </Link>
+              </div>
+              {packageCount === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Birden çok hizmetini tek pakette topla (örn. &quot;Düğün
+                  Paketi&quot;). Müşteriler profilinde paketlerini görüp doğrudan
+                  iletişime geçebilir.
+                </p>
+              ) : (
+                <p className="text-ink-72 text-sm">
+                  Paketlerini düzenle, yeni paket ekle, aktif/pasif yap.
+                </p>
               )}
             </div>
           )}

@@ -141,3 +141,17 @@ export type ProfessionalRatingSummary = {
   review_count: number;
   average_rating: number;
 };
+export type ServicePackage = {
+  id: string;
+  profile_id: string;
+  title: string;
+  description: string | null;
+  includes: string[];
+  price_min: number | null;
+  price_max: number | null;
+  price_on_request: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+};

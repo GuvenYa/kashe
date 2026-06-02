@@ -17,6 +17,8 @@ type Props = {
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
+  packageContext?: { title: string; price: string | null } | null;
+  variant?: 'default' | 'package';
 };
 
 export function IletisimButton({
@@ -26,6 +28,8 @@ export function IletisimButton({
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
+  packageContext = null,
+  variant = 'default',
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,6 +47,19 @@ export function IletisimButton({
 
   function setField(key: string, value: string) {
     setBriefValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Paket için iletişim: modalı açarken mesajı paket referansıyla ön-doldur
+  function openForPackage() {
+    if (packageContext) {
+      const priceText = packageContext.price
+        ? ` (${packageContext.price})`
+        : '';
+      setMessage(
+        `Merhaba, "${packageContext.title}"${priceText} paketiniz hakkında bilgi almak istiyorum. `
+      );
+    }
+    setModalOpen(true);
   }
 
   // Body scroll lock
@@ -247,22 +264,32 @@ export function IletisimButton({
 
   
 
-  // Login + müşteri → İletişim butonu
+  // Login + müşteri → İletişim butonu (paket varyantında sade buton, değilse kutu)
   return (
     <>
-      <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
-        <h2 className="font-display text-xl text-ink mb-2">Talep gönder</h2>
-        <p className="text-ink-72 text-sm mb-4">
-          Etkinlik detaylarını paylaş, profesyonel sana daha hızlı ve doğru yanıt versin.
-        </p>
+      {variant === 'package' ? (
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
-          className="px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+          onClick={openForPackage}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
         >
-          Talep gönder
+          Bu paket için ilet
         </button>
-      </div>
+      ) : (
+        <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
+          <h2 className="font-display text-xl text-ink mb-2">Talep gönder</h2>
+          <p className="text-ink-72 text-sm mb-4">
+            Etkinlik detaylarını paylaş, profesyonel sana daha hızlı ve doğru yanıt versin.
+          </p>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+          >
+            Talep gönder
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {modalOpen && (
