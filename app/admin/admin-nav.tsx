@@ -7,6 +7,8 @@ import { createClient } from '@/app/lib/supabase-browser';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/profiller', label: 'Profiller' },
+  { href: '/admin/ilanlar', label: 'İlanlar' },
   { href: '/admin/kullanicilar', label: 'Kullanıcılar' },
   { href: '/admin/kategori-talepleri', label: 'Kategori Talepleri' },
   { href: '/admin/yorumlar', label: 'Yorumlar' },

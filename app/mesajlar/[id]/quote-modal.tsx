@@ -144,20 +144,23 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
               Hizmet kapsamı
             </label>
             {quoteTemplates.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-ink-72 w-full mb-0.5">
-                  Hazır taslak (tıkla, sonra düzenle)
-                </span>
-                {quoteTemplates.map((tpl, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setDescription(tpl)}
-                    className="text-left text-[11px] leading-snug text-ink bg-white border border-line rounded-lg px-2.5 py-1.5 hover:border-terracotta hover:bg-terracotta/[0.04] transition max-w-full line-clamp-2"
-                  >
-                    {tpl}
-                  </button>
-                ))}
+              <div className="mb-2.5 rounded-lg border border-terracotta/20 bg-terracotta/[0.05] p-2.5">
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-terracotta mb-1.5 flex items-center gap-1">
+                  <span aria-hidden="true">✎</span>
+                  Hazır taslak — tıkla, sonra düzenle
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {quoteTemplates.map((tpl, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setDescription(tpl)}
+                      className="text-left text-[12px] leading-snug text-ink bg-white border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all line-clamp-2"
+                    >
+                      {tpl}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <textarea

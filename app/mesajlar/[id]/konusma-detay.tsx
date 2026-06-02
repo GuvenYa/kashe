@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   sendMessage,
+  sendMessageWithAttachment,
+  getAttachmentUrl,
   markConversationRead,
   assignConversation,
   unassignConversation,
@@ -14,6 +16,7 @@ import type { Quote } from '../quotes-data';
 import { QuoteModal } from './quote-modal';
 import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
+import { MediaLightbox } from '@/app/components/media-lightbox';
 import type { Message } from '@/app/lib/types';
 import {
   validateMessageContent,
@@ -52,6 +55,21 @@ type Props = {
   initialMessages: Message[];
   initialQuotes: Record<string, Quote>;
 };
+
+const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
+const ATTACHMENT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ATTACHMENT_DOC_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+function attachmentKind(mime: string): 'image' | 'pdf' | 'doc' | null {
+  if (ATTACHMENT_IMAGE_TYPES.includes(mime)) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  if (ATTACHMENT_DOC_TYPES.includes(mime)) return 'doc';
+  return null;
+}
 
 const TONES = [
   { bg: 'rgba(200,68,42,0.12)', fg: '#C8442A' },
@@ -126,6 +144,8 @@ export function KonusmaDetay({
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [quotesById, setQuotesById] =
     useState<Record<string, Quote>>(initialQuotes);
@@ -175,6 +195,7 @@ export function KonusmaDetay({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null);
@@ -309,6 +330,75 @@ export function KonusmaDetay({
     if (v.ok) return null;
     return formatViolationMessage(v.violations);
   }, [body]);
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+
+    setError(null);
+    const kind = attachmentKind(file.type);
+    if (!kind) {
+      setError('Desteklenmeyen dosya tipi. Görsel, PDF veya Word gönderebilirsin.');
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      setError("Dosya 20 MB'dan büyük olamaz.");
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+      const path = `${currentUserId}/${conversationId}/${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 8)}.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from('message-attachments')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+
+      if (upErr) {
+        setError('Yükleme başarısız: ' + upErr.message);
+        return;
+      }
+
+      const result = await sendMessageWithAttachment(
+        conversationId,
+        { path, type: kind, name: file.name },
+        body.trim()
+      );
+
+      if (result.success) {
+        setBody('');
+        router.refresh();
+      } else {
+        setError(result.error || 'Dosya gönderilemedi.');
+        // Başarısızsa yüklenen dosyayı temizle
+        await supabase.storage.from('message-attachments').remove([path]);
+      }
+    } catch (err) {
+      setError('Bir hata oluştu: ' + (err instanceof Error ? err.message : 'bilinmeyen'));
+    } finally {
+      setUploadingFile(false);
+    }
+  }
+
+  // Bir mesaj ekini signed URL ile aç (resim → lightbox, doc → yeni sekme)
+  async function openAttachment(msg: Message) {
+    if (!msg.attachment_path) return;
+    const result = await getAttachmentUrl(conversationId, msg.attachment_path);
+    if ('error' in result) {
+      setError(result.error);
+      return;
+    }
+    if (msg.attachment_type === 'image') {
+      setLightboxUrl(result.url);
+    } else {
+      window.open(result.url, '_blank', 'noopener,noreferrer');
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -606,9 +696,49 @@ export function KonusmaDetay({
                         )}
                       </p>
                     )}
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {msg.body}
-                    </p>
+                    {msg.message_type === 'file' && msg.attachment_path && (
+                      <button
+                        type="button"
+                        onClick={() => openAttachment(msg)}
+                        className={`mb-2 flex items-center gap-2.5 rounded-lg border px-3 py-2 w-full text-left transition ${
+                          isMine
+                            ? 'border-paper/30 bg-paper/10 hover:bg-paper/20'
+                            : 'border-line bg-paper hover:border-terracotta'
+                        }`}
+                      >
+                        <span
+                          className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+                            isMine ? 'bg-paper/20' : 'bg-terracotta/10'
+                          }`}
+                        >
+                          {msg.attachment_type === 'image' ? (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-terracotta)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="3" y="3" width="18" height="18" rx="2" />
+                              <circle cx="8.5" cy="8.5" r="1.5" />
+                              <path d="M21 15l-5-5L5 21" />
+                            </svg>
+                          ) : (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-terracotta)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <path d="M14 2v6h6" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block text-xs font-medium truncate ${isMine ? 'text-paper' : 'text-ink'}`}>
+                            {msg.attachment_name || 'Dosya'}
+                          </span>
+                          <span className={`block text-[10px] ${isMine ? 'text-paper/70' : 'text-ink-50'}`}>
+                            {msg.attachment_type === 'image' ? 'Görseli aç' : 'Dosyayı aç'}
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                    {msg.body && msg.body !== 'Dosya gönderildi' && (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {msg.body}
+                      </p>
+                    )}
                     <p
                       className={`text-[10px] mt-1 ${
                         isMine ? 'text-paper/70' : 'text-ink-50'
@@ -707,6 +837,29 @@ export function KonusmaDetay({
               +
             </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            aria-label="Dosya ekle"
+            title="Dosya ekle"
+            className="kashe-tap shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl border border-line bg-paper text-ink-72 hover:text-terracotta hover:border-terracotta transition flex items-center justify-center disabled:opacity-50"
+          >
+            {uploadingFile ? (
+              <span className="font-mono text-[10px]">...</span>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
           <textarea
             value={body}
             onChange={(e) => {
@@ -760,6 +913,13 @@ export function KonusmaDetay({
           onClose={() => setQuoteModalOpen(false)}
         />
       )}
+
+      <MediaLightbox
+        items={lightboxUrl ? [{ url: lightboxUrl, type: 'image' }] : []}
+        index={lightboxUrl ? 0 : null}
+        onClose={() => setLightboxUrl(null)}
+        onNavigate={() => {}}
+      />
     </div>
   );
 }

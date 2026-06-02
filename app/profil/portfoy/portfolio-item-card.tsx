@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deletePortfolioItem, updatePortfolioCaption } from './actions';
+import { MediaLightbox } from '@/app/components/media-lightbox';
 import type { PortfolioItem } from '@/app/lib/types';
 
 type Props = {
@@ -15,9 +16,12 @@ export function PortfolioItemCard({ item }: Props) {
   const [editingCaption, setEditingCaption] = useState(false);
   const [caption, setCaption] = useState(item.caption || '');
   const [error, setError] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const isVideo = item.media_type === 'video';
 
   function handleDelete() {
-    if (!confirm('Bu fotoğrafı silmek istediğine emin misin?')) return;
+    if (!confirm('Bu öğeyi silmek istediğine emin misin?')) return;
     setError(null);
     startTransition(async () => {
       const result = await deletePortfolioItem(item.id);
@@ -48,13 +52,40 @@ export function PortfolioItemCard({ item }: Props) {
   return (
     <div className="group relative bg-white border border-line rounded-lg overflow-hidden">
       <div className="aspect-square bg-paper relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.media_url}
-          alt={item.caption || 'Portfolio'}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          className="block w-full h-full"
+          aria-label="Büyüt"
+        >
+          {isVideo ? (
+            <>
+              <video
+                src={item.media_url}
+                className="w-full h-full object-cover pointer-events-none"
+                muted
+                playsInline
+                preload="metadata"
+              />
+              {/* Oynat ikonu overlay */}
+              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="w-12 h-12 rounded-full bg-ink/60 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-paper)" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+            </>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={item.media_url}
+              alt={item.caption || 'Portfolio'}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          )}
+        </button>
 
         {/* Hover overlay - sil butonu */}
         <button
@@ -118,6 +149,19 @@ export function PortfolioItemCard({ item }: Props) {
           <p className="text-xs text-terracotta mt-2">{error}</p>
         )}
       </div>
+
+      <MediaLightbox
+        items={[
+          {
+            url: item.media_url,
+            type: isVideo ? 'video' : 'image',
+            caption: item.caption,
+          },
+        ]}
+        index={lightboxOpen ? 0 : null}
+        onClose={() => setLightboxOpen(false)}
+        onNavigate={() => {}}
+      />
     </div>
   );
 }

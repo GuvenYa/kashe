@@ -66,6 +66,9 @@ export type Application = {
   created_at: string;
   updated_at: string;
   responded_at: string | null;
+  attachment_path: string | null;
+  attachment_type: string | null;
+  attachment_name: string | null;
 };
 
 // Joined types (UI'da kullanılan)
@@ -340,6 +343,16 @@ export function canPublishListing(status: ListingStatus): boolean {
 
 export function canCloseListing(status: ListingStatus): boolean {
   return status === 'published';
+}
+
+// İptal edilmiş ilan tekrar taslağa alınabilir (yanlışlıkla iptal için geri dönüş)
+export function canRestoreListing(status: ListingStatus): boolean {
+  return status === 'cancelled';
+}
+
+// İptal veya taslak ilan silinebilir
+export function canDeleteListing(status: ListingStatus): boolean {
+  return status === 'draft' || status === 'cancelled';
 }
 
 export function canCancelListing(status: ListingStatus): boolean {

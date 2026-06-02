@@ -23,6 +23,7 @@ export type Profile = {
   created_at: string;
   updated_at: string;
   attributes?: Record<string, string | string[]> | null;
+  
 };
 export type ServiceCategory = {
   id: number;
@@ -93,7 +94,10 @@ export type Message = {
   read_at: string | null;
   created_at: string;
   // Faz 8: Quote system
-  message_type: 'text' | 'quote' | 'system';
+  message_type: 'text' | 'quote' | 'system' | 'file';
+  attachment_path: string | null;
+  attachment_type: string | null;
+  attachment_name: string | null;
   quote_id: string | null;
 };
 

@@ -81,7 +81,7 @@ export async function Categories() {
             return (
               <Link
                 key={cat.id}
-                href={`/kesfet?kategori=${cat.id}`}
+                href={`/kategori/${cat.slug}`}
                 className="group relative bg-card border border-line rounded-2xl p-6 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
               >
                 {/* Hover'da hafif renk yıkaması (zemin) */}

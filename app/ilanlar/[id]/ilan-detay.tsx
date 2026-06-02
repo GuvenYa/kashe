@@ -32,6 +32,8 @@ import {
   canApplyToListing,
   canCloseListing,
   canCancelListing,
+  canRestoreListing,
+  canDeleteListing,
   canShortlistApplication,
   canAcceptApplication,
   canRejectApplication,
@@ -42,11 +44,14 @@ import {
 import {
   closeListing,
   cancelListing,
+  restoreListing,
+  deleteListing,
   shortlistApplication,
   acceptApplication,
   rejectApplication,
 } from '../listings-actions';
 import { ApplyModal } from './apply-modal';
+import { ApplicationAttachment } from '@/app/components/application-attachment';
 
 type Props = {
   listing: ListingWithRelations;
@@ -127,6 +132,18 @@ export function IlanDetay({
     const result = await cancelListing(listing.id);
     if (!result.success) throw new Error(result.error);
     router.refresh();
+  }
+
+  async function handleRestore() {
+    const result = await restoreListing(listing.id);
+    if (!result.success) throw new Error(result.error);
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    const result = await deleteListing(listing.id);
+    if (!result.success) throw new Error(result.error);
+    router.push('/ilanlarim');
   }
 
   // Status badge styles
@@ -372,6 +389,38 @@ export function IlanDetay({
                       : 'İlanı iptal et'}
                   </button>
                 )}
+                {canRestoreListing(listing.status) && (
+                  <button
+                    onClick={() => withConfirm('restore', handleRestore)}
+                    disabled={isPending}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
+                      confirming === 'restore'
+                        ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                        : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Pencil size={14} strokeWidth={1.75} />
+                    {confirming === 'restore'
+                      ? 'Eminsen tekrar tıkla'
+                      : 'Taslağa geri al'}
+                  </button>
+                )}
+                {canDeleteListing(listing.status) && (
+                  <button
+                    onClick={() => withConfirm('delete', handleDelete)}
+                    disabled={isPending}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
+                      confirming === 'delete'
+                        ? 'bg-ember text-paper border-ember'
+                        : 'border-line text-ink-72 hover:border-ember hover:text-ember'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Trash2 size={14} strokeWidth={1.75} />
+                    {confirming === 'delete'
+                      ? 'Kalıcı olarak sil'
+                      : 'İlanı sil'}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -605,6 +654,20 @@ function ApplicationCard({
               application.currency
             )}
           </span>
+        </div>
+      )}
+
+      {application.attachment_path && (
+        <div className="mb-3">
+          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1.5">
+            Eklenen dosya
+          </p>
+          <ApplicationAttachment
+            applicationId={application.id}
+            attachmentPath={application.attachment_path}
+            attachmentType={application.attachment_type}
+            attachmentName={application.attachment_name}
+          />
         </div>
       )}
 

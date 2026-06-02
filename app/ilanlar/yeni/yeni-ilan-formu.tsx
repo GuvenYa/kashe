@@ -38,6 +38,13 @@ const EVENT_TYPE_OPTIONS = [
   { key: 'other', label: 'Diğer' },
 ];
 
+// Proje-temelli kategoriler (etkinlik türü alakasız: oyuncu, model).
+// Bunlarda "düğün/sünnet" sormak anlamsız — etkinlik türü alanı gizlenir.
+function isProjectBasedCategory(categoryName: string | undefined): boolean {
+  const name = (categoryName || '').toLocaleLowerCase('tr');
+  return name.includes('oyuncu') || name.includes('model');
+}
+
 // Kategori adına göre örnek başlık/açıklama placeholder'ı.
 // name_tr'nin içinde geçen anahtar kelimeye göre eşleşir (slug bağımsız).
 function getPlaceholders(categoryName: string | undefined): {
@@ -308,6 +315,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
     (c) => c.id === categoryId
   )?.name_tr;
   const placeholders = getPlaceholders(selectedCategoryName);
+  const isProjectBased = isProjectBasedCategory(selectedCategoryName);
 
   const showCustomBudget = budgetPreset === 'custom';
   const showPresetInfo = budgetPreset !== 'open' && budgetPreset !== 'custom';
@@ -332,9 +340,15 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
             </label>
             <select
               value={categoryId}
-              onChange={(e) =>
-                setCategoryId(e.target.value ? parseInt(e.target.value, 10) : '')
-              }
+              onChange={(e) => {
+                const newId = e.target.value ? parseInt(e.target.value, 10) : '';
+                setCategoryId(newId);
+                // Proje-temelli kategoriye geçildiyse etkinlik türünü temizle
+                const newName = categories.find((c) => c.id === newId)?.name_tr;
+                if (isProjectBasedCategory(newName)) {
+                  setEventType('');
+                }
+              }}
               required
               className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
             >
@@ -414,33 +428,35 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       {/* Bölüm 2: Etkinlik */}
       <section className="bg-white border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
-          Etkinlik detayları{' '}
+          {isProjectBased ? 'Proje detayları' : 'Etkinlik detayları'}{' '}
           <span className="normal-case tracking-normal">(hepsi opsiyonel)</span>
         </p>
 
         <div className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-                Etkinlik türü
-              </label>
-              <select
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-              >
-                <option value="">Seç...</option>
-                {EVENT_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!isProjectBased && (
+              <div>
+                <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
+                  Etkinlik türü
+                </label>
+                <select
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                >
+                  <option value="">Seç...</option>
+                  {EVENT_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-                Etkinlik tarihi
+                {isProjectBased ? 'Çekim / proje tarihi' : 'Etkinlik tarihi'}
               </label>
               <input
                 type="date"

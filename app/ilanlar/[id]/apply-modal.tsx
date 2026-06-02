@@ -1,10 +1,26 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { applyToListing } from '../listings-actions';
 import { getApplicationTemplates } from '@/app/lib/message-templates';
+import { createClient } from '@/app/lib/supabase-browser';
+
+const MAX_APP_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+const APP_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const APP_DOC_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+function appAttachmentKind(mime: string): 'image' | 'pdf' | 'doc' | null {
+  if (APP_IMAGE_TYPES.includes(mime)) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  if (APP_DOC_TYPES.includes(mime)) return 'doc';
+  return null;
+}
 
 type Props = {
   listingId: string;
@@ -24,6 +40,9 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
   const [coverMessage, setCoverMessage] = useState('');
   const [amount, setAmount] = useState('');
   const [includeAmount, setIncludeAmount] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
 
@@ -31,7 +50,29 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
     setCoverMessage('');
     setAmount('');
     setIncludeAmount(false);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setError(null);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null;
+    setError(null);
+    if (!selected) {
+      setFile(null);
+      return;
+    }
+    if (!appAttachmentKind(selected.type)) {
+      setError('Desteklenmeyen dosya tipi. Görsel, PDF veya Word ekleyebilirsin.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (selected.size > MAX_APP_FILE_SIZE) {
+      setError("Dosya 20 MB'dan büyük olamaz.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setFile(selected);
   }
 
   function handleClose() {
@@ -59,10 +100,57 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
     }
 
     startTransition(async () => {
+      let attachment:
+        | { path: string; type: 'image' | 'pdf' | 'doc'; name: string }
+        | null = null;
+
+      // Dosya seçildiyse önce storage'a yükle
+      if (file) {
+        const kind = appAttachmentKind(file.type);
+        if (!kind) {
+          setError('Desteklenmeyen dosya tipi.');
+          return;
+        }
+        setUploading(true);
+        try {
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) {
+            setError('Oturum bulunamadı.');
+            setUploading(false);
+            return;
+          }
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+          const path = `${user.id}/${listingId}/${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 8)}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from('application-attachments')
+            .upload(path, file, { cacheControl: '3600', upsert: false });
+          if (upErr) {
+            setError('Dosya yüklenemedi: ' + upErr.message);
+            setUploading(false);
+            return;
+          }
+          attachment = { path, type: kind, name: file.name };
+        } catch (err) {
+          setError(
+            'Yükleme hatası: ' +
+              (err instanceof Error ? err.message : 'bilinmeyen')
+          );
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       const result = await applyToListing({
         listing_id: listingId,
         cover_message: coverMessage.trim(),
         proposed_amount: proposedAmount,
+        attachment,
       });
 
       if (result.success) {
@@ -71,6 +159,13 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
         router.refresh();
       } else {
         setError(result.error);
+        // Başvuru başarısızsa yüklenen dosyayı temizle
+        if (attachment) {
+          const supabase = createClient();
+          await supabase.storage
+            .from('application-attachments')
+            .remove([attachment.path]);
+        }
       }
     });
   }
@@ -110,20 +205,23 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
               Başvuru mesajın
             </label>
             {templates.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-ink-72 w-full mb-0.5">
-                  Hazır taslak (tıkla, sonra düzenle)
-                </span>
-                {templates.map((tpl, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCoverMessage(tpl)}
-                    className="text-left text-[11px] leading-snug text-ink bg-white border border-line rounded-lg px-2.5 py-1.5 hover:border-[#1E3A5F] hover:bg-[#1E3A5F]/[0.04] transition max-w-full line-clamp-2"
-                  >
-                    {tpl}
-                  </button>
-                ))}
+              <div className="mb-2.5 rounded-lg border border-[#1E3A5F]/20 bg-[#1E3A5F]/[0.05] p-2.5">
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#1E3A5F] mb-1.5 flex items-center gap-1">
+                  <span aria-hidden="true">✎</span>
+                  Hazır taslak — tıkla, sonra düzenle
+                </p>
+                <div className="flex flex-col gap-2">
+                  {templates.map((tpl, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCoverMessage(tpl)}
+                      className="text-left text-[12px] leading-relaxed text-ink-72 bg-white border border-line rounded-lg px-3 py-2.5 hover:border-[#1E3A5F] hover:text-ink hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-y-0.5 transition-all"
+                    >
+                      {tpl}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <textarea
@@ -178,6 +276,63 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
             )}
           </div>
 
+          {/* Dosya eki (opsiyonel) */}
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
+              Dosya ekle (opsiyonel)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleFileChange}
+              className="hidden"
+              id="apply-file-input"
+            />
+            {file ? (
+              <div className="flex items-center gap-3 bg-white border border-line rounded-lg px-3 py-2.5">
+                <span className="shrink-0 w-9 h-9 rounded-lg bg-[#1E3A5F]/10 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-medium text-ink truncate">
+                    {file.name}
+                  </span>
+                  <span className="block text-[10px] text-ink-72">
+                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  className="shrink-0 text-ink-72 hover:text-terracotta text-lg leading-none w-7 h-7 flex items-center justify-center"
+                  aria-label="Dosyayı kaldır"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="apply-file-input"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-line rounded-lg text-sm text-ink-72 hover:text-[#1E3A5F] hover:border-[#1E3A5F] transition cursor-pointer"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                CV, portfolyo veya örnek iş ekle
+              </label>
+            )}
+            <p className="text-[10px] text-ink-72 mt-1.5">
+              Görsel, PDF veya Word · max 20 MB
+            </p>
+          </div>
+
           {error && (
             <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-4 py-3">
               {error}
@@ -199,7 +354,11 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <Send size={14} strokeWidth={1.75} />
-              {isPending ? 'Gönderiliyor...' : 'Başvuruyu gönder'}
+              {uploading
+                ? 'Dosya yükleniyor...'
+                : isPending
+                ? 'Gönderiliyor...'
+                : 'Başvuruyu gönder'}
             </button>
           </div>
         </form>

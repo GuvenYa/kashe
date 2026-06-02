@@ -40,7 +40,7 @@ export async function CategoryMarquee() {
           return (
             <div key={`${cat.id}-${i}`} className="flex items-center gap-10 md:gap-14">
               <a
-                href={`/kesfet?kategori=${cat.id}`}
+                href={`/kategori/${cat.slug}`}
                 className="flex items-center gap-3 group shrink-0"
               >
                 {icon && (

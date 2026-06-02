@@ -6,6 +6,20 @@ import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
 import { KategoriTalepCta } from '@/app/components/kategori-talep-cta';
 
+const PRICE_OPTIONS = [
+  { value: '5000', label: "5.000 ₺'ye kadar" },
+  { value: '15000', label: "15.000 ₺'ye kadar" },
+  { value: '30000', label: "30.000 ₺'ye kadar" },
+  { value: '60000', label: "60.000 ₺'ye kadar" },
+  { value: '100000', label: "100.000 ₺'ye kadar" },
+];
+
+const RATING_OPTIONS = [
+  { value: '4.5', label: '4,5 ve üzeri' },
+  { value: '4', label: '4 ve üzeri' },
+  { value: '3', label: '3 ve üzeri' },
+];
+
 type Props = {
   categories: ServiceCategory[];
   cities: TurkishCity[];
@@ -14,6 +28,8 @@ type Props = {
   currentSearch: string;
   currentAttrs: Record<string, string[]>;
   currentType: 'profesyonel' | 'ajans' | null;
+  currentMaxPrice: number | null;
+  currentMinRating: number | null;
   resultCount: number;
   isLoggedIn: boolean;
 };
@@ -26,6 +42,8 @@ export function KesfetFilters({
   currentSearch,
   currentAttrs,
   currentType,
+  currentMaxPrice,
+  currentMinRating,
   resultCount,
   isLoggedIn,
 }: Props) {
@@ -39,6 +57,12 @@ export function KesfetFilters({
   const [city, setCity] = useState<string>(currentCity ? String(currentCity) : '');
   const [type, setType] = useState<string>(currentType ?? '');
   const [attrs, setAttrs] = useState<Record<string, string[]>>(currentAttrs);
+  const [maxPrice, setMaxPrice] = useState<string>(
+    currentMaxPrice !== null ? String(currentMaxPrice) : ''
+  );
+  const [minRating, setMinRating] = useState<string>(
+    currentMinRating !== null ? String(currentMinRating) : ''
+  );
 
   // Şehir arama dropdown
   const [cityOpen, setCityOpen] = useState(false);
@@ -65,6 +89,8 @@ export function KesfetFilters({
       if (cats.length > 0) params.set('kategori', cats.join(','));
       if (city) params.set('sehir', city);
       if (type) params.set('tip', type);
+      if (maxPrice) params.set('fiyat', maxPrice);
+      if (minRating) params.set('puan', minRating);
       for (const [key, vals] of Object.entries(attrs)) {
         if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
       }
@@ -75,7 +101,7 @@ export function KesfetFilters({
     }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, cats, city, type, attrs]);
+  }, [search, cats, city, type, attrs, maxPrice, minRating]);
 
   // Şehir dropdown dışarı tıklama
   useEffect(() => {
@@ -140,6 +166,8 @@ export function KesfetFilters({
     setCity('');
     setType('');
     setAttrs({});
+    setMaxPrice('');
+    setMinRating('');
   }
 
   const selectedCity = cities.find((c) => String(c.id) === city);
@@ -153,6 +181,8 @@ export function KesfetFilters({
     cats.length +
     (city ? 1 : 0) +
     (type ? 1 : 0) +
+    (maxPrice ? 1 : 0) +
+    (minRating ? 1 : 0) +
     Object.keys(attrs).length;
 
   // ===== Sidebar içeriği (hem masaüstü hem mobil drawer kullanır) =====
@@ -315,6 +345,75 @@ export function KesfetFilters({
               </ul>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Fiyat — başlangıç fiyatı tavanı */}
+      <div>
+        <p className="font-display text-base text-ink mb-3">Fiyat</p>
+        <div className="space-y-1.5">
+          {[{ value: '', label: 'Fark etmez' }, ...PRICE_OPTIONS].map((opt) => (
+            <button
+              key={opt.value || 'all'}
+              type="button"
+              onClick={() => setMaxPrice(opt.value)}
+              className="flex items-center gap-2.5 w-full text-left group"
+            >
+              <span
+                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  maxPrice === opt.value ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                }`}
+              >
+                {maxPrice === opt.value && (
+                  <span className="w-2 h-2 rounded-full bg-terracotta" />
+                )}
+              </span>
+              <span
+                className={`text-sm transition-colors ${
+                  maxPrice === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                }`}
+              >
+                {opt.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Puan — minimum */}
+      <div>
+        <p className="font-display text-base text-ink mb-3">Puan</p>
+        <div className="space-y-1.5">
+          {[{ value: '', label: 'Fark etmez' }, ...RATING_OPTIONS].map((opt) => (
+            <button
+              key={opt.value || 'all'}
+              type="button"
+              onClick={() => setMinRating(opt.value)}
+              className="flex items-center gap-2.5 w-full text-left group"
+            >
+              <span
+                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  minRating === opt.value ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                }`}
+              >
+                {minRating === opt.value && (
+                  <span className="w-2 h-2 rounded-full bg-terracotta" />
+                )}
+              </span>
+              <span
+                className={`text-sm flex items-center gap-1 transition-colors ${
+                  minRating === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                }`}
+              >
+                {opt.value && (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-terracotta)" stroke="var(--color-terracotta)" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                  </svg>
+                )}
+                {opt.label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 

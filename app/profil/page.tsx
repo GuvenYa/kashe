@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { PublishToggle } from './publish-toggle';
+import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { getUserFavorites } from '@/app/favoriler/actions';
 import {
   isProfessional,
@@ -302,6 +303,42 @@ export default async function ProfilPage() {
                   style={{ width: `${completeness}%` }}
                 />
               </div>
+
+              {missingFields.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-line">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                    Tamamlanması gerekenler
+                  </p>
+                  <ul className="space-y-1.5">
+                    {missingFields.map((field) => {
+                      // Hizmet maddesi hizmetler sayfasına, gerisi düzenleme sayfasına
+                      const href = field.toLocaleLowerCase('tr').includes('hizmet')
+                        ? '/profil/hizmetlerim'
+                        : '/profil/duzenle';
+                      return (
+                        <li key={field}>
+                          <Link
+                            href={href}
+                            className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-terracotta transition-colors"
+                          >
+                            <span
+                              className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-terracotta shrink-0 transition-colors"
+                              aria-hidden="true"
+                            />
+                            <span className="flex-1">{field}</span>
+                            <span
+                              className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-hidden="true"
+                            >
+                              Tamamla →
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -501,25 +538,10 @@ export default async function ProfilPage() {
 
               {portfolioItems.length === 0 ? (
                 <p className="text-ink-72">
-                  Henüz portföy fotoğrafı eklemedin.
+                  Henüz portföy öğesi eklemedin.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {portfolioItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="aspect-square bg-paper rounded-lg overflow-hidden border border-line"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.media_url}
-                        alt={item.caption || 'Portfolio'}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  ))}
-                </div>
+                <PortfolioGallery items={portfolioItems} />
               )}
             </div>
           )}

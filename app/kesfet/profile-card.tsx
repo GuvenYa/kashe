@@ -3,6 +3,7 @@ import { formatPriceRange } from '@/app/lib/profile-helpers';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import { getFilterFields } from '@/app/lib/filter-config';
+import { getCardBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
 
 type Props = {
   profile: {
@@ -13,6 +14,7 @@ type Props = {
     company_name: string | null;
     role: string;
     created_at?: string | null;
+    approval_status?: string | null;
     attributes?: Record<string, string | string[]> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -107,13 +109,14 @@ export function ProfileCard({
   const canRequestQuote =
     currentUserRole === 'client' || currentUserRole === 'business';
 
-  // "Yeni" rozeti: profil son 30 günde oluşturulduysa
-  const isNew = (() => {
-    if (!profile.created_at) return false;
-    const created = new Date(profile.created_at).getTime();
-    const days = (Date.now() - created) / (1000 * 60 * 60 * 24);
-    return days <= 30;
-  })();
+  // Otomatik rozetler (kartta en fazla 2, öncelik sıralı)
+  const badgeInput = {
+    approvalStatus: profile.approval_status,
+    createdAt: profile.created_at,
+    rating,
+  };
+  const badges = getCardBadges(badgeInput);
+  const verified = isVerified(badgeInput);
 
   return (
     <div className="relative group h-full transition-all duration-300 hover:-translate-y-1">
@@ -157,17 +160,39 @@ export function ProfileCard({
                     />
                   )}
                   {categoryName}
-                  {isNew && (
-                    <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-moss bg-moss/10 border border-moss/30 px-1.5 py-0.5 rounded">
-                      Yeni
-                    </span>
-                  )}
                 </p>
               )
             )}
-            <h3 className="font-display text-lg text-ink group-hover:text-terracotta transition-colors truncate leading-tight">
-              {displayName}
+            <h3 className="font-display text-lg text-ink group-hover:text-terracotta transition-colors leading-tight flex items-center gap-1.5">
+              <span className="truncate">{displayName}</span>
+              {verified && (
+                <span
+                  title="Doğrulanmış"
+                  aria-label="Doğrulanmış"
+                  className="shrink-0 inline-flex"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                      d="M12 2l2.4 1.8 3 -.2 .9 2.9 2.4 1.8 -1 2.9 1 2.9 -2.4 1.8 -.9 2.9 -3 -.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.3 15.7l1-2.9-1-2.9 2.4-1.8.9-2.9 3 .2z"
+                      fill="var(--color-moss)"
+                    />
+                    <path d="M8.5 12l2.2 2.2 4.3-4.4" stroke="#FAF7F0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              )}
             </h3>
+            {badges.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {badges.map((b) => (
+                  <span
+                    key={b.key}
+                    className={`font-mono text-[9px] uppercase tracking-[0.12em] px-1.5 py-0.5 rounded border ${BADGE_TONE_CLASS[b.tone]}`}
+                  >
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            )}
             {cityName && (
               <p className="text-xs text-ink-72 mt-0.5">{cityName}</p>
             )}

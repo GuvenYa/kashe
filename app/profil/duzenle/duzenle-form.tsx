@@ -166,7 +166,16 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
               id="primary_category_id"
               name="primary_category_id"
               value={primaryCategoryId}
-              onChange={(e) => setPrimaryCategoryId(e.target.value)}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setPrimaryCategoryId(newId);
+                // Kategori değişti → eski kategorinin attribute'ları artık geçersiz,
+                // temizle ki jsonb'de çöp kalmasın ve keşfet filtresi şaşmasın.
+                // (Aynı kategori tekrar seçilirse mevcut değerler korunsun diye kontrol)
+                if (newId !== primaryCategoryId) {
+                  setAttributes({});
+                }
+              }}
               className={inputClass}
             >
               <option value="">Bir kategori seç</option>

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { IlanDetay } from './ilan-detay';
 import { incrementListingViews } from '../listings-actions';
+import { TopNav } from '@/app/components/sections/top-nav';
 import type {
   ListingWithRelations,
   ApplicationWithRelations,
@@ -98,13 +99,16 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
   });
 
   return (
-    <IlanDetay
-      listing={listing}
-      currentUserId={user?.id ?? null}
-      isOwner={isOwner}
-      isProfessional={canApply}
-      myApplication={myApplication}
-      applications={applications}
-    />
+    <>
+      <TopNav />
+      <IlanDetay
+        listing={listing}
+        currentUserId={user?.id ?? null}
+        isOwner={isOwner}
+        isProfessional={canApply}
+        myApplication={myApplication}
+        applications={applications}
+      />
+    </>
   );
 }

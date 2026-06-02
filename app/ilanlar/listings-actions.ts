@@ -8,6 +8,7 @@ import {
   canPublishListing,
   canCloseListing,
   canCancelListing,
+  canRestoreListing,
   canEditListing,
   canApplyToListing,
   isDeadlinePassed,
@@ -258,6 +259,15 @@ export async function cancelListing(
 }
 
 /**
+ * Cancelled → draft (iptal edilen ilanı geri al, tekrar düzenlenebilir/yayınlanabilir).
+ */
+export async function restoreListing(
+  listingId: string
+): Promise<ActionResult> {
+  return updateListingStatus(listingId, 'draft', canRestoreListing);
+}
+
+/**
  * Status değişimi için iç yardımcı.
  */
 async function updateListingStatus(
@@ -358,6 +368,11 @@ type ApplyToListingInput = {
   listing_id: string;
   cover_message: string;
   proposed_amount: number | null;
+  attachment?: {
+    path: string;
+    type: 'image' | 'pdf' | 'doc';
+    name: string;
+  } | null;
 };
 
 /**
@@ -420,6 +435,12 @@ export async function applyToListing(
     return { success: false, error: 'Kendi ilanına başvuramazsın' };
   }
 
+  // Ek dosya varsa path güvenliği — dosya bu kullanıcının klasöründe mi?
+  const attachment = input.attachment ?? null;
+  if (attachment && !attachment.path.startsWith(`${user.id}/`)) {
+    return { success: false, error: 'Geçersiz dosya yolu.' };
+  }
+
   // INSERT — UNIQUE constraint mevcut başvuruyu yakalayacak
   const { data: newApp, error } = await supabase
     .from('applications')
@@ -429,11 +450,20 @@ export async function applyToListing(
       cover_message: input.cover_message.trim(),
       proposed_amount: input.proposed_amount,
       status: 'pending',
+      attachment_path: attachment?.path ?? null,
+      attachment_type: attachment?.type ?? null,
+      attachment_name: attachment?.name ?? null,
     })
     .select('id')
     .single();
 
   if (error || !newApp) {
+    // Başvuru başarısızsa yüklenen dosyayı temizle (best effort)
+    if (attachment) {
+      await supabase.storage
+        .from('application-attachments')
+        .remove([attachment.path]);
+    }
     // UNIQUE constraint hatası — özel mesaj
     if (error?.code === '23505') {
       return {
@@ -613,4 +643,60 @@ export async function incrementListingViews(
   }
 
   return { success: true };
+}
+// =============================================================================
+// Başvuru eki — signed URL (private bucket)
+// =============================================================================
+
+/**
+ * Bir başvuru ekinin signed URL'ini üretir.
+ * Sadece başvuran ya da ilan sahibi erişebilir.
+ */
+export async function getApplicationAttachmentUrl(
+  applicationId: string,
+  attachmentPath: string
+): Promise<{ url: string } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Oturum bulunamadı.' };
+
+  // Başvuru + ilan sahibini çek, erişimi doğrula
+  const { data: app } = await supabase
+    .from('applications')
+    .select('id, applicant_id, attachment_path, listings(creator_id)')
+    .eq('id', applicationId)
+    .single();
+
+  if (!app || !app.attachment_path) {
+    return { error: 'Ek bulunamadı.' };
+  }
+
+  const listingCreator = (app.listings as unknown as { creator_id: string })
+    ?.creator_id;
+
+  const hasAccess =
+    app.applicant_id === user.id || listingCreator === user.id;
+
+  if (!hasAccess) {
+    return { error: 'Bu eke erişimin yok.' };
+  }
+
+  // İstenen path gerçekten bu başvurunun eki mi?
+  if (app.attachment_path !== attachmentPath) {
+    return { error: 'Ek eşleşmedi.' };
+  }
+
+  const { data, error } = await supabase.storage
+    .from('application-attachments')
+    .createSignedUrl(attachmentPath, 3600);
+
+  if (error || !data) {
+    return { error: 'Bağlantı oluşturulamadı.' };
+  }
+
+  return { url: data.signedUrl };
 }

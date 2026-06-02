@@ -10,8 +10,10 @@ type Props = {
   maxItems: number;
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
   const router = useRouter();
@@ -42,13 +44,20 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
 
     // Tip ve boyut kontrolü
     for (const file of files) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        setError(`"${file.name}" desteklenmeyen tip. JPG, PNG, WebP yükleyebilirsin.`);
+      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+      const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+      if (!isImage && !isVideo) {
+        setError(`"${file.name}" desteklenmeyen tip. Görsel (JPG, PNG, WebP) veya video (MP4, WebM, MOV) yükleyebilirsin.`);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
-      if (file.size > MAX_FILE_SIZE) {
-        setError(`"${file.name}" 5 MB'dan büyük.`);
+      if (isImage && file.size > MAX_IMAGE_SIZE) {
+        setError(`"${file.name}" 5 MB'dan büyük (görsel limiti).`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      if (isVideo && file.size > MAX_VIDEO_SIZE) {
+        setError(`"${file.name}" 50 MB'dan büyük (video limiti).`);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
@@ -86,10 +95,11 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
           data: { publicUrl },
         } = supabase.storage.from('portfolio').getPublicUrl(fileName);
 
+        const isVideoFile = ALLOWED_VIDEO_TYPES.includes(file.type);
         const { error: dbError } = await supabase.from('portfolio_items').insert({
           profile_id: userId,
           media_url: publicUrl,
-          media_type: 'image',
+          media_type: isVideoFile ? 'video' : 'image',
           caption: null,
         });
 
@@ -127,7 +137,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
             Yükle
           </p>
           <p className="text-sm text-ink-72">
-            {currentCount}/{maxItems} fotoğraf · JPG, PNG, WebP · Her dosya max 5 MB
+            {currentCount}/{maxItems} öğe · Görsel (max 5 MB) veya video (max 50 MB)
           </p>
         </div>
 
@@ -135,7 +145,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
             multiple
             onChange={handleFileChange}
             className="hidden"
@@ -155,7 +165,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
                 ? `Yükleniyor (${progress.current}/${progress.total})...`
                 : 'Yükleniyor...'
               : canUpload
-              ? '+ Fotoğraf ekle'
+              ? '+ Görsel / video ekle'
               : 'Limit doldu'}
           </label>
         </div>

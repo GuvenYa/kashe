@@ -24,6 +24,7 @@ type PublishedProfile = {
   company_name: string | null;
   role: string;
   created_at: string | null;
+  approval_status: string | null;
   attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -41,6 +42,8 @@ type SearchParams = {
   q?: string;
   sirala?: 'yeni' | 'puan';
   tip?: 'profesyonel' | 'ajans';
+  fiyat?: string;
+  puan?: string;
   [key: `attr_${string}`]: string | undefined;
 };
 
@@ -64,6 +67,9 @@ export default async function KesfetPage({
   const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
   const typeFilter: 'profesyonel' | 'ajans' | null =
     params.tip === 'profesyonel' || params.tip === 'ajans' ? params.tip : null;
+  // Fiyat tavanı (başlangıç fiyatı bu değerin altındakiler) ve min puan
+  const maxPrice = params.fiyat ? parseInt(params.fiyat, 10) : null;
+  const minRating = params.puan ? parseFloat(params.puan) : null;
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
     supabase
@@ -78,7 +84,7 @@ export default async function KesfetPage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at, approval_status,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -192,6 +198,28 @@ export default async function KesfetPage({
     });
   }
 
+  // Fiyat filtresi: profilin en düşük başlangıç fiyatı maxPrice altında mı?
+  // "Talep üzerine" hizmetler fiyat bilinmediği için filtre aktifken elenir.
+  if (maxPrice !== null) {
+    profiles = profiles.filter((p) => {
+      const svcs = servicesByProfile[p.id] || [];
+      const numeric = svcs.filter(
+        (s) => !s.price_on_request && s.price_min !== null
+      );
+      if (numeric.length === 0) return false;
+      const lowest = Math.min(...numeric.map((s) => s.price_min as number));
+      return lowest <= maxPrice;
+    });
+  }
+
+  // Puan filtresi: ortalama puanı minRating ve üzeri olanlar
+  if (minRating !== null) {
+    profiles = profiles.filter((p) => {
+      const r = ratingsByProfile[p.id];
+      return r && r.count > 0 && r.average >= minRating;
+    });
+  }
+
   if (sortBy === 'puan') {
     profiles.sort((a, b) => {
       const ra = ratingsByProfile[a.id];
@@ -210,7 +238,9 @@ export default async function KesfetPage({
     cityId ||
     searchQuery ||
     typeFilter ||
-    hasAttrFilters
+    hasAttrFilters ||
+    maxPrice !== null ||
+    minRating !== null
   );
 
   const {
@@ -268,6 +298,8 @@ export default async function KesfetPage({
                 currentSearch={searchQuery}
                 currentAttrs={activeAttrFilters}
                 currentType={typeFilter}
+                currentMaxPrice={maxPrice}
+                currentMinRating={minRating}
                 resultCount={profiles.length}
                 isLoggedIn={isLoggedIn}
               />

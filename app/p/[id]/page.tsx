@@ -16,6 +16,8 @@ import {
 } from '@/app/lib/profile-helpers';
 import type { ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
+import { getBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
+import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 
 type PublicProfile = {
   id: string;
@@ -28,6 +30,8 @@ type PublicProfile = {
   role: string;
   is_published: boolean;
   last_seen_at: string | null;
+  approval_status: string | null;
+  created_at: string | null;
   attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -78,7 +82,7 @@ export default async function PublicProfilePage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes, approval_status, created_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -273,6 +277,14 @@ export default async function PublicProfilePage({
   const averageRating = ratingData?.average_rating ?? 0;
   const recentReviews = recentReviewsData ?? [];
 
+  const badgeInput = {
+    approvalStatus: profile.approval_status,
+    createdAt: profile.created_at,
+    rating: { count: reviewCount, average: averageRating },
+  };
+  const profileBadges = getBadges(badgeInput);
+  const profileVerified = isVerified(badgeInput);
+
   // Müşteri profilleri + yanıtları toplu çek
   type CustomerMini = {
     id: string;
@@ -408,11 +420,38 @@ export default async function PublicProfilePage({
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
                   {getRoleLabel(profile.role)}
                 </p>
-                <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-                  {displayName}
+                <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight flex items-center gap-2">
+                  <span>{displayName}</span>
+                  {profileVerified && (
+                    <span
+                      title="Doğrulanmış"
+                      aria-label="Doğrulanmış"
+                      className="shrink-0 inline-flex"
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path
+                          d="M12 2l2.4 1.8 3 -.2 .9 2.9 2.4 1.8 -1 2.9 1 2.9 -2.4 1.8 -.9 2.9 -3 -.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.3 15.7l1-2.9-1-2.9 2.4-1.8.9-2.9 3 .2z"
+                          fill="var(--color-moss)"
+                        />
+                        <path d="M8.5 12l2.2 2.2 4.3-4.4" stroke="#FAF7F0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  )}
                 </h1>
                 {categoryLabel && (
                   <p className="text-ink-72 mt-1.5">{categoryLabel}</p>
+                )}
+                {profileBadges.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    {profileBadges.map((b) => (
+                      <span
+                        key={b.key}
+                        className={`font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border ${BADGE_TONE_CLASS[b.tone]}`}
+                      >
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 {cityName && (
                   <p className="text-sm text-ink-72 mt-2 flex items-center gap-1.5">
@@ -624,26 +663,10 @@ export default async function PublicProfilePage({
           {portfolioItems.length > 0 && (
             <div className="bg-white border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-6">Portföy</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {portfolioItems.map((item) => (
-                  <div key={item.id} className="space-y-2">
-                    <div className="aspect-square bg-paper rounded-lg overflow-hidden border border-line">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.media_url}
-                        alt={item.caption || 'Portfolio'}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-                    {item.caption && (
-                      <p className="text-xs text-ink-72 leading-relaxed line-clamp-2">
-                        {item.caption}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <PortfolioGallery
+                items={portfolioItems}
+                gridClassName="grid grid-cols-2 md:grid-cols-3 gap-3"
+              />
             </div>
           )}
 

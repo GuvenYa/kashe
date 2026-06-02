@@ -672,3 +672,175 @@ export async function unassignConversation(
   revalidatePath(`/mesajlar/${conversationId}`);
   return { success: true, conversationId };
 }
+// =============================================================================
+// DOSYA EKİ — private mesaj ekleri
+// =============================================================================
+
+/**
+ * Dosya ekli mesaj gönderir. Dosya client'ta 'message-attachments' (private)
+ * bucket'ına yüklenmiş olmalı; buraya storage path'i gelir.
+ * İsteğe bağlı body (açıklama) ile birlikte gönderilebilir.
+ */
+export async function sendMessageWithAttachment(
+  conversationId: string,
+  attachment: {
+    path: string;
+    type: 'image' | 'pdf' | 'doc';
+    name: string;
+  },
+  body: string = ''
+): Promise<MessagingActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Oturum bulunamadı.' };
+  }
+
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+  }
+
+  // Path güvenliği: dosya gerçekten bu kullanıcının klasöründe mi?
+  if (!attachment.path.startsWith(`${user.id}/`)) {
+    return { success: false, error: 'Geçersiz dosya yolu.' };
+  }
+
+  // Açıklama metni varsa güvenlik kontrolü (telefon/IBAN/email)
+  const trimmedBody = body.trim();
+  if (trimmedBody.length > 0) {
+    if (trimmedBody.length > 2000) {
+      return { success: false, error: 'Açıklama 2000 karakterden uzun olamaz.' };
+    }
+    const securityCheck = await checkContentSecurity(
+      supabase,
+      user.id,
+      conversationId,
+      trimmedBody
+    );
+    if (securityCheck) {
+      return { success: false, error: securityCheck, violation: true };
+    }
+  }
+
+  // Konuşma erişim kontrolü (sendMessage ile aynı mantık)
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('customer_id, professional_id')
+    .eq('id', conversationId)
+    .single();
+
+  let hasAccess =
+    !!conv &&
+    (conv.customer_id === user.id || conv.professional_id === user.id);
+
+  if (conv && !hasAccess) {
+    const { data: assignee } = await supabase
+      .from('conversation_assignees')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    hasAccess = !!assignee;
+  }
+
+  if (!conv || !hasAccess) {
+    // Erişim yoksa yüklenen dosyayı temizle (best effort)
+    await supabase.storage.from('message-attachments').remove([attachment.path]);
+    return { success: false, error: 'Bu konuşmaya erişimin yok.' };
+  }
+
+  const { error } = await supabase.from('messages').insert({
+    conversation_id: conversationId,
+    sender_id: user.id,
+    body: trimmedBody || 'Dosya gönderildi',
+    message_type: 'file',
+    attachment_path: attachment.path,
+    attachment_type: attachment.type,
+    attachment_name: attachment.name,
+  });
+
+  if (error) {
+    await supabase.storage.from('message-attachments').remove([attachment.path]);
+    return { success: false, error: 'Dosya gönderilemedi: ' + error.message };
+  }
+
+  notifyNewMessage(
+    supabase,
+    conversationId,
+    user.id,
+    trimmedBody || '📎 Dosya'
+  ).catch(() => {});
+
+  revalidatePath('/mesajlar');
+  revalidatePath(`/mesajlar/${conversationId}`);
+  return { success: true, conversationId };
+}
+
+/**
+ * Bir mesaj ekinin signed URL'ini üretir (kısa ömürlü, imzalı).
+ * Sadece konuşmanın tarafı erişebilir — erişim doğrulanır.
+ */
+export async function getAttachmentUrl(
+  conversationId: string,
+  attachmentPath: string
+): Promise<{ url: string } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Oturum bulunamadı.' };
+
+  // Konuşma erişim kontrolü
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('customer_id, professional_id')
+    .eq('id', conversationId)
+    .single();
+
+  let hasAccess =
+    !!conv &&
+    (conv.customer_id === user.id || conv.professional_id === user.id);
+
+  if (conv && !hasAccess) {
+    const { data: assignee } = await supabase
+      .from('conversation_assignees')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    hasAccess = !!assignee;
+  }
+
+  if (!conv || !hasAccess) {
+    return { error: 'Bu eke erişimin yok.' };
+  }
+
+  // Ekin gerçekten bu konuşmaya ait olduğunu doğrula
+  const { data: msg } = await supabase
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('attachment_path', attachmentPath)
+    .maybeSingle();
+
+  if (!msg) {
+    return { error: 'Ek bulunamadı.' };
+  }
+
+  // Signed URL — 1 saat geçerli
+  const { data, error } = await supabase.storage
+    .from('message-attachments')
+    .createSignedUrl(attachmentPath, 3600);
+
+  if (error || !data) {
+    return { error: 'Bağlantı oluşturulamadı.' };
+  }
+
+  return { url: data.signedUrl };
+}
