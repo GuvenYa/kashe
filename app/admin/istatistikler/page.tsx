@@ -84,11 +84,17 @@ type SupplyDemandCityRow = {
   supply: number
   demand: number
 }
-type TabKey = 'genel' | 'talep-arz' | 'icerik'
+type TabKey = 'genel' | 'talep-arz' | 'icerik' | 'buyume' | 'huni' | 'tutundurma'
 type TopFavRow = { profile_id: string; name: string; category: string | null; fav_count: number }
 type TopRatedRow = { professional_id: string; name: string; category: string | null; avg_rating: number; review_count: number }
 type TopViewedRow = { profile_id: string; name: string; category: string | null; views: number }
 type ActiveCatRow = { category_id: number; label: string; listings_count: number; applications_count: number; activity: number }
+type WeeklyCompareRow = { metric: string; this_week: number; last_week: number }
+type WeeklyTrendRow = { week_start: string; kayit: number; ilan: number; basvuru: number; rezervasyon: number; mesaj: number; teklif: number }
+type FunnelRow = { step: number; label: string; cnt: number }
+type IncompleteProRow = { profile_id: string; name: string; category: string | null; approval_status: string; is_published: boolean }
+type ListingNoAppRow = { listing_id: string; title: string; creator_id: string; creator_name: string; created_at: string }
+type ProNoAppRow = { profile_id: string; name: string; category: string | null }
 
 const num = (v: unknown) => Number(v ?? 0)
 const fmtDate = (s: any) => {
@@ -169,13 +175,20 @@ export default function IstatistiklerPage() {
   const [topRated, setTopRated] = useState<TopRatedRow[]>([])
   const [topViewed, setTopViewed] = useState<TopViewedRow[]>([])
   const [activeCats, setActiveCats] = useState<ActiveCatRow[]>([])
+  const [weeklyCompare, setWeeklyCompare] = useState<WeeklyCompareRow[]>([])
+  const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendRow[]>([])
+  const [funnelPro, setFunnelPro] = useState<FunnelRow[]>([])
+  const [funnelClient, setFunnelClient] = useState<FunnelRow[]>([])
+  const [incompletePros, setIncompletePros] = useState<IncompleteProRow[]>([])
+  const [listingsNoApps, setListingsNoApps] = useState<ListingNoAppRow[]>([])
+  const [prosNoApps, setProsNoApps] = useState<ProNoAppRow[]>([])
   const [tab, setTab] = useState<TabKey>('genel')
 
   useEffect(() => {
     const supabase = createClient()
     ;(async () => {
       try {
-        const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12] = await Promise.all([
+        const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19] = await Promise.all([
           supabase.rpc('admin_stats_registrations', { p_days: 30 }),
           supabase.rpc('admin_stats_active_users'),
           supabase.rpc('admin_stats_messages', { p_days: 30 }),
@@ -188,9 +201,16 @@ export default function IstatistiklerPage() {
           supabase.rpc('admin_stats_top_rated'),
           supabase.rpc('admin_stats_top_viewed'),
           supabase.rpc('admin_stats_active_categories'),
+          supabase.rpc('admin_stats_weekly_compare'),
+          supabase.rpc('admin_stats_weekly_trend'),
+          supabase.rpc('admin_funnel_professional'),
+          supabase.rpc('admin_funnel_client'),
+          supabase.rpc('admin_retention_incomplete_pros'),
+          supabase.rpc('admin_retention_listings_no_apps'),
+          supabase.rpc('admin_retention_pros_no_apps'),
         ])
 
-        const firstErr = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12].find((r) => r.error)?.error
+        const firstErr = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19].find((r) => r.error)?.error
         if (firstErr) throw firstErr
 
         setReg((r1.data ?? []) as RegRow[])
@@ -205,6 +225,13 @@ export default function IstatistiklerPage() {
         setTopRated((r10.data ?? []) as TopRatedRow[])
         setTopViewed((r11.data ?? []) as TopViewedRow[])
         setActiveCats((r12.data ?? []) as ActiveCatRow[])
+        setWeeklyCompare((r13.data ?? []) as WeeklyCompareRow[])
+        setWeeklyTrend((r14.data ?? []) as WeeklyTrendRow[])
+        setFunnelPro((r15.data ?? []) as FunnelRow[])
+        setFunnelClient((r16.data ?? []) as FunnelRow[])
+        setIncompletePros((r17.data ?? []) as IncompleteProRow[])
+        setListingsNoApps((r18.data ?? []) as ListingNoAppRow[])
+        setProsNoApps((r19.data ?? []) as ProNoAppRow[])
       } catch (e: any) {
         setError(e?.message ?? 'İstatistikler yüklenirken bir hata oluştu.')
       } finally {
@@ -269,6 +296,33 @@ export default function IstatistiklerPage() {
     .map((r) => ({ ...r, gap: num(r.supply) - num(r.demand) }))
     .sort((a, b) => b.gap - a.gap)
 
+  // ---- Büyüme: haftalık karşılaştırma + trend ----
+  const METRIC_LABELS: Record<string, string> = {
+    kayit: 'Yeni kayıt',
+    ilan: 'Yeni ilan',
+    basvuru: 'Başvuru',
+    rezervasyon: 'Rezervasyon',
+    mesaj: 'Mesaj',
+    teklif: 'Teklif',
+  }
+  const compareCards = weeklyCompare.map((r) => {
+    const tw = num(r.this_week)
+    const lw = num(r.last_week)
+    let pct: number | null = null
+    if (lw > 0) pct = Math.round(((tw - lw) / lw) * 100)
+    else if (tw > 0) pct = 100
+    return { metric: r.metric, label: METRIC_LABELS[r.metric] ?? r.metric, tw, lw, pct }
+  })
+  const trendData = weeklyTrend.map((r) => ({
+    hafta: fmtDate(r.week_start),
+    Kayıt: num(r.kayit),
+    İlan: num(r.ilan),
+    Başvuru: num(r.basvuru),
+    Rezervasyon: num(r.rezervasyon),
+    Mesaj: num(r.mesaj),
+    Teklif: num(r.teklif),
+  }))
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-[#1A120E]/60">
@@ -315,6 +369,9 @@ export default function IstatistiklerPage() {
             { key: 'genel', label: 'Genel' },
             { key: 'talep-arz', label: 'Talep-Arz' },
             { key: 'icerik', label: 'İçerik' },
+            { key: 'buyume', label: 'Büyüme' },
+            { key: 'huni', label: 'Hunisi' },
+            { key: 'tutundurma', label: 'Tutundurma' },
           ] as { key: TabKey; label: string }[]).map((t) => (
             <button
               key={t.key}
@@ -663,7 +720,218 @@ export default function IstatistiklerPage() {
             </Card>
           </div>
         )}
+
+        {/* BÜYÜME SEKMESİ */}
+        {tab === 'buyume' && (
+          <div className="space-y-6">
+            {/* Bu hafta vs geçen hafta — karşılaştırma kartları */}
+            <div>
+              <div className="mb-3">
+                <Eyebrow>Bu hafta vs geçen hafta</Eyebrow>
+              </div>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                {compareCards.map((c) => {
+                  const up = c.pct !== null && c.pct > 0
+                  const down = c.pct !== null && c.pct < 0
+                  const flat = c.pct === null || c.pct === 0
+                  return (
+                    <div key={c.metric} className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
+                      <Eyebrow>{c.label}</Eyebrow>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span style={{ fontFamily: SERIF }} className="text-3xl font-semibold text-[#1A120E]">
+                          {c.tw}
+                        </span>
+                        {c.pct !== null && (
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: up ? C.moss : down ? C.ember : '#1A120E80' }}
+                          >
+                            {up ? '↑' : down ? '↓' : '–'} {Math.abs(c.pct)}%
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-[#1A120E]/50">
+                        Geçen hafta: {c.lw}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Haftalık trend — son 12 hafta */}
+            <Card eyebrow="Son 12 hafta" title="Haftalık büyüme trendi">
+              <ResponsiveContainer width="100%" height={340}>
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="trendKayit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.terracotta} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={C.terracotta} stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
+                  <XAxis dataKey="hafta" fontSize={11} stroke={`${C.ink}80`} />
+                  <YAxis allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                  <Area type="monotone" dataKey="Kayıt" stroke={C.terracotta} fill="url(#trendKayit)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="İlan" stroke={C.plum} fill="transparent" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Başvuru" stroke={C.moss} fill="transparent" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Rezervasyon" stroke={C.ember} fill="transparent" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="mt-2 text-xs text-[#1A120E]/50">
+                Mesaj ve teklif hacmi ayrı eksende olduğu için grafikte kayıt/ilan/başvuru/rezervasyon
+                gösterilir. Tüm metrikler için karşılaştırma kartlarına bakabilirsin.
+              </p>
+            </Card>
+          </div>
+        )}
+
+        {/* HUNİ SEKMESİ */}
+        {tab === 'huni' && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <FunnelCard
+              title="Profesyonel yolculuğu"
+              eyebrow="Arz tarafı · Kümülatif"
+              rows={funnelPro}
+              accent={C.plum}
+            />
+            <FunnelCard
+              title="Müşteri yolculuğu"
+              eyebrow="Talep tarafı · Kümülatif"
+              rows={funnelClient}
+              accent={C.terracotta}
+            />
+          </div>
+        )}
+
+        {/* TUTUNDURMA SEKMESİ */}
+        {tab === 'tutundurma' && (
+          <div className="space-y-6">
+            <p className="text-sm text-[#1A120E]/60">
+              Huni&apos;de kaybedilen kullanıcılar — her liste bir aksiyon fırsatı.
+              Profile tıklayarak ilgili kullanıcıya ulaşabilirsin.
+            </p>
+
+            {/* Profilini tamamlamayan profesyoneller */}
+            <Card eyebrow="Aksiyon · Tamamlama hatırlat" title={`Profilini tamamlamayan profesyoneller (${incompletePros.length})`}>
+              {incompletePros.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Herkes profilini tamamlamış.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {incompletePros.map((r) => (
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                        {r.name}
+                      </a>
+                      <span className="flex items-center gap-2 shrink-0 text-xs">
+                        {r.category && <span className="text-[#1A120E]/50">{r.category}</span>}
+                        <span className={`px-2 py-0.5 rounded-full ${
+                          r.approval_status === 'rejected'
+                            ? 'bg-[#A8341E]/10 text-[#A8341E]'
+                            : !r.is_published
+                            ? 'bg-[#D98C3F]/15 text-[#8C5A1F]'
+                            : 'bg-[#1A120E]/8 text-[#1A120E]/60'
+                        }`}>
+                          {r.approval_status === 'rejected' ? 'Reddedildi' : !r.is_published ? 'Yayında değil' : r.approval_status}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+
+            {/* Başvuru almayan ilanlar */}
+            <Card eyebrow="Aksiyon · Öne çıkarma öner" title={`Başvuru almayan açık ilanlar (${listingsNoApps.length})`}>
+              {listingsNoApps.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Tüm açık ilanlar başvuru almış.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {listingsNoApps.map((r) => (
+                    <li key={r.listing_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <a href={`/ilanlar/${r.listing_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                        {r.title}
+                      </a>
+                      <span className="shrink-0 text-xs text-[#1A120E]/50">{r.creator_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+
+            {/* Yayında ama başvurmayan profesyoneller */}
+            <Card eyebrow="Aksiyon · İlan öner" title={`Yayında ama hiç başvurmayan profesyoneller (${prosNoApps.length})`}>
+              {prosNoApps.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Tüm yayındaki profesyoneller başvurmuş.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {prosNoApps.map((r) => (
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                        {r.name}
+                      </a>
+                      {r.category && <span className="shrink-0 text-xs text-[#1A120E]/50">{r.category}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+// Huni kartı — her adım kayıt tabanına göre yüzde, azalan bar
+function FunnelCard({
+  title,
+  eyebrow,
+  rows,
+  accent,
+}: {
+  title: string
+  eyebrow: string
+  rows: FunnelRow[]
+  accent: string
+}) {
+  const base = rows.length > 0 ? Number(rows[0].cnt) : 0
+  return (
+    <div className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-[#A8341E]">
+        {eyebrow}
+      </span>
+      <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-4 text-xl font-semibold text-[#1A120E]">
+        {title}
+      </h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-[#1A120E]/50">Henüz veri yok.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((r) => {
+            const cnt = Number(r.cnt)
+            const pct = base > 0 ? Math.round((cnt / base) * 100) : 0
+            return (
+              <div key={r.step}>
+                <div className="flex items-center justify-between mb-1 text-sm">
+                  <span className="text-[#1A120E] font-medium">{r.label}</span>
+                  <span className="text-[#1A120E]/60">
+                    {cnt} <span className="text-[#1A120E]/40">· %{pct}</span>
+                  </span>
+                </div>
+                <div className="h-7 w-full rounded-lg bg-[#FAF7F0] overflow-hidden">
+                  <div
+                    className="h-full rounded-lg transition-all flex items-center"
+                    style={{ width: `${Math.max(pct, 2)}%`, background: accent }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

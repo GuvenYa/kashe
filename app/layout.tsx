@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, DM_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from '@vercel/analytics/next';
 import { CerezBanner } from "@/app/components/cerez-banner";
 
 const fraunces = Fraunces({
@@ -42,6 +43,7 @@ export default function RootLayout({
     >
       <body className="font-body antialiased">
         {children}
+        <Analytics />
         {/* <CerezBanner /> */}
       </body>
     </html>
