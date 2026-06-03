@@ -41,6 +41,7 @@ import {
   type Application,
   type ApplicationWithRelations,
 } from '../listings-data';
+import { BADGE_TONE_CLASS } from '@/app/lib/badges';
 import {
   closeListing,
   cancelListing,
@@ -75,6 +76,7 @@ export function IlanDetay({
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [appViewMode, setAppViewMode] = useState<'list' | 'compare'>('list');
 
   const statusTone = getListingStatusTone(listing.status);
   const statusLabel = getListingStatusLabel(listing.status);
@@ -496,12 +498,40 @@ export function IlanDetay({
         {/* Başvurular bölümü — SADECE SAHİBİ GÖRÜR */}
         {isOwner && (
           <div className="mt-12">
-            <h2 className="font-display text-2xl text-ink mb-4">
-              Gelen başvurular{' '}
-              <span className="text-ink-72 text-lg">
-                ({applications.length})
-              </span>
-            </h2>
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+              <h2 className="font-display text-2xl text-ink">
+                Gelen başvurular{' '}
+                <span className="text-ink-72 text-lg">
+                  ({applications.length})
+                </span>
+              </h2>
+              {applications.length > 1 && (
+                <div className="inline-flex rounded-lg border border-line overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setAppViewMode('list')}
+                    className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
+                      appViewMode === 'list'
+                        ? 'bg-ink text-paper'
+                        : 'bg-white text-ink-72 hover:text-ink'
+                    }`}
+                  >
+                    Liste
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAppViewMode('compare')}
+                    className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
+                      appViewMode === 'compare'
+                        ? 'bg-ink text-paper'
+                        : 'bg-white text-ink-72 hover:text-ink'
+                    }`}
+                  >
+                    Karşılaştır
+                  </button>
+                </div>
+              )}
+            </div>
 
             {applications.length === 0 ? (
               <div className="bg-white border border-line rounded-lg p-8 text-center">
@@ -509,6 +539,18 @@ export function IlanDetay({
                   Henüz başvuru yok. İlanın yayında, profesyoneller görüp
                   başvurabilir.
                 </p>
+              </div>
+            ) : appViewMode === 'compare' ? (
+              <div className="-mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto">
+                <div className="flex gap-4 min-w-min pb-2">
+                  {applications.map((app) => (
+                    <ApplicationCompareColumn
+                      key={app.id}
+                      application={app}
+                      onAction={() => router.refresh()}
+                    />
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -520,9 +562,9 @@ export function IlanDetay({
                   />
                 ))}
               </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
       </div>
 
       {/* Apply Modal */}
@@ -725,4 +767,229 @@ function ApplicationCard({
   );
 
 
+}
+
+// =============================================================================
+// Application Compare Column — yan yana karşılaştırma sütunu
+// =============================================================================
+
+function ApplicationCompareColumn({
+  application,
+  onAction,
+}: {
+  application: ApplicationWithRelations;
+  onAction: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const applicant = application.applicant;
+  const name =
+    applicant?.role === 'business' && applicant?.company_name
+      ? applicant.company_name
+      : applicant?.full_name || 'İsimsiz';
+
+  const tone = getApplicationStatusTone(application.status);
+  const badgeStyles: Record<typeof tone, string> = {
+    pending: 'bg-amber-100 text-amber-800 border-amber-200',
+    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
+  };
+
+  const rating = application.applicantRating;
+  const proBadges = application.applicantBadges ?? [];
+
+  function withConfirm(key: string, action: () => Promise<void>) {
+    if (confirming !== key) {
+      setConfirming(key);
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      try {
+        await action();
+        setConfirming(null);
+        onAction();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Hata');
+        setConfirming(null);
+      }
+    });
+  }
+
+  async function handleShortlist() {
+    const r = await shortlistApplication(application.id);
+    if (!r.success) throw new Error(r.error);
+  }
+  async function handleAccept() {
+    const r = await acceptApplication(application.id);
+    if (!r.success) throw new Error(r.error);
+  }
+  async function handleReject() {
+    const r = await rejectApplication(application.id);
+    if (!r.success) throw new Error(r.error);
+  }
+
+  return (
+    <div className="bg-white border border-line rounded-lg p-4 w-72 shrink-0 flex flex-col">
+      {/* Başvuran */}
+      <Link
+        href={applicant ? `/p/${applicant.id}` : '#'}
+        className="flex flex-col items-center text-center gap-2 group pb-3 border-b border-line"
+      >
+        {applicant?.avatar_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={applicant.avatar_url}
+            alt={name}
+            className="w-14 h-14 rounded-full object-cover border border-line"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-lg">
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors leading-tight">
+          {name}
+        </p>
+      </Link>
+
+      {/* Puan */}
+      <div className="py-2.5 border-b border-line text-center">
+        <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1">
+          Puan
+        </p>
+        {rating && rating.count > 0 ? (
+          <p className="text-sm text-ink flex items-center justify-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-terracotta)" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+            </svg>
+            <span className="font-display font-semibold">{rating.average}</span>
+            <span className="text-ink-72">({rating.count})</span>
+          </p>
+        ) : (
+          <p className="text-sm text-ink-72">Henüz yok</p>
+        )}
+      </div>
+
+      {/* Rozetler */}
+      {proBadges.length > 0 && (
+        <div className="py-2.5 border-b border-line">
+          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1.5 text-center">
+            Rozetler
+          </p>
+          <div className="flex flex-wrap gap-1 justify-center">
+            {proBadges.map((b) => (
+              <span
+                key={b.key}
+                className={`font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full border ${BADGE_TONE_CLASS[b.tone]}`}
+              >
+                {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fiyat */}
+      <div className="py-2.5 border-b border-line text-center">
+        <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1">
+          Fiyat teklifi
+        </p>
+        {application.proposed_amount !== null ? (
+          <p className="font-display text-lg font-medium text-[#1E3A5F]">
+            {formatProposedAmount(
+              application.proposed_amount,
+              application.currency
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-ink-72">Belirtmedi</p>
+        )}
+      </div>
+
+      {/* Durum */}
+      <div className="py-2.5 border-b border-line text-center">
+        <span
+          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${badgeStyles[tone]}`}
+        >
+          {getApplicationStatusLabel(application.status)}
+        </span>
+      </div>
+
+      {/* Mesaj */}
+      <div className="py-2.5 border-b border-line flex-1">
+        <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1">
+          Mesaj
+        </p>
+        <p className="text-xs text-ink leading-relaxed whitespace-pre-wrap line-clamp-6">
+          {application.cover_message}
+        </p>
+      </div>
+
+      {/* Ek */}
+      <div className="py-2.5 border-b border-line text-center">
+        {application.attachment_path ? (
+          <span className="inline-flex items-center gap-1 text-xs text-moss">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 12l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Dosya ekli
+          </span>
+        ) : (
+          <span className="text-xs text-ink-72">Ek yok</span>
+        )}
+      </div>
+
+      {error && <p className="text-xs text-terracotta mt-2">{error}</p>}
+
+      {/* Aksiyonlar */}
+      <div className="flex flex-col gap-1.5 pt-3">
+        {canAcceptApplication(application.status) && (
+          <button
+            onClick={() => withConfirm('accept', handleAccept)}
+            disabled={isPending}
+            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border text-white transition ${
+              confirming === 'accept'
+                ? 'bg-[#142745] border-[#142745]'
+                : 'bg-[#1E3A5F] border-[#1E3A5F] hover:bg-[#142745]'
+            } disabled:opacity-50`}
+          >
+            <CheckCircle2 size={12} strokeWidth={1.75} />
+            {confirming === 'accept' ? 'Onayla' : 'Kabul et'}
+          </button>
+        )}
+        {canShortlistApplication(application.status) && (
+          <button
+            onClick={() => withConfirm('shortlist', handleShortlist)}
+            disabled={isPending}
+            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
+              confirming === 'shortlist'
+                ? 'bg-amber-500 text-white border-amber-500'
+                : 'border-line text-ink-72 hover:border-amber-500 hover:text-amber-700'
+            } disabled:opacity-50`}
+          >
+            <Star size={12} strokeWidth={1.75} />
+            {confirming === 'shortlist' ? 'Onayla' : 'Kısa listeye al'}
+          </button>
+        )}
+        {canRejectApplication(application.status) && (
+          <button
+            onClick={() => withConfirm('reject', handleReject)}
+            disabled={isPending}
+            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
+              confirming === 'reject'
+                ? 'bg-terracotta text-paper border-terracotta'
+                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+            } disabled:opacity-50`}
+          >
+            <XCircle size={12} strokeWidth={1.75} />
+            {confirming === 'reject' ? 'Onayla' : 'Reddet'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IlanlarListesi } from './ilanlar-listesi';
+import { getListingBoostWeight } from './listings-data';
 import type { ListingWithRelations } from './listings-data';
 
 async function getUserRole(): Promise<string | null> {
@@ -90,6 +91,11 @@ export default async function IlanlarPage({
 
   const { data: listingsData } = await query;
   const listings = (listingsData ?? []) as unknown as ListingWithRelations[];
+
+  // Öne çıkan ilanlar üstte (stable sort published_at sırasını korur)
+  listings.sort(
+    (a, b) => getListingBoostWeight(b) - getListingBoostWeight(a)
+  );
 
   return (
     <>

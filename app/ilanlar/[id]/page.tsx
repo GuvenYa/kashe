@@ -3,6 +3,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { IlanDetay } from './ilan-detay';
 import { incrementListingViews } from '../listings-actions';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getBadges } from '@/app/lib/badges';
 import type {
   ListingWithRelations,
   ApplicationWithRelations,
@@ -82,15 +83,60 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         `
         *,
         applicant:profiles!applications_applicant_id_fkey (
-          id, full_name, avatar_url, company_name, role, bio
+          id, full_name, avatar_url, company_name, role, bio, approval_status, created_at
         )
       `
       )
       .eq('listing_id', id)
       .order('created_at', { ascending: false });
 
-    applications =
-      (appsData as unknown as ApplicationWithRelations[]) ?? [];
+    let apps = (appsData as unknown as ApplicationWithRelations[]) ?? [];
+
+    // Başvuranların puan özetlerini topluca çek, her başvuruya puan + rozet iliştir
+    const applicantIds = apps
+      .map((a) => a.applicant?.id)
+      .filter((x): x is string => !!x);
+
+    if (applicantIds.length > 0) {
+      const { data: ratingsData } = await supabase
+        .from('professional_rating_summary')
+        .select('professional_id, review_count, average_rating')
+        .in('professional_id', applicantIds);
+
+      const ratingMap = new Map<string, { count: number; average: number }>();
+      (ratingsData ?? []).forEach((r) => {
+        ratingMap.set(r.professional_id, {
+          count: r.review_count ?? 0,
+          average: r.average_rating ?? 0,
+        });
+      });
+      (ratingsData ?? []).forEach((r) => {
+        ratingMap.set(r.professional_id, {
+          count: r.review_count ?? 0,
+          average: r.average_rating ?? 0,
+        });
+      });
+
+      apps = apps.map((a) => {
+        if (!a.applicant) return a;
+        const rating = ratingMap.get(a.applicant.id) ?? {
+          count: 0,
+          average: 0,
+        };
+        const badgeInput = {
+          approvalStatus: a.applicant.approval_status ?? null,
+          createdAt: a.applicant.created_at ?? null,
+          rating,
+        };
+        return {
+          ...a,
+          applicantRating: rating,
+          applicantBadges: getBadges(badgeInput),
+        };
+      });
+    }
+
+    applications = apps;
   }
 
   // View counter (fire-and-forget, sahibi kendi sayfasını sayılmaz)

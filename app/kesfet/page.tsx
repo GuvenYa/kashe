@@ -25,6 +25,8 @@ type PublishedProfile = {
   role: string;
   created_at: string | null;
   approval_status: string | null;
+  premium_tier: string | null;
+  premium_until: string | null;
   attributes: Record<string, string | string[]> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -84,7 +86,7 @@ export default async function KesfetPage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at, approval_status,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at, approval_status, premium_tier, premium_until,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -232,6 +234,22 @@ export default async function KesfetPage({
       return countB - countA;
     });
   }
+
+  // Premium profiller her zaman üstte — mevcut sıralama kendi içinde korunur (stable sort).
+  // Tier ağırlığı: agency(3) > plus(2) > premium(1) > none(0). Yüksek tier daha üstte.
+  const tierWeight = (tier: string | null, until: string | null): number => {
+    if (!tier || tier === 'none') return 0;
+    if (until && new Date(until).getTime() <= Date.now()) return 0; // süresi geçmiş
+    if (tier === 'agency') return 3;
+    if (tier === 'plus') return 2;
+    if (tier === 'premium') return 1;
+    return 0;
+  };
+  profiles.sort(
+    (a, b) =>
+      tierWeight(b.premium_tier, b.premium_until) -
+      tierWeight(a.premium_tier, a.premium_until)
+  );
 
   const hasFilters = !!(
     categoryIds.length > 0 ||

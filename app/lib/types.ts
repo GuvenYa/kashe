@@ -20,6 +20,9 @@ export type Profile = {
   is_admin: boolean;
   primary_category_id: number | null;
   company_name: string | null;
+  premium_tier: 'none' | 'premium' | 'plus' | 'agency' | null;
+  premium_until: string | null;
+  views_count: number;
   created_at: string;
   updated_at: string;
   attributes?: Record<string, string | string[]> | null;

@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { PublishToggle } from './publish-toggle';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { getUserFavorites } from '@/app/favoriler/actions';
+import { isPremiumActive } from '@/app/lib/badges';
 import {
   isProfessional,
   isClient,
@@ -134,6 +135,28 @@ export default async function ProfilPage() {
   let services: ServiceWithCategory[] = [];
   let portfolioItems: PortfolioItem[] = [];
   let packageCount = 0;
+  // Premium istatistikleri
+  let stats = {
+    views: 0,
+    favorites: 0,
+    applications: 0,
+    accepted: 0,
+    completedJobs: 0,
+    reviewCount: 0,
+    averageRating: 0,
+  };
+  const proIsPremium = isPro
+    ? isPremiumActive(
+        (profile.premium_tier ?? null) as
+          | 'none'
+          | 'premium'
+          | 'plus'
+          | 'agency'
+          | null,
+        profile.premium_until ?? null
+      )
+    : false;
+
   if (isPro) {
     const [{ data: servicesData }, { data: portfolioData }, { count: pkgCount }] =
       await Promise.all([
@@ -157,6 +180,51 @@ export default async function ProfilPage() {
     services = (servicesData || []) as ServiceWithCategory[];
     portfolioItems = (portfolioData || []) as PortfolioItem[];
     packageCount = pkgCount ?? 0;
+
+    // İstatistikler — sadece premium kullanıcı için topla (gereksiz sorgu önle)
+    if (proIsPremium) {
+      const [
+        { count: favCount },
+        { count: appCount },
+        { count: acceptedCount },
+        { count: completedCount },
+        { data: ratingData },
+      ] = await Promise.all([
+        supabase
+          .from('favorites')
+          .select('id', { count: 'exact', head: true })
+          .eq('professional_id', user.id),
+        supabase
+          .from('applications')
+          .select('id', { count: 'exact', head: true })
+          .eq('applicant_id', user.id),
+        supabase
+          .from('applications')
+          .select('id', { count: 'exact', head: true })
+          .eq('applicant_id', user.id)
+          .eq('status', 'accepted'),
+        supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('professional_id', user.id)
+          .eq('status', 'completed'),
+        supabase
+          .from('professional_rating_summary')
+          .select('review_count, average_rating')
+          .eq('professional_id', user.id)
+          .maybeSingle(),
+      ]);
+
+      stats = {
+        views: (profile.views_count as number) ?? 0,
+        favorites: favCount ?? 0,
+        applications: appCount ?? 0,
+        accepted: acceptedCount ?? 0,
+        completedJobs: completedCount ?? 0,
+        reviewCount: ratingData?.review_count ?? 0,
+        averageRating: ratingData?.average_rating ?? 0,
+      };
+    }
   }
 
   const cityName = profile.turkish_cities?.name;
@@ -463,6 +531,111 @@ export default async function ProfilPage() {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* PROFESYONEL: İstatistiklerim (premium) */}
+          {isPro && proIsPremium && (
+            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display text-2xl text-ink">
+                  İstatistiklerim
+                </h2>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
+                  Premium
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.views}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Profil görüntülenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.favorites}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Favoriye eklenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.applications}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">
+                    Yaptığın başvuru
+                    {stats.applications > 0 && (
+                      <span className="text-moss">
+                        {' '}
+                        · {stats.accepted} kabul
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.completedJobs}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Tamamlanan iş</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none flex items-center gap-1">
+                    {stats.reviewCount > 0 ? stats.averageRating : '—'}
+                    {stats.reviewCount > 0 && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-terracotta)" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                      </svg>
+                    )}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">
+                    Ortalama puan
+                    {stats.reviewCount > 0 && (
+                      <span> · {stats.reviewCount} yorum</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PROFESYONEL: İstatistik teşvik (premium değilse) */}
+          {isPro && !proIsPremium && (
+            <div className="mt-8 bg-gradient-to-br from-[#F4E9C8]/60 to-paper border border-[#D9C179] rounded-lg p-8">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
+                    Premium
+                  </span>
+                  <h2 className="font-display text-2xl text-ink mt-3">
+                    İstatistiklerini gör
+                  </h2>
+                  <p className="text-ink-72 text-sm mt-2 max-w-md">
+                    Profilin kaç kez görüntülendi, kaç kişi favoriledi, başvuru
+                    ve iş performansın nasıl? Premium ile tüm istatistiklerine
+                    eriş, keşfette üst sıralarda yer al.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 mt-5 opacity-50 pointer-events-none select-none">
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ···
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Görüntülenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ··
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Favori</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ···
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Başvuru</p>
+                </div>
+              </div>
             </div>
           )}
 

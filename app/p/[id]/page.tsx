@@ -19,6 +19,7 @@ import { getFilterFields } from '@/app/lib/filter-config';
 import { getBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
+import { incrementProfileViews } from './profile-views-actions';
 
 type PublicProfile = {
   id: string;
@@ -109,6 +110,11 @@ export default async function PublicProfilePage({
   ) {
     notFound();
   }
+
+  // Görüntülenme say (fire-and-forget, sahibi kendi profilini saymaz)
+  incrementProfileViews(profile.id).catch(() => {
+    // sessiz fail
+  });
 
   const isAgencyProfile = profile.role === 'agency';
 

@@ -8,23 +8,40 @@
  * Kartta sınırlı sayıda gösterilir; düşük öncelikli rozet üsttekiler varsa elenir.
  */
 
-export type BadgeKey = 'verified' | 'topRated' | 'popular' | 'new';
+export type BadgeKey = 'premium' | 'verified' | 'topRated' | 'popular' | 'new';
 
 export type Badge = {
   key: BadgeKey;
   label: string;
   /** Görsel ton — Kashe paletinden */
-  tone: 'moss' | 'terracotta' | 'plum' | 'ink';
+  tone: 'moss' | 'terracotta' | 'plum' | 'ink' | 'premium';
 };
 
 // Öncelik: küçük index = yüksek öncelik
-const BADGE_ORDER: BadgeKey[] = ['verified', 'topRated', 'popular', 'new'];
+const BADGE_ORDER: BadgeKey[] = ['premium', 'verified', 'topRated', 'popular', 'new'];
+
+export type PremiumTier = 'none' | 'premium' | 'plus' | 'agency';
 
 type BadgeInput = {
   approvalStatus?: string | null;
   createdAt?: string | null;
   rating?: { count: number; average: number } | null;
+  premiumTier?: PremiumTier | null;
+  premiumUntil?: string | null;
 };
+
+/**
+ * Premium aktif mi? Tier 'none' değil VE süresi geçmemiş.
+ * premium_until null ise (süresiz/manuel) ve tier varsa aktif kabul edilir.
+ */
+export function isPremiumActive(
+  tier?: PremiumTier | null,
+  until?: string | null
+): boolean {
+  if (!tier || tier === 'none') return false;
+  if (!until) return true; // süresiz (manuel atama)
+  return new Date(until).getTime() > Date.now();
+}
 
 /**
  * Bir profil için hak edilen tüm rozetleri öncelik sırasıyla döndürür.
@@ -36,6 +53,11 @@ export function isVerified(input: BadgeInput): boolean {
 
 export function getBadges(input: BadgeInput): Badge[] {
   const earned: Badge[] = [];
+
+  // Premium — en yüksek öncelikli rozet (ödeme/kampanya ile aktif)
+  if (isPremiumActive(input.premiumTier, input.premiumUntil)) {
+    earned.push({ key: 'premium', label: 'Premium', tone: 'premium' });
+  }
 
   // NOT: 'verified' artık rozet listesinde değil — isim yanında tik (isVerified).
 
@@ -83,4 +105,5 @@ export const BADGE_TONE_CLASS: Record<Badge['tone'], string> = {
   terracotta: 'text-terracotta bg-terracotta/10 border-terracotta/30',
   plum: 'text-plum bg-plum/10 border-plum/30',
   ink: 'text-ink-72 bg-ink-72/10 border-ink-72/20',
+  premium: 'text-[#8A6D1F] bg-[#F4E9C8] border-[#D9C179]',
 };

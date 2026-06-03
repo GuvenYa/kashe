@@ -9,6 +9,9 @@ import {
   formatBudgetRange,
   formatListingAge,
   getEventTypeLabel,
+  isUrgent,
+  isFeaturedHome,
+  isFeaturedCategory,
   type ListingWithRelations,
 } from './listings-data';
 import { getCategoryIcon } from '@/app/lib/category-icon';
@@ -233,11 +236,34 @@ function IlanCard({ listing }: { listing: ListingWithRelations }) {
     listing.currency
   );
 
+  const urgent = isUrgent(listing);
+  const featured = isFeaturedHome(listing) || isFeaturedCategory(listing);
+
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
-      className="block bg-white border border-line rounded-lg p-5 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+      className={`block rounded-lg p-5 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${
+        featured
+          ? 'bg-[#FFFDF6] border border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[4px_4px_0_#D9C179]'
+          : 'bg-white border border-line hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+      }`}
     >
+      {/* Öne çıkan + acil etiketleri */}
+      {(featured || urgent) && (
+        <div className="flex items-center gap-2 mb-3">
+          {featured && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179]">
+              ★ Öne çıkan
+            </span>
+          )}
+          {urgent && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-ember bg-ember/10 border border-ember/30">
+              ● Acil
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Kategori + tarih */}
       <div className="flex items-center justify-between mb-3">
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">

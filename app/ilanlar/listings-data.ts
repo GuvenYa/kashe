@@ -53,6 +53,11 @@ export type Listing = {
   updated_at: string;
   published_at: string | null;
   approval_note: string | null;
+  is_urgent: boolean;
+  urgent_until: string | null;
+  featured_category_until: string | null;
+  featured_home_until: string | null;
+  notified_at: string | null;
 };
 
 export type Application = {
@@ -94,8 +99,12 @@ export type ApplicationWithRelations = Application & {
     company_name: string | null;
     role: string;
     bio: string | null;
+    approval_status?: string | null;
+    created_at?: string | null;
   } | null;
   listing?: Pick<Listing, 'id' | 'title' | 'status' | 'creator_id'> | null;
+  applicantRating?: { count: number; average: number };
+  applicantBadges?: import('@/app/lib/badges').Badge[];
 };
 
 // =============================================================================
@@ -430,4 +439,43 @@ export function canAcceptApplication(status: ApplicationStatus): boolean {
 
 export function canRejectApplication(status: ApplicationStatus): boolean {
   return status === 'pending' || status === 'shortlisted';
+}
+
+// =============================================================================
+// İlan öne çıkarma (boost) — dokümandaki 3 görsel hizmet
+// =============================================================================
+
+type BoostFields = {
+  is_urgent?: boolean;
+  urgent_until?: string | null;
+  featured_category_until?: string | null;
+  featured_home_until?: string | null;
+};
+
+function isActiveUntil(until: string | null | undefined): boolean {
+  if (!until) return false;
+  return new Date(until).getTime() > Date.now();
+}
+
+// Acil etiket aktif mi? (is_urgent işaretli VE süresi geçmemiş)
+export function isUrgent(l: BoostFields): boolean {
+  return !!l.is_urgent && isActiveUntil(l.urgent_until);
+}
+
+// Kategori üst sıra aktif mi?
+export function isFeaturedCategory(l: BoostFields): boolean {
+  return isActiveUntil(l.featured_category_until);
+}
+
+// Ana sayfa vitrini aktif mi?
+export function isFeaturedHome(l: BoostFields): boolean {
+  return isActiveUntil(l.featured_home_until);
+}
+
+// Sıralama ağırlığı: ana sayfa vitrini(3) > kategori üst sıra(2) > normal(0).
+// Acil etiket sıralamayı değiştirmez, sadece görsel rozet (doküman: "etiket").
+export function getListingBoostWeight(l: BoostFields): number {
+  if (isFeaturedHome(l)) return 3;
+  if (isFeaturedCategory(l)) return 2;
+  return 0;
 }

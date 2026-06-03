@@ -3,7 +3,7 @@ import { formatPriceRange } from '@/app/lib/profile-helpers';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import { getFilterFields } from '@/app/lib/filter-config';
-import { getCardBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
+import { getCardBadges, isVerified, isPremiumActive, BADGE_TONE_CLASS } from '@/app/lib/badges';
 
 type Props = {
   profile: {
@@ -15,6 +15,8 @@ type Props = {
     role: string;
     created_at?: string | null;
     approval_status?: string | null;
+    premium_tier?: string | null;
+    premium_until?: string | null;
     attributes?: Record<string, string | string[]> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
@@ -114,15 +116,30 @@ export function ProfileCard({
     approvalStatus: profile.approval_status,
     createdAt: profile.created_at,
     rating,
+    premiumTier: (profile.premium_tier ?? null) as
+      | 'none'
+      | 'premium'
+      | 'plus'
+      | 'agency'
+      | null,
+    premiumUntil: profile.premium_until ?? null,
   };
   const badges = getCardBadges(badgeInput);
   const verified = isVerified(badgeInput);
+  const isPremium = isPremiumActive(
+    badgeInput.premiumTier,
+    badgeInput.premiumUntil
+  );
 
   return (
     <div className="relative group h-full transition-all duration-300 hover:-translate-y-1">
       <Link
         href={`/p/${profile.id}`}
-        className="flex flex-col h-full bg-card border border-line rounded-xl p-4 group-hover:border-terracotta group-hover:shadow-[0_12px_28px_-14px_rgba(26,18,14,0.20)] transition-all duration-300"
+        className={`flex flex-col h-full bg-card border rounded-xl p-4 transition-all duration-300 ${
+          isPremium
+            ? 'border-[#D9C179] group-hover:border-[#C9AE5F] group-hover:shadow-[0_12px_28px_-14px_rgba(138,109,31,0.30)] ring-1 ring-[#D9C179]/40'
+            : 'border-line group-hover:border-terracotta group-hover:shadow-[0_12px_28px_-14px_rgba(26,18,14,0.20)]'
+        }`}
       >
         <div className="flex items-start gap-3 pr-9">
           {profile.avatar_url ? (

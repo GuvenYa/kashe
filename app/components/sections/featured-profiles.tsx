@@ -32,6 +32,7 @@ type FeaturedProfile = {
   reviewCount: number;
   priceFrom: number | null;
   isNew: boolean;
+  isPremium: boolean;
 };
 
 function formatPrice(n: number): string {
@@ -55,12 +56,12 @@ export async function FeaturedProfiles() {
     slugToId[c.slug] = c.id;
   });
 
-  // Top 6 profil: rating ortalamasına göre, yoksa en yeni
+  // Daha geniş havuz çek (premium önceliklendirme için), sonra 6'ya indir
   const { data: profiles } = await supabase
     .from("profiles")
     .select(
       `
-      id, full_name, avatar_url, company_name, role, created_at,
+      id, full_name, avatar_url, company_name, role, created_at, premium_tier, premium_until,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, slug)
     `
@@ -68,18 +69,37 @@ export async function FeaturedProfiles() {
     .eq("is_published", true)
     .in("role", ["professional", "agency"])
     .order("updated_at", { ascending: false })
-    .limit(6);
+    .limit(24);
 
-  const list = (profiles || []) as unknown as Array<{
+  const rawList = (profiles || []) as unknown as Array<{
     id: string;
     full_name: string | null;
     avatar_url: string | null;
     company_name: string | null;
     role: string;
     created_at: string | null;
+    premium_tier: string | null;
+    premium_until: string | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; slug: string } | null;
   }>;
+
+  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 6'yı göster
+  const tierWeight = (tier: string | null, until: string | null): number => {
+    if (!tier || tier === "none") return 0;
+    if (until && new Date(until).getTime() <= Date.now()) return 0;
+    if (tier === "agency") return 3;
+    if (tier === "plus") return 2;
+    if (tier === "premium") return 1;
+    return 0;
+  };
+  const list = [...rawList]
+    .sort(
+      (a, b) =>
+        tierWeight(b.premium_tier, b.premium_until) -
+        tierWeight(a.premium_tier, a.premium_until)
+    )
+    .slice(0, 6);
 
   if (list.length === 0) return null; // Boş ise bölüm hiç görünmesin
 
@@ -121,6 +141,10 @@ export async function FeaturedProfiles() {
       const days = (Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24);
       isNew = days <= 30;
     }
+    const premiumActive =
+      !!p.premium_tier &&
+      p.premium_tier !== "none" &&
+      (!p.premium_until || new Date(p.premium_until).getTime() > Date.now());
     return {
       id: p.id,
       full_name: p.full_name,
@@ -134,6 +158,7 @@ export async function FeaturedProfiles() {
       reviewCount: ratingsByProfile[p.id]?.count ?? 0,
       priceFrom: priceFromByProfile[p.id] ?? null,
       isNew,
+      isPremium: premiumActive,
     };
   });
 
@@ -202,7 +227,11 @@ export async function FeaturedProfiles() {
               <Link
                 key={p.id}
                 href={`/p/${p.id}`}
-                className="group bg-card border border-line rounded-2xl overflow-hidden transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)]"
+                className={`group bg-card border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
+                  p.isPremium
+                    ? "border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[0_18px_40px_-16px_rgba(138,109,31,0.30)]"
+                    : "border-line hover:border-terracotta hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)]"
+                }`}
               >
                 {/* Üst — renkli ikon/avatar zemini (hero kartlarındaki gibi) */}
                 <div
@@ -239,7 +268,12 @@ export async function FeaturedProfiles() {
                       {p.category ?? "Profesyonel"}
                       {p.city ? ` · ${p.city}` : ""}
                     </span>
-                    {p.isNew && (
+                    {p.isPremium && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-1.5 py-0.5 rounded">
+                        Premium
+                      </span>
+                    )}
+                    {p.isNew && !p.isPremium && (
                       <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-moss bg-moss/10 border border-moss/30 px-1.5 py-0.5 rounded">
                         Yeni
                       </span>
