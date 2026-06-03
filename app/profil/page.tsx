@@ -418,38 +418,38 @@ export default async function ProfilPage() {
           )}
 
           {/* INFO CARD */}
-          <div className="bg-white border border-line rounded-lg p-8 space-y-6">
+          <div className="bg-white border border-line rounded-xl p-6 space-y-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
                 Email
               </p>
-              <p className="text-ink text-lg">{user.email}</p>
+              <p className="text-ink text-sm">{user.email}</p>
             </div>
 
             {profile.phone && (
-              <div className="border-t border-line pt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <div className="border-t border-line pt-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
                   Telefon
                 </p>
-                <p className="text-ink text-lg">{profile.phone}</p>
+                <p className="text-ink text-sm">{profile.phone}</p>
               </div>
             )}
 
             {cityName && (
-              <div className="border-t border-line pt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <div className="border-t border-line pt-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
                   Şehir
                 </p>
-                <p className="text-ink text-lg">{cityName}</p>
+                <p className="text-ink text-sm">{cityName}</p>
               </div>
             )}
 
             {profile.bio && (
-              <div className="border-t border-line pt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <div className="border-t border-line pt-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
                   Hakkımda
                 </p>
-                <p className="text-ink text-base leading-relaxed whitespace-pre-wrap">
+                <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
                   {profile.bio}
                 </p>
               </div>
@@ -459,9 +459,9 @@ export default async function ProfilPage() {
           {/* PROFESYONEL: Hizmetler */}
           {/* PROFESYONEL: Üye olduğum ajanslar */}
           {isPro && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">
+                <h2 className="font-display text-xl text-ink">
                   Üye olduğum ajanslar{' '}
                   <span className="text-ink-72 text-lg">
                     ({myAgencies.length})
@@ -536,9 +536,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: İstatistiklerim (premium) */}
           {isPro && proIsPremium && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">
+                <h2 className="font-display text-xl text-ink">
                   İstatistiklerim
                 </h2>
                 <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
@@ -641,9 +641,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Hizmetler */}
           {isPro && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">Hizmetlerim</h2>
+                <h2 className="font-display text-xl text-ink">Hizmetlerim</h2>
                 <Link
                   href="/profil/hizmetlerim"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -703,9 +703,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Paketler */}
           {isPro && (
-            <div className="mt-6 bg-white border border-line rounded-lg p-8">
+            <div className="mt-6 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">
+                <h2 className="font-display text-xl text-ink">
                   Paketlerim{' '}
                   <span className="text-ink-72 text-lg">({packageCount})</span>
                 </h2>
@@ -732,9 +732,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Portföy */}
           {isPro && (
-            <div className="mt-6 bg-white border border-line rounded-lg p-8">
+            <div className="mt-6 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">Portföy</h2>
+                <h2 className="font-display text-xl text-ink">Portföy</h2>
                 <Link
                   href="/profil/portfoy"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -757,9 +757,9 @@ export default async function ProfilPage() {
 
           {/* AJANS: Ekibim */}
           {isAgencyUser && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">
+                <h2 className="font-display text-xl text-ink">
                   Ekibim{' '}
                   <span className="text-ink-72 text-lg">
                     ({agencyMemberCount})
@@ -817,9 +817,9 @@ export default async function ProfilPage() {
 
           {/* KURUMSAL / MÜŞTERİ: İlanlarım */}
           {(isBusinessUser || isClientUser) && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">İlanlarım</h2>
+                <h2 className="font-display text-xl text-ink">İlanlarım</h2>
                 <div className="flex items-center gap-4">
                   <Link
                     href="/ilanlarim"
@@ -845,9 +845,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Başvurularım */}
           {isPro && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">Başvurularım</h2>
+                <h2 className="font-display text-xl text-ink">Başvurularım</h2>
                 <Link
                   href="/basvurularim"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -864,9 +864,9 @@ export default async function ProfilPage() {
 
           {/* MÜŞTERİ: Favorilerim */}
           {isClientUser && (
-            <div className="mt-8 bg-white border border-line rounded-lg p-8">
+            <div className="mt-5 bg-white border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-2xl text-ink">Favorilerim</h2>
+                <h2 className="font-display text-xl text-ink">Favorilerim</h2>
                 <Link
                   href="/favoriler"
                   className="text-sm font-display font-medium text-terracotta hover:underline"

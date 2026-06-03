@@ -21,6 +21,7 @@ export const Eyebrow = forwardRef<HTMLDivElement, EyebrowProps>(
         >
           <span>✦</span>
           {children}
+          <span>✦</span>
         </div>
       );
     }

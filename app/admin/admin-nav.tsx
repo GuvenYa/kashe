@@ -46,77 +46,107 @@ export function AdminNav({
     return pathname.startsWith(href);
   }
 
-  return (
-    <nav className="w-full border-b border-line bg-ink text-paper sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-3 flex items-center justify-between gap-6">
-        {/* Logo + admin badge */}
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
-              k
-            </span>
-            <span className="font-display font-semibold text-xl text-paper tracking-tight">
-              Kashe
-            </span>
+  // Sidebar içeriği (hem desktop hem mobil drawer kullanır)
+  const navContent = (
+    <>
+      {/* Logo + admin badge */}
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-paper/10">
+        <Link
+          href="/admin"
+          className="flex items-center gap-2.5"
+          onClick={() => setMobileOpen(false)}
+        >
+          <span className="w-7 h-7 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
+            k
+          </span>
+          <span className="font-display font-semibold text-xl text-paper tracking-tight">
+            Kashe
+          </span>
+        </Link>
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-terracotta bg-terracotta/10 px-2 py-0.5 rounded-full border border-terracotta/30">
+          Admin
+        </span>
+      </div>
+
+      {/* Nav linkleri */}
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setMobileOpen(false)}
+            className={`block font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors ${
+              isActive(item.href)
+                ? 'bg-terracotta text-paper'
+                : 'text-paper/65 hover:text-paper hover:bg-paper/5'
+            }`}
+          >
+            {item.label}
           </Link>
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta bg-terracotta/10 px-2 py-1 rounded-full border border-terracotta/30">
-            Admin
+        ))}
+      </div>
+
+      {/* Alt — profil + siteye dön + çıkış */}
+      <div className="border-t border-paper/10 px-3 py-4 space-y-1">
+        <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
+          {avatarUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={avatarUrl}
+              alt={adminName}
+              className="w-8 h-8 rounded-full object-cover border border-paper/20 shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
+              {initials}
+            </div>
+          )}
+          <span className="font-display text-sm text-paper truncate">
+            {adminName}
           </span>
         </div>
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="block font-mono text-[10px] uppercase tracking-[0.14em] text-paper/55 hover:text-paper hover:bg-paper/5 px-3 py-2 rounded-lg transition-colors"
+        >
+          ← Siteye dön
+        </Link>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="block w-full text-left font-mono text-[10px] uppercase tracking-[0.14em] text-paper/55 hover:text-paper hover:bg-paper/5 px-3 py-2 rounded-lg transition-colors"
+        >
+          Çıkış yap
+        </button>
+      </div>
+    </>
+  );
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2 rounded transition-colors ${
-                isActive(item.href)
-                  ? 'bg-terracotta text-paper'
-                  : 'text-paper/70 hover:text-paper hover:bg-paper/5'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
+  return (
+    <>
+      {/* DESKTOP — sabit sol sidebar */}
+      <aside className="hidden md:flex md:flex-col fixed top-0 left-0 h-screen w-60 bg-ink border-r border-paper/10 z-40">
+        {navContent}
+      </aside>
 
-        {/* Sağ — admin profil + çıkış */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
-          <Link
-            href="/"
-            className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper/60 hover:text-paper transition-colors"
-          >
-            ← Siteye dön
-          </Link>
-          <div className="flex items-center gap-2">
-            {avatarUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={avatarUrl}
-                alt={adminName}
-                className="w-7 h-7 rounded-full object-cover border border-paper/20"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xs">
-                {initials}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper/60 hover:text-paper transition-colors"
-            >
-              Çıkış
-            </button>
-          </div>
-        </div>
-
-        {/* Mobil hamburger */}
+      {/* MOBİL — üst bar + hamburger */}
+      <div className="md:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
+        <Link href="/admin" className="flex items-center gap-2.5">
+          <span className="w-7 h-7 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
+            k
+          </span>
+          <span className="font-display font-semibold text-xl text-paper tracking-tight">
+            Kashe
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-terracotta bg-terracotta/10 px-2 py-0.5 rounded-full border border-terracotta/30">
+            Admin
+          </span>
+        </Link>
         <button
           type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 -mr-2 text-paper"
+          className="p-2 -mr-2 text-paper"
           aria-label="Menü"
         >
           {mobileOpen ? (
@@ -131,42 +161,19 @@ export function AdminNav({
         </button>
       </div>
 
-      {/* Mobil menü */}
+      {/* MOBİL — açılır drawer */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-paper/10 bg-ink">
-          <div className="px-6 py-3 space-y-1">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`block font-mono text-xs uppercase tracking-[0.14em] px-3 py-2.5 rounded transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-terracotta text-paper'
-                    : 'text-paper/70 hover:text-paper hover:bg-paper/5'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <div className="border-t border-paper/10 my-2" />
-            <Link
-              href="/"
-              onClick={() => setMobileOpen(false)}
-              className="block font-mono text-xs uppercase tracking-[0.14em] px-3 py-2.5 text-paper/60 hover:text-paper transition-colors"
-            >
-              ← Siteye dön
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="block w-full text-left font-mono text-xs uppercase tracking-[0.14em] px-3 py-2.5 text-paper/60 hover:text-paper transition-colors"
-            >
-              Çıkış yap
-            </button>
-          </div>
-        </div>
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-ink/50 z-40"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+          <aside className="md:hidden fixed top-0 left-0 h-screen w-64 bg-ink z-50 flex flex-col">
+            {navContent}
+          </aside>
+        </>
       )}
-    </nav>
+    </>
   );
 }

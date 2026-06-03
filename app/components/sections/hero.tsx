@@ -120,7 +120,7 @@ export async function Hero() {
           <div>
             <div className="kashe-rise" style={{ animationDelay: "0ms" }}>
               <Eyebrow variant="pill">
-                ✦ Türkiye&apos;nin etkinlik pazaryeri ✦
+                Türkiye&apos;nin etkinlik pazaryeri
               </Eyebrow>
             </div>
 

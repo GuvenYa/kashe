@@ -49,7 +49,7 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-paper">
       <AdminNav adminName={adminName} avatarUrl={profile.avatar_url ?? null} />
-      <main className="px-6 md:px-12 py-8 md:py-10">
+      <main className="md:ml-60 px-6 md:px-12 py-8 md:py-10">
         <div className="max-w-7xl mx-auto">{children}</div>
       </main>
     </div>

@@ -71,6 +71,24 @@ type ActiveRow = { role_key: string; total: number; active_7d: number; active_30
 type MsgRow = { bucket: string; cnt: number }
 type QuoteRow = { status_key: string; cnt: number }
 type LabelRow = { label: string; cnt: number }
+type SupplyDemandCatRow = {
+  category_id: number
+  label: string
+  supply: number
+  demand: number
+  applications: number
+}
+type SupplyDemandCityRow = {
+  city_id: number
+  label: string
+  supply: number
+  demand: number
+}
+type TabKey = 'genel' | 'talep-arz' | 'icerik'
+type TopFavRow = { profile_id: string; name: string; category: string | null; fav_count: number }
+type TopRatedRow = { professional_id: string; name: string; category: string | null; avg_rating: number; review_count: number }
+type TopViewedRow = { profile_id: string; name: string; category: string | null; views: number }
+type ActiveCatRow = { category_id: number; label: string; listings_count: number; applications_count: number; activity: number }
 
 const num = (v: unknown) => Number(v ?? 0)
 const fmtDate = (s: any) => {
@@ -145,21 +163,34 @@ export default function IstatistiklerPage() {
   const [quotes, setQuotes] = useState<QuoteRow[]>([])
   const [cats, setCats] = useState<LabelRow[]>([])
   const [cities, setCities] = useState<LabelRow[]>([])
+  const [sdCat, setSdCat] = useState<SupplyDemandCatRow[]>([])
+  const [sdCity, setSdCity] = useState<SupplyDemandCityRow[]>([])
+  const [topFav, setTopFav] = useState<TopFavRow[]>([])
+  const [topRated, setTopRated] = useState<TopRatedRow[]>([])
+  const [topViewed, setTopViewed] = useState<TopViewedRow[]>([])
+  const [activeCats, setActiveCats] = useState<ActiveCatRow[]>([])
+  const [tab, setTab] = useState<TabKey>('genel')
 
   useEffect(() => {
     const supabase = createClient()
     ;(async () => {
       try {
-        const [r1, r2, r3, r4, r5, r6] = await Promise.all([
+        const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12] = await Promise.all([
           supabase.rpc('admin_stats_registrations', { p_days: 30 }),
           supabase.rpc('admin_stats_active_users'),
           supabase.rpc('admin_stats_messages', { p_days: 30 }),
           supabase.rpc('admin_stats_quotes'),
           supabase.rpc('admin_stats_categories'),
           supabase.rpc('admin_stats_cities'),
+          supabase.rpc('admin_stats_supply_demand_category'),
+          supabase.rpc('admin_stats_supply_demand_city'),
+          supabase.rpc('admin_stats_top_favorited'),
+          supabase.rpc('admin_stats_top_rated'),
+          supabase.rpc('admin_stats_top_viewed'),
+          supabase.rpc('admin_stats_active_categories'),
         ])
 
-        const firstErr = [r1, r2, r3, r4, r5, r6].find((r) => r.error)?.error
+        const firstErr = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12].find((r) => r.error)?.error
         if (firstErr) throw firstErr
 
         setReg((r1.data ?? []) as RegRow[])
@@ -168,6 +199,12 @@ export default function IstatistiklerPage() {
         setQuotes((r4.data ?? []) as QuoteRow[])
         setCats((r5.data ?? []) as LabelRow[])
         setCities((r6.data ?? []) as LabelRow[])
+        setSdCat((r7.data ?? []) as SupplyDemandCatRow[])
+        setSdCity((r8.data ?? []) as SupplyDemandCityRow[])
+        setTopFav((r9.data ?? []) as TopFavRow[])
+        setTopRated((r10.data ?? []) as TopRatedRow[])
+        setTopViewed((r11.data ?? []) as TopViewedRow[])
+        setActiveCats((r12.data ?? []) as ActiveCatRow[])
       } catch (e: any) {
         setError(e?.message ?? 'İstatistikler yüklenirken bir hata oluştu.')
       } finally {
@@ -214,6 +251,24 @@ export default function IstatistiklerPage() {
   const quoteAccepted = num(quotes.find((q) => q.status_key === 'accepted')?.cnt)
   const conversion = quoteTotal > 0 ? Math.round((quoteAccepted / quoteTotal) * 100) : 0
 
+  // ---- Talep-arz: karşılaştırma grafiği + açık tespiti ----
+  const sdChartData = sdCat.map((r) => ({
+    label: r.label,
+    Arz: num(r.supply),
+    Talep: num(r.demand),
+  }))
+
+  // Arz açığı: talep > arz (profesyonel çek). Talep açığı: arz > talep (talep yarat).
+  const supplyGaps = sdCat
+    .filter((r) => num(r.demand) > num(r.supply))
+    .map((r) => ({ ...r, gap: num(r.demand) - num(r.supply) }))
+    .sort((a, b) => b.gap - a.gap)
+
+  const demandGaps = sdCat
+    .filter((r) => num(r.supply) > num(r.demand) && num(r.supply) > 0)
+    .map((r) => ({ ...r, gap: num(r.supply) - num(r.demand) }))
+    .sort((a, b) => b.gap - a.gap)
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-[#1A120E]/60">
@@ -254,7 +309,31 @@ export default function IstatistiklerPage() {
           <StatTile label="Teklif Dönüşümü" value={`%${conversion}`} accent={C.ember} />
         </div>
 
-        {/* Grafikler */}
+        {/* Sekme çubuğu — alt çizgi tarzı */}
+        <div className="mb-6 flex gap-6 border-b border-[#1A120E]/12">
+          {([
+            { key: 'genel', label: 'Genel' },
+            { key: 'talep-arz', label: 'Talep-Arz' },
+            { key: 'icerik', label: 'İçerik' },
+          ] as { key: TabKey; label: string }[]).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              style={{ fontFamily: MONO }}
+              className={`relative px-1 py-3 text-[12px] uppercase tracking-[0.12em] border-b-2 -mb-px transition-colors ${
+                tab === t.key
+                  ? 'border-[#C8442A] text-[#1A120E] font-semibold'
+                  : 'border-transparent text-[#1A120E]/45 hover:text-[#1A120E]/80'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* GENEL SEKMESİ */}
+        {tab === 'genel' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* 1. Yeni kayıt zaman serisi (rol bazlı) */}
           <Card eyebrow="Büyüme" title="Yeni Kayıtlar (rol bazlı)">
@@ -393,6 +472,197 @@ export default function IstatistiklerPage() {
             </ResponsiveContainer>
           </Card>
         </div>
+        )}
+
+        {/* TALEP-ARZ SEKMESİ */}
+        {tab === 'talep-arz' && (
+          <div className="space-y-6">
+            {/* Karar kartları: arz açığı + talep açığı */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Arz açığı — profesyonel çek */}
+              <div className="rounded-2xl border border-[#A8341E]/25 bg-[#A8341E]/5 p-5">
+                <Eyebrow>Arz açığı · Profesyonel çek</Eyebrow>
+                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-[#1A120E]">
+                  Talebin arzı aştığı kategoriler
+                </h3>
+                <p className="mb-4 text-sm text-[#1A120E]/60">
+                  Bu kategorilerde müşteri talebi var ama yeterli profesyonel yok.
+                  Reklam/içerikle profesyonel çekmek en yüksek getiriyi sağlar.
+                </p>
+                {supplyGaps.length === 0 ? (
+                  <p className="text-sm text-[#1A120E]/50">Şu an arz açığı yok.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {supplyGaps.map((r) => (
+                      <li
+                        key={r.category_id}
+                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium text-[#1A120E]">{r.label}</span>
+                        <span className="text-[#1A120E]/60">
+                          {r.demand} talep · {r.supply} arz{' '}
+                          <strong className="text-[#A8341E]">(+{r.gap} açık)</strong>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Talep açığı — talep yarat */}
+              <div className="rounded-2xl border border-[#3F6B47]/25 bg-[#3F6B47]/5 p-5">
+                <Eyebrow>Talep açığı · Talep yarat</Eyebrow>
+                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-[#1A120E]">
+                  Arzın talebi aştığı kategoriler
+                </h3>
+                <p className="mb-4 text-sm text-[#1A120E]/60">
+                  Bu kategorilerde çok profesyonel var ama az talep. Sosyal medya
+                  içeriği ve kampanyayla müşteri talebi yaratmak gerekir.
+                </p>
+                {demandGaps.length === 0 ? (
+                  <p className="text-sm text-[#1A120E]/50">Şu an talep açığı yok.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {demandGaps.map((r) => (
+                      <li
+                        key={r.category_id}
+                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium text-[#1A120E]">{r.label}</span>
+                        <span className="text-[#1A120E]/60">
+                          {r.supply} arz · {r.demand} talep{' '}
+                          <strong className="text-[#3F6B47]">(+{r.gap} fazla)</strong>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {/* Kategori bazlı arz vs talep karşılaştırma */}
+            <Card eyebrow="Karşılaştırma" title="Kategori bazlı arz vs talep">
+              <ResponsiveContainer width="100%" height={Math.max(320, sdChartData.length * 38)}>
+                <BarChart data={sdChartData} layout="vertical" barGap={2}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
+                  <XAxis type="number" allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
+                  <YAxis type="category" dataKey="label" width={130} fontSize={11} stroke={`${C.ink}80`} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                  <Bar dataKey="Arz" fill={C.moss} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="Talep" fill={C.terracotta} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            {/* Şehir bazlı arz vs talep */}
+            <Card eyebrow="Coğrafya" title="Şehir bazlı arz vs talep">
+              <ResponsiveContainer width="100%" height={Math.max(280, sdCity.length * 38)}>
+                <BarChart
+                  data={sdCity.map((r) => ({ label: r.label, Arz: num(r.supply), Talep: num(r.demand) }))}
+                  layout="vertical"
+                  barGap={2}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
+                  <XAxis type="number" allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
+                  <YAxis type="category" dataKey="label" width={100} fontSize={11} stroke={`${C.ink}80`} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                  <Bar dataKey="Arz" fill={C.moss} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="Talep" fill={C.terracotta} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+        )}
+
+        {/* İÇERİK SEKMESİ */}
+        {tab === 'icerik' && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* En çok favorilenen */}
+            <Card eyebrow="Sosyal medya · Öne çıkar" title="En çok favorilenen profesyoneller">
+              {topFav.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Henüz favori verisi yok.</p>
+              ) : (
+                <ol className="space-y-2">
+                  {topFav.map((r, i) => (
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
+                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                      </span>
+                      <span className="text-[#1A120E]/70 shrink-0">{r.fav_count} ❤</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+
+            {/* En yüksek puanlı */}
+            <Card eyebrow="Sosyal medya · Öne çıkar" title="En yüksek puanlı profesyoneller">
+              {topRated.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Henüz puan verisi yok.</p>
+              ) : (
+                <ol className="space-y-2">
+                  {topRated.map((r, i) => (
+                    <li key={r.professional_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
+                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                      </span>
+                      <span className="text-[#1A120E]/70 shrink-0">
+                        ★ {Number(r.avg_rating).toFixed(1)} ({r.review_count})
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+
+            {/* En çok görüntülenen */}
+            <Card eyebrow="Sosyal medya · Öne çıkar" title="En çok görüntülenen profiller">
+              {topViewed.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Henüz görüntülenme verisi yok.</p>
+              ) : (
+                <ol className="space-y-2">
+                  {topViewed.map((r, i) => (
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
+                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                      </span>
+                      <span className="text-[#1A120E]/70 shrink-0">{r.views} görüntülenme</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+
+            {/* En aktif kategoriler */}
+            <Card eyebrow="Trend · İçerik fikri" title="En aktif kategoriler">
+              {activeCats.filter((r) => r.activity > 0).length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Henüz aktivite verisi yok.</p>
+              ) : (
+                <ol className="space-y-2">
+                  {activeCats.filter((r) => r.activity > 0).map((r, i) => (
+                    <li key={r.category_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1A120E] truncate">{r.label}</span>
+                      </span>
+                      <span className="text-[#1A120E]/70 shrink-0 text-xs">
+                        {r.listings_count} ilan · {r.applications_count} başvuru
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
