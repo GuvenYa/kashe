@@ -71,6 +71,11 @@ export function Footer() {
                 </a>
               </li>
               <li>
+                <a href="/fiyatlandirma" className="text-paper/80 hover:text-paper transition-colors">
+                  Fiyatlandırma
+                </a>
+              </li>
+              <li>
                 <a href="/yardim" className="text-paper/80 hover:text-paper transition-colors">
                   Yardım
                 </a>

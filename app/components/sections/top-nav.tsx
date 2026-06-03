@@ -113,6 +113,9 @@ export async function TopNav() {
               <a href="/#kurumsal" className={navLinkClass}>
                 Kurumsal
               </a>
+              <a href="/fiyatlandirma" className={navLinkClass}>
+                Fiyatlandırma
+              </a>
             </>
           )}
         </div>
