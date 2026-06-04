@@ -205,6 +205,14 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     return { success: false, error: 'Onaylama başarısız: ' + error.message };
   }
 
+  // Aynı konuşmadaki diğer bekleyen teklifleri reddet (çift rezervasyonu önle)
+  await supabase
+    .from('quotes')
+    .update({ status: 'declined' })
+    .eq('conversation_id', quote.conversation_id)
+    .neq('id', quoteId)
+    .eq('status', 'pending');
+
   // E-POSTA: profesyonele "teklifin onaylandı" bildirimi
   notifyQuoteAccepted(
     supabase,

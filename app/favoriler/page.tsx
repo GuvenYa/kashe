@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from '../kesfet/profile-card';
 import { EmptyState } from '@/app/components/EmptyState';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getUserFavorites, getFavoritedIds } from './actions';
 
 export const metadata = {
@@ -92,7 +93,7 @@ export default async function FavorilerPage() {
     .single();
 
   // Suspension kontrolü — askıdaki kullanıcı favorileri göremez
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   const userRole = profile?.role ?? null;
 

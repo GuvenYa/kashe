@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 
 export const metadata = {
@@ -22,7 +23,7 @@ export default async function TeklifTalepleriPage() {
     .single();
 
   // Suspension kontrolü
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   if (profile?.role !== 'professional' && profile?.role !== 'agency') {
     redirect('/profil');

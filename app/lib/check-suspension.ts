@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 
 /**
  * Askıya alınmış kullanıcı kontrolü.

@@ -22,8 +22,36 @@ export default async function YeniIlanPage() {
     .eq('id', user.id)
     .single();
 
-  // Suspension kontrolü — askıdaki kullanıcı yeni ilan açamaz
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  // Suspension kontrolü — askıdaki kullanıcı yeni ilan açamaz.
+  // Redirect yerine sayfa-içi mesaj (client navigation sırasında redirect
+  // router'ı bozuyor — "rendered more hooks" hatası).
+  if (profile?.suspended_at) {
+    return (
+      <div className="bg-paper min-h-screen">
+        <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
+            Hesap askıda
+          </p>
+          <h1 className="font-display text-4xl text-ink mb-3">
+            Hesabın şu an{' '}
+            <em className="text-terracotta not-italic italic font-medium">
+              askıya alınmış
+            </em>
+          </h1>
+          <p className="text-ink-72 mb-8">
+            Bu durumda yeni ilan açamazsın. Sorularınız için destek ekibiyle
+            iletişime geçebilirsin.
+          </p>
+          <a
+            href="mailto:kasheofficial@gmail.com"
+            className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+          >
+            Destek ekibine yaz
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const role = profile?.role;
   const canCreate = role === 'client' || role === 'business';

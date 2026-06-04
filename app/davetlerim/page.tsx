@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { createClient } from '@/app/lib/supabase-server';
 import { DavetlerimListesi } from './davetlerim-listesi';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import type { AgencyInvitationWithRelations } from '@/app/ajans/agency-data';
 
 export const metadata = {
@@ -28,7 +29,7 @@ export default async function DavetlerimPage() {
     .single();
 
   // Suspension kontrolü — askıdaki kullanıcı davetleri göremez
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   if (!profile) {
     redirect('/profil');

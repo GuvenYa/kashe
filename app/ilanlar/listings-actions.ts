@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
+import { isUserSuspended } from '@/app/lib/check-suspension';
 import {
   validateListingInput,
   validateApplicationInput,
@@ -62,6 +63,14 @@ export async function createListing(
   } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
 
   // Validation
   const validationError = validateListingInput({
@@ -283,6 +292,14 @@ async function updateListingStatus(
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
+
   const { data: listing } = await supabase
     .from('listings')
     .select('id, creator_id, status')
@@ -388,6 +405,14 @@ export async function applyToListing(
   } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
 
   // Validation
   const validationError = validateApplicationInput({
@@ -529,6 +554,14 @@ export async function acceptApplication(
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
+
   // Başvuru + ilan bilgisi
   const { data: app } = await supabase
     .from('applications')
@@ -595,6 +628,14 @@ export async function reopenListing(
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
+
   const { data: listing } = await supabase
     .from('listings')
     .select('id, creator_id, status')
@@ -645,6 +686,14 @@ export async function unrejectApplication(
   } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
 
   const { data: app } = await supabase
     .from('applications')
@@ -716,6 +765,14 @@ async function updateApplicationStatus(
   } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
 
   // Application + listing creator'ı join'le çek
   const { data: app } = await supabase

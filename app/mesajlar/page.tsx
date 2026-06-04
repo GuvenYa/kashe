@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
 
 export const metadata = {
@@ -47,7 +48,7 @@ export default async function MesajlarPage() {
     .select('suspended_at')
     .eq('id', user.id)
     .single();
-  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
   // Atandığım konuşma id'lerini junction'dan çek
   const { data: myAssignments } = await supabase

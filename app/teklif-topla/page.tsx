@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { orderCities } from '@/app/lib/city-order';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TeklifToplaFormu } from './teklif-topla-formu';
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default async function TeklifToplaPage() {
     .single();
 
   // Suspension kontrolü
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   const role = profile?.role;
   if (role !== 'client' && role !== 'business') {

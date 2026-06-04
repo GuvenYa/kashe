@@ -3,6 +3,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { IlanDetay } from './ilan-detay';
 import { incrementListingViews } from '../listings-actions';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getBadges } from '@/app/lib/badges';
 import type {
   ListingWithRelations,
@@ -48,14 +49,18 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     notFound();
   }
 
-  // Kullanıcı profili (role tespiti)
+  // Kullanıcı profili (role + suspension tespiti)
   let userRole: string | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, suspended_at')
       .eq('id', user.id)
       .single();
+    // Askıdaki kullanıcı ilan detayını yönetemez (redirect yerine sayfa-içi mesaj)
+    if (profile?.suspended_at) {
+      return <SuspendedNotice />;
+    }
     userRole = profile?.role ?? null;
   }
 

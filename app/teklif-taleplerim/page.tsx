@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 
 export const metadata = {
@@ -27,7 +28,9 @@ export default async function TeklifTaleplerimPage() {
     .select('suspended_at')
     .eq('id', user.id)
     .single();
-  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
+
+
 
   // Kendi taleplerim + her birinin recipient'ları (teklif sayısı için)
   const { data: requests } = await supabase

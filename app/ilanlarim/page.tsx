@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { IlanlarimListesi } from './ilanlarim-listesi';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import type { ListingWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string }>;
@@ -36,7 +37,7 @@ export default async function IlanlarimPage({
     .single();
 
   // Suspension kontrolü — askıdaki kullanıcı ilanlarını yönetemez
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   console.log('[ilanlarim] role:', profile?.role);
 

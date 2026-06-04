@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { BasvurularimListesi } from './basvurularim-listesi';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import type { ApplicationWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string }>;
@@ -29,7 +30,7 @@ export default async function BasvurularimPage({
     .single();
 
   // Suspension kontrolü — askıdaki kullanıcı başvurularını yönetemez
-  if (profile?.suspended_at) redirect('/askiya-alindi');
+  if (profile?.suspended_at) return <SuspendedNotice />;
 
   if (profile?.role !== 'professional' && profile?.role !== 'agency') {
     redirect('/profil');

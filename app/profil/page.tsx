@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { PublishToggle } from './publish-toggle';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { getUserFavorites } from '@/app/favoriler/actions';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { isPremiumActive } from '@/app/lib/badges';
 import {
   isProfessional,
@@ -49,7 +50,7 @@ export default async function ProfilPage() {
 
   // Suspension kontrolü — askıdaki kullanıcı profile gelmemeli
   if (profileData.suspended_at) {
-    redirect('/askiya-alindi');
+    return <SuspendedNotice />;
   }
 
   const profile = profileData as Profile & {

@@ -6,6 +6,7 @@ import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from './rezervasyon-karti';
 import { Calendar } from 'lucide-react';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getEventTypeLabel } from '@/app/mesajlar/data';
 
 type BookingRow = {
@@ -54,7 +55,7 @@ export default async function RezervasyonlarimPage() {
     .select('suspended_at')
     .eq('id', user.id)
     .single();
-  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
   const { data: bookingsData } = await supabase
     .from('bookings')

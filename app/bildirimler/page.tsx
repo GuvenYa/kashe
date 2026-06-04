@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getNotifications } from './actions';
+import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { BildirimListesi } from './bildirim-listesi';
 
 export const metadata = {
@@ -71,7 +72,7 @@ export default async function BildirimlerPage() {
     .select('suspended_at')
     .eq('id', user.id)
     .single();
-  if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
+  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
   // Bildirimleri çek
   const { notifications, error } = await getNotifications();
