@@ -37,6 +37,8 @@ import {
   canShortlistApplication,
   canAcceptApplication,
   canRejectApplication,
+  canUnrejectApplication,
+  canReopenListing,
   type ListingWithRelations,
   type Application,
   type ApplicationWithRelations,
@@ -47,9 +49,11 @@ import {
   cancelListing,
   restoreListing,
   deleteListing,
+  reopenListing,
   shortlistApplication,
   acceptApplication,
   rejectApplication,
+  unrejectApplication,
 } from '../listings-actions';
 import { ApplyModal } from './apply-modal';
 import { ApplicationAttachment } from '@/app/components/application-attachment';
@@ -138,6 +142,12 @@ export function IlanDetay({
 
   async function handleRestore() {
     const result = await restoreListing(listing.id);
+    if (!result.success) throw new Error(result.error);
+    router.refresh();
+  }
+
+  async function handleReopen() {
+    const result = await reopenListing(listing.id);
     if (!result.success) throw new Error(result.error);
     router.refresh();
   }
@@ -373,6 +383,22 @@ export function IlanDetay({
                     {confirming === 'close'
                       ? 'Eminsen tekrar tıkla'
                       : 'Başvuruları kapat'}
+                  </button>
+                )}
+                {canReopenListing(listing.status) && (
+                  <button
+                    onClick={() => withConfirm('reopen', handleReopen)}
+                    disabled={isPending}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
+                      confirming === 'reopen'
+                        ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                        : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Send size={14} strokeWidth={1.75} />
+                    {confirming === 'reopen'
+                      ? 'Eminsen tekrar tıkla'
+                      : 'Başvuruları tekrar aç'}
                   </button>
                 )}
                 {canCancelListing(listing.status) && (
@@ -640,6 +666,10 @@ function ApplicationCard({
     const r = await rejectApplication(application.id);
     if (!r.success) throw new Error(r.error);
   }
+  async function handleUnreject() {
+    const r = await unrejectApplication(application.id);
+    if (!r.success) throw new Error(r.error);
+  }
 
   return (
     <div className="bg-white border border-line rounded-lg p-5">
@@ -759,6 +789,20 @@ function ApplicationCard({
           >
             <XCircle size={12} strokeWidth={1.75} />
             {confirming === 'reject' ? 'Onayla' : 'Reddet'}
+          </button>
+        )}
+        {canUnrejectApplication(application.status) && (
+          <button
+            onClick={() => withConfirm('unreject', handleUnreject)}
+            disabled={isPending}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
+              confirming === 'unreject'
+                ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+            } disabled:opacity-50`}
+          >
+            <Send size={12} strokeWidth={1.75} />
+            {confirming === 'unreject' ? 'Onayla' : 'Geri al'}
           </button>
         )}
       </div> 

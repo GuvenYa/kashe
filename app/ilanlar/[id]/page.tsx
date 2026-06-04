@@ -110,12 +110,6 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
           average: r.average_rating ?? 0,
         });
       });
-      (ratingsData ?? []).forEach((r) => {
-        ratingMap.set(r.professional_id, {
-          count: r.review_count ?? 0,
-          average: r.average_rating ?? 0,
-        });
-      });
 
       apps = apps.map((a) => {
         if (!a.applicant) return a;

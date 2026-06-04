@@ -354,6 +354,11 @@ export function canCloseListing(status: ListingStatus): boolean {
   return status === 'published';
 }
 
+// Dolmuş ilan tekrar açılabilir (filled → published)
+export function canReopenListing(status: ListingStatus): boolean {
+  return status === 'filled';
+}
+
 // İptal edilmiş ilan tekrar taslağa alınabilir (yanlışlıkla iptal için geri dönüş)
 export function canRestoreListing(status: ListingStatus): boolean {
   return status === 'cancelled';
@@ -439,6 +444,11 @@ export function canAcceptApplication(status: ApplicationStatus): boolean {
 
 export function canRejectApplication(status: ApplicationStatus): boolean {
   return status === 'pending' || status === 'shortlisted';
+}
+
+// Reddedilen başvuru geri alınabilir (rejected → pending), ama sadece ilan hâlâ açıkken
+export function canUnrejectApplication(status: ApplicationStatus): boolean {
+  return status === 'rejected';
 }
 
 // =============================================================================

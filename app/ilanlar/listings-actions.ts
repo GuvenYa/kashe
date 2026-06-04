@@ -521,12 +521,168 @@ export async function shortlistApplication(
 export async function acceptApplication(
   applicationId: string
 ): Promise<ActionResult> {
-  return updateApplicationStatus(
-    applicationId,
-    'accepted',
-    canAcceptApplication,
-    'owner'
-  );
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Başvuru + ilan bilgisi
+  const { data: app } = await supabase
+    .from('applications')
+    .select('id, listing_id, status, listings(creator_id)')
+    .eq('id', applicationId)
+    .single();
+
+  if (!app) return { success: false, error: 'Başvuru bulunamadı' };
+
+  const listingCreator = (app.listings as unknown as { creator_id: string })
+    ?.creator_id;
+  if (listingCreator !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil' };
+  }
+  if (!canAcceptApplication(app.status as ApplicationStatus)) {
+    return { success: false, error: 'Bu işlem mevcut durumda yapılamaz' };
+  }
+
+  // 1) Bu başvuruyu kabul et
+  const { error: acceptErr } = await supabase
+    .from('applications')
+    .update({ status: 'accepted' })
+    .eq('id', applicationId);
+  if (acceptErr) {
+    return { success: false, error: 'Kabul edilemedi: ' + acceptErr.message };
+  }
+
+  // 2) İlanı filled yap
+  const { error: listingErr } = await supabase
+    .from('listings')
+    .update({ status: 'filled' })
+    .eq('id', app.listing_id);
+  if (listingErr) {
+    return { success: false, error: 'İlan güncellenemedi: ' + listingErr.message };
+  }
+
+  // 3) Aynı ilandaki diğer açık başvuruları (pending/shortlisted) reddet
+  await supabase
+    .from('applications')
+    .update({ status: 'rejected' })
+    .eq('listing_id', app.listing_id)
+    .neq('id', applicationId)
+    .in('status', ['pending', 'shortlisted']);
+
+  revalidatePath(`/ilanlar/${app.listing_id}`);
+  revalidatePath('/basvurularim');
+  revalidatePath('/ilanlarim');
+  return { success: true };
+}
+
+/**
+ * Dolmuş ilanı tekrar aç (filled → published).
+ * Kabul edilen başvuru tekrar pending olur (yeniden değerlendirme).
+ * Otomatik reddedilenler rejected kalır — sahip isterse tek tek geri alır.
+ */
+export async function reopenListing(
+  listingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('id, creator_id, status')
+    .eq('id', listingId)
+    .single();
+
+  if (!listing) return { success: false, error: 'İlan bulunamadı' };
+  if (listing.creator_id !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil' };
+  }
+  if (listing.status !== 'filled') {
+    return { success: false, error: 'Sadece dolmuş ilan tekrar açılabilir' };
+  }
+
+  // İlanı published yap
+  const { error: listingErr } = await supabase
+    .from('listings')
+    .update({ status: 'published' })
+    .eq('id', listingId);
+  if (listingErr) {
+    return { success: false, error: 'İlan açılamadı: ' + listingErr.message };
+  }
+
+  // Kabul edilen başvuruyu pending'e geri al
+  await supabase
+    .from('applications')
+    .update({ status: 'pending' })
+    .eq('listing_id', listingId)
+    .eq('status', 'accepted');
+
+  revalidatePath(`/ilanlar/${listingId}`);
+  revalidatePath('/basvurularim');
+  revalidatePath('/ilanlarim');
+  return { success: true };
+}
+
+/**
+ * Reddedilen başvuruyu geri al (rejected → pending).
+ * Sadece ilan hâlâ published iken (dolmuş ilanda anlamsız).
+ */
+export async function unrejectApplication(
+  applicationId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { data: app } = await supabase
+    .from('applications')
+    .select('id, listing_id, status, listings(creator_id, status)')
+    .eq('id', applicationId)
+    .single();
+
+  if (!app) return { success: false, error: 'Başvuru bulunamadı' };
+
+  const listingRel = app.listings as unknown as {
+    creator_id: string;
+    status: string;
+  };
+  if (listingRel?.creator_id !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil' };
+  }
+  if (app.status !== 'rejected') {
+    return { success: false, error: 'Sadece reddedilmiş başvuru geri alınabilir' };
+  }
+  if (listingRel.status !== 'published') {
+    return {
+      success: false,
+      error: 'Başvuru geri almak için ilan açık olmalı',
+    };
+  }
+
+  const { error } = await supabase
+    .from('applications')
+    .update({ status: 'pending' })
+    .eq('id', applicationId);
+  if (error) {
+    return { success: false, error: 'Geri alınamadı: ' + error.message };
+  }
+
+  revalidatePath(`/ilanlar/${app.listing_id}`);
+  revalidatePath('/basvurularim');
+  revalidatePath('/ilanlarim');
+  return { success: true };
 }
 
 /**
