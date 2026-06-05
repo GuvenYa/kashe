@@ -35,13 +35,21 @@ export default async function IlanDuzenlePage({
 
   const listing = listingData as Listing;
 
-  // Sahibi mi?
-  if (listing.creator_id !== user.id) {
+  // Admin mi? (admin başkasının ilanını her statusde düzenleyebilir)
+  const { data: editorProfile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  const isAdmin = editorProfile?.is_admin ?? false;
+
+  // Sahibi veya admin mi?
+  if (listing.creator_id !== user.id && !isAdmin) {
     notFound();
   }
 
-  // Düzenlenebilir mi?
-  if (!canEditListing(listing.status as ListingStatus)) {
+  // Düzenlenebilir mi? (admin her durumda düzenleyebilir, sahip için kısıt)
+  if (!isAdmin && !canEditListing(listing.status as ListingStatus)) {
     redirect(`/ilanlar/${id}`);
   }
 

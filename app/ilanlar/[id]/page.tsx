@@ -43,18 +43,18 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
 
   const listing = listingData as unknown as ListingWithRelations;
 
-  // İzin kontrolü: published değilse sadece sahibi görebilir
+  // İzin kontrolü: published değilse sadece sahibi (veya admin) görebilir.
+  // NOT: admin tespiti aşağıda profile çekiminde yapılıyor; isOwner burada yeterli
+  // değil — bu yüzden asıl notFound kontrolünü profile çekiminden sonraya aldık.
   const isOwner = !!user && listing.creator_id === user.id;
-  if (listing.status !== 'published' && !isOwner) {
-    notFound();
-  }
 
-  // Kullanıcı profili (role + suspension tespiti)
+  // Kullanıcı profili (role + suspension + admin tespiti)
   let userRole: string | null = null;
+  let isAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, suspended_at')
+      .select('role, suspended_at, is_admin')
       .eq('id', user.id)
       .single();
     // Askıdaki kullanıcı ilan detayını yönetemez (redirect yerine sayfa-içi mesaj)
@@ -62,6 +62,12 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
       return <SuspendedNotice />;
     }
     userRole = profile?.role ?? null;
+    isAdmin = profile?.is_admin ?? false;
+  }
+
+  // İzin kontrolü (admin dahil): published değilse sadece sahibi veya admin görebilir
+  if (listing.status !== 'published' && !isOwner && !isAdmin) {
+    notFound();
   }
 
   // Başvurabilen roller: profesyonel + ajans

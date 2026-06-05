@@ -156,6 +156,14 @@ export async function updateListing(
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
+  // Admin mi? (admin başkasının ilanını düzenleyebilir, tekrar onaya sokmadan)
+  const { data: editorProfile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  const isAdmin = editorProfile?.is_admin ?? false;
+
   // Mevcut ilanı çek (yetki + status kontrolü)
   const { data: existing } = await supabase
     .from('listings')
@@ -164,18 +172,20 @@ export async function updateListing(
     .single();
 
   if (!existing) return { success: false, error: 'İlan bulunamadı' };
-  if (existing.creator_id !== user.id) {
+  if (existing.creator_id !== user.id && !isAdmin) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
-  if (!canEditListing(existing.status as ListingStatus)) {
+  // Sahip için düzenlenebilirlik kontrolü; admin her durumda düzenleyebilir
+  if (!isAdmin && !canEditListing(existing.status as ListingStatus)) {
     return { success: false, error: 'Bu ilan artık düzenlenemez' };
   }
 
-  // Model 3: revision veya rejected ilan düzenlenince tekrar onaya gider (pending_approval).
-  // published düzenlenince published kalır (karar a). draft draft kalır.
+  // Model 3: revision veya rejected ilan düzenlenince tekrar onaya gider.
+  // AMA admin düzenlemesi direkt geçerli — tekrar onaya sokmaz (admin zaten onaylayıcı).
   const currentStatus = existing.status as ListingStatus;
   const shouldResubmit =
-    currentStatus === 'revision' || currentStatus === 'rejected';
+    !isAdmin &&
+    (currentStatus === 'revision' || currentStatus === 'rejected');
 
   // Yalnızca verilen alanları güncelle
   const updateData: Record<string, unknown> = {};
@@ -329,6 +339,63 @@ async function updateListingStatus(
   revalidatePath('/ilanlar');
   revalidatePath('/ilanlarim');
   revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}
+
+/**
+ * ADMIN: Herhangi bir ilanı yayından kaldırır (→ cancelled).
+ * Sadece admin çağırabilir. RLS "Admins can update any listing" izin verir.
+ */
+export async function adminCancelListing(
+  listingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  // Admin kontrolü
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) {
+    return { success: false, error: 'Bu işlem için yetkin yok' };
+  }
+
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('id, status')
+    .eq('id', listingId)
+    .single();
+
+  if (!listing) return { success: false, error: 'İlan bulunamadı' };
+  // Sadece yayında veya dolu ilan yayından kaldırılır
+  if (listing.status !== 'published' && listing.status !== 'filled') {
+    return {
+      success: false,
+      error: 'Sadece yayında veya dolu ilan yayından kaldırılabilir',
+    };
+  }
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ status: 'cancelled' })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'Yayından kaldırılamadı: ' + error.message };
+  }
+
+  revalidatePath('/ilanlar');
+  revalidatePath('/ilanlarim');
+  revalidatePath(`/ilanlar/${listingId}`);
+  revalidatePath('/admin/ilanlar');
+  revalidatePath('/admin');
   return { success: true };
 }
 

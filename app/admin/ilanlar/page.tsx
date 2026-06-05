@@ -1,14 +1,22 @@
 import { createClient } from '@/app/lib/supabase-server';
 import Link from 'next/link';
 import { IlanOnayAksiyonlari } from './ilan-onay-aksiyonlari';
+import { AdminIlanKaldir } from './admin-ilan-kaldir';
 import { formatBudgetRange } from '@/app/ilanlar/listings-data';
 
-type Durum = 'pending_approval' | 'revision' | 'rejected';
+type Durum =
+  | 'pending_approval'
+  | 'revision'
+  | 'rejected'
+  | 'published'
+  | 'filled';
 
 const TABS: { key: Durum; label: string }[] = [
   { key: 'pending_approval', label: 'Onay Bekleyen' },
   { key: 'revision', label: 'Revizyonda' },
   { key: 'rejected', label: 'Reddedilen' },
+  { key: 'published', label: 'Yayında' },
+  { key: 'filled', label: 'Dolduruldu' },
 ];
 
 export default async function AdminIlanlarPage({
@@ -17,14 +25,26 @@ export default async function AdminIlanlarPage({
   searchParams: Promise<{ durum?: string }>;
 }) {
   const params = await searchParams;
-  const durum: Durum =
-    params.durum === 'revision' || params.durum === 'rejected'
-      ? params.durum
-      : 'pending_approval';
+  const validDurumlar: Durum[] = [
+    'pending_approval',
+    'revision',
+    'rejected',
+    'published',
+    'filled',
+  ];
+  const durum: Durum = validDurumlar.includes(params.durum as Durum)
+    ? (params.durum as Durum)
+    : 'pending_approval';
 
   const supabase = await createClient();
 
-  const [pendingCount, revisionCount, rejectedCount] = await Promise.all([
+  const [
+    pendingCount,
+    revisionCount,
+    rejectedCount,
+    publishedCount,
+    filledCount,
+  ] = await Promise.all([
     supabase
       .from('listings')
       .select('id', { count: 'exact', head: true })
@@ -37,12 +57,22 @@ export default async function AdminIlanlarPage({
       .from('listings')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'rejected'),
+    supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'published'),
+    supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'filled'),
   ]);
 
   const counts: Record<Durum, number> = {
     pending_approval: pendingCount.count ?? 0,
     revision: revisionCount.count ?? 0,
     rejected: rejectedCount.count ?? 0,
+    published: publishedCount.count ?? 0,
+    filled: filledCount.count ?? 0,
   };
 
   const { data: listings } = await supabase
@@ -105,11 +135,16 @@ export default async function AdminIlanlarPage({
               ? 'Onay bekleyen ilan yok'
               : durum === 'revision'
               ? 'Revizyonda ilan yok'
-              : 'Reddedilen ilan yok'}
+              : durum === 'rejected'
+              ? 'Reddedilen ilan yok'
+              : durum === 'published'
+              ? 'Yayında ilan yok'
+              : 'Dolu ilan yok'}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {list.map((l: any) => {
             const creator = l.creator;
             const creatorName =
@@ -160,18 +195,35 @@ export default async function AdminIlanlarPage({
                         {l.approval_note}
                       </p>
                     )}
-                    <a
-                      href={`/ilanlar/${l.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
-                    >
-                      İlanı önizle →
-                    </a>
+                    <div className="flex items-center gap-4 mt-2">
+                      <a
+                        href={`/ilanlar/${l.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
+                      >
+                        İlanı önizle →
+                      </a>
+                      <a
+                        href={`/ilanlar/${l.id}/duzenle`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 hover:text-ink transition-colors"
+                      >
+                        Düzenle →
+                      </a>
+                    </div>
                   </div>
 
                   <div className="shrink-0 lg:w-72">
-                    <IlanOnayAksiyonlari listingId={l.id} />
+                    {(durum === 'pending_approval' ||
+                      durum === 'revision' ||
+                      durum === 'rejected') && (
+                      <IlanOnayAksiyonlari listingId={l.id} />
+                    )}
+                    {(durum === 'published' || durum === 'filled') && (
+                      <AdminIlanKaldir listingId={l.id} />
+                    )}
                   </div>
                 </div>
               </div>
