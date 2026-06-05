@@ -138,6 +138,34 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     applications = apps;
   }
 
+  // Kabul edilen başvuru varsa, müşteri ↔ o profesyonel konuşmasının id'sini bul
+  // (sahip için "Konuşmaya git" butonu)
+  let acceptedConversationId: string | null = null;
+  if (isOwner) {
+    const acceptedApp = applications.find((a) => a.status === 'accepted');
+    if (acceptedApp?.applicant?.id) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('customer_id', listing.creator_id)
+        .eq('professional_id', acceptedApp.applicant.id)
+        .maybeSingle();
+      acceptedConversationId = conv?.id ?? null;
+    }
+  }
+
+  // Başvuran (profesyonel) tarafı: kendi başvurusu kabul edildiyse konuşma id'si
+  let myConversationId: string | null = null;
+  if (user && canApply && myApplication?.status === 'accepted') {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('customer_id', listing.creator_id)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    myConversationId = conv?.id ?? null;
+  }
+
   // View counter (fire-and-forget, sahibi kendi sayfasını sayılmaz)
   incrementListingViews(id).catch(() => {
     // sessiz fail
@@ -153,6 +181,8 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         isProfessional={canApply}
         myApplication={myApplication}
         applications={applications}
+        acceptedConversationId={acceptedConversationId}
+        myConversationId={myConversationId}
       />
     </>
   );

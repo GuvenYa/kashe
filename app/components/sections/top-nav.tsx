@@ -52,8 +52,9 @@ export async function TopNav() {
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/takvimim", label: "Takvimim" });
   }
-  // Müşteri/işletme → Rezervasyonlarım, profilim'in hemen ardına
+  // Müşteri/işletme → İlanlarım + Rezervasyonlarım, profilim'in hemen ardına
   if (isClient || isBusiness) {
+    menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
     menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
   }
   if (isProfessional) {

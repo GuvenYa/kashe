@@ -32,9 +32,14 @@ export default async function IlanlarPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  // Kullanıcı rolü (CTA için)
+  // Kullanıcı rolü (CTA için) + id (kendi ilanlarını ayırmak için)
   const userRole = await getUserRole();
   const canCreateListing = userRole === 'client' || userRole === 'business';
+
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  const currentUserId = currentUser?.id ?? null;
 
   // Kategorileri ve şehirleri filtreler için çek
   const [categoriesResult, citiesResult] = await Promise.all([
@@ -130,6 +135,7 @@ export default async function IlanlarPage({
             etkinlik: params.etkinlik ?? null,
           }}
           canCreateListing={canCreateListing}
+          currentUserId={currentUserId}
         />
       </div>
     </div>

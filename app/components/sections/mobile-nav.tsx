@@ -130,6 +130,11 @@ export function MobileNav({
                     </a>
                   )}
                   {(isClient || isBusiness) && (
+                    <a href="/ilanlarim" className={linkClass}>
+                      İlanlarım
+                    </a>
+                  )}
+                  {(isClient || isBusiness) && (
                     <a href="/rezervasyonlarim" className={linkClass}>
                       Rezervasyonlarım
                     </a>

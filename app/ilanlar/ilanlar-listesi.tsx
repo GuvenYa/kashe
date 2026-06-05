@@ -40,6 +40,7 @@ type Props = {
   cities: City[];
   activeFilters: Filters;
   canCreateListing: boolean;
+  currentUserId: string | null;
 };
 
 const EVENT_TYPE_OPTIONS = [
@@ -59,6 +60,7 @@ export function IlanlarListesi({
   cities,
   activeFilters,
   canCreateListing,
+  currentUserId,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -187,43 +189,88 @@ export function IlanlarListesi({
         </div>
       </div>
 
-      {/* Sonuç sayısı */}
-      <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-72 mb-6">
-        {listings.length} ilan
-      </p>
+      {/* Kendi ilanları ile diğerlerini ayır */}
+      {(() => {
+        const myListings = currentUserId
+          ? listings.filter((l) => l.creator_id === currentUserId)
+          : [];
+        const otherListings = currentUserId
+          ? listings.filter((l) => l.creator_id !== currentUserId)
+          : listings;
 
-      {/* İlan listesi */}
-      {listings.length === 0 ? (
-        <EmptyState
-          icon={hasActiveFilters ? SearchX : Briefcase}
-          title={
-            hasActiveFilters
-              ? 'Bu filtrelere uygun ilan yok'
-              : 'Henüz ilan açılmamış'
-          }
-          description={
-            hasActiveFilters
-              ? 'Farklı filtreler dene veya tümünü temizle.'
-              : 'İlk ilan eklendiğinde burada görünecek.'
-          }
-          action={
-            hasActiveFilters
-              ? { label: 'Filtreleri temizle', href: '/ilanlar' }
-              : undefined
-          }
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {listings.map((listing) => (
-            <IlanCard key={listing.id} listing={listing} />
-          ))}
-        </div>
-      )}
+        if (listings.length === 0) {
+          return (
+            <EmptyState
+              icon={hasActiveFilters ? SearchX : Briefcase}
+              title={
+                hasActiveFilters
+                  ? 'Bu filtrelere uygun ilan yok'
+                  : 'Henüz ilan açılmamış'
+              }
+              description={
+                hasActiveFilters
+                  ? 'Farklı filtreler dene veya tümünü temizle.'
+                  : 'İlk ilan eklendiğinde burada görünecek.'
+              }
+              action={
+                hasActiveFilters
+                  ? { label: 'Filtreleri temizle', href: '/ilanlar' }
+                  : undefined
+              }
+            />
+          );
+        }
+
+        return (
+          <>
+            {/* KENDİ İLANLARIN — en üstte ayrı bölüm */}
+            {myListings.length > 0 && (
+              <div className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta">
+                    Senin ilanların
+                  </span>
+                  <span className="font-mono text-[10px] text-ink-72">
+                    ({myListings.length})
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myListings.map((listing) => (
+                    <IlanCard key={listing.id} listing={listing} isOwn />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* DİĞER İLANLAR */}
+            {otherListings.length > 0 && (
+              <>
+                {myListings.length > 0 && (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
+                    Diğer ilanlar
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {otherListings.map((listing) => (
+                    <IlanCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
 
-function IlanCard({ listing }: { listing: ListingWithRelations }) {
+function IlanCard({
+  listing,
+  isOwn = false,
+}: {
+  listing: ListingWithRelations;
+  isOwn?: boolean;
+}) {
   const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
   const categoryIcon = getCategoryIcon(listing.service_categories?.slug);
   const cityName = listing.turkish_cities?.name;
@@ -243,11 +290,22 @@ function IlanCard({ listing }: { listing: ListingWithRelations }) {
     <Link
       href={`/ilanlar/${listing.id}`}
       className={`block rounded-lg p-5 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${
-        featured
+        isOwn
+          ? 'bg-terracotta/[0.04] border-2 border-terracotta/30 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+          : featured
           ? 'bg-[#FFFDF6] border border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[4px_4px_0_#D9C179]'
           : 'bg-white border border-line hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
       }`}
     >
+      {/* Kendi ilanın etiketi */}
+      {isOwn && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-terracotta bg-terracotta/10 border border-terracotta/30">
+            Senin ilanın
+          </span>
+        </div>
+      )}
+
       {/* Öne çıkan + acil etiketleri */}
       {(featured || urgent) && (
         <div className="flex items-center gap-2 mb-3">

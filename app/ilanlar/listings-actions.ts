@@ -562,17 +562,25 @@ export async function acceptApplication(
     };
   }
 
-  // Başvuru + ilan bilgisi
+  // Başvuru + ilan bilgisi (konuşma açmak için applicant_id + ilan detayları da gerekli)
   const { data: app } = await supabase
     .from('applications')
-    .select('id, listing_id, status, listings(creator_id)')
+    .select(
+      'id, listing_id, applicant_id, status, listings(creator_id, event_date, event_type, location, guest_count)'
+    )
     .eq('id', applicationId)
     .single();
 
   if (!app) return { success: false, error: 'Başvuru bulunamadı' };
 
-  const listingCreator = (app.listings as unknown as { creator_id: string })
-    ?.creator_id;
+  const listingRel = app.listings as unknown as {
+    creator_id: string;
+    event_date: string | null;
+    event_type: string | null;
+    location: string | null;
+    guest_count: number | null;
+  };
+  const listingCreator = listingRel?.creator_id;
   if (listingCreator !== user.id) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
@@ -606,9 +614,64 @@ export async function acceptApplication(
     .neq('id', applicationId)
     .in('status', ['pending', 'shortlisted']);
 
+  // 4) Müşteri ile kabul edilen profesyonel arasında konuşma aç (yoksa) +
+  //    sistem mesajı düş. Böylece kabul sonrası iletişim kanalı hazır olur.
+  const customerId = user.id; // ilan sahibi = müşteri (kabul eden)
+  const professionalId = app.applicant_id;
+
+  // Var olan konuşmayı bul
+  const { data: existingConv } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('customer_id', customerId)
+    .eq('professional_id', professionalId)
+    .maybeSingle();
+
+  let conversationId: string | null = existingConv?.id ?? null;
+
+  // Etkinlik bilgisi — kabul edilen ilandan (çıta bunu gösterir)
+  const eventInfo = {
+    event_date: listingRel.event_date,
+    event_type: listingRel.event_type,
+    location: listingRel.location,
+    guest_count: listingRel.guest_count,
+  };
+
+  if (!conversationId) {
+    // Yeni konuşma — ilan bilgisiyle aç
+    const { data: newConv } = await supabase
+      .from('conversations')
+      .insert({
+        customer_id: customerId,
+        professional_id: professionalId,
+        ...eventInfo,
+      })
+      .select('id')
+      .single();
+    conversationId = newConv?.id ?? null;
+  } else {
+    // Mevcut konuşma — çıtayı en son kabul edilen işin bilgisiyle güncelle (Yol A)
+    await supabase
+      .from('conversations')
+      .update(eventInfo)
+      .eq('id', conversationId);
+  }
+
+  // Sistem mesajı ekle (sender = müşteri, çünkü kabul eden o)
+  if (conversationId) {
+    await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: customerId,
+      body: 'Başvurun kabul edildi. Detayları buradan konuşabilirsiniz.',
+      message_type: 'system',
+    });
+    revalidatePath(`/mesajlar/${conversationId}`);
+  }
+
   revalidatePath(`/ilanlar/${app.listing_id}`);
   revalidatePath('/basvurularim');
   revalidatePath('/ilanlarim');
+  revalidatePath('/mesajlar');
   return { success: true };
 }
 

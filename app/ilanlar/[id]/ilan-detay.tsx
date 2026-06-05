@@ -65,6 +65,8 @@ type Props = {
   isProfessional: boolean;
   myApplication: Application | null;
   applications: ApplicationWithRelations[];
+  acceptedConversationId: string | null;
+  myConversationId: string | null;
 };
 
 export function IlanDetay({
@@ -74,6 +76,8 @@ export function IlanDetay({
   isProfessional,
   myApplication,
   applications,
+  acceptedConversationId,
+  myConversationId,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -503,6 +507,15 @@ export function IlanDetay({
                   </span>
                 </p>
               )}
+              {myApplication.status === 'accepted' && myConversationId && (
+                <Link
+                  href={`/mesajlar/${myConversationId}`}
+                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                >
+                  <Send size={14} strokeWidth={1.75} />
+                  Konuşmaya git
+                </Link>
+              )}
             </div>
           )}
 
@@ -524,6 +537,26 @@ export function IlanDetay({
         {/* Başvurular bölümü — SADECE SAHİBİ GÖRÜR */}
         {isOwner && (
           <div className="mt-12">
+            {acceptedConversationId && (
+              <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
+                    Başvuru kabul edildi
+                  </p>
+                  <p className="text-sm text-ink">
+                    Kabul ettiğin profesyonelle mesajlaşarak detayları
+                    konuşabilirsin.
+                  </p>
+                </div>
+                <Link
+                  href={`/mesajlar/${acceptedConversationId}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all shrink-0"
+                >
+                  <Send size={14} strokeWidth={1.75} />
+                  Konuşmaya git
+                </Link>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
               <h2 className="font-display text-2xl text-ink">
                 Gelen başvurular{' '}
