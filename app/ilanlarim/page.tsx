@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { IlanlarimListesi } from './ilanlarim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { TopNav } from '@/app/components/sections/top-nav';
 import type { ListingWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string }>;
@@ -89,6 +90,8 @@ export default async function IlanlarimPage({
   }));
 
   return (
+    <>
+    <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-5xl mx-auto px-6 md:px-12 py-12">
         {/* Hero */}
@@ -121,5 +124,6 @@ export default async function IlanlarimPage({
         />
       </div>
     </div>
+    </>
   );
 }

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
+import { RezervasyonButton } from './rezervasyon-button';
+import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { isFavorited as checkIsFavorited } from '@/app/favoriler/actions';
@@ -860,14 +862,53 @@ export default async function PublicProfilePage({
 
           {/* İLETİŞİM & YORUM BUTONLARI */}
           <div className="flex flex-col gap-3">
-            <IletisimButton
-              professionalId={profile.id}
-              professionalName={displayName}
-              categorySlug={profile.service_categories?.slug ?? null}
-              isLoggedIn={isLoggedIn}
-              currentUserIsProfessional={currentUserIsProfessional}
-              isOwnProfile={isOwnProfile}
-            />
+            {/* Kendi profili veya profesyonel değilse: 3 aksiyon kutusu */}
+            {!isOwnProfile && !currentUserIsProfessional ? (
+              <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
+                <h2 className="font-display text-xl text-ink mb-2">
+                  Bu profesyonelle çalış
+                </h2>
+                <p className="text-ink-72 text-sm mb-4">
+                  İhtiyacına göre teklif al, doğrudan rezervasyon iste ya da
+                  açık ilanına davet et.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <IletisimButton
+                    professionalId={profile.id}
+                    professionalName={displayName}
+                    categorySlug={profile.service_categories?.slug ?? null}
+                    isLoggedIn={isLoggedIn}
+                    currentUserIsProfessional={currentUserIsProfessional}
+                    isOwnProfile={isOwnProfile}
+                    variant="inline"
+                  />
+                  <RezervasyonButton
+                    professionalId={profile.id}
+                    professionalName={displayName}
+                    isLoggedIn={isLoggedIn}
+                    currentUserIsProfessional={currentUserIsProfessional}
+                    isOwnProfile={isOwnProfile}
+                  />
+                  <DavetButton
+                    professionalId={profile.id}
+                    professionalName={displayName}
+                    isLoggedIn={isLoggedIn}
+                    currentUserIsProfessional={currentUserIsProfessional}
+                    isOwnProfile={isOwnProfile}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Kendi profili / profesyonel: mevcut IletisimButton bilgi kutusunu göster */
+              <IletisimButton
+                professionalId={profile.id}
+                professionalName={displayName}
+                categorySlug={profile.service_categories?.slug ?? null}
+                isLoggedIn={isLoggedIn}
+                currentUserIsProfessional={currentUserIsProfessional}
+                isOwnProfile={isOwnProfile}
+              />
+            )}
             <YorumButton
               professionalId={profile.id}
               professionalName={displayName}

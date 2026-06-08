@@ -139,6 +139,11 @@ export function MobileNav({
                       Rezervasyonlarım
                     </a>
                   )}
+                  {(isProfessional || isAgency) && (
+                    <a href="/basvurularim" className={linkClass}>
+                      Başvurularım
+                    </a>
+                  )}
                   {isProfessional && (
                     <a href="/profil/hizmetlerim" className={linkClass}>
                       Hizmetlerim

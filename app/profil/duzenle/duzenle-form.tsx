@@ -96,8 +96,11 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
       const result = await updateProfile(formData);
       if (result.success) {
         setSuccess(true);
-        router.refresh();
-        setTimeout(() => setSuccess(false), 1500);
+        // Başarı mesajını kısa süre göster, sonra profil sayfasına dön
+        setTimeout(() => {
+          router.push('/profil');
+          router.refresh();
+        }, 1200);
       } else {
         setError(result.error || 'Bir hata oluştu.');
       }

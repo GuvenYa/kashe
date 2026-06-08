@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { orderCities } from '@/app/lib/city-order';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { TopNav } from '@/app/components/sections/top-nav';
 import { TeklifToplaFormu } from './teklif-topla-formu';
 
 export const metadata = {
@@ -33,6 +34,8 @@ export default async function TeklifToplaPage() {
   const role = profile?.role;
   if (role !== 'client' && role !== 'business') {
     return (
+      <>
+      <TopNav />
       <div className="bg-paper min-h-screen">
         <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
@@ -56,6 +59,7 @@ export default async function TeklifToplaPage() {
           </Link>
         </div>
       </div>
+      </>
     );
   }
 
@@ -69,6 +73,8 @@ export default async function TeklifToplaPage() {
   ]);
 
   return (
+    <>
+    <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
         <header className="mb-10">
@@ -95,5 +101,6 @@ export default async function TeklifToplaPage() {
         />
       </div>
     </div>
+    </>
   );
 }

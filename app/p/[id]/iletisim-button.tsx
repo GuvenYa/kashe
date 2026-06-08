@@ -18,7 +18,7 @@ type Props = {
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   packageContext?: { title: string; price: string | null } | null;
-  variant?: 'default' | 'package';
+  variant?: 'default' | 'package' | 'inline';
 };
 
 export function IletisimButton({
@@ -264,7 +264,7 @@ export function IletisimButton({
 
   
 
-  // Login + müşteri → İletişim butonu (paket varyantında sade buton, değilse kutu)
+  // Login + müşteri → İletişim butonu (varyanta göre: package=sade buton, inline=tek buton kutusuz, default=kutu)
   return (
     <>
       {variant === 'package' ? (
@@ -274,6 +274,14 @@ export function IletisimButton({
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
         >
           Bu paket için ilet
+        </button>
+      ) : variant === 'inline' ? (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="flex-1 px-5 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all text-center"
+        >
+          Teklif Al
         </button>
       ) : (
         <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">

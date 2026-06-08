@@ -40,6 +40,8 @@ export type StartConversationData = {
   guest_count: number | null;
   budget_range: string | null;
   brief_data?: Record<string, string> | null;
+  // 'quote' (varsayılan, Teklif Al) | 'booking_request' (Rezervasyon Talebi)
+  request_type?: 'quote' | 'booking_request';
 };
 
 const SLIDING_WINDOW_MINUTES = 5;
@@ -366,6 +368,23 @@ export async function startConversation(
 
   if (existing) {
     conversationId = existing.id;
+    // Mevcut konuşmaya yeni talep geldi — çubuğu en güncel talebe göre güncelle.
+    // Yalnızca gelen talepte dolu olan alanları yaz (boş alan eskisini ezmesin).
+    const updateFields: Record<string, unknown> = {
+      request_type: data.request_type ?? 'quote',
+    };
+    if (data.event_date !== null) updateFields.event_date = data.event_date;
+    if (data.event_type !== null) updateFields.event_type = data.event_type;
+    if (data.location !== null)
+      updateFields.location = data.location?.trim() || null;
+    if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
+    if (data.budget_range !== null) updateFields.budget_range = data.budget_range;
+    if (data.brief_data) updateFields.brief_data = data.brief_data;
+
+    await supabase
+      .from('conversations')
+      .update(updateFields)
+      .eq('id', conversationId);
   } else {
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
@@ -378,6 +397,7 @@ export async function startConversation(
         guest_count: data.guest_count,
         budget_range: data.budget_range,
         brief_data: data.brief_data ?? null,
+        request_type: data.request_type ?? 'quote',
       })
       .select('id')
       .single();
@@ -391,6 +411,23 @@ export async function startConversation(
       };
     }
     conversationId = newConv.id;
+  }
+
+  // Rezervasyon talebinde önce bir sistem notu, sonra kullanıcının mesajı
+  if (data.request_type === 'booking_request') {
+    const dateText = data.event_date
+      ? new Date(data.event_date).toLocaleDateString('tr-TR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'belirtilmedi';
+    await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      body: `📅 Rezervasyon talebi — Tarih: ${dateText}${data.location ? ` · Yer: ${data.location}` : ''}`,
+      message_type: 'system',
+    });
   }
 
   const { error: msgError } = await supabase.from('messages').insert({
