@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
+import { TopNav } from '@/app/components/sections/top-nav';
 import GirisForm from './giris-form';
 
 // Güvenlik: sadece site-içi (relative) yollara redirect izni ver.
@@ -33,10 +34,13 @@ export default async function GirisPage({
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF7F0] flex items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md">
-        <GirisForm redirectTo={redirectTo} />
-      </div>
-    </main>
+    <>
+      <TopNav />
+      <main className="min-h-screen bg-[#FAF7F0] flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md">
+          <GirisForm redirectTo={redirectTo} />
+        </div>
+      </main>
+    </>
   );
 }

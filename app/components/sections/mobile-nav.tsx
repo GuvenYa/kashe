@@ -16,6 +16,7 @@ type Props = {
   canCollectOffers: boolean;
   userId: string | null;
   notificationCount: number;
+  menuLinks: { href: string; label: string }[];
 };
 
 export function MobileNav({
@@ -28,6 +29,7 @@ export function MobileNav({
   canCollectOffers,
   userId,
   notificationCount,
+  menuLinks,
 }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -120,45 +122,15 @@ export function MobileNav({
 
               {isLoggedIn ? (
                 <>
-                  {/* PROFİL GRUBU */}
-                  <a href="/profil" className={linkClass}>
-                    Profilim
-                  </a>
-                  {(isProfessional || isAgency) && (
-                    <a href="/takvimim" className={linkClass}>
-                      Takvimim
-                    </a>
-                  )}
-                  {(isClient || isBusiness) && (
-                    <a href="/ilanlarim" className={linkClass}>
-                      İlanlarım
-                    </a>
-                  )}
-                  {(isClient || isBusiness) && (
-                    <a href="/rezervasyonlarim" className={linkClass}>
-                      Rezervasyonlarım
-                    </a>
-                  )}
-                  {(isProfessional || isAgency) && (
-                    <a href="/basvurularim" className={linkClass}>
-                      Başvurularım
-                    </a>
-                  )}
-                  {isProfessional && (
-                    <a href="/profil/hizmetlerim" className={linkClass}>
-                      Hizmetlerim
-                    </a>
-                  )}
-                  {isProfessional && (
-                    <a href="/profil/portfoy" className={linkClass}>
-                      Portföyüm
-                    </a>
-                  )}
-                  {isClient && (
-                    <a href="/favoriler" className={linkClass}>
-                      Favoriler
-                    </a>
-                  )}
+                  {/* PROFİL GRUBU — tek kaynak: TopNav'dan gelen menuLinks.
+                      Bildirimler aşağıda badge'li ayrı render edildiği için hariç tutulur. */}
+                  {menuLinks
+                    .filter((link) => link.href !== '/bildirimler')
+                    .map((link) => (
+                      <a key={link.href} href={link.href} className={linkClass}>
+                        {link.label}
+                      </a>
+                    ))}
 
                   <div className="border-t border-line my-3" />
 

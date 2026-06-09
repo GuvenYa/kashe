@@ -59,6 +59,7 @@ export async function TopNav() {
   }
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
+    menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });
   }
   if (isProfessional) {
     menuLinks.push({ href: "/profil/hizmetlerim", label: "Hizmetlerim" });
@@ -164,6 +165,7 @@ export async function TopNav() {
           canCollectOffers={canCollectOffers}
           userId={user?.id ?? null}
           notificationCount={notificationCount}
+          menuLinks={menuLinks}
         />
       </div>
     </nav>

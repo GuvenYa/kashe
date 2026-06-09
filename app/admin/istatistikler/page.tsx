@@ -84,7 +84,17 @@ type SupplyDemandCityRow = {
   supply: number
   demand: number
 }
-type TabKey = 'genel' | 'talep-arz' | 'icerik' | 'buyume' | 'huni' | 'tutundurma'
+type TabKey = 'genel' | 'talep-arz' | 'icerik' | 'buyume' | 'huni' | 'tutundurma' | 'yonetim'
+type QueueRow = { pending_profiles: number; pending_listings: number; pending_categories: number }
+type AdminActionRow = {
+  id: string
+  admin_name: string
+  action: string
+  target_type: string
+  target_id: string | null
+  notes: string | null
+  created_at: string
+}
 type TopFavRow = { profile_id: string; name: string; category: string | null; fav_count: number }
 type TopRatedRow = { professional_id: string; name: string; category: string | null; avg_rating: number; review_count: number }
 type TopViewedRow = { profile_id: string; name: string; category: string | null; views: number }
@@ -182,16 +192,30 @@ export default function IstatistiklerPage() {
   const [incompletePros, setIncompletePros] = useState<IncompleteProRow[]>([])
   const [listingsNoApps, setListingsNoApps] = useState<ListingNoAppRow[]>([])
   const [prosNoApps, setProsNoApps] = useState<ProNoAppRow[]>([])
+  const [queue, setQueue] = useState<QueueRow | null>(null)
+  const [recentActions, setRecentActions] = useState<AdminActionRow[]>([])
   const [tab, setTab] = useState<TabKey>('genel')
 
+  // Tarih aralığı — sadece akış metriklerini (kayıt + mesaj) etkiler.
+  // 'Tümü' için büyük gün sayısı (pratikte tüm zaman).
+  const RANGE_OPTIONS = [
+    { key: 7, label: '7 gün' },
+    { key: 30, label: '30 gün' },
+    { key: 90, label: '90 gün' },
+    { key: 3650, label: 'Tümü' },
+  ] as const
+  const [pDays, setPDays] = useState<number>(30)
+  const rangeLabel =
+    RANGE_OPTIONS.find((o) => o.key === pDays)?.label ?? `${pDays} gün`
+
+  // İlk yükleme — filtreden bağımsız (anlık durum + sabit pencere) RPC'ler.
+  // registrations + messages ayrı effect'te (p_days'e bağlı).
   useEffect(() => {
     const supabase = createClient()
     ;(async () => {
       try {
-        const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19] = await Promise.all([
-          supabase.rpc('admin_stats_registrations', { p_days: 30 }),
+        const [r2, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21] = await Promise.all([
           supabase.rpc('admin_stats_active_users'),
-          supabase.rpc('admin_stats_messages', { p_days: 30 }),
           supabase.rpc('admin_stats_quotes'),
           supabase.rpc('admin_stats_categories'),
           supabase.rpc('admin_stats_cities'),
@@ -208,14 +232,14 @@ export default function IstatistiklerPage() {
           supabase.rpc('admin_retention_incomplete_pros'),
           supabase.rpc('admin_retention_listings_no_apps'),
           supabase.rpc('admin_retention_pros_no_apps'),
+          supabase.rpc('admin_queue_counts'),
+          supabase.rpc('admin_recent_actions', { p_limit: 30 }),
         ])
 
-        const firstErr = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19].find((r) => r.error)?.error
+        const firstErr = [r2, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21].find((r) => r.error)?.error
         if (firstErr) throw firstErr
 
-        setReg((r1.data ?? []) as RegRow[])
         setActive((r2.data ?? []) as ActiveRow[])
-        setMsgs((r3.data ?? []) as MsgRow[])
         setQuotes((r4.data ?? []) as QuoteRow[])
         setCats((r5.data ?? []) as LabelRow[])
         setCities((r6.data ?? []) as LabelRow[])
@@ -232,6 +256,8 @@ export default function IstatistiklerPage() {
         setIncompletePros((r17.data ?? []) as IncompleteProRow[])
         setListingsNoApps((r18.data ?? []) as ListingNoAppRow[])
         setProsNoApps((r19.data ?? []) as ProNoAppRow[])
+        setQueue(((r20.data ?? [])[0] ?? null) as QueueRow | null)
+        setRecentActions((r21.data ?? []) as AdminActionRow[])
       } catch (e: any) {
         setError(e?.message ?? 'İstatistikler yüklenirken bir hata oluştu.')
       } finally {
@@ -239,6 +265,25 @@ export default function IstatistiklerPage() {
       }
     })()
   }, [])
+
+  // Akış metrikleri — p_days değişince yeniden çağrılır (kayıt + mesaj).
+  useEffect(() => {
+    const supabase = createClient()
+    ;(async () => {
+      try {
+        const [rReg, rMsg] = await Promise.all([
+          supabase.rpc('admin_stats_registrations', { p_days: pDays }),
+          supabase.rpc('admin_stats_messages', { p_days: pDays }),
+        ])
+        if (rReg.error) throw rReg.error
+        if (rMsg.error) throw rMsg.error
+        setReg((rReg.data ?? []) as RegRow[])
+        setMsgs((rMsg.data ?? []) as MsgRow[])
+      } catch (e: any) {
+        setError(e?.message ?? 'Akış verileri yüklenirken bir hata oluştu.')
+      }
+    })()
+  }, [pDays])
 
   // ---- Kayıtları tarihe göre pivotla (rol bazlı stacked area) ----
   const regByDate: Record<string, any> = {}
@@ -344,22 +389,45 @@ export default function IstatistiklerPage() {
   return (
     <div className="min-h-screen bg-[#FAF7F0] p-6">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8">
-          <Eyebrow>Admin · Panel</Eyebrow>
-          <h1
-            style={{ fontFamily: SERIF }}
-            className="mt-1 text-3xl font-semibold text-[#1A120E]"
-          >
-            İstatistikler
-          </h1>
-          <p className="mt-1 text-sm text-[#1A120E]/60">Son 30 günün özeti</p>
+        <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Eyebrow>Admin · Panel</Eyebrow>
+            <h1
+              style={{ fontFamily: SERIF }}
+              className="mt-1 text-3xl font-semibold text-[#1A120E]"
+            >
+              İstatistikler
+            </h1>
+            <p className="mt-1 text-sm text-[#1A120E]/60">
+              Akış metrikleri: son {rangeLabel.toLowerCase()} · diğerleri güncel durum
+            </p>
+          </div>
+
+          {/* Tarih aralığı seçici — sadece akış metriklerini etkiler */}
+          <div className="inline-flex rounded-xl border border-[#1A120E]/12 bg-white p-1 shadow-sm">
+            {RANGE_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => setPDays(o.key)}
+                style={{ fontFamily: MONO }}
+                className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg transition-colors ${
+                  pDays === o.key
+                    ? 'bg-[#C8442A] text-white'
+                    : 'text-[#1A120E]/55 hover:text-[#1A120E]'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         {/* Özet kutucuklar */}
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatTile label="Toplam Kullanıcı" value={totalUsers.toLocaleString('tr-TR')} accent={C.terracotta} />
           <StatTile label="Son 7g Aktif" value={totalActive7d.toLocaleString('tr-TR')} accent={C.plum} />
-          <StatTile label="Mesaj (30g)" value={totalMessages.toLocaleString('tr-TR')} accent={C.moss} />
+          <StatTile label={`Mesaj (${rangeLabel === 'Tümü' ? 'tüm' : rangeLabel})`} value={totalMessages.toLocaleString('tr-TR')} accent={C.moss} />
           <StatTile label="Teklif Dönüşümü" value={`%${conversion}`} accent={C.ember} />
         </div>
 
@@ -372,6 +440,7 @@ export default function IstatistiklerPage() {
             { key: 'buyume', label: 'Büyüme' },
             { key: 'huni', label: 'Hunisi' },
             { key: 'tutundurma', label: 'Tutundurma' },
+            { key: 'yonetim', label: 'Yönetim' },
           ] as { key: TabKey; label: string }[]).map((t) => (
             <button
               key={t.key}
@@ -880,9 +949,148 @@ export default function IstatistiklerPage() {
             </Card>
           </div>
         )}
+
+        {/* YÖNETİM SEKMESİ */}
+        {tab === 'yonetim' && (
+          <div className="space-y-6">
+            {/* Bekleyen kuyruk kartları */}
+            <div>
+              <div className="mb-3">
+                <Eyebrow>Bekleyen kuyruk</Eyebrow>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <QueueCard
+                  label="Bekleyen profiller"
+                  count={num(queue?.pending_profiles)}
+                  href="/admin/profiller"
+                  accent={C.plum}
+                />
+                <QueueCard
+                  label="Bekleyen ilanlar"
+                  count={num(queue?.pending_listings)}
+                  href="/admin/ilanlar"
+                  accent={C.terracotta}
+                />
+                <QueueCard
+                  label="Kategori talepleri"
+                  count={num(queue?.pending_categories)}
+                  href="/admin/kategori-talepleri"
+                  accent={C.moss}
+                />
+              </div>
+            </div>
+
+            {/* Son admin işlemleri */}
+            <Card eyebrow="Denetim · Son işlemler" title="Son yönetici işlemleri">
+              {recentActions.length === 0 ? (
+                <p className="text-sm text-[#1A120E]/50">Henüz işlem kaydı yok.</p>
+              ) : (
+                <ul className="divide-y divide-[#1A120E]/8">
+                  {recentActions.map((a) => {
+                    const meta = actionMeta(a.action)
+                    const targetHref = targetLink(a.target_type, a.target_id)
+                    return (
+                      <li key={a.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="shrink-0 w-1.5 h-1.5 rounded-full"
+                            style={{ background: meta.color }}
+                          />
+                          <span className="text-[#1A120E] truncate">
+                            <strong className="font-medium">{a.admin_name}</strong>{' '}
+                            <span className="text-[#1A120E]/70">{meta.label}</span>
+                            {a.notes && (
+                              <span className="text-[#1A120E]/45 italic"> — {a.notes}</span>
+                            )}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-3 shrink-0">
+                          {targetHref && (
+                            <a
+                              href={targetHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-[#C8442A] hover:underline"
+                            >
+                              Görüntüle
+                            </a>
+                          )}
+                          <span className="text-[11px] text-[#1A120E]/45" style={{ fontFamily: MONO }}>
+                            {fmtDateTime(a.created_at)}
+                          </span>
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
+}
+
+// Bekleyen kuyruk kartı — sayı + ilgili admin sayfasına link
+function QueueCard({ label, count, href, accent }: { label: string; count: number; href: string; accent: string }) {
+  return (
+    <a
+      href={href}
+      className="block rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm transition-all hover:border-[#C8442A] hover:-translate-y-0.5"
+    >
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-[#A8341E]">
+        {label}
+      </span>
+      <div className="mt-1 flex items-baseline justify-between">
+        <span style={{ fontFamily: SERIF, color: accent }} className="text-3xl font-semibold">
+          {count}
+        </span>
+        <span className="text-[11px] text-[#C8442A]">Yönet →</span>
+      </div>
+    </a>
+  )
+}
+
+// action metnini okunabilir Türkçe etikete + renge çevir
+function actionMeta(action: string): { label: string; color: string } {
+  const map: Record<string, { label: string; color: string }> = {
+    approve_listing: { label: 'ilanı onayladı', color: C.moss },
+    reject_listing: { label: 'ilanı reddetti', color: C.ember },
+    revision_listing: { label: 'ilana revizyon istedi', color: '#D98C3F' },
+    cancel_listing: { label: 'ilanı yayından kaldırdı', color: C.ember },
+    approve_profile: { label: 'profili onayladı', color: C.moss },
+    reject_profile: { label: 'profili reddetti', color: C.ember },
+    revision_profile: { label: 'profile revizyon istedi', color: '#D98C3F' },
+    ban_user: { label: 'kullanıcıyı askıya aldı', color: C.ember },
+    unban_user: { label: 'kullanıcının askısını kaldırdı', color: C.moss },
+    approve_category: { label: 'kategori talebini onayladı', color: C.moss },
+    decline_category: { label: 'kategori talebini reddetti', color: C.ember },
+    add_category: { label: 'kategori ekledi', color: C.plum },
+  }
+  return map[action] ?? { label: action.replace(/_/g, ' '), color: C.plum }
+}
+
+// hedef tipine göre link üret (varsa)
+function targetLink(targetType: string, targetId: string | null): string | null {
+  if (!targetId) return null
+  switch (targetType) {
+    case 'listing':
+      return `/ilanlar/${targetId}`
+    case 'user':
+    case 'profile':
+      return `/p/${targetId}`
+    default:
+      return null
+  }
+}
+
+// tarih + saat formatı (DD.MM HH:mm)
+function fmtDateTime(s: string): string {
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 // Huni kartı — her adım kayıt tabanına göre yüzde, azalan bar
