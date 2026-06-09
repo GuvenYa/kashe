@@ -58,12 +58,30 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
   );
   const [companyName, setCompanyName] = useState(profile.company_name || '');
 
+  // İlan sahibi varsayılanı: ilanlarına genelde kimler başvursun
+  // 'both' | 'professional' | 'agency' (DB: text[] — both=iki rol/null)
+  function detectDefaultRoles(): 'both' | 'professional' | 'agency' {
+    const r = (profile as { default_allowed_applicant_roles?: string[] | null })
+      .default_allowed_applicant_roles;
+    if (!r || r.length === 0 || r.length === 2) return 'both';
+    if (r[0] === 'professional') return 'professional';
+    if (r[0] === 'agency') return 'agency';
+    return 'both';
+  }
+  const [defaultApplicantRoles, setDefaultApplicantRoles] = useState<
+    'both' | 'professional' | 'agency'
+  >(detectDefaultRoles());
+
  const initialAttributes: Record<string, string | string[]> =
     (profile.attributes as Record<string, string | string[]>) || {};
   const [attributes, setAttributes] = useState(initialAttributes);
 
   const showProfessionalFields = isProfessional(profile);
   const showBusinessFields = isBusiness(profile);
+  // İlan açabilen roller (client/business) başvuru kısıtı varsayılanını görür.
+  // professional/agency ilana başvuran taraftır, ilan açmaz.
+  const showApplicantRolesDefault =
+    profile.role === 'client' || profile.role === 'business';
 
   // Seçili kategorinin slug'ını bul (filter-config slug'a göre çalışır)
   const selectedCategorySlug = primaryCategoryId
@@ -91,6 +109,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
     formData.append('primary_category_id', primaryCategoryId);
     formData.append('company_name', companyName);
     formData.append('attributes', JSON.stringify(attributes));
+    formData.append('default_applicant_roles', defaultApplicantRoles);
 
     startTransition(async () => {
       const result = await updateProfile(formData);
@@ -287,6 +306,41 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
             {bio.length}/500 karakter
           </p>
         </div>
+
+        {showApplicantRolesDefault && (
+          <div>
+            <label className={labelClass}>İlanlarıma kimler başvursun</label>
+            <p className="text-xs text-ink-72 mb-3 -mt-1">
+              Yeni ilanların için varsayılan. Her ilanda ayrıca
+              değiştirebilirsin.
+            </p>
+            <div className="space-y-2">
+              {[
+                { key: 'both' as const, label: 'Herkes (profesyonel + ajans)' },
+                { key: 'professional' as const, label: 'Sadece bireysel profesyoneller' },
+                { key: 'agency' as const, label: 'Sadece ajanslar' },
+              ].map((opt) => (
+                <label
+                  key={opt.key}
+                  className={`flex items-center gap-2 bg-white border rounded-lg p-3 cursor-pointer transition ${
+                    defaultApplicantRoles === opt.key
+                      ? 'border-terracotta'
+                      : 'border-line hover:border-terracotta/50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="default-applicant-roles"
+                    checked={defaultApplicantRoles === opt.key}
+                    onChange={() => setDefaultApplicantRoles(opt.key)}
+                    className="accent-terracotta"
+                  />
+                  <span className="text-sm text-ink">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">

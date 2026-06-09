@@ -196,6 +196,18 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       ? initialData.application_deadline.split('T')[0]
       : ''
   );
+  // Kimler başvurabilir: 'both' (herkes) | 'professional' | 'agency'
+  // null/boş veya iki rol = 'both'
+  function detectApplicantRoles(): 'both' | 'professional' | 'agency' {
+    const r = initialData?.allowed_applicant_roles;
+    if (!r || r.length === 0 || r.length === 2) return 'both';
+    if (r[0] === 'professional') return 'professional';
+    if (r[0] === 'agency') return 'agency';
+    return 'both';
+  }
+  const [applicantRoles, setApplicantRoles] = useState<
+    'both' | 'professional' | 'agency'
+  >(detectApplicantRoles());
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -255,6 +267,11 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       finalGuestCount = v;
     }
 
+    // Rol seçimini DB formatına çevir: 'both' → null (profil varsayılanı),
+    // tek rol → o rolü içeren dizi
+    const rolesValue: string[] | null =
+      applicantRoles === 'both' ? null : [applicantRoles];
+
     startTransition(async () => {
       if (isEditMode && initialData) {
         // EDIT MODE
@@ -274,6 +291,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           application_deadline: applicationDeadline
             ? new Date(applicationDeadline + 'T23:59:59').toISOString()
             : null,
+          allowed_applicant_roles: rolesValue,
         });
 
         if (result.success) {
@@ -298,6 +316,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           application_deadline: applicationDeadline
             ? new Date(applicationDeadline + 'T23:59:59').toISOString()
             : null,
+          allowed_applicant_roles: rolesValue,
           publish_immediately: publishImmediately,
         });
 
@@ -602,6 +621,47 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               Profesyoneller bu aralığı görecek
             </p>
           )}
+        </div>
+      </section>
+
+      {/* Bölüm 3.5: Kimler başvurabilir */}
+      <section className="bg-white border border-line rounded-lg p-6">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+          Kimler başvurabilir
+        </p>
+        <p className="text-xs text-ink-72 mb-4">
+          İlanına kimlerin başvurabileceğini sınırla. Boş bırakırsan profilindeki
+          varsayılan kullanılır.
+        </p>
+        <div className="space-y-2">
+          {[
+            { key: 'both' as const, label: 'Herkes', desc: 'Bireysel profesyoneller ve ajanslar başvurabilir.' },
+            { key: 'professional' as const, label: 'Sadece bireysel profesyoneller', desc: 'Ajanslar bu ilana başvuramaz.' },
+            { key: 'agency' as const, label: 'Sadece ajanslar', desc: 'Bireysel profesyoneller bu ilana başvuramaz.' },
+          ].map((opt) => (
+            <label
+              key={opt.key}
+              className={`block bg-paper border rounded-lg p-4 cursor-pointer transition ${
+                applicantRoles === opt.key
+                  ? 'border-terracotta'
+                  : 'border-line hover:border-terracotta/50'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  name="applicant-roles"
+                  checked={applicantRoles === opt.key}
+                  onChange={() => setApplicantRoles(opt.key)}
+                  className="mt-1 accent-terracotta"
+                />
+                <div>
+                  <p className="font-medium text-ink text-sm">{opt.label}</p>
+                  <p className="text-xs text-ink-72 mt-0.5">{opt.desc}</p>
+                </div>
+              </div>
+            </label>
+          ))}
         </div>
       </section>
 

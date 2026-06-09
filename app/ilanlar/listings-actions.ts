@@ -46,6 +46,8 @@ type CreateListingInput = {
   budget_min: number | null;
   budget_max: number | null;
   application_deadline: string | null;
+  // Kimler başvurabilir override. null = ilan sahibinin profil varsayılanı kullanılır.
+  allowed_applicant_roles: string[] | null;
   // Eğer true, status = 'published'; false, status = 'draft'
   publish_immediately: boolean;
 };
@@ -120,6 +122,7 @@ export async function createListing(
       budget_min: input.budget_min,
       budget_max: input.budget_max,
       application_deadline: input.application_deadline,
+      allowed_applicant_roles: input.allowed_applicant_roles,
       // Yayınla = admin onayına gönder (pending_approval). Aksi halde taslak.
       status: input.publish_immediately ? 'pending_approval' : 'draft',
     })
@@ -205,6 +208,8 @@ export async function updateListing(
   if (input.budget_max !== undefined) updateData.budget_max = input.budget_max;
   if (input.application_deadline !== undefined)
     updateData.application_deadline = input.application_deadline;
+  if (input.allowed_applicant_roles !== undefined)
+    updateData.allowed_applicant_roles = input.allowed_applicant_roles;
   if (input.category_id !== undefined)
     updateData.category_id = input.category_id;
 
@@ -512,7 +517,9 @@ export async function applyToListing(
   // İlan published mı + başvuru süresi geçmemiş mi kontrol et
   const { data: listing } = await supabase
     .from('listings')
-    .select('id, creator_id, status, application_deadline')
+    .select(
+      'id, creator_id, status, application_deadline, allowed_applicant_roles'
+    )
     .eq('id', input.listing_id)
     .single();
 
@@ -525,6 +532,33 @@ export async function applyToListing(
   }
   if (listing.creator_id === user.id) {
     return { success: false, error: 'Kendi ilanına başvuramazsın' };
+  }
+
+  // Başvuran rolü kısıtı — ilan override'ı varsa onu, yoksa ilan sahibinin
+  // profil varsayılanını kullan. Başvuran bu role kümesinde değilse engelle.
+  let effectiveRoles = listing.allowed_applicant_roles as string[] | null;
+  if (!effectiveRoles || effectiveRoles.length === 0) {
+    const { data: ownerProfile } = await supabase
+      .from('profiles')
+      .select('default_allowed_applicant_roles')
+      .eq('id', listing.creator_id)
+      .single();
+    effectiveRoles =
+      (ownerProfile?.default_allowed_applicant_roles as string[] | null) ??
+      ['professional', 'agency'];
+  }
+
+  if (!effectiveRoles.includes(profile.role)) {
+    const onlyAgency =
+      effectiveRoles.length === 1 && effectiveRoles[0] === 'agency';
+    const onlyPro =
+      effectiveRoles.length === 1 && effectiveRoles[0] === 'professional';
+    const msg = onlyAgency
+      ? 'Bu ilana yalnızca ajanslar başvurabilir.'
+      : onlyPro
+        ? 'Bu ilana yalnızca bireysel profesyoneller başvurabilir.'
+        : 'Bu ilana başvuru için uygun hesap türüne sahip değilsin.';
+    return { success: false, error: msg };
   }
 
   // Ek dosya varsa path güvenliği — dosya bu kullanıcının klasöründe mi?

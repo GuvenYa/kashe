@@ -44,6 +44,19 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
 
   const companyName = formData.get('company_name')?.toString().trim() || null;
 
+  // İlan başvuru varsayılanı: 'both' → iki rol, tek rol → o rol.
+  // Sadece client/business gönderir; gelmezse mevcut değere dokunma.
+  const defaultRolesRaw = formData.get('default_applicant_roles')?.toString();
+  let defaultApplicantRoles: string[] | null = null;
+  if (defaultRolesRaw === 'both') {
+    defaultApplicantRoles = ['professional', 'agency'];
+  } else if (
+    defaultRolesRaw === 'professional' ||
+    defaultRolesRaw === 'agency'
+  ) {
+    defaultApplicantRoles = [defaultRolesRaw];
+  }
+
   // Kategoriye özel özellikler (attributes jsonb)
   let attributes: Record<string, unknown> = {};
   const attributesRaw = formData.get('attributes')?.toString();
@@ -86,6 +99,12 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     company_name: companyName,
     attributes,
   };
+
+  // İlan başvuru varsayılanını yalnızca form gönderdiyse güncelle
+  // (professional/agency formu bu alanı göndermez → değer korunur)
+  if (defaultApplicantRoles !== null) {
+    updatePayload.default_allowed_applicant_roles = defaultApplicantRoles;
+  }
 
   if (currentApproval === 'revision') {
     updatePayload.approval_status = 'pending';

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kashe — H1 Aydınlık Paper Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Geist:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F0; --paper-2:#F3EDE2; --card:#FFFFFF;
+    --terracotta:#C8442A; --ember:#A8341E; --ink:#1A120E; --ink-2:#2A1E16;
+    --ink-72:#5A4F47; --line:#E5DCCE; --plum:#6B2E5C; --moss:#3F6B47;
+    --gold:#C9A24B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:'Geist',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  .it{font-style:italic;color:var(--terracotta)}
+  .photo{position:relative;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat}
+  .photo::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,transparent 38%,rgba(26,18,14,0.5))}
+  .p-dj{background-image:url('images/dj-mertkan.jpg');background-color:#3a2230}
+  .p-photo{background-image:url('images/ece-yildiz.jpg');background-color:#2c3a2e}
+  .p-band{background-image:url('images/vibes-band.jpg');background-color:#2a1e2a}
+  .p-host{background-image:url('images/selin-aksoy.jpg');background-color:#3a241e}
+  .p-hero{background-image:url('images/hero-event.jpg');background-color:#1A120E}
+
+  /* NAV — koyu */
+  nav{position:sticky;top:0;z-index:50;background:var(--paper);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:72px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:600;font-size:23px;color:var(--ink)}
+  .logo-sq{width:33px;height:33px;background:var(--terracotta);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--paper);font-weight:600;font-size:18px;font-family:'Fraunces'}
+  .nav-links{display:flex;gap:30px;list-style:none}
+  .nav-links a{color:var(--ink-72);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
+  .nav-links a:hover{color:var(--terracotta)}
+  .nav-right{display:flex;align-items:center;gap:18px}
+  .btn{font-family:'Geist';font-weight:600;font-size:14px;padding:11px 22px;border-radius:10px;cursor:pointer;border:none;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn-pri{background:var(--terracotta);color:var(--paper)}
+  .btn-pri:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 rgba(250,247,240,0.9)}
+  .btn-ghost-light{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+  .btn-ghost-light:hover{border-color:var(--terracotta);color:var(--terracotta)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+  .btn-ghost:hover{background:var(--ink);color:var(--paper)}
+  .link-login{color:var(--ink);font-size:14px;font-weight:500;text-decoration:none}
+
+  /* HERO — koyu ink blok + sıcak ton */
+  .hero-block{background:var(--paper);position:relative;overflow:hidden;border-radius:0 0 30px 30px}
+  .hero-block::before{content:"";position:absolute;top:-100px;right:10%;width:420px;height:420px;background:radial-gradient(circle,rgba(200,68,42,0.10),transparent 70%);z-index:0}
+  .hero{display:grid;grid-template-columns:1.02fr 1fr;gap:50px;align-items:center;padding:64px 0 80px;position:relative;z-index:1}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.16em;font-size:11px;color:var(--terracotta);background:rgba(200,68,42,0.14);padding:7px 15px;border-radius:100px;margin-bottom:24px;border:1px solid rgba(200,68,42,0.25)}
+  .hero h1{font-family:'Fraunces',serif;font-weight:500;font-size:60px;line-height:1.02;letter-spacing:-0.02em;margin-bottom:22px;color:var(--ink)}
+  .hero p.sub{font-size:18px;color:var(--ink-72);max-width:440px;margin-bottom:32px;line-height:1.6}
+  .hero-cta{display:flex;gap:14px;margin-bottom:30px}
+  .btn-lg{padding:15px 30px;font-size:15px}
+  .trust{display:flex;gap:22px;flex-wrap:wrap}
+  .trust span{font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;font-size:10.5px;color:var(--ink-72);display:flex;align-items:center;gap:7px}
+  .trust span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--terracotta)}
+
+  .hero-visual{position:relative;height:460px}
+  .hv-ph{position:absolute;border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,0.4);border:3px solid var(--card);background-size:cover;background-position:center}
+  .hv-big{width:66%;height:70%;top:0;right:0;z-index:2}
+  .hv-sm1{width:46%;height:46%;bottom:0;left:0;z-index:3}
+  .hv-sm2{width:34%;height:36%;top:38%;right:10%;z-index:4}
+  .fc-badge{position:absolute;top:14px;right:14px;background:var(--card);border-radius:100px;padding:8px 14px;box-shadow:0 12px 28px rgba(0,0,0,0.3);z-index:6;display:flex;align-items:center;gap:8px}
+  .fc-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--moss)}
+  .fc-badge .txt{font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;font-size:10px;color:var(--ink);font-weight:500}
+  .fc-rate-float{position:absolute;bottom:8%;right:-3%;background:var(--card);border-radius:13px;padding:10px 14px;box-shadow:0 14px 32px rgba(0,0,0,0.3);z-index:6;text-align:center}
+  .fc-rate-float .big{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--terracotta)}
+  .fc-rate-float .lbl{font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;font-size:9px;color:var(--ink-72)}
+
+  /* STAT kutu — hero'ya biner */
+  .hero-stats{position:absolute;bottom:-46px;left:50%;transform:translateX(-50%);width:90%;max-width:1184px;background:var(--card);border-radius:16px;display:grid;grid-template-columns:repeat(4,1fr);padding:24px;box-shadow:0 18px 44px rgba(26,18,14,0.16);z-index:20;border:1px solid var(--line)}
+  .hs{text-align:center;border-right:1px solid var(--line)}
+  .hs:last-child{border:none}
+  .hs .num{font-family:'Fraunces',serif;font-weight:600;font-size:28px;color:var(--ink)}
+  .hs .lbl{font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;font-size:10px;color:var(--ink-72);margin-top:3px}
+
+  /* NEDEN KASHE */
+  .why{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin:96px 0 72px}
+  .why-item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;transition:all .2s}
+  .why-item:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(26,18,14,0.08)}
+  .why-item .ico{width:44px;height:44px;border-radius:12px;background:rgba(200,68,42,0.08);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:13px}
+  .why-item .t{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin-bottom:5px;color:var(--ink)}
+  .why-item .d{font-size:13px;color:var(--ink-72);line-height:1.55}
+
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:26px}
+  .sec-head h2{font-family:'Fraunces',serif;font-weight:500;font-size:34px;letter-spacing:-0.01em}
+  .sec-head a{color:var(--terracotta);font-size:13px;font-weight:600;text-decoration:none}
+
+  .cats{display:grid;grid-template-columns:repeat(8,1fr);gap:12px;margin-bottom:72px}
+  .cat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 10px;text-align:center;transition:all .2s;cursor:pointer}
+  .cat:hover{border-color:var(--terracotta);transform:translateY(-3px);box-shadow:0 10px 24px rgba(200,68,42,0.1)}
+  .cat .ico{font-size:24px;margin-bottom:8px}
+  .cat .nm{font-size:12px;font-weight:500;color:var(--ink)}
+
+  .pros{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:72px}
+  .pro{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer}
+  .pro:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(26,18,14,0.12)}
+  .pro-img{height:175px}
+  .pro-fav{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;font-size:14px;z-index:2}
+  .pro-badge{position:absolute;top:12px;left:12px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;font-size:9px;background:var(--terracotta);color:var(--paper);padding:4px 9px;border-radius:6px;z-index:2}
+  .pro-body{padding:16px}
+  .pro-name{font-family:'Fraunces',serif;font-weight:600;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+  .pro-rate{font-family:'DM Mono',monospace;font-size:12px;color:var(--terracotta)}
+  .pro-cat{font-size:13px;color:var(--ink-72);margin:3px 0 10px}
+  .pro-loc{font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;font-size:10px;color:var(--ink-72)}
+  .pro-price{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--ink)}
+  .pro-price b{color:var(--terracotta);font-weight:600}
+
+  .band{background:var(--ink);border-radius:18px;display:grid;grid-template-columns:repeat(4,1fr);padding:30px;gap:20px;margin-bottom:64px}
+  .band-item .ico{width:38px;height:38px;border-radius:10px;background:rgba(250,247,240,0.08);display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px}
+  .band-item .t{font-family:'Fraunces',serif;font-weight:600;font-size:15px;margin-bottom:2px;color:var(--paper)}
+  .band-item .d{font-size:12px;color:rgba(250,247,240,0.6)}
+
+  @media(max-width:980px){.hero{grid-template-columns:1fr;gap:34px}.hero-visual{height:320px}.hero-stats{grid-template-columns:repeat(2,1fr);position:static;transform:none;width:100%;margin-top:24px}.hs{border:none;padding:8px 0}.why{grid-template-columns:repeat(2,1fr);margin-top:40px}.cats{grid-template-columns:repeat(4,1fr)}.pros{grid-template-columns:repeat(2,1fr)}.band{grid-template-columns:repeat(2,1fr)}.nav-links{display:none}.hero h1{font-size:44px}}
+</style>
+</head>
+<body>
+
+<div class="hero-block">
+  <nav><div class="wrap nav-in">
+    <div class="brand"><span class="logo-sq">k</span>kashe</div>
+    <ul class="nav-links"><li><a href="#">Keşfet</a></li><li><a href="#">İlanlar</a></li><li><a href="#">Hizmetler</a></li><li><a href="#">Nasıl Çalışır?</a></li><li><a href="#">Kurumsal</a></li></ul>
+    <div class="nav-right"><a href="#" class="link-login">Giriş Yap</a><a href="#" class="btn btn-pri">Üye Ol</a></div>
+  </div></nav>
+
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">✦ Türkiye'nin Etkinlik Pazaryeri</span>
+        <h1>Doğru kişiye<br><span class="it">direkt</span> ulaş.</h1>
+        <p class="sub">Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu. Etkinlik ve yetenek hizmetlerini ajanssız, şeffaf fiyatla buluşturuyoruz.</p>
+        <div class="hero-cta"><a href="#" class="btn btn-pri btn-lg">Hizmet ara →</a><a href="#" class="btn btn-ghost-light btn-lg">Hizmet ver</a></div>
+        <div class="trust"><span>e-Devlet Doğrulama</span><span>Güvenli Ödeme</span><span>Sözleşme Koruması</span></div>
+      </div>
+      <div class="hero-visual">
+        <div class="hv-ph hv-big" style="background-image:url('images/hero-event.jpg')"></div>
+        <div class="hv-ph hv-sm1" style="background-image:url('images/dj-mertkan.jpg')"></div>
+        <div class="hv-ph hv-sm2" style="background-image:url('images/ece-yildiz.jpg')"></div>
+        <div class="fc-badge"><span class="dot"></span><span class="txt">e-Devlet Onaylı</span></div>
+        <div class="fc-rate-float"><div class="big">%98</div><div class="lbl">Memnuniyet</div></div>
+      </div>
+    </section>
+  </div>
+  <div class="wrap" style="position:relative">
+    <div class="hero-stats">
+      <div class="hs"><div class="num">9+</div><div class="lbl">Profesyonel</div></div>
+      <div class="hs"><div class="num">12</div><div class="lbl">Kategori</div></div>
+      <div class="hs"><div class="num">81</div><div class="lbl">Şehir</div></div>
+      <div class="hs"><div class="num">Güvenli</div><div class="lbl">Ödeme</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- NEDEN KASHE -->
+  <div class="why">
+    <div class="why-item"><div class="ico">🤝</div><div class="t">Ajanssız Çalışma</div><div class="d">Doğrudan profesyonele ulaş, aracı komisyonu ödeme.</div></div>
+    <div class="why-item"><div class="ico">📊</div><div class="t">Teklifleri Karşılaştır</div><div class="d">Birden fazla teklif al, ihtiyacına uygun seçeneği belirle.</div></div>
+    <div class="why-item"><div class="ico">🛡️</div><div class="t">Güvenli ve Şeffaf</div><div class="d">Doğrulanmış profiller, güvenli ödeme ve sözleşme koruması.</div></div>
+    <div class="why-item"><div class="ico">⏱️</div><div class="t">Zaman Kazan</div><div class="d">Hızlı arama, kolay iletişim, tek panelden tüm süreç.</div></div>
+  </div>
+
+  <!-- KATEGORILER -->
+  <div class="sec-head"><h2>Popüler <span class="it">kategoriler</span></h2><a href="#">Tüm kategoriler →</a></div>
+  <div class="cats">
+    <div class="cat"><div class="ico">🎧</div><div class="nm">DJ</div></div>
+    <div class="cat"><div class="ico">📷</div><div class="nm">Fotoğrafçı</div></div>
+    <div class="cat"><div class="ico">🎤</div><div class="nm">Sunucu</div></div>
+    <div class="cat"><div class="ico">🎵</div><div class="nm">Müzisyen</div></div>
+    <div class="cat"><div class="ico">🎭</div><div class="nm">Hostes</div></div>
+    <div class="cat"><div class="ico">🎪</div><div class="nm">Organizasyon</div></div>
+    <div class="cat"><div class="ico">🔊</div><div class="nm">Ses & Işık</div></div>
+    <div class="cat"><div class="ico">⊕</div><div class="nm">Daha Fazlası</div></div>
+  </div>
+
+  <!-- ONE CIKAN -->
+  <div class="sec-head"><h2>Bu hafta <span class="it">en çok tercih edilenler</span></h2><a href="#">Tümünü keşfet →</a></div>
+  <div class="pros">
+    <div class="pro"><div class="pro-img photo p-dj"><span class="pro-badge">Öne Çıkan</span><div class="pro-fav">♡</div></div><div class="pro-body"><div class="pro-name">DJ Mertkan <span class="pro-rate">★ 4.9</span></div><div class="pro-cat">DJ</div><div class="pro-loc">📍 İstanbul</div><div class="pro-price"><b>3.500 TL</b>'den başlayan</div></div></div>
+    <div class="pro"><div class="pro-img photo p-photo"><div class="pro-fav">♡</div></div><div class="pro-body"><div class="pro-name">Ece Yıldız <span class="pro-rate">★ 5.0</span></div><div class="pro-cat">Fotoğrafçı</div><div class="pro-loc">📍 Ankara</div><div class="pro-price"><b>4.500 TL</b>'den başlayan</div></div></div>
+    <div class="pro"><div class="pro-img photo p-band"><div class="pro-fav">♡</div></div><div class="pro-body"><div class="pro-name">The Vibes Band <span class="pro-rate">★ 4.8</span></div><div class="pro-cat">Müzik Grubu</div><div class="pro-loc">📍 İzmir</div><div class="pro-price"><b>7.000 TL</b>'den başlayan</div></div></div>
+    <div class="pro"><div class="pro-img photo p-host"><div class="pro-fav">♡</div></div><div class="pro-body"><div class="pro-name">Selin Aksoy <span class="pro-rate">★ 4.9</span></div><div class="pro-cat">Sunucu</div><div class="pro-loc">📍 İstanbul</div><div class="pro-price"><b>3.000 TL</b>'den başlayan</div></div></div>
+  </div>
+
+  <!-- BAND -->
+  <div class="band">
+    <div class="band-item"><div class="ico">🛡️</div><div class="t">e-Devlet Doğrulama</div><div class="d">Güvenilir profiller</div></div>
+    <div class="band-item"><div class="ico">🔒</div><div class="t">Güvenli Ödeme</div><div class="d">Korunan işlemler</div></div>
+    <div class="band-item"><div class="ico">📋</div><div class="t">Sözleşme Koruması</div><div class="d">Haklarınız güvende</div></div>
+    <div class="band-item"><div class="ico">🎧</div><div class="t">7/24 Destek</div><div class="d">Her zaman yanınızdayız</div></div>
+  </div>
+</div>
+
+</body>
+</html>

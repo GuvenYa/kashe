@@ -55,6 +55,7 @@ export type Listing = {
   approval_note: string | null;
   is_urgent: boolean;
   urgent_until: string | null;
+  allowed_applicant_roles: string[] | null;
   featured_category_until: string | null;
   featured_home_until: string | null;
   notified_at: string | null;
