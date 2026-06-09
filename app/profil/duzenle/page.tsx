@@ -27,7 +27,7 @@ export default async function ProfilDuzenlePage() {
       .from('service_categories')
       .select('*')
       .eq('is_active', true)
-      .order('sort_order'),
+      .order('name_tr'),
   ]);
 
   if (!profile) {

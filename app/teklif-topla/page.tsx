@@ -68,7 +68,7 @@ export default async function TeklifToplaPage() {
       .from('service_categories')
       .select('id, slug, name_tr')
       .eq('is_active', true)
-      .order('sort_order'),
+      .order('name_tr'),
     supabase.from('turkish_cities').select('id, name').order('name'),
   ]);
 

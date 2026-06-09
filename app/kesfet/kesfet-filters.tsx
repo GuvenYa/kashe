@@ -493,7 +493,11 @@ export function KesfetFilters({
 
       {/* Kategori öneri CTA — sidebar'ın sonunda vurgulu kart */}
       <div className="pt-6 border-t border-line">
-        <KategoriTalepCta isLoggedIn={isLoggedIn} variant="block" />
+        <KategoriTalepCta
+          isLoggedIn={isLoggedIn}
+          variant="block"
+          existingSlugs={categories.map((c) => c.slug)}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { TalepAksiyonlari } from './talep-aksiyonlari';
+import { YeniKategoriFormu } from './yeni-kategori-formu';
 import Link from 'next/link';
 
 export const metadata = {
@@ -145,11 +146,16 @@ export default async function AdminCategoryRequestsPage({
           Kategori talepleri
         </h1>
         <p className="text-sm text-ink-72 mt-2">
-          Kullanıcılardan gelen yeni kategori önerileri. Onayladığın talepleri{' '}
-          <span className="font-semibold text-ink">manuel</span> olarak
-          Supabase&apos;de <code className="bg-paper-2 px-1 rounded">service_categories</code>{' '}
-          tablosuna eklemeyi unutma.
+          Kullanıcılardan gelen yeni kategori önerileri. Onayladığın talepleri
+          aşağıdaki <span className="font-semibold text-ink">Kategoriye ekle</span>{' '}
+          butonuyla doğrudan yayına alabilirsin. Yeni bir kategoriyi sıfırdan da
+          ekleyebilirsin.
         </p>
+      </div>
+
+      {/* Sıfırdan yeni kategori ekleme */}
+      <div className="mb-6">
+        <YeniKategoriFormu />
       </div>
 
       {/* Status filtre chip'leri */}
@@ -287,32 +293,26 @@ export default async function AdminCategoryRequestsPage({
                 )}
 
                 {/* Aksiyonlar */}
-                <div className="pt-3 border-t border-line">
+                <div className="pt-3 border-t border-line space-y-3">
                   <TalepAksiyonlari
                     requestId={req.id}
                     status={req.status}
                     categoryName={req.category_name}
                   />
+                  {/* Onaylı/incelenen talebi doğrudan kategoriye çevir */}
+                  {(req.status === 'approved' || req.status === 'reviewing') && (
+                    <YeniKategoriFormu
+                      initialName={req.category_name}
+                      fromRequestId={req.id}
+                      triggerLabel="Kategoriye ekle"
+                      triggerVariant="inline"
+                      closeOnSuccess
+                    />
+                  )}
                 </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* İpucu */}
-      {statusFilter === 'approved' && requests.length > 0 && (
-        <div className="mt-6 bg-moss/[0.06] border border-moss/25 rounded-2xl p-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-moss mb-2">
-            İpucu
-          </p>
-          <p className="text-sm text-ink leading-relaxed">
-            Onayladığın talepleri Supabase&apos;de{' '}
-            <code className="bg-paper-2 px-1 rounded">service_categories</code>{' '}
-            tablosuna yeni satır olarak eklemen gerekiyor. Kategori için{' '}
-            <span className="font-semibold">name_tr, slug, emoji, sort_order</span>{' '}
-            doldur. Eklendikten sonra anasayfa ve keşfette otomatik görünür.
-          </p>
         </div>
       )}
     </>

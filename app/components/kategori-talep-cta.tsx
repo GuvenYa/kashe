@@ -11,7 +11,26 @@ type Props = {
    *  - 'block': kart benzeri vurgulu (keşfet sidebar altında)
    */
   variant?: 'inline' | 'block';
+  /** Mevcut kategori slug'ları — anlık "zaten var" uyarısı için */
+  existingSlugs?: string[];
 };
+
+/** Türkçe başlıktan slug üretir (action ile aynı mantık) */
+function slugifyTr(input: string): string {
+  const map: Record<string, string> = {
+    ç: 'c', Ç: 'c', ğ: 'g', Ğ: 'g', ı: 'i', İ: 'i',
+    ö: 'o', Ö: 'o', ş: 's', Ş: 's', ü: 'u', Ü: 'u',
+  };
+  return input
+    .trim()
+    .split('')
+    .map((ch) => map[ch] ?? ch)
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
 
 const EVENT_OPTIONS = [
   { value: '', label: 'Seçim yapma (opsiyonel)' },
@@ -23,7 +42,11 @@ const EVENT_OPTIONS = [
   { value: 'other', label: 'Diğer' },
 ];
 
-export function KategoriTalepCta({ isLoggedIn, variant = 'inline' }: Props) {
+export function KategoriTalepCta({
+  isLoggedIn,
+  variant = 'inline',
+  existingSlugs = [],
+}: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +107,12 @@ export function KategoriTalepCta({ isLoggedIn, variant = 'inline' }: Props) {
       }
     });
   }
+
+  // Yazılan isim mevcut bir kategoriyle eşleşiyor mu? (anlık uyarı)
+  const trimmedName = name.trim();
+  const matchedExisting =
+    trimmedName.length >= 2 &&
+    existingSlugs.includes(slugifyTr(trimmedName));
 
   // CTA tetik bileşeni — iki varyant
   const trigger =
@@ -205,8 +234,18 @@ export function KategoriTalepCta({ isLoggedIn, variant = 'inline' }: Props) {
                 maxLength={60}
                 required
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+                className={`w-full px-3 py-2.5 bg-paper border rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
+                  matchedExisting
+                    ? 'border-terracotta focus:border-terracotta focus:ring-terracotta/20'
+                    : 'border-line focus:border-terracotta focus:ring-terracotta/20'
+                }`}
               />
+              {matchedExisting && (
+                <p className="text-[11px] text-terracotta mt-1.5 leading-relaxed">
+                  Bu kategori zaten mevcut. Keşfet sayfasından filtreleyerek
+                  bulabilirsin.
+                </p>
+              )}
             </label>
 
             {/* Açıklama */}
@@ -262,7 +301,7 @@ export function KategoriTalepCta({ isLoggedIn, variant = 'inline' }: Props) {
               </button>
               <button
                 type="submit"
-                disabled={isPending || name.trim().length < 2}
+                disabled={isPending || name.trim().length < 2 || matchedExisting}
                 className="kashe-tap flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-60 shadow-[3px_3px_0_var(--color-terracotta-12)]"
               >
                 {isPending ? '...' : 'Gönder'}

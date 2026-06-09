@@ -10,6 +10,25 @@ export type CategoryRequestInput = {
   eventContext: string | null;
 };
 
+/**
+ * Türkçe başlıktan URL-uyumlu slug üretir (admin/actions.ts ile aynı mantık).
+ */
+function slugifyTr(input: string): string {
+  const map: Record<string, string> = {
+    ç: 'c', Ç: 'c', ğ: 'g', Ğ: 'g', ı: 'i', İ: 'i',
+    ö: 'o', Ö: 'o', ş: 's', Ş: 's', ü: 'u', Ü: 'u',
+  };
+  return input
+    .trim()
+    .split('')
+    .map((ch) => map[ch] ?? ch)
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
 type ActionResult = { success: true } | { success: false; error: string };
 
 /**
@@ -59,6 +78,23 @@ export async function createCategoryRequest(
   const eventContext = input.eventContext?.trim() || null;
   if (eventContext && eventContext.length > 50) {
     return { success: false, error: 'Etkinlik bağlamı geçersiz.' };
+  }
+
+  // Bu kategori zaten var mı? Yazılan isimden slug üret, mevcut kategorilerle karşılaştır.
+  const requestedSlug = slugifyTr(name);
+  if (requestedSlug) {
+    const { data: existingCategory } = await supabase
+      .from('service_categories')
+      .select('id, name_tr')
+      .eq('slug', requestedSlug)
+      .maybeSingle();
+
+    if (existingCategory) {
+      return {
+        success: false,
+        error: `"${existingCategory.name_tr}" kategorisi zaten mevcut. Keşfet sayfasından filtreleyerek bulabilirsin.`,
+      };
+    }
   }
 
   // Dedupe: aynı kullanıcı, aynı normalize edilmiş kategori adı varsa

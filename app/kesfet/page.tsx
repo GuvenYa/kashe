@@ -78,7 +78,7 @@ export default async function KesfetPage({
       .from('service_categories')
       .select('*')
       .eq('is_active', true)
-      .order('sort_order'),
+      .order('name_tr'),
     supabase.from('turkish_cities').select('*').order('name'),
   ]);
 

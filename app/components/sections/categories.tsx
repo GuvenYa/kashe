@@ -136,7 +136,11 @@ export async function Categories() {
 
         {/* Kategori öneri CTA — grid altında, sade inline */}
         <div className="mt-10 flex justify-center">
-          <KategoriTalepCta isLoggedIn={isLoggedIn} variant="inline" />
+          <KategoriTalepCta
+            isLoggedIn={isLoggedIn}
+            variant="inline"
+            existingSlugs={categories.map((c) => c.slug)}
+          />
         </div>
       </div>
     </section>

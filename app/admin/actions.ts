@@ -577,3 +577,129 @@ export async function removeReviewReply(
   revalidatePath(`/p/${review.professional_id}/yorumlar`);
   return { success: true };
 }
+// =============================================================================
+// Kategori — direkt ekleme (admin)
+// =============================================================================
+
+/**
+ * Türkçe başlıktan URL-uyumlu slug üretir.
+ * "Düğün Fotoğrafçısı" → "dugun-fotografcisi"
+ */
+function slugifyTr(input: string): string {
+  const map: Record<string, string> = {
+    ç: 'c', Ç: 'c', ğ: 'g', Ğ: 'g', ı: 'i', İ: 'i',
+    ö: 'o', Ö: 'o', ş: 's', Ş: 's', ü: 'u', Ü: 'u',
+  };
+  return input
+    .trim()
+    .split('')
+    .map((ch) => map[ch] ?? ch)
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
+type AddCategoryInput = {
+  name_tr: string;
+  slug: string;
+  emoji: string | null;
+  description: string | null;
+  // Bu talepten oluşturuluyorsa, onaylama için id (opsiyonel)
+  from_request_id?: string | null;
+};
+
+/**
+ * ADMIN: service_categories'e yeni kategori ekler.
+ * slug çakışması ve admin yetkisi kontrol edilir.
+ */
+export async function addCategory(
+  input: AddCategoryInput
+): Promise<{ success: boolean; error?: string; categoryId?: number }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  // Admin kontrolü
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) {
+    return { success: false, error: 'Bu işlem için yetkin yok.' };
+  }
+
+  const name = input.name_tr.trim();
+  if (name.length < 2) {
+    return { success: false, error: 'Kategori adı en az 2 karakter olmalı.' };
+  }
+
+  // Slug — boş gelirse addan üret, doluysa onu temizle
+  let slug = input.slug.trim() ? slugifyTr(input.slug) : slugifyTr(name);
+  if (!slug) {
+    return { success: false, error: 'Geçerli bir slug üretilemedi.' };
+  }
+
+  // Slug çakışması kontrolü
+  const { data: existing } = await supabase
+    .from('service_categories')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (existing) {
+    return {
+      success: false,
+      error: `"${slug}" slug'ı zaten kullanılıyor. Farklı bir slug gir.`,
+    };
+  }
+
+  // sort_order — en sona ekle (mevcut max + 1)
+  const { data: maxRow } = await supabase
+    .from('service_categories')
+    .select('sort_order')
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextSortOrder = (maxRow?.sort_order ?? 0) + 1;
+
+  const { data: newCat, error } = await supabase
+    .from('service_categories')
+    .insert({
+      name_tr: name,
+      slug,
+      emoji: input.emoji?.trim() || null,
+      description: input.description?.trim() || null,
+      sort_order: nextSortOrder,
+      is_active: true,
+    })
+    .select('id')
+    .single();
+
+  if (error || !newCat) {
+    return {
+      success: false,
+      error: 'Kategori eklenemedi: ' + (error?.message ?? 'bilinmeyen'),
+    };
+  }
+
+  // Bu bir talepten oluşturulduysa, talebi de approved yap (henüz değilse)
+  if (input.from_request_id) {
+    await supabase
+      .from('category_requests')
+      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .eq('id', input.from_request_id);
+  }
+
+  revalidatePath('/admin/kategori-talepleri');
+  revalidatePath('/admin');
+  revalidatePath('/kesfet');
+  revalidatePath('/'); // anasayfa kategori listesi
+  return { success: true, categoryId: newCat.id };
+}

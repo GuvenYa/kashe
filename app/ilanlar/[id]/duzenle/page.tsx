@@ -59,7 +59,7 @@ export default async function IlanDuzenlePage({
       .from('service_categories')
       .select('id, name_tr, emoji')
       .eq('is_active', true)
-      .order('sort_order'),
+      .order('name_tr'),
     supabase
       .from('turkish_cities')
       .select('id, name')
