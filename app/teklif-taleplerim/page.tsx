@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { TopNav } from '@/app/components/sections/top-nav';
 import { createClient } from '@/app/lib/supabase-server';
 
 export const metadata = {
@@ -49,6 +50,8 @@ export default async function TeklifTaleplerimPage() {
   const list = requests || [];
 
   return (
+    <>
+    <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
         <div className="flex items-start justify-between gap-4 mb-10 flex-wrap">
@@ -148,5 +151,6 @@ export default async function TeklifTaleplerimPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

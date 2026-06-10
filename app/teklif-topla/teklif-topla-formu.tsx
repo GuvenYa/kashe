@@ -25,6 +25,16 @@ const DEADLINE_OPTIONS = [
   { value: 7, label: '1 hafta' },
 ];
 
+const TARGET_ROLE_OPTIONS: {
+  value: 'both' | 'professional' | 'agency';
+  label: string;
+  hint: string;
+}[] = [
+  { value: 'both', label: 'Hepsi', hint: 'Profesyonel + ajans' },
+  { value: 'professional', label: 'Profesyonel', hint: 'Bireysel' },
+  { value: 'agency', label: 'Ajans', hint: 'Sadece ajanslar' },
+];
+
 export function TeklifToplaFormu({
   categories,
   cities,
@@ -42,6 +52,9 @@ export function TeklifToplaFormu({
   const [recipientCount, setRecipientCount] = useState(10);
   const [deadlineDays, setDeadlineDays] = useState(3);
   const [shareBudget, setShareBudget] = useState(true);
+  const [targetRole, setTargetRole] = useState<'both' | 'professional' | 'agency'>('both');
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
 
   const selectedSlug =
     categoryId === ''
@@ -88,6 +101,26 @@ export function TeklifToplaFormu({
       if (raw) cleanBrief[f.key] = raw;
     }
 
+    // Bütçe parse (Türkçe binlik ayraç temizle)
+    const parseBudget = (s: string): number | null => {
+      const cleaned = s.trim().replace(/\./g, '').replace(',', '.');
+      if (cleaned === '') return null;
+      const n = parseFloat(cleaned);
+      return isNaN(n) || n < 0 ? null : n;
+    };
+    const bMin = parseBudget(budgetMin);
+    const bMax = parseBudget(budgetMax);
+
+    if (bMin !== null && bMax !== null && bMin > bMax) {
+      setError('Minimum bütçe maksimumdan büyük olamaz.');
+      return;
+    }
+
+    const targetRoles: ('professional' | 'agency')[] =
+      targetRole === 'both'
+        ? ['professional', 'agency']
+        : [targetRole];
+
     startTransition(async () => {
       const result = await createQuoteRequest({
         category_id: categoryId,
@@ -95,11 +128,12 @@ export function TeklifToplaFormu({
         brief_data: Object.keys(cleanBrief).length > 0 ? cleanBrief : null,
         event_date: legacyEventDate,
         event_type: legacyEventType,
-        budget_min: null,
-        budget_max: null,
+        budget_min: bMin,
+        budget_max: bMax,
         share_budget: shareBudget,
         response_deadline_days: deadlineDays,
         recipient_count: recipientCount,
+        target_roles: targetRoles,
       });
 
       if (result.success && result.data) {
@@ -180,7 +214,11 @@ export function TeklifToplaFormu({
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {briefFields
-              .filter((field) => field.legacyColumn !== 'location')
+              .filter(
+                (field) =>
+                  field.legacyColumn !== 'location' &&
+                  field.legacyColumn !== 'budget_range'
+              )
               .map((field) => {
               const value = briefValues[field.key] ?? '';
               const wrapperClass =
@@ -271,6 +309,43 @@ export function TeklifToplaFormu({
           <div className="space-y-5">
             <div>
               <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+                Kimlere gönderilsin?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {TARGET_ROLE_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
+                      targetRole === opt.value
+                        ? 'border-terracotta'
+                        : 'border-line hover:border-terracotta/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="targetRole"
+                        checked={targetRole === opt.value}
+                        onChange={() => setTargetRole(opt.value)}
+                        className="accent-terracotta"
+                      />
+                      <span className="text-sm text-ink font-medium">
+                        {opt.label}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-ink-72 mt-1 ml-6 font-mono uppercase tracking-[0.1em]">
+                      {opt.hint}
+                    </p>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-ink-72 mt-1.5 font-mono">
+                Premium profesyoneller önce listelenir
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                 Kaç profesyonele gönderilsin?
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -318,6 +393,33 @@ export function TeklifToplaFormu({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+                Bütçe aralığın (opsiyonel)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={budgetMin}
+                  onChange={(e) => setBudgetMin(e.target.value)}
+                  placeholder="Min ₺"
+                  className={inputClass}
+                />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={budgetMax}
+                  onChange={(e) => setBudgetMax(e.target.value)}
+                  placeholder="Max ₺"
+                  className={inputClass}
+                />
+              </div>
+              <p className="text-[10px] text-ink-72 mt-1.5 font-mono">
+                Boş bırakabilirsin — profesyoneller yine teklif verir
+              </p>
             </div>
 
             <label className="flex items-start gap-3 cursor-pointer">

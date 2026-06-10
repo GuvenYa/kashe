@@ -52,14 +52,16 @@ export async function TopNav() {
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/takvimim", label: "Takvimim" });
   }
-  // Müşteri/işletme → İlanlarım + Rezervasyonlarım, profilim'in hemen ardına
+  // Müşteri/işletme → İlanlarım + Rezervasyonlarım + Teklif Taleplerim
   if (isClient || isBusiness) {
     menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
     menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
+    menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
   }
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
     menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });
+    menuLinks.push({ href: "/teklif-talepleri", label: "Teklif Talepleri" });
   }
   if (isProfessional) {
     menuLinks.push({ href: "/profil/hizmetlerim", label: "Hizmetlerim" });

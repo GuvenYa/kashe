@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
+import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
 
 export const metadata = {
@@ -111,6 +112,8 @@ export default async function TeklifKarsilastirPage({
   const cheapest = offers.length > 0 ? offers[0].quote.total_amount : null;
 
   return (
+    <>
+    <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
         
@@ -257,5 +260,6 @@ export default async function TeklifKarsilastirPage({
         )}
       </div>
     </div>
+    </>
   );
 }

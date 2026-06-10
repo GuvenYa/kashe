@@ -26,6 +26,7 @@ type CreateQuoteRequestInput = {
   share_budget: boolean;
   response_deadline_days: number | null;
   recipient_count: number;
+  target_roles: ('professional' | 'agency')[];
 };
 
 export async function createQuoteRequest(
@@ -56,11 +57,17 @@ export async function createQuoteRequest(
     return { success: false, error: 'Kategori seçmelisin' };
   }
 
-  // 1) Eşleştirme: kategori + (varsa şehir) + approved + published + professional/agency
+  // 1) Eşleştirme: kategori + (varsa şehir) + approved + published + hedef rol(ler)
+  // Premium tier + premium_until de çekilir → premium profesyoneller öne sıralanır
+  const roles =
+    input.target_roles && input.target_roles.length > 0
+      ? input.target_roles
+      : ['professional', 'agency'];
+
   let matchQuery = supabase
     .from('profiles')
-    .select('id')
-    .in('role', ['professional', 'agency'])
+    .select('id, premium_tier, premium_until')
+    .in('role', roles)
     .eq('approval_status', 'approved')
     .eq('is_published', true)
     .eq('primary_category_id', input.category_id);
@@ -74,16 +81,33 @@ export async function createQuoteRequest(
     return { success: false, error: 'Eşleştirme hatası: ' + matchError.message };
   }
 
-  const matchedIds = (matched || []).map((m) => m.id);
+  // Premium öncelikli sıralama (keşfet/kategori ile aynı tierWeight mantığı)
+  const tierWeight = (tier: string | null, until: string | null): number => {
+    if (!tier || tier === 'none') return 0;
+    if (until && new Date(until).getTime() <= Date.now()) return 0;
+    if (tier === 'agency') return 3;
+    if (tier === 'plus') return 2;
+    if (tier === 'premium') return 1;
+    return 0;
+  };
+
+  const sortedMatched = (matched || []).slice().sort(
+    (a, b) =>
+      tierWeight(b.premium_tier, b.premium_until) -
+      tierWeight(a.premium_tier, a.premium_until)
+  );
+
+  const matchedIds = sortedMatched.map((m) => m.id);
 
   if (matchedIds.length === 0) {
     return {
       success: false,
       error:
-        'Bu kriterlere uygun profesyonel bulunamadı. Şehir filtresini kaldırmayı veya kategoriyi değiştirmeyi dene.',
+        'Bu kriterlere uygun profesyonel bulunamadı. Şehir filtresini kaldırmayı, rol hedefini genişletmeyi veya kategoriyi değiştirmeyi dene.',
     };
   }
 
+  // Premium'lar başta — ilk N seçilir (öncelik premium'da)
   const selectedIds = matchedIds.slice(0, input.recipient_count);
 
   // 2) response_deadline hesapla
