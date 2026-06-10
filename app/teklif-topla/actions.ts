@@ -27,6 +27,11 @@ type CreateQuoteRequestInput = {
   response_deadline_days: number | null;
   recipient_count: number;
   target_roles: ('professional' | 'agency')[];
+  attachment?: {
+    path: string;
+    type: 'image' | 'pdf' | 'doc';
+    name: string;
+  } | null;
 };
 
 export async function createQuoteRequest(
@@ -118,6 +123,12 @@ export async function createQuoteRequest(
     deadline = d.toISOString();
   }
 
+  // Ek dosya varsa path güvenliği — bu kullanıcının klasöründe mi?
+  const attachment = input.attachment ?? null;
+  if (attachment && !attachment.path.startsWith(`${user.id}/`)) {
+    return { success: false, error: 'Geçersiz dosya yolu.' };
+  }
+
   // 3) Talebi oluştur
   const { data: newRequest, error: reqError } = await supabase
     .from('quote_requests')
@@ -134,11 +145,20 @@ export async function createQuoteRequest(
       response_deadline: deadline,
       recipient_count: selectedIds.length,
       status: 'active',
+      attachment_path: attachment?.path ?? null,
+      attachment_type: attachment?.type ?? null,
+      attachment_name: attachment?.name ?? null,
     })
     .select('id')
     .single();
 
   if (reqError || !newRequest) {
+    // Talep oluşmadıysa yüklenen dosyayı temizle (best effort)
+    if (attachment) {
+      await supabase.storage
+        .from('quote-attachments')
+        .remove([attachment.path]);
+    }
     return {
       success: false,
       error: 'Talep oluşturulamadı: ' + (reqError?.message ?? 'bilinmeyen'),
@@ -434,4 +454,60 @@ export async function markRequestViewed(
 
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+// =============================================================================
+// Brief eki — signed URL (private bucket)
+// =============================================================================
+
+/**
+ * Teklif talebi ekinin signed URL'ini üretir.
+ * Sadece talebi oluşturan müşteri ya da talebin gönderildiği profesyonel erişebilir.
+ */
+export async function getQuoteAttachmentUrl(
+  requestId: string
+): Promise<{ url: string; name: string | null } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Oturum bulunamadı.' };
+
+  // Talep + ek + müşteri
+  const { data: request } = await supabase
+    .from('quote_requests')
+    .select('id, customer_id, attachment_path, attachment_name')
+    .eq('id', requestId)
+    .single();
+
+  if (!request || !request.attachment_path) {
+    return { error: 'Ek bulunamadı.' };
+  }
+
+  // Erişim: müşteri (sahip) VEYA bu talebin gönderildiği profesyonel
+  let hasAccess = request.customer_id === user.id;
+  if (!hasAccess) {
+    const { data: rec } = await supabase
+      .from('quote_request_recipients')
+      .select('id')
+      .eq('request_id', requestId)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    hasAccess = !!rec;
+  }
+
+  if (!hasAccess) {
+    return { error: 'Bu eke erişimin yok.' };
+  }
+
+  const { data, error } = await supabase.storage
+    .from('quote-attachments')
+    .createSignedUrl(request.attachment_path, 3600);
+
+  if (error || !data) {
+    return { error: 'Bağlantı oluşturulamadı.' };
+  }
+
+  return { url: data.signedUrl, name: request.attachment_name };
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createQuoteRequest } from './actions';
+import { createClient } from '@/app/lib/supabase-browser';
 import {
   getBriefFields,
   getBriefIntro,
@@ -11,6 +12,21 @@ import {
 
 type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
+
+const MAX_BRIEF_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+const BRIEF_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const BRIEF_DOC_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+function briefAttachmentKind(mime: string): 'image' | 'pdf' | 'doc' | null {
+  if (BRIEF_IMAGE_TYPES.includes(mime)) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  if (BRIEF_DOC_TYPES.includes(mime)) return 'doc';
+  return null;
+}
 
 const RECIPIENT_OPTIONS = [
   { value: 5, label: '5 profesyonel', hint: 'Dar ve kontrollü' },
@@ -55,6 +71,29 @@ export function TeklifToplaFormu({
   const [targetRole, setTargetRole] = useState<'both' | 'professional' | 'agency'>('both');
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null;
+    setError(null);
+    if (!selected) {
+      setFile(null);
+      return;
+    }
+    if (!briefAttachmentKind(selected.type)) {
+      setError('Desteklenmeyen dosya tipi. Görsel, PDF veya Word ekleyebilirsin.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (selected.size > MAX_BRIEF_FILE_SIZE) {
+      setError("Dosya 20 MB'dan büyük olamaz.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setFile(selected);
+  }
 
   const selectedSlug =
     categoryId === ''
@@ -122,6 +161,52 @@ export function TeklifToplaFormu({
         : [targetRole];
 
     startTransition(async () => {
+      let attachment:
+        | { path: string; type: 'image' | 'pdf' | 'doc'; name: string }
+        | null = null;
+
+      // Dosya seçildiyse önce storage'a yükle
+      if (file) {
+        const kind = briefAttachmentKind(file.type);
+        if (!kind) {
+          setError('Desteklenmeyen dosya tipi.');
+          return;
+        }
+        setUploading(true);
+        try {
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) {
+            setError('Oturum bulunamadı.');
+            setUploading(false);
+            return;
+          }
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+          const path = `${user.id}/${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 8)}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from('quote-attachments')
+            .upload(path, file, { cacheControl: '3600', upsert: false });
+          if (upErr) {
+            setError('Dosya yüklenemedi: ' + upErr.message);
+            setUploading(false);
+            return;
+          }
+          attachment = { path, type: kind, name: file.name };
+        } catch (err) {
+          setError(
+            'Yükleme hatası: ' +
+              (err instanceof Error ? err.message : 'bilinmeyen')
+          );
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       const result = await createQuoteRequest({
         category_id: categoryId,
         city_id: cityId === '' ? null : cityId,
@@ -134,12 +219,20 @@ export function TeklifToplaFormu({
         response_deadline_days: deadlineDays,
         recipient_count: recipientCount,
         target_roles: targetRoles,
+        attachment,
       });
 
       if (result.success && result.data) {
         router.push('/teklif-taleplerim');
       } else if (!result.success) {
         setError(result.error);
+        // Talep başarısızsa yüklenen dosyayı temizle
+        if (attachment) {
+          const supabase = createClient();
+          await supabase.storage
+            .from('quote-attachments')
+            .remove([attachment.path]);
+        }
       }
     });
   }
@@ -422,6 +515,63 @@ export function TeklifToplaFormu({
               </p>
             </div>
 
+            {/* Dosya eki (opsiyonel) */}
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+                Dosya ekle (opsiyonel)
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleFileChange}
+                className="hidden"
+                id="brief-file-input"
+              />
+              {file ? (
+                <div className="flex items-center gap-3 bg-white border border-line rounded-lg px-3 py-2.5">
+                  <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium text-ink truncate">
+                      {file.name}
+                    </span>
+                    <span className="block text-[10px] text-ink-72">
+                      {(file.size / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="shrink-0 text-ink-72 hover:text-terracotta text-lg leading-none w-7 h-7 flex items-center justify-center"
+                    aria-label="Dosyayı kaldır"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="brief-file-input"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition cursor-pointer"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Örnek görsel, plan veya brief ekle
+                </label>
+              )}
+              <p className="text-[10px] text-ink-72 mt-1.5">
+                Görsel, PDF veya Word · max 20 MB
+              </p>
+            </div>
+
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -451,7 +601,11 @@ export function TeklifToplaFormu({
             disabled={isPending}
             className="flex-1 px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
           >
-            {isPending ? 'Gönderiliyor...' : 'Teklif talebini gönder'}
+            {uploading
+              ? 'Dosya yükleniyor...'
+              : isPending
+              ? 'Gönderiliyor...'
+              : 'Teklif talebini gönder'}
           </button>
         </div>
       )}

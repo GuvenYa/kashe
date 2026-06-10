@@ -3,6 +3,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
+import { BriefEkButonu } from './brief-ek-butonu';
 
 export const metadata = {
   title: 'Teklif Talepleri — Kashe',
@@ -39,6 +40,7 @@ export default async function TeklifTalepleriPage() {
       quote_requests (
         id, brief_data, event_date, event_type, budget_min, budget_max,
         share_budget, response_deadline, status,
+        attachment_path, attachment_name, attachment_type,
         service_categories (name_tr),
         turkish_cities (name),
         customer:profiles!quote_requests_customer_id_fkey (full_name, company_name, role)
@@ -147,6 +149,15 @@ export default async function TeklifTalepleriPage() {
                         </p>
                       ))}
                     </div>
+                  )}
+
+                  {/* Müşterinin eklediği dosya */}
+                  {req.attachment_path && (
+                    <BriefEkButonu
+                      requestId={req.id}
+                      attachmentName={req.attachment_name}
+                      attachmentType={req.attachment_type}
+                    />
                   )}
 
                   <div className="pt-3 border-t border-line">
