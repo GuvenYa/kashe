@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { blockDate, unblockDate } from '@/app/takvimim/availability-actions';
+import { blockDate, unblockDate, blockDateRange } from '@/app/takvimim/availability-actions';
 
 type Props = {
   /** Manuel bloklu günler: ["2026-06-14", ...] */
@@ -40,6 +40,10 @@ export function AvailabilityCalendar({
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-11
+
+  // Aralık modu — açıkken iki tık bir aralığı doldurur
+  const [rangeMode, setRangeMode] = useState(false);
+  const [rangeStart, setRangeStart] = useState<string | null>(null);
 
   const blockedSet = new Set(blockedDates);
   const bookedSet = new Set(bookedDates);
@@ -79,6 +83,30 @@ export function AvailabilityCalendar({
   function handleDayClick(dateStr: string, isBooked: boolean, isPast: boolean) {
     if (!editable || isBooked || isPast || isPending) return;
     setError(null);
+
+    // ARALIK MODU
+    if (rangeMode) {
+      if (!rangeStart) {
+        // İlk tık — başlangıcı belirle
+        setRangeStart(dateStr);
+        return;
+      }
+      // İkinci tık — aralığı doldur
+      const start = rangeStart;
+      setRangeStart(null);
+      startTransition(async () => {
+        const result = await blockDateRange(start, dateStr);
+        if (!result.success) {
+          setError(result.error || 'Hata');
+        } else {
+          setRangeMode(false);
+          router.refresh();
+        }
+      });
+      return;
+    }
+
+    // TEK-TIK MODU (mevcut davranış)
     const isBlocked = blockedSet.has(dateStr);
     startTransition(async () => {
       const result = isBlocked
@@ -99,6 +127,35 @@ export function AvailabilityCalendar({
 
   return (
     <div className="bg-white border border-line rounded-2xl p-5 md:p-6 max-w-md">
+      {/* Aralık modu toggle (sadece düzenlenebilir) */}
+      {editable && (
+        <div className="flex items-center justify-between mb-4">
+          <button
+            type="button"
+            onClick={() => {
+              setRangeMode((v) => !v);
+              setRangeStart(null);
+              setError(null);
+            }}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] border transition ${
+              rangeMode
+                ? 'bg-terracotta text-paper border-terracotta'
+                : 'bg-white text-ink-72 border-line hover:border-ink-72'
+            }`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            {rangeMode ? 'Aralık modu açık' : 'Aralık seç'}
+          </button>
+          {rangeMode && (
+            <span className="font-mono text-[10px] text-terracotta">
+              {rangeStart ? 'Bitiş gününe tıkla' : 'Başlangıca tıkla'}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Ay navigasyonu */}
       <div className="flex items-center justify-between mb-5">
         <button
@@ -164,7 +221,8 @@ export function AvailabilityCalendar({
             cls += ' text-ink';
             if (editable) cls += ' hover:bg-moss/10 cursor-pointer';
           }
-          if (isToday) cls += ' ring-1 ring-inset ring-ink-72/40';
+          if (rangeStart === dateStr) cls += ' ring-2 ring-inset ring-terracotta bg-terracotta/8';
+          else if (isToday) cls += ' ring-1 ring-inset ring-ink-72/40';
 
           const clickable = editable && !isBooked && !isPast;
 
