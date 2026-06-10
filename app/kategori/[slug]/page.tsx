@@ -45,6 +45,34 @@ type ServicePriceInfo = {
   price_on_request: boolean;
 };
 
+// Kategori adına göre dinamik SSS üret. Platform işleyişine dair sorular —
+// kategoriden bağımsız aynı, sadece kategori adı değişir.
+function getCategoryFaq(categoryName: string): { q: string; a: string }[] {
+  const lower = categoryName.toLocaleLowerCase('tr');
+  return [
+    {
+      q: `Kashe'de nasıl ${categoryName.toLocaleLowerCase('tr')} bulurum?`,
+      a: `Kategori sayfasından şehir, fiyat ve puana göre filtreleyerek ${lower} profesyonellerini karşılaştırabilirsin. Beğendiğin profilden doğrudan teklif alabilir, rezervasyon talebi gönderebilir ya da mesajla iletişime geçebilirsin.`,
+    },
+    {
+      q: `${categoryName} için nasıl teklif alırım?`,
+      a: `İki yolu var: Beğendiğin bir profile girip "Teklif Al" diyebilir, ya da "Teklif Topla" ile ihtiyacını anlatıp ${lower} kategorisindeki birden fazla profesyonelden teklif toplayabilirsin. Teklif almak ücretsizdir.`,
+    },
+    {
+      q: `Fiyatlar neye göre belirleniyor?`,
+      a: `Fiyatlar profesyonelin deneyimine, hizmet kapsamına, etkinlik tarihine ve süresine göre değişir. Profil kartlarında başlangıç fiyatını veya fiyat aralığını görebilir, net fiyat için teklif alabilirsin. Bazı profesyoneller hazır paketler de sunar.`,
+    },
+    {
+      q: `Ödeme nasıl yapılıyor, güvenli mi?`,
+      a: `Kashe bir aracı platformdur; iletişim, teklif ve rezervasyon süreçlerini tek yerde toplar. Anlaşma detaylarını profesyonelle netleştirir, işlemini platform üzerinden güvenle takip edebilirsin. Tamamlanan işler için karşılıklı değerlendirme yapılır.`,
+    },
+    {
+      q: `Profesyonellerin güvenilirliğini nasıl anlarım?`,
+      a: `Her profilde doğrulama rozetleri, gerçek müşteri yorumları, puanlar ve portföy bulunur. Tamamlanmış işlerden gelen değerlendirmeleri inceleyerek doğru ${lower} profesyoneline güvenle karar verebilirsin.`,
+    },
+  ];
+}
+
 async function getCategory(slug: string): Promise<CategoryRow | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -168,10 +196,26 @@ export default async function KategoriPage({ params }: Props) {
 
   const isLoggedIn = !!user;
   const iconUrl = getCategoryIcon(category.slug);
+  const faq = getCategoryFaq(category.name_tr);
+
+  // FAQPage JSON-LD — Google zengin sonuç için
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
 
   return (
     <>
       <TopNav />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <main className="min-h-screen bg-paper">
         {/* HERO */}
         <section className="border-b border-line bg-card relative overflow-hidden">
@@ -266,6 +310,46 @@ export default async function KategoriPage({ params }: Props) {
               </div>
             </>
           )}
+        </section>
+
+        {/* SSS */}
+        <section className="border-t border-line">
+          <div className="max-w-3xl mx-auto px-6 md:px-12 py-14 md:py-16">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+              Sık sorulan sorular
+            </p>
+            <h2 className="font-display text-3xl md:text-4xl text-ink tracking-tight mb-8">
+              {category.name_tr} hakkında{' '}
+              <em className="text-terracotta not-italic italic font-medium">
+                merak edilenler
+              </em>
+            </h2>
+            <div className="space-y-3">
+              {faq.map((item, i) => (
+                <details
+                  key={i}
+                  className="group bg-card border border-line rounded-xl overflow-hidden"
+                >
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer px-5 py-4 list-none">
+                    <span className="font-display font-medium text-ink text-lg">
+                      {item.q}
+                    </span>
+                    <span
+                      className="shrink-0 text-terracotta transition-transform duration-200 group-open:rotate-45"
+                      aria-hidden="true"
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="px-5 pb-5 -mt-1">
+                    <p className="text-ink-72 leading-relaxed">{item.a}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* CTA — ilan aç / teklif topla */}
