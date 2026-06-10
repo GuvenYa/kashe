@@ -84,7 +84,26 @@ type SupplyDemandCityRow = {
   supply: number
   demand: number
 }
-type TabKey = 'genel' | 'talep-arz' | 'icerik' | 'buyume' | 'huni' | 'tutundurma' | 'yonetim'
+type TabKey = 'genel' | 'talep-arz' | 'icerik' | 'buyume' | 'huni' | 'tutundurma' | 'yonetim' | 'rezervasyon' | 'operasyonel'
+type OpsListingFirstApp = { avg_hours: number; median_hours: number; measured_count: number }
+type OpsAppResponse = {
+  avg_hours: number
+  median_hours: number
+  responded_count: number
+  total_count: number
+  pending_count: number
+}
+type OpsMsgResponse = { avg_hours: number; median_hours: number; measured_count: number }
+type BookingSummary = {
+  total_count: number
+  confirmed_count: number
+  completed_count: number
+  cancelled_count: number
+  gmv: number
+  avg_value: number
+  cancelled_value: number
+}
+type BookingDailyRow = { bucket: string; gmv: number; cnt: number }
 type QueueRow = { pending_profiles: number; pending_listings: number; pending_categories: number }
 type AdminActionRow = {
   id: string
@@ -194,6 +213,11 @@ export default function IstatistiklerPage() {
   const [prosNoApps, setProsNoApps] = useState<ProNoAppRow[]>([])
   const [queue, setQueue] = useState<QueueRow | null>(null)
   const [recentActions, setRecentActions] = useState<AdminActionRow[]>([])
+  const [bookingSummary, setBookingSummary] = useState<BookingSummary | null>(null)
+  const [bookingDaily, setBookingDaily] = useState<BookingDailyRow[]>([])
+  const [opsFirstApp, setOpsFirstApp] = useState<OpsListingFirstApp | null>(null)
+  const [opsAppResp, setOpsAppResp] = useState<OpsAppResponse | null>(null)
+  const [opsMsgResp, setOpsMsgResp] = useState<OpsMsgResponse | null>(null)
   const [tab, setTab] = useState<TabKey>('genel')
 
   // Tarih aralığı — sadece akış metriklerini (kayıt + mesaj) etkiler.
@@ -266,19 +290,34 @@ export default function IstatistiklerPage() {
     })()
   }, [])
 
-  // Akış metrikleri — p_days değişince yeniden çağrılır (kayıt + mesaj).
+  // Akış metrikleri — p_days değişince yeniden çağrılır (kayıt + mesaj + rezervasyon).
   useEffect(() => {
     const supabase = createClient()
     ;(async () => {
       try {
-        const [rReg, rMsg] = await Promise.all([
+        const [rReg, rMsg, rBs, rBd, rO1, rO2, rO3] = await Promise.all([
           supabase.rpc('admin_stats_registrations', { p_days: pDays }),
           supabase.rpc('admin_stats_messages', { p_days: pDays }),
+          supabase.rpc('admin_booking_summary', { p_days: pDays }),
+          supabase.rpc('admin_booking_daily', { p_days: pDays }),
+          supabase.rpc('admin_ops_listing_to_first_app', { p_days: pDays }),
+          supabase.rpc('admin_ops_application_response', { p_days: pDays }),
+          supabase.rpc('admin_ops_message_response', { p_days: pDays }),
         ])
         if (rReg.error) throw rReg.error
         if (rMsg.error) throw rMsg.error
+        if (rBs.error) throw rBs.error
+        if (rBd.error) throw rBd.error
+        if (rO1.error) throw rO1.error
+        if (rO2.error) throw rO2.error
+        if (rO3.error) throw rO3.error
         setReg((rReg.data ?? []) as RegRow[])
         setMsgs((rMsg.data ?? []) as MsgRow[])
+        setBookingSummary(((rBs.data ?? [])[0] ?? null) as BookingSummary | null)
+        setBookingDaily((rBd.data ?? []) as BookingDailyRow[])
+        setOpsFirstApp(((rO1.data ?? [])[0] ?? null) as OpsListingFirstApp | null)
+        setOpsAppResp(((rO2.data ?? [])[0] ?? null) as OpsAppResponse | null)
+        setOpsMsgResp(((rO3.data ?? [])[0] ?? null) as OpsMsgResponse | null)
       } catch (e: any) {
         setError(e?.message ?? 'Akış verileri yüklenirken bir hata oluştu.')
       }
@@ -440,6 +479,8 @@ export default function IstatistiklerPage() {
             { key: 'buyume', label: 'Büyüme' },
             { key: 'huni', label: 'Hunisi' },
             { key: 'tutundurma', label: 'Tutundurma' },
+            { key: 'rezervasyon', label: 'Rezervasyon' },
+            { key: 'operasyonel', label: 'Operasyonel' },
             { key: 'yonetim', label: 'Yönetim' },
           ] as { key: TabKey; label: string }[]).map((t) => (
             <button
@@ -950,6 +991,198 @@ export default function IstatistiklerPage() {
           </div>
         )}
 
+        {/* REZERVASYON SEKMESİ */}
+        {tab === 'rezervasyon' && (
+          <div className="space-y-6">
+            {/* Özet kartları */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <StatTile
+                label="Rezervasyon"
+                value={num(bookingSummary?.total_count).toLocaleString('tr-TR')}
+                accent={C.terracotta}
+              />
+              <StatTile
+                label="GMV (geçerli)"
+                value={`${num(bookingSummary?.gmv).toLocaleString('tr-TR')} ₺`}
+                accent={C.moss}
+              />
+              <StatTile
+                label="Ort. değer"
+                value={`${Math.round(num(bookingSummary?.avg_value)).toLocaleString('tr-TR')} ₺`}
+                accent={C.plum}
+              />
+              <StatTile
+                label="İptal oranı"
+                value={`%${
+                  num(bookingSummary?.total_count) > 0
+                    ? Math.round(
+                        (num(bookingSummary?.cancelled_count) /
+                          num(bookingSummary?.total_count)) *
+                          100
+                      )
+                    : 0
+                }`}
+                accent={C.ember}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* GMV zaman serisi */}
+              <Card eyebrow="Hacim" title="GMV trendi">
+                {bookingDaily.length === 0 ? (
+                  <p className="text-sm text-[#1A120E]/50">Bu aralıkta rezervasyon yok.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={bookingDaily.map((r) => ({ date: r.bucket, GMV: num(r.gmv), adet: num(r.cnt) }))}>
+                      <defs>
+                        <linearGradient id="gmvGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={C.moss} stopOpacity={0.5} />
+                          <stop offset="95%" stopColor={C.moss} stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
+                      <XAxis dataKey="date" tickFormatter={fmtDate} fontSize={11} stroke={`${C.ink}80`} />
+                      <YAxis fontSize={11} stroke={`${C.ink}80`} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        labelFormatter={fmtDate}
+                        formatter={(v: any, name: any) =>
+                          name === 'GMV' ? [`${num(v).toLocaleString('tr-TR')} ₺`, 'GMV'] : [v, name]
+                        }
+                      />
+                      <Area type="monotone" dataKey="GMV" stroke={C.moss} fill="url(#gmvGrad)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </Card>
+
+              {/* Durum dağılımı */}
+              <Card eyebrow="Durum" title="Rezervasyon durumları">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart
+                    data={[
+                      { name: 'Onaylı', value: num(bookingSummary?.confirmed_count), fill: C.moss },
+                      { name: 'Tamamlandı', value: num(bookingSummary?.completed_count), fill: C.plum },
+                      { name: 'İptal', value: num(bookingSummary?.cancelled_count), fill: C.ember },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
+                    <XAxis dataKey="name" fontSize={11} stroke={`${C.ink}80`} />
+                    <YAxis allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="value" name="Adet" radius={[4, 4, 0, 0]}>
+                      {[C.moss, C.plum, C.ember].map((c, i) => (
+                        <Cell key={i} fill={c} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="mt-2 text-xs text-[#1A120E]/50">
+                  İptal edilen rezervasyonların toplam değeri:{' '}
+                  <strong style={{ color: C.ember }}>
+                    {num(bookingSummary?.cancelled_value).toLocaleString('tr-TR')} ₺
+                  </strong>
+                </p>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* OPERASYONEL SEKMESİ */}
+        {tab === 'operasyonel' && (
+          <div className="space-y-6">
+            <p className="text-sm text-[#1A120E]/60">
+              Platformun hızı — düşük süreler sağlıklı bir pazaryerinin işareti.
+              Ortalama yanıltabilir, o yüzden medyan da gösteriliyor.
+            </p>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* İlan → ilk başvuru */}
+              <Card eyebrow="Arz hızı" title="İlan → ilk başvuru">
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span style={{ fontFamily: SERIF, color: C.plum }} className="text-2xl font-semibold">
+                      {fmtDuration(num(opsFirstApp?.avg_hours))}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                      {fmtDuration(num(opsFirstApp?.median_hours))}
+                    </span>
+                  </div>
+                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                    {num(opsFirstApp?.measured_count)} ilan ölçüldü
+                  </p>
+                </div>
+              </Card>
+
+              {/* Başvuru → yanıt */}
+              <Card eyebrow="Yanıt hızı" title="Başvuru → yanıt">
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span style={{ fontFamily: SERIF, color: C.terracotta }} className="text-2xl font-semibold">
+                      {fmtDuration(num(opsAppResp?.avg_hours))}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                      {fmtDuration(num(opsAppResp?.median_hours))}
+                    </span>
+                  </div>
+                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                    {num(opsAppResp?.responded_count)} / {num(opsAppResp?.total_count)} yanıtlandı
+                    {num(opsAppResp?.pending_count) > 0 && (
+                      <span className="text-[#A8341E]">
+                        {' '}· {num(opsAppResp?.pending_count)} bekliyor
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </Card>
+
+              {/* Mesaj → ilk yanıt */}
+              <Card eyebrow="İletişim hızı" title="Mesaj → ilk yanıt">
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span style={{ fontFamily: SERIF, color: C.moss }} className="text-2xl font-semibold">
+                      {fmtDuration(num(opsMsgResp?.avg_hours))}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                      {fmtDuration(num(opsMsgResp?.median_hours))}
+                    </span>
+                  </div>
+                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                    {num(opsMsgResp?.measured_count)} konuşma ölçüldü
+                  </p>
+                </div>
+              </Card>
+            </div>
+
+            {/* Yanıtsız başvuru uyarısı */}
+            {num(opsAppResp?.pending_count) > 0 && (
+              <div className="rounded-2xl border border-[#D98C3F]/30 bg-[#D98C3F]/8 p-5">
+                <Eyebrow>Dikkat · Yanıtsız başvurular</Eyebrow>
+                <p className="mt-2 text-sm text-[#1A120E]/70">
+                  Bu aralıkta{' '}
+                  <strong style={{ color: '#8C5A1F' }}>
+                    {num(opsAppResp?.pending_count)} başvuru
+                  </strong>{' '}
+                  hâlâ yanıt bekliyor. İlan sahiplerine hatırlatma, yanıt oranını
+                  ve profesyonel memnuniyetini artırır.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* YÖNETİM SEKMESİ */}
         {tab === 'yonetim' && (
           <div className="space-y-6">
@@ -1083,6 +1316,14 @@ function targetLink(targetType: string, targetId: string | null): string | null 
     default:
       return null
   }
+}
+
+// saat sayısını okunabilir süreye çevir (1.5 → "1.5 sa", 30 → "1.2 gün", 0.5 → "30 dk")
+function fmtDuration(hours: number): string {
+  if (!hours || hours <= 0) return '—'
+  if (hours < 1) return `${Math.round(hours * 60)} dk`
+  if (hours < 48) return `${hours.toFixed(1)} sa`
+  return `${(hours / 24).toFixed(1)} gün`
 }
 
 // tarih + saat formatı (DD.MM HH:mm)
