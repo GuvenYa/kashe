@@ -42,6 +42,8 @@ export type StartConversationData = {
   brief_data?: Record<string, string> | null;
   // 'quote' (varsayılan, Teklif Al) | 'booking_request' (Rezervasyon Talebi)
   request_type?: 'quote' | 'booking_request';
+  start_time?: string | null;
+  end_time?: string | null;
 };
 
 const SLIDING_WINDOW_MINUTES = 5;
@@ -380,6 +382,10 @@ export async function startConversation(
     if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
     if (data.budget_range !== null) updateFields.budget_range = data.budget_range;
     if (data.brief_data) updateFields.brief_data = data.brief_data;
+    if (data.start_time !== undefined && data.start_time !== null)
+      updateFields.start_time = data.start_time;
+    if (data.end_time !== undefined && data.end_time !== null)
+      updateFields.end_time = data.end_time;
 
     await supabase
       .from('conversations')
@@ -398,6 +404,8 @@ export async function startConversation(
         budget_range: data.budget_range,
         brief_data: data.brief_data ?? null,
         request_type: data.request_type ?? 'quote',
+        start_time: data.start_time ?? null,
+        end_time: data.end_time ?? null,
       })
       .select('id')
       .single();
@@ -422,10 +430,14 @@ export async function startConversation(
           year: 'numeric',
         })
       : 'belirtilmedi';
+    const timeText =
+      data.start_time
+        ? ` · Saat: ${data.start_time.slice(0, 5)}${data.end_time ? `–${data.end_time.slice(0, 5)}` : ''}`
+        : '';
     await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      body: `📅 Rezervasyon talebi — Tarih: ${dateText}${data.location ? ` · Yer: ${data.location}` : ''}`,
+      body: `📅 Rezervasyon talebi — Tarih: ${dateText}${timeText}${data.location ? ` · Yer: ${data.location}` : ''}`,
       message_type: 'system',
     });
   }

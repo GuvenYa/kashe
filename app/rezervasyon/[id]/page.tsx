@@ -17,6 +17,8 @@ type BookingDetay = {
   customer_id: string;
   professional_id: string;
   event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   event_type: string | null;
   location: string | null;
   guest_count: number | null;
@@ -78,6 +80,16 @@ function formatEventDate(iso: string | null): string {
   });
 }
 
+function formatEventTime(
+  start: string | null,
+  end: string | null
+): string | null {
+  if (!start) return null;
+  const s = start.slice(0, 5);
+  if (end) return `${s}–${end.slice(0, 5)}`;
+  return s;
+}
+
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString('tr-TR', {
@@ -134,7 +146,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     .select(
       `
       id, quote_id, conversation_id, customer_id, professional_id,
-      event_date, event_type, location, guest_count,
+      event_date, start_time, end_time, event_type, location, guest_count,
       total_amount, currency, status,
       created_at, cancelled_at, cancelled_by, cancellation_reason, completed_at,
       customer:profiles!bookings_customer_id_fkey (
@@ -308,6 +320,16 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                   {formatEventDate(booking.event_date)}
                 </dd>
               </div>
+              {formatEventTime(booking.start_time, booking.end_time) && (
+                <div>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1">
+                    Saat
+                  </dt>
+                  <dd className="text-base text-ink">
+                    {formatEventTime(booking.start_time, booking.end_time)}
+                  </dd>
+                </div>
+              )}
               {booking.event_type && (
                 <div>
                   <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1">

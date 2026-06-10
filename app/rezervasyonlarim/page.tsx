@@ -15,6 +15,8 @@ type BookingRow = {
   conversation_id: string;
   professional_id: string;
   event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   event_type: string | null;
   location: string | null;
   guest_count: number | null;
@@ -62,7 +64,7 @@ export default async function RezervasyonlarimPage() {
     .select(
       `
       id, quote_id, conversation_id, professional_id,
-      event_date, event_type, location, guest_count,
+      event_date, start_time, end_time, event_type, location, guest_count,
       total_amount, currency, status,
       created_at, completed_at, cancelled_at,
       professional:profiles!bookings_professional_id_fkey (

@@ -6,6 +6,8 @@ type Booking = {
   id: string;
   conversation_id: string;
   event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   event_type: string | null;
   location: string | null;
   guest_count: number | null;
@@ -55,6 +57,17 @@ function formatEventDate(iso: string | null): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+// "14:00:00" → "14:00"; başlangıç+bitiş → "14:00–18:00"; sadece başlangıç → "14:00"
+function formatEventTime(
+  start: string | null,
+  end: string | null
+): string | null {
+  if (!start) return null;
+  const s = start.slice(0, 5);
+  if (end) return `${s}–${end.slice(0, 5)}`;
+  return s;
 }
 
 const STATUS_STYLES: Record<
@@ -161,6 +174,15 @@ export function RezervasyonKarti({
               </svg>
               <span className="font-medium text-ink">{formatEventDate(b.event_date)}</span>
             </span>
+            {formatEventTime(b.start_time, b.end_time) && (
+              <span className="flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="font-medium text-ink">{formatEventTime(b.start_time, b.end_time)}</span>
+              </span>
+            )}
             {b.event_type && (
               <span>{getEventTypeLabel(b.event_type) ?? b.event_type}</span>
             )}
