@@ -66,8 +66,8 @@ export default async function PortfoyPage() {
               </em>
             </h1>
             <p className="text-ink-72 mt-3 max-w-xl">
-              Önceki işlerinden fotoğraflar ekle. Müşteriler profil sayfanda bu
-              galeriyi görecek.
+              Önceki işlerinden fotoğraf ve videolar ekle. Müşteriler profil
+              sayfanda bu galeriyi görecek.
             </p>
           </div>
 
@@ -82,11 +82,11 @@ export default async function PortfoyPage() {
           {items.length === 0 ? (
             <div className="bg-white border border-line rounded-lg p-12 text-center">
               <p className="font-display text-2xl text-ink mb-3">
-                İlk fotoğrafını yükle.
+                İlk işini yükle.
               </p>
               <p className="text-ink-72 max-w-md mx-auto">
                 Önceki etkinliklerinden, sahne performanslarından, projelerinden
-                en güzel kareleri ekle.
+                en güzel kareleri ve videoları ekle.
               </p>
             </div>
           ) : (

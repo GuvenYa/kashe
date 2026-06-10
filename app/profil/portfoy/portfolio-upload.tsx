@@ -36,7 +36,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
     // Limit kontrolü
     if (files.length > remaining) {
       setError(
-        `Maksimum ${maxItems} fotoğraf yükleyebilirsin. Şu an ${remaining} slot kaldı.`
+        `Maksimum ${maxItems} öğe yükleyebilirsin. Şu an ${remaining} slot kaldı.`
       );
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
