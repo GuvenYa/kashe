@@ -36,6 +36,8 @@
   --color-plum: #EC4899;   /* pembe — gradyan ikinci ucu / ikincil vurgu */
   --color-moss: #3F6B47;   /* yeşil — başarı/onay durumları */
   --color-ember: #7C3AED;  /* koyu mor — hover/koyu varyant */
+  --color-danger: #DC2626;       /* kırmızı — yıkıcı aksiyon (sil/iptal/askıya al) */
+  --color-danger-08: rgba(220, 38, 38, 0.08); /* kırmızı tint — hover/zemin */
 
   /* === Marka gradyanı === */
   --gradient-brand: linear-gradient(135deg, #9333EA, #EC4899);

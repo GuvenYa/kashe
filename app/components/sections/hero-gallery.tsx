@@ -2,8 +2,9 @@
 
 /**
  * Hero kayan foto galerisi — iki kolon, farklı hızlarda dikey kayar.
- * Görseller /public/hero/ altında (pro-1..4.jpg). Şimdilik statik;
- * profesyonel sayısı artınca gerçek avatar/portfolyo verisine geçilecek.
+ * Görseller /public/hero/ altında sabit (pro-1..4.jpg).
+ * (Dinamik avatar versiyonu git geçmişinde mevcut — gerçek profillere
+ *  geçilmek istenirse geri alınabilir.)
  */
 
 const COL_A = ["/hero/pro-1.jpg", "/hero/pro-3.jpg"];

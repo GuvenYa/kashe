@@ -15,7 +15,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     "bg-white border-[1.5px] border-terracotta-soft text-terracotta hover:bg-terracotta-08",
   ghost: "bg-transparent text-terracotta hover:bg-terracotta-08",
-  destructive: "bg-ember text-white hover:opacity-90",
+  destructive: "bg-danger text-white hover:opacity-90",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
