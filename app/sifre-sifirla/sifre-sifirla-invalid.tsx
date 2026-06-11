@@ -1,16 +1,12 @@
 import Link from 'next/link';
+import { BrandMark } from '@/app/components/ui/brand-mark';
 
 export function SifreSifirlaInvalid() {
   return (
     <div className="text-center">
-      <Link href="/" className="inline-block mb-8">
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-10 h-10 bg-terracotta rounded flex items-center justify-center">
-            <span className="font-serif text-paper text-xl font-bold">k</span>
-          </div>
-          <span className="font-serif text-ink text-2xl font-bold">Kashe</span>
-        </div>
-      </Link>
+      <div className="inline-block mb-8">
+        <BrandMark size="lg" />
+      </div>
 
       <h1 className="font-display text-3xl text-ink mb-4 tracking-tight">
         Bağlantı geçersiz.
@@ -23,7 +19,7 @@ export function SifreSifirlaInvalid() {
 
       <Link
         href="/sifremi-unuttum"
-        className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+        className="inline-block px-6 py-3 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(147,51,234,0.5)] transition-all"
       >
         Yeni bağlantı iste
       </Link>

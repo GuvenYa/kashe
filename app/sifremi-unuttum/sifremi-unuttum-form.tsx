@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-browser';
+import { BrandMark } from '@/app/components/ui/brand-mark';
 
 function translateError(message: string): string {
   const m = message.toLowerCase();
@@ -44,14 +45,9 @@ export function SifremiUnuttumForm() {
   if (sent) {
     return (
       <div className="text-center">
-        <Link href="/" className="inline-block mb-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-terracotta rounded flex items-center justify-center">
-              <span className="font-serif text-paper text-xl font-bold">k</span>
-            </div>
-            <span className="font-serif text-ink text-2xl font-bold">Kashe</span>
-          </div>
-        </Link>
+        <div className="inline-block mb-8">
+          <BrandMark size="lg" />
+        </div>
 
         <div className="inline-flex px-4 py-1.5 rounded-full border border-terracotta/30 mb-6">
           <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
@@ -94,14 +90,9 @@ export function SifremiUnuttumForm() {
   return (
     <div>
       <div className="text-center mb-10">
-        <Link href="/" className="inline-block mb-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-terracotta rounded flex items-center justify-center">
-              <span className="font-serif text-paper text-xl font-bold">k</span>
-            </div>
-            <span className="font-serif text-ink text-2xl font-bold">Kashe</span>
-          </div>
-        </Link>
+        <div className="inline-block mb-8">
+          <BrandMark size="lg" />
+        </div>
         <h1 className="font-display text-3xl md:text-4xl text-ink mb-3 tracking-tight">
           Şifreni{' '}
           <em className="text-terracotta not-italic italic font-medium">
@@ -143,7 +134,7 @@ export function SifremiUnuttumForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full px-6 py-3.5 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Gönderiliyor...' : 'Sıfırlama bağlantısı gönder'}
         </button>

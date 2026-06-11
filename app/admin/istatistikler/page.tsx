@@ -18,14 +18,15 @@ import {
   Legend,
 } from 'recharts'
 
-// ---- Kashe tema (Theme 2) ----
+// ---- Kashe tema (Varyant D — mor-pembe) ----
+// Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
 const C = {
-  paper: '#FAF7F0',
-  terracotta: '#C8442A',
+  paper: '#FFFFFF',
+  terracotta: '#9333EA', // mor
   ink: '#1A120E',
-  plum: '#6B2E5C',
-  moss: '#3F6B47',
-  ember: '#A8341E',
+  plum: '#EC4899',       // pembe
+  moss: '#3F6B47',       // yeşil (başarı/onay)
+  ember: '#7C3AED',      // koyu mor
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -62,8 +63,8 @@ const PIE_PALETTE = [C.terracotta, C.plum, C.moss, C.ember, '#D98C3F', '#8C6B4F'
 
 const ROLE_ORDER = ['client', 'professional', 'business', 'agency'] as const
 
-const SERIF = 'Fraunces, serif'
-const MONO = 'DM Mono, monospace'
+const SERIF = 'var(--font-display), sans-serif'
+const MONO = 'var(--font-mono), monospace'
 
 // ---- Tipler ----
 type RegRow = { bucket: string; role_key: string; cnt: number }
@@ -136,7 +137,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{ fontFamily: MONO, letterSpacing: '0.08em' }}
-      className="text-[11px] uppercase text-[#A8341E]"
+      className="text-[11px] uppercase text-terracotta"
     >
       {children}
     </span>
@@ -153,11 +154,11 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
       <h3
         style={{ fontFamily: SERIF }}
-        className="mt-1 mb-4 text-xl font-semibold text-[#1A120E]"
+        className="mt-1 mb-4 text-xl font-semibold text-ink"
       >
         {title}
       </h3>
@@ -168,7 +169,7 @@ function Card({
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <div className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
       <Eyebrow>{label}</Eyebrow>
       <div
         style={{ fontFamily: SERIF, color: accent }}
@@ -183,7 +184,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
 const tooltipStyle = {
   borderRadius: 12,
   border: `1px solid ${C.ink}1A`,
-  fontFamily: 'Geist, sans-serif',
+  fontFamily: 'var(--font-body), sans-serif',
   fontSize: 13,
   background: '#fff',
 }
@@ -409,7 +410,7 @@ export default function IstatistiklerPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-[#1A120E]/60">
+      <div className="flex min-h-[60vh] items-center justify-center text-ink-50">
         <span style={{ fontFamily: MONO }} className="text-sm uppercase tracking-wider">
           İstatistikler yükleniyor…
         </span>
@@ -419,31 +420,31 @@ export default function IstatistiklerPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-[#A8341E]/30 bg-[#A8341E]/5 p-6 text-[#A8341E]">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-terracotta/30 bg-terracotta-08 p-6 text-terracotta">
         <strong style={{ fontFamily: SERIF }}>Hata:</strong> {error}
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F0] p-6">
+    <div className="min-h-screen bg-paper p-6">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <Eyebrow>Admin · Panel</Eyebrow>
             <h1
               style={{ fontFamily: SERIF }}
-              className="mt-1 text-3xl font-semibold text-[#1A120E]"
+              className="mt-1 text-3xl font-semibold text-ink"
             >
               İstatistikler
             </h1>
-            <p className="mt-1 text-sm text-[#1A120E]/60">
+            <p className="mt-1 text-sm text-ink-50">
               Akış metrikleri: son {rangeLabel.toLowerCase()} · diğerleri güncel durum
             </p>
           </div>
 
           {/* Tarih aralığı seçici — sadece akış metriklerini etkiler */}
-          <div className="inline-flex rounded-xl border border-[#1A120E]/12 bg-white p-1 shadow-sm">
+          <div className="inline-flex rounded-xl border border-line bg-white p-1 shadow-sm">
             {RANGE_OPTIONS.map((o) => (
               <button
                 key={o.key}
@@ -452,8 +453,8 @@ export default function IstatistiklerPage() {
                 style={{ fontFamily: MONO }}
                 className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg transition-colors ${
                   pDays === o.key
-                    ? 'bg-[#C8442A] text-white'
-                    : 'text-[#1A120E]/55 hover:text-[#1A120E]'
+                    ? 'bg-gradient-brand text-white'
+                    : 'text-ink-50 hover:text-ink'
                 }`}
               >
                 {o.label}
@@ -471,7 +472,7 @@ export default function IstatistiklerPage() {
         </div>
 
         {/* Sekme çubuğu — alt çizgi tarzı */}
-        <div className="mb-6 flex gap-6 border-b border-[#1A120E]/12">
+        <div className="mb-6 flex gap-6 border-b border-line">
           {([
             { key: 'genel', label: 'Genel' },
             { key: 'talep-arz', label: 'Talep-Arz' },
@@ -490,8 +491,8 @@ export default function IstatistiklerPage() {
               style={{ fontFamily: MONO }}
               className={`relative px-1 py-3 text-[12px] uppercase tracking-[0.12em] border-b-2 -mb-px transition-colors ${
                 tab === t.key
-                  ? 'border-[#C8442A] text-[#1A120E] font-semibold'
-                  : 'border-transparent text-[#1A120E]/45 hover:text-[#1A120E]/80'
+                  ? 'border-terracotta text-ink font-semibold'
+                  : 'border-transparent text-ink-50 hover:text-ink-72'
               }`}
             >
               {t.label}
@@ -591,7 +592,7 @@ export default function IstatistiklerPage() {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-              <p className="mt-2 text-sm text-[#1A120E]/70">
+              <p className="mt-2 text-sm text-ink-72">
                 Kabul oranı:{' '}
                 <strong style={{ fontFamily: SERIF, color: C.moss }}>%{conversion}</strong>
               </p>
@@ -647,17 +648,17 @@ export default function IstatistiklerPage() {
             {/* Karar kartları: arz açığı + talep açığı */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Arz açığı — profesyonel çek */}
-              <div className="rounded-2xl border border-[#A8341E]/25 bg-[#A8341E]/5 p-5">
+              <div className="rounded-2xl border border-terracotta/25 bg-terracotta-08 p-5">
                 <Eyebrow>Arz açığı · Profesyonel çek</Eyebrow>
-                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-[#1A120E]">
+                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-ink">
                   Talebin arzı aştığı kategoriler
                 </h3>
-                <p className="mb-4 text-sm text-[#1A120E]/60">
+                <p className="mb-4 text-sm text-ink-50">
                   Bu kategorilerde müşteri talebi var ama yeterli profesyonel yok.
                   Reklam/içerikle profesyonel çekmek en yüksek getiriyi sağlar.
                 </p>
                 {supplyGaps.length === 0 ? (
-                  <p className="text-sm text-[#1A120E]/50">Şu an arz açığı yok.</p>
+                  <p className="text-sm text-ink-50">Şu an arz açığı yok.</p>
                 ) : (
                   <ul className="space-y-2">
                     {supplyGaps.map((r) => (
@@ -665,10 +666,10 @@ export default function IstatistiklerPage() {
                         key={r.category_id}
                         className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
                       >
-                        <span className="font-medium text-[#1A120E]">{r.label}</span>
-                        <span className="text-[#1A120E]/60">
+                        <span className="font-medium text-ink">{r.label}</span>
+                        <span className="text-ink-72">
                           {r.demand} talep · {r.supply} arz{' '}
-                          <strong className="text-[#A8341E]">(+{r.gap} açık)</strong>
+                          <strong className="text-terracotta">(+{r.gap} açık)</strong>
                         </span>
                       </li>
                     ))}
@@ -677,17 +678,17 @@ export default function IstatistiklerPage() {
               </div>
 
               {/* Talep açığı — talep yarat */}
-              <div className="rounded-2xl border border-[#3F6B47]/25 bg-[#3F6B47]/5 p-5">
+              <div className="rounded-2xl border border-moss/25 bg-moss/5 p-5">
                 <Eyebrow>Talep açığı · Talep yarat</Eyebrow>
-                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-[#1A120E]">
+                <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-ink">
                   Arzın talebi aştığı kategoriler
                 </h3>
-                <p className="mb-4 text-sm text-[#1A120E]/60">
+                <p className="mb-4 text-sm text-ink-50">
                   Bu kategorilerde çok profesyonel var ama az talep. Sosyal medya
                   içeriği ve kampanyayla müşteri talebi yaratmak gerekir.
                 </p>
                 {demandGaps.length === 0 ? (
-                  <p className="text-sm text-[#1A120E]/50">Şu an talep açığı yok.</p>
+                  <p className="text-sm text-ink-50">Şu an talep açığı yok.</p>
                 ) : (
                   <ul className="space-y-2">
                     {demandGaps.map((r) => (
@@ -695,10 +696,10 @@ export default function IstatistiklerPage() {
                         key={r.category_id}
                         className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
                       >
-                        <span className="font-medium text-[#1A120E]">{r.label}</span>
-                        <span className="text-[#1A120E]/60">
+                        <span className="font-medium text-ink">{r.label}</span>
+                        <span className="text-ink-72">
                           {r.supply} arz · {r.demand} talep{' '}
-                          <strong className="text-[#3F6B47]">(+{r.gap} fazla)</strong>
+                          <strong className="text-moss">(+{r.gap} fazla)</strong>
                         </span>
                       </li>
                     ))}
@@ -749,17 +750,17 @@ export default function IstatistiklerPage() {
             {/* En çok favorilenen */}
             <Card eyebrow="Sosyal medya · Öne çıkar" title="En çok favorilenen profesyoneller">
               {topFav.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Henüz favori verisi yok.</p>
+                <p className="text-sm text-ink-50">Henüz favori verisi yok.</p>
               ) : (
                 <ol className="space-y-2">
                   {topFav.map((r, i) => (
-                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
-                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
-                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-ink truncate">{r.name}</span>
+                        {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
-                      <span className="text-[#1A120E]/70 shrink-0">{r.fav_count} ❤</span>
+                      <span className="text-ink-72 shrink-0">{r.fav_count} ❤</span>
                     </li>
                   ))}
                 </ol>
@@ -769,17 +770,17 @@ export default function IstatistiklerPage() {
             {/* En yüksek puanlı */}
             <Card eyebrow="Sosyal medya · Öne çıkar" title="En yüksek puanlı profesyoneller">
               {topRated.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Henüz puan verisi yok.</p>
+                <p className="text-sm text-ink-50">Henüz puan verisi yok.</p>
               ) : (
                 <ol className="space-y-2">
                   {topRated.map((r, i) => (
-                    <li key={r.professional_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                    <li key={r.professional_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
-                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
-                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-ink truncate">{r.name}</span>
+                        {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
-                      <span className="text-[#1A120E]/70 shrink-0">
+                      <span className="text-ink-72 shrink-0">
                         ★ {Number(r.avg_rating).toFixed(1)} ({r.review_count})
                       </span>
                     </li>
@@ -791,17 +792,17 @@ export default function IstatistiklerPage() {
             {/* En çok görüntülenen */}
             <Card eyebrow="Sosyal medya · Öne çıkar" title="En çok görüntülenen profiller">
               {topViewed.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Henüz görüntülenme verisi yok.</p>
+                <p className="text-sm text-ink-50">Henüz görüntülenme verisi yok.</p>
               ) : (
                 <ol className="space-y-2">
                   {topViewed.map((r, i) => (
-                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
-                        <span className="font-medium text-[#1A120E] truncate">{r.name}</span>
-                        {r.category && <span className="text-[#1A120E]/50 text-xs shrink-0">· {r.category}</span>}
+                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-ink truncate">{r.name}</span>
+                        {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
-                      <span className="text-[#1A120E]/70 shrink-0">{r.views} görüntülenme</span>
+                      <span className="text-ink-72 shrink-0">{r.views} görüntülenme</span>
                     </li>
                   ))}
                 </ol>
@@ -811,16 +812,16 @@ export default function IstatistiklerPage() {
             {/* En aktif kategoriler */}
             <Card eyebrow="Trend · İçerik fikri" title="En aktif kategoriler">
               {activeCats.filter((r) => r.activity > 0).length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Henüz aktivite verisi yok.</p>
+                <p className="text-sm text-ink-50">Henüz aktivite verisi yok.</p>
               ) : (
                 <ol className="space-y-2">
                   {activeCats.filter((r) => r.activity > 0).map((r, i) => (
-                    <li key={r.category_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
+                    <li key={r.category_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-[#C8442A] font-semibold w-5 shrink-0">{i + 1}.</span>
-                        <span className="font-medium text-[#1A120E] truncate">{r.label}</span>
+                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-ink truncate">{r.label}</span>
                       </span>
-                      <span className="text-[#1A120E]/70 shrink-0 text-xs">
+                      <span className="text-ink-72 shrink-0 text-xs">
                         {r.listings_count} ilan · {r.applications_count} başvuru
                       </span>
                     </li>
@@ -845,10 +846,10 @@ export default function IstatistiklerPage() {
                   const down = c.pct !== null && c.pct < 0
                   const flat = c.pct === null || c.pct === 0
                   return (
-                    <div key={c.metric} className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
+                    <div key={c.metric} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
                       <Eyebrow>{c.label}</Eyebrow>
                       <div className="mt-1 flex items-baseline gap-2">
-                        <span style={{ fontFamily: SERIF }} className="text-3xl font-semibold text-[#1A120E]">
+                        <span style={{ fontFamily: SERIF }} className="text-3xl font-semibold text-ink">
                           {c.tw}
                         </span>
                         {c.pct !== null && (
@@ -860,7 +861,7 @@ export default function IstatistiklerPage() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-[#1A120E]/50">
+                      <p className="mt-1 text-xs text-ink-50">
                         Geçen hafta: {c.lw}
                       </p>
                     </div>
@@ -890,7 +891,7 @@ export default function IstatistiklerPage() {
                   <Area type="monotone" dataKey="Rezervasyon" stroke={C.ember} fill="transparent" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="mt-2 text-xs text-[#1A120E]/50">
+              <p className="mt-2 text-xs text-ink-50">
                 Mesaj ve teklif hacmi ayrı eksende olduğu için grafikte kayıt/ilan/başvuru/rezervasyon
                 gösterilir. Tüm metrikler için karşılaştırma kartlarına bakabilirsin.
               </p>
@@ -919,7 +920,7 @@ export default function IstatistiklerPage() {
         {/* TUTUNDURMA SEKMESİ */}
         {tab === 'tutundurma' && (
           <div className="space-y-6">
-            <p className="text-sm text-[#1A120E]/60">
+            <p className="text-sm text-ink-50">
               Huni&apos;de kaybedilen kullanıcılar — her liste bir aksiyon fırsatı.
               Profile tıklayarak ilgili kullanıcıya ulaşabilirsin.
             </p>
@@ -927,22 +928,22 @@ export default function IstatistiklerPage() {
             {/* Profilini tamamlamayan profesyoneller */}
             <Card eyebrow="Aksiyon · Tamamlama hatırlat" title={`Profilini tamamlamayan profesyoneller (${incompletePros.length})`}>
               {incompletePros.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Herkes profilini tamamlamış.</p>
+                <p className="text-sm text-ink-50">Herkes profilini tamamlamış.</p>
               ) : (
                 <ul className="space-y-2">
                   {incompletePros.map((r) => (
-                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
-                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
                         {r.name}
                       </a>
                       <span className="flex items-center gap-2 shrink-0 text-xs">
-                        {r.category && <span className="text-[#1A120E]/50">{r.category}</span>}
+                        {r.category && <span className="text-ink-50">{r.category}</span>}
                         <span className={`px-2 py-0.5 rounded-full ${
                           r.approval_status === 'rejected'
-                            ? 'bg-[#A8341E]/10 text-[#A8341E]'
+                            ? 'bg-terracotta-12 text-terracotta'
                             : !r.is_published
                             ? 'bg-[#D98C3F]/15 text-[#8C5A1F]'
-                            : 'bg-[#1A120E]/8 text-[#1A120E]/60'
+                            : 'bg-ink-12 text-ink-72'
                         }`}>
                           {r.approval_status === 'rejected' ? 'Reddedildi' : !r.is_published ? 'Yayında değil' : r.approval_status}
                         </span>
@@ -956,15 +957,15 @@ export default function IstatistiklerPage() {
             {/* Başvuru almayan ilanlar */}
             <Card eyebrow="Aksiyon · Öne çıkarma öner" title={`Başvuru almayan açık ilanlar (${listingsNoApps.length})`}>
               {listingsNoApps.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Tüm açık ilanlar başvuru almış.</p>
+                <p className="text-sm text-ink-50">Tüm açık ilanlar başvuru almış.</p>
               ) : (
                 <ul className="space-y-2">
                   {listingsNoApps.map((r) => (
-                    <li key={r.listing_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
-                      <a href={`/ilanlar/${r.listing_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                    <li key={r.listing_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
+                      <a href={`/ilanlar/${r.listing_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
                         {r.title}
                       </a>
-                      <span className="shrink-0 text-xs text-[#1A120E]/50">{r.creator_name}</span>
+                      <span className="shrink-0 text-xs text-ink-50">{r.creator_name}</span>
                     </li>
                   ))}
                 </ul>
@@ -974,15 +975,15 @@ export default function IstatistiklerPage() {
             {/* Yayında ama başvurmayan profesyoneller */}
             <Card eyebrow="Aksiyon · İlan öner" title={`Yayında ama hiç başvurmayan profesyoneller (${prosNoApps.length})`}>
               {prosNoApps.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Tüm yayındaki profesyoneller başvurmuş.</p>
+                <p className="text-sm text-ink-50">Tüm yayındaki profesyoneller başvurmuş.</p>
               ) : (
                 <ul className="space-y-2">
                   {prosNoApps.map((r) => (
-                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF7F0] px-3 py-2 text-sm">
-                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1A120E] hover:text-[#C8442A] truncate">
+                    <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
                         {r.name}
                       </a>
-                      {r.category && <span className="shrink-0 text-xs text-[#1A120E]/50">{r.category}</span>}
+                      {r.category && <span className="shrink-0 text-xs text-ink-50">{r.category}</span>}
                     </li>
                   ))}
                 </ul>
@@ -1030,7 +1031,7 @@ export default function IstatistiklerPage() {
               {/* GMV zaman serisi */}
               <Card eyebrow="Hacim" title="GMV trendi">
                 {bookingDaily.length === 0 ? (
-                  <p className="text-sm text-[#1A120E]/50">Bu aralıkta rezervasyon yok.</p>
+                  <p className="text-sm text-ink-50">Bu aralıkta rezervasyon yok.</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <AreaChart data={bookingDaily.map((r) => ({ date: r.bucket, GMV: num(r.gmv), adet: num(r.cnt) }))}>
@@ -1077,7 +1078,7 @@ export default function IstatistiklerPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                <p className="mt-2 text-xs text-[#1A120E]/50">
+                <p className="mt-2 text-xs text-ink-50">
                   İptal edilen rezervasyonların toplam değeri:{' '}
                   <strong style={{ color: C.ember }}>
                     {num(bookingSummary?.cancelled_value).toLocaleString('tr-TR')} ₺
@@ -1091,7 +1092,7 @@ export default function IstatistiklerPage() {
         {/* OPERASYONEL SEKMESİ */}
         {tab === 'operasyonel' && (
           <div className="space-y-6">
-            <p className="text-sm text-[#1A120E]/60">
+            <p className="text-sm text-ink-50">
               Platformun hızı — düşük süreler sağlıklı bir pazaryerinin işareti.
               Ortalama yanıltabilir, o yüzden medyan da gösteriliyor.
             </p>
@@ -1101,18 +1102,18 @@ export default function IstatistiklerPage() {
               <Card eyebrow="Arz hızı" title="İlan → ilk başvuru">
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span className="text-sm text-ink-72">Ortalama</span>
                     <span style={{ fontFamily: SERIF, color: C.plum }} className="text-2xl font-semibold">
                       {fmtDuration(num(opsFirstApp?.avg_hours))}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
-                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                    <span className="text-sm text-ink-72">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-ink">
                       {fmtDuration(num(opsFirstApp?.median_hours))}
                     </span>
                   </div>
-                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                  <p className="pt-2 text-xs text-ink-50 border-t border-line">
                     {num(opsFirstApp?.measured_count)} ilan ölçüldü
                   </p>
                 </div>
@@ -1122,21 +1123,21 @@ export default function IstatistiklerPage() {
               <Card eyebrow="Yanıt hızı" title="Başvuru → yanıt">
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span className="text-sm text-ink-72">Ortalama</span>
                     <span style={{ fontFamily: SERIF, color: C.terracotta }} className="text-2xl font-semibold">
                       {fmtDuration(num(opsAppResp?.avg_hours))}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
-                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                    <span className="text-sm text-ink-72">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-ink">
                       {fmtDuration(num(opsAppResp?.median_hours))}
                     </span>
                   </div>
-                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                  <p className="pt-2 text-xs text-ink-50 border-t border-line">
                     {num(opsAppResp?.responded_count)} / {num(opsAppResp?.total_count)} yanıtlandı
                     {num(opsAppResp?.pending_count) > 0 && (
-                      <span className="text-[#A8341E]">
+                      <span className="text-terracotta">
                         {' '}· {num(opsAppResp?.pending_count)} bekliyor
                       </span>
                     )}
@@ -1148,18 +1149,18 @@ export default function IstatistiklerPage() {
               <Card eyebrow="İletişim hızı" title="Mesaj → ilk yanıt">
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Ortalama</span>
+                    <span className="text-sm text-ink-72">Ortalama</span>
                     <span style={{ fontFamily: SERIF, color: C.moss }} className="text-2xl font-semibold">
                       {fmtDuration(num(opsMsgResp?.avg_hours))}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-[#1A120E]/60">Medyan</span>
-                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-[#1A120E]">
+                    <span className="text-sm text-ink-72">Medyan</span>
+                    <span style={{ fontFamily: SERIF }} className="text-xl font-semibold text-ink">
                       {fmtDuration(num(opsMsgResp?.median_hours))}
                     </span>
                   </div>
-                  <p className="pt-2 text-xs text-[#1A120E]/45 border-t border-[#1A120E]/8">
+                  <p className="pt-2 text-xs text-ink-50 border-t border-line">
                     {num(opsMsgResp?.measured_count)} konuşma ölçüldü
                   </p>
                 </div>
@@ -1170,7 +1171,7 @@ export default function IstatistiklerPage() {
             {num(opsAppResp?.pending_count) > 0 && (
               <div className="rounded-2xl border border-[#D98C3F]/30 bg-[#D98C3F]/8 p-5">
                 <Eyebrow>Dikkat · Yanıtsız başvurular</Eyebrow>
-                <p className="mt-2 text-sm text-[#1A120E]/70">
+                <p className="mt-2 text-sm text-ink-72">
                   Bu aralıkta{' '}
                   <strong style={{ color: '#8C5A1F' }}>
                     {num(opsAppResp?.pending_count)} başvuru
@@ -1216,9 +1217,9 @@ export default function IstatistiklerPage() {
             {/* Son admin işlemleri */}
             <Card eyebrow="Denetim · Son işlemler" title="Son yönetici işlemleri">
               {recentActions.length === 0 ? (
-                <p className="text-sm text-[#1A120E]/50">Henüz işlem kaydı yok.</p>
+                <p className="text-sm text-ink-50">Henüz işlem kaydı yok.</p>
               ) : (
-                <ul className="divide-y divide-[#1A120E]/8">
+                <ul className="divide-y divide-line">
                   {recentActions.map((a) => {
                     const meta = actionMeta(a.action)
                     const targetHref = targetLink(a.target_type, a.target_id)
@@ -1229,11 +1230,11 @@ export default function IstatistiklerPage() {
                             className="shrink-0 w-1.5 h-1.5 rounded-full"
                             style={{ background: meta.color }}
                           />
-                          <span className="text-[#1A120E] truncate">
+                          <span className="text-ink truncate">
                             <strong className="font-medium">{a.admin_name}</strong>{' '}
-                            <span className="text-[#1A120E]/70">{meta.label}</span>
+                            <span className="text-ink-72">{meta.label}</span>
                             {a.notes && (
-                              <span className="text-[#1A120E]/45 italic"> — {a.notes}</span>
+                              <span className="text-ink-50 italic"> — {a.notes}</span>
                             )}
                           </span>
                         </span>
@@ -1243,12 +1244,12 @@ export default function IstatistiklerPage() {
                               href={targetHref}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-[#C8442A] hover:underline"
+                              className="text-[11px] text-terracotta hover:underline"
                             >
                               Görüntüle
                             </a>
                           )}
-                          <span className="text-[11px] text-[#1A120E]/45" style={{ fontFamily: MONO }}>
+                          <span className="text-[11px] text-ink-50" style={{ fontFamily: MONO }}>
                             {fmtDateTime(a.created_at)}
                           </span>
                         </span>
@@ -1270,16 +1271,16 @@ function QueueCard({ label, count, href, accent }: { label: string; count: numbe
   return (
     <a
       href={href}
-      className="block rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm transition-all hover:border-[#C8442A] hover:-translate-y-0.5"
+      className="block rounded-2xl border border-line bg-white p-5 shadow-sm transition-all hover:border-terracotta hover:-translate-y-0.5"
     >
-      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-[#A8341E]">
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
         {label}
       </span>
       <div className="mt-1 flex items-baseline justify-between">
         <span style={{ fontFamily: SERIF, color: accent }} className="text-3xl font-semibold">
           {count}
         </span>
-        <span className="text-[11px] text-[#C8442A]">Yönet →</span>
+        <span className="text-[11px] text-terracotta">Yönet →</span>
       </div>
     </a>
   )
@@ -1348,15 +1349,15 @@ function FunnelCard({
 }) {
   const base = rows.length > 0 ? Number(rows[0].cnt) : 0
   return (
-    <div className="rounded-2xl border border-[#1A120E]/10 bg-white p-5 shadow-sm">
-      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-[#A8341E]">
+    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
         {eyebrow}
       </span>
-      <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-4 text-xl font-semibold text-[#1A120E]">
+      <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-4 text-xl font-semibold text-ink">
         {title}
       </h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-[#1A120E]/50">Henüz veri yok.</p>
+        <p className="text-sm text-ink-50">Henüz veri yok.</p>
       ) : (
         <div className="space-y-3">
           {rows.map((r) => {
@@ -1365,12 +1366,12 @@ function FunnelCard({
             return (
               <div key={r.step}>
                 <div className="flex items-center justify-between mb-1 text-sm">
-                  <span className="text-[#1A120E] font-medium">{r.label}</span>
-                  <span className="text-[#1A120E]/60">
-                    {cnt} <span className="text-[#1A120E]/40">· %{pct}</span>
+                  <span className="text-ink font-medium">{r.label}</span>
+                  <span className="text-ink-72">
+                    {cnt} <span className="text-ink-50">· %{pct}</span>
                   </span>
                 </div>
-                <div className="h-7 w-full rounded-lg bg-[#FAF7F0] overflow-hidden">
+                <div className="h-7 w-full rounded-lg bg-paper-2 overflow-hidden">
                   <div
                     className="h-full rounded-lg transition-all flex items-center"
                     style={{ width: `${Math.max(pct, 2)}%`, background: accent }}

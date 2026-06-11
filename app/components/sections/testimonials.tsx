@@ -8,10 +8,11 @@ type Testimonial = {
   tone: { bg: string; fg: string };
 };
 
+// NOT: key isimleri kod referansı (TONES.terracotta vb.), renkle örtüşmese de korundu.
 const TONES = {
-  terracotta: { bg: "rgba(200,68,42,0.10)", fg: "#C8442A" },
-  plum: { bg: "rgba(107,46,92,0.10)", fg: "#6B2E5C" },
-  moss: { bg: "rgba(63,107,71,0.10)", fg: "#3F6B47" },
+  terracotta: { bg: "rgba(147,51,234,0.10)", fg: "#9333EA" },
+  plum: { bg: "rgba(219,39,119,0.10)", fg: "#DB2777" },
+  moss: { bg: "rgba(124,58,237,0.10)", fg: "#7C3AED" },
 };
 
 // NOT: Bu yorumlar şu an temsilidir — gerçek müşteri/profesyonel

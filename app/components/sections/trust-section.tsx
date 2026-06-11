@@ -41,10 +41,10 @@ const trustItems: TrustItem[] = [
 
 // İkon zeminleri için renk rotasyonu (Kashe paleti) — Categories ile tutarlı.
 const TONES = [
-  { bg: "rgba(200,68,42,0.10)", fg: "#C8442A" }, // terracotta
-  { bg: "rgba(107,46,92,0.10)", fg: "#6B2E5C" }, // plum
-  { bg: "rgba(63,107,71,0.10)", fg: "#3F6B47" }, // moss
-  { bg: "rgba(168,52,30,0.10)", fg: "#A8341E" }, // ember
+  { bg: "rgba(147,51,234,0.10)", fg: "#9333EA" }, // mor
+  { bg: "rgba(219,39,119,0.10)", fg: "#DB2777" }, // pembe
+  { bg: "rgba(124,58,237,0.10)", fg: "#7C3AED" }, // koyu mor
+  { bg: "rgba(162,28,175,0.10)", fg: "#A21CAF" }, // fuşya
 ];
 
 export function TrustSection() {
