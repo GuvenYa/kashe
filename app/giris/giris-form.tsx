@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-browser';
+import { BrandMark } from '@/app/components/ui/brand-mark';
 
 function translateError(message: string): string {
   const m = message.toLowerCase();
@@ -69,25 +70,20 @@ export default function GirisForm({
   return (
     <div>
       <div className="text-center mb-10">
-        <Link href="/" className="inline-block mb-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-[#C8442A] rounded flex items-center justify-center">
-              <span className="font-serif text-[#FAF7F0] text-xl font-bold">k</span>
-            </div>
-            <span className="font-serif text-[#1A120E] text-2xl font-bold italic">Kashe</span>
-          </div>
-        </Link>
-        <h1 className="font-serif text-3xl md:text-4xl text-[#1A120E] mb-3">
-          Tekrar <em className="text-[#C8442A] not-italic italic font-medium">hoş geldin</em>.
+        <div className="inline-block mb-8">
+          <BrandMark size="lg" />
+        </div>
+        <h1 className="font-display font-light text-3xl md:text-4xl text-ink mb-3">
+          Tekrar <em>hoş geldin</em>.
         </h1>
-        <p className="text-[#1A120E]/70">Hesabına giriş yap ve devam et.</p>
+        <p className="text-ink-72">Hesabına giriş yap ve devam et.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label
             htmlFor="email"
-            className="block text-xs font-mono uppercase tracking-wider text-[#1A120E]/60 mb-2"
+            className="block text-xs font-mono uppercase tracking-wider text-ink-50 mb-2"
           >
             Email
           </label>
@@ -97,7 +93,7 @@ export default function GirisForm({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-[#1A120E]/15 rounded-lg text-[#1A120E] placeholder:text-[#1A120E]/30 focus:outline-none focus:border-[#C8442A] focus:ring-2 focus:ring-[#C8442A]/20 transition"
+            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-12 transition"
             placeholder="seninadin@email.com"
             autoComplete="email"
           />
@@ -107,13 +103,13 @@ export default function GirisForm({
           <div className="flex items-center justify-between mb-2">
             <label
               htmlFor="sifre"
-              className="block text-xs font-mono uppercase tracking-wider text-[#1A120E]/60"
+              className="block text-xs font-mono uppercase tracking-wider text-ink-50"
             >
               Şifre
             </label>
             <Link
               href="/sifremi-unuttum"
-              className="text-sm text-[#C8442A] hover:underline"
+              className="text-sm text-terracotta hover:underline"
             >
               Şifremi unuttum
             </Link>
@@ -125,14 +121,14 @@ export default function GirisForm({
               required
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              className="w-full px-4 py-3 pr-12 bg-white border border-[#1A120E]/15 rounded-lg text-[#1A120E] placeholder:text-[#1A120E]/30 focus:outline-none focus:border-[#C8442A] focus:ring-2 focus:ring-[#C8442A]/20 transition"
+              className="w-full px-4 py-3 pr-12 bg-white border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-12 transition"
               placeholder="••••••••"
               autoComplete="current-password"
             />
             <button
               type="button"
               onClick={() => setShowSifre((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A120E]/40 hover:text-[#1A120E]/70 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-32 hover:text-ink-72 transition-colors"
               aria-label={showSifre ? 'Şifreyi gizle' : 'Şifreyi göster'}
             >
               {showSifre ? (
@@ -153,7 +149,7 @@ export default function GirisForm({
         </div>
 
         {hata && (
-          <div className="px-4 py-3 bg-[#C8442A]/10 border border-[#C8442A]/30 rounded-lg text-sm text-[#C8442A]">
+          <div className="px-4 py-3 bg-terracotta-08 border border-terracotta/30 rounded-lg text-sm text-terracotta">
             {hata}
           </div>
         )}
@@ -161,15 +157,15 @@ export default function GirisForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3.5 bg-[#C8442A] text-[#FAF7F0] rounded-lg font-medium hover:bg-[#a8381f] disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="w-full px-6 py-3.5 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
         </button>
       </form>
 
-      <p className="text-center text-sm text-[#1A120E]/60 mt-8">
+      <p className="text-center text-sm text-ink-50 mt-8">
         Hesabın yok mu?{' '}
-        <Link href="/uye-ol" className="text-[#C8442A] hover:underline font-medium">
+        <Link href="/uye-ol" className="text-terracotta hover:underline font-medium">
           Üye ol
         </Link>
       </p>

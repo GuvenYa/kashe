@@ -8,17 +8,9 @@ export function BrandMark({ size = "default" }: { size?: "default" | "lg" }) {
   return (
     <a href="/" className="inline-flex items-center gap-2.5">
       <span
-        className={`${d.box} bg-terracotta flex items-center justify-center text-paper font-display font-semibold ${d.letter} leading-none`}
+        className={`${d.box} bg-gradient-brand flex items-center justify-center text-paper font-display font-semibold ${d.letter} leading-none rounded-lg`}
       >
-        <em
-          className="text-paper not-italic font-light"
-          style={{
-            fontStyle: "italic",
-            fontVariationSettings: '"SOFT" 100',
-          }}
-        >
-          k
-        </em>
+        k
       </span>
       <span className={`font-display font-semibold ${d.text} text-ink tracking-tight`}>
         Kashe

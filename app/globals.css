@@ -70,10 +70,20 @@ body {
   background: var(--gradient-brand);
 }
 
-/* === Italik vurgu (sadeleştirildi) ===
-   Eski sistem Fraunces SOFT/opsz + terracotta italik idi ("Claude kokusu").
-   Artık em/i normal italik; renk metinden miras alınır. */
-em,
+/* === Vurgu sistemi (Varyant D) ===
+   <em> = marka gradyanı, italik DEĞİL (eski Fraunces+terracotta italik
+   "Claude kokusu" yerine modern gradyan vurgu). Tüm <em>'ler tek noktadan
+   döner — className'deki text-terracotta/italic bu kuralla ezilir (layer-dışı).
+   Hukuki/teknik italik için <i> ayrı tutuldu. */
+em {
+  font-style: normal;
+  font-weight: 600;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 i {
   font-style: italic;
 }
