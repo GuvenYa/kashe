@@ -41,7 +41,7 @@ function buildEmailHtml(params: {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FAF7F0; color: #1A120E; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FAF8FC; color: #1A120E; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
   <div style="background: white; border-radius: 12px; padding: 32px;">
     <h1 style="font-size: 20px; margin: 0 0 16px 0; color: #1A120E;">
       Merhaba ${recipientName},
@@ -49,12 +49,12 @@ function buildEmailHtml(params: {
     <p style="font-size: 16px; line-height: 1.5; margin: 0 0 24px 0;">
       Kashe'de <strong>${senderName}</strong> sana yeni bir mesaj gönderdi:
     </p>
-    <div style="background: #FAF7F0; border-left: 3px solid #C8442A; padding: 16px; margin: 0 0 24px 0; border-radius: 4px;">
+    <div style="background: #F5EEFB; border-left: 3px solid #9333EA; padding: 16px; margin: 0 0 24px 0; border-radius: 4px;">
       <p style="font-size: 15px; line-height: 1.5; margin: 0; color: #1A120E;">
         ${messagePreview}
       </p>
     </div>
-    <a href="${conversationUrl}" style="display: inline-block; background: #C8442A; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+    <a href="${conversationUrl}" style="display: inline-block; background: #9333EA; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
       Mesajı görüntüle
     </a>
     <p style="font-size: 13px; color: #6B5F58; margin: 32px 0 0 0;">

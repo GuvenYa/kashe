@@ -255,7 +255,7 @@ export function KesfetFilters({
                 >
                   {on && (
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 12l5 5L20 6" stroke="#FAF7F0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                 </span>
@@ -446,7 +446,7 @@ export function KesfetFilters({
                           >
                             {on && (
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5 12l5 5L20 6" stroke="#FAF7F0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             )}
                           </span>

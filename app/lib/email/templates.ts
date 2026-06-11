@@ -2,14 +2,14 @@ import { SITE_URL } from './resend-client';
 
 // Kashe paleti — inline kullanım için
 const COLORS = {
-  paper: '#FAF7F0',
-  paper2: '#F2EDDF',
+  paper: '#FAF8FC',
+  paper2: '#F5EEFB',
   card: '#FFFFFF',
   ink: '#1A120E',
   ink72: 'rgba(26, 18, 14, 0.72)',
   ink50: 'rgba(26, 18, 14, 0.5)',
-  terracotta: '#C8442A',
-  ember: '#A8341E',
+  terracotta: '#9333EA',
+  ember: '#7C3AED',
   moss: '#3F6B47',
   line: 'rgba(26, 18, 14, 0.12)',
 };
@@ -69,7 +69,7 @@ function baseLayout(opts: {
             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
               <tr>
                 <td style="background-color:${COLORS.terracotta};width:28px;height:28px;border-radius:6px;text-align:center;vertical-align:middle;">
-                  <span style="color:${COLORS.paper};font-weight:600;font-style:italic;font-size:18px;line-height:28px;">k</span>
+                  <span style="color:#FFFFFF;font-weight:600;font-size:18px;line-height:28px;">k</span>
                 </td>
                 <td style="padding-left:10px;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:${COLORS.ink};">Kashe</td>
               </tr>

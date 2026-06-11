@@ -193,7 +193,7 @@ export function ProfileCard({
                       d="M12 2l2.4 1.8 3 -.2 .9 2.9 2.4 1.8 -1 2.9 1 2.9 -2.4 1.8 -.9 2.9 -3 -.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.3 15.7l1-2.9-1-2.9 2.4-1.8.9-2.9 3 .2z"
                       fill="var(--color-moss)"
                     />
-                    <path d="M8.5 12l2.2 2.2 4.3-4.4" stroke="#FAF7F0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8.5 12l2.2 2.2 4.3-4.4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
               )}

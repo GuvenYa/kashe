@@ -2,7 +2,7 @@
 // Kullanım: burstConfetti(x, y)  — x,y ekran koordinatı (clientX/clientY)
 // Kashe renkleriyle: terracotta, plum, moss, soft.
 
-const COLORS = ["#C8442A", "#6B2E5C", "#3F6B47", "#E08266", "#1A120E"];
+const COLORS = ["#9333EA", "#EC4899", "#C084FC", "#7C3AED", "#A21CAF"];
 
 export function burstConfetti(x: number, y: number, count = 14) {
   if (typeof window === "undefined") return;
