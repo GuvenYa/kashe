@@ -45,7 +45,7 @@ export default async function HizmetlerimPage() {
   const [{ data: services }, { data: categories }] = await Promise.all([
     supabase
       .from('services')
-      .select('*, service_categories(name_tr, emoji)')
+      .select('*, service_categories(name_tr, emoji), service_addons(*)')
       .eq('profile_id', user.id)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false }),

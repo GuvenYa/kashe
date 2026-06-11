@@ -18,6 +18,11 @@ type Props = {
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   packageContext?: { title: string; price: string | null } | null;
+  serviceContext?: {
+    title: string;
+    addons: { title: string; price: number }[];
+    estimatedTotal: number | null;
+  } | null;
   variant?: 'default' | 'package' | 'inline';
 };
 
@@ -29,6 +34,7 @@ export function IletisimButton({
   currentUserIsProfessional,
   isOwnProfile,
   packageContext = null,
+  serviceContext = null,
   variant = 'default',
 }: Props) {
   const router = useRouter();
@@ -49,7 +55,11 @@ export function IletisimButton({
     setBriefValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Paket için iletişim: modalı açarken mesajı paket referansıyla ön-doldur
+  function formatTL(n: number): string {
+    return `₺${Math.round(n).toLocaleString('tr-TR')}`;
+  }
+
+  // Paket veya hizmet+ekstra için iletişim: modalı açarken mesajı ön-doldur
   function openForPackage() {
     if (packageContext) {
       const priceText = packageContext.price
@@ -58,6 +68,27 @@ export function IletisimButton({
       setMessage(
         `Merhaba, "${packageContext.title}"${priceText} paketiniz hakkında bilgi almak istiyorum. `
       );
+    } else if (serviceContext) {
+      const { title, addons, estimatedTotal } = serviceContext;
+      if (addons.length > 0) {
+        const addonLines = addons
+          .map(
+            (a) =>
+              `• ${a.title}${a.price > 0 ? ` (+${formatTL(a.price)})` : ''}`
+          )
+          .join('\n');
+        const totalText =
+          estimatedTotal !== null
+            ? `\n\nTahmini toplam: ~${formatTL(estimatedTotal)}`
+            : '';
+        setMessage(
+          `Merhaba, "${title}" hizmetiniz için aşağıdaki ekstralarla ilgileniyorum:\n${addonLines}${totalText}\n\n`
+        );
+      } else {
+        setMessage(
+          `Merhaba, "${title}" hizmetiniz hakkında bilgi almak istiyorum. `
+        );
+      }
     }
     setModalOpen(true);
   }
@@ -273,7 +304,11 @@ export function IletisimButton({
           onClick={openForPackage}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
         >
-          Bu paket için ilet
+          {serviceContext
+            ? serviceContext.addons.length > 0
+              ? 'Seçili ekstralarla ilet'
+              : 'Bu hizmet için ilet'
+            : 'Bu paket için ilet'}
         </button>
       ) : variant === 'inline' ? (
         <button

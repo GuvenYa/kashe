@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleServiceActive, deleteService } from './actions';
 import { formatPriceRange, formatDuration } from '@/app/lib/profile-helpers';
+import { AddonManager } from './addon-manager';
 import type { ServiceWithCategory } from '@/app/lib/types';
 
 type Props = {
@@ -75,6 +76,11 @@ export function ServiceCard({ service, onEdit }: Props) {
               {service.description}
             </p>
           )}
+
+          <AddonManager
+            serviceId={service.id}
+            addons={service.service_addons || []}
+          />
 
           {error && (
             <p className="text-sm text-terracotta mt-3">{error}</p>

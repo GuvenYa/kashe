@@ -76,6 +76,19 @@ export type ProfileWithCity = Profile & {
 
 export type ServiceWithCategory = Service & {
   service_categories: { name_tr: string; emoji: string | null } | null;
+  service_addons?: ServiceAddon[];
+};
+
+export type ServiceAddon = {
+  id: string;
+  service_id: string;
+  profile_id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string | null;
 };
 // ===== MESSAGING =====
 

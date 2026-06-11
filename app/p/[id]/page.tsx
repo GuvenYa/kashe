@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
 import { RezervasyonButton } from './rezervasyon-button';
+import { HizmetSecici } from './hizmet-secici';
 import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
@@ -188,7 +189,7 @@ export default async function PublicProfilePage({
   ] = await Promise.all([
     supabase
       .from('services')
-      .select('*, service_categories(name_tr, emoji)')
+      .select('*, service_categories(name_tr, emoji), service_addons(*)')
       .eq('profile_id', profile.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
@@ -778,35 +779,18 @@ export default async function PublicProfilePage({
                 Sunulan hizmetler
               </h2>
               <div className="space-y-5">
-                {services.map((service) => {
-                  const priceLabel = formatPriceRange(
-                    service.price_min,
-                    service.price_max,
-                    service.price_on_request
-                  );
-                  const durationLabel = formatDuration(service.duration_hours);
-                  const catLabel = service.service_categories
-                    ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
-                    : '';
-                  return (
-                    <div key={service.id} className="border-l-2 border-terracotta pl-5 py-1">
-                      <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
-                        {catLabel}
-                      </p>
-                      <h3 className="font-display text-lg text-ink mb-1">
-                        {service.title}
-                      </h3>
-                      <p className="text-sm text-ink-72 mb-2">
-                        {[durationLabel, priceLabel].filter(Boolean).join(' · ')}
-                      </p>
-                      {service.description && (
-                        <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap">
-                          {service.description}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                {services.map((service) => (
+                  <HizmetSecici
+                    key={service.id}
+                    service={service}
+                    professionalId={profile.id}
+                    professionalName={displayName}
+                    categorySlug={profile.service_categories?.slug ?? null}
+                    isLoggedIn={isLoggedIn}
+                    currentUserIsProfessional={currentUserIsProfessional}
+                    isOwnProfile={isOwnProfile}
+                  />
+                ))}
               </div>
             </div>
           )}
