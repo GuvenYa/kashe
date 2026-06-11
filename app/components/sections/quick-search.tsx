@@ -140,7 +140,7 @@ export function QuickSearch({
       {/* Ara butonu */}
       <button
         type="submit"
-        className="shrink-0 bg-terracotta text-paper rounded-xl px-7 py-4 md:py-0 font-display font-semibold hover:bg-ember transition-colors flex items-center justify-center gap-2"
+        className="shrink-0 bg-gradient-brand text-white rounded-xl px-7 py-4 md:py-0 font-display font-semibold transition-all hover:shadow-[0_8px_22px_-8px_rgba(147,51,234,0.55)] flex items-center justify-center gap-2"
       >
         <svg
           width="18"

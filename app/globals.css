@@ -2,8 +2,8 @@
 
 @theme {
   /* === Zemin renkleri (Light Mode) === */
-  --color-paper: #FAF7F0;
-  --color-paper-2: #F0EBDD;
+  --color-paper: #FFFFFF;
+  --color-paper-2: #FAF8FC;
   --color-card: #FFFFFF;
 
   /* === İnk = ana metin/koyu zemin === */
@@ -17,27 +17,33 @@
   --color-ink-20: rgba(26, 18, 14, 0.20);
   --color-ink-12: rgba(26, 18, 14, 0.12);
 
-  --color-paper-72: rgba(250, 247, 240, 0.72);
-  --color-paper-50: rgba(250, 247, 240, 0.50);
-  --color-paper-24: rgba(250, 247, 240, 0.24);
-  --color-paper-14: rgba(250, 247, 240, 0.14);
+  --color-paper-72: rgba(255, 255, 255, 0.72);
+  --color-paper-50: rgba(255, 255, 255, 0.50);
+  --color-paper-24: rgba(255, 255, 255, 0.24);
+  --color-paper-14: rgba(255, 255, 255, 0.14);
 
-  /* === Aksan === */
-  --color-terracotta: #C8442A;
-  --color-terracotta-soft: #E08266;
-  --color-terracotta-08: rgba(200, 68, 42, 0.08);
-  --color-terracotta-12: rgba(200, 68, 42, 0.12);
+  /* === Aksan (mor-pembe kimlik — eski terracotta token isimleri korundu) === */
+  --color-terracotta: #9333EA;
+  --color-terracotta-soft: #C084FC;
+  --color-terracotta-08: rgba(147, 51, 234, 0.08);
+  --color-terracotta-12: rgba(147, 51, 234, 0.12);
+
   /* === Çizgi & sınır === */
   --color-line: rgba(26, 18, 14, 0.12);
   --color-line-strong: rgba(26, 18, 14, 0.20);
-  --color-plum: #6B2E5C;
-  --color-moss: #3F6B47;
-  --color-ember: #A8341E;
+
+  /* === İkincil renkler === */
+  --color-plum: #EC4899;   /* pembe — gradyan ikinci ucu / ikincil vurgu */
+  --color-moss: #3F6B47;   /* yeşil — başarı/onay durumları */
+  --color-ember: #7C3AED;  /* koyu mor — hover/koyu varyant */
+
+  /* === Marka gradyanı === */
+  --gradient-brand: linear-gradient(135deg, #9333EA, #EC4899);
 
   /* === Fontlar === */
-  --font-display: var(--font-fraunces);
-  --font-body: var(--font-geist);
-  --font-mono: var(--font-dm-mono);
+  --font-display: var(--font-bricolage);
+  --font-body: var(--font-outfit);
+  --font-mono: var(--font-outfit);
 
   /* === Radius === */
   --radius-pill: 9999px;
@@ -50,18 +56,30 @@ body {
   font-family: var(--font-body);
 }
 
-/* === Italic Fraunces aksan rengi otomatik === */
+/* === Marka gradyanı yardımcı sınıfları === */
+.text-gradient-brand {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-gradient-brand {
+  background: var(--gradient-brand);
+}
+
+/* === Italik vurgu (sadeleştirildi) ===
+   Eski sistem Fraunces SOFT/opsz + terracotta italik idi ("Claude kokusu").
+   Artık em/i normal italik; renk metinden miras alınır. */
 em,
 i {
-  color: var(--color-terracotta);
   font-style: italic;
-  font-variation-settings: "SOFT" 100, "opsz" 144;
 }
 
 /* === Seçim rengi === */
 ::selection {
   background: var(--color-terracotta);
-  color: var(--color-paper);
+  color: #FFFFFF;
 }
 
 /* === Dark section helper (B2B bölümü için) === */
@@ -70,10 +88,7 @@ i {
   color: var(--color-paper);
 }
 
-.dark-section em,
-.dark-section i {
-  color: var(--color-terracotta);
-}
+/* === Toast === */
 @keyframes kasheFadeInUpToast {
   from {
     opacity: 0;
@@ -84,6 +99,7 @@ i {
     transform: translateX(-50%) translateY(0);
   }
 }
+
 /* === Hero animasyonları === */
 @keyframes kasheRise {
   from {
@@ -97,12 +113,8 @@ i {
 }
 
 @keyframes kasheFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes kasheFloat {
@@ -128,59 +140,7 @@ i {
   animation: kasheFloat 6s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-rise,
-  .kashe-fade,
-  .kashe-float {
-    animation: none;
-    opacity: 1;
-  }
-}
-/* === Hero animasyonları === */
-@keyframes kasheRise {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes kasheFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes kasheFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
-}
-
-.kashe-rise {
-  opacity: 0;
-  animation: kasheRise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.kashe-fade {
-  opacity: 0;
-  animation: kasheFade 1s ease forwards;
-}
-
-.kashe-float {
-  animation: kasheFloat 6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .kashe-rise,
-  .kashe-fade,
-  .kashe-float {
-    animation: none;
-    opacity: 1;
-  }
-}
-/* === Kayan bant (marquee) === */
+/* === Yatay kayan bant (marquee) === */
 @keyframes kasheMarquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -194,14 +154,19 @@ i {
   animation-play-state: paused;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-marquee {
-    animation: none;
-  }
+/* === Dikey kayan şerit (hero galeri) === */
+@keyframes kasheScrollUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
 }
+
+.kashe-scroll-up {
+  animation: kasheScrollUp var(--kashe-scroll-dur, 24s) linear infinite;
+}
+
 /* ============ CANLILIK DOKUNUŞLARI ============ */
 
-/* 1 & Categories: hover'da ikon zıplama */
+/* Kategoriler: hover'da ikon zıplama */
 @keyframes kasheIconPop {
   0% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-6px) scale(1.08); }
@@ -211,7 +176,7 @@ i {
   animation: kasheIconPop 0.5s ease;
 }
 
-/* 3: canlı rozet — yanıp sönen nokta */
+/* Canlı rozet — yanıp sönen nokta */
 @keyframes kashePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.7); }
@@ -220,7 +185,7 @@ i {
   animation: kashePulse 2s ease-in-out infinite;
 }
 
-/* 5: scroll-reveal — kaydırınca belirme */
+/* Scroll-reveal — kaydırınca belirme */
 .kashe-reveal {
   opacity: 0;
   transform: translateY(100px);
@@ -231,14 +196,9 @@ i {
   transform: translateY(0);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-icon-pop,
-  .kashe-pulse { animation: none; }
-  .kashe-reveal { opacity: 1; transform: none; transition: none; }
-}
-/* ============ GRUP 1: GLOBAL MİKRO-ETKİLEŞİMLER ============ */
+/* ============ GLOBAL MİKRO-ETKİLEŞİMLER ============ */
 
-/* 1. Buton tık hissi — her butona uygulanabilir */
+/* Buton tık hissi */
 .kashe-tap {
   transition: transform 0.12s ease;
 }
@@ -246,7 +206,7 @@ i {
   transform: scale(0.97);
 }
 
-/* 2. Yıldız parıltısı — hover'da hafif ışıldama */
+/* Yıldız parıltısı */
 @keyframes kasheStarShine {
   0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
   50% { transform: scale(1.25) rotate(8deg); filter: brightness(1.3); }
@@ -260,7 +220,7 @@ i {
   animation: kasheStarShine 0.6s ease;
 }
 
-/* 4. Form alanı odak animasyonu — label yukarı kayar/renklenir */
+/* Form alanı odak animasyonu */
 .kashe-field {
   position: relative;
 }
@@ -280,7 +240,7 @@ i {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 7. Logo canlanması — hover'da "k" zıplar/döner */
+/* Logo canlanması */
 @keyframes kasheLogoWiggle {
   0%, 100% { transform: rotate(0deg) scale(1); }
   30% { transform: rotate(-8deg) scale(1.1); }
@@ -293,7 +253,7 @@ i {
   animation: kasheLogoWiggle 0.5s ease;
 }
 
-/* 13. Sayfa geçişi fade — içerik girişinde yumuşak belirme */
+/* Sayfa geçişi fade */
 @keyframes kashePageFade {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -302,14 +262,9 @@ i {
   animation: kashePageFade 0.4s ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-tap, .kashe-star, .kashe-logo-mark { animation: none !important; transition: none; }
-  .kashe-page-fade { animation: none; }
-  .kashe-field-line { transition: none; }
-}
-/* ============ GRUP 3: KUTLAMA ANLARI ============ */
+/* ============ KUTLAMA ANLARI ============ */
 
-/* Kalp patlaması — favoriye eklerken */
+/* Kalp patlaması */
 @keyframes kasheHeartPop {
   0% { transform: scale(1); }
   30% { transform: scale(1.35); }
@@ -320,7 +275,7 @@ i {
   animation: kasheHeartPop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Konfeti/parçacık — saçılma */
+/* Konfeti */
 @keyframes kasheConfetti {
   0% {
     opacity: 1;
@@ -340,13 +295,9 @@ i {
   animation: kasheConfetti 0.7s ease-out forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-heart-pop { animation: none; }
-  .kashe-confetti-piece { display: none; }
-}
-/* ============ GRUP 2: EĞLENCELİ DURUMLAR ============ */
+/* ============ DURUMLAR ============ */
 
-/* Yükleme halkası dönüşü */
+/* Yükleme halkası */
 @keyframes kasheSpin {
   to { transform: rotate(360deg); }
 }
@@ -354,9 +305,6 @@ i {
   animation: kasheSpin 0.8s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kashe-spin { animation-duration: 2s; }
-}
 /* Filtre drawer — sağdan kayma */
 @keyframes kasheDrawerIn {
   from { transform: translateX(100%); }
@@ -365,18 +313,48 @@ i {
 .kashe-drawer {
   animation: kasheDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@media (prefers-reduced-motion: reduce) {
-  .kashe-drawer { animation: none; }
-}
-@keyframes kasheDrawerIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-.kashe-drawer { animation: kasheDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Scrollbar gizleme */
 .kashe-no-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge eski */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .kashe-no-scrollbar::-webkit-scrollbar {
-  display: none; /* WebKit (Chrome, Safari, mobile Chrome) */
+  display: none;
+}
+
+/* === Reduced motion: tüm animasyonlar kapanır === */
+@media (prefers-reduced-motion: reduce) {
+  .kashe-rise,
+  .kashe-fade,
+  .kashe-float,
+  .kashe-marquee,
+  .kashe-scroll-up,
+  .kashe-icon-pop,
+  .kashe-pulse,
+  .kashe-star,
+  .kashe-logo-mark,
+  .kashe-heart-pop,
+  .kashe-page-fade,
+  .kashe-drawer {
+    animation: none;
+  }
+  .kashe-rise,
+  .kashe-fade {
+    opacity: 1;
+  }
+  .kashe-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .kashe-confetti-piece {
+    display: none;
+  }
+  .kashe-spin {
+    animation-duration: 2s;
+  }
+  .kashe-field-line {
+    transition: none;
+  }
 }
