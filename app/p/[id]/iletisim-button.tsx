@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { startConversation } from '@/app/mesajlar/actions';
+import {
+  startConversation,
+  sendMessageWithAttachment,
+} from '@/app/mesajlar/actions';
+import { createClient } from '@/app/lib/supabase-browser';
+import {
+  MAX_ATTACHMENT_SIZE,
+  ATTACHMENT_ACCEPT,
+  attachmentKind,
+} from '@/app/lib/attachments';
 import {
   getBriefFields,
   getBriefIntro,
@@ -41,6 +50,8 @@ export function IletisimButton({
   const [modalOpen, setModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [message, setMessage] = useState('');
@@ -177,6 +188,28 @@ export function IletisimButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, professionalId]);
 
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    setError(null);
+    if (!attachmentKind(file.type)) {
+      setError(
+        'Desteklenmeyen dosya tipi. Görsel, PDF veya Word gönderebilirsin.'
+      );
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      setError("Dosya 20 MB'dan büyük olamaz.");
+      return;
+    }
+    setSelectedFile(file);
+  }
+
+  function removeFile() {
+    setSelectedFile(null);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -259,15 +292,52 @@ export function IletisimButton({
       return;
     }
 
-    // GİRİŞ YAPMIŞ AKIŞ: doğrudan gönder
+    // GİRİŞ YAPMIŞ AKIŞ: doğrudan gönder (+ varsa dosyayı ikinci mesaj olarak)
     startTransition(async () => {
       const result = await startConversation(payload);
 
-      if (result.success && result.conversationId) {
-        router.push(`/mesajlar/${result.conversationId}`);
-      } else {
+      if (!result.success || !result.conversationId) {
         setError(result.error || 'Bir hata oluştu.');
+        return;
       }
+
+      const convId = result.conversationId;
+
+      // Dosya seçildiyse: konuşma açıldıktan sonra eki yükle + ayrı mesaj gönder.
+      // Hata olursa sessizce geç — metin mesajı zaten iletildi.
+      if (selectedFile) {
+        try {
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          const kind = attachmentKind(selectedFile.type);
+          if (user && kind) {
+            const ext =
+              selectedFile.name.split('.').pop()?.toLowerCase() || 'bin';
+            const path = `${user.id}/${convId}/${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 8)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from('message-attachments')
+              .upload(path, selectedFile, {
+                cacheControl: '3600',
+                upsert: false,
+              });
+            if (!upErr) {
+              await sendMessageWithAttachment(
+                convId,
+                { path, type: kind, name: selectedFile.name },
+                ''
+              );
+            }
+          }
+        } catch {
+          /* ek başarısız — konuşma yine de açıldı */
+        }
+      }
+
+      router.push(`/mesajlar/${convId}`);
     });
   }
 
@@ -483,6 +553,61 @@ export function IletisimButton({
                   {message.length}/2000 karakter
                 </p>
               </div>
+
+              {/* SECTION: Dosya eki (opsiyonel) */}
+              {isLoggedIn && (
+                <div className="pt-4 border-t border-line">
+                  <p className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+                    Dosya ekle{' '}
+                    <span className="text-ink-72/60 normal-case tracking-normal">
+                      (opsiyonel)
+                    </span>
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ATTACHMENT_ACCEPT}
+                    onChange={handleFileSelected}
+                    className="hidden"
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-white px-3 py-2.5">
+                      <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm text-ink truncate">
+                        {selectedFile.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={removeFile}
+                        className="shrink-0 text-ink-72 hover:text-terracotta transition-colors p-1"
+                        aria-label="Dosyayı kaldır"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 5L15 15M5 15L15 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition-colors"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Dosya seç
+                    </button>
+                  )}
+                  <p className="text-xs text-ink-72 mt-2">
+                    Görsel, PDF veya Word · en fazla 20 MB
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">

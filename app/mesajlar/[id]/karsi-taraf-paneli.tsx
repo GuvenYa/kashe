@@ -16,9 +16,13 @@ type OtherUser = {
 type Props = {
   other: OtherUser;
   viewerRole: 'customer' | 'professional';
+  // İletişim gate (komisyon-kritik): true ise telefon görünür.
+  // false ise other.phone zaten null gelir (data katmanı) — burada sadece
+  // "neden gizli" notunu çiziyoruz.
+  contactUnlocked: boolean;
 };
 
-export function KarsiTarafPaneli({ other, viewerRole }: Props) {
+export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) {
   const isOtherProfessional = other.role === 'professional' || other.role === 'business';
 
   const displayName =
@@ -94,8 +98,8 @@ export function KarsiTarafPaneli({ other, viewerRole }: Props) {
         })()}
       </div>
 
-      {/* Şehir + Telefon (varsa) */}
-      {(other.city || other.phone) && (
+      {/* Şehir + Telefon (gate'li) */}
+      {(other.city || other.phone || !contactUnlocked) && (
         <div className="space-y-3 pt-4 border-t border-line">
           {other.city && (
             <div>
@@ -105,17 +109,46 @@ export function KarsiTarafPaneli({ other, viewerRole }: Props) {
               <p className="text-sm text-ink">{other.city}</p>
             </div>
           )}
-          {other.phone && (
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
-                Telefon
+
+          {/* Telefon: anlaşma onaylanınca açılır. Kilitliyken numara client'a
+              hiç gelmez (other.phone === null); burada sadece sebebi gösteriyoruz. */}
+          {contactUnlocked ? (
+            other.phone && (
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
+                  Telefon
+                </p>
+                <a
+                  href={`tel:${other.phone}`}
+                  className="text-sm text-ink hover:text-terracotta transition-colors"
+                >
+                  {other.phone}
+                </a>
+              </div>
+            )
+          ) : (
+            <div className="rounded-md bg-paper border border-line px-3 py-2.5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1 flex items-center gap-1.5">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                İletişim kilitli
               </p>
-              <a
-                href={`tel:${other.phone}`}
-                className="text-sm text-ink hover:text-terracotta transition-colors"
-              >
-                {other.phone}
-              </a>
+              <p className="text-xs text-ink-72 leading-relaxed">
+                Telefon numarası, rezervasyon onaylandıktan sonra görünür.
+                Anlaşana kadar mesajlaşma Kashe üzerinden devam eder.
+              </p>
             </div>
           )}
         </div>

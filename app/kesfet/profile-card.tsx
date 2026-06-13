@@ -33,6 +33,8 @@ type Props = {
   isFavorited: boolean;
   isLoggedIn: boolean;
   currentUserRole: string | null;
+  /** Önümüzdeki 7 gün tamamen dolu → "Yoğun" rozeti. Varsayılan false. */
+  isBusy?: boolean;
 };
 
 export function ProfileCard({
@@ -42,6 +44,7 @@ export function ProfileCard({
   isFavorited,
   isLoggedIn,
   currentUserRole,
+  isBusy = false,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
@@ -208,6 +211,16 @@ export function ProfileCard({
                     {b.label}
                   </span>
                 ))}
+              </div>
+            )}
+            {isBusy && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                <span
+                  title="Önümüzdeki günlerde dolu"
+                  className="font-mono text-[9px] uppercase tracking-[0.12em] px-1.5 py-0.5 rounded border text-[#9A6B00] bg-[#FBEFD3] border-[#E6CE8F]"
+                >
+                  Yoğun
+                </span>
               </div>
             )}
             {cityName && (

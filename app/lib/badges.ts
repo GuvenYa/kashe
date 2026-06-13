@@ -107,3 +107,73 @@ export const BADGE_TONE_CLASS: Record<Badge['tone'], string> = {
   ink: 'text-ink-72 bg-ink-72/10 border-ink-72/20',
   premium: 'text-[#8A6D1F] bg-[#F4E9C8] border-[#D9C179]',
 };
+// =============================================================================
+// MÜSAİTLİK — "Yoğun" tespiti (Sıra 3)
+// =============================================================================
+
+/**
+ * Önümüzdeki BUSY_WINDOW_DAYS günün HEPSİ doluysa profil "yoğun" sayılır.
+ * Dolu gün = availability_blocks (manuel) ∪ onaylı bookings event_date.
+ * Gevşek eşik: penceredeki her gün kapalıysa yoğun; 1 boş gün bile varsa müsait.
+ */
+export const BUSY_WINDOW_DAYS = 7;
+
+/** Bir tarihi yerel 'YYYY-MM-DD' anahtarına çevir (saat dilimi kaymadan). */
+function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Bugünden itibaren BUSY_WINDOW_DAYS günün tarih anahtarları.
+ * Sorgu aralığını ve doluluk kontrolünü buradan türetiriz (tek kaynak).
+ */
+export function busyWindowKeys(today: Date = new Date()): string[] {
+  const keys: string[] = [];
+  for (let i = 0; i < BUSY_WINDOW_DAYS; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    keys.push(dateKey(d));
+  }
+  return keys;
+}
+
+/**
+ * Verilen dolu-gün kümesi, pencerenin TÜM günlerini kapsıyor mu?
+ * blockedSet: 'YYYY-MM-DD' string'lerinden oluşan Set.
+ */
+export function isBusy(
+  blockedSet: Set<string>,
+  today: Date = new Date()
+): boolean {
+  if (blockedSet.size === 0) return false;
+  return busyWindowKeys(today).every((k) => blockedSet.has(k));
+}
+
+// =============================================================================
+// ROZET FİLTRESİ — keşfet toggle'ları için yardımcı (Sıra 3)
+// =============================================================================
+
+/**
+ * Bir profil, verilen rozet anahtarlarından HERHANGİ BİRİNE sahip mi? (VEYA havuzu)
+ * keys: ['premium','verified','topRated','popular'] alt kümesi.
+ * Premium ve verified türetilmiş (rozet listesinde olmayabilir), o yüzden
+ * burada doğrudan kontrol ediyoruz.
+ */
+export function matchesAnyBadge(input: BadgeInput, keys: string[]): boolean {
+  if (keys.length === 0) return true; // hiç seçim yok → herkes geçer
+
+  for (const key of keys) {
+    if (key === 'premium') {
+      if (isPremiumActive(input.premiumTier, input.premiumUntil)) return true;
+    } else if (key === 'verified') {
+      if (isVerified(input)) return true;
+    } else {
+      // topRated / popular → getBadges'ten türet
+      if (getBadges(input).some((b) => b.key === key)) return true;
+    }
+  }
+  return false;
+}

@@ -30,6 +30,9 @@ type Props = {
   currentType: 'profesyonel' | 'ajans' | null;
   currentMaxPrice: number | null;
   currentMinRating: number | null;
+  currentBadgeKeys: string[];
+  currentOnlyAvailable: boolean;
+  currentExperience: string[];
   resultCount: number;
   isLoggedIn: boolean;
 };
@@ -44,6 +47,9 @@ export function KesfetFilters({
   currentType,
   currentMaxPrice,
   currentMinRating,
+  currentBadgeKeys,
+  currentOnlyAvailable,
+  currentExperience,
   resultCount,
   isLoggedIn,
 }: Props) {
@@ -63,6 +69,30 @@ export function KesfetFilters({
   const [minRating, setMinRating] = useState<string>(
     currentMinRating !== null ? String(currentMinRating) : ''
   );
+
+  // Sıra 3 — gelişmiş filtreler
+  const [badgeKeys, setBadgeKeys] = useState<string[]>(currentBadgeKeys);
+  const [onlyAvailable, setOnlyAvailable] = useState<boolean>(
+    currentOnlyAvailable
+  );
+  const [experience, setExperience] = useState<string[]>(currentExperience);
+  const [advancedOpen, setAdvancedOpen] = useState<boolean>(
+    currentBadgeKeys.length > 0 ||
+      currentOnlyAvailable ||
+      currentExperience.length > 0
+  );
+
+  function toggleBadge(key: string) {
+    setBadgeKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
+
+  function toggleExperience(val: string) {
+    setExperience((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    );
+  }
 
   // Şehir arama dropdown
   const [cityOpen, setCityOpen] = useState(false);
@@ -91,6 +121,12 @@ export function KesfetFilters({
       if (type) params.set('tip', type);
       if (maxPrice) params.set('fiyat', maxPrice);
       if (minRating) params.set('puan', minRating);
+      if (badgeKeys.includes('premium')) params.set('premium', '1');
+      if (badgeKeys.includes('verified')) params.set('dogrulanmis', '1');
+      if (badgeKeys.includes('topRated')) params.set('yuksekpuan', '1');
+      if (badgeKeys.includes('popular')) params.set('coktercih', '1');
+      if (onlyAvailable) params.set('musait', '1');
+      if (experience.length > 0) params.set('deneyim', experience.join(','));
       for (const [key, vals] of Object.entries(attrs)) {
         if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
       }
@@ -101,7 +137,18 @@ export function KesfetFilters({
     }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, cats, city, type, attrs, maxPrice, minRating]);
+  }, [
+    search,
+    cats,
+    city,
+    type,
+    attrs,
+    maxPrice,
+    minRating,
+    badgeKeys,
+    onlyAvailable,
+    experience,
+  ]);
 
   // Şehir dropdown dışarı tıklama
   useEffect(() => {
@@ -168,6 +215,9 @@ export function KesfetFilters({
     setAttrs({});
     setMaxPrice('');
     setMinRating('');
+    setBadgeKeys([]);
+    setOnlyAvailable(false);
+    setExperience([]);
   }
 
   const selectedCity = cities.find((c) => String(c.id) === city);
@@ -183,6 +233,9 @@ export function KesfetFilters({
     (type ? 1 : 0) +
     (maxPrice ? 1 : 0) +
     (minRating ? 1 : 0) +
+    badgeKeys.length +
+    (onlyAvailable ? 1 : 0) +
+    experience.length +
     Object.keys(attrs).length;
 
   // ===== Sidebar içeriği (hem masaüstü hem mobil drawer kullanır) =====
@@ -415,6 +468,146 @@ export function KesfetFilters({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Gelişmiş filtreler — akordiyon (Sıra 3) */}
+      <div className="border-t border-line pt-5">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="flex items-center justify-between w-full group"
+        >
+          <span className="font-display text-base text-ink">
+            Daha fazla filtre
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={`text-ink-32 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        {advancedOpen && (
+          <div className="mt-4 space-y-6">
+            {/* Rozetler — 4 bağımsız toggle, aralarında VEYA */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                Rozetler
+              </p>
+              <p className="text-xs text-ink-32 mb-3 -mt-1">
+                Seçtiklerinden en az birine sahip profiller
+              </p>
+              <div className="space-y-1.5">
+                {[
+                  { key: 'premium', label: 'Premium' },
+                  { key: 'verified', label: 'Doğrulanmış' },
+                  { key: 'topRated', label: 'Yüksek Puanlı' },
+                  { key: 'popular', label: 'Çok Tercih Edilen' },
+                ].map((opt) => {
+                  const on = badgeKeys.includes(opt.key);
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => toggleBadge(opt.key)}
+                      className="flex items-center gap-2.5 w-full text-left group"
+                    >
+                      <span
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                        }`}
+                      >
+                        {on && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Müsaitlik — tek toggle (AND kısıt) */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                Müsaitlik
+              </p>
+              <button
+                type="button"
+                onClick={() => setOnlyAvailable((v) => !v)}
+                className="flex items-center gap-2.5 w-full text-left group"
+              >
+                <span
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    onlyAvailable ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                  }`}
+                >
+                  {onlyAvailable && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className={`text-sm transition-colors ${onlyAvailable ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                  Şu an müsait (yoğun olanları gizle)
+                </span>
+              </button>
+            </div>
+
+            {/* Deneyim — çoklu seçim (sıralama: seçilenler üste, eleme yok) */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                Deneyim
+              </p>
+              <p className="text-xs text-ink-32 mb-3 -mt-1">
+                Seçtiğin deneyimdekiler üst sıralarda gösterilir
+              </p>
+              <div className="space-y-1.5">
+                {[
+                  { value: 'junior', label: '0-2 yıl' },
+                  { value: 'mid', label: '3-5 yıl' },
+                  { value: 'senior', label: '6-10 yıl' },
+                  { value: 'expert', label: '10+ yıl' },
+                ].map((opt) => {
+                  const on = experience.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleExperience(opt.value)}
+                      className="flex items-center gap-2.5 w-full text-left group"
+                    >
+                      <span
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                        }`}
+                      >
+                        {on && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Kategoriye özel detaylı filtreler — sadece tek kategori seçiliyken */}

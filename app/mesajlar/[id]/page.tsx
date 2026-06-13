@@ -194,6 +194,18 @@ export default async function KonusmaPage({
     });
   }
 
+  // İLETİŞİM GATE (komisyon-kritik) — telefon yalnızca gerçek anlaşmada açılır.
+  // Anlaşma = bu konuşmaya bağlı onaylı/tamamlanmış rezervasyon (bookings).
+  // Kilitliyken telefon client'a HİÇ gitmez (data katmanı, görsel gizleme değil).
+  const { data: dealRows } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('conversation_id', id)
+    .in('status', ['confirmed', 'completed'])
+    .limit(1);
+
+  const contactUnlocked = (dealRows?.length ?? 0) > 0;
+
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
 
@@ -267,11 +279,12 @@ export default async function KonusmaPage({
                 company_name: other.company_name,
                 role: other.role,
                 bio: other.bio,
-                phone: other.phone,
+                phone: contactUnlocked ? other.phone : null,
                 city: other.turkish_cities?.name ?? null,
                 last_seen_at: other.last_seen_at,
               }}
               viewerRole={isCustomer ? 'customer' : 'professional'}
+              contactUnlocked={contactUnlocked}
             />
           </div>
         </div>

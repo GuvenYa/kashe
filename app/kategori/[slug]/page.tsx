@@ -7,6 +7,7 @@ import { ProfileCard } from '@/app/kesfet/profile-card';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { getCategoryIcon } from '@/app/lib/category-icon';
+import { isBusy as computeBusy, busyWindowKeys } from '@/app/lib/badges';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -174,6 +175,54 @@ export default async function KategoriPage({ params }: Props) {
     });
   }
 
+  // ---- MÜSAİTLİK (Sıra 3): önümüzdeki 7 gün dolu mu? (Keşfet ile aynı mantık) ----
+  const busyByProfile: Record<string, boolean> = {};
+  if (profileIds.length > 0) {
+    const windowKeys = busyWindowKeys();
+    const windowStart = windowKeys[0];
+    const windowEnd = windowKeys[windowKeys.length - 1];
+
+    const blockedByProfile: Record<string, Set<string>> = {};
+    const addDay = (pid: string, day: string) => {
+      if (!blockedByProfile[pid]) blockedByProfile[pid] = new Set();
+      blockedByProfile[pid].add(day);
+    };
+
+    const [{ data: blocksData }, { data: bookingsData }] = await Promise.all([
+      supabase
+        .from('availability_blocks')
+        .select('profile_id, blocked_date')
+        .in('profile_id', profileIds)
+        .gte('blocked_date', windowStart)
+        .lte('blocked_date', windowEnd),
+      supabase
+        .from('bookings')
+        .select('professional_id, event_date, status')
+        .in('professional_id', profileIds)
+        .in('status', ['confirmed', 'completed'])
+        .gte('event_date', windowStart)
+        .lte('event_date', windowEnd),
+    ]);
+
+    (blocksData || []).forEach((b) => {
+      if (b.blocked_date) addDay(b.profile_id, b.blocked_date as string);
+    });
+    (bookingsData || []).forEach((bk) => {
+      if (bk.event_date) addDay(bk.professional_id, bk.event_date as string);
+    });
+
+    for (const pid of profileIds) {
+      busyByProfile[pid] = computeBusy(blockedByProfile[pid] ?? new Set());
+    }
+
+    // Yoğun olanları dibe at (premium bile olsa müsait olanların altında).
+    profiles.sort((a, b) => {
+      const ba = busyByProfile[a.id] ? 1 : 0;
+      const bb = busyByProfile[b.id] ? 1 : 0;
+      return ba - bb;
+    });
+  }
+
   // Kullanıcı durumu (favori + rol)
   const {
     data: { user },
@@ -305,6 +354,7 @@ export default async function KategoriPage({ params }: Props) {
                     isFavorited={favoritedIds.has(profile.id)}
                     isLoggedIn={isLoggedIn}
                     currentUserRole={currentUserRole}
+                    isBusy={busyByProfile[profile.id] ?? false}
                   />
                 ))}
               </div>

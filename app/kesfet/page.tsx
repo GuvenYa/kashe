@@ -8,6 +8,11 @@ import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
 import { getFilterFields } from '@/app/lib/filter-config';
+import {
+  matchesAnyBadge,
+  isBusy as computeBusy,
+  busyWindowKeys,
+} from '@/app/lib/badges';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 
 export const metadata = {
@@ -46,6 +51,13 @@ type SearchParams = {
   tip?: 'profesyonel' | 'ajans';
   fiyat?: string;
   puan?: string;
+  // Sıra 3 — gelişmiş filtreler
+  premium?: string; // '1' → sadece premium
+  dogrulanmis?: string; // '1' → sadece doğrulanmış
+  yuksekpuan?: string; // '1' → "Yüksek Puanlı" rozeti
+  coktercih?: string; // '1' → "Çok Tercih Edilen" rozeti
+  musait?: string; // '1' → yoğun olanları gizle (AND kısıt)
+  deneyim?: string; // 'junior,senior' → bu deneyimdekiler önce (sıralama)
   [key: `attr_${string}`]: string | undefined;
 };
 
@@ -72,6 +84,21 @@ export default async function KesfetPage({
   // Fiyat tavanı (başlangıç fiyatı bu değerin altındakiler) ve min puan
   const maxPrice = params.fiyat ? parseInt(params.fiyat, 10) : null;
   const minRating = params.puan ? parseFloat(params.puan) : null;
+
+  // Sıra 3 — rozet havuzu (VEYA): seçili olanlardan birine sahip olan geçer
+  const badgeKeys: string[] = [];
+  if (params.premium === '1') badgeKeys.push('premium');
+  if (params.dogrulanmis === '1') badgeKeys.push('verified');
+  if (params.yuksekpuan === '1') badgeKeys.push('topRated');
+  if (params.coktercih === '1') badgeKeys.push('popular');
+
+  // Müsaitlik (AND kısıt): true ise yoğun olanlar listeden çıkar
+  const onlyAvailable = params.musait === '1';
+
+  // Deneyim (sıralama, eleme değil): bu değerlere sahip olanlar üste
+  const wantedExperience = params.deneyim
+    ? params.deneyim.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
     supabase
@@ -200,6 +227,49 @@ export default async function KesfetPage({
     });
   }
 
+  // ---- MÜSAİTLİK (Sıra 3): önümüzdeki 7 gün dolu mu? ----
+  // Dolu gün = availability_blocks (manuel) ∪ onaylı bookings event_date.
+  // Pencere dışındaki kayıtları çekmemek için tarih aralığıyla sınırlıyoruz.
+  const busyByProfile: Record<string, boolean> = {};
+  if (profileIds.length > 0) {
+    const windowKeys = busyWindowKeys();
+    const windowStart = windowKeys[0];
+    const windowEnd = windowKeys[windowKeys.length - 1];
+
+    const blockedByProfile: Record<string, Set<string>> = {};
+    const addDay = (pid: string, day: string) => {
+      if (!blockedByProfile[pid]) blockedByProfile[pid] = new Set();
+      blockedByProfile[pid].add(day);
+    };
+
+    const [{ data: blocksData }, { data: bookingsData }] = await Promise.all([
+      supabase
+        .from('availability_blocks')
+        .select('profile_id, blocked_date')
+        .in('profile_id', profileIds)
+        .gte('blocked_date', windowStart)
+        .lte('blocked_date', windowEnd),
+      supabase
+        .from('bookings')
+        .select('professional_id, event_date, status')
+        .in('professional_id', profileIds)
+        .in('status', ['confirmed', 'completed'])
+        .gte('event_date', windowStart)
+        .lte('event_date', windowEnd),
+    ]);
+
+    (blocksData || []).forEach((b) => {
+      if (b.blocked_date) addDay(b.profile_id, b.blocked_date as string);
+    });
+    (bookingsData || []).forEach((bk) => {
+      if (bk.event_date) addDay(bk.professional_id, bk.event_date as string);
+    });
+
+    for (const pid of profileIds) {
+      busyByProfile[pid] = computeBusy(blockedByProfile[pid] ?? new Set());
+    }
+  }
+
   // Fiyat filtresi: profilin en düşük başlangıç fiyatı maxPrice altında mı?
   // "Talep üzerine" hizmetler fiyat bilinmediği için filtre aktifken elenir.
   if (maxPrice !== null) {
@@ -222,6 +292,32 @@ export default async function KesfetPage({
     });
   }
 
+  // Rozet havuzu (VEYA): seçili rozetlerden birine sahip olanlar
+  if (badgeKeys.length > 0) {
+    profiles = profiles.filter((p) =>
+      matchesAnyBadge(
+        {
+          approvalStatus: p.approval_status,
+          createdAt: p.created_at,
+          rating: ratingsByProfile[p.id] ?? null,
+          premiumTier: (p.premium_tier ?? null) as
+            | 'none'
+            | 'premium'
+            | 'plus'
+            | 'agency'
+            | null,
+          premiumUntil: p.premium_until ?? null,
+        },
+        badgeKeys
+      )
+    );
+  }
+
+  // Müsaitlik (AND kısıt): yoğun olanları gizle
+  if (onlyAvailable) {
+    profiles = profiles.filter((p) => !busyByProfile[p.id]);
+  }
+
   if (sortBy === 'puan') {
     profiles.sort((a, b) => {
       const ra = ratingsByProfile[a.id];
@@ -235,8 +331,18 @@ export default async function KesfetPage({
     });
   }
 
-  // Premium profiller her zaman üstte — mevcut sıralama kendi içinde korunur (stable sort).
-  // Tier ağırlığı: agency(3) > plus(2) > premium(1) > none(0). Yüksek tier daha üstte.
+  // Deneyim sıralaması (Sıra 3, ELEME DEĞİL): seçili deneyimdekiler üste,
+  // doldurmayan dahil kimse kaybolmaz. Stable sort sırayı korur.
+  if (wantedExperience.length > 0) {
+    const expMatch = (p: PublishedProfile): number => {
+      const raw = p.attributes?.experience;
+      const val = Array.isArray(raw) ? raw[0] : raw;
+      return val && wantedExperience.includes(val) ? 1 : 0;
+    };
+    profiles.sort((a, b) => expMatch(b) - expMatch(a));
+  }
+
+  // Premium profiller üstte — Tier: agency(3) > plus(2) > premium(1) > none(0).
   const tierWeight = (tier: string | null, until: string | null): number => {
     if (!tier || tier === 'none') return 0;
     if (until && new Date(until).getTime() <= Date.now()) return 0; // süresi geçmiş
@@ -251,6 +357,15 @@ export default async function KesfetPage({
       tierWeight(a.premium_tier, a.premium_until)
   );
 
+  // EN SON: yoğun olanları dibe at (premium bile olsa müsait olanların altında).
+  // Müsaitlik filtresi aktifse zaten elenmişlerdir; bu, filtre kapalıyken
+  // "Yoğun" rozetli profilleri sona koyar.
+  profiles.sort((a, b) => {
+    const ba = busyByProfile[a.id] ? 1 : 0;
+    const bb = busyByProfile[b.id] ? 1 : 0;
+    return ba - bb;
+  });
+
   const hasFilters = !!(
     categoryIds.length > 0 ||
     cityId ||
@@ -258,7 +373,10 @@ export default async function KesfetPage({
     typeFilter ||
     hasAttrFilters ||
     maxPrice !== null ||
-    minRating !== null
+    minRating !== null ||
+    badgeKeys.length > 0 ||
+    onlyAvailable ||
+    wantedExperience.length > 0
   );
 
   const {
@@ -318,6 +436,9 @@ export default async function KesfetPage({
                 currentType={typeFilter}
                 currentMaxPrice={maxPrice}
                 currentMinRating={minRating}
+                currentBadgeKeys={badgeKeys}
+                currentOnlyAvailable={onlyAvailable}
+                currentExperience={wantedExperience}
                 resultCount={profiles.length}
                 isLoggedIn={isLoggedIn}
               />
@@ -366,6 +487,7 @@ export default async function KesfetPage({
                         isFavorited={favoritedIds.has(profile.id)}
                         isLoggedIn={isLoggedIn}
                         currentUserRole={currentUserRole}
+                        isBusy={busyByProfile[profile.id] ?? false}
                       />
                     ))}
                   </div>
