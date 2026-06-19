@@ -7,7 +7,11 @@ import {
   unbanUser,
   makeAdmin,
   removeAdmin,
+  grantPremium,
+  revokePremium,
 } from '@/app/admin/actions';
+import { isPremiumActive } from '@/app/lib/badges';
+import { tierLabel, PREMIUM_DURATIONS } from '@/app/lib/premium';
 
 type UserData = {
   id: string;
@@ -18,6 +22,8 @@ type UserData = {
   is_admin: boolean;
   suspended_at: string | null;
   suspension_reason: string | null;
+  premium_tier: string | null;
+  premium_until: string | null;
 };
 
 type Props = {
@@ -25,12 +31,23 @@ type Props = {
   isCurrentUser: boolean;
 };
 
-type ModalMode = null | 'ban' | 'unban' | 'make-admin' | 'remove-admin';
+type ModalMode =
+  | null
+  | 'ban'
+  | 'unban'
+  | 'make-admin'
+  | 'remove-admin'
+  | 'grant-premium'
+  | 'revoke-premium';
 
 export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [banReason, setBanReason] = useState('');
+  const [premiumTier, setPremiumTier] = useState<'premium' | 'plus' | 'agency'>(
+    'premium'
+  );
+  const [premiumMonths, setPremiumMonths] = useState(6);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
@@ -56,6 +73,13 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
     (user.role === 'business' || user.role === 'agency') && user.company_name
       ? user.company_name
       : user.full_name || user.email || 'Bu kullanıcı';
+
+  // Premium sadece profesyonel ve ajansa atanır
+  const canHavePremium = user.role === 'professional' || user.role === 'agency';
+  const premiumActive = isPremiumActive(
+    user.premium_tier as 'none' | 'premium' | 'plus' | 'agency' | null,
+    user.premium_until
+  );
 
   function openModal(mode: ModalMode) {
     setMenuOpen(false);
@@ -85,6 +109,10 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
         result = await makeAdmin(user.id);
       } else if (modalMode === 'remove-admin') {
         result = await removeAdmin(user.id);
+      } else if (modalMode === 'grant-premium') {
+        result = await grantPremium(user.id, premiumTier, premiumMonths);
+      } else if (modalMode === 'revoke-premium') {
+        result = await revokePremium(user.id);
       } else {
         return;
       }
@@ -200,6 +228,76 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
           </>
         )}
 
+        {modalMode === 'grant-premium' && (
+          <>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#8A6D1F] mb-2">
+              Premium ver
+            </p>
+            <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
+              <em className="text-terracotta">{displayName}</em>&apos;a premium
+              ver
+            </h3>
+            <p className="text-sm text-ink-72 leading-relaxed mb-4">
+              Manuel premium atama (iyzico öncesi / kampanya). Seçilen süre
+              sonunda otomatik biter.
+            </p>
+
+            <label className="block mb-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 block mb-1.5">
+                Plan
+              </span>
+              <select
+                value={premiumTier}
+                onChange={(e) =>
+                  setPremiumTier(
+                    e.target.value as 'premium' | 'plus' | 'agency'
+                  )
+                }
+                disabled={isPending}
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+              >
+                <option value="premium">Premium</option>
+                <option value="plus">Plus</option>
+                <option value="agency">Ajans</option>
+              </select>
+            </label>
+
+            <label className="block mb-4">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 block mb-1.5">
+                Süre
+              </span>
+              <select
+                value={premiumMonths}
+                onChange={(e) => setPremiumMonths(Number(e.target.value))}
+                disabled={isPending}
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+              >
+                {PREMIUM_DURATIONS.map((d) => (
+                  <option key={d.months} value={d.months}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
+
+        {modalMode === 'revoke-premium' && (
+          <>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ember mb-2">
+              Premium kaldır
+            </p>
+            <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
+              <em className="text-ember">{displayName}</em>&apos;ın premium
+              üyeliği kaldırılsın mı?
+            </h3>
+            <p className="text-sm text-ink-72 leading-relaxed mb-5">
+              Profil Standart seviyeye döner. Keşfet önceliği ve premium rozeti
+              kaldırılır.
+            </p>
+          </>
+        )}
+
         {error && (
           <p className="text-xs text-terracotta mb-4 bg-terracotta/8 border border-terracotta/20 rounded-lg p-3">
             {error}
@@ -238,7 +336,11 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                   ? 'Askıyı kaldır'
                   : modalMode === 'make-admin'
                     ? 'Admin yap'
-                    : 'Yetkiyi kaldır'}
+                    : modalMode === 'grant-premium'
+                      ? 'Premium ver'
+                      : modalMode === 'revoke-premium'
+                        ? 'Premium kaldır'
+                        : 'Yetkiyi kaldır'}
           </button>
         </div>
       </div>
@@ -285,6 +387,28 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                 label="Admin yap"
               />
             )}
+
+            {canHavePremium &&
+              (premiumActive ? (
+                <MenuItem
+                  onClick={() => openModal('revoke-premium')}
+                  color="ember"
+                  label={`Premium kaldır (${tierLabel(
+                    user.premium_tier as
+                      | 'none'
+                      | 'premium'
+                      | 'plus'
+                      | 'agency'
+                      | null
+                  )})`}
+                />
+              ) : (
+                <MenuItem
+                  onClick={() => openModal('grant-premium')}
+                  color="ink"
+                  label="Premium ver"
+                />
+              ))}
           </div>
         )}
       </div>

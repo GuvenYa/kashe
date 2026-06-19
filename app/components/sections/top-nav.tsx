@@ -48,14 +48,16 @@ export async function TopNav() {
   const menuLinks: { href: string; label: string }[] = [
     { href: "/profil", label: "Profilim" },
   ];
-  // Profesyonel/ajans → Takvimim, profilim'in hemen ardına
+  // Profesyonel/ajans → Takvimim + Kazançlarım, profilim'in hemen ardına
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/takvimim", label: "Takvimim" });
+    menuLinks.push({ href: "/kazanclarim", label: "Kazançlarım" });
   }
   // Müşteri/işletme → İlanlarım + Rezervasyonlarım + Teklif Taleplerim
   if (isClient || isBusiness) {
     menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
     menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
+    menuLinks.push({ href: "/odemelerim", label: "Ödeme Geçmişi" });
     menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
   }
   if (isProfessional || isAgency) {
@@ -69,6 +71,9 @@ export async function TopNav() {
   }
   if (isClient) {
     menuLinks.push({ href: "/favoriler", label: "Favoriler" });
+  }
+  if (isProfessional || isAgency) {
+    menuLinks.push({ href: "/premium", label: "Premium" });
   }
   menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
 

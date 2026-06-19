@@ -703,3 +703,69 @@ export async function addCategory(
   revalidatePath('/'); // anasayfa kategori listesi
   return { success: true, categoryId: newCat.id };
 }
+// ============================================================
+// PREMIUM (manuel atama — iyzico öncesi)
+// ============================================================
+
+export async function grantPremium(
+  userId: string,
+  tier: 'premium' | 'plus' | 'agency',
+  months: number
+): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  if (!['premium', 'plus', 'agency'].includes(tier)) {
+    return { success: false, error: 'Geçersiz plan.' };
+  }
+  if (![1, 3, 6, 12].includes(months)) {
+    return { success: false, error: 'Geçersiz süre.' };
+  }
+
+  const until = new Date();
+  until.setMonth(until.getMonth() + months);
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ premium_tier: tier, premium_until: until.toISOString() })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('[admin] grant premium error:', updateError);
+    return { success: false, error: 'Premium verilemedi: ' + updateError.message };
+  }
+
+  await logAction(
+    supabase,
+    adminId,
+    'grant_premium',
+    'user',
+    userId,
+    `${tier} / ${months} ay`
+  );
+
+  revalidatePath('/admin/kullanicilar');
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function revokePremium(userId: string): Promise<ActionResult> {
+  const { supabase, adminId, error } = await requireAdmin();
+  if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ premium_tier: 'none', premium_until: null })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('[admin] revoke premium error:', updateError);
+    return { success: false, error: 'Premium kaldırılamadı: ' + updateError.message };
+  }
+
+  await logAction(supabase, adminId, 'revoke_premium', 'user', userId);
+
+  revalidatePath('/admin/kullanicilar');
+  revalidatePath('/admin');
+  return { success: true };
+}

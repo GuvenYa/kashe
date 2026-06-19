@@ -25,6 +25,8 @@ type UserRow = {
   is_admin: boolean;
   suspended_at: string | null;
   suspension_reason: string | null;
+  premium_tier: string | null;
+  premium_until: string | null;
 };
 
 function formatDate(iso: string | null): string {
@@ -66,7 +68,7 @@ export default async function AdminUsersPage({
   let query = supabase
     .from('profiles')
     .select(
-      'id, full_name, company_name, email, role, avatar_url, created_at, updated_at, is_admin, suspended_at, suspension_reason'
+      'id, full_name, company_name, email, role, avatar_url, created_at, updated_at, is_admin, suspended_at, suspension_reason, premium_tier, premium_until'
     )
     .order('created_at', { ascending: false });
 
