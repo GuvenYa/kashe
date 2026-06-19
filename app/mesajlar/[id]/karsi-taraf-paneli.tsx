@@ -9,6 +9,7 @@ type OtherUser = {
   role: string;
   bio: string | null;
   phone: string | null;
+  email: string | null;
   city: string | null;
   last_seen_at: string | null;
 };
@@ -16,8 +17,8 @@ type OtherUser = {
 type Props = {
   other: OtherUser;
   viewerRole: 'customer' | 'professional';
-  // İletişim gate (komisyon-kritik): true ise telefon görünür.
-  // false ise other.phone zaten null gelir (data katmanı) — burada sadece
+  // İletişim gate (komisyon-kritik): true ise telefon/e-posta görünür.
+  // false ise other.phone/email zaten null gelir (data katmanı) — burada sadece
   // "neden gizli" notunu çiziyoruz.
   contactUnlocked: boolean;
 };
@@ -98,8 +99,8 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
         })()}
       </div>
 
-      {/* Şehir + Telefon (gate'li) */}
-      {(other.city || other.phone || !contactUnlocked) && (
+      {/* Şehir + Telefon + E-posta (gate'li) */}
+      {(other.city || other.phone || other.email || !contactUnlocked) && (
         <div className="space-y-3 pt-4 border-t border-line">
           {other.city && (
             <div>
@@ -110,22 +111,37 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
             </div>
           )}
 
-          {/* Telefon: anlaşma onaylanınca açılır. Kilitliyken numara client'a
-              hiç gelmez (other.phone === null); burada sadece sebebi gösteriyoruz. */}
+          {/* Telefon + e-posta: anlaşma onaylanınca açılır. Kilitliyken değerler
+              client'a hiç gelmez (null); burada sadece sebebi gösteriyoruz. */}
           {contactUnlocked ? (
-            other.phone && (
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
-                  Telefon
-                </p>
-                <a
-                  href={`tel:${other.phone}`}
-                  className="text-sm text-ink hover:text-terracotta transition-colors"
-                >
-                  {other.phone}
-                </a>
-              </div>
-            )
+            <>
+              {other.phone && (
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
+                    Telefon
+                  </p>
+                  <a
+                    href={`tel:${other.phone}`}
+                    className="text-sm text-ink hover:text-terracotta transition-colors"
+                  >
+                    {other.phone}
+                  </a>
+                </div>
+              )}
+              {other.email && (
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
+                    E-posta
+                  </p>
+                  <a
+                    href={`mailto:${other.email}`}
+                    className="text-sm text-ink hover:text-terracotta transition-colors break-all"
+                  >
+                    {other.email}
+                  </a>
+                </div>
+              )}
+            </>
           ) : (
             <div className="rounded-md bg-paper border border-line px-3 py-2.5">
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1 flex items-center gap-1.5">
@@ -146,7 +162,7 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
                 İletişim kilitli
               </p>
               <p className="text-xs text-ink-72 leading-relaxed">
-                Telefon numarası, rezervasyon onaylandıktan sonra görünür.
+                Telefon ve e-posta, rezervasyon onaylandıktan sonra görünür.
                 Anlaşana kadar mesajlaşma Kashe üzerinden devam eder.
               </p>
             </div>

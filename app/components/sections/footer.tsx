@@ -95,6 +95,9 @@ export function Footer() {
             <a href="/gizlilik" className="hover:text-paper transition-colors">
               Gizlilik
             </a>
+            <a href="/kvkk" className="hover:text-paper transition-colors">
+              KVKK
+            </a>
             <a href="/kullanim-kosullari" className="hover:text-paper transition-colors">
               Kullanım koşulları
             </a>

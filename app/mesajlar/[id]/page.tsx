@@ -15,6 +15,7 @@ type ConversationParticipant = {
   role: string;
   bio: string | null;
   phone: string | null;
+  email: string | null;
   last_seen_at: string | null;
   turkish_cities: { name: string } | null;
   service_categories: { slug: string } | null;
@@ -64,12 +65,12 @@ export default async function KonusmaPage({
       id, customer_id, professional_id,
       event_date, event_type, location, guest_count, budget_range,
       customer:customer_id (
-        id, full_name, avatar_url, company_name, role, bio, phone, last_seen_at,
+        id, full_name, avatar_url, company_name, role, bio, phone, email, last_seen_at,
         turkish_cities(name),
         service_categories!profiles_primary_category_id_fkey(slug)
       ),
       professional:professional_id (
-        id, full_name, avatar_url, company_name, role, bio, phone, last_seen_at,
+        id, full_name, avatar_url, company_name, role, bio, phone, email, last_seen_at,
         turkish_cities(name),
         service_categories!profiles_primary_category_id_fkey(slug)
       )
@@ -280,6 +281,7 @@ export default async function KonusmaPage({
                 role: other.role,
                 bio: other.bio,
                 phone: contactUnlocked ? other.phone : null,
+                email: contactUnlocked ? other.email : null,
                 city: other.turkish_cities?.name ?? null,
                 last_seen_at: other.last_seen_at,
               }}

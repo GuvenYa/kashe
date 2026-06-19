@@ -379,7 +379,7 @@ export function UyeOlForm({
           <label htmlFor="kvkk" className="text-sm text-ink-72 leading-snug cursor-pointer">
             <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">KVKK Aydınlatma Metni</a>
             {"'ni ve "}
-            <a href="/kullanim-sartlari" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">Kullanım Şartları</a>
+            <a href="/kullanim-kosullari" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">Kullanım Koşulları</a>
             {"'nı okudum, onaylıyorum."}
           </label>
         </div>
