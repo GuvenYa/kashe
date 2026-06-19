@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ReplyButton } from './reply-button';
+import { SikayetButton } from '@/app/sikayet/sikayet-button';
 
 type Customer = {
   id: string;
@@ -26,6 +27,8 @@ type Props = {
   /** Mevcut kullanıcı bu yorumun ait olduğu profesyonel mi?
    *  True ise "Yanıtla / Yanıtı düzenle" butonu görünür. */
   isOwnedByProfessional: boolean;
+  /** Şikayet butonu için giriş durumu */
+  isLoggedIn?: boolean;
 };
 
 function formatReviewDate(isoDate: string): string {
@@ -42,6 +45,7 @@ export function ReviewCard({
   customer,
   reply,
   isOwnedByProfessional,
+  isLoggedIn = false,
 }: Props) {
   const customerName = customer?.full_name ?? 'İsimsiz';
 
@@ -84,9 +88,17 @@ export function ReviewCard({
                 {customerName}
               </p>
             )}
-            <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.12em] shrink-0">
-              {formatReviewDate(review.created_at)}
-            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.12em]">
+                {formatReviewDate(review.created_at)}
+              </p>
+              <SikayetButton
+                targetType="review"
+                targetId={review.id}
+                isLoggedIn={isLoggedIn}
+                variant="icon"
+              />
+            </div>
           </div>
 
           <StarDisplay rating={review.rating} />

@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { href: '/admin/kullanicilar', label: 'Kullanıcılar' },
   { href: '/admin/kategori-talepleri', label: 'Kategori Talepleri' },
   { href: '/admin/yorumlar', label: 'Yorumlar' },
+  { href: '/admin/sikayetler', label: 'Şikayetler' },
+  { href: '/admin/blog', label: 'Blog' },
   { href: '/admin/istatistikler', label: 'İstatistikler' },
 ];
 

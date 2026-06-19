@@ -118,6 +118,9 @@ export const BADGE_TONE_CLASS: Record<Badge['tone'], string> = {
  */
 export const BUSY_WINDOW_DAYS = 7;
 
+/** Pencerede kaç gün dolu olursa "yoğun" sayılır (BUSY_WINDOW_DAYS içinden). */
+export const BUSY_THRESHOLD = 5;
+
 /** Bir tarihi yerel 'YYYY-MM-DD' anahtarına çevir (saat dilimi kaymadan). */
 function dateKey(d: Date): string {
   const y = d.getFullYear();
@@ -141,7 +144,9 @@ export function busyWindowKeys(today: Date = new Date()): string[] {
 }
 
 /**
- * Verilen dolu-gün kümesi, pencerenin TÜM günlerini kapsıyor mu?
+ * Penceredeki (BUSY_WINDOW_DAYS) günlerden en az BUSY_THRESHOLD tanesi
+ * doluysa profil "yoğun" sayılır. Eşik tabanlı — delik delik ama yoğun
+ * takvimleri de yakalar, tek-iki boşluğu tolere eder.
  * blockedSet: 'YYYY-MM-DD' string'lerinden oluşan Set.
  */
 export function isBusy(
@@ -149,7 +154,10 @@ export function isBusy(
   today: Date = new Date()
 ): boolean {
   if (blockedSet.size === 0) return false;
-  return busyWindowKeys(today).every((k) => blockedSet.has(k));
+  const filledCount = busyWindowKeys(today).filter((k) =>
+    blockedSet.has(k)
+  ).length;
+  return filledCount >= BUSY_THRESHOLD;
 }
 
 // =============================================================================

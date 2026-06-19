@@ -105,8 +105,9 @@ export function ProfileCard({
     }
   }
 
-  // Kalp ikonu sadece profesyonel profillerinde gösterilir
-  const showFavoriteButton = profile.role === 'professional';
+  // Kalp ikonu profesyonel ve ajans profillerinde gösterilir
+  const showFavoriteButton =
+    profile.role === 'professional' || profile.role === 'agency';
 
   // Teklif isteyebilen roller: hizmet alan hesaplar (client / business)
   // Bu kartlar zaten sadece professional/agency profillerini gösterir,

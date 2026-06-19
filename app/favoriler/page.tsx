@@ -270,7 +270,7 @@ export default async function FavorilerPage() {
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Kaydettiğin{' '}
               <em className="text-terracotta not-italic italic font-medium">
-                profesyoneller
+                profiller
               </em>
               .
             </h1>

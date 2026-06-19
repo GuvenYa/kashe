@@ -45,7 +45,7 @@ export async function addFavorite(
     };
   }
 
-  // Hedefin profesyonel olduğunu doğrula
+  // Hedefin profesyonel veya ajans olduğunu doğrula
   const { data: target, error: targetError } = await supabase
     .from('profiles')
     .select('role')
@@ -53,13 +53,13 @@ export async function addFavorite(
     .single();
 
   if (targetError || !target) {
-    return { success: false, error: 'Profesyonel bulunamadı.' };
+    return { success: false, error: 'Profil bulunamadı.' };
   }
 
-  if (target.role !== 'professional') {
+  if (target.role !== 'professional' && target.role !== 'agency') {
     return {
       success: false,
-      error: 'Sadece profesyoneller favorilenebilir.',
+      error: 'Sadece profesyoneller ve ajanslar favorilenebilir.',
     };
   }
 

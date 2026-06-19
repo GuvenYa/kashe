@@ -10,6 +10,7 @@ import { YorumButton } from './yorum-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { isFavorited as checkIsFavorited } from '@/app/favoriler/actions';
 import { ReviewCard } from '@/app/yorumlar/review-card';
+import { SikayetButton } from '@/app/sikayet/sikayet-button';
 import {
   formatPriceRange,
   formatDuration,
@@ -238,9 +239,10 @@ export default async function PublicProfilePage({
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
 
-  // Favori durumu — sadece başkasının profesyonel profilinde anlamlı
+  // Favori durumu — başkasının profesyonel veya ajans profilinde anlamlı
   const showFavoriteButton =
-    !isOwnProfile && profile.role === 'professional';
+    !isOwnProfile &&
+    (profile.role === 'professional' || profile.role === 'agency');
   let initialFavorited = false;
   if (showFavoriteButton && isLoggedIn && currentUserRole === 'client') {
     initialFavorited = await checkIsFavorited(profile.id);
@@ -838,6 +840,7 @@ export default async function PublicProfilePage({
                     customer={customerMap.get(r.customer_id) ?? null}
                     reply={replyMap.get(r.id) ?? null}
                     isOwnedByProfessional={isOwnedByProfessional}
+                    isLoggedIn={isLoggedIn}
                   />
                 ))}
               </div>
@@ -901,6 +904,19 @@ export default async function PublicProfilePage({
               enabled={canReview}
             />
           </div>
+
+          {/* Profili şikayet et — sahibi olmayan herkese */}
+          {!isOwnProfile && (
+            <div className="mt-6 flex justify-center">
+              <SikayetButton
+                targetType="profile"
+                targetId={profile.id}
+                isLoggedIn={isLoggedIn}
+                variant="link"
+                label="Bu profili şikayet et"
+              />
+            </div>
+          )}
         </div>
       </main>
     </>

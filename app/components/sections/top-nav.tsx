@@ -96,6 +96,9 @@ export async function TopNav() {
           <a href="/ilanlar" className={navLinkClass}>
             İlanlar
           </a>
+          <a href="/blog" className={navLinkClass}>
+            Blog
+          </a>
           {user ? (
             <>
               {canReceiveOffers && (

@@ -108,6 +108,9 @@ export function MobileNav({
               <a href="/ilanlar" className={linkClass}>
                 İlanlar
               </a>
+              <a href="/blog" className={linkClass}>
+                Blog
+              </a>
               <a href="/#hizmetler" className={linkClass}>
                 Hizmetler
               </a>

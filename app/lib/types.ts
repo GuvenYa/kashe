@@ -171,3 +171,40 @@ export type ServicePackage = {
   created_at: string | null;
   updated_at: string | null;
 };
+export type BlogPostStatus = 'draft' | 'published';
+
+export type BlogPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  cover_image_url: string | null;
+  author_id: string | null;
+  status: BlogPostStatus;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type ReportTargetType = 'listing' | 'profile' | 'review';
+export type ReportReason =
+  | 'spam'
+  | 'inappropriate'
+  | 'fake'
+  | 'harassment'
+  | 'other';
+export type ReportStatus = 'pending' | 'reviewing' | 'resolved' | 'dismissed';
+
+export type Report = {
+  id: string;
+  reporter_id: string;
+  target_type: ReportTargetType;
+  target_id: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  admin_note: string | null;
+  created_at: string;
+};

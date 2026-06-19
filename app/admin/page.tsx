@@ -30,6 +30,7 @@ export default async function AdminDashboardPage() {
     weekBookingsResult,
     pendingCategoryRequestsResult,
     suspendedUsersResult,
+    pendingReportsResult,
     totalUsersResult,
     totalProsResult,
     totalBookingsResult,
@@ -57,6 +58,11 @@ export default async function AdminDashboardPage() {
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .not('suspended_at', 'is', null),
+    // Bekleyen şikayet
+    supabase
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending'),
 
     // Toplam istatistikler (alt bilgi)
     supabase
@@ -97,6 +103,7 @@ export default async function AdminDashboardPage() {
   const weekBookings = weekBookingsResult.count ?? 0;
   const pendingCategoryRequests = pendingCategoryRequestsResult.count ?? 0;
   const suspendedUsers = suspendedUsersResult.count ?? 0;
+  const pendingReports = pendingReportsResult.count ?? 0;
 
   const totalUsers = totalUsersResult.count ?? 0;
   const totalPros = totalProsResult.count ?? 0;
@@ -122,7 +129,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* 4 büyük sayı kartı */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-10">
         <StatCard
           label="Bugün yeni kayıt"
           value={todayUsers}
@@ -147,6 +154,14 @@ export default async function AdminDashboardPage() {
             suspendedUsers > 0
               ? '/admin/kullanicilar?filter=suspended'
               : undefined
+          }
+        />
+        <StatCard
+          label="Bekleyen şikayet"
+          value={pendingReports}
+          accent="terracotta"
+          href={
+            pendingReports > 0 ? '/admin/sikayetler' : '/admin/sikayetler'
           }
         />
       </div>

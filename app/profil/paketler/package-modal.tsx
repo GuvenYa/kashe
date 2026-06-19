@@ -19,7 +19,11 @@ export function PackageModal({ open, onClose, pkg }: Props) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [includes, setIncludes] = useState<string[]>(['']);
-  const [priceOnRequest, setPriceOnRequest] = useState(false);
+  // Fiyat modu: 'fixed' (tek sabit) | 'range' (min-max) | 'request' (talep üzerine)
+  const [priceMode, setPriceMode] = useState<'fixed' | 'range' | 'request'>(
+    'fixed'
+  );
+  const [priceFixed, setPriceFixed] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
 
@@ -32,14 +36,33 @@ export function PackageModal({ open, onClose, pkg }: Props) {
       setTitle(pkg.title);
       setDescription(pkg.description || '');
       setIncludes(pkg.includes && pkg.includes.length > 0 ? [...pkg.includes] : ['']);
-      setPriceOnRequest(pkg.price_on_request);
-      setPriceMin(pkg.price_min !== null ? String(pkg.price_min) : '');
-      setPriceMax(pkg.price_max !== null ? String(pkg.price_max) : '');
+      if (pkg.price_on_request) {
+        setPriceMode('request');
+        setPriceFixed('');
+        setPriceMin('');
+        setPriceMax('');
+      } else if (
+        pkg.price_min !== null &&
+        pkg.price_max !== null &&
+        pkg.price_min === pkg.price_max
+      ) {
+        // min===max → sabit fiyat olarak yorumla
+        setPriceMode('fixed');
+        setPriceFixed(String(pkg.price_min));
+        setPriceMin('');
+        setPriceMax('');
+      } else {
+        setPriceMode('range');
+        setPriceFixed('');
+        setPriceMin(pkg.price_min !== null ? String(pkg.price_min) : '');
+        setPriceMax(pkg.price_max !== null ? String(pkg.price_max) : '');
+      }
     } else {
       setTitle('');
       setDescription('');
       setIncludes(['']);
-      setPriceOnRequest(false);
+      setPriceMode('fixed');
+      setPriceFixed('');
       setPriceMin('');
       setPriceMax('');
     }
@@ -89,13 +112,24 @@ export function PackageModal({ open, onClose, pkg }: Props) {
     e.preventDefault();
     setError(null);
 
+    let outMin: number | null = null;
+    let outMax: number | null = null;
+    if (priceMode === 'fixed') {
+      const f = parseNumber(priceFixed);
+      outMin = f;
+      outMax = f; // sabit fiyat: min=max (DB'de aralık olarak saklanır, gösterimde tek)
+    } else if (priceMode === 'range') {
+      outMin = parseNumber(priceMin);
+      outMax = parseNumber(priceMax);
+    }
+
     const data: PackageFormData = {
       title: title.trim(),
       description: description.trim() || null,
       includes: includes,
-      price_on_request: priceOnRequest,
-      price_min: priceOnRequest ? null : parseNumber(priceMin),
-      price_max: priceOnRequest ? null : parseNumber(priceMax),
+      price_on_request: priceMode === 'request',
+      price_min: outMin,
+      price_max: outMax,
     };
 
     startTransition(async () => {
@@ -227,21 +261,71 @@ export function PackageModal({ open, onClose, pkg }: Props) {
           </div>
 
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={priceOnRequest}
-                onChange={(e) => setPriceOnRequest(e.target.checked)}
-                className="w-4 h-4 accent-terracotta"
-              />
-              <span className="text-sm text-ink">Fiyatı talep üzerine paylaş</span>
-            </label>
-            <p className="text-xs text-ink-72 mt-1.5 ml-7">
-              Müşteri seni mesajla aradığında fiyatı sen verirsin.
-            </p>
+            <label className={labelClass}>Fiyatlandırma</label>
+            <div className="space-y-1.5">
+              {[
+                { key: 'fixed', label: 'Sabit fiyat' },
+                { key: 'range', label: 'Fiyat aralığı' },
+                { key: 'request', label: 'Talep üzerine' },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() =>
+                    setPriceMode(opt.key as 'fixed' | 'range' | 'request')
+                  }
+                  className="flex items-center gap-2.5 w-full text-left group"
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      priceMode === opt.key
+                        ? 'border-terracotta'
+                        : 'border-line group-hover:border-ink-72'
+                    }`}
+                  >
+                    {priceMode === opt.key && (
+                      <span className="w-2 h-2 rounded-full bg-terracotta" />
+                    )}
+                  </span>
+                  <span
+                    className={`text-sm transition-colors ${
+                      priceMode === opt.key ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                    }`}
+                  >
+                    {opt.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {priceMode === 'request' && (
+              <p className="text-xs text-ink-72 mt-2">
+                Müşteri seni mesajla aradığında fiyatı sen verirsin.
+              </p>
+            )}
           </div>
 
-          {!priceOnRequest && (
+          {priceMode === 'fixed' && (
+            <div>
+              <label htmlFor="pkg-price-fixed" className={labelClass}>
+                Fiyat (₺) <span className="text-terracotta">*</span>
+              </label>
+              <input
+                id="pkg-price-fixed"
+                type="text"
+                inputMode="decimal"
+                required
+                value={priceFixed}
+                onChange={(e) => setPriceFixed(e.target.value)}
+                className={inputClass}
+                placeholder="20000"
+              />
+              <p className="text-xs text-ink-72 mt-1.5">
+                Bu paketin net fiyatı. Tek bir tutar gösterilir.
+              </p>
+            </div>
+          )}
+
+          {priceMode === 'range' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="pkg-price-min" className={labelClass}>
@@ -251,7 +335,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                   id="pkg-price-min"
                   type="text"
                   inputMode="decimal"
-                  required={!priceOnRequest}
+                  required
                   value={priceMin}
                   onChange={(e) => setPriceMin(e.target.value)}
                   className={inputClass}
@@ -266,7 +350,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                   id="pkg-price-max"
                   type="text"
                   inputMode="decimal"
-                  required={!priceOnRequest}
+                  required
                   value={priceMax}
                   onChange={(e) => setPriceMax(e.target.value)}
                   className={inputClass}

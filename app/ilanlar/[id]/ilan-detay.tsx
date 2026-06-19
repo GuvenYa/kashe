@@ -57,6 +57,7 @@ import {
 } from '../listings-actions';
 import { ApplyModal } from './apply-modal';
 import { ApplicationAttachment } from '@/app/components/application-attachment';
+import { SikayetButton } from '@/app/sikayet/sikayet-button';
 
 type Props = {
   listing: ListingWithRelations;
@@ -340,6 +341,19 @@ export function IlanDetay({
                 </p>
               </div>
             </div>
+
+            {/* Şikayet — sahibi olmayan herkese */}
+            {!isOwner && (
+              <div className="mt-4 pt-4 border-t border-line flex justify-end">
+                <SikayetButton
+                  targetType="listing"
+                  targetId={listing.id}
+                  isLoggedIn={!!currentUserId}
+                  variant="link"
+                  label="İlanı şikayet et"
+                />
+              </div>
+            )}
           </div>
         )}
 

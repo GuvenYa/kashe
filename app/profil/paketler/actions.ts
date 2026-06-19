@@ -44,7 +44,7 @@ function validatePackageData(data: PackageFormData): string | null {
 
   if (!data.price_on_request) {
     if (data.price_min === null || data.price_max === null) {
-      return 'Fiyat aralığı girmelisin (veya "Talep üzerine" seç).';
+      return 'Fiyat girmelisin (veya "Talep üzerine" seç).';
     }
     if (data.price_min < 0 || data.price_max < 0) {
       return 'Fiyat negatif olamaz.';
