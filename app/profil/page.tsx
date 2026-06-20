@@ -20,6 +20,7 @@ import {
   formatDuration,
 } from '@/app/lib/profile-helpers';
 import type { Profile, ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
+import { getCachedUser } from '@/app/lib/auth';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -28,9 +29,7 @@ export const metadata = {
 export default async function ProfilPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');

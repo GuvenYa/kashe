@@ -5,12 +5,11 @@ import { UnreadBadge } from "./unread-badge";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
+import { getCachedUser } from "@/app/lib/auth";
 
 export async function TopNav() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   let role: string | null = null;
   let fullName: string | null = null;

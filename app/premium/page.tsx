@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { PlanSecici } from './plan-secici';
+import { getCachedUser } from '@/app/lib/auth';
 import { isPremiumActive, type PremiumTier } from '@/app/lib/badges';
 
 export const metadata = {
@@ -11,9 +12,7 @@ export const metadata = {
 export default async function PremiumPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');

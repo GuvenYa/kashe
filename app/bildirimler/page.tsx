@@ -6,6 +6,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getNotifications } from './actions';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { getCachedUser } from '@/app/lib/auth';
 import { BildirimListesi } from './bildirim-listesi';
 
 export const metadata = {
@@ -15,9 +16,7 @@ export const metadata = {
 export default async function BildirimlerPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   // Durum 1: Giriş yapmamış
   if (!user) {

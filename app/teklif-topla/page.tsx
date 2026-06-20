@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { orderCities } from '@/app/lib/city-order';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getCachedUser } from '@/app/lib/auth';
 import { TeklifToplaFormu } from './teklif-topla-formu';
 
 export const metadata = {
@@ -13,9 +14,7 @@ export const metadata = {
 export default async function TeklifToplaPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris?redirect=/teklif-topla');

@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IlanlarListesi } from './ilanlar-listesi';
 import { getListingBoostWeight } from './listings-data';
+import { getCachedUser } from '@/app/lib/auth';
 import type { ListingWithRelations } from './listings-data';
 
 async function getUserRole(): Promise<string | null> {
@@ -36,10 +37,8 @@ export default async function IlanlarPage({
   const userRole = await getUserRole();
   const canCreateListing = userRole === 'client' || userRole === 'business';
 
-  const {
-    data: { user: currentUser },
-  } = await supabase.auth.getUser();
-  const currentUserId = currentUser?.id ?? null;
+ const user = await getCachedUser();
+  const currentUserId = user?.id ?? null;
 
   // Kategorileri ve şehirleri filtreler için çek
   const [categoriesResult, citiesResult] = await Promise.all([

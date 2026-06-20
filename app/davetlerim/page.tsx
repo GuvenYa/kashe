@@ -5,6 +5,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { DavetlerimListesi } from './davetlerim-listesi';
 import { IlanDavetleriListesi, type IlanDaveti } from './ilan-davetleri-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { getCachedUser } from '@/app/lib/auth';
 import type { AgencyInvitationWithRelations } from '@/app/ajans/agency-data';
 
 export const metadata = {
@@ -14,9 +15,7 @@ export const metadata = {
 export default async function DavetlerimPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris?redirect=/davetlerim');

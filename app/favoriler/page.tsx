@@ -6,6 +6,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from '../kesfet/profile-card';
 import { EmptyState } from '@/app/components/EmptyState';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { getCachedUser } from '@/app/lib/auth';
 import { getUserFavorites, getFavoritedIds } from './actions';
 
 export const metadata = {
@@ -34,9 +35,7 @@ export default async function FavorilerPage() {
   const supabase = await createClient();
 
   // Auth kontrol
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const user = await getCachedUser();
 
   // Durum 1: Giriş yapmamış
   if (!user) {

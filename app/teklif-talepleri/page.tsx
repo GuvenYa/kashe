@@ -3,6 +3,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
+import { getCachedUser } from '@/app/lib/auth';
 import { BriefEkButonu } from './brief-ek-butonu';
 
 export const metadata = {
@@ -12,9 +13,7 @@ export const metadata = {
 export default async function TeklifTalepleriPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/teklif-talepleri');
 
   // Rol + suspension kontrolü — sadece professional/agency

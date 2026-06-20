@@ -3,6 +3,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { BasvurularimListesi } from './basvurularim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getCachedUser } from '@/app/lib/auth';
 import type { ApplicationWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string }>;
@@ -15,9 +16,7 @@ export default async function BasvurularimPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris?redirect=/basvurularim');

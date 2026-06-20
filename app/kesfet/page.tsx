@@ -14,6 +14,7 @@ import {
   busyWindowKeys,
 } from '@/app/lib/badges';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
+import { getCachedUser } from '@/app/lib/auth';
 
 export const metadata = {
   title: 'Keşfet — Kashe',
@@ -379,9 +380,7 @@ export default async function KesfetPage({
     wantedExperience.length > 0
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   let currentUserRole: string | null = null;
   let favoritedIds = new Set<string>();

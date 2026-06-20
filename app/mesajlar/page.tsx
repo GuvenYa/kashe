@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
+import { getCachedUser } from '@/app/lib/auth';
 
 export const metadata = {
   title: 'Mesajlar — Kashe',
@@ -34,9 +35,7 @@ type ConversationRow = {
 export default async function MesajlarPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');

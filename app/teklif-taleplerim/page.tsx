@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 
 export const metadata = {
@@ -18,9 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function TeklifTaleplerimPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/teklif-taleplerim');
 
   // Suspension kontrolü — askıdaki kullanıcı teklif taleplerini göremez

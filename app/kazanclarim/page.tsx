@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getCachedUser } from '@/app/lib/auth';
 import { calcCommission, formatTRY, COMMISSION_RATE } from '@/app/lib/premium';
 
 export const metadata = {
@@ -30,9 +31,7 @@ function formatDate(iso: string | null): string {
 export default async function KazanclarimPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');

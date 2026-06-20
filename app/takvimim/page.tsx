@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
+import { getCachedUser } from '@/app/lib/auth';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 
 type BookingRow = {
@@ -40,9 +41,7 @@ export const metadata = {
 export default async function TakvimimPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');

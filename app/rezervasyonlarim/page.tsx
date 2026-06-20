@@ -6,6 +6,7 @@ import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from './rezervasyon-karti';
 import { Calendar } from 'lucide-react';
+import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getEventTypeLabel } from '@/app/mesajlar/data';
 
@@ -43,9 +44,7 @@ export const metadata = {
 export default async function RezervasyonlarimPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/giris');
