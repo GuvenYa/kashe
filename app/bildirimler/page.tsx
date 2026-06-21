@@ -8,6 +8,7 @@ import { getNotifications } from './actions';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCachedUser } from '@/app/lib/auth';
 import { BildirimListesi } from './bildirim-listesi';
+import { PushToggle } from './push-toggle';
 
 export const metadata = {
   title: 'Bildirimler — Kashe',
@@ -113,6 +114,7 @@ export default async function BildirimlerPage() {
                 .
               </h1>
             </div>
+            <PushToggle />
             <EmptyState
               icon={Bell}
               title="Ortalık sakin"
@@ -132,6 +134,7 @@ export default async function BildirimlerPage() {
       <TopNav />
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
+          <PushToggle />
           <BildirimListesi
             initialNotifications={notifications}
             initialUnreadCount={unreadCount}

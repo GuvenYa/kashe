@@ -15,6 +15,8 @@ import {
   newQuoteEmail,
   quoteAcceptedEmail,
 } from '@/app/lib/email/templates';
+import { sendPushToUser } from '@/app/lib/push-server';
+import { formatQuoteAmount as fmtPush } from './quotes-data';
 
 type CreateQuoteInput = {
   conversationId: string;
@@ -370,6 +372,14 @@ async function notifyNewQuote(
       conversationId,
       eventType: 'new_quote',
     });
+
+    // Web push — müşteriye anlık teklif bildirimi
+    await sendPushToUser(customerId, {
+      title: `${senderName} sana teklif gönderdi`,
+      body: `${formattedAmount} tutarında yeni bir teklif aldın.`,
+      url: `/mesajlar/${conversationId}`,
+      tag: `quote-${conversationId}`,
+    });
   } catch (err) {
     console.error('[email] notifyNewQuote error:', err);
   }
@@ -430,6 +440,14 @@ async function notifyQuoteAccepted(
       text: template.text,
       conversationId,
       eventType: 'quote_accepted',
+    });
+
+    // Web push — profesyonele anlık "teklifin kabul edildi" bildirimi
+    await sendPushToUser(professionalId, {
+      title: `${customerName} teklifini kabul etti! 🎉`,
+      body: `${formattedAmount} tutarındaki teklifin onaylandı.`,
+      url: `/mesajlar/${conversationId}`,
+      tag: `quote-accepted-${conversationId}`,
     });
   } catch (err) {
     console.error('[email] notifyQuoteAccepted error:', err);

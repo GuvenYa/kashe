@@ -23,6 +23,7 @@ import {
   newConversationEmail,
 } from '@/app/lib/email/templates';
 import { getEventTypeLabel } from './data';
+import { sendPushToUser } from '@/app/lib/push-server';
 
 export type MessagingActionResult = {
   success: boolean;
@@ -211,6 +212,14 @@ async function notifyNewMessage(
       text: template.text,
       conversationId,
       eventType: 'new_message',
+    });
+
+    // Web push — karşı tarafa anlık tarayıcı bildirimi (sessiz fail)
+    await sendPushToUser(recipientId, {
+      title: `${senderName} sana mesaj gönderdi`,
+      body: messageBody.length > 120 ? messageBody.slice(0, 120) + '…' : messageBody,
+      url: `/mesajlar/${conversationId}`,
+      tag: `message-${conversationId}`,
     });
   } catch (err) {
     console.error('[email] notifyNewMessage error:', err);

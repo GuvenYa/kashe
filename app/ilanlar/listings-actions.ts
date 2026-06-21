@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { isUserSuspended } from '@/app/lib/check-suspension';
+import { sendPushToUser } from '@/app/lib/push-server';
 import {
   validateListingInput,
   validateApplicationInput,
@@ -603,10 +604,33 @@ export async function applyToListing(
     };
   }
 
-  revalidatePath(`/ilanlar/${input.listing_id}`);
-  revalidatePath('/basvurularim');
-  return { success: true, data: { id: newApp.id } };
-}
+  // Web push — ilan sahibine yeni başvuru bildirimi (sessiz fail)
+    try {
+      const { data: applicantProfile } = await supabase
+        .from('profiles')
+        .select('full_name, company_name, role')
+        .eq('id', user.id)
+        .single();
+      const applicantName =
+        (applicantProfile?.role === 'business' ||
+          applicantProfile?.role === 'agency') &&
+        applicantProfile?.company_name
+          ? applicantProfile.company_name
+          : applicantProfile?.full_name || 'Biri';
+      await sendPushToUser(listing.creator_id, {
+        title: `${applicantName} ilanına başvurdu`,
+        body: 'Yeni bir başvuru aldın. İncelemek için tıkla.',
+        url: '/ilanlarim',
+        tag: `application-${input.listing_id}`,
+      });
+    } catch (e) {
+      console.error('[push] applyToListing error:', e);
+    }
+
+    revalidatePath(`/ilanlar/${input.listing_id}`);
+    revalidatePath('/basvurularim');
+    return { success: true, data: { id: newApp.id } };
+  }
 
 /**
  * Profesyonel kendi başvurusunu geri çeker.
@@ -769,12 +793,35 @@ export async function acceptApplication(
     revalidatePath(`/mesajlar/${conversationId}`);
   }
 
-  revalidatePath(`/ilanlar/${app.listing_id}`);
-  revalidatePath('/basvurularim');
-  revalidatePath('/ilanlarim');
-  revalidatePath('/mesajlar');
-  return { success: true };
-}
+  // Web push — başvurana "kabul edildin" bildirimi (sessiz fail)
+    try {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('full_name, company_name, role')
+        .eq('id', user.id)
+        .single();
+      const ownerName =
+        (ownerProfile?.role === 'business' ||
+          ownerProfile?.role === 'agency') &&
+        ownerProfile?.company_name
+          ? ownerProfile.company_name
+          : ownerProfile?.full_name || 'İlan sahibi';
+      await sendPushToUser(professionalId, {
+        title: 'Başvurun kabul edildi! 🎉',
+        body: `${ownerName} başvurunu kabul etti. Detaylar için tıkla.`,
+        url: conversationId ? `/mesajlar/${conversationId}` : '/basvurularim',
+        tag: `application-accepted-${applicationId}`,
+      });
+    } catch (e) {
+      console.error('[push] acceptApplication error:', e);
+    }
+
+    revalidatePath(`/ilanlar/${app.listing_id}`);
+    revalidatePath('/basvurularim');
+    revalidatePath('/ilanlarim');
+    revalidatePath('/mesajlar');
+    return { success: true };
+  }
 
 /**
  * Dolmuş ilanı tekrar aç (filled → published).
