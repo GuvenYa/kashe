@@ -1,6 +1,7 @@
 import { TopNav } from "@/app/components/sections/top-nav";
 import { Hero } from "@/app/components/sections/hero";
 import { CategoryMarquee } from "@/app/components/sections/category-marquee";
+import { KasheAiSection } from "@/app/components/sections/kashe-ai-section";
 import { FeaturedProfiles } from "@/app/components/sections/featured-profiles";
 import { Categories } from "@/app/components/sections/categories";
 import { HowItWorks } from "@/app/components/sections/how-it-works";
@@ -20,6 +21,9 @@ export default function Home() {
       <main>
         <Hero />
         <CategoryMarquee />
+        <Reveal>
+          <KasheAiSection />
+        </Reveal>
         <Reveal>
           <FeaturedProfiles />
         </Reveal>

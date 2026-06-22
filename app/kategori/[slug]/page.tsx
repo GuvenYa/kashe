@@ -363,7 +363,39 @@ export default async function KategoriPage({ params }: Props) {
         </section>
 
         {/* SSS */}
-        <section className="border-t border-line">
+        {/* Kashe AI önerisi */}
+          <section className="border-t border-line px-6 md:px-12 py-10">
+            <div className="max-w-7xl mx-auto">
+              <Link
+                href="/pro-bul"
+                className="kashe-tap group flex items-center gap-4 bg-card border border-line rounded-2xl p-5 md:p-6 hover:border-terracotta transition"
+              >
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-terracotta/10 flex items-center justify-center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
+                    <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
+                    Kashe AI
+                  </p>
+                  <p className="font-display font-semibold text-ink leading-snug">
+                    Sana en uygun {category.name_tr.toLocaleLowerCase('tr')}{' '}
+                    profesyonelini bulalım
+                  </p>
+                  <p className="text-sm text-ink-72 mt-0.5 leading-relaxed">
+                    Nasıl biri aradığını anlat, yapay zekâ gerekçesiyle önersin.
+                  </p>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-72 group-hover:text-terracotta transition">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </section>
+
+          {/* SSS */}
+          <section className="border-t border-line">
           <div className="max-w-3xl mx-auto px-6 md:px-12 py-14 md:py-16">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
               Sık sorulan sorular

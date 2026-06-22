@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Sparkles } from 'lucide-react';
 import { createService, updateService, type ServiceFormData } from './actions';
+import { generateServiceDescription } from '@/app/lib/ai-actions';
 import type { Service, ServiceCategory } from '@/app/lib/types';
 
 type Props = {
@@ -23,6 +25,26 @@ export function ServiceModal({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // AI hizmet açıklaması yardımcısı
+  const [aiSvcKeywords, setAiSvcKeywords] = useState('');
+  const [aiSvcLoading, setAiSvcLoading] = useState(false);
+  const [aiSvcError, setAiSvcError] = useState<string | null>(null);
+
+  async function handleGenerateServiceDesc() {
+    setAiSvcError(null);
+    setAiSvcLoading(true);
+    const result = await generateServiceDescription({
+      serviceTitle: title.trim(),
+      keywords: aiSvcKeywords.trim(),
+    });
+    if (result.success) {
+      setDescription(result.text);
+    } else {
+      setAiSvcError(result.error);
+    }
+    setAiSvcLoading(false);
+  }
 
   const [categoryId, setCategoryId] = useState<string>('');
   const [title, setTitle] = useState('');
@@ -200,18 +222,50 @@ export function ServiceModal({
           </div>
 
           <div>
-            <label htmlFor="modal-description" className={labelClass}>
-              Açıklama
-            </label>
-            <textarea
-              id="modal-description"
-              rows={3}
-              maxLength={1000}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={`${inputClass} resize-none`}
-              placeholder="Bu hizmette neler yapıyorsun, neyi kapsıyor..."
-            />
+              <label htmlFor="modal-description" className={labelClass}>
+                Açıklama
+              </label>
+              <div className="mb-3 bg-white border border-line rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} className="text-terracotta" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+                    AI ile açıklama yaz
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
+                  Başlığı doldur, istersen birkaç detay ekle (kapsam, süre, dahil
+                  olanlar). Yapay zekâ bir taslak yazsın — sonra düzenleyebilirsin.
+                </p>
+                <input
+                  type="text"
+                  value={aiSvcKeywords}
+                  onChange={(e) => setAiSvcKeywords(e.target.value)}
+                  placeholder="Örn: 4 saat, ekipman dahil, 2 fotoğrafçı, dijital teslim"
+                  maxLength={500}
+                  className={`${inputClass} mb-2`}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateServiceDesc}
+                  disabled={aiSvcLoading}
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                >
+                  <Sparkles size={13} />
+                  {aiSvcLoading ? 'Yazıyor…' : 'AI ile yaz'}
+                </button>
+                {aiSvcError && (
+                  <p className="text-[11px] text-danger mt-2">{aiSvcError}</p>
+                )}
+              </div>
+              <textarea
+                id="modal-description"
+                rows={3}
+                maxLength={1000}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`${inputClass} resize-none`}
+                placeholder="Bu hizmette neler yapıyorsun, neyi kapsıyor..."
+              />
             <p className="text-xs text-ink-72 mt-1.5">{description.length}/1000</p>
           </div>
 

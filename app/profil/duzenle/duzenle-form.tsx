@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 import { updateProfile } from './actions';
+import { generateProfileBio } from '@/app/lib/ai-actions';
 import { AvatarUpload } from './avatar-upload';
 import { AttributesEditor } from './attributes-editor';
 import { isProfessional, isBusiness } from '@/app/lib/profile-helpers';
@@ -45,6 +47,29 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // AI bio yardımcısı
+  const [aiBioKeywords, setAiBioKeywords] = useState('');
+  const [aiBioLoading, setAiBioLoading] = useState(false);
+  const [aiBioError, setAiBioError] = useState<string | null>(null);
+
+  async function handleGenerateBio() {
+    setAiBioError(null);
+    setAiBioLoading(true);
+    const categoryName =
+      categories.find((c) => String(c.id) === primaryCategoryId)?.name_tr || '';
+    const result = await generateProfileBio({
+      categoryName,
+      keywords: aiBioKeywords.trim(),
+      isAgency: profile.role === 'agency',
+    });
+    if (result.success) {
+      setBio(result.text);
+    } else {
+      setAiBioError(result.error);
+    }
+    setAiBioLoading(false);
+  }
 
   const [fullName, setFullName] = useState(profile.full_name || '');
   const [bio, setBio] = useState(profile.bio || '');
@@ -283,16 +308,51 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
         </div>
 
         <div>
-          <label htmlFor="bio" className={labelClass}>
-            Hakkımda
-          </label>
-          <textarea
-            id="bio"
-            name="bio"
-            rows={5}
-            maxLength={500}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            <label htmlFor="bio" className={labelClass}>
+              Hakkımda
+            </label>
+            {showProfessionalFields && (
+              <div className="mb-3 bg-paper border border-line rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} className="text-terracotta" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+                    AI ile Hakkımda yaz
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
+                  Kategorini seç, istersen birkaç detay ekle (deneyim, tarz,
+                  uzmanlık). Yapay zekâ senin için bir taslak yazsın — sonra
+                  düzenleyebilirsin.
+                </p>
+                <input
+                  type="text"
+                  value={aiBioKeywords}
+                  onChange={(e) => setAiBioKeywords(e.target.value)}
+                  placeholder="Örn: 8 yıl deneyim, düğün ve kurumsal, modern tarz"
+                  maxLength={500}
+                  className={`${inputClass} mb-2`}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateBio}
+                  disabled={aiBioLoading}
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                >
+                  <Sparkles size={13} />
+                  {aiBioLoading ? 'Yazıyor…' : 'AI ile yaz'}
+                </button>
+                {aiBioError && (
+                  <p className="text-[11px] text-danger mt-2">{aiBioError}</p>
+                )}
+              </div>
+            )}
+            <textarea
+              id="bio"
+              name="bio"
+              rows={5}
+              maxLength={500}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
             className={`${inputClass} resize-none`}
             placeholder={
               showProfessionalFields
