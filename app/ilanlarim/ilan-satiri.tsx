@@ -26,12 +26,14 @@ import {
   closeListing,
   cancelListing,
   deleteListing,
-  activateUrgentSimulation,
-  cancelUrgentSimulation,
 } from '../ilanlar/listings-actions';
-import { isUrgent } from '../ilanlar/listings-data';
-import { getPromotionPlan } from '@/app/lib/promotion';
-import { formatTRY } from '@/app/lib/premium';
+import {
+  isUrgent,
+  isFeaturedCategory,
+  isFeaturedHome,
+} from '../ilanlar/listings-data';
+import { OneCikarModal } from './one-cikar-modal';
+import { Sparkles } from 'lucide-react';
 
 type Props = {
   listing: ListingWithRelations & { application_count: number };
@@ -93,20 +95,12 @@ export function IlanSatiri({ listing }: Props) {
     router.push('/ilanlarim');
   }
 
-  async function handleUrgent() {
-    const r = await activateUrgentSimulation(listing.id);
-    if (!r.success) throw new Error(r.error);
-    router.refresh();
-  }
+  const [showPromote, setShowPromote] = useState(false);
 
-  async function handleUrgentCancel() {
-    const r = await cancelUrgentSimulation(listing.id);
-    if (!r.success) throw new Error(r.error);
-    router.refresh();
-  }
-
-  const urgentActive = isUrgent(listing);
-  const urgentPlan = getPromotionPlan('urgent');
+  const anyPromoActive =
+    isUrgent(listing) ||
+    isFeaturedCategory(listing) ||
+    isFeaturedHome(listing);
   // Öne çıkarma sadece yayında/dolu ilan için
   const canPromote =
     listing.status === 'published' || listing.status === 'filled';
@@ -191,19 +185,6 @@ export function IlanSatiri({ listing }: Props) {
         <p className="text-xs text-terracotta mb-2">{error}</p>
       )}
 
-      {confirming === 'urgent' && urgentPlan && (
-        <div className="mb-3 p-3 bg-terracotta/5 border border-terracotta/20 rounded-lg">
-          <p className="text-sm text-ink font-medium mb-0.5">
-            {urgentPlan.label} · {urgentPlan.durationDays} gün ·{' '}
-            {formatTRY(urgentPlan.price)}
-          </p>
-          <p className="text-xs text-ink-72 leading-relaxed">
-            {urgentPlan.desc} İyzico ödeme entegrasyonu yakında — şimdilik
-            ücretsiz deneyebilirsin. Onaylamak için tekrar tıkla.
-          </p>
-        </div>
-      )}
-
       {/* Aksiyonlar */}
       <div className="flex flex-wrap gap-2 pt-3 border-t border-line">
         <Link
@@ -214,35 +195,18 @@ export function IlanSatiri({ listing }: Props) {
           Detay
         </Link>
 
-        {canPromote && !urgentActive && (
+        {canPromote && (
           <button
-            onClick={() => withConfirm('urgent', handleUrgent)}
+            onClick={() => setShowPromote(true)}
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
-              confirming === 'urgent'
-                ? 'bg-terracotta text-paper border-terracotta'
+              anyPromoActive
+                ? 'bg-terracotta/10 border-terracotta/40 text-terracotta hover:border-terracotta'
                 : 'border-terracotta/40 text-terracotta hover:border-terracotta hover:bg-terracotta/5'
             } disabled:opacity-50`}
           >
-            🔥
-            {confirming === 'urgent'
-              ? `Onayla (${urgentPlan ? formatTRY(urgentPlan.price) : ''})`
-              : 'Öne çıkar'}
-          </button>
-        )}
-
-        {canPromote && urgentActive && (
-          <button
-            onClick={() => withConfirm('urgent-cancel', handleUrgentCancel)}
-            disabled={isPending}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
-              confirming === 'urgent-cancel'
-                ? 'bg-ink text-paper border-ink'
-                : 'bg-terracotta/10 border-terracotta/40 text-terracotta hover:border-terracotta'
-            } disabled:opacity-50`}
-          >
-            🔥
-            {confirming === 'urgent-cancel' ? 'Kaldır onayla' : 'Acil aktif'}
+            <Sparkles size={12} strokeWidth={1.75} />
+            {anyPromoActive ? 'Öne çıkarma aktif' : 'Öne çıkar'}
           </button>
         )}
 
@@ -319,6 +283,10 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
       </div>
+
+      {showPromote && (
+        <OneCikarModal listing={listing} onClose={() => setShowPromote(false)} />
+      )}
     </div>
   );
 }

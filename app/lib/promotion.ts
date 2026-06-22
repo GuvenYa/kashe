@@ -34,14 +34,14 @@ export const PROMOTION_PLANS: PromotionPlan[] = [
   {
     type: 'featured_category',
     label: 'Kategori Üstü',
-    desc: 'İlanın, kategori ve ilan listelerinde üst sıralarda görünsün.',
+    desc: 'İlanın, kendi kategorisinde ve listelerde üst sıralara taşınsın.',
     price: 399,
     durationDays: 7,
   },
   {
     type: 'featured_home',
     label: 'Vitrin',
-    desc: 'İlanın ana sayfa ve keşfet vitrininde öne çıksın.',
+    desc: 'İlanın, tüm ilan listesinde en üst sırada, özel vitrin çerçevesiyle gösterilsin — en yüksek görünürlük.',
     price: 999,
     durationDays: 7,
   },

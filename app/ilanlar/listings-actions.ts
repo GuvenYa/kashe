@@ -1330,3 +1330,105 @@ export async function cancelUrgentSimulation(
   revalidatePath(`/ilanlar/${listingId}`);
   return { success: true };
 }
+// ---- ÖNE ÇIKARMA: Kategori üstü + Vitrin (admin + kullanıcı simülasyon) ----
+// Acil'den farkı: tek bool yok, sadece "...until" tarihi. featured_category_until
+// (kategori/ilan listesi üst sıra) veya featured_home_until (ana sayfa vitrini).
+
+type FeaturedField = 'featured_category_until' | 'featured_home_until';
+
+async function setFeatured(
+  listingId: string,
+  field: FeaturedField,
+  until: string | null,
+  requireOwner: boolean
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
+
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('id, creator_id, status')
+    .eq('id', listingId)
+    .single();
+
+  if (!listing) return { success: false, error: 'İlan bulunamadı.' };
+
+  // Yetki: admin VEYA (kullanıcı simülasyonunda) ilan sahibi
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  const isAdmin = profile?.is_admin === true;
+
+  if (requireOwner && !isAdmin && listing.creator_id !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil.' };
+  }
+  if (!requireOwner && !isAdmin) {
+    return { success: false, error: 'Bu işlem için yetkin yok.' };
+  }
+
+  // Etkinleştirme (until dolu) sadece yayında/dolu ilan için
+  if (until && listing.status !== 'published' && listing.status !== 'filled') {
+    return {
+      success: false,
+      error: 'Sadece yayında olan ilanlar öne çıkarılabilir.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ [field]: until })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'İşlem başarısız: ' + error.message };
+  }
+
+  revalidatePath('/ilanlarim');
+  revalidatePath('/ilanlar');
+  revalidatePath('/admin/ilanlar');
+  revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}
+
+function daysFromNow(days: number): string {
+  const valid = [3, 7, 14].includes(days) ? days : 7;
+  return new Date(Date.now() + valid * 24 * 60 * 60 * 1000).toISOString();
+}
+
+// --- Kategori üstü ---
+export async function activateFeaturedCategorySimulation(
+  listingId: string
+): Promise<ActionResult> {
+  return setFeatured(listingId, 'featured_category_until', daysFromNow(7), true);
+}
+export async function cancelFeaturedCategory(
+  listingId: string
+): Promise<ActionResult> {
+  return setFeatured(listingId, 'featured_category_until', null, true);
+}
+
+// --- Vitrin (ana sayfa) ---
+export async function activateFeaturedHomeSimulation(
+  listingId: string
+): Promise<ActionResult> {
+  return setFeatured(listingId, 'featured_home_until', daysFromNow(7), true);
+}
+export async function cancelFeaturedHome(
+  listingId: string
+): Promise<ActionResult> {
+  return setFeatured(listingId, 'featured_home_until', null, true);
+}
