@@ -267,10 +267,14 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       finalGuestCount = v;
     }
 
-    // Rol seçimini DB formatına çevir: 'both' → null (profil varsayılanı),
-    // tek rol → o rolü içeren dizi
-    const rolesValue: string[] | null =
-      applicantRoles === 'both' ? null : [applicantRoles];
+    // Rol seçimini DB formatına çevir: 'both' → her iki rol (açık değer),
+    // tek rol → o rolü içeren dizi.
+    // NOT: 'both' artık null DEĞİL — kullanıcı "Herkes" derken profil
+    // varsayılanına devretmeyi değil, açıkça ikisini de kastediyor.
+    const rolesValue: string[] =
+      applicantRoles === 'both'
+        ? ['professional', 'agency']
+        : [applicantRoles];
 
     startTransition(async () => {
       if (isEditMode && initialData) {
