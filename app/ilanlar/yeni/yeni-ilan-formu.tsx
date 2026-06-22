@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
+import { generateListingDescription } from '../../lib/ai-actions';
 import { createListing, updateListing } from '../listings-actions';
 import {
   BUDGET_PRESETS,
@@ -141,6 +142,27 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // AI ilan metni yardımcısı
+  const [aiKeywords, setAiKeywords] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function handleGenerateDescription() {
+    setAiError(null);
+    setAiLoading(true);
+    const result = await generateListingDescription({
+      title: title.trim(),
+      categoryName: selectedCategoryName || '',
+      keywords: aiKeywords.trim(),
+    });
+    if (result.success) {
+      setDescription(result.text);
+    } else {
+      setAiError(result.error);
+    }
+    setAiLoading(false);
+  }
 
   const isEditMode = !!initialData;
 
@@ -411,12 +433,44 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
               Açıklama <span className="text-terracotta">*</span>
             </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={placeholders.description}
-              rows={6}
-              maxLength={5000}
+            <div className="mb-3 bg-paper border border-line rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} className="text-terracotta" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+                    AI ile açıklama yaz
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
+                  Başlık ve kategoriyi doldur, istersen birkaç detay ekle. Yapay
+                  zekâ senin için taslak bir açıklama yazsın — sonra düzenleyebilirsin.
+                </p>
+                <input
+                  type="text"
+                  value={aiKeywords}
+                  onChange={(e) => setAiKeywords(e.target.value)}
+                  placeholder="Örn: 100 kişi, açık hava, akşam, 4 saat"
+                  maxLength={500}
+                  className="w-full px-3 py-2 bg-white border border-line rounded text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition mb-2"
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateDescription}
+                  disabled={aiLoading}
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                >
+                  <Sparkles size={13} />
+                  {aiLoading ? 'Yazıyor…' : 'AI ile yaz'}
+                </button>
+                {aiError && (
+                  <p className="text-[11px] text-danger mt-2">{aiError}</p>
+                )}
+              </div>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={placeholders.description}
+                rows={6}
+                maxLength={5000}
               required
               className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
             />
