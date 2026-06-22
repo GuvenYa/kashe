@@ -1124,3 +1124,209 @@ export async function getApplicationAttachmentUrl(
 
   return { url: data.signedUrl };
 }
+/**
+ * Admin: ilanı acil yap (öne çıkarma — acil etiketi). is_urgent=true +
+ * urgent_until = now + days. Premium grant kalıbı, ilana özel + gün bazlı.
+ * Doküman 12.3 ilan öne çıkarma. iyzico gelince satın almaya bağlanır;
+ * şimdilik admin verir / kullanıcı simülasyonla dener.
+ */
+export async function adminGrantUrgent(
+  listingId: string,
+  days: number
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) {
+    return { success: false, error: 'Bu işlem için yetkin yok' };
+  }
+
+  const validDays = [3, 7, 14].includes(days) ? days : 7;
+  const until = new Date(
+    Date.now() + validDays * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ is_urgent: true, urgent_until: until })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'Acil yapılamadı: ' + error.message };
+  }
+
+  // Audit log (best effort)
+  try {
+    await supabase.from('admin_audit_log').insert({
+      admin_id: user.id,
+      action: 'grant_urgent',
+      target_type: 'listing',
+      target_id: listingId,
+      notes: `${validDays} gün acil etiketi`,
+    });
+  } catch (e) {
+    console.error('[admin-audit] grant_urgent log error:', e);
+  }
+
+  revalidatePath('/admin/ilanlar');
+  revalidatePath('/ilanlar');
+  revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}
+
+/**
+ * Admin: ilanın acil etiketini kaldır.
+ */
+export async function adminRevokeUrgent(
+  listingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) {
+    return { success: false, error: 'Bu işlem için yetkin yok' };
+  }
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ is_urgent: false, urgent_until: null })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'Acil kaldırılamadı: ' + error.message };
+  }
+
+  try {
+    await supabase.from('admin_audit_log').insert({
+      admin_id: user.id,
+      action: 'revoke_urgent',
+      target_type: 'listing',
+      target_id: listingId,
+    });
+  } catch (e) {
+    console.error('[admin-audit] revoke_urgent log error:', e);
+  }
+
+  revalidatePath('/admin/ilanlar');
+  revalidatePath('/ilanlar');
+  revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}
+/**
+ * SİMÜLASYON: İlan sahibi kendi ilanını acil yapar (iyzico öncesi).
+ * Gerçek ödeme YOK. Yalnızca KENDİ ilanına, yayında/dolu durumdaysa.
+ * iyzico gelince gerçek ödemeye bağlanır. Doküman 12.3 ilan öne çıkarma.
+ */
+export async function activateUrgentSimulation(
+  listingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  // Suspension kontrolü
+  if (await isUserSuspended(user.id)) {
+    return {
+      success: false,
+      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+    };
+  }
+
+  // İlan sahibi mi + durum uygun mu?
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('id, creator_id, status')
+    .eq('id', listingId)
+    .single();
+
+  if (!listing) return { success: false, error: 'İlan bulunamadı.' };
+  if (listing.creator_id !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil.' };
+  }
+  if (listing.status !== 'published' && listing.status !== 'filled') {
+    return {
+      success: false,
+      error: 'Sadece yayında olan ilanlar öne çıkarılabilir.',
+    };
+  }
+
+  const until = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ is_urgent: true, urgent_until: until })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'Öne çıkarılamadı: ' + error.message };
+  }
+
+  revalidatePath('/ilanlarim');
+  revalidatePath('/ilanlar');
+  revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}
+
+/** SİMÜLASYON: İlan sahibi kendi ilanının acil etiketini kaldırır. */
+export async function cancelUrgentSimulation(
+  listingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('id, creator_id')
+    .eq('id', listingId)
+    .single();
+
+  if (!listing) return { success: false, error: 'İlan bulunamadı.' };
+  if (listing.creator_id !== user.id) {
+    return { success: false, error: 'Bu ilan senin değil.' };
+  }
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ is_urgent: false, urgent_until: null })
+    .eq('id', listingId);
+
+  if (error) {
+    return { success: false, error: 'Kaldırılamadı: ' + error.message };
+  }
+
+  revalidatePath('/ilanlarim');
+  revalidatePath('/ilanlar');
+  revalidatePath(`/ilanlar/${listingId}`);
+  return { success: true };
+}

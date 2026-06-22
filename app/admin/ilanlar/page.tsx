@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import Link from 'next/link';
 import { IlanOnayAksiyonlari } from './ilan-onay-aksiyonlari';
 import { AdminIlanKaldir } from './admin-ilan-kaldir';
+import { AdminIlanAcil } from './admin-ilan-acil';
 import { formatBudgetRange } from '@/app/ilanlar/listings-data';
 
 type Durum =
@@ -80,7 +81,7 @@ export default async function AdminIlanlarPage({
     .select(
       `
       id, title, description, budget_min, budget_max, currency,
-      status, approval_note, created_at, creator_id,
+      status, approval_note, created_at, creator_id, is_urgent, urgent_until,
       service_categories (name_tr),
       turkish_cities (name),
       creator:profiles!listings_creator_id_fkey (full_name, company_name, role, email)
@@ -222,7 +223,14 @@ export default async function AdminIlanlarPage({
                       <IlanOnayAksiyonlari listingId={l.id} />
                     )}
                     {(durum === 'published' || durum === 'filled') && (
-                      <AdminIlanKaldir listingId={l.id} />
+                      <div className="space-y-2">
+                        <AdminIlanKaldir listingId={l.id} />
+                        <AdminIlanAcil
+                          listingId={l.id}
+                          isUrgent={l.is_urgent ?? false}
+                          urgentUntil={l.urgent_until ?? null}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
