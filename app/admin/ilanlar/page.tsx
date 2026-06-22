@@ -82,6 +82,7 @@ export default async function AdminIlanlarPage({
       `
       id, title, description, budget_min, budget_max, currency,
       status, approval_note, created_at, creator_id, is_urgent, urgent_until,
+      featured_category_until, featured_home_until,
       service_categories (name_tr),
       turkish_cities (name),
       creator:profiles!listings_creator_id_fkey (full_name, company_name, role, email)
@@ -229,6 +230,8 @@ export default async function AdminIlanlarPage({
                           listingId={l.id}
                           isUrgent={l.is_urgent ?? false}
                           urgentUntil={l.urgent_until ?? null}
+                          featuredCategoryUntil={l.featured_category_until ?? null}
+                          featuredHomeUntil={l.featured_home_until ?? null}
                         />
                       </div>
                     )}
