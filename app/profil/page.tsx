@@ -314,7 +314,7 @@ export default async function ProfilPage() {
               )}
 
               {profile.approval_status === 'revision' && (
-                <div className="bg-terracotta/5 border border-terracotta/30 rounded-lg p-5">
+                <div className="bg-danger-08 border border-danger/30 rounded-lg p-5">
                   <p className="font-display text-base text-ink mb-1">
                     Revizyon istendi
                   </p>

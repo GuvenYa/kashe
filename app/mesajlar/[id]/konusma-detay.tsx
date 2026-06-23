@@ -822,7 +822,7 @@ export function KonusmaDetay({
         )}
 
         {error && !securityWarning && (
-          <p className="text-xs text-terracotta mb-2">{error}</p>
+          <p className="text-xs text-danger mb-2">{error}</p>
         )}
 
         <div className="flex items-end gap-2 md:gap-3">

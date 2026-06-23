@@ -250,7 +250,7 @@ export function TeklifToplaFormu({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Kategori <span className="text-terracotta">*</span>
+              Kategori <span className="text-danger">*</span>
             </label>
             <select
               value={categoryId}
@@ -589,7 +589,7 @@ export function TeklifToplaFormu({
       )}
 
       {error && (
-        <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-4 py-3">
+        <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3">
           {error}
         </div>
       )}

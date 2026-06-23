@@ -189,7 +189,7 @@ export function YorumModal({
 
           {/* ERROR */}
           {error && (
-            <p className="text-sm text-terracotta mb-4">{error}</p>
+            <p className="text-sm text-danger mb-4">{error}</p>
           )}
 
           {/* ACTIONS */}

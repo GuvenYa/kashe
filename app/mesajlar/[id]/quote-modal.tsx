@@ -268,7 +268,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
           </div>
 
           {error && (
-            <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-4 py-3">
+            <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}

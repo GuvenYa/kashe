@@ -381,7 +381,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           {/* Kategori */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Kategori <span className="text-terracotta">*</span>
+              Kategori <span className="text-danger">*</span>
             </label>
             <select
               value={categoryId}
@@ -412,7 +412,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           {/* Başlık */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Başlık <span className="text-terracotta">*</span>
+              Başlık <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -431,7 +431,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
           {/* Açıklama */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Açıklama <span className="text-terracotta">*</span>
+              Açıklama <span className="text-danger">*</span>
             </label>
             <div className="mb-3 bg-paper border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">

@@ -284,7 +284,7 @@ export function UyeOlForm({
 
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
-            Telefon <span className="text-terracotta">*</span>
+            Telefon <span className="text-danger">*</span>
           </label>
           <div className="flex items-stretch gap-2">
             <span className="inline-flex items-center px-3 bg-card border border-line rounded-lg text-ink font-mono text-sm select-none">
@@ -350,7 +350,7 @@ export function UyeOlForm({
 
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
-            Şehir <span className="text-terracotta">*</span>
+            Şehir <span className="text-danger">*</span>
           </label>
           <select
             value={cityId}

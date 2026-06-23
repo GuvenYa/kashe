@@ -116,7 +116,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
           {/* Fiyat */}
           <div>
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Toplam fiyat (TL) <span className="text-terracotta">*</span>
+              Toplam fiyat (TL) <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -131,7 +131,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
           {/* Hizmet açıklaması */}
           <div>
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Hizmet açıklaması <span className="text-terracotta">*</span>
+              Hizmet açıklaması <span className="text-danger">*</span>
             </label>
             <textarea
               rows={4}
@@ -197,7 +197,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
           {/* Mesaj */}
           <div className="pt-4 border-t border-line">
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Mesajın <span className="text-terracotta">*</span>
+              Mesajın <span className="text-danger">*</span>
             </label>
             <textarea
               rows={4}
@@ -210,7 +210,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
           </div>
 
           {error && (
-            <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+            <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
               {error}
             </div>
           )}

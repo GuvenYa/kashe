@@ -121,7 +121,7 @@ export function RezervasyonAksiyonlari({
             </label>
 
             {error && (
-              <p className="text-xs text-terracotta mt-3">{error}</p>
+              <p className="text-xs text-danger mt-3">{error}</p>
             )}
 
             <div className="flex gap-3 mt-5">
@@ -166,7 +166,7 @@ export function RezervasyonAksiyonlari({
             </p>
 
             {error && (
-              <p className="text-xs text-terracotta mt-3">{error}</p>
+              <p className="text-xs text-danger mt-3">{error}</p>
             )}
 
             <div className="flex gap-3 mt-5">

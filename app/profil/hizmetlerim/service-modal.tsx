@@ -187,7 +187,7 @@ export function ServiceModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
             <label htmlFor="modal-category" className={labelClass}>
-              Kategori <span className="text-terracotta">*</span>
+              Kategori <span className="text-danger">*</span>
             </label>
             <select
               id="modal-category"
@@ -207,7 +207,7 @@ export function ServiceModal({
 
           <div>
             <label htmlFor="modal-title" className={labelClass}>
-              Başlık <span className="text-terracotta">*</span>
+              Başlık <span className="text-danger">*</span>
             </label>
             <input
               id="modal-title"
@@ -290,7 +290,7 @@ export function ServiceModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="modal-price-min" className={labelClass}>
-                  Min fiyat (₺) <span className="text-terracotta">*</span>
+                  Min fiyat (₺) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="modal-price-min"
@@ -305,7 +305,7 @@ export function ServiceModal({
               </div>
               <div>
                 <label htmlFor="modal-price-max" className={labelClass}>
-                  Max fiyat (₺) <span className="text-terracotta">*</span>
+                  Max fiyat (₺) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="modal-price-max"
@@ -340,7 +340,7 @@ export function ServiceModal({
           </div>
 
           {error && (
-            <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+            <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
               {error}
             </div>
           )}

@@ -132,7 +132,7 @@ function DavetSatiri({
           </button>
         )}
       </div>
-      {error && <p className="text-[10px] text-terracotta mt-2">{error}</p>}
+      {error && <p className="text-[10px] text-danger mt-2">{error}</p>}
     </div>
   );
 }

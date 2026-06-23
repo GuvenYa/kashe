@@ -104,7 +104,7 @@ export function OneCikarModal({ listing, onClose }: Props) {
 
         <div className="p-6 space-y-3">
           {error && (
-            <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+            <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
               {error}
             </div>
           )}

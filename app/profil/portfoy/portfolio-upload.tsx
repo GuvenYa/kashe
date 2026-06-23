@@ -172,7 +172,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
       </div>
 
       {error && (
-        <p className="text-sm text-terracotta">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       )}
     </div>
   );

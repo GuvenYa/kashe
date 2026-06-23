@@ -179,7 +179,7 @@ export function SikayetButton({
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                    Sebep <span className="text-terracotta">*</span>
+                    Sebep <span className="text-danger">*</span>
                   </label>
                   <div className="space-y-1.5">
                     {REASONS.map((r) => (

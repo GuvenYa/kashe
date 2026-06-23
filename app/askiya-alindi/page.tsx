@@ -59,7 +59,7 @@ export default async function AskiyaAlindiPage() {
         <div className="bg-card border border-line rounded-2xl p-7 md:p-8 shadow-[0_18px_40px_-18px_rgba(26,18,14,0.16)]">
           {/* İkon + eyebrow */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-12 h-12 rounded-full bg-terracotta/10 border border-terracotta/30 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-full bg-danger-08 border border-danger/30 flex items-center justify-center shrink-0">
               <svg
                 width="22"
                 height="22"
@@ -76,7 +76,7 @@ export default async function AskiyaAlindiPage() {
                 />
               </svg>
             </div>
-            <Eyebrow variant="inline" className="!text-terracotta">
+            <Eyebrow variant="inline" className="!text-danger">
               Hesap askıda
             </Eyebrow>
           </div>
@@ -84,7 +84,7 @@ export default async function AskiyaAlindiPage() {
           {/* Başlık */}
           <h1 className="font-display font-light text-2xl md:text-3xl text-ink tracking-tight leading-[1.15] mb-3">
             Merhaba {displayName}, hesabın şu an{' '}
-            <em className="text-terracotta">askıya alınmış</em>.
+            <em className="text-danger">askıya alınmış</em>.
           </h1>
 
           <p className="text-[15px] text-ink-72 leading-relaxed mb-5">

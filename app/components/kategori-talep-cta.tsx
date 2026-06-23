@@ -224,7 +224,7 @@ export function KategoriTalepCta({
             {/* Kategori adı */}
             <label className="block mb-4">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 block mb-1.5">
-                Kategori adı <span className="text-terracotta">*</span>
+                Kategori adı <span className="text-danger">*</span>
               </span>
               <input
                 type="text"

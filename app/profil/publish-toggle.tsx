@@ -57,9 +57,9 @@ export function PublishToggle({ isPublished, canPublish, missingFields }: Props)
               {missingFields.map((field) => (
                 <li
                   key={field}
-                  className="text-sm text-terracotta flex items-center gap-2"
+                  className="text-sm text-danger flex items-center gap-2"
                 >
-                  <span className="w-1 h-1 rounded-full bg-terracotta" />
+                  <span className="w-1 h-1 rounded-full bg-danger" />
                   {field}
                 </li>
               ))}
@@ -67,7 +67,7 @@ export function PublishToggle({ isPublished, canPublish, missingFields }: Props)
           )}
 
           {error && (
-            <p className="mt-3 text-sm text-terracotta">{error}</p>
+            <p className="mt-3 text-sm text-danger">{error}</p>
           )}
         </div>
 

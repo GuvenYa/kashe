@@ -358,7 +358,7 @@ export function IlanDetay({
         )}
 
         {error && (
-          <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3 mb-4">
             {error}
           </div>
         )}
@@ -791,7 +791,7 @@ function ApplicationCard({
       )}
 
       {error && (
-        <p className="text-xs text-terracotta mb-2">{error}</p>
+        <p className="text-xs text-danger mb-2">{error}</p>
       )}
 
       {/* Aksiyon butonları */}
@@ -1034,7 +1034,7 @@ function ApplicationCompareColumn({
         )}
       </div>
 
-      {error && <p className="text-xs text-terracotta mt-2">{error}</p>}
+      {error && <p className="text-xs text-danger mt-2">{error}</p>}
 
       {/* Aksiyonlar */}
       <div className="flex flex-col gap-1.5 pt-3">

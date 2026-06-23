@@ -150,7 +150,7 @@ export function YeniKategoriFormu({
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4">
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Kategori adı <span className="text-terracotta">*</span>
+              Kategori adı <span className="text-danger">*</span>
             </label>
             <input
               type="text"

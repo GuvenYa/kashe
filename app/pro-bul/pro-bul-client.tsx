@@ -48,7 +48,7 @@ export function ProBulClient({ categories, cities }: Props) {
         {/* Kategori */}
         <div>
           <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-            Kategori <span className="text-terracotta">*</span>
+            Kategori <span className="text-danger">*</span>
           </label>
           <select
             value={categorySlug}

@@ -206,7 +206,7 @@ export function DavetButton({
 
                   <div>
                     <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                      İlan seç <span className="text-terracotta">*</span>
+                      İlan seç <span className="text-danger">*</span>
                     </label>
                     <div className="space-y-2">
                       {listings.map((l) => {
@@ -264,7 +264,7 @@ export function DavetButton({
                   </div>
 
                   {error && (
-                    <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+                    <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
                       {error}
                     </div>
                   )}

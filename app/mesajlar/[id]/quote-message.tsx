@@ -171,7 +171,7 @@ export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
         </div>
 
         {error && (
-          <div className="mx-5 mb-3 bg-terracotta/10 border border-terracotta/30 text-terracotta text-xs rounded-lg px-3 py-2">
+          <div className="mx-5 mb-3 bg-danger-08 border border-danger/30 text-danger text-xs rounded-lg px-3 py-2">
             {error}
           </div>
         )}

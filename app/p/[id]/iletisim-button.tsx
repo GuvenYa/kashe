@@ -455,7 +455,7 @@ export function IletisimButton({
                       >
                         {field.label}
                         {field.required && (
-                          <span className="text-terracotta"> *</span>
+                          <span className="text-danger"> *</span>
                         )}
                       </label>
                     );
@@ -537,7 +537,7 @@ export function IletisimButton({
               {/* SECTION: Mesaj */}
               <div className="pt-4 border-t border-line">
                 <label htmlFor="message" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                  Mesajın <span className="text-terracotta">*</span>
+                  Mesajın <span className="text-danger">*</span>
                 </label>
                 <textarea
                   id="message"
@@ -610,7 +610,7 @@ export function IletisimButton({
               )}
 
               {error && (
-                <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+                <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
                   {error}
                 </div>
               )}

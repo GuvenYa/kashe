@@ -182,7 +182,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
             <label htmlFor="pkg-title" className={labelClass}>
-              Paket adı <span className="text-terracotta">*</span>
+              Paket adı <span className="text-danger">*</span>
             </label>
             <input
               id="pkg-title"
@@ -215,7 +215,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
           {/* Dahil olanlar — madde listesi */}
           <div>
             <label className={labelClass}>
-              Pakete dahil olanlar <span className="text-terracotta">*</span>
+              Pakete dahil olanlar <span className="text-danger">*</span>
             </label>
             <div className="space-y-2">
               {includes.map((item, i) => (
@@ -307,7 +307,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
           {priceMode === 'fixed' && (
             <div>
               <label htmlFor="pkg-price-fixed" className={labelClass}>
-                Fiyat (₺) <span className="text-terracotta">*</span>
+                Fiyat (₺) <span className="text-danger">*</span>
               </label>
               <input
                 id="pkg-price-fixed"
@@ -329,7 +329,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="pkg-price-min" className={labelClass}>
-                  Min fiyat (₺) <span className="text-terracotta">*</span>
+                  Min fiyat (₺) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="pkg-price-min"
@@ -344,7 +344,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
               </div>
               <div>
                 <label htmlFor="pkg-price-max" className={labelClass}>
-                  Max fiyat (₺) <span className="text-terracotta">*</span>
+                  Max fiyat (₺) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="pkg-price-max"
@@ -361,7 +361,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
           )}
 
           {error && (
-            <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+            <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
               {error}
             </div>
           )}

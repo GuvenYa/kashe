@@ -146,7 +146,7 @@ export function PortfolioItemCard({ item }: Props) {
         )}
 
         {error && (
-          <p className="text-xs text-terracotta mt-2">{error}</p>
+          <p className="text-xs text-danger mt-2">{error}</p>
         )}
       </div>
 

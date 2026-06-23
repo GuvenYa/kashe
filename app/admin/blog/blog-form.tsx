@@ -131,7 +131,7 @@ export function BlogForm({ post }: Props) {
       {/* Başlık */}
       <div>
         <label htmlFor="blog-title" className={labelClass}>
-          Başlık <span className="text-terracotta">*</span>
+          Başlık <span className="text-danger">*</span>
         </label>
         <input
           id="blog-title"
@@ -235,7 +235,7 @@ export function BlogForm({ post }: Props) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className={`${labelClass} mb-0`}>
-            İçerik (Markdown) <span className="text-terracotta">*</span>
+            İçerik (Markdown) <span className="text-danger">*</span>
           </label>
           <div className="flex gap-1 bg-paper-2/40 rounded-lg p-1">
             <button

@@ -241,7 +241,7 @@ export function AddonManager({ serviceId, addons }: Props) {
         </p>
       )}
 
-      {error && !formOpen && <p className="text-xs text-terracotta mt-1">{error}</p>}
+      {error && !formOpen && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

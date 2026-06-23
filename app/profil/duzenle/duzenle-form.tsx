@@ -171,7 +171,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="full_name" className={labelClass}>
-            Ad Soyad <span className="text-terracotta">*</span>
+            Ad Soyad <span className="text-danger">*</span>
           </label>
           <input
             id="full_name"
@@ -189,7 +189,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
         {showBusinessFields && (
           <div>
             <label htmlFor="company_name" className={labelClass}>
-              Şirket adı <span className="text-terracotta">*</span>
+              Şirket adı <span className="text-danger">*</span>
             </label>
             <input
               id="company_name"
@@ -207,7 +207,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
         {showProfessionalFields && (
           <div>
             <label htmlFor="primary_category_id" className={labelClass}>
-              Ana hizmet kategorisi <span className="text-terracotta">*</span>
+              Ana hizmet kategorisi <span className="text-danger">*</span>
             </label>
             <select
               id="primary_category_id"
@@ -403,7 +403,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
         )}
 
         {error && (
-          <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+          <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
             {error}
           </div>
         )}

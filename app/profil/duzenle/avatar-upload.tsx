@@ -186,7 +186,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName }: Props) {
         </p>
 
         {error && (
-          <p className="text-sm text-terracotta mt-2">{error}</p>
+          <p className="text-sm text-danger mt-2">{error}</p>
         )}
       </div>
     </div>

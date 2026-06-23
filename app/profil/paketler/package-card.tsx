@@ -98,7 +98,7 @@ export function PackageCard({ pkg, onEdit }: Props) {
             </ul>
           )}
 
-          {error && <p className="text-sm text-terracotta mt-3">{error}</p>}
+          {error && <p className="text-sm text-danger mt-3">{error}</p>}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

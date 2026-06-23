@@ -53,7 +53,7 @@ export function BriefEkButonu({ requestId, attachmentName, attachmentType }: Pro
           {loading ? 'Açılıyor...' : `${typeLabel} ek: ${attachmentName ?? 'Dosya'}`}
         </span>
       </button>
-      {error && <p className="text-[11px] text-terracotta mt-1">{error}</p>}
+      {error && <p className="text-[11px] text-danger mt-1">{error}</p>}
     </div>
   );
 }

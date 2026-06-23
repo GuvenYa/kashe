@@ -157,7 +157,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
           </p>
 
           {error && (
-            <p className="text-sm text-terracotta mb-4">{error}</p>
+            <p className="text-sm text-danger mb-4">{error}</p>
           )}
 
           <div className="flex flex-col-reverse md:flex-row gap-3 md:items-center md:justify-between">

@@ -114,7 +114,7 @@ function UyeSatiri({ member }: { member: AgencyMemberWithProfile }) {
             {confirming ? 'Onayla' : 'Çıkar'}
           </button>
           {error && (
-            <p className="text-[10px] text-terracotta mt-1">{error}</p>
+            <p className="text-[10px] text-danger mt-1">{error}</p>
           )}
         </div>
       </div>

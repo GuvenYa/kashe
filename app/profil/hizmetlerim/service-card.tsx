@@ -83,7 +83,7 @@ export function ServiceCard({ service, onEdit }: Props) {
           />
 
           {error && (
-            <p className="text-sm text-terracotta mt-3">{error}</p>
+            <p className="text-sm text-danger mt-3">{error}</p>
           )}
         </div>
 

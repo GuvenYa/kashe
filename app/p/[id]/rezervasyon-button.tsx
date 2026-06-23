@@ -301,7 +301,7 @@ export function RezervasyonButton({
 
               <div>
                 <label htmlFor="booking-date" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                  Tarih <span className="text-terracotta">*</span>
+                  Tarih <span className="text-danger">*</span>
                 </label>
                 <input
                   id="booking-date"
@@ -396,7 +396,7 @@ export function RezervasyonButton({
 
               <div>
                 <label htmlFor="booking-message" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
-                  Mesajın <span className="text-terracotta">*</span>
+                  Mesajın <span className="text-danger">*</span>
                 </label>
                 <textarea
                   id="booking-message"
@@ -465,7 +465,7 @@ export function RezervasyonButton({
               </div>
 
               {error && (
-                <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+                <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
                   {error}
                 </div>
               )}

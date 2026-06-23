@@ -14,12 +14,12 @@ export function SuspendedNotice() {
       <TopNav />
       <div className="bg-paper min-h-screen">
         <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-danger mb-4">
             Hesap askıda
           </p>
           <h1 className="font-display text-4xl text-ink mb-3">
             Hesabın şu an{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-danger not-italic italic font-medium">
               askıya alınmış
             </em>
           </h1>

@@ -140,7 +140,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
       <div className="bg-card border border-line rounded-2xl max-w-md w-full p-6 md:p-7 shadow-xl">
         {modalMode === 'ban' && (
           <>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-danger mb-2">
               Hesabı askıya al
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
@@ -153,7 +153,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
 
             <label className="block mb-4">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 block mb-1.5">
-                Sebep <span className="text-terracotta">*</span>
+                Sebep <span className="text-danger">*</span>
               </span>
               <textarea
                 value={banReason}
