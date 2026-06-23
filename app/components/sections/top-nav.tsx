@@ -84,9 +84,12 @@ export async function TopNav() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
         <a href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
-          <span className="kashe-logo-mark w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded-md">
-            k
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icon-192.png"
+              alt="Kashe"
+              className="w-8 h-8 rounded-md"
+            />
           <span className="font-display font-semibold text-2xl text-ink tracking-tight">
             Kashe
           </span>
