@@ -169,7 +169,7 @@ export default async function TeklifKarsilastirPage({
               return (
                 <div
                   key={recipient.id}
-                  className={`bg-white border rounded-lg p-6 ${
+                  className={`bg-card border rounded-lg p-6 ${
                     isCheapest ? 'border-moss' : 'border-line'
                   }`}
                 >

@@ -192,7 +192,7 @@ export function AjansUyeOlForm() {
         </div>
 
         {error && (
-          <div className="p-3 border border-ember text-sm text-ember">
+          <div className="p-3 border border-danger text-sm text-danger bg-danger-08">
             {error}
           </div>
         )}

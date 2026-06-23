@@ -259,7 +259,7 @@ export function DavetButton({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Profilini beğendim, ilanım için seni davet etmek istiyorum..."
-                      className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+                      className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
                     />
                   </div>
 

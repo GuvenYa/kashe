@@ -162,7 +162,7 @@ export default async function AdminIlanlarPage({
             return (
               <div
                 key={l.id}
-                className="bg-white border border-line rounded-lg p-6"
+                className="bg-card border border-line rounded-lg p-6"
               >
                 <div className="flex flex-col lg:flex-row lg:items-start gap-4 lg:justify-between">
                   <div className="min-w-0 flex-1">

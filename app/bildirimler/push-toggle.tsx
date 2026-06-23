@@ -102,7 +102,7 @@ export function PushToggle() {
                 : 'Aç, böylece site kapalıyken bile yeni mesaj ve tekliflerden anında haberdar ol.'}
             </p>
             {state === 'denied' && (
-              <p className="text-xs text-ember mt-1.5">
+              <p className="text-xs text-ink-72 mt-1.5">
                 Bildirim izni tarayıcıda engellenmiş. Açmak için tarayıcı site
                 ayarlarından bildirimlere izin ver.
               </p>
@@ -119,7 +119,7 @@ export function PushToggle() {
               type="button"
               onClick={handleDisable}
               disabled={busy}
-              className="kashe-tap px-4 py-2 rounded-lg border border-line text-ink-72 font-display font-semibold text-sm hover:border-ember hover:text-ember transition disabled:opacity-50"
+              className="kashe-tap px-4 py-2 rounded-lg border border-line text-ink-72 font-display font-semibold text-sm hover:border-ink hover:text-ink transition disabled:opacity-50"
             >
               {busy ? '...' : 'Kapat'}
             </button>

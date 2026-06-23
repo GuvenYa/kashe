@@ -116,7 +116,7 @@ export function RezervasyonAksiyonlari({
                 rows={3}
                 maxLength={500}
                 placeholder="Kısa bir açıklama yazabilirsin..."
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
               />
             </label>
 

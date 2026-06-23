@@ -66,7 +66,7 @@ export function TalepKartiAksiyonlari({
 
   return (
     <>
-      {error && <p className="text-xs text-ember mb-2">{error}</p>}
+      {error && <p className="text-xs text-danger mb-2">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setModalOpen(true)}
@@ -80,7 +80,7 @@ export function TalepKartiAksiyonlari({
           disabled={isPending}
           className={`px-4 py-2 border rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] transition disabled:opacity-50 ${
             confirmDecline
-              ? 'bg-ember text-paper border-ember'
+              ? 'bg-danger text-paper border-danger'
               : 'border-line text-ink-72 hover:border-ink'
           }`}
         >

@@ -101,7 +101,7 @@ export function HizmetSecici({
                 <label
                   key={addon.id}
                   className={`flex items-start gap-3 cursor-pointer p-2 rounded-lg transition ${
-                    isSel ? 'bg-terracotta/8' : 'hover:bg-white'
+                    isSel ? 'bg-terracotta/8' : 'hover:bg-card'
                   }`}
                 >
                   <input

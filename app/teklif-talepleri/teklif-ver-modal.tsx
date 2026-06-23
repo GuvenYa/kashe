@@ -124,7 +124,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Örn: 15.000"
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
           </div>
 
@@ -139,7 +139,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
               value={servicesDescription}
               onChange={(e) => setServicesDescription(e.target.value)}
               placeholder="Teklife neler dahil? Süre, kapsam, ekipman, teslimat vb."
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {servicesDescription.length}/2000
@@ -172,7 +172,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
               value={cancellationPolicy}
               onChange={(e) => setCancellationPolicy(e.target.value)}
               placeholder="İade ve iptal koşulların..."
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
             />
           </div>
 
@@ -184,7 +184,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
             <select
               value={expiryKey}
               onChange={(e) => setExpiryKey(e.target.value as QuoteExpiryKey)}
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             >
               {QUOTE_EXPIRY_OPTIONS.map((opt) => (
                 <option key={opt.key} value={opt.key}>
@@ -205,7 +205,7 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Merhaba, talebinizi inceledim. Şöyle bir teklif sunuyorum..."
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
             />
           </div>
 

@@ -309,7 +309,7 @@ export function RezervasyonButton({
                   min={todayStr}
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 />
               </div>
 
@@ -325,7 +325,7 @@ export function RezervasyonButton({
                       <select
                         value={splitTime(startTime).h}
                         onChange={(e) => setTimePart(startTime, setStartTime, 'h', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                         aria-label="Başlangıç saati"
                       >
                         <option value="">--</option>
@@ -337,7 +337,7 @@ export function RezervasyonButton({
                       <select
                         value={splitTime(startTime).m}
                         onChange={(e) => setTimePart(startTime, setStartTime, 'm', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                         aria-label="Başlangıç dakikası"
                       >
                         <option value="">--</option>
@@ -354,7 +354,7 @@ export function RezervasyonButton({
                       <select
                         value={splitTime(endTime).h}
                         onChange={(e) => setTimePart(endTime, setEndTime, 'h', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                         aria-label="Bitiş saati"
                       >
                         <option value="">--</option>
@@ -366,7 +366,7 @@ export function RezervasyonButton({
                       <select
                         value={splitTime(endTime).m}
                         onChange={(e) => setTimePart(endTime, setEndTime, 'm', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                         aria-label="Bitiş dakikası"
                       >
                         <option value="">--</option>
@@ -390,7 +390,7 @@ export function RezervasyonButton({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="örn. İstanbul, Beşiktaş"
-                  className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 />
               </div>
 
@@ -406,7 +406,7 @@ export function RezervasyonButton({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Merhaba, belirttiğim tarih için sizi rezerve etmek istiyorum. Etkinlik hakkında kısaca..."
-                  className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
                 />
                 <p className="text-xs text-ink-72 mt-1.5">{message.length}/2000 karakter</p>
               </div>
@@ -427,7 +427,7 @@ export function RezervasyonButton({
                   className="hidden"
                 />
                 {selectedFile ? (
-                  <div className="flex items-center gap-2.5 rounded-lg border border-line bg-white px-3 py-2.5">
+                  <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-2.5">
                     <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />

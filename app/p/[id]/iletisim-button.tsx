@@ -460,7 +460,7 @@ export function IletisimButton({
                       </label>
                     );
                     const inputClass =
-                      'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+                      'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
                     // textarea tam satır kaplasın
                     const wrapperClass =
@@ -546,7 +546,7 @@ export function IletisimButton({
                   maxLength={2000}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
                   placeholder="Merhaba, etkinliğim için sizden bilgi almak istiyorum. Düşündüğüm konseptten kısaca bahsetmem gerekirse..."
                 />
                 <p className="text-xs text-ink-72 mt-1.5">
@@ -571,7 +571,7 @@ export function IletisimButton({
                     className="hidden"
                   />
                   {selectedFile ? (
-                    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-white px-3 py-2.5">
+                    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-2.5">
                       <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                           <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />

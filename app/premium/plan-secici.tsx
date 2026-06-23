@@ -257,7 +257,7 @@ export function PlanSecici({
                 value={months}
                 onChange={(e) => setMonths(Number(e.target.value))}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
               >
                 {PREMIUM_DURATIONS.map((d) => (
                   <option key={d.months} value={d.months}>
@@ -305,7 +305,7 @@ export function PlanSecici({
             className="bg-card border border-line rounded-2xl max-w-md w-full p-6 md:p-7 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ember mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-danger mb-2">
               Üyeliği iptal et
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
@@ -335,7 +335,7 @@ export function PlanSecici({
                 type="button"
                 onClick={handleCancel}
                 disabled={isPending}
-                className="flex-1 px-4 py-2.5 bg-ember text-paper rounded-xl font-display font-semibold text-sm hover:opacity-90 transition disabled:opacity-60"
+                className="flex-1 px-4 py-2.5 bg-danger text-paper rounded-xl font-display font-semibold text-sm hover:opacity-90 transition disabled:opacity-60"
               >
                 {isPending ? '...' : 'İptal et'}
               </button>

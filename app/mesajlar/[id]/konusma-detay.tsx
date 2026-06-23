@@ -887,8 +887,8 @@ export function KonusmaDetay({
             }}
             className={`flex-1 px-4 py-3 bg-paper border rounded-xl text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition resize-none text-sm ${
               securityWarning
-                ? 'border-terracotta/50 focus:border-terracotta focus:ring-terracotta/20'
-                : 'border-line focus:border-terracotta focus:ring-terracotta/20'
+                ? 'border-terracotta/50 focus:border-terracotta focus:ring-terracotta-08'
+                : 'border-line focus:border-terracotta focus:ring-terracotta-08'
             }`}
           />
           <button

@@ -107,7 +107,7 @@ export function CitySelect({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="Şehir ara..."
-              className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta/20"
+              className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta-08"
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">

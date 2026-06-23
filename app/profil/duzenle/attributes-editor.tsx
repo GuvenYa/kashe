@@ -20,7 +20,7 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-xl text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-xl text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   return (
     <div className="bg-card border border-line rounded-2xl p-7 md:p-8">

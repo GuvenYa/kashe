@@ -444,7 +444,7 @@ export default function IstatistiklerPage() {
           </div>
 
           {/* Tarih aralığı seçici — sadece akış metriklerini etkiler */}
-          <div className="inline-flex rounded-xl border border-line bg-white p-1 shadow-sm">
+          <div className="inline-flex rounded-xl border border-line bg-card p-1 shadow-sm">
             {RANGE_OPTIONS.map((o) => (
               <button
                 key={o.key}
@@ -664,7 +664,7 @@ export default function IstatistiklerPage() {
                     {supplyGaps.map((r) => (
                       <li
                         key={r.category_id}
-                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
+                        className="flex items-center justify-between rounded-lg bg-card px-3 py-2 text-sm"
                       >
                         <span className="font-medium text-ink">{r.label}</span>
                         <span className="text-ink-72">
@@ -694,7 +694,7 @@ export default function IstatistiklerPage() {
                     {demandGaps.map((r) => (
                       <li
                         key={r.category_id}
-                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
+                        className="flex items-center justify-between rounded-lg bg-card px-3 py-2 text-sm"
                       >
                         <span className="font-medium text-ink">{r.label}</span>
                         <span className="text-ink-72">
@@ -846,7 +846,7 @@ export default function IstatistiklerPage() {
                   const down = c.pct !== null && c.pct < 0
                   const flat = c.pct === null || c.pct === 0
                   return (
-                    <div key={c.metric} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+                    <div key={c.metric} className="rounded-2xl border border-line bg-card p-5 shadow-sm">
                       <Eyebrow>{c.label}</Eyebrow>
                       <div className="mt-1 flex items-baseline gap-2">
                         <span style={{ fontFamily: SERIF }} className="text-3xl font-semibold text-ink">
@@ -1271,7 +1271,7 @@ function QueueCard({ label, count, href, accent }: { label: string; count: numbe
   return (
     <a
       href={href}
-      className="block rounded-2xl border border-line bg-white p-5 shadow-sm transition-all hover:border-terracotta hover:-translate-y-0.5"
+      className="block rounded-2xl border border-line bg-card p-5 shadow-sm transition-all hover:border-terracotta hover:-translate-y-0.5"
     >
       <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
         {label}

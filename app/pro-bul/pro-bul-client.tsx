@@ -40,11 +40,11 @@ export function ProBulClient({ categories, cities }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   return (
     <div>
-      <div className="bg-white border border-line rounded-2xl p-5 space-y-4">
+      <div className="bg-card border border-line rounded-2xl p-5 space-y-4">
         {/* Kategori */}
         <div>
           <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
@@ -126,7 +126,7 @@ export function ProBulClient({ categories, cities }: Props) {
               <Link
                 key={m.id}
                 href={`/p/${m.id}`}
-                className="kashe-tap group block bg-white border border-line rounded-xl p-4 hover:border-terracotta transition"
+                className="kashe-tap group block bg-card border border-line rounded-xl p-4 hover:border-terracotta transition"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

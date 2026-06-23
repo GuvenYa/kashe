@@ -136,7 +136,7 @@ export default async function AdminProfillerPage({
             return (
               <div
                 key={p.id}
-                className="bg-white border border-line rounded-lg p-6"
+                className="bg-card border border-line rounded-lg p-6"
               >
                 <div className="flex flex-col md:flex-row md:items-start gap-4 md:justify-between">
                   <div className="flex items-start gap-4 min-w-0">

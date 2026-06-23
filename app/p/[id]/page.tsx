@@ -657,7 +657,7 @@ export default async function PublicProfilePage({
                       <Link
                         key={r.id}
                         href={`/p/${ag.id}`}
-                        className="inline-flex items-center gap-2 bg-white border border-[#1E3A5F]/20 rounded-full pl-1.5 pr-4 py-1.5 hover:border-[#1E3A5F] hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                        className="inline-flex items-center gap-2 bg-card border border-[#1E3A5F]/20 rounded-full pl-1.5 pr-4 py-1.5 hover:border-[#1E3A5F] hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
                       >
                         {ag.avatar_url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */

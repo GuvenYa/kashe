@@ -126,7 +126,7 @@ export function AvailabilityCalendar({
     (viewYear === now.getFullYear() && viewMonth < now.getMonth());
 
   return (
-    <div className="bg-white border border-line rounded-2xl p-5 md:p-6 max-w-md">
+    <div className="bg-card border border-line rounded-2xl p-5 md:p-6 max-w-md">
       {/* Aralık modu toggle (sadece düzenlenebilir) */}
       {editable && (
         <div className="flex items-center justify-between mb-4">
@@ -140,7 +140,7 @@ export function AvailabilityCalendar({
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] border transition ${
               rangeMode
                 ? 'bg-terracotta text-paper border-terracotta'
-                : 'bg-white text-ink-72 border-line hover:border-ink-72'
+                : 'bg-card text-ink-72 border-line hover:border-ink-72'
             }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

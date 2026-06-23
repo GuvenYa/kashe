@@ -236,8 +236,8 @@ export function KategoriTalepCta({
                 disabled={isPending}
                 className={`w-full px-3 py-2.5 bg-paper border rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
                   matchedExisting
-                    ? 'border-terracotta focus:border-terracotta focus:ring-terracotta/20'
-                    : 'border-line focus:border-terracotta focus:ring-terracotta/20'
+                    ? 'border-terracotta focus:border-terracotta focus:ring-terracotta-08'
+                    : 'border-line focus:border-terracotta focus:ring-terracotta-08'
                 }`}
               />
               {matchedExisting && (
@@ -260,7 +260,7 @@ export function KategoriTalepCta({
                 rows={3}
                 maxLength={280}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none disabled:opacity-60"
               />
               <p className="text-[10px] text-ink-50 mt-1 text-right font-mono">
                 {description.length}/280
@@ -276,7 +276,7 @@ export function KategoriTalepCta({
                 value={eventContext}
                 onChange={(e) => setEventContext(e.target.value)}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
               >
                 {EVENT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>

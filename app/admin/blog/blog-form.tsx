@@ -308,7 +308,7 @@ export function BlogForm({ post }: Props) {
               className={`px-4 py-2 rounded-lg text-sm font-display font-medium border transition-colors ${
                 status === opt.key
                   ? 'bg-terracotta text-paper border-terracotta'
-                  : 'bg-white text-ink-72 border-line hover:border-ink-72'
+                  : 'bg-card text-ink-72 border-line hover:border-ink-72'
               }`}
             >
               {opt.label}

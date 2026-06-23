@@ -324,8 +324,8 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               modalMode === 'unban'
                 ? 'bg-moss text-paper hover:bg-moss/85'
                 : modalMode === 'remove-admin'
-                  ? 'bg-ember text-paper hover:bg-ember/85'
-                  : 'bg-terracotta text-paper hover:bg-ember'
+                  ? 'bg-danger text-paper hover:bg-danger/85'
+                  : 'bg-danger text-paper hover:bg-danger/85'
             }`}
           >
             {isPending

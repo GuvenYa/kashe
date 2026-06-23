@@ -248,7 +248,7 @@ export function KesfetFilters({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="İsim ile ara..."
-          className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition text-sm"
+          className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition text-sm"
         />
       </div>
 
@@ -354,7 +354,7 @@ export function KesfetFilters({
                   onChange={(e) => setCityQuery(e.target.value)}
                   placeholder="Şehir ara..."
                   autoFocus
-                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta/20"
+                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta-08"
                 />
               </div>
               <ul className="max-h-56 overflow-y-auto py-1">
@@ -660,7 +660,7 @@ export function KesfetFilters({
                 <select
                   value={cur}
                   onChange={(e) => setAttrSingle(field.key, e.target.value)}
-                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 >
                   <option value="">Hepsi</option>
                   {field.options.map((opt) => (

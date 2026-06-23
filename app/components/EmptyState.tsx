@@ -23,7 +23,7 @@ type EmptyStateProps = {
  */
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="bg-white border border-line rounded-lg p-12 text-center">
+    <div className="bg-card border border-line rounded-lg p-12 text-center">
       <div
         className="w-16 h-16 mx-auto mb-5 rounded-full bg-terracotta/8 flex items-center justify-center"
         aria-hidden="true"

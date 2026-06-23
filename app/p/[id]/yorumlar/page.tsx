@@ -164,7 +164,7 @@ export default async function YorumlarPage({
           </Link>
 
           {/* HEADER: küçük avatar + isim + büyük rating */}
-          <div className="bg-white border border-line rounded-lg p-8 mb-6">
+          <div className="bg-card border border-line rounded-lg p-8 mb-6">
             <div className="flex items-start gap-6 flex-wrap">
               {profile.avatar_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -253,7 +253,7 @@ export default async function YorumlarPage({
               ))}
             </div>
           ) : (
-            <div className="bg-white border border-line rounded-lg p-12 text-center">
+            <div className="bg-card border border-line rounded-lg p-12 text-center">
               <p className="font-display text-2xl text-ink mb-3">
                 Henüz yorum yok.
               </p>
@@ -274,8 +274,8 @@ function BigStar() {
       width="28"
       height="28"
       viewBox="0 0 24 24"
-      fill="var(--color-terracotta)"
-      stroke="var(--color-terracotta)"
+      fill="var(--color-plum)"
+      stroke="var(--color-plum)"
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

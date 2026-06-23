@@ -238,12 +238,12 @@ export function TeklifToplaFormu({
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Bölüm 1: Kategori + şehir */}
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
           Ne arıyorsun?
         </p>
@@ -298,7 +298,7 @@ export function TeklifToplaFormu({
 
       {/* Bölüm 2: Brief */}
       {categoryId !== '' && (
-        <section className="bg-white border border-line rounded-lg p-6">
+        <section className="bg-card border border-line rounded-lg p-6">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
             Etkinlik detayları
           </p>
@@ -394,7 +394,7 @@ export function TeklifToplaFormu({
 
       {/* Bölüm 3: Gönderim ayarları */}
       {categoryId !== '' && (
-        <section className="bg-white border border-line rounded-lg p-6">
+        <section className="bg-card border border-line rounded-lg p-6">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
             Gönderim ayarları
           </p>
@@ -529,7 +529,7 @@ export function TeklifToplaFormu({
                 id="brief-file-input"
               />
               {file ? (
-                <div className="flex items-center gap-3 bg-white border border-line rounded-lg px-3 py-2.5">
+                <div className="flex items-center gap-3 bg-card border border-line rounded-lg px-3 py-2.5">
                   <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -559,7 +559,7 @@ export function TeklifToplaFormu({
               ) : (
                 <label
                   htmlFor="brief-file-input"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition cursor-pointer"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
