@@ -129,7 +129,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="5.000"
-                className="w-full px-4 py-3 pr-12 bg-white border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 required
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-72 text-sm font-mono">
@@ -155,7 +155,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                       key={i}
                       type="button"
                       onClick={() => setDescription(tpl)}
-                      className="text-left text-[12px] leading-snug text-ink bg-white border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all line-clamp-2"
+                      className="text-left text-[12px] leading-snug text-ink bg-card border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all line-clamp-2"
                     >
                       {tpl}
                     </button>
@@ -169,7 +169,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
               placeholder="Ne yapacağını net şekilde yaz. Örn: 4 saatlik canlı performans, akustik gitar ve vokal. 2 set, ara verilerek..."
               rows={5}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
               required
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
@@ -191,7 +191,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                   className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                     expiryKey === opt.key
                       ? 'bg-terracotta text-paper border-terracotta'
-                      : 'bg-white text-ink-72 border-line hover:border-terracotta/50'
+                      : 'bg-card text-ink-72 border-line hover:border-terracotta/50'
                   }`}
                 >
                   {opt.label}
@@ -212,7 +212,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                   {CANCELLATION_POLICY_TEMPLATES.map((tmpl) => (
                     <label
                       key={tmpl.key}
-                      className={`block bg-white border rounded-lg p-3 cursor-pointer transition ${
+                      className={`block bg-card border rounded-lg p-3 cursor-pointer transition ${
                         policyKey === tmpl.key
                           ? 'border-terracotta'
                           : 'border-line hover:border-terracotta/50'
@@ -254,7 +254,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                   placeholder="İptal politikanı buraya yaz..."
                   rows={4}
                   maxLength={1000}
-                  className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
                 />
                 <button
                   type="button"
@@ -278,7 +278,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-5 py-3 border border-line text-ink-72 rounded-lg font-display font-semibold text-sm hover:bg-white transition"
+              className="flex-1 px-5 py-3 border border-line text-ink-72 rounded-lg font-display font-semibold text-sm hover:bg-card transition"
             >
               Vazgeç
             </button>

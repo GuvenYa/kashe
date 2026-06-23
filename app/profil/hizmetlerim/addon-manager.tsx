@@ -194,7 +194,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
               placeholder="Ekstra adı (örn. Drone çekimi)"
-              className="flex-1 px-3 py-2 bg-white border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+              className="flex-1 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
             />
             <input
               type="text"
@@ -202,7 +202,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Fiyat ₺"
-              className="w-28 px-3 py-2 bg-white border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+              className="w-28 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
             />
           </div>
           <input
@@ -211,9 +211,9 @@ export function AddonManager({ serviceId, addons }: Props) {
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             placeholder="Kısa açıklama (opsiyonel)"
-            className="w-full px-3 py-2 bg-white border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+            className="w-full px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
           />
-          {error && <p className="text-xs text-terracotta">{error}</p>}
+          {error && <p className="text-xs text-danger">{error}</p>}
           <div className="flex items-center gap-2">
             <button
               type="button"

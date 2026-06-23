@@ -99,7 +99,7 @@ export default async function IlanlarimPage({
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
               Yönetim
             </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
+            <h1 className="font-display font-semibold text-4xl text-ink leading-tight">
               <em className="text-terracotta not-italic italic font-medium">
                 İlanlarım
               </em>

@@ -48,7 +48,7 @@ const user = await getCachedUser();
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
                 Favorilerim
               </p>
-              <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Önce{' '}
                 <em className="text-terracotta not-italic italic font-medium">
                   giriş yap
@@ -56,7 +56,7 @@ const user = await getCachedUser();
                 .
               </h1>
             </div>
-            <div className="bg-white border border-line rounded-lg p-12 text-center">
+            <div className="bg-card border border-line rounded-lg p-12 text-center">
               <p className="font-display text-xl text-ink mb-3">
                 Favorilerini görmek için giriş yapmalısın.
               </p>
@@ -108,7 +108,7 @@ const user = await getCachedUser();
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
                 Favorilerim
               </p>
-              <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Bu sayfa{' '}
                 <em className="text-terracotta not-italic italic font-medium">
                   müşterilere özel
@@ -116,7 +116,7 @@ const user = await getCachedUser();
                 .
               </h1>
             </div>
-            <div className="bg-white border border-line rounded-lg p-12 text-center">
+            <div className="bg-card border border-line rounded-lg p-12 text-center">
               <p className="font-display text-xl text-ink mb-3">
                 Favoriler sadece müşteri hesaplarında çalışıyor.
               </p>
@@ -141,8 +141,8 @@ const user = await getCachedUser();
         <TopNav />
         <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6">
-              <p className="text-terracotta text-sm">
+            <div className="bg-danger-08 border border-danger/30 rounded-lg p-6">
+              <p className="text-danger text-sm">
                 Bir sorun oluştu, lütfen sayfayı yenile.
               </p>
             </div>
@@ -163,7 +163,7 @@ const user = await getCachedUser();
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
                 Favorilerim
               </p>
-              <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Henüz favorin{' '}
                 <em className="text-terracotta not-italic italic font-medium">
                   yok

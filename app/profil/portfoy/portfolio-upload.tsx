@@ -130,7 +130,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-6">
+    <div className="bg-card border border-line rounded-lg p-6">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">

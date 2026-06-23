@@ -16,7 +16,7 @@ export default function ProfilLoading() {
         </div>
 
         {/* Info card */}
-        <div className="bg-white border border-line rounded-lg p-8 space-y-6">
+        <div className="bg-card border border-line rounded-lg p-8 space-y-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="space-y-2">
               <div className="h-3 w-20 bg-line rounded animate-pulse" />

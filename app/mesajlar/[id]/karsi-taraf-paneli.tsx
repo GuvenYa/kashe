@@ -50,7 +50,7 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
   const showProfileLink = isOtherProfessional;
 
   return (
-    <aside className="bg-white border border-line rounded-lg p-6 md:sticky md:top-24 md:self-start">
+    <aside className="bg-card border border-line rounded-lg p-6 md:sticky md:top-24 md:self-start">
       <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-4">
         Konuşulan kişi
       </p>

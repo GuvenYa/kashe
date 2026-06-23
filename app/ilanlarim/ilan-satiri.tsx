@@ -108,12 +108,12 @@ export function IlanSatiri({ listing }: Props) {
   const badgeStyles: Record<typeof statusTone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-danger-08 text-danger border-danger/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
   return (
-    <div className="bg-white border border-line rounded-lg p-5">
+    <div className="bg-card border border-line rounded-lg p-5">
       {/* Header: kategori + status */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
@@ -164,7 +164,7 @@ export function IlanSatiri({ listing }: Props) {
             className={`mb-4 p-3 rounded-lg border text-sm ${
               listing.status === 'revision'
                 ? 'bg-amber-50 border-amber-200 text-amber-900'
-                : 'bg-terracotta/5 border-terracotta/30 text-ink'
+                : 'bg-danger-08 border-danger/30 text-ink'
             }`}
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] mb-1">
@@ -182,7 +182,7 @@ export function IlanSatiri({ listing }: Props) {
         )}
 
       {error && (
-        <p className="text-xs text-terracotta mb-2">{error}</p>
+        <p className="text-xs text-danger mb-2">{error}</p>
       )}
 
       {/* Aksiyonlar */}

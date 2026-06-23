@@ -49,7 +49,7 @@ export function ServiceCard({ service, onEdit }: Props) {
 
   return (
     <div
-      className={`bg-white border rounded-lg p-6 transition-opacity ${
+      className={`bg-card border rounded-lg p-6 transition-opacity ${
         service.is_active ? 'border-line' : 'border-line opacity-60'
       }`}
     >

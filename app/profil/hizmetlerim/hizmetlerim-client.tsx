@@ -48,7 +48,7 @@ export function HizmetlerimClient({ services, categories, primaryCategoryId }: P
       </div>
 
       {services.length === 0 ? (
-        <div className="bg-white border border-line rounded-lg p-12 text-center">
+        <div className="bg-card border border-line rounded-lg p-12 text-center">
           <p className="font-display text-2xl text-ink mb-3">
             İlk hizmetini ekle.
           </p>

@@ -118,7 +118,7 @@ export function OneCikarModal({ listing, onClose }: Props) {
                 className={`border rounded-xl p-4 transition ${
                   active
                     ? 'border-terracotta bg-terracotta/5'
-                    : 'border-line bg-white'
+                    : 'border-line bg-card'
                 }`}
               >
                 <div className="flex items-start gap-3">

@@ -50,7 +50,7 @@ export function PortfolioItemCard({ item }: Props) {
   }
 
   return (
-    <div className="group relative bg-white border border-line rounded-lg overflow-hidden">
+    <div className="group relative bg-card border border-line rounded-lg overflow-hidden">
       <div className="aspect-square bg-paper relative">
         <button
           type="button"

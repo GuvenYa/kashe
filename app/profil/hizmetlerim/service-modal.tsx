@@ -139,7 +139,7 @@ export function ServiceModal({
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
@@ -158,7 +158,7 @@ export function ServiceModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="font-display text-xl text-ink">
+          <h2 className="font-display font-semibold text-xl text-ink">
             {isEdit ? 'Hizmeti düzenle' : 'Yeni hizmet ekle'}
           </h2>
           <button
@@ -225,7 +225,7 @@ export function ServiceModal({
               <label htmlFor="modal-description" className={labelClass}>
                 Açıklama
               </label>
-              <div className="mb-3 bg-white border border-line rounded-lg p-3">
+              <div className="mb-3 bg-card border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={14} className="text-terracotta" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">

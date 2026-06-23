@@ -71,7 +71,7 @@ function DavetSatiri({
   return (
     <div
       className={`border rounded-lg p-4 ${
-        isPast ? 'bg-paper/40 border-line/60' : 'bg-white border-line'
+        isPast ? 'bg-paper/40 border-line/60' : 'bg-card border-line'
       }`}
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">

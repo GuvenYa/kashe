@@ -27,7 +27,7 @@ export function EkibimPaneli({ members, invitations, currentUserId }: Props) {
     <div className="space-y-8">
       {/* Üst CTA — Yeni üye davet et */}
       {!showInviteForm && (
-        <div className="bg-white border border-line rounded-lg p-5 flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-card border border-line rounded-lg p-5 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="font-display text-lg text-ink">Yeni üye davet et</p>
             <p className="text-sm text-ink-72 mt-0.5">

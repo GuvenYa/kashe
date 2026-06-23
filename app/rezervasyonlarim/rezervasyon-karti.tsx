@@ -32,10 +32,10 @@ type Booking = {
 };
 
 const TONES = [
-  { bg: 'rgba(147,51,234,0.12)', fg: '#9333EA' },
-  { bg: 'rgba(219,39,119,0.12)', fg: '#DB2777' },
-  { bg: 'rgba(124,58,237,0.12)', fg: '#7C3AED' },
-  { bg: 'rgba(162,28,175,0.12)', fg: '#A21CAF' },
+  { bg: 'rgba(31,92,74,0.12)',   fg: '#1F5C4A' },
+  { bg: 'rgba(226,103,74,0.12)', fg: '#E2674A' },
+  { bg: 'rgba(45,111,184,0.12)', fg: '#2D6FB8' },
+  { bg: 'rgba(181,133,31,0.12)', fg: '#B5851F' },
 ];
 
 function pickTone(id: string) {

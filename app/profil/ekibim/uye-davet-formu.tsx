@@ -71,7 +71,7 @@ export function UyeDavetFormu({ onClose }: Props) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-6">
+    <div className="bg-card border border-line rounded-lg p-6">
       <div className="flex items-center justify-between mb-5">
         <p className="font-display text-lg text-ink">Yeni üye davet et</p>
         <button

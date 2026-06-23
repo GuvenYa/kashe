@@ -147,7 +147,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';

@@ -273,7 +273,7 @@ export default async function ProfilPage() {
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
                   {getRoleLabel(profile.role)}
                 </p>
-                <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
+                <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
                   {displayName}
                 </h1>
                 {isBusinessUser && profile.company_name && profile.full_name && (
@@ -298,7 +298,7 @@ export default async function ProfilPage() {
           {!isClientUser && profile.approval_status !== 'approved' && (
             <div className="mb-8">
               {profile.approval_status === 'pending' && (
-                <div className="bg-white border border-line rounded-lg p-5 flex items-start gap-3">
+                <div className="bg-card border border-line rounded-lg p-5 flex items-start gap-3">
                   <span className="mt-0.5 w-2.5 h-2.5 rounded-full bg-terracotta shrink-0 animate-pulse" />
                   <div>
                     <p className="font-display text-base text-ink">
@@ -322,7 +322,7 @@ export default async function ProfilPage() {
                     Profilin yayına alınabilmesi için bazı düzenlemeler gerekiyor:
                   </p>
                   {profile.approval_note && (
-                    <p className="text-sm text-ink mt-2 p-3 bg-white border border-line rounded">
+                    <p className="text-sm text-ink mt-2 p-3 bg-card border border-line rounded">
                       {profile.approval_note}
                     </p>
                   )}
@@ -333,12 +333,12 @@ export default async function ProfilPage() {
               )}
 
               {profile.approval_status === 'rejected' && (
-                <div className="bg-ember/5 border border-ember/40 rounded-lg p-5">
+                <div className="bg-danger-08 border border-danger/30 rounded-lg p-5">
                   <p className="font-display text-base text-ink mb-1">
                     Profil reddedildi
                   </p>
                   {profile.approval_note && (
-                    <p className="text-sm text-ink mt-2 p-3 bg-white border border-line rounded">
+                    <p className="text-sm text-ink mt-2 p-3 bg-card border border-line rounded">
                       {profile.approval_note}
                     </p>
                   )}
@@ -363,7 +363,7 @@ export default async function ProfilPage() {
 
           {/* COMPLETENESS BAR */}
           {completeness < 100 && (
-            <div className="mb-8 bg-white border border-line rounded-lg p-5">
+            <div className="mb-8 bg-card border border-line rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
                   Profil tamlığı
@@ -418,7 +418,7 @@ export default async function ProfilPage() {
           )}
 
           {/* INFO CARD */}
-          <div className="bg-white border border-line rounded-xl p-6 space-y-4">
+          <div className="bg-card border border-line rounded-xl p-6 space-y-4">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
                 Email
@@ -459,9 +459,9 @@ export default async function ProfilPage() {
           {/* PROFESYONEL: Hizmetler */}
           {/* PROFESYONEL: Üye olduğum ajanslar */}
           {isPro && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">
+                <h2 className="font-display font-semibold text-xl text-ink">
                   Üye olduğum ajanslar{' '}
                   <span className="text-ink-72 text-lg">
                     ({myAgencies.length})
@@ -536,9 +536,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: İstatistiklerim (premium) */}
           {isPro && proIsPremium && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">
+                <h2 className="font-display font-semibold text-xl text-ink">
                   İstatistiklerim
                 </h2>
                 <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
@@ -582,7 +582,7 @@ export default async function ProfilPage() {
                   <p className="font-display text-3xl text-ink leading-none flex items-center gap-1">
                     {stats.reviewCount > 0 ? stats.averageRating : '—'}
                     {stats.reviewCount > 0 && (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-terracotta)" xmlns="http://www.w3.org/2000/svg">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                       </svg>
                     )}
@@ -606,7 +606,7 @@ export default async function ProfilPage() {
                   <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
                     Premium
                   </span>
-                  <h2 className="font-display text-2xl text-ink mt-3">
+                  <h2 className="font-display font-semibold text-2xl text-ink mt-3">
                     İstatistiklerini gör
                   </h2>
                   <p className="text-ink-72 text-sm mt-2 max-w-md">
@@ -641,9 +641,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Hizmetler */}
           {isPro && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">Hizmetlerim</h2>
+                <h2 className="font-display font-semibold text-xl text-ink">Hizmetlerim</h2>
                 <Link
                   href="/profil/hizmetlerim"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -703,9 +703,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Paketler */}
           {isPro && (
-            <div className="mt-6 bg-white border border-line rounded-xl p-6">
+            <div className="mt-6 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">
+                <h2 className="font-display font-semibold text-xl text-ink">
                   Paketlerim{' '}
                   <span className="text-ink-72 text-lg">({packageCount})</span>
                 </h2>
@@ -732,9 +732,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Portföy */}
           {isPro && (
-            <div className="mt-6 bg-white border border-line rounded-xl p-6">
+            <div className="mt-6 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">Portföy</h2>
+                <h2 className="font-display font-semibold text-xl text-ink">Portföy</h2>
                 <Link
                   href="/profil/portfoy"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -757,9 +757,9 @@ export default async function ProfilPage() {
 
           {/* AJANS: Ekibim */}
           {isAgencyUser && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">
+                <h2 className="font-display font-semibold text-xl text-ink">
                   Ekibim{' '}
                   <span className="text-ink-72 text-lg">
                     ({agencyMemberCount})
@@ -817,9 +817,9 @@ export default async function ProfilPage() {
 
           {/* KURUMSAL / MÜŞTERİ: İlanlarım */}
           {(isBusinessUser || isClientUser) && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">İlanlarım</h2>
+                <h2 className="font-display font-semibold text-xl text-ink">İlanlarım</h2>
                 <div className="flex items-center gap-4">
                   <Link
                     href="/ilanlarim"
@@ -845,9 +845,9 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: Başvurularım */}
           {isPro && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">Başvurularım</h2>
+                <h2 className="font-display font-semibold text-xl text-ink">Başvurularım</h2>
                 <Link
                   href="/basvurularim"
                   className="text-sm font-display font-medium text-terracotta hover:underline"
@@ -864,9 +864,9 @@ export default async function ProfilPage() {
 
           {/* MÜŞTERİ: Favorilerim */}
           {isClientUser && (
-            <div className="mt-5 bg-white border border-line rounded-xl p-6">
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
               <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display text-xl text-ink">Favorilerim</h2>
+                <h2 className="font-display font-semibold text-xl text-ink">Favorilerim</h2>
                 <Link
                   href="/favoriler"
                   className="text-sm font-display font-medium text-terracotta hover:underline"

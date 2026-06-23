@@ -121,7 +121,7 @@ export default function GirisForm({
               required
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              className="w-full px-4 py-3 pr-12 bg-white border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-12 transition"
+              className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
               placeholder="••••••••"
               autoComplete="current-password"
             />

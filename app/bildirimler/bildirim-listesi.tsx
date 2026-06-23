@@ -180,7 +180,7 @@ export function BildirimListesi({
             </button>
           )}
         </div>
-        <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+        <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
           {unreadCount > 0 ? (
             <>
               <em className="text-terracotta not-italic italic font-medium">
@@ -205,7 +205,7 @@ export function BildirimListesi({
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
                 {GROUP_LABELS[groupKey]}
               </p>
-              <div className="bg-white border border-line rounded-lg overflow-hidden">
+              <div className="bg-card border border-line rounded-lg overflow-hidden">
                 {items.map((notif, idx) => {
                   const isUnread = !notif.read_at;
                   const isLast = idx === items.length - 1;

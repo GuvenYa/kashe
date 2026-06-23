@@ -117,7 +117,7 @@ export default async function RezervasyonlarimPage() {
             <Eyebrow variant="inline" className="mb-3">
               Sahnen
             </Eyebrow>
-            <h1 className="font-display font-light text-4xl md:text-5xl text-ink tracking-[-0.03em] leading-[1.05]">
+            <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-[-0.03em] leading-[1.05]">
               <em>Rezervasyonlarım</em>.
             </h1>
             <p className="text-base text-ink-72 mt-3 max-w-xl leading-relaxed">

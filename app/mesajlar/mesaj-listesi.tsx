@@ -226,7 +226,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                   <Link
                     key={conv.id}
                     href={`/mesajlar/${conv.id}`}
-                    className="block bg-white border border-line rounded-lg p-5 hover:border-terracotta transition-colors"
+                    className="block bg-card border border-line rounded-lg p-5 hover:border-terracotta transition-colors"
                   >
                     <div className="flex items-start gap-4">
                       {other.avatar_url ? (

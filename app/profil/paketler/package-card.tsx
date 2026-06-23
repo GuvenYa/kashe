@@ -44,7 +44,7 @@ export function PackageCard({ pkg, onEdit }: Props) {
 
   return (
     <div
-      className={`bg-white border rounded-lg p-6 transition-opacity ${
+      className={`bg-card border rounded-lg p-6 transition-opacity ${
         pkg.is_active ? 'border-line' : 'border-line opacity-60'
       }`}
     >

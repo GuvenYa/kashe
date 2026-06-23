@@ -63,7 +63,7 @@ export function IlanlarimListesi({ listings, activeStatus }: Props) {
   return (
     <div>
       {/* Status tabs */}
-      <div className="bg-white border border-line rounded-lg p-2 mb-6 overflow-x-auto">
+      <div className="bg-card border border-line rounded-lg p-2 mb-6 overflow-x-auto">
         <div className="flex gap-1 min-w-min">
           {STATUS_TABS.map((tab) => {
             const count = counts[tab.key] ?? 0;

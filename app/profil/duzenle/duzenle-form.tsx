@@ -152,14 +152,14 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 
   return (
     <div className="space-y-8">
-      <div className="bg-white border border-line rounded-lg p-6">
+      <div className="bg-card border border-line rounded-lg p-6">
         <p className={labelClass + ' !mb-4'}>Profil fotoğrafı</p>
         <AvatarUpload
           userId={profile.id}
@@ -267,7 +267,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
             Telefon
           </label>
           <div className="flex items-stretch gap-2">
-            <span className="inline-flex items-center px-3 bg-white border border-line rounded-lg text-ink font-mono text-sm select-none">
+            <span className="inline-flex items-center px-3 bg-card border border-line rounded-lg text-ink font-mono text-sm select-none">
               +90
             </span>
             <input
@@ -281,7 +281,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
             />
           </div>
           {phone && phoneDigits(phone).length > 0 && phoneDigits(phone).length < 10 && (
-            <p className="text-xs text-terracotta mt-1.5">
+            <p className="text-xs text-danger mt-1.5">
               Numara eksik görünüyor (10 hane: 5XX XXX XX XX)
             </p>
           )}
@@ -382,7 +382,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
               ].map((opt) => (
                 <label
                   key={opt.key}
-                  className={`flex items-center gap-2 bg-white border rounded-lg p-3 cursor-pointer transition ${
+                  className={`flex items-center gap-2 bg-card border rounded-lg p-3 cursor-pointer transition ${
                     defaultApplicantRoles === opt.key
                       ? 'border-terracotta'
                       : 'border-line hover:border-terracotta/50'

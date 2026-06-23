@@ -169,7 +169,7 @@ export default async function MesajlarPage() {
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
               Mesajlar
             </p>
-            <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
+            <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
               Tüm{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 konuşmaların

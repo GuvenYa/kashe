@@ -64,7 +64,7 @@ function UyeSatiri({ member }: { member: AgencyMemberWithProfile }) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-5">
+    <div className="bg-card border border-line rounded-lg p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <Link
           href={professional ? `/p/${professional.id}` : '#'}
