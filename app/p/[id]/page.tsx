@@ -407,18 +407,8 @@ export default async function PublicProfilePage({
           </Link>
 
           {/* HEADER */}
-          <div className="bg-card border border-line rounded-2xl p-8 mb-6 relative overflow-hidden">
-            {/* Atmosferik zemin — hero diliyle */}
-            <div
-              aria-hidden
-              className="absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full pointer-events-none opacity-50"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(200, 68, 42, 0.10) 0%, transparent 70%)",
-                filter: "blur(60px)",
-              }}
-            />
-            <div className="relative">
+          <div className="bg-card border border-line rounded-2xl p-8 mb-6">
+            <div>
             {showFavoriteButton && (
               <div className="absolute top-6 right-6 z-10">
                 <FavoriteButton
@@ -526,7 +516,7 @@ export default async function PublicProfilePage({
                     className="inline-flex items-center gap-2 mt-3 group"
                   >
                     <span className="flex items-center gap-1">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-terracotta)" stroke="var(--color-terracotta)" strokeWidth="1.5" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-plum)" stroke="var(--color-plum)" strokeWidth="1.5" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                       </svg>
                       <span className="font-display font-semibold text-ink">
@@ -551,7 +541,7 @@ export default async function PublicProfilePage({
 
           {/* KATEGORİYE ÖZEL ÖZELLİKLER */}
           {attrGroups.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-6">Özellikler</h2>
               <div className="space-y-5">
                 {attrGroups.map((group) => (
@@ -577,7 +567,7 @@ export default async function PublicProfilePage({
 
           {/* EKİBİMİZ (ajans) */}
           {isAgencyProfile && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-1">Ekibimiz</h2>
               <p className="text-sm text-ink-72 mb-6">
                 Bu ajansın çatısı altındaki profesyoneller.
@@ -693,7 +683,7 @@ export default async function PublicProfilePage({
 
           {/* PORTFÖY GALERİ */}
           {portfolioItems.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-6">Portföy</h2>
               <PortfolioGallery
                 items={portfolioItems}
@@ -704,7 +694,7 @@ export default async function PublicProfilePage({
 
           {/* PAKETLER */}
           {packages.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-1">Paketler</h2>
               <p className="text-sm text-ink-72 mb-6">
                 Hazır paketler — ihtiyacına en yakınını seçip doğrudan iletişime
@@ -776,7 +766,7 @@ export default async function PublicProfilePage({
 
           {/* HİZMETLER */}
           {services.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-6">
                 Sunulan hizmetler
               </h2>
@@ -798,7 +788,7 @@ export default async function PublicProfilePage({
           )}
 {/* MÜSAİTLİK (varsa) — salt görüntüleme */}
           {blockedDates.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <h2 className="font-display text-2xl text-ink mb-1">Müsaitlik</h2>
               <p className="text-sm text-ink-72 mb-6">
                 İşaretli günler dolu. Diğer günler için iletişime geçebilirsin.
@@ -813,7 +803,7 @@ export default async function PublicProfilePage({
 
           {/* YORUMLAR (varsa) */}
           {recentReviews.length > 0 && (
-            <div className="bg-white border border-line rounded-lg p-8 mb-6">
+            <div className="bg-card border border-line rounded-lg p-8 mb-6">
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <h2 className="font-display text-2xl text-ink">
                   Yorumlar

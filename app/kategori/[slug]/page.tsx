@@ -267,17 +267,8 @@ export default async function KategoriPage({ params }: Props) {
       />
       <main className="min-h-screen bg-paper">
         {/* HERO */}
-        <section className="border-b border-line bg-card relative overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute -top-24 -right-24 w-[400px] h-[400px] rounded-full pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(200,68,42,0.12) 0%, transparent 70%)',
-              filter: 'blur(80px)',
-            }}
-          />
-          <div className="max-w-5xl mx-auto px-6 md:px-12 py-14 md:py-20 relative">
+        <section className="border-b border-line bg-card">
+          <div className="max-w-5xl mx-auto px-6 md:px-12 py-14 md:py-20">
             <Link
               href="/kesfet"
               className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-8"
@@ -289,7 +280,7 @@ export default async function KategoriPage({ params }: Props) {
               {iconUrl && (
                 <div
                   className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(200,68,42,0.10)' }}
+                  style={{ background: "#E9F1ED" }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -304,7 +295,7 @@ export default async function KategoriPage({ params }: Props) {
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
                   Kategori
                 </p>
-                <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
+                <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
                   {category.name_tr}
                 </h1>
                 {category.description && (
@@ -400,7 +391,7 @@ export default async function KategoriPage({ params }: Props) {
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
               Sık sorulan sorular
             </p>
-            <h2 className="font-display text-3xl md:text-4xl text-ink tracking-tight mb-8">
+            <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
               {category.name_tr} hakkında{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 merak edilenler

@@ -114,21 +114,12 @@ export default function FiyatlandirmaPage() {
       <TopNav />
       <main className="min-h-screen bg-paper">
         {/* HERO */}
-        <section className="border-b border-line relative overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute -top-24 -right-24 w-[400px] h-[400px] rounded-full pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(200,68,42,0.12) 0%, transparent 70%)',
-              filter: 'blur(80px)',
-            }}
-          />
-          <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-24 relative text-center">
+        <section className="border-b border-line">
+          <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-24 text-center">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-4">
               Fiyatlandırma
             </p>
-            <h1 className="font-display text-4xl md:text-6xl text-ink tracking-tight leading-[1.05]">
+            <h1 className="font-display font-semibold text-4xl md:text-6xl text-ink tracking-tight leading-[1.05]">
               Görünürlüğünü{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 büyüt
@@ -160,8 +151,8 @@ export default function FiyatlandirmaPage() {
                 key={plan.key}
                 className={`relative flex flex-col rounded-2xl p-6 transition-all ${
                   plan.highlight
-                    ? 'bg-white border-2 border-[#D9C179] ring-1 ring-[#D9C179]/40 shadow-[0_18px_40px_-20px_rgba(138,109,31,0.30)]'
-                    : 'bg-white border border-line'
+                    ? 'bg-card border-2 border-[#D9C179] ring-1 ring-[#D9C179]/40 shadow-[0_18px_40px_-20px_rgba(138,109,31,0.30)]'
+                    : 'bg-card border border-line'
                 }`}
               >
                 {plan.highlight && (
@@ -221,7 +212,7 @@ export default function FiyatlandirmaPage() {
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
                 İlan öne çıkarma
               </p>
-              <h2 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
+              <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
                 İlanını{' '}
                 <em className="text-terracotta not-italic italic font-medium">
                   öne çıkar
@@ -237,7 +228,7 @@ export default function FiyatlandirmaPage() {
               {BOOSTS.map((boost) => (
                 <div
                   key={boost.name}
-                  className="flex items-start justify-between gap-4 bg-white border border-line rounded-xl p-5"
+                  className="flex items-start justify-between gap-4 bg-card border border-line rounded-xl p-5"
                 >
                   <div className="min-w-0">
                     <h3 className="font-display text-lg text-ink">
@@ -268,7 +259,7 @@ export default function FiyatlandirmaPage() {
         {/* CTA */}
         <section className="border-t border-line bg-card">
           <div className="max-w-4xl mx-auto px-6 md:px-12 py-16 text-center">
-            <h2 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
+            <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
               Sahnede{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 yerini al

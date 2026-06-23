@@ -73,7 +73,7 @@ export default function GirisForm({
         <div className="inline-block mb-8">
           <BrandMark size="lg" />
         </div>
-        <h1 className="font-display font-light text-3xl md:text-4xl text-ink mb-3">
+        <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink mb-3">
           Tekrar <em>hoş geldin</em>.
         </h1>
         <p className="text-ink-72">Hesabına giriş yap ve devam et.</p>
@@ -93,7 +93,7 @@ export default function GirisForm({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-12 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             placeholder="seninadin@email.com"
             autoComplete="email"
           />
@@ -149,7 +149,7 @@ export default function GirisForm({
         </div>
 
         {hata && (
-          <div className="px-4 py-3 bg-terracotta-08 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+          <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
             {hata}
           </div>
         )}
@@ -157,7 +157,7 @@ export default function GirisForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3.5 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full px-6 py-3.5 bg-terracotta text-white rounded-lg font-display font-semibold hover:bg-ember disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
         </button>

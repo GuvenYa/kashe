@@ -190,7 +190,7 @@ export function UyeOlForm({
         <div className="mb-6 flex justify-center">
           <Eyebrow variant="pill">Kayıt başarılı</Eyebrow>
         </div>
-        <h1 className="font-display font-light text-4xl md:text-5xl leading-[1] tracking-[-0.03em] text-ink mb-6">
+        <h1 className="font-display font-semibold text-4xl md:text-5xl leading-[1] tracking-[-0.03em] text-ink mb-6">
           Email&apos;ini <em>kontrol</em> et.
         </h1>
         <p className="text-lg text-ink-72 leading-[1.55] mb-10">
@@ -209,7 +209,7 @@ export function UyeOlForm({
         <div className="mb-4 flex justify-center">
           <Eyebrow variant="pill">{config.eyebrow}</Eyebrow>
         </div>
-        <h1 className="font-display font-light text-3xl md:text-4xl leading-[1.1] tracking-[-0.03em] text-ink mb-4">
+        <h1 className="font-display font-semibold text-3xl md:text-4xl leading-[1.1] tracking-[-0.03em] text-ink mb-4">
           {config.title}
         </h1>
         <p className="text-base text-ink-72 leading-[1.55]">
@@ -287,7 +287,7 @@ export function UyeOlForm({
             Telefon <span className="text-terracotta">*</span>
           </label>
           <div className="flex items-stretch gap-2">
-            <span className="inline-flex items-center px-3 bg-white border border-line rounded-lg text-ink font-mono text-sm select-none">
+            <span className="inline-flex items-center px-3 bg-card border border-line rounded-lg text-ink font-mono text-sm select-none">
               +90
             </span>
             <input
@@ -297,11 +297,11 @@ export function UyeOlForm({
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="5XX XXX XX XX"
               disabled={loading}
-              className="flex-1 w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="flex-1 w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
           </div>
           {phone && phoneDigits(phone).length > 0 && phoneDigits(phone).length < 10 && (
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ember">
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-danger">
               Numara eksik görünüyor (10 hane: 5XX XXX XX XX)
             </p>
           )}
@@ -356,7 +356,7 @@ export function UyeOlForm({
             value={cityId}
             onChange={(e) => setCityId(e.target.value)}
             disabled={loading}
-            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition appearance-none cursor-pointer"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition appearance-none cursor-pointer"
           >
             <option value="">Şehrini seç</option>
             {cities.map((city) => (
@@ -385,7 +385,7 @@ export function UyeOlForm({
         </div>
 
         {error && (
-          <div className="p-3 border border-ember text-sm text-ember">
+          <div className="p-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
             {error}
           </div>
         )}

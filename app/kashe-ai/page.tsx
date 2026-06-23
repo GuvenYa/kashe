@@ -36,7 +36,7 @@ export default function KasheAiPage() {
                 Kashe AI
               </p>
             </div>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+            <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
               Yapay zekâ,{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 senin yanında
@@ -56,7 +56,7 @@ export default function KasheAiPage() {
                 <Link
                   key={tool.href}
                   href={tool.href}
-                  className="kashe-tap group flex flex-col h-full bg-white border border-line rounded-2xl p-6 hover:border-terracotta transition"
+                  className="kashe-tap group flex flex-col h-full bg-card border border-line rounded-2xl p-6 hover:border-terracotta transition"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-11 h-11 rounded-xl bg-terracotta/10 flex items-center justify-center">

@@ -409,7 +409,7 @@ export default async function KesfetPage({
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
               Keşfet
             </p>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+            <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
               Profesyonelleri{' '}
               <em className="text-terracotta not-italic italic font-medium">
                 keşfet
@@ -446,8 +446,8 @@ export default async function KesfetPage({
             {/* Sağ — sonuçlar */}
             <div className="flex-1 min-w-0">
               {error ? (
-                <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6">
-                  <p className="text-terracotta text-sm">
+                <div className="bg-danger-08 border border-danger/30 rounded-lg p-6">
+                  <p className="text-danger text-sm">
                     Bir sorun oluştu, lütfen sayfayı yenile.
                   </p>
                 </div>

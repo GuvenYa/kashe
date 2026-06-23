@@ -36,7 +36,7 @@ export default async function GirisPage({
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-[#FAF7F0] flex items-center justify-center px-6 py-16">
+      <main className="min-h-screen bg-paper flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
           <GirisForm redirectTo={redirectTo} />
         </div>
