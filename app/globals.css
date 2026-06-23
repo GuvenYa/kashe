@@ -2,50 +2,50 @@
 
 @theme {
   /* === Zemin renkleri (Light Mode) === */
-  --color-paper: #FFFFFF;
-  --color-paper-2: #FAF8FC;
-  --color-card: #FFFFFF;
+  --color-paper: #FBF8F4;   /* ARTIK SICAK KIRIK BEYAZ — ana sayfa zemini (eski: #FFFFFF saf beyaz) */
+  --color-paper-2: #FBEEE8; /* ARTIK ŞEFTALI ZEMİN — ikincil bölüm zemini (eski: #FAF8FC mor-tint) */
+  --color-card: #FFFFFF;    /* Kart/panel zemini — saf beyaz, paper üzerinde yükselir */
 
   /* === İnk = ana metin/koyu zemin === */
-  --color-ink: #1A120E;
+  --color-ink: #16140F;     /* Ana metin — neredeyse siyah, hafif sıcak */
   --color-ink-2: #2D1F18;
 
   /* === Metin opasiteli === */
-  --color-ink-72: rgba(26, 18, 14, 0.72);
-  --color-ink-50: rgba(26, 18, 14, 0.50);
-  --color-ink-32: rgba(26, 18, 14, 0.32);
-  --color-ink-20: rgba(26, 18, 14, 0.20);
-  --color-ink-12: rgba(26, 18, 14, 0.12);
+  --color-ink-72: rgba(22, 20, 15, 0.72);
+  --color-ink-50: rgba(22, 20, 15, 0.50);
+  --color-ink-32: rgba(22, 20, 15, 0.32);
+  --color-ink-20: rgba(22, 20, 15, 0.20);
+  --color-ink-12: rgba(22, 20, 15, 0.12);
 
-  --color-paper-72: rgba(255, 255, 255, 0.72);
-  --color-paper-50: rgba(255, 255, 255, 0.50);
-  --color-paper-24: rgba(255, 255, 255, 0.24);
-  --color-paper-14: rgba(255, 255, 255, 0.14);
+  --color-paper-72: rgba(251, 248, 244, 0.72);
+  --color-paper-50: rgba(251, 248, 244, 0.50);
+  --color-paper-24: rgba(251, 248, 244, 0.24);
+  --color-paper-14: rgba(251, 248, 244, 0.14);
 
-  /* === Aksan (mor-pembe kimlik — eski terracotta token isimleri korundu) === */
-  --color-terracotta: #9333EA;
-  --color-terracotta-soft: #C084FC;
-  --color-terracotta-08: rgba(147, 51, 234, 0.08);
-  --color-terracotta-12: rgba(147, 51, 234, 0.12);
+  /* === Marka renkleri — token isimleri eski kaldı, değerler YENİ sisteme güncellendi === */
+  --color-terracotta: #1F5C4A;               /* ARTIK ZÜMRÜT — birincil marka rengi (eski: #9333EA mor) */
+  --color-terracotta-soft: #E9F1ED;          /* ARTIK AÇIK ZÜMRÜT — yumuşak arka plan (eski: #C084FC açık mor) */
+  --color-terracotta-08: rgba(31, 92, 74, 0.08);  /* ARTIK ZÜMRÜT %8 — hover/zemin tint (eski: mor %8) */
+  --color-terracotta-12: rgba(31, 92, 74, 0.12);  /* ARTIK ZÜMRÜT %12 — seçili zemin (eski: mor %12) */
 
   /* === Çizgi & sınır === */
-  --color-line: rgba(26, 18, 14, 0.12);
-  --color-line-strong: rgba(26, 18, 14, 0.20);
+  --color-line: rgba(22, 20, 15, 0.12);      /* Kenarlıklar, ayırıcılar — sıcak açık ton */
+  --color-line-strong: rgba(22, 20, 15, 0.20);
 
   /* === İkincil renkler === */
-  --color-plum: #EC4899;   /* pembe — gradyan ikinci ucu / ikincil vurgu */
-  --color-moss: #3F6B47;   /* yeşil — başarı/onay durumları */
-  --color-ember: #7C3AED;  /* koyu mor — hover/koyu varyant */
-  --color-danger: #DC2626;       /* kırmızı — yıkıcı aksiyon (sil/iptal/askıya al) */
-  --color-danger-08: rgba(220, 38, 38, 0.08); /* kırmızı tint — hover/zemin */
+  --color-plum: #E2674A;    /* ARTIK MERCAN AKSAN — ikincil vurgu (eski: #EC4899 pembe) */
+  --color-moss: #1F8A5F;    /* YEŞİL — başarı/onay durumları */
+  --color-ember: #143D31;   /* ARTIK KOYU ZÜMRÜT — hover/koyu varyant (eski: #7C3AED koyu mor) */
+  --color-danger: #DC2626;       /* Kırmızı — yıkıcı aksiyon (sil/iptal/askıya al) */
+  --color-danger-08: rgba(220, 38, 38, 0.08);
 
-  /* === Marka gradyanı === */
-  --gradient-brand: linear-gradient(135deg, #9333EA, #EC4899);
+  /* === Marka gradyanı — zümrüt tonları (eski: mor-pembe terk edildi) === */
+  --gradient-brand: linear-gradient(135deg, #1F5C4A, #143D31); /* ARTIK ZÜMRÜT GRADYAN */
 
   /* === Fontlar === */
-  --font-display: var(--font-bricolage);
-  --font-body: var(--font-outfit);
-  --font-mono: var(--font-outfit);
+  --font-display: var(--font-space-grotesk); /* Space Grotesk — başlıklar (eski: Bricolage Grotesque) */
+  --font-body: var(--font-inter);            /* Inter — gövde metin (eski: Outfit) */
+  --font-mono: var(--font-inter);            /* Inter — label/nav/mono (eski: Outfit) */
 
   /* === Radius === */
   --radius-pill: 9999px;
@@ -58,30 +58,22 @@ body {
   font-family: var(--font-body);
 }
 
-/* === Marka gradyanı yardımcı sınıfları === */
+/* === Marka gradyanı yardımcı sınıfları — zümrüt tonlarına güncellendi === */
 .text-gradient-brand {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-terracotta); /* Düz zümrüt — gradient yerine kararlı renk */
 }
 
 .bg-gradient-brand {
   background: var(--gradient-brand);
 }
 
-/* === Vurgu sistemi (Varyant D) ===
-   <em> = marka gradyanı, italik DEĞİL (eski Fraunces+terracotta italik
-   "Claude kokusu" yerine modern gradyan vurgu). Tüm <em>'ler tek noktadan
-   döner — className'deki text-terracotta/italic bu kuralla ezilir (layer-dışı).
+/* === Vurgu sistemi
+   <em> = zümrüt renk, kalın (eski: mor-pembe gradyan — "Claude kokusu" nedeniyle terk edildi).
    Hukuki/teknik italik için <i> ayrı tutuldu. */
 em {
   font-style: normal;
   font-weight: 600;
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-terracotta); /* Zümrüt vurgu */
 }
 
 i {
@@ -94,7 +86,7 @@ i {
   color: #FFFFFF;
 }
 
-/* === Dark section helper (B2B bölümü için) === */
+/* === Dark section helper === */
 .dark-section {
   background: var(--color-ink);
   color: var(--color-paper);
@@ -246,7 +238,7 @@ i {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-terracotta);
+  background: var(--color-terracotta); /* Zümrüt odak çizgisi */
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -370,6 +362,7 @@ i {
     transition: none;
   }
 }
+
 /* Blog / Markdown içeriği — react-markdown çıktısı */
 .kashe-prose {
   color: var(--color-ink);
@@ -380,7 +373,7 @@ i {
 .kashe-prose h1,
 .kashe-prose h2,
 .kashe-prose h3 {
-  font-family: var(--font-bricolage, ui-sans-serif), sans-serif;
+  font-family: var(--font-display); /* Space Grotesk */
   font-weight: 600;
   color: var(--color-ink);
   line-height: 1.25;
@@ -392,7 +385,7 @@ i {
 .kashe-prose h3 { font-size: 1.25rem; }
 .kashe-prose p { margin: 0 0 1.15rem; }
 .kashe-prose a {
-  color: var(--color-terracotta);
+  color: var(--color-terracotta); /* Zümrüt link */
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -402,7 +395,7 @@ i {
 .kashe-prose ol { list-style: decimal; }
 .kashe-prose li { margin: 0.3rem 0; }
 .kashe-prose blockquote {
-  border-left: 3px solid var(--color-terracotta);
+  border-left: 3px solid var(--color-terracotta); /* Zümrüt sol kenarlık */
   padding-left: 1rem;
   margin: 0 0 1.15rem;
   color: var(--color-ink-72);

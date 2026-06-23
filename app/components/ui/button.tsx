@@ -11,17 +11,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-brand text-white hover:-translate-y-0.5 hover:shadow-[0_10px_28px_-8px_rgba(147,51,234,0.5)]",
+    "bg-terracotta text-white hover:bg-ember active:bg-ember",
   secondary:
-    "bg-white border-[1.5px] border-terracotta-soft text-terracotta hover:bg-terracotta-08",
+    "bg-card border border-line text-ink hover:border-terracotta hover:text-terracotta",
   ghost: "bg-transparent text-terracotta hover:bg-terracotta-08",
   destructive: "bg-danger text-white hover:opacity-90",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "px-4 py-2 text-sm",
-  md: "px-6 py-3 text-base",
-  lg: "px-8 py-4 text-base",
+  md: "px-5 py-2.5 text-sm",
+  lg: "px-7 py-3.5 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -30,7 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-terracotta focus-visible:outline-offset-2",
+          "inline-flex items-center justify-center gap-2 rounded-lg font-display font-semibold transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-terracotta focus-visible:outline-offset-2",
           variantClasses[variant],
           sizeClasses[size],
           className

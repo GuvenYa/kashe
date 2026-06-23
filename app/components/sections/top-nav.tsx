@@ -77,20 +77,20 @@ export async function TopNav() {
   menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
 
   const navLinkClass =
-    "font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors";
+    "font-body text-xs uppercase tracking-[0.16em] text-ink-50 hover:text-ink transition-colors duration-200";
 
   return (
-    <nav className="w-full border-b border-line bg-paper/90 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="w-full border-b border-line bg-paper/95 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
         <a href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icon-192.png"
-              alt="Kashe"
-              className="w-8 h-8 rounded-md"
-            />
-          <span className="font-display font-semibold text-2xl text-ink tracking-tight">
+          <img
+            src="/icon-192.png"
+            alt="Kashe"
+            className="w-8 h-8 rounded-md kashe-logo-mark"
+          />
+          <span className="font-display font-semibold text-xl text-ink tracking-tight">
             Kashe
           </span>
         </a>
