@@ -74,7 +74,7 @@ export function QuickSearch({
   return (
     <form
       onSubmit={handleSearch}
-      className="relative z-40 bg-card border-2 border-ink rounded-2xl shadow-[3px_3px_0_var(--color-terracotta)] md:shadow-[6px_6px_0_var(--color-terracotta)] p-2 flex flex-col md:flex-row md:items-stretch gap-1.5"
+      className="relative z-40 bg-card border border-line rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] p-2 flex flex-col md:flex-row md:items-stretch gap-1.5"
     >
       {/* Serbest metin + autocomplete */}
       <div className="relative flex-[1.4]" ref={containerRef}>
@@ -140,7 +140,7 @@ export function QuickSearch({
       {/* Ara butonu */}
       <button
         type="submit"
-        className="shrink-0 bg-gradient-brand text-white rounded-xl px-7 py-4 md:py-0 font-display font-semibold transition-all hover:shadow-[0_8px_22px_-8px_rgba(147,51,234,0.55)] flex items-center justify-center gap-2"
+        className="shrink-0 bg-terracotta text-white rounded-lg px-7 py-4 md:py-0 font-display font-semibold transition-all hover:bg-ember flex items-center justify-center gap-2"
       >
         <svg
           width="18"
