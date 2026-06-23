@@ -30,14 +30,14 @@ export function AdminIlanKaldir({ listingId }: { listingId: string }) {
 
   return (
     <div>
-      {error && <p className="text-xs text-ember mb-2">{error}</p>}
+      {error && <p className="text-xs text-danger mb-2">{error}</p>}
       <button
         onClick={handleClick}
         disabled={isPending}
         className={`px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border transition disabled:opacity-50 ${
           confirming
-            ? 'bg-ember text-paper border-ember'
-            : 'border-ember text-ember hover:bg-ember/5'
+            ? 'bg-danger text-paper border-danger'
+            : 'border-danger text-danger hover:bg-danger/5'
         }`}
       >
         {isPending

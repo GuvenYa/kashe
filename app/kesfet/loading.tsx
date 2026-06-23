@@ -19,14 +19,14 @@ export default function KesfetLoading() {
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white border border-line rounded-lg p-5 mb-8">
+        <div className="bg-card border border-line rounded-lg p-5 mb-8">
           <div className="h-11 bg-line rounded animate-pulse" />
         </div>
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white border border-line rounded-lg p-6">
+            <div key={i} className="bg-card border border-line rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 bg-line rounded-full animate-pulse shrink-0" />
                 <div className="flex-1 space-y-2">

@@ -162,7 +162,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                 rows={3}
                 maxLength={500}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none disabled:opacity-60"
               />
               <p className="text-[10px] text-ink-50 mt-1 text-right font-mono">
                 {banReason.length}/500
@@ -214,11 +214,11 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
 
         {modalMode === 'remove-admin' && (
           <>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ember mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-danger mb-2">
               Admin yetkisini kaldır
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-ember">{displayName}</em>&apos;ın admin
+              <em className="text-danger">{displayName}</em>&apos;ın admin
               yetkisi kaldırılsın mı?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
@@ -254,7 +254,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                   )
                 }
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
               >
                 <option value="premium">Premium</option>
                 <option value="plus">Plus</option>
@@ -270,7 +270,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                 value={premiumMonths}
                 onChange={(e) => setPremiumMonths(Number(e.target.value))}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
               >
                 {PREMIUM_DURATIONS.map((d) => (
                   <option key={d.months} value={d.months}>
@@ -284,11 +284,11 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
 
         {modalMode === 'revoke-premium' && (
           <>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ember mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-danger mb-2">
               Premium kaldır
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-ember">{displayName}</em>&apos;ın premium
+              <em className="text-danger">{displayName}</em>&apos;ın premium
               üyeliği kaldırılsın mı?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
@@ -377,7 +377,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
             {user.is_admin ? (
               <MenuItem
                 onClick={() => openModal('remove-admin')}
-                color="ember"
+                color="danger"
                 label="Admin yetkisini kaldır"
               />
             ) : (
@@ -392,7 +392,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               (premiumActive ? (
                 <MenuItem
                   onClick={() => openModal('revoke-premium')}
-                  color="ember"
+                  color="danger"
                   label={`Premium kaldır (${tierLabel(
                     user.premium_tier as
                       | 'none'
@@ -426,13 +426,13 @@ function MenuItem({
   label,
 }: {
   onClick: () => void;
-  color: 'terracotta' | 'moss' | 'ember' | 'ink';
+  color: 'terracotta' | 'moss' | 'danger' | 'ink';
   label: string;
 }) {
   const colorClass = {
     terracotta: 'text-terracotta hover:bg-terracotta/8',
     moss: 'text-moss hover:bg-moss/8',
-    ember: 'text-ember hover:bg-ember/8',
+    danger: 'text-danger hover:bg-danger/8',
     ink: 'text-ink-72 hover:bg-paper-2 hover:text-ink',
   };
   return (

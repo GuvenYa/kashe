@@ -39,7 +39,7 @@ export default async function AdminBlogPage() {
       </div>
 
       {posts.length === 0 ? (
-        <div className="bg-white border border-line rounded-lg p-12 text-center">
+        <div className="bg-card border border-line rounded-lg p-12 text-center">
           <p className="font-display text-lg text-ink mb-2">Henüz yazı yok</p>
           <p className="text-sm text-ink-72 mb-5">
             İlk blog yazını oluştur — yayınlanınca /blog sayfasında görünür.
@@ -56,7 +56,7 @@ export default async function AdminBlogPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="bg-white border border-line rounded-lg p-4 flex items-center gap-4"
+              className="bg-card border border-line rounded-lg p-4 flex items-center gap-4"
             >
               {/* Kapak küçük önizleme */}
               <div className="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-paper-2 border border-line flex items-center justify-center">

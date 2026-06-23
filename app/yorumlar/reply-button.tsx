@@ -150,7 +150,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
             maxLength={1000}
             rows={5}
             placeholder="Müşterine bir teşekkür et veya yorumuna açıklama getir..."
-            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none text-sm leading-relaxed"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none text-sm leading-relaxed"
           />
           <p className="text-xs text-ink-72 mt-1.5 text-right mb-4">
             {body.length} / 1000

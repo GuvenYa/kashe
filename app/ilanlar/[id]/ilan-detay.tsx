@@ -229,7 +229,7 @@ export function IlanDetay({
           eventDateFormatted ||
           listing.location ||
           listing.guest_count !== null) && (
-          <div className="bg-white border border-line rounded-lg p-5 mb-6">
+          <div className="bg-card border border-line rounded-lg p-5 mb-6">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
               Etkinlik özeti
             </p>
@@ -278,7 +278,7 @@ export function IlanDetay({
         )}
 
         {/* Bütçe + Açıklama */}
-        <div className="bg-white border border-line rounded-lg p-6 mb-6">
+        <div className="bg-card border border-line rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-line">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
               Bütçe
@@ -313,7 +313,7 @@ export function IlanDetay({
 
         {/* İlan sahibi kartı */}
         {listing.creator && (
-          <div className="bg-white border border-line rounded-lg p-5 mb-6">
+          <div className="bg-card border border-line rounded-lg p-5 mb-6">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
               İlan sahibi
             </p>
@@ -367,7 +367,7 @@ export function IlanDetay({
         <div className="mb-8">
           {/* ANONIM */}
           {!currentUserId && (
-            <div className="bg-white border-2 border-terracotta/20 rounded-lg p-5 text-center">
+            <div className="bg-card border-2 border-terracotta/20 rounded-lg p-5 text-center">
               <p className="text-sm text-ink mb-3">
                 Bu ilana başvurmak için giriş yapmalısın.
               </p>
@@ -382,7 +382,7 @@ export function IlanDetay({
 
           {/* SAHIBI */}
           {isOwner && (
-            <div className="bg-white border border-line rounded-lg p-5">
+            <div className="bg-card border border-line rounded-lg p-5">
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
                 İlanını yönet
               </p>
@@ -457,8 +457,8 @@ export function IlanDetay({
                     disabled={isPending}
                     className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
                       confirming === 'delete'
-                        ? 'bg-ember text-paper border-ember'
-                        : 'border-line text-ink-72 hover:border-ember hover:text-ember'
+                        ? 'bg-danger text-paper border-danger'
+                        : 'border-line text-ink-72 hover:border-danger hover:text-danger'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <Trash2 size={14} strokeWidth={1.75} />
@@ -586,7 +586,7 @@ export function IlanDetay({
                     className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
                       appViewMode === 'list'
                         ? 'bg-ink text-paper'
-                        : 'bg-white text-ink-72 hover:text-ink'
+                        : 'bg-card text-ink-72 hover:text-ink'
                     }`}
                   >
                     Liste
@@ -597,7 +597,7 @@ export function IlanDetay({
                     className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
                       appViewMode === 'compare'
                         ? 'bg-ink text-paper'
-                        : 'bg-white text-ink-72 hover:text-ink'
+                        : 'bg-card text-ink-72 hover:text-ink'
                     }`}
                   >
                     Karşılaştır
@@ -607,7 +607,7 @@ export function IlanDetay({
             </div>
 
             {applications.length === 0 ? (
-              <div className="bg-white border border-line rounded-lg p-8 text-center">
+              <div className="bg-card border border-line rounded-lg p-8 text-center">
                 <p className="text-sm text-ink-72">
                   Henüz başvuru yok. İlanın yayında, profesyoneller görüp
                   başvurabilir.
@@ -719,7 +719,7 @@ function ApplicationCard({
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-5">
+    <div className="bg-card border border-line rounded-lg p-5">
       <div className="flex items-start justify-between gap-4 mb-3">
         <Link
           href={applicant ? `/p/${applicant.id}` : '#'}
@@ -924,7 +924,7 @@ function ApplicationCompareColumn({
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-4 w-72 shrink-0 flex flex-col">
+    <div className="bg-card border border-line rounded-lg p-4 w-72 shrink-0 flex flex-col">
       {/* Başvuran */}
       <Link
         href={applicant ? `/p/${applicant.id}` : '#'}
@@ -954,7 +954,7 @@ function ApplicationCompareColumn({
         </p>
         {rating && rating.count > 0 ? (
           <p className="text-sm text-ink flex items-center justify-center gap-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-terracotta)" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
             <span className="font-display font-semibold">{rating.average}</span>

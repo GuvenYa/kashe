@@ -123,12 +123,12 @@ export default async function AdminUsersPage({
           name="q"
           defaultValue={searchQuery}
           placeholder="İsim, e-posta veya firma ile ara..."
-          className="flex-1 px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+          className="flex-1 px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
         />
         <select
           name="role"
           defaultValue={roleFilter}
-          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
         >
           <option value="">Tüm roller</option>
           <option value="client">Müşteri</option>
@@ -139,7 +139,7 @@ export default async function AdminUsersPage({
         <select
           name="filter"
           defaultValue={statusFilter}
-          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
         >
           <option value="">Tüm durumlar</option>
           <option value="suspended">Askıdaki</option>

@@ -61,9 +61,9 @@ export function IlanOnayAksiyonlari({ listingId }: { listingId: string }) {
               ? 'Red gerekçesi (kullanıcıya gösterilecek)...'
               : 'Revizyon notu (kullanıcıya gösterilecek)...'
           }
-          className="w-full px-3 py-2 bg-white border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+          className="w-full px-3 py-2 bg-card border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
         />
-        {error && <p className="text-xs text-ember">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex gap-2">
           <button
             onClick={handleSubmitNote}
@@ -94,7 +94,7 @@ export function IlanOnayAksiyonlari({ listingId }: { listingId: string }) {
 
   return (
     <div>
-      {error && <p className="text-xs text-ember mb-2">{error}</p>}
+      {error && <p className="text-xs text-danger mb-2">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleApprove}
@@ -113,7 +113,7 @@ export function IlanOnayAksiyonlari({ listingId }: { listingId: string }) {
         <button
           onClick={() => setMode('reject')}
           disabled={isPending}
-          className="px-4 py-2 border border-ember text-ember rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-ember/5 disabled:opacity-50 transition"
+          className="px-4 py-2 border border-danger text-danger rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-danger-08 disabled:opacity-50 transition"
         >
           Reddet
         </button>

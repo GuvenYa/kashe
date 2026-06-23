@@ -106,7 +106,7 @@ export function IlanlarListesi({
       )}
 
       {/* Filtreler */}
-      <div className="bg-white border border-line rounded-lg p-5 mb-8">
+      <div className="bg-card border border-line rounded-lg p-5 mb-8">
         <div className="flex items-center justify-between mb-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
             Filtrele
@@ -134,7 +134,7 @@ export function IlanlarListesi({
                 setFilter('kategori', e.target.value || null)
               }
               disabled={isPending}
-              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             >
               <option value="">Tümü</option>
               {categories.map((cat) => (
@@ -154,7 +154,7 @@ export function IlanlarListesi({
               value={activeFilters.sehir ?? ''}
               onChange={(e) => setFilter('sehir', e.target.value || null)}
               disabled={isPending}
-              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             >
               <option value="">Tümü</option>
               {cities.map((city) => (
@@ -176,7 +176,7 @@ export function IlanlarListesi({
                 setFilter('etkinlik', e.target.value || null)
               }
               disabled={isPending}
-              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             >
               <option value="">Tümü</option>
               {EVENT_TYPE_OPTIONS.map((opt) => (
@@ -294,7 +294,7 @@ function IlanCard({
           ? 'bg-terracotta/[0.04] border-2 border-terracotta/30 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
           : featured
           ? 'bg-[#FFFDF6] border border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[4px_4px_0_#D9C179]'
-          : 'bg-white border border-line hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+          : 'bg-card border border-line hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
       }`}
     >
       {/* Kendi ilanın etiketi */}
@@ -315,7 +315,7 @@ function IlanCard({
             </span>
           )}
           {urgent && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-ember bg-ember/10 border border-ember/30">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-danger bg-danger-08 border border-danger/30">
               ● Acil
             </span>
           )}

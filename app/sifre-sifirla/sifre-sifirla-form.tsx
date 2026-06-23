@@ -112,7 +112,7 @@ export function SifreSifirlaForm() {
             minLength={8}
             value={sifre}
             onChange={(e) => setSifre(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             placeholder="••••••••"
             autoComplete="new-password"
           />
@@ -135,14 +135,14 @@ export function SifreSifirlaForm() {
             minLength={8}
             value={sifreTekrar}
             onChange={(e) => setSifreTekrar(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             placeholder="••••••••"
             autoComplete="new-password"
           />
         </div>
 
         {hata && (
-          <div className="px-4 py-3 bg-terracotta/10 border border-terracotta/30 rounded-lg text-sm text-terracotta">
+          <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
             {hata}
           </div>
         )}

@@ -151,7 +151,7 @@ export default async function TakvimimPage() {
               {/* Sağ panel — özet + yaklaşan işler */}
               <div className="space-y-4">
                 {/* Özet kartı */}
-                <div className="bg-white border border-line rounded-2xl p-5">
+                <div className="bg-card border border-line rounded-2xl p-5">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
                     Bu ay
                   </p>
@@ -181,7 +181,7 @@ export default async function TakvimimPage() {
 
                 {/* Yaklaşan işler mini listesi */}
                 {upcoming.length > 0 && (
-                  <div className="bg-white border border-line rounded-2xl p-5">
+                  <div className="bg-card border border-line rounded-2xl p-5">
                     <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
                       Sıradaki işler
                     </p>

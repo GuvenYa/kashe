@@ -58,7 +58,7 @@ export function ReviewCard({
     .toUpperCase();
 
   return (
-    <article className="bg-white border border-line rounded-lg p-6">
+    <article className="bg-card border border-line rounded-lg p-6">
       {/* HEADER: avatar + isim + tarih + yıldız */}
       <header className="flex items-start gap-4 mb-4">
         {customer?.avatar_url ? (
@@ -160,8 +160,8 @@ function Star({ filled }: { filled: boolean }) {
       width="16"
       height="16"
       viewBox="0 0 24 24"
-      fill={filled ? 'var(--color-terracotta)' : 'none'}
-      stroke={filled ? 'var(--color-terracotta)' : 'var(--color-ink-72)'}
+      fill={filled ? 'var(--color-plum)' : 'none'}
+      stroke={filled ? 'var(--color-plum)' : 'var(--color-ink-72)'}
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

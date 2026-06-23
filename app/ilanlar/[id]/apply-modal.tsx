@@ -216,7 +216,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
                       key={i}
                       type="button"
                       onClick={() => setCoverMessage(tpl)}
-                      className="text-left text-[12px] leading-relaxed text-ink-72 bg-white border border-line rounded-lg px-3 py-2.5 hover:border-[#1E3A5F] hover:text-ink hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-y-0.5 transition-all"
+                      className="text-left text-[12px] leading-relaxed text-ink-72 bg-card border border-line rounded-lg px-3 py-2.5 hover:border-[#1E3A5F] hover:text-ink hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-y-0.5 transition-all"
                     >
                       {tpl}
                     </button>
@@ -230,7 +230,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
               placeholder="Kendini ve neden bu işe uygun olduğunu kısaca anlat. Benzer deneyimlerin, uzmanlıklarını, müsaitlik durumunu belirt."
               rows={6}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 transition resize-none"
               required
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
@@ -260,7 +260,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="10.000"
-                  className="w-full px-4 py-3 pr-12 bg-white border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 transition"
+                  className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 transition"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-72 text-sm font-mono">
                   TL
@@ -290,7 +290,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
               id="apply-file-input"
             />
             {file ? (
-              <div className="flex items-center gap-3 bg-white border border-line rounded-lg px-3 py-2.5">
+              <div className="flex items-center gap-3 bg-card border border-line rounded-lg px-3 py-2.5">
                 <span className="shrink-0 w-9 h-9 rounded-lg bg-[#1E3A5F]/10 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -320,7 +320,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
             ) : (
               <label
                 htmlFor="apply-file-input"
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-line rounded-lg text-sm text-ink-72 hover:text-[#1E3A5F] hover:border-[#1E3A5F] transition cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-line rounded-lg text-sm text-ink-72 hover:text-[#1E3A5F] hover:border-[#1E3A5F] transition cursor-pointer"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
@@ -344,7 +344,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-5 py-3 border border-line text-ink-72 rounded-lg font-display font-semibold text-sm hover:bg-white transition"
+              className="flex-1 px-5 py-3 border border-line text-ink-72 rounded-lg font-display font-semibold text-sm hover:bg-card transition"
             >
               Vazgeç
             </button>

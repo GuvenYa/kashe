@@ -372,7 +372,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Bölüm 1: Temel */}
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
           Temel bilgiler
         </p>
@@ -395,7 +395,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 }
               }}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             >
               <option value="">Kategori seç...</option>
               {categories.map((cat) => (
@@ -421,7 +421,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               placeholder={placeholders.title}
               maxLength={200}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {title.length} / 200 karakter (en az 3)
@@ -450,7 +450,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                   onChange={(e) => setAiKeywords(e.target.value)}
                   placeholder="Örn: 100 kişi, açık hava, akşam, 4 saat"
                   maxLength={500}
-                  className="w-full px-3 py-2 bg-white border border-line rounded text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition mb-2"
+                  className="w-full px-3 py-2 bg-card border border-line rounded text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition mb-2"
                 />
                 <button
                   type="button"
@@ -472,7 +472,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 rows={6}
                 maxLength={5000}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {description.length} / 5000 karakter (en az 10)
@@ -493,7 +493,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               placeholder="Profesyonelin sahip olması gereken nitelikler, deneyim, sertifika, ekipman vs."
               rows={3}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {requirements.length} / 2000 karakter
@@ -503,7 +503,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       </section>
 
       {/* Bölüm 2: Etkinlik */}
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
           {isProjectBased ? 'Proje detayları' : 'Etkinlik detayları'}{' '}
           <span className="normal-case tracking-normal">(hepsi opsiyonel)</span>
@@ -519,7 +519,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 <select
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value)}
-                  className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 >
                   <option value="">Seç...</option>
                   {EVENT_TYPE_OPTIONS.map((opt) => (
@@ -540,7 +540,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 min={today}
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
               />
             </div>
           </div>
@@ -556,7 +556,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Örn: Maltepe Sahil Düğün Salonu"
                 maxLength={200}
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
               />
             </div>
 
@@ -569,7 +569,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                 onChange={(e) =>
                   setCityId(e.target.value ? parseInt(e.target.value, 10) : '')
                 }
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
               >
                 <option value="">Seç...</option>
                 {cities.map((city) => (
@@ -592,7 +592,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               placeholder="Örn: 100"
               min={0}
               max={100000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
           </div>
 
@@ -605,7 +605,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
               value={applicationDeadline}
               onChange={(e) => setApplicationDeadline(e.target.value)}
               min={today}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               Boş bırakırsan başvurular süresiz açık kalır. Bu tarih geçince yeni başvuru alınmaz.
@@ -615,7 +615,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       </section>
 
       {/* Bölüm 3: Bütçe */}
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
           Bütçe
         </p>
@@ -655,7 +655,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                   value={budgetMin}
                   onChange={(e) => setBudgetMin(e.target.value)}
                   placeholder="5.000"
-                  className="w-full px-3 py-2.5 bg-white border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 />
               </div>
               <div>
@@ -668,7 +668,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
                   value={budgetMax}
                   onChange={(e) => setBudgetMax(e.target.value)}
                   placeholder="15.000"
-                  className="w-full px-3 py-2.5 bg-white border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
                 />
               </div>
             </div>
@@ -683,7 +683,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
       </section>
 
       {/* Bölüm 3.5: Kimler başvurabilir */}
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
           Kimler başvurabilir
         </p>
@@ -725,7 +725,7 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
 
       {/* Bölüm 4: Yayınla / Taslak — sadece create mode */}
       {!isEditMode && (
-      <section className="bg-white border border-line rounded-lg p-6">
+      <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
           Durum
         </p>

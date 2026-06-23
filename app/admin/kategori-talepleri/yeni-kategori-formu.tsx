@@ -159,7 +159,7 @@ export function YeniKategoriFormu({
               placeholder="Örn: Karikatürist"
               maxLength={80}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
           </div>
           <div>
@@ -172,7 +172,7 @@ export function YeniKategoriFormu({
               onChange={(e) => setEmoji(e.target.value)}
               placeholder="🎨"
               maxLength={4}
-              className="w-20 px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm text-center focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+              className="w-20 px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm text-center focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
           </div>
         </div>
@@ -190,7 +190,7 @@ export function YeniKategoriFormu({
             }}
             placeholder="karikaturist"
             maxLength={60}
-            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm font-mono focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm font-mono focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
           />
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
             /kategori/{slug || '...'} adresinde görünür. Türkçe karakter ve boşluk olmamalı.
@@ -207,7 +207,7 @@ export function YeniKategoriFormu({
             placeholder="Kategori sayfasında görünecek kısa açıklama."
             rows={2}
             maxLength={500}
-            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none"
+            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
           />
         </div>
 

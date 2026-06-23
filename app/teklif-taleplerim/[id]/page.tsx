@@ -148,7 +148,7 @@ export default async function TeklifKarsilastirPage({
         </header>
 
         {offers.length === 0 ? (
-          <div className="bg-white border border-line rounded-lg p-12 text-center">
+          <div className="bg-card border border-line rounded-lg p-12 text-center">
             <p className="font-display text-xl text-ink mb-2">
               Henüz teklif gelmedi
             </p>
@@ -229,7 +229,7 @@ export default async function TeklifKarsilastirPage({
                       </p>
                       <p
                         className={`font-mono text-[10px] uppercase tracking-[0.14em] mt-1 ${
-                          expired ? 'text-ember' : 'text-ink-72'
+                          expired ? 'text-danger' : 'text-ink-72'
                         }`}
                       >
                         {expired ? 'Süresi doldu' : formatExpiresIn(quote.expires_at)}

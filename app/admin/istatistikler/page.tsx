@@ -154,7 +154,7 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
       <h3
         style={{ fontFamily: SERIF }}
@@ -169,7 +169,7 @@ function Card({
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <Eyebrow>{label}</Eyebrow>
       <div
         style={{ fontFamily: SERIF, color: accent }}
@@ -1349,7 +1349,7 @@ function FunnelCard({
 }) {
   const base = rows.length > 0 ? Number(rows[0].cnt) : 0
   return (
-    <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
         {eyebrow}
       </span>

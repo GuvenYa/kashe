@@ -78,7 +78,7 @@ export default async function TeklifTaleplerimPage() {
         </div>
 
         {list.length === 0 ? (
-          <div className="bg-white border border-line rounded-lg p-12 text-center">
+          <div className="bg-card border border-line rounded-lg p-12 text-center">
             <p className="font-display text-xl text-ink mb-2">
               Henüz teklif talebin yok
             </p>
@@ -106,7 +106,7 @@ export default async function TeklifTaleplerimPage() {
                 <Link
                   key={req.id}
                   href={`/teklif-taleplerim/${req.id}`}
-                  className="block bg-white border border-line rounded-lg p-6 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+                  className="block bg-card border border-line rounded-lg p-6 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>

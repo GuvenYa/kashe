@@ -180,7 +180,7 @@ export function YorumModal({
               maxLength={1000}
               rows={5}
               placeholder="Profesyonelle nasıl bir deneyim yaşadın? Diğer müşterilere yardımcı olur."
-              className="w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition resize-none text-sm leading-relaxed"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none text-sm leading-relaxed"
             />
             <p className="text-xs text-ink-72 mt-1.5 text-right">
               {body.length} / 1000
@@ -261,8 +261,8 @@ function Star({ filled }: { filled: boolean }) {
       width="28"
       height="28"
       viewBox="0 0 24 24"
-      fill={filled ? 'var(--color-terracotta)' : 'none'}
-      stroke={filled ? 'var(--color-terracotta)' : 'var(--color-ink-72)'}
+      fill={filled ? 'var(--color-plum)' : 'none'}
+      stroke={filled ? 'var(--color-plum)' : 'var(--color-ink-72)'}
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

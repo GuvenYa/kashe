@@ -61,7 +61,7 @@ export function BasvuruSatiri({ application }: Props) {
   const appDate = new Date(application.created_at);
 
   return (
-    <div className="bg-white border border-line rounded-lg p-5">
+    <div className="bg-card border border-line rounded-lg p-5">
       {/* Header: kategori + status */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">

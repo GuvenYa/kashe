@@ -122,7 +122,7 @@ export function BlogForm({ post }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-white border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 
@@ -243,7 +243,7 @@ export function BlogForm({ post }: Props) {
               onClick={() => setTab('write')}
               className={`px-3 py-1 rounded text-xs font-mono uppercase tracking-[0.12em] transition-colors ${
                 tab === 'write'
-                  ? 'bg-white text-ink shadow-sm'
+                  ? 'bg-card text-ink shadow-sm'
                   : 'text-ink-72 hover:text-ink'
               }`}
             >
@@ -254,7 +254,7 @@ export function BlogForm({ post }: Props) {
               onClick={() => setTab('preview')}
               className={`px-3 py-1 rounded text-xs font-mono uppercase tracking-[0.12em] transition-colors ${
                 tab === 'preview'
-                  ? 'bg-white text-ink shadow-sm'
+                  ? 'bg-card text-ink shadow-sm'
                   : 'text-ink-72 hover:text-ink'
               }`}
             >
@@ -274,7 +274,7 @@ export function BlogForm({ post }: Props) {
             placeholder={'# Başlık\n\nParagraf metni. **Kalın**, *italik*, [link](https://...).\n\n- Madde 1\n- Madde 2'}
           />
         ) : (
-          <div className="min-h-[200px] px-5 py-4 bg-white border border-line rounded-lg">
+          <div className="min-h-[200px] px-5 py-4 bg-card border border-line rounded-lg">
             {content.trim() ? (
               <div className="kashe-prose">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>

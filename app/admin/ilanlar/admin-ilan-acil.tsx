@@ -60,7 +60,7 @@ export function AdminIlanAcil({
         Öne çıkarma
       </p>
 
-      {error && <p className="text-xs text-ember">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
 
       {/* Acil */}
       <button
