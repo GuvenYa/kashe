@@ -1,63 +1,52 @@
-import { Eyebrow } from "@/app/components/ui/eyebrow";
-import { Button } from "@/app/components/ui/button";
-
 export function FooterCTA() {
   return (
-    <section className="relative overflow-hidden bg-paper-2 border-t border-line">
-      {/* Atmosferik terracotta glow — sağ orta */}
-      <div
-        aria-hidden
-        className="absolute top-1/4 -right-32 w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(200, 68, 42, 0.10) 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(107, 46, 92, 0.08) 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-24 md:py-32">
-        <div className="max-w-3xl mx-auto text-center">
+    /* Dış bölüm: bg-paper, içinde rounded-3xl zümrüt gradyan kart */
+    <section className="bg-paper py-14 md:py-20">
+      <div className="max-w-7xl mx-auto px-6 md:px-9">
+        <div
+          className="rounded-3xl text-center px-8 md:px-16 lg:px-24 py-16 md:py-20"
+          style={{ background: "var(--gradient-brand)" }}
+        >
           {/* Eyebrow */}
-          <div className="mb-8 flex justify-center">
-            <Eyebrow variant="pill">Hemen başla</Eyebrow>
+          <div className="inline-flex items-center gap-2.5 mb-8">
+            <span className="inline-block h-px w-6 shrink-0 bg-white/30" />
+            <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-white/60">
+              Hemen başla
+            </span>
+            <span className="inline-block h-px w-6 shrink-0 bg-white/30" />
           </div>
 
-          {/* Headline */}
-          <h2 className="font-display font-light text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.04em] text-ink mb-8">
-            Profilini <em>aç</em>, çalışmaya başla.
+          {/* Başlık — <span className="text-plum"> kullan, em (zümrüt) koyu zeminde görünmez */}
+          <h2 className="font-display font-semibold text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.04em] text-white mb-6 max-w-3xl mx-auto">
+            Profilini{" "}
+            <span className="text-plum">aç</span>
+            , çalışmaya başla.
           </h2>
 
-          {/* Subhead */}
-          <p className="text-lg md:text-xl text-ink-72 leading-[1.55] mb-10 max-w-2xl mx-auto">
-            Ücretsiz hesap aç, kendi profilini oluştur, hizmet ver ya da ihtiyacın
+          {/* Alt metin */}
+          <p className="font-body text-lg md:text-xl text-white/65 leading-[1.55] mb-10 max-w-xl mx-auto">
+            Ücretsiz hesap aç, profilini oluştur, hizmet ver ya da ihtiyacın
             olan profesyoneli bul. Komisyon sadece iş tamamlanınca.
           </p>
 
-          {/* İki CTA buton */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/uye-ol?rol=profesyonel">
-              <Button variant="primary" size="lg">
-                Hizmet ver →
-              </Button>
+          {/* CTA butonları */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a
+              href="/uye-ol?rol=profesyonel"
+              className="inline-flex items-center gap-2 bg-white text-ink font-display font-semibold rounded-lg px-8 py-3.5 text-base hover:bg-paper transition-colors"
+            >
+              Hizmet ver →
             </a>
-            <a href="/uye-ol?rol=musteri">
-              <Button variant="secondary" size="lg">
-                Hizmet ara
-              </Button>
+            <a
+              href="/uye-ol?rol=musteri"
+              className="inline-flex items-center gap-2 font-body text-white/75 hover:text-white text-base underline-offset-4 hover:underline transition-colors px-4 py-3.5"
+            >
+              Hizmet ara
             </a>
           </div>
 
           {/* Trust line */}
-          <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
+          <p className="mt-10 font-body text-[11px] uppercase tracking-[0.18em] text-white/35">
             Ücretsiz kayıt · KVKK uyumlu · İstediğin zaman çıkış
           </p>
         </div>

@@ -11,12 +11,14 @@ const TOP_CATEGORIES = [
   { slug: "sunucu", label: "Sunucu" },
 ];
 
-// Renk rotasyonu (categories/trust ile tutarlı)
+// Profil kartı üst zemin renkleri — DESIGN.md §1 çok renkli sistem.
+// Kategori kartlarıyla tutarlı pastel rotasyon.
 const TONES = [
-  { bg: "rgba(200,68,42,0.10)", bgHover: "rgba(200,68,42,0.18)" },
-  { bg: "rgba(107,46,92,0.10)", bgHover: "rgba(107,46,92,0.18)" },
-  { bg: "rgba(63,107,71,0.10)", bgHover: "rgba(63,107,71,0.18)" },
-  { bg: "rgba(168,52,30,0.10)", bgHover: "rgba(168,52,30,0.18)" },
+  { headerBg: "#EAE4F5" }, // mor
+  { headerBg: "#E2EEFB" }, // mavi
+  { headerBg: "#FFF1DC" }, // altın
+  { headerBg: "#FCEAE4" }, // mercan
+  { headerBg: "#E6F6EE" }, // yeşil
 ];
 
 type FeaturedProfile = {
@@ -171,7 +173,7 @@ export async function FeaturedProfiles() {
             <Eyebrow variant="inline" className="mb-4">
               Öne çıkanlar
             </Eyebrow>
-            <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
+            <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
               Bu hafta <em>en çok tercih edilenler</em>.
             </h2>
           </div>
@@ -233,10 +235,10 @@ export async function FeaturedProfiles() {
                     : "border-line hover:border-terracotta hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)]"
                 }`}
               >
-                {/* Üst — renkli ikon/avatar zemini (hero kartlarındaki gibi) */}
+                {/* Üst — renkli ikon/avatar zemini */}
                 <div
                   className="h-28 flex items-center justify-center transition-colors duration-300"
-                  style={{ background: tone.bg }}
+                  style={{ background: tone.headerBg }}
                 >
                   {p.avatar_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -285,7 +287,7 @@ export async function FeaturedProfiles() {
                       <div className="flex items-center gap-1.5">
                         <svg
                           width="13" height="13" viewBox="0 0 24 24"
-                          fill="var(--color-terracotta)" stroke="var(--color-terracotta)"
+                          fill="var(--color-plum)" stroke="var(--color-plum)"
                           strokeWidth="1.5" strokeLinejoin="round"
                           xmlns="http://www.w3.org/2000/svg"
                           aria-hidden="true"

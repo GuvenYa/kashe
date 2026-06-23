@@ -8,11 +8,11 @@ type Testimonial = {
   tone: { bg: string; fg: string };
 };
 
-// NOT: key isimleri kod referansı (TONES.terracotta vb.), renkle örtüşmese de korundu.
+// Avatar arka plan renkleri — DESIGN.md §1 pastel palette.
 const TONES = {
-  terracotta: { bg: "rgba(147,51,234,0.10)", fg: "#9333EA" },
-  plum: { bg: "rgba(219,39,119,0.10)", fg: "#DB2777" },
-  moss: { bg: "rgba(124,58,237,0.10)", fg: "#7C3AED" },
+  terracotta: { bg: "#FCEAE4", fg: "#E2674A" }, // mercan
+  plum:       { bg: "#E9F1ED", fg: "#1F5C4A" }, // zümrüt
+  moss:       { bg: "#FFF1DC", fg: "#B5851F" }, // altın
 };
 
 // NOT: Bu yorumlar şu an temsilidir — gerçek müşteri/profesyonel
@@ -53,7 +53,7 @@ function StarRow() {
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill="var(--color-terracotta)"
+          fill="var(--color-plum)"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
@@ -73,7 +73,7 @@ export function Testimonials() {
           <Eyebrow variant="inline" className="mb-4">
             Kashe deneyimi
           </Eyebrow>
-          <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
+          <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
             Kullanıcılar <em>ne diyor?</em>
           </h2>
         </div>
@@ -99,7 +99,7 @@ export function Testimonials() {
                 <blockquote className="font-display text-lg leading-[1.5] text-ink mb-6 flex-1">
                   <span
                     aria-hidden="true"
-                    className="font-display italic text-3xl leading-none text-terracotta mr-1 align-top"
+                    className="font-display italic text-3xl leading-none text-plum mr-1 align-top"
                   >
                     “
                   </span>
