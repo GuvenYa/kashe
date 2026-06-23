@@ -16,8 +16,12 @@ export async function CategoryMarquee() {
   const loop = [...categories, ...categories];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-12 my-2">
-      <div className="bg-gradient-brand overflow-hidden py-5 md:py-6 relative rounded-2xl">
+    <div className="max-w-7xl mx-auto px-6 md:px-9 mt-8 mb-10">
+      {/* Zümrüt gradyan bant — kategori adlarını editöryel marquee olarak gösterir */}
+      <div
+        className="overflow-hidden py-5 md:py-6 relative rounded-2xl"
+        style={{ background: "var(--gradient-brand)" }}
+      >
         <div className="kashe-marquee flex items-center gap-10 md:gap-14 w-max">
           {loop.map((cat, i) => {
             const icon = getCategoryIcon(cat.slug);
@@ -33,17 +37,16 @@ export async function CategoryMarquee() {
                       src={icon}
                       alt=""
                       aria-hidden="true"
-                      className="w-7 h-7 md:w-8 md:h-8 object-contain opacity-90 group-hover:opacity-100 transition-opacity"
-                      style={{
-                        filter: "brightness(0) invert(1)",
-                      }}
+                      className="w-6 h-6 md:w-7 md:h-7 object-contain opacity-70 group-hover:opacity-100 transition-opacity"
+                      style={{ filter: "brightness(0) invert(1)" }}
                     />
                   )}
-                  <span className="font-display font-semibold text-xl md:text-3xl text-white whitespace-nowrap group-hover:opacity-80 transition-opacity">
+                  <span className="font-display font-semibold text-lg md:text-2xl text-white whitespace-nowrap group-hover:opacity-80 transition-opacity tracking-[-0.02em]">
                     {cat.name_tr}
                   </span>
                 </a>
-                <span className="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
+                {/* Ayırıcı nokta */}
+                <span className="w-1 h-1 rounded-full bg-white/30 shrink-0" />
               </div>
             );
           })}

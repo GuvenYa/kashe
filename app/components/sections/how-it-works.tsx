@@ -1,4 +1,3 @@
-import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Reveal } from "./reveal";
 
 type Step = {
@@ -34,49 +33,67 @@ const steps: Step[] = [
 
 export function HowItWorks() {
   return (
-    <section id="nasil-calisir" className="bg-paper border-t border-line">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
-        {/* Section header */}
-        <div className="mb-12 md:mb-16 max-w-2xl">
-          <Eyebrow variant="inline" className="mb-4">
-            Nasıl çalışır
-          </Eyebrow>
-          <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink mb-6">
-            3 adımda <em>doğru kişiye</em> ulaş.
-          </h2>
-          <p className="text-lg text-ink-72 leading-[1.55]">
-            İhtiyacını yaz, teklif al, güvenle öde. Bütün süreç ortalama 48 saat.
-          </p>
-        </div>
+    /* Dış bölüm: sayfa zemini bg-paper, içinde koyu zümrüt kart */
+    <section id="nasil-calisir" className="bg-paper py-14 md:py-20">
+      <div className="max-w-7xl mx-auto px-6 md:px-9">
+        {/* Koyu zümrüt yuvarlak bölüm — DESIGN.md §4 "Nasıl çalışır" */}
+        <div
+          className="rounded-3xl px-8 md:px-14 lg:px-20 pt-14 md:pt-18 pb-14 md:pb-18"
+          style={{ background: "var(--color-ember)" }}
+        >
+          {/* Section header */}
+          <div className="mb-12 md:mb-16 max-w-2xl">
+            {/* Eyebrow — ince çizgi + etiket, beyaz üzeri */}
+            <div className="inline-flex items-center gap-2.5 mb-6">
+              <span className="inline-block h-px w-6 shrink-0 bg-white/30" />
+              <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-white/60">
+                Nasıl çalışır
+              </span>
+            </div>
 
-        {/* Steps grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 border-t border-line">
-          {steps.map((step, index) => (
-            <Reveal
-              key={step.number}
-              delay={index * 180}
-              className={`p-8 md:p-10 ${
-                index < steps.length - 1 ? "md:border-r border-line" : ""
-              } ${index < steps.length - 1 ? "border-b md:border-b-0 border-line" : ""}`}
-            >
-              {/* Number + eyebrow */}
-              <div className="flex items-baseline gap-3 mb-6 font-mono text-[11px] uppercase tracking-[0.18em]">
-                <span className="text-terracotta font-semibold">{step.number}</span>
-                <span className="w-3 h-px bg-terracotta inline-block"></span>
-                <span className="text-terracotta">{step.eyebrow}</span>
-              </div>
+            <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-[56px] leading-[1.0] tracking-[-0.03em] text-white mb-5">
+              3 adımda{" "}
+              <span className="text-plum">doğru kişiye</span>{" "}
+              ulaş.
+            </h2>
+            <p className="font-body text-lg text-white/60 leading-[1.6]">
+              İhtiyacını yaz, teklif al, güvenle öde. Bütün süreç ortalama 48 saat.
+            </p>
+          </div>
 
-              {/* Title */}
-              <h3 className="font-display font-normal text-2xl md:text-3xl text-ink mb-3 leading-tight tracking-[-0.02em]">
-                {step.title}
-              </h3>
+          {/* Adımlar grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/10">
+            {steps.map((step, index) => (
+              <Reveal
+                key={step.number}
+                delay={index * 180}
+                className={[
+                  "pt-10 pb-8",
+                  index < steps.length - 1
+                    ? "md:pr-10 md:border-r border-white/10 border-b md:border-b-0"
+                    : "",
+                  index > 0 ? "md:pl-10" : "",
+                ].join(" ")}
+              >
+                {/* Mercan sayı + çizgi + eyebrow */}
+                <div className="flex items-baseline gap-3 mb-6 font-body text-[11px] uppercase tracking-[0.18em]">
+                  <span className="text-plum font-semibold text-base">{step.number}</span>
+                  <span className="w-3 h-px bg-plum inline-block" />
+                  <span className="text-white/50">{step.eyebrow}</span>
+                </div>
 
-              {/* Description */}
-              <p className="text-base text-ink-72 leading-[1.55]">
-                {step.description}
-              </p>
-            </Reveal>
-          ))}
+                {/* Başlık */}
+                <h3 className="font-display font-semibold text-2xl md:text-[26px] text-white mb-3 leading-tight tracking-[-0.02em]">
+                  {step.title}
+                </h3>
+
+                {/* Açıklama */}
+                <p className="font-body text-base text-white/60 leading-[1.6]">
+                  {step.description}
+                </p>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </div>
     </section>

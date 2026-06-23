@@ -10,13 +10,15 @@ type CategoryRow = {
   name_tr: string;
 };
 
-// Kategori zeminleri için renk rotasyonu (Kashe paleti).
-// Tailwind dinamik class purge ettiği için inline rgba kullanıyoruz.
+// Kategori ikon zemini renk rotasyonu — DESIGN.md §1 çok renkli sistem.
+// iconBg: ikon kutusunun dolgu rengi (pastel).
+// cardHover: kart hover'ında üst katman overlay (subtle rgba).
 const TONES = [
-  { bg: "rgba(200,68,42,0.10)", bgHover: "rgba(200,68,42,0.18)" }, // terracotta
-  { bg: "rgba(107,46,92,0.10)", bgHover: "rgba(107,46,92,0.18)" }, // plum
-  { bg: "rgba(63,107,71,0.10)", bgHover: "rgba(63,107,71,0.18)" }, // moss
-  { bg: "rgba(168,52,30,0.10)", bgHover: "rgba(168,52,30,0.18)" }, // ember
+  { iconBg: "#EAE4F5", cardHover: "rgba(109,79,176,0.07)"  }, // DJ          — mor    #6D4FB0
+  { iconBg: "#E2EEFB", cardHover: "rgba(45,111,184,0.07)"  }, // Fotoğrafçı  — mavi   #2D6FB8
+  { iconBg: "#FFF1DC", cardHover: "rgba(181,133,31,0.07)"  }, // Sunucu      — altın  #B5851F
+  { iconBg: "#FCEAE4", cardHover: "rgba(226,103,74,0.07)"  }, // Organizasyon— mercan #E2674A
+  { iconBg: "#E6F6EE", cardHover: "rgba(31,138,95,0.07)"   }, // Müzisyen    — yeşil  #1F8A5F
 ];
 
 export async function Categories() {
@@ -87,7 +89,7 @@ export async function Categories() {
                 {/* Hover'da hafif renk yıkaması (zemin) */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ background: tone.bg }}
+                  style={{ background: tone.cardHover }}
                   aria-hidden="true"
                 />
 
@@ -95,7 +97,7 @@ export async function Categories() {
                   {/* İkon — renk rotasyonlu zemin */}
                   <div
                     className="w-20 h-20 flex items-center justify-center mb-5 rounded-xl transition-colors duration-300 overflow-hidden"
-                    style={{ background: tone.bg }}
+                    style={{ background: tone.iconBg }}
                   >
                     {iconUrl ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
