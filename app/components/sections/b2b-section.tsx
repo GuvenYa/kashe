@@ -33,28 +33,9 @@ export function B2BSection() {
   return (
     <section
       id="kurumsal"
-      className="dark-section bg-ink relative overflow-hidden"
+      className="dark-section bg-ink"
     >
-      <div
-        aria-hidden
-        className="absolute top-1/4 -left-32 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(200, 68, 42, 0.18) 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(107, 46, 92, 0.20) 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
             <div className="mb-6">
@@ -64,8 +45,9 @@ export function B2BSection() {
               </span>
             </div>
 
-            <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-paper mb-6">
-              Kurumsal etkinlikler için <em>tek panel.</em>
+            <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-paper mb-6">
+              Kurumsal etkinlikler için{" "}
+              <span className="text-plum">tek panel.</span>
             </h2>
 
             <p className="text-lg text-paper-72 leading-[1.55] mb-10 max-w-xl">
@@ -77,7 +59,7 @@ export function B2BSection() {
             <div className="space-y-5 mb-10">
               {features.map((feat) => (
                 <div key={feat.number} className="flex gap-4 items-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-terracotta text-terracotta flex items-center justify-center font-mono text-xs">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-plum text-plum flex items-center justify-center font-mono text-xs">
                     {feat.number}
                   </div>
                   <div className="pt-1">
@@ -146,7 +128,7 @@ function MockupRow({
       <span
         className={`text-right ${
           highlight
-            ? "font-display italic text-2xl text-terracotta"
+            ? "font-display italic text-2xl text-plum"
             : "text-paper font-medium text-base"
         }`}
       >

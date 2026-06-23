@@ -8,10 +8,14 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="/" className="flex items-center gap-2.5 mb-4">
-              <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none">
-                k
-              </span>
-              <span className="font-display font-semibold text-2xl text-paper tracking-tight">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icon-192.png"
+                alt=""
+                aria-hidden="true"
+                className="w-8 h-8 rounded-md"
+              />
+              <span className="font-display font-semibold text-xl text-paper tracking-tight">
                 Kashe
               </span>
             </a>

@@ -39,12 +39,12 @@ const trustItems: TrustItem[] = [
   },
 ];
 
-// İkon zeminleri için renk rotasyonu (Kashe paleti) — Categories ile tutarlı.
+// İkon zemin/ön plan renkleri — DESIGN.md §1 çok renkli sistem, categories ile tutarlı.
 const TONES = [
-  { bg: "rgba(147,51,234,0.10)", fg: "#9333EA" }, // mor
-  { bg: "rgba(219,39,119,0.10)", fg: "#DB2777" }, // pembe
-  { bg: "rgba(124,58,237,0.10)", fg: "#7C3AED" }, // koyu mor
-  { bg: "rgba(162,28,175,0.10)", fg: "#A21CAF" }, // fuşya
+  { iconBg: "#E9F1ED", iconFg: "#1F5C4A", cardHover: "rgba(31,92,74,0.06)"    }, // zümrüt
+  { iconBg: "#FCEAE4", iconFg: "#E2674A", cardHover: "rgba(226,103,74,0.06)"  }, // mercan
+  { iconBg: "#E2EEFB", iconFg: "#2D6FB8", cardHover: "rgba(45,111,184,0.06)"  }, // mavi
+  { iconBg: "#FFF1DC", iconFg: "#B5851F", cardHover: "rgba(181,133,31,0.06)"  }, // altın
 ];
 
 export function TrustSection() {
@@ -56,7 +56,7 @@ export function TrustSection() {
           <Eyebrow variant="inline" className="mb-4">
             Güvenliğin bizim için önemli
           </Eyebrow>
-          <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
+          <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
             Her aşamada <em>güvende</em> ol.
           </h2>
         </div>
@@ -74,19 +74,19 @@ export function TrustSection() {
                 {/* Hover renk yıkaması */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ background: tone.bg }}
+                  style={{ background: tone.cardHover }}
                   aria-hidden="true"
                 />
                 <div className="relative">
                   {/* İkon — renk rotasyonlu zemin */}
                   <div
                     className="w-16 h-16 flex items-center justify-center mb-5 rounded-xl transition-transform duration-300 group-hover:scale-105"
-                    style={{ background: tone.bg }}
+                    style={{ background: tone.iconBg }}
                   >
                     <Icon
                       className="w-7 h-7"
                       strokeWidth={1.5}
-                      style={{ color: tone.fg }}
+                      style={{ color: tone.iconFg }}
                     />
                   </div>
                   <h3 className="font-display font-medium text-lg text-ink mb-2 leading-tight">
