@@ -132,7 +132,7 @@ export function SikayetAksiyonlari({ reportId, status }: Props) {
       )}
 
       {error && (
-        <p className="text-xs text-terracotta mt-2 bg-terracotta/8 border border-terracotta/20 rounded-lg p-2">
+        <p className="text-xs text-danger mt-2 bg-danger-08 border border-danger/30 rounded-lg p-2">
           {error}
         </p>
       )}

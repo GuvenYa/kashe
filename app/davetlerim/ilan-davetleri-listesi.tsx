@@ -202,7 +202,7 @@ function IlanDavetKarti({
       )}
 
       {error && (
-        <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta text-sm rounded-lg px-3 py-2 mb-3">
+        <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-3 py-2 mb-3">
           {error}
         </div>
       )}

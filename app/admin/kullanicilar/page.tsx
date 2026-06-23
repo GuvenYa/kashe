@@ -163,8 +163,8 @@ export default async function AdminUsersPage({
 
       {/* Tablo */}
       {error ? (
-        <div className="bg-terracotta/10 border border-terracotta/30 rounded-lg p-6">
-          <p className="text-terracotta text-sm">
+        <div className="bg-danger-08 border border-danger/30 rounded-lg p-6">
+          <p className="text-danger text-sm">
             Liste yüklenemedi: {error.message}
           </p>
         </div>

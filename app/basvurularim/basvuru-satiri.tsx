@@ -147,7 +147,7 @@ export function BasvuruSatiri({ application }: Props) {
       </p>
 
       {error && (
-        <p className="text-xs text-terracotta mb-2">{error}</p>
+        <p className="text-xs text-danger mb-2">{error}</p>
       )}
 
       {/* Aksiyonlar */}

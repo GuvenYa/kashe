@@ -299,7 +299,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
         )}
 
         {error && (
-          <p className="text-xs text-terracotta mb-4 bg-terracotta/8 border border-terracotta/20 rounded-lg p-3">
+          <p className="text-xs text-danger mb-4 bg-danger-08 border border-danger/30 rounded-lg p-3">
             {error}
           </p>
         )}

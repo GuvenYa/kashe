@@ -82,7 +82,7 @@ export function ApplicationAttachment({
         </span>
       </button>
 
-      {error && <p className="text-xs text-terracotta mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
 
       <MediaLightbox
         items={lightboxUrl ? [{ url: lightboxUrl, type: 'image' }] : []}

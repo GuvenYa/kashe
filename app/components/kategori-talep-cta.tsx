@@ -287,7 +287,7 @@ export function KategoriTalepCta({
             </label>
 
             {error && (
-              <p className="text-xs text-terracotta mb-4">{error}</p>
+              <p className="text-xs text-danger mb-4">{error}</p>
             )}
 
             <div className="flex gap-3">

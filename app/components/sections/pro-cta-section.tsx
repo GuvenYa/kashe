@@ -155,7 +155,7 @@ export function ProCtaSection() {
                   <div className="flex items-center gap-1.5">
                     <svg
                       width="13" height="13" viewBox="0 0 24 24"
-                      fill="var(--color-terracotta)" stroke="var(--color-terracotta)"
+                      fill="var(--color-plum)" stroke="var(--color-plum)"
                       strokeWidth="1.5" strokeLinejoin="round"
                       xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"

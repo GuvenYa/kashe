@@ -280,7 +280,7 @@ export function AvailabilityCalendar({
         </p>
       )}
 
-      {error && <p className="text-sm text-terracotta mt-3">{error}</p>}
+      {error && <p className="text-sm text-danger mt-3">{error}</p>}
     </div>
   );
 }
