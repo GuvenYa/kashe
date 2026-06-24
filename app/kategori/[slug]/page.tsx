@@ -8,6 +8,11 @@ import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import { isBusy as computeBusy, busyWindowKeys } from '@/app/lib/badges';
+import {
+  getCategoryContent,
+  USE_CASES,
+  CATEGORY_TAGLINE,
+} from '@/app/lib/category-content';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -90,10 +95,14 @@ export async function generateMetadata({ params }: Props) {
   const category = await getCategory(slug);
   if (!category) return { title: 'Kategori bulunamadı — Kashe' };
 
-  const title = category.seo_title || `${category.name_tr} — Kashe`;
+  // Editöryel içerik varsa onu kullan; yoksa mevcut fallback AYNEN kalır
+  const content = getCategoryContent(slug);
+  const title =
+    content?.seoTitle || category.seo_title || `${category.name_tr} — Kashe`;
   return {
     title,
     description:
+      content?.seoDescription ??
       category.description ??
       `${category.name_tr} kategorisinde doğrulanmış profesyonelleri Kashe'de keşfedin.`,
   };
@@ -107,6 +116,9 @@ export default async function KategoriPage({ params }: Props) {
   if (!category) {
     notFound();
   }
+
+  // Kategoriye özel editöryel içerik (yalnızca dolu kategorilerde; yoksa null → generic)
+  const content = getCategoryContent(slug);
 
   // Bu kategorideki yayında profiller
   const { data: profilesData } = await supabase
@@ -296,11 +308,11 @@ export default async function KategoriPage({ params }: Props) {
                   Kategori
                 </p>
                 <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-                  {category.name_tr}
+                  {content?.heroHeadline ?? category.name_tr}
                 </h1>
-                {category.description && (
+                {(content?.description ?? category.description) && (
                   <p className="text-ink-72 text-lg mt-4 max-w-2xl leading-relaxed">
-                    {category.description}
+                    {content?.description ?? category.description}
                   </p>
                 )}
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mt-5">
@@ -310,6 +322,38 @@ export default async function KategoriPage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        {/* ALT HİZMETLER — yalnızca editöryel içeriği olan kategorilerde */}
+        {content?.subServices && content.subServices.length > 0 && (
+          <section className="border-b border-line">
+            <div className="max-w-7xl mx-auto px-6 md:px-12 py-14 md:py-16">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+                Alt hizmetler
+              </p>
+              <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
+                {category.name_tr}{' '}
+                <em className="text-terracotta not-italic italic font-medium">
+                  alanları
+                </em>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {content.subServices.map((sub) => (
+                  <div
+                    key={sub.name}
+                    className="bg-card border border-line rounded-2xl p-5 hover:border-terracotta transition-colors"
+                  >
+                    <p className="font-display font-semibold text-ink leading-snug mb-1.5">
+                      {sub.name}
+                    </p>
+                    <p className="text-sm text-ink-72 leading-relaxed">
+                      {sub.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* PROFİLLER */}
         <section className="max-w-7xl mx-auto px-6 md:px-12 py-12">
@@ -353,7 +397,39 @@ export default async function KategoriPage({ params }: Props) {
           )}
         </section>
 
-        {/* SSS */}
+        {/* KİMLER KULLANIR? — yalnızca editöryel içeriği olan kategorilerde */}
+        {content && (
+          <section className="border-t border-line bg-card">
+            <div className="max-w-7xl mx-auto px-6 md:px-12 py-14 md:py-16">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+                {CATEGORY_TAGLINE}
+              </p>
+              <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
+                Kimler{' '}
+                <em className="text-terracotta not-italic italic font-medium">
+                  kullanır
+                </em>
+                ?
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {USE_CASES.map((uc) => (
+                  <div
+                    key={uc.role}
+                    className="bg-paper border border-line rounded-2xl p-6"
+                  >
+                    <p className="font-display font-semibold text-lg text-ink mb-2">
+                      {uc.role}
+                    </p>
+                    <p className="text-sm text-ink-72 leading-relaxed">
+                      {uc.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Kashe AI önerisi */}
           <section className="border-t border-line px-6 md:px-12 py-10">
             <div className="max-w-7xl mx-auto">
