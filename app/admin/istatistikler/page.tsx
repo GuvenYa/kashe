@@ -453,7 +453,7 @@ export default function IstatistiklerPage() {
                 style={{ fontFamily: MONO }}
                 className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg transition-colors ${
                   pDays === o.key
-                    ? 'bg-gradient-brand text-white'
+                    ? 'bg-terracotta text-paper'
                     : 'text-ink-50 hover:text-ink'
                 }`}
               >
