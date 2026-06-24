@@ -209,15 +209,22 @@ function SpiralCard({
 /* ─── Spiral grup + animasyon ─── */
 function SpiralScene({
   reducedMotion,
+  isMobile,
+  onFirstFrame,
   onHover,
   onHoverOut,
   onPick,
 }: {
   reducedMotion: boolean;
+  isMobile: boolean;
+  onFirstFrame: () => void;
   onHover: (meta: CardMeta, clientX: number, clientY: number) => void;
   onHoverOut: () => void;
   onPick: (meta: CardMeta) => void;
 }) {
+  const interactive = !isMobile; // mobilde hover/tıklama/parallax KAPALI
+  const noop = () => {};
+  const firstFrameRef = useRef(false); // ilk çizilen frame'de fade-in tetikler
   const groupRef = useRef<THREE.Group>(null!);
   const mouseRef = useRef({ x: 0, y: 0 });
   const insideRef = useRef(false); // imleç canvas üzerinde mi
@@ -286,9 +293,9 @@ function SpiralScene({
     return out;
   }, [baseTextures]);
 
-  /* Fare parallax — canvas'a göreceli koordinat; imleç çıkınca nötr */
+  /* Fare parallax (SADECE masaüstü) — canvas'a göreceli; imleç çıkınca nötr */
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || isMobile) return;
     const el = gl.domElement;
     const onMove = (e: PointerEvent) => {
       const rect = el.getBoundingClientRect();
@@ -307,11 +314,11 @@ function SpiralScene({
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);
     };
-  }, [gl, reducedMotion]);
+  }, [gl, reducedMotion, isMobile]);
 
-  /* Scroll-itme: tekerlek → dönüş ivmesi (sayfa scroll'unu ELE GEÇİRMEZ) */
+  /* Scroll-itme MASAÜSTÜ: tekerlek → dönüş ivmesi (sayfa scroll'unu ELE GEÇİRMEZ) */
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || isMobile) return;
     const el = gl.domElement;
     const onWheel = (e: WheelEvent) => {
       spinVelRef.current = THREE.MathUtils.clamp(
@@ -322,10 +329,33 @@ function SpiralScene({
     };
     el.addEventListener('wheel', onWheel, { passive: true });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [gl, reducedMotion]);
+  }, [gl, reducedMotion, isMobile]);
+
+  /* Scroll-itme MOBİL: sayfa scrollY değişimi → dönüş ivmesi (jesti çalmaz, passive) */
+  useEffect(() => {
+    if (reducedMotion || !isMobile) return;
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      spinVelRef.current = THREE.MathUtils.clamp(
+        spinVelRef.current + (y - lastY) * 0.002,
+        -0.5,
+        0.5
+      );
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [reducedMotion, isMobile]);
 
   useFrame((_, delta) => {
     if (!groupRef.current || reducedMotion) return;
+
+    /* İlk gerçek frame çizildi (texture hazır + grup render oldu) → fade-in tetikle */
+    if (!firstFrameRef.current) {
+      firstFrameRef.current = true;
+      onFirstFrame();
+    }
 
     /* Idle auto-rotate — hover sırasında DURAKLAT (kullanıcı kartı okur/tıklar) */
     if (hoveredIdx === null) {
@@ -338,21 +368,22 @@ function SpiralScene({
       spinVelRef.current *= 0.94;
     }
 
-    /* İki eksen parallax — imleç üzerindeyse eğil, çıkınca nötre dön (lerp 0.07).
-       X: öne-arkaya (mouseY ×0.25 ≈ 14°), Z: sağa-sola yatış (mouseX ×0.18 ≈ 10°).
-       BASE_TILT_X'in ÜSTÜNE eklenir; auto-rotate (rotation.y) ayrı çalışır. */
-    const targetX = insideRef.current ? mouseRef.current.y * 0.25 : 0;
-    const targetZ = insideRef.current ? mouseRef.current.x * 0.18 : 0;
-    tiltRef.current.x += (targetX - tiltRef.current.x) * 0.07;
-    tiltRef.current.z += (targetZ - tiltRef.current.z) * 0.07;
-    groupRef.current.rotation.x = BASE_TILT_X + tiltRef.current.x;
-    groupRef.current.rotation.z = tiltRef.current.z;
+    /* İki eksen parallax (SADECE masaüstü) — imleç üzerindeyse eğil, çıkınca nötre dön.
+       Mobilde KAPALI (dokunmatikte mouse yok); davul nötr kalır (BASE_TILT_X). */
+    if (!isMobile) {
+      const targetX = insideRef.current ? mouseRef.current.y * 0.25 : 0;
+      const targetZ = insideRef.current ? mouseRef.current.x * 0.18 : 0;
+      tiltRef.current.x += (targetX - tiltRef.current.x) * 0.07;
+      tiltRef.current.z += (targetZ - tiltRef.current.z) * 0.07;
+      groupRef.current.rotation.x = BASE_TILT_X + tiltRef.current.x;
+      groupRef.current.rotation.z = tiltRef.current.z;
+    }
   });
 
   return (
     /* Taban tilt JSX'te → reduced-motion'da da huni eğimi korunur.
-       y=-0.4: davulu hafif aşağı al → üst kenar kırpılması yumuşar */
-    <group ref={groupRef} position={[0, -0.4, 0]} rotation={[BASE_TILT_X, 0, 0]}>
+       Masaüstü y=-0.4 (üst kenar yumuşar); mobilde y=0 (dikeyde ortalı, üst boşluk dengeli) */
+    <group ref={groupRef} position={[0, isMobile ? 0 : -0.4, 0]} rotation={[BASE_TILT_X, 0, 0]}>
       {cards.map((card, i) => (
         <SpiralCard
           key={i}
@@ -366,15 +397,23 @@ function SpiralScene({
           frameGeo={card.frameGeo}
           meta={card.meta}
           hovered={hoveredIdx === i}
-          onOver={(meta, x, y) => {
-            setHoveredIdx(i);
-            onHover(meta, x, y);
-          }}
-          onOut={() => {
-            setHoveredIdx(null);
-            onHoverOut();
-          }}
-          onClick={(meta) => onPick(meta)}
+          onOver={
+            interactive
+              ? (meta, x, y) => {
+                  setHoveredIdx(i);
+                  onHover(meta, x, y);
+                }
+              : noop
+          }
+          onOut={
+            interactive
+              ? () => {
+                  setHoveredIdx(null);
+                  onHoverOut();
+                }
+              : noop
+          }
+          onClick={interactive ? (meta) => onPick(meta) : noop}
         />
       ))}
     </group>
@@ -384,11 +423,17 @@ function SpiralScene({
 /* ─── Canvas ─── */
 function Hero3DCanvas({
   reducedMotion,
+  isMobile,
+  camZ,
+  onFirstFrame,
   onHover,
   onHoverOut,
   onPick,
 }: {
   reducedMotion: boolean;
+  isMobile: boolean;
+  camZ: number;
+  onFirstFrame: () => void;
   onHover: (meta: CardMeta, clientX: number, clientY: number) => void;
   onHoverOut: () => void;
   onPick: (meta: CardMeta) => void;
@@ -397,7 +442,7 @@ function Hero3DCanvas({
     <Canvas
       dpr={[1, 1.5]}
       frameloop={reducedMotion ? 'demand' : 'always'}
-      camera={{ fov: FOV, position: [0, 0, CAM_Z] }}
+      camera={{ fov: FOV, position: [0, 0, camZ] }}
       style={{ width: '100%', height: '100%', background: 'transparent' }}
       gl={{ alpha: true, antialias: false }}
     >
@@ -405,42 +450,13 @@ function Hero3DCanvas({
       <ambientLight intensity={1} />
       <SpiralScene
         reducedMotion={reducedMotion}
+        isMobile={isMobile}
+        onFirstFrame={onFirstFrame}
         onHover={onHover}
         onHoverOut={onHoverOut}
         onPick={onPick}
       />
     </Canvas>
-  );
-}
-
-/* ─── ★4.9 mercan rozeti ─── */
-function CoralBadge() {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '-14px',
-        right: '-14px',
-        background: 'var(--color-plum)',
-        color: '#fff',
-        width: '84px',
-        height: '84px',
-        borderRadius: '50%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: 'rotate(8deg)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-        zIndex: 10,
-        fontFamily: 'var(--font-display)',
-      }}
-    >
-      <span style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>★4.9</span>
-      <small style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>
-        puan
-      </small>
-    </div>
   );
 }
 
@@ -475,9 +491,20 @@ function CategoryLabel({ label, x, y }: { label: string; x: number; y: number })
 /* ─── Dışa aktarılan bileşen ─── */
 export default function Hero3D() {
   const [reducedMotion, setReducedMotion] = useState(false);
+  // Lazy init (ssr:false → window var) → mobilde ilk render'da doğru, flash yok
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 1023px)').matches
+  );
   const [hover, setHover] = useState<{ label: string; x: number; y: number } | null>(null);
+  const [ready, setReady] = useState(false); // davul ilk frame çizilince fade-in
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const camZ = isMobile ? 10.0 : CAM_Z; // mobilde davul kareyi daha dolu doldursun (gök boşluğu azalır; masaüstü 8.5)
+
+  const handleFirstFrame = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -486,6 +513,22 @@ export default function Hero3D() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  /* reduced-motion: frameloop='demand' → useFrame onFirstFrame tetiklemez.
+     Bu durumda davul statik render olur; raf ile ready yap (fade yine yumuşak). */
+  useEffect(() => {
+    if (!reducedMotion) return;
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, [reducedMotion]);
 
   /* Hover: client koordinatını container'a göreceli pill konumuna çevir */
   const handleHover = useCallback(
@@ -512,7 +555,12 @@ export default function Hero3D() {
   );
 
   return (
-    <div ref={containerRef} className="relative" style={{ height: '540px' }}>
+    /* Mobilde parent'ı doldur (hero-mobile davulu arka plan yapar); masaüstü 540px */
+    <div
+      ref={containerRef}
+      className={isMobile ? 'absolute inset-0' : 'relative'}
+      style={isMobile ? { width: '100%', height: '100%' } : { height: '540px' }}
+    >
       {/* Zümrüt zemin gradyanı */}
       <div
         aria-hidden="true"
@@ -524,18 +572,28 @@ export default function Hero3D() {
         }}
       />
 
-      <CoralBadge />
+      {/* Fade-in: davul ilk frame'de opacity 0→1 (KÖK DOM opacity, materyal değil).
+          Arkasında zümrüt gradyan + placeholder zemini → swap'ta boşluk/flash yok. */}
+      <div
+        className="absolute inset-0 transition-opacity duration-500 ease-out"
+        style={{ opacity: ready ? 1 : 0 }}
+      >
+        <Hero3DErrorBoundary fallback={<HeroCollage />}>
+          <Hero3DCanvas
+            reducedMotion={reducedMotion}
+            isMobile={isMobile}
+            camZ={camZ}
+            onFirstFrame={handleFirstFrame}
+            onHover={handleHover}
+            onHoverOut={handleHoverOut}
+            onPick={handlePick}
+          />
+        </Hero3DErrorBoundary>
+      </div>
 
-      <Hero3DErrorBoundary fallback={<HeroCollage />}>
-        <Hero3DCanvas
-          reducedMotion={reducedMotion}
-          onHover={handleHover}
-          onHoverOut={handleHoverOut}
-          onPick={handlePick}
-        />
-      </Hero3DErrorBoundary>
-
-      {hover && <CategoryLabel label={hover.label} x={hover.x} y={hover.y} />}
+      {!isMobile && hover && (
+        <CategoryLabel label={hover.label} x={hover.x} y={hover.y} />
+      )}
     </div>
   );
 }

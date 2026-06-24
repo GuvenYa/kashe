@@ -1,8 +1,8 @@
 import { createClient } from "@/app/lib/supabase-server";
 import { orderCities } from "@/app/lib/city-order";
 import { QuickSearch } from "./quick-search";
-import { HeroCollage } from "./hero-collage";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
+import { HeroMobile } from "./hero-mobile";
 
 export async function Hero() {
   const supabase = await createClient();
@@ -48,7 +48,19 @@ export async function Hero() {
 
   return (
     <section className="relative bg-paper">
-      <div className="max-w-7xl mx-auto px-6 md:px-9 pt-14 md:pt-20 pb-12 md:pb-16">
+      {/* ═══ MOBİL (<lg): davul arka + metin önde (ayrı izole parça) ═══ */}
+      <div className="lg:hidden">
+        <HeroMobile
+          categories={categories}
+          cities={cities}
+          popularLinks={popularLinks}
+          formattedProCount={formattedProCount}
+          cityCount={cityCount ?? 81}
+        />
+      </div>
+
+      {/* ═══ MASAÜSTÜ (lg+): mevcut grid — BİREBİR korundu ═══ */}
+      <div className="hidden lg:block max-w-7xl mx-auto px-6 md:px-9 pt-14 md:pt-20 pb-12 md:pb-16">
         {/* Hero ızgarası: sol metin | sağ kolaj — HERO-REF.md §4 */}
         <div className="grid lg:grid-cols-[1fr_1.05fr] gap-[54px] items-center">
 
