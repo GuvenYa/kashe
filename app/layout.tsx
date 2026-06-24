@@ -19,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kashe — Doğru kişiye direkt",
+  title: "Kashe — Türkiye'nin Yetenek Sahnesi | DJ, Fotoğrafçı, Sunucu & Etkinlik",
   description:
     "Türkiye'nin etkinlik ve yetenek pazaryeri. Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu — ajanssız, şeffaf fiyatla.",
   manifest: "/manifest.json",

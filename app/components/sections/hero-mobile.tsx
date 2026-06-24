@@ -16,7 +16,7 @@ type Props = {
 /**
  * MOBİL HERO (<lg) — davul ARKADA (z-0) + metin ÖNDE ortada (z-3).
  * Masaüstü grid'inden tamamen izole; sadece hero.tsx'in lg:hidden dalında render edilir.
- * Hero3D mobilde kendini fill + camZ 11.5 + parallax/hover kapalı + scroll-itme'ye ayarlar.
+ * Hero3D mobilde kendini fill + camZ 10.0 + parallax/hover kapalı + scroll-itme'ye ayarlar.
  */
 export function HeroMobile({
   categories,
