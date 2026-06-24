@@ -2,6 +2,7 @@ import { createClient } from "@/app/lib/supabase-server";
 import { orderCities } from "@/app/lib/city-order";
 import { QuickSearch } from "./quick-search";
 import { HeroCollage } from "./hero-collage";
+import { Hero3DWrapper } from "./hero-3d-wrapper";
 
 export async function Hero() {
   const supabase = await createClient();
@@ -153,12 +154,12 @@ export async function Hero() {
             </div>
           </div>
 
-          {/* ——— SAĞ SÜTUN: kolaj — sadece lg+ ——— */}
+          {/* ——— SAĞ SÜTUN: 3D helix (lg+) / kolaj fallback (mobil) ——— */}
           <div
             className="kashe-fade hidden lg:block"
             style={{ animationDelay: "300ms" }}
           >
-            <HeroCollage />
+            <Hero3DWrapper />
           </div>
 
         </div>
