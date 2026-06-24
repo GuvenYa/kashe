@@ -2,14 +2,14 @@ import { SITE_URL } from './resend-client';
 
 // Kashe paleti — inline kullanım için
 const COLORS = {
-  paper: '#FAF8FC',
-  paper2: '#F5EEFB',
+  paper: '#FBF8F4',
+  paper2: '#FBEEE8',
   card: '#FFFFFF',
   ink: '#1A120E',
   ink72: 'rgba(26, 18, 14, 0.72)',
   ink50: 'rgba(26, 18, 14, 0.5)',
-  terracotta: '#9333EA',
-  ember: '#7C3AED',
+  terracotta: '#1F5C4A',
+  ember: '#143D31',
   moss: '#3F6B47',
   line: 'rgba(26, 18, 14, 0.12)',
 };

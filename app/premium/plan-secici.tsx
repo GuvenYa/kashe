@@ -155,7 +155,7 @@ export function PlanSecici({
                 key={plan.tier}
                 className={`relative rounded-2xl border p-6 flex flex-col ${
                   plan.highlighted
-                    ? 'border-terracotta shadow-[0_8px_30px_-12px_rgba(147,51,234,0.3)]'
+                    ? 'border-terracotta shadow-[0_8px_30px_-12px_rgba(31,92,74,0.3)]'
                     : 'border-line'
                 }`}
               >

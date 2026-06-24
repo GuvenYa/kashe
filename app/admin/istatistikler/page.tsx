@@ -18,15 +18,15 @@ import {
   Legend,
 } from 'recharts'
 
-// ---- Kashe tema (Varyant D — mor-pembe) ----
+// ---- Kashe tema (P6 — zümrüt/mercan) ----
 // Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
 const C = {
   paper: '#FFFFFF',
-  terracotta: '#9333EA', // mor
+  terracotta: '#1F5C4A', // zümrüt
   ink: '#1A120E',
-  plum: '#EC4899',       // pembe
+  plum: '#E2674A',       // mercan
   moss: '#3F6B47',       // yeşil (başarı/onay)
-  ember: '#7C3AED',      // koyu mor
+  ember: '#143D31',      // koyu zümrüt
 }
 
 const ROLE_LABELS: Record<string, string> = {

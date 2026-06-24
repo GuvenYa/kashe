@@ -117,8 +117,8 @@ export default function FavoriteButton({
           className={popping ? 'kashe-heart-pop' : ''}
           size={icon}
           strokeWidth={2}
-          fill={favorited ? '#EC4899' : 'none'}
-          color={favorited ? '#EC4899' : '#1A120E'}
+          fill={favorited ? '#E2674A' : 'none'}
+          color={favorited ? '#E2674A' : '#1A120E'}
           style={{
             transition: 'fill 0.2s ease',
           }}

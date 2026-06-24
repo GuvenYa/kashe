@@ -1,8 +1,8 @@
 // Hafif, bağımlılıksız mikro-konfeti. Bir ekran noktasından renkli parçacık saçar.
 // Kullanım: burstConfetti(x, y)  — x,y ekran koordinatı (clientX/clientY)
-// Kashe renkleriyle: terracotta, plum, moss, soft.
+// Kashe P6 paleti: zümrüt, mercan, altın, mavi, yeşil.
 
-const COLORS = ["#9333EA", "#EC4899", "#C084FC", "#7C3AED", "#A21CAF"];
+const COLORS = ["#1F5C4A", "#E2674A", "#B5851F", "#2D6FB8", "#1F8A5F"];
 
 export function burstConfetti(x: number, y: number, count = 14) {
   if (typeof window === "undefined") return;

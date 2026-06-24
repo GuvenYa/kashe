@@ -53,10 +53,11 @@ type BookingDetay = {
 };
 
 const TONES = [
-  { bg: 'rgba(147,51,234,0.12)', fg: '#9333EA' },
-  { bg: 'rgba(219,39,119,0.12)', fg: '#DB2777' },
-  { bg: 'rgba(124,58,237,0.12)', fg: '#7C3AED' },
-  { bg: 'rgba(162,28,175,0.12)', fg: '#A21CAF' },
+  { bg: 'rgba(109,79,176,0.12)', fg: '#6D4FB0' }, // mor
+  { bg: 'rgba(45,111,184,0.12)', fg: '#2D6FB8' }, // mavi
+  { bg: 'rgba(181,133,31,0.12)', fg: '#B5851F' }, // altın
+  { bg: 'rgba(226,103,74,0.12)', fg: '#E2674A' }, // mercan
+  { bg: 'rgba(31,138,95,0.12)', fg: '#1F8A5F' },  // yeşil
 ];
 
 function pickTone(id: string) {
