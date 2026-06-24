@@ -220,7 +220,8 @@ function SpiralScene({
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const tiltRef = useRef({ x: 0, y: 0 });
+  const insideRef = useRef(false); // imleç canvas üzerinde mi
+  const tiltRef = useRef({ x: 0, z: 0 }); // parallax eğimi (öne-arkaya + sağa-sola)
   const spinVelRef = useRef(0); // scroll-itme ivmesi (sönümlü)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const { gl } = useThree();
@@ -285,18 +286,28 @@ function SpiralScene({
     return out;
   }, [baseTextures]);
 
-  /* Fare parallax */
+  /* Fare parallax — canvas'a göreceli koordinat; imleç çıkınca nötr */
   useEffect(() => {
     if (reducedMotion) return;
-    const onMove = (e: MouseEvent) => {
+    const el = gl.domElement;
+    const onMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
       mouseRef.current = {
-        x: (e.clientX / window.innerWidth - 0.5) * 2,
-        y: -(e.clientY / window.innerHeight - 0.5) * 2,
+        x: ((e.clientX - rect.left) / rect.width - 0.5) * 2, // -1..1
+        y: -(((e.clientY - rect.top) / rect.height - 0.5) * 2), // -1..1 (yukarı +)
       };
+      insideRef.current = true;
     };
-    window.addEventListener('mousemove', onMove);
-    return () => window.removeEventListener('mousemove', onMove);
-  }, [reducedMotion]);
+    const onLeave = () => {
+      insideRef.current = false; // çıkınca eğim sıfıra döner (useFrame lerp)
+    };
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
+    return () => {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }, [gl, reducedMotion]);
 
   /* Scroll-itme: tekerlek → dönüş ivmesi (sayfa scroll'unu ELE GEÇİRMEZ) */
   useEffect(() => {
@@ -327,10 +338,15 @@ function SpiralScene({
       spinVelRef.current *= 0.94;
     }
 
-    /* Smooth parallax tilt — taban tilt'in ÜSTÜNE eklenir */
-    tiltRef.current.x += (mouseRef.current.y * 0.12 - tiltRef.current.x) * 0.05;
-    tiltRef.current.y += (mouseRef.current.x * 0.08 - tiltRef.current.y) * 0.05;
+    /* İki eksen parallax — imleç üzerindeyse eğil, çıkınca nötre dön (lerp 0.07).
+       X: öne-arkaya (mouseY ×0.25 ≈ 14°), Z: sağa-sola yatış (mouseX ×0.18 ≈ 10°).
+       BASE_TILT_X'in ÜSTÜNE eklenir; auto-rotate (rotation.y) ayrı çalışır. */
+    const targetX = insideRef.current ? mouseRef.current.y * 0.25 : 0;
+    const targetZ = insideRef.current ? mouseRef.current.x * 0.18 : 0;
+    tiltRef.current.x += (targetX - tiltRef.current.x) * 0.07;
+    tiltRef.current.z += (targetZ - tiltRef.current.z) * 0.07;
     groupRef.current.rotation.x = BASE_TILT_X + tiltRef.current.x;
+    groupRef.current.rotation.z = tiltRef.current.z;
   });
 
   return (
