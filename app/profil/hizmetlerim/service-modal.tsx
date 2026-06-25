@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { createService, updateService, type ServiceFormData } from './actions';
 import { generateServiceDescription } from '@/app/lib/ai-actions';
-import type { Service, ServiceCategory } from '@/app/lib/types';
+import type { Service, ServiceCategory, PriceUnit } from '@/app/lib/types';
 
 type Props = {
   open: boolean;
@@ -52,7 +52,12 @@ export function ServiceModal({
   const [priceOnRequest, setPriceOnRequest] = useState(false);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [priceUnit, setPriceUnit] = useState<PriceUnit>('total');
+  const [priceStarting, setPriceStarting] = useState(false);
   const [durationHours, setDurationHours] = useState('');
+
+  // §11: tek-fiyat modu (birim≠total VEYA başlangıç) → aralık yerine tek fiyat alanı
+  const isSinglePrice = priceUnit !== 'total' || priceStarting;
 
   const isEdit = !!service;
 
@@ -67,6 +72,8 @@ export function ServiceModal({
       setPriceOnRequest(service.price_on_request);
       setPriceMin(service.price_min !== null ? String(service.price_min) : '');
       setPriceMax(service.price_max !== null ? String(service.price_max) : '');
+      setPriceUnit(service.price_unit ?? 'total');
+      setPriceStarting(service.price_starting ?? false);
       setDurationHours(
         service.duration_hours !== null ? String(service.duration_hours) : ''
       );
@@ -77,6 +84,8 @@ export function ServiceModal({
       setPriceOnRequest(false);
       setPriceMin('');
       setPriceMax('');
+      setPriceUnit('total');
+      setPriceStarting(false);
       setDurationHours('');
     }
   }, [open, service, defaultCategoryId]);
@@ -121,6 +130,8 @@ export function ServiceModal({
       price_on_request: priceOnRequest,
       price_min: priceOnRequest ? null : parseNumber(priceMin),
       price_max: priceOnRequest ? null : parseNumber(priceMax),
+      price_unit: priceUnit,
+      price_starting: priceStarting,
       duration_hours: parseNumber(durationHours),
     };
 
@@ -278,7 +289,7 @@ export function ServiceModal({
                 className="w-4 h-4 accent-terracotta"
               />
               <span className="text-sm text-ink">
-                Fiyatı talep üzerine paylaş
+                Fiyatı görüşülür olarak işaretle
               </span>
             </label>
             <p className="text-xs text-ink-72 mt-1.5 ml-7">
@@ -286,40 +297,101 @@ export function ServiceModal({
             </p>
           </div>
 
-          {!priceOnRequest && (
-            <div className="grid grid-cols-2 gap-4">
+          {/* §11 — Fiyat birimi + başlangıç (görüşülür iken devre dışı) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="modal-price-unit" className={labelClass}>
+                Fiyat birimi
+              </label>
+              <select
+                id="modal-price-unit"
+                value={priceUnit}
+                onChange={(e) => setPriceUnit(e.target.value as PriceUnit)}
+                disabled={priceOnRequest}
+                className={`${inputClass} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <option value="total">Toplam</option>
+                <option value="hourly">Saatlik</option>
+                <option value="half_day">Yarım gün</option>
+                <option value="full_day">Tam gün</option>
+              </select>
+            </div>
+            <div className="flex items-end pb-1">
+              <label
+                className={`flex items-center gap-2.5 ${
+                  priceOnRequest ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={priceStarting}
+                  onChange={(e) => setPriceStarting(e.target.checked)}
+                  disabled={priceOnRequest}
+                  className="w-4 h-4 accent-terracotta"
+                />
+                <span className="text-sm text-ink">Bu fiyattan başlar</span>
+              </label>
+            </div>
+          </div>
+
+          {!priceOnRequest &&
+            (isSinglePrice ? (
+              /* Tek-fiyat modu (birim≠total VEYA başlangıç): tek alan → min'e yazılır */
               <div>
-                <label htmlFor="modal-price-min" className={labelClass}>
-                  Min fiyat (₺) <span className="text-danger">*</span>
+                <label htmlFor="modal-price-single" className={labelClass}>
+                  Fiyat (₺) <span className="text-danger">*</span>
                 </label>
                 <input
-                  id="modal-price-min"
+                  id="modal-price-single"
                   type="text"
                   inputMode="decimal"
-                  required={!priceOnRequest}
+                  required
                   value={priceMin}
                   onChange={(e) => setPriceMin(e.target.value)}
                   className={inputClass}
-                  placeholder="5000"
+                  placeholder="1500"
                 />
+                <p className="text-xs text-ink-72 mt-1.5">
+                  {priceStarting
+                    ? '"…\'den başlar" olarak gösterilir.'
+                    : 'Seçtiğin birimle birlikte tek fiyat gösterilir.'}
+                </p>
               </div>
-              <div>
-                <label htmlFor="modal-price-max" className={labelClass}>
-                  Max fiyat (₺) <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="modal-price-max"
-                  type="text"
-                  inputMode="decimal"
-                  required={!priceOnRequest}
-                  value={priceMax}
-                  onChange={(e) => setPriceMax(e.target.value)}
-                  className={inputClass}
-                  placeholder="15000"
-                />
+            ) : (
+              /* total + not-starting → mevcut min/max aralık (bugünkü) */
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="modal-price-min" className={labelClass}>
+                    Min fiyat (₺) <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    id="modal-price-min"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    className={inputClass}
+                    placeholder="5000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="modal-price-max" className={labelClass}>
+                    Max fiyat (₺) <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    id="modal-price-max"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    className={inputClass}
+                    placeholder="15000"
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            ))}
 
           <div>
             <label htmlFor="modal-duration" className={labelClass}>

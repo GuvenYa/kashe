@@ -26,6 +26,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
   const [priceFixed, setPriceFixed] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [priceStarting, setPriceStarting] = useState(false); // §11 "başlangıç"
 
   const isEdit = !!pkg;
 
@@ -36,6 +37,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
       setTitle(pkg.title);
       setDescription(pkg.description || '');
       setIncludes(pkg.includes && pkg.includes.length > 0 ? [...pkg.includes] : ['']);
+      setPriceStarting(pkg.price_starting ?? false);
       if (pkg.price_on_request) {
         setPriceMode('request');
         setPriceFixed('');
@@ -65,6 +67,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
       setPriceFixed('');
       setPriceMin('');
       setPriceMax('');
+      setPriceStarting(false);
     }
   }, [open, pkg]);
 
@@ -130,6 +133,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
       price_on_request: priceMode === 'request',
       price_min: outMin,
       price_max: outMax,
+      price_starting: priceMode === 'request' ? false : priceStarting,
     };
 
     startTransition(async () => {
@@ -266,7 +270,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
               {[
                 { key: 'fixed', label: 'Sabit fiyat' },
                 { key: 'range', label: 'Fiyat aralığı' },
-                { key: 'request', label: 'Talep üzerine' },
+                { key: 'request', label: 'Fiyat görüşülür' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -302,6 +306,29 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                 Müşteri seni mesajla aradığında fiyatı sen verirsin.
               </p>
             )}
+          </div>
+
+          {/* §11 — başlangıç fiyatı (görüşülür dışında aktif) */}
+          <div>
+            <label
+              className={`flex items-center gap-2.5 ${
+                priceMode === 'request'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={priceStarting}
+                onChange={(e) => setPriceStarting(e.target.checked)}
+                disabled={priceMode === 'request'}
+                className="w-4 h-4 accent-terracotta"
+              />
+              <span className="text-sm text-ink">Bu fiyattan başlar</span>
+            </label>
+            <p className="text-xs text-ink-72 mt-1.5 ml-7">
+              İşaretlersen &quot;…&apos;den başlar&quot; olarak gösterilir.
+            </p>
           </div>
 
           {priceMode === 'fixed' && (

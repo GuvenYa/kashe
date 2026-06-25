@@ -2,6 +2,9 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import type { PriceUnit } from '@/app/lib/types';
+
+const VALID_UNITS: PriceUnit[] = ['total', 'hourly', 'half_day', 'full_day'];
 
 export type ServiceFormData = {
   category_id: number;
@@ -11,7 +14,48 @@ export type ServiceFormData = {
   price_min: number | null;
   price_max: number | null;
   duration_hours: number | null;
+  price_unit?: PriceUnit;
+  price_starting?: boolean;
 };
+
+/**
+ * §11 — Form verisinden DB fiyat alanlarını normalize eder (kararlar a/b/c/d):
+ *  (c) görüşülür → birim/başlangıç yok sayılır (total/false)
+ *  (b)(d) tek-fiyat modu (unit≠total VEYA starting) → (a) max = min
+ *  total + not-starting → bugünkü aralık
+ */
+function normalizeServicePricing(data: ServiceFormData) {
+  if (data.price_on_request) {
+    return {
+      price_on_request: true,
+      price_min: null,
+      price_max: null,
+      price_unit: 'total' as PriceUnit,
+      price_starting: false,
+    };
+  }
+  const unit: PriceUnit = VALID_UNITS.includes(data.price_unit as PriceUnit)
+    ? (data.price_unit as PriceUnit)
+    : 'total';
+  const starting = !!data.price_starting;
+  if (unit !== 'total' || starting) {
+    // tek-fiyat modu → max = min (CHECK price_range_valid için)
+    return {
+      price_on_request: false,
+      price_min: data.price_min,
+      price_max: data.price_min,
+      price_unit: unit,
+      price_starting: starting,
+    };
+  }
+  return {
+    price_on_request: false,
+    price_min: data.price_min,
+    price_max: data.price_max,
+    price_unit: 'total' as PriceUnit,
+    price_starting: false,
+  };
+}
 
 export type ServiceActionResult = {
   success: boolean;
@@ -34,17 +78,36 @@ function validateServiceData(data: ServiceFormData): string | null {
   }
 
   if (!data.price_on_request) {
-    if (data.price_min === null || data.price_max === null) {
-      return 'Fiyat aralığı girmelisin (veya "Talep üzerine" seç).';
-    }
-    if (data.price_min < 0 || data.price_max < 0) {
-      return 'Fiyat negatif olamaz.';
-    }
-    if (data.price_min > data.price_max) {
-      return 'Minimum fiyat maksimum fiyattan büyük olamaz.';
-    }
-    if (data.price_max > 10000000) {
-      return 'Fiyat çok yüksek görünüyor.';
+    const unit = VALID_UNITS.includes(data.price_unit as PriceUnit)
+      ? data.price_unit
+      : 'total';
+    const singleMode = unit !== 'total' || !!data.price_starting;
+
+    if (singleMode) {
+      // tek-fiyat modu → yalnız min zorunlu (max action'da min'e eşitlenir)
+      if (data.price_min === null) {
+        return 'Fiyat girmelisin (veya "Fiyat görüşülür" seç).';
+      }
+      if (data.price_min < 0) {
+        return 'Fiyat negatif olamaz.';
+      }
+      if (data.price_min > 10000000) {
+        return 'Fiyat çok yüksek görünüyor.';
+      }
+    } else {
+      // total + not-starting → aralık (bugünkü)
+      if (data.price_min === null || data.price_max === null) {
+        return 'Fiyat aralığı girmelisin (veya "Fiyat görüşülür" seç).';
+      }
+      if (data.price_min < 0 || data.price_max < 0) {
+        return 'Fiyat negatif olamaz.';
+      }
+      if (data.price_min > data.price_max) {
+        return 'Minimum fiyat maksimum fiyattan büyük olamaz.';
+      }
+      if (data.price_max > 10000000) {
+        return 'Fiyat çok yüksek görünüyor.';
+      }
     }
   }
 
@@ -73,6 +136,7 @@ export async function createService(data: ServiceFormData): Promise<ServiceActio
     return { success: false, error: validationError };
   }
 
+  const pricing = normalizeServicePricing(data);
   const { data: inserted, error } = await supabase
     .from('services')
     .insert({
@@ -80,9 +144,11 @@ export async function createService(data: ServiceFormData): Promise<ServiceActio
       category_id: data.category_id,
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      price_on_request: data.price_on_request,
-      price_min: data.price_on_request ? null : data.price_min,
-      price_max: data.price_on_request ? null : data.price_max,
+      price_on_request: pricing.price_on_request,
+      price_min: pricing.price_min,
+      price_max: pricing.price_max,
+      price_unit: pricing.price_unit,
+      price_starting: pricing.price_starting,
       duration_hours: data.duration_hours,
       is_active: true,
     })
@@ -117,15 +183,18 @@ export async function updateService(
     return { success: false, error: validationError };
   }
 
+  const pricing = normalizeServicePricing(data);
   const { error } = await supabase
     .from('services')
     .update({
       category_id: data.category_id,
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      price_on_request: data.price_on_request,
-      price_min: data.price_on_request ? null : data.price_min,
-      price_max: data.price_on_request ? null : data.price_max,
+      price_on_request: pricing.price_on_request,
+      price_min: pricing.price_min,
+      price_max: pricing.price_max,
+      price_unit: pricing.price_unit,
+      price_starting: pricing.price_starting,
       duration_hours: data.duration_hours,
     })
     .eq('id', serviceId)

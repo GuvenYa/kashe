@@ -10,6 +10,7 @@ export type PackageFormData = {
   price_on_request: boolean;
   price_min: number | null;
   price_max: number | null;
+  price_starting?: boolean; // §11 — paketlerde birim YOK, sadece "başlangıç"
 };
 
 export type PackageActionResult = {
@@ -44,7 +45,7 @@ function validatePackageData(data: PackageFormData): string | null {
 
   if (!data.price_on_request) {
     if (data.price_min === null || data.price_max === null) {
-      return 'Fiyat girmelisin (veya "Talep üzerine" seç).';
+      return 'Fiyat girmelisin (veya "Fiyat görüşülür" seç).';
     }
     if (data.price_min < 0 || data.price_max < 0) {
       return 'Fiyat negatif olamaz.';
@@ -92,6 +93,7 @@ export async function createPackage(
       price_on_request: data.price_on_request,
       price_min: data.price_on_request ? null : data.price_min,
       price_max: data.price_on_request ? null : data.price_max,
+      price_starting: data.price_on_request ? false : !!data.price_starting,
       is_active: true,
     })
     .select('id')
@@ -134,6 +136,7 @@ export async function updatePackage(
       price_on_request: data.price_on_request,
       price_min: data.price_on_request ? null : data.price_min,
       price_max: data.price_on_request ? null : data.price_max,
+      price_starting: data.price_on_request ? false : !!data.price_starting,
     })
     .eq('id', packageId)
     .eq('profile_id', user.id);
