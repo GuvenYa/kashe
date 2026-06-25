@@ -8,8 +8,9 @@ import { HizmetSecici } from './hizmet-secici';
 import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
-import { isFavorited as checkIsFavorited } from '@/app/favoriler/actions';
+import { isFavorited as checkIsFavorited, getFavoritedIds } from '@/app/favoriler/actions';
 import { ReviewCard } from '@/app/yorumlar/review-card';
+import { ProfileCard } from '@/app/kesfet/profile-card';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
 import {
   formatPriceRange,
@@ -391,6 +392,105 @@ export default async function PublicProfilePage({
         (v) => field.options.find((o) => o.value === v)?.label ?? v
       );
       attrGroups.push({ label: field.label, values: labels });
+    }
+  }
+
+  // ---- BENZER PROFİLLER (additive) ----
+  // Aynı kategorideki diğer YAYINDA + ONAYLI hizmet sağlayıcılar (professional/agency).
+  // ProfileCard yeniden kullanılır; aynı şehir önce, sonra yüksek puan; ilk 6.
+  type SimilarCandidate = {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+    company_name: string | null;
+    role: string;
+    created_at: string | null;
+    approval_status: string | null;
+    premium_tier: string | null;
+    premium_until: string | null;
+    attributes: Record<string, string | string[]> | null;
+    city_id: number | null;
+    turkish_cities: { name: string } | null;
+    service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
+  };
+
+  let similarProfiles: SimilarCandidate[] = [];
+  const similarServicesByProfile: Record<
+    string,
+    { price_min: number | null; price_max: number | null; price_on_request: boolean }[]
+  > = {};
+  const similarRatingsByProfile: Record<string, { count: number; average: number }> = {};
+  let similarFavoritedIds = new Set<string>();
+
+  if (profile.primary_category_id != null) {
+    const { data: candidatesData } = await supabase
+      .from('profiles')
+      .select(
+        `
+        id, full_name, avatar_url, bio, company_name, role, created_at, approval_status, premium_tier, premium_until, attributes, city_id,
+        turkish_cities(name),
+        service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
+      `
+      )
+      .eq('primary_category_id', profile.primary_category_id)
+      .eq('is_published', true)
+      .eq('approval_status', 'approved')
+      .in('role', ['professional', 'agency'])
+      .neq('id', profile.id)
+      .limit(12); // over-fetch; JS'te şehir+puan sıralanıp 6'ya inilir
+
+    const candidates = (candidatesData ?? []) as unknown as SimilarCandidate[];
+
+    if (candidates.length > 0) {
+      const candidateIds = candidates.map((c) => c.id);
+
+      // Fiyat + puan + favori (paralel)
+      const [{ data: simServices }, { data: simRatings }, favIds] = await Promise.all([
+        supabase
+          .from('services')
+          .select('profile_id, price_min, price_max, price_on_request')
+          .eq('is_active', true)
+          .in('profile_id', candidateIds),
+        supabase
+          .from('professional_rating_summary')
+          .select('professional_id, review_count, average_rating')
+          .in('professional_id', candidateIds),
+        isLoggedIn && currentUserRole === 'client'
+          ? getFavoritedIds()
+          : Promise.resolve(new Set<string>()),
+      ]);
+
+      (simServices ?? []).forEach((svc) => {
+        if (!similarServicesByProfile[svc.profile_id])
+          similarServicesByProfile[svc.profile_id] = [];
+        similarServicesByProfile[svc.profile_id].push({
+          price_min: svc.price_min,
+          price_max: svc.price_max,
+          price_on_request: svc.price_on_request,
+        });
+      });
+
+      (simRatings ?? []).forEach((r) => {
+        similarRatingsByProfile[r.professional_id] = {
+          count: r.review_count,
+          average: r.average_rating,
+        };
+      });
+
+      similarFavoritedIds = favIds;
+
+      // Sıralama: aynı şehir önce, sonra yüksek puan (null = 0) → ilk 6
+      similarProfiles = candidates
+        .sort((a, b) => {
+          const aCity = a.city_id === profile.city_id ? 1 : 0;
+          const bCity = b.city_id === profile.city_id ? 1 : 0;
+          if (aCity !== bCity) return bCity - aCity;
+          const aRating = similarRatingsByProfile[a.id]?.average ?? 0;
+          const bRating = similarRatingsByProfile[b.id]?.average ?? 0;
+          return bRating - aRating;
+        })
+        .slice(0, 6);
     }
   }
 
@@ -908,6 +1008,38 @@ export default async function PublicProfilePage({
             </div>
           )}
         </div>
+
+        {/* BENZER PROFİLLER — aynı kategorideki diğer profesyoneller (additive; boşsa gizli) */}
+        {similarProfiles.length > 0 && (
+          <section className="max-w-3xl mx-auto mt-14">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-2">
+              Benzer profiller
+            </p>
+            <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-1.5">
+              Aynı kategoride{' '}
+              <em className="text-terracotta not-italic italic font-medium">
+                diğer profesyoneller
+              </em>
+            </h2>
+            <p className="text-ink-72 text-sm mb-6">
+              {profile.service_categories?.name_tr ?? 'Bu kategori'} alanındaki diğer
+              profiller
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 auto-rows-fr">
+              {similarProfiles.map((p) => (
+                <ProfileCard
+                  key={p.id}
+                  profile={p}
+                  services={similarServicesByProfile[p.id] || []}
+                  rating={similarRatingsByProfile[p.id] || null}
+                  isFavorited={similarFavoritedIds.has(p.id)}
+                  isLoggedIn={isLoggedIn}
+                  currentUserRole={currentUserRole}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </>
   );
