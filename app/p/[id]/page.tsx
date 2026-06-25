@@ -805,7 +805,9 @@ export default async function PublicProfilePage({
                   const pkgPrice = formatPriceRange(
                     pkg.price_min,
                     pkg.price_max,
-                    pkg.price_on_request
+                    pkg.price_on_request,
+                    'total',
+                    pkg.price_starting
                   );
                   return (
                     <div

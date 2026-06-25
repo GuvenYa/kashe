@@ -39,7 +39,9 @@ export function PackageCard({ pkg, onEdit }: Props) {
   const priceLabel = formatPriceRange(
     pkg.price_min,
     pkg.price_max,
-    pkg.price_on_request
+    pkg.price_on_request,
+    'total',
+    pkg.price_starting
   );
 
   return (

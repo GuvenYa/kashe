@@ -43,6 +43,9 @@ export type TurkishCity = {
   name: string;
 };
 
+/** §11 — Hizmet fiyat birimi (paketlerde yok). */
+export type PriceUnit = 'total' | 'hourly' | 'half_day' | 'full_day';
+
 export type Service = {
   id: string;
   profile_id: string;
@@ -53,6 +56,9 @@ export type Service = {
   price_max: number | null;
   price_on_request: boolean;
   duration_hours: number | null;
+  // §11 fiyat modu — opsiyonel (eski veriyle uyum; select('*') ile dolu gelir)
+  price_unit?: PriceUnit;
+  price_starting?: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -166,6 +172,8 @@ export type ServicePackage = {
   price_min: number | null;
   price_max: number | null;
   price_on_request: boolean;
+  // §11 — paketlerde yalnızca "başlangıç" bayrağı (birim YOK)
+  price_starting?: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string | null;

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatPriceRange } from '@/app/lib/profile-helpers';
+import { formatPriceRange, PRICE_ON_REQUEST_LABEL } from '@/app/lib/profile-helpers';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import { getFilterFields } from '@/app/lib/filter-config';
@@ -95,7 +95,7 @@ export function ProfileCard({
 
   if (services.length > 0) {
     if (numericServices.length === 0) {
-      priceLabel = 'Talep üzerine';
+      priceLabel = PRICE_ON_REQUEST_LABEL;
     } else {
       const allMins = numericServices.map((s) => s.price_min as number);
       const allMaxs = numericServices.map((s) => s.price_max as number);

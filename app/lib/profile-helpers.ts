@@ -1,4 +1,15 @@
-import type { Profile, Service } from './types';
+import type { Profile, Service, PriceUnit } from './types';
+
+/** §11 — Birim ÖNEKİ (total → boş). Tek kaynak. */
+const PRICE_UNIT_PREFIX: Record<PriceUnit, string> = {
+  total: '',
+  hourly: 'Saatlik',
+  half_day: 'Yarım gün',
+  full_day: 'Tam gün',
+};
+
+/** "Talep üzerine" yerine yeni gösterim metni (tek kaynak). */
+export const PRICE_ON_REQUEST_LABEL = 'Fiyat görüşülür';
 
 export function isProfessional(profile: Profile | null | undefined): boolean {
   return profile?.role === 'professional';
@@ -133,22 +144,50 @@ export function formatPrice(amount: number | null | undefined): string {
 }
 
 /**
- * Fiyat aralığı: 5000, 15000 → "5.000 – 15.000 ₺"
- * Talep üzerine ise farklı string.
+ * §11 fiyat gösterimi: [birim öneki] + fiyat + [başlangıç soneki].
+ *   onRequest         → "Fiyat görüşülür"
+ *   total + range     → "5.000 – 15.000 ₺"      (BUGÜNKÜ çıktı, birebir)
+ *   hourly            → "Saatlik 1.500 ₺"
+ *   full_day          → "Tam gün 15.000 ₺"
+ *   total + starting  → "4.000 ₺'den başlar"     (tek değer = min)
+ * Geriye uyumlu: unit/starting default'ları (total/false) bugünkü davranışı korur.
  */
 export function formatPriceRange(
   min: number | null | undefined,
   max: number | null | undefined,
-  onRequest: boolean
+  onRequest: boolean,
+  unit: PriceUnit = 'total',
+  starting = false
 ): string {
-  if (onRequest) return 'Talep üzerine';
+  if (onRequest) return PRICE_ON_REQUEST_LABEL;
   if (min === null || min === undefined || max === null || max === undefined) {
     return '';
   }
-  if (min === max) return formatPrice(min);
-  const minFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(min);
-  const maxFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(max);
-  return `${minFmt} – ${maxFmt} ₺`;
+
+  // "₺ arkada" tek-fiyat (yeni modlar: birim/başlangıç) — "1.500 ₺"
+  const trailingSingle = (v: number) =>
+    `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(v)} ₺`;
+
+  // Fiyat gövdesi:
+  //  - starting veya birimli (unit≠total) → tek değer (min), "₺ arkada"
+  //  - total + tek (min===max)           → BUGÜNKÜ "₺5.000" (formatPrice, ₺ önde)
+  //  - total + aralık                     → BUGÜNKÜ "5.000 – 15.000 ₺"
+  let priceBody: string;
+  if (starting || unit !== 'total') {
+    priceBody = trailingSingle(min);
+  } else if (min === max) {
+    priceBody = formatPrice(min);
+  } else {
+    const minFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(min);
+    const maxFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(max);
+    priceBody = `${minFmt} – ${maxFmt} ₺`;
+  }
+
+  const prefix = PRICE_UNIT_PREFIX[unit];
+  const prefixPart = prefix ? `${prefix} ` : '';
+  const suffix = starting ? "'den başlar" : '';
+
+  return `${prefixPart}${priceBody}${suffix}`;
 }
 
 /**

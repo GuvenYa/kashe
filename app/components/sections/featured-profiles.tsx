@@ -306,7 +306,7 @@ export async function FeaturedProfiles() {
                         {formatPrice(p.priceFrom)}<span className="text-ink-50 font-normal">'den</span>
                       </span>
                     ) : (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">Talep üzerine</span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">Fiyat görüşülür</span>
                     )}
                   </div>
                 </div>

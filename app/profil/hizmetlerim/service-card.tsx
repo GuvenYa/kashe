@@ -40,7 +40,9 @@ export function ServiceCard({ service, onEdit }: Props) {
   const priceLabel = formatPriceRange(
     service.price_min,
     service.price_max,
-    service.price_on_request
+    service.price_on_request,
+    service.price_unit,
+    service.price_starting
   );
   const durationLabel = formatDuration(service.duration_hours);
   const categoryLabel = service.service_categories
