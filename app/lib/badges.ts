@@ -20,6 +20,9 @@ export type Badge = {
 // Öncelik: küçük index = yüksek öncelik
 const BADGE_ORDER: BadgeKey[] = ['premium', 'verified', 'topRated', 'popular', 'new'];
 
+/** "Yeni" eşiği (gün). Rozet + teklif-topla keşif kotası tek kaynaktan okur. */
+export const NEW_BADGE_DAYS = 30;
+
 export type PremiumTier = 'none' | 'premium' | 'plus' | 'agency';
 
 type BadgeInput = {
@@ -71,10 +74,10 @@ export function getBadges(input: BadgeInput): Badge[] {
     earned.push({ key: 'popular', label: 'Çok Tercih Edilen', tone: 'plum' });
   }
 
-  // Yeni — son 30 günde kaydolmuş
+  // Yeni — son NEW_BADGE_DAYS günde kaydolmuş
   if (input.createdAt) {
     const days = (Date.now() - new Date(input.createdAt).getTime()) / 86400000;
-    if (days <= 30) {
+    if (days <= NEW_BADGE_DAYS) {
       earned.push({ key: 'new', label: 'Yeni', tone: 'ink' });
     }
   }

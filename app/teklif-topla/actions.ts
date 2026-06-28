@@ -6,6 +6,7 @@ import {
   QUOTE_EXPIRY_OPTIONS,
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
+import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -71,7 +72,7 @@ export async function createQuoteRequest(
 
   let matchQuery = supabase
     .from('profiles')
-    .select('id, premium_tier, premium_until')
+    .select('id, premium_tier, premium_until, created_at')
     .in('role', roles)
     .eq('approval_status', 'approved')
     .eq('is_published', true)
@@ -86,25 +87,8 @@ export async function createQuoteRequest(
     return { success: false, error: 'Eşleştirme hatası: ' + matchError.message };
   }
 
-  // Premium öncelikli sıralama (keşfet/kategori ile aynı tierWeight mantığı)
-  const tierWeight = (tier: string | null, until: string | null): number => {
-    if (!tier || tier === 'none') return 0;
-    if (until && new Date(until).getTime() <= Date.now()) return 0;
-    if (tier === 'agency') return 3;
-    if (tier === 'plus') return 2;
-    if (tier === 'premium') return 1;
-    return 0;
-  };
-
-  const sortedMatched = (matched || []).slice().sort(
-    (a, b) =>
-      tierWeight(b.premium_tier, b.premium_until) -
-      tierWeight(a.premium_tier, a.premium_until)
-  );
-
-  const matchedIds = sortedMatched.map((m) => m.id);
-
-  if (matchedIds.length === 0) {
+  const matchedList = matched || [];
+  if (matchedList.length === 0) {
     return {
       success: false,
       error:
@@ -112,8 +96,33 @@ export async function createQuoteRequest(
     };
   }
 
-  // Premium'lar başta — ilk N seçilir (öncelik premium'da)
-  const selectedIds = matchedIds.slice(0, input.recipient_count);
+  // Kalite kotası için puan verisi (batch — kategori/benzer-profil kalıbı)
+  const matchedIds = matchedList.map((m) => m.id);
+  const { data: ratingsData } = await supabase
+    .from('professional_rating_summary')
+    .select('professional_id, review_count, average_rating')
+    .in('professional_id', matchedIds);
+
+  const ratingsById = new Map<string, { count: number; average: number }>();
+  (ratingsData || []).forEach((r) => {
+    ratingsById.set(r.professional_id, {
+      count: r.review_count,
+      average: r.average_rating,
+    });
+  });
+
+  // Kotalı seçim havuzu → saf helper (premium %30 + kalite %40 + keşif %20 + rotasyon %10)
+  const pool: PoolItem[] = matchedList.map((m) => ({
+    id: m.id,
+    premiumTier: m.premium_tier,
+    premiumUntil: m.premium_until,
+    createdAt: m.created_at,
+    rating: ratingsById.get(m.id) ?? null,
+  }));
+
+  // Talebe özgü deterministik seed (her talep farklı rotasyon)
+  const seed = Date.now() >>> 0;
+  const selectedIds = selectQuoteRecipients(pool, input.recipient_count, seed);
 
   // 2) response_deadline hesapla
   let deadline: string | null = null;
