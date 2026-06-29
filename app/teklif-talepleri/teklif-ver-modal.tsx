@@ -12,10 +12,18 @@ import {
 type Props = {
   recipientId: string;
   customerName: string;
+  budgetMax: number | null;
+  shareBudget: boolean;
   onClose: () => void;
 };
 
-export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
+export function TeklifVerModal({
+  recipientId,
+  customerName,
+  budgetMax,
+  shareBudget,
+  onClose,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +33,14 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
   const [cancellationPolicy, setCancellationPolicy] = useState('');
   const [expiryKey, setExpiryKey] = useState<QuoteExpiryKey>('3d');
   const [message, setMessage] = useState('');
+
+  // Bütçe yumuşak sınır uyarısı (sadece paylaşıldıysa + üst sınır + tutar aşıyorsa)
+  const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+  const overBudgetWarning =
+    shareBudget &&
+    budgetMax != null &&
+    !isNaN(parsedAmount) &&
+    parsedAmount > budgetMax;
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -126,6 +142,13 @@ export function TeklifVerModal({ recipientId, customerName, onClose }: Props) {
               placeholder="Örn: 15.000"
               className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
             />
+            {overBudgetWarning && (
+              <p className="mt-2 text-xs text-plum bg-plum/8 border border-plum/25 rounded-lg px-3 py-2">
+                Bu tutar müşterinin belirttiği bütçeyi (
+                {new Intl.NumberFormat('tr-TR').format(budgetMax as number)} ₺)
+                aşıyor. Yine de gönderebilirsiniz.
+              </p>
+            )}
           </div>
 
           {/* Hizmet açıklaması */}

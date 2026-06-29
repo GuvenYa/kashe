@@ -121,9 +121,16 @@ export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
           <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 mb-1">
             Toplam
           </p>
-          <p className="font-display text-3xl text-ink font-medium tracking-tight">
-            {formatQuoteAmount(quote.total_amount, quote.currency)}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-display text-3xl text-ink font-medium tracking-tight">
+              {formatQuoteAmount(quote.total_amount, quote.currency)}
+            </p>
+            {quote.over_budget && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border text-plum bg-plum/10 border-plum/30">
+                Bütçe üstü
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Hizmet kapsamı */}

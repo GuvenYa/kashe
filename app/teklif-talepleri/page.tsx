@@ -168,6 +168,8 @@ export default async function TeklifTalepleriPage() {
                       }
                       conversationId={r.conversation_id}
                       status={r.status}
+                      budgetMax={req.share_budget ? req.budget_max : null}
+                      shareBudget={!!req.share_budget}
                     />
                   </div>
                 </div>

@@ -26,6 +26,8 @@ export type Quote = {
   status: QuoteStatus;
   created_at: string;
   responded_at: string | null;
+  /** §bütçe — teklif müşterinin paylaştığı üst bütçeyi aşıyor mu (submit anında hesaplanır) */
+  over_budget?: boolean;
 };
 
 export type Booking = {

@@ -11,6 +11,8 @@ type Props = {
   alreadyResponded: boolean;
   conversationId: string | null;
   status: string;
+  budgetMax: number | null;
+  shareBudget: boolean;
 };
 
 export function TalepKartiAksiyonlari({
@@ -19,6 +21,8 @@ export function TalepKartiAksiyonlari({
   alreadyResponded,
   conversationId,
   status,
+  budgetMax,
+  shareBudget,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,6 +96,8 @@ export function TalepKartiAksiyonlari({
         <TeklifVerModal
           recipientId={recipientId}
           customerName={customerName}
+          budgetMax={budgetMax}
+          shareBudget={shareBudget}
           onClose={() => setModalOpen(false)}
         />
       )}

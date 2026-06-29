@@ -354,6 +354,12 @@ export async function submitOffer(
     Date.now() + expiryOption.hours * 60 * 60 * 1000
   ).toISOString();
 
+  // Bütçe yumuşak sınır: paylaşıldıysa VE üst sınır varsa VE teklif aşıyorsa "bütçe üstü"
+  const overBudget =
+    !!request.share_budget &&
+    request.budget_max != null &&
+    input.total_amount > request.budget_max;
+
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
     .insert({
@@ -364,6 +370,7 @@ export async function submitOffer(
       cancellation_policy: input.cancellation_policy?.trim() || null,
       expires_at: expiresAt,
       status: 'pending',
+      over_budget: overBudget,
     })
     .select('id')
     .single();
