@@ -81,6 +81,16 @@ export default async function ProfilPage() {
     pendingInvitationCount = invitationsCountResult.count ?? 0;
   }
 
+  // Kurum ise: ekip üye sayısı
+  let businessMemberCount = 0;
+  if (isBusinessUser) {
+    const businessMembersResult = await supabase
+      .from('business_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', user.id);
+    businessMemberCount = businessMembersResult.count ?? 0;
+  }
+
   // Profesyonel ise: üye olduğu ajanslar
   type MyAgency = {
     id: string;
@@ -814,6 +824,41 @@ export default async function ProfilPage() {
                   İncele →
                 </Link>
               </div>
+            </div>
+          )}
+
+          {/* KURUMSAL: Ekip */}
+          {isBusinessUser && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">
+                  Kurumsal Ekip{' '}
+                  <span className="text-ink-72 text-lg">
+                    ({businessMemberCount})
+                  </span>
+                </h2>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href="/profil/kurumsal-ekip"
+                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                  >
+                    {businessMemberCount === 0
+                      ? 'İlk üyeyi davet et →'
+                      : 'Tümünü yönet →'}
+                  </Link>
+                </div>
+              </div>
+              {businessMemberCount === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Kurum hesabını birlikte yönetecek ekip üyen yok. Email ile
+                  davet et, kabul edince ilan ve tekliflerini birlikte
+                  yönetebilirsiniz.
+                </p>
+              ) : (
+                <p className="text-ink-72 text-sm">
+                  Ekip üyelerini yönet, yeni üyeler davet et, rolleri ayarla.
+                </p>
+              )}
             </div>
           )}
 

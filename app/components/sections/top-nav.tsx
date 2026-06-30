@@ -59,6 +59,10 @@ export async function TopNav() {
     menuLinks.push({ href: "/odemelerim", label: "Ödeme Geçmişi" });
     menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
   }
+  // İşletme → kurumsal ekip davetlerini görebilmesi için Davetlerim
+  if (isBusiness) {
+    menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });
+  }
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
     menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });

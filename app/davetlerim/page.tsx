@@ -4,9 +4,11 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { createClient } from '@/app/lib/supabase-server';
 import { DavetlerimListesi } from './davetlerim-listesi';
 import { IlanDavetleriListesi, type IlanDaveti } from './ilan-davetleri-listesi';
+import { KurumsalDavetlerListesi } from './kurumsal-davetler-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCachedUser } from '@/app/lib/auth';
 import type { AgencyInvitationWithRelations } from '@/app/ajans/agency-data';
+import type { BusinessInvitationWithRelations } from '@/app/kurumsal/business-data';
 
 export const metadata = {
   title: 'Davetlerim — Kashe',
@@ -68,6 +70,23 @@ export default async function DavetlerimPage() {
   const listingInvitations = (listingInvitesData ??
     []) as unknown as IlanDaveti[];
 
+  // Kurumsal ekip davetleri (bu kullanıcıya gelenler — email veya invited_user_id ile)
+  const { data: businessInvitesData } = await supabase
+    .from('business_invitations')
+    .select(
+      `
+      *,
+      business:profiles!business_invitations_business_id_fkey (
+        id, full_name, avatar_url, company_name, bio
+      )
+    `
+    )
+    .or(`invited_user_id.eq.${user.id},invited_email.eq.${profile.email}`)
+    .order('created_at', { ascending: false });
+
+  const businessInvitations = (businessInvitesData ??
+    []) as unknown as BusinessInvitationWithRelations[];
+
   return (
     <>
       <TopNav />
@@ -90,8 +109,8 @@ export default async function DavetlerimPage() {
               </em>
             </h1>
             <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Sana gelen ilan ve ajans davetlerini buradan görebilir, kabul
-              veya reddedebilirsin.
+              Sana gelen ilan, ajans ve kurumsal ekip davetlerini buradan
+              görebilir, kabul veya reddedebilirsin.
             </p>
           </header>
 
@@ -99,6 +118,18 @@ export default async function DavetlerimPage() {
           {listingInvitations.length > 0 && (
             <div className="mb-12">
               <IlanDavetleriListesi invitations={listingInvitations} />
+            </div>
+          )}
+
+          {/* KURUMSAL EKİP DAVETLERİ — gate yok, her rol kabul edebilir */}
+          {businessInvitations.length > 0 && (
+            <div className="mb-12">
+              <div className="mb-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+                  Kurumsal ekip davetleri
+                </p>
+              </div>
+              <KurumsalDavetlerListesi invitations={businessInvitations} />
             </div>
           )}
 
