@@ -54,7 +54,7 @@ const FAQ_GROUPS: FaqGroup[] = [
     questions: [
       {
         q: 'Hangi rolde kayıt olmalıyım?',
-        a: 'Üç seçenek var: (1) Hizmet alan kullanıcı (bireysel — düğün, doğum günü, kurumsal etkinlik için profesyonel arıyorsan), (2) İşletme (kurumsal etkinlik düzenleyen firma), (3) Profesyonel hizmet sağlayıcı (kendi adına çalışan fotoğrafçı, DJ, sunucu vb.), (4) Ajans/menajer (birden fazla profesyoneli temsil eden yapı).',
+        a: 'Dört seçenek var: (1) Hizmet alan kullanıcı (bireysel — düğün, doğum günü, kurumsal etkinlik için profesyonel arıyorsan), (2) İşletme (kurumsal etkinlik düzenleyen firma), (3) Profesyonel hizmet sağlayıcı (kendi adına çalışan fotoğrafçı, DJ, sunucu vb.), (4) Ajans/menajer (birden fazla profesyoneli temsil eden yapı).',
       },
       {
         q: 'Sonradan rol değiştirebilir miyim?',

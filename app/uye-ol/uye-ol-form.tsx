@@ -7,7 +7,7 @@ import { Input } from "@/app/components/ui/input";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { createClient } from "@/app/lib/supabase-browser";
 
-type Role = "professional" | "client" | "corporate";
+type Role = "professional" | "client" | "business";
 
 function translateError(message: string): string {
   const errorMap: Record<string, string> = {
@@ -54,9 +54,9 @@ const roleConfig = {
   kurumsal: {
     label: "Kurumsal",
     eyebrow: "Kurumsal hesap",
-    title: "Şirketin için tek panel.",
-    description: "Otel, fuar şirketi, etkinlik ajansı misin? Toplu ilan yayınla.",
-    role: "corporate" as Role,
+    title: "Şirketiniz için Kashe.",
+    description: "Otel, fuar veya kurumsal etkinlik ekibi misiniz? Şirket adınızla ilan açın, çok sayıda profesyonelden teklif toplayın.",
+    role: "business" as Role,
   },
 };
 
@@ -217,7 +217,7 @@ export function UyeOlForm({
         </p>
       </div>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-3 flex gap-2">
         <button
           type="button"
           onClick={() => setRole("profesyonel")}
@@ -252,6 +252,17 @@ export function UyeOlForm({
           Kurumsal
         </button>
       </div>
+
+      {/* Ajans ayrı bir kayıt akışı — 3 ana rolün altında ikincil ipucu (buton değil) */}
+      <p className="mb-6 text-center text-xs text-ink-72">
+        Ajans mı yönetiyorsunuz?{" "}
+        <a
+          href="/uye-ol/ajans"
+          className="text-terracotta hover:text-ink font-medium"
+        >
+          Ajans hesabı oluşturun →
+        </a>
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -412,12 +423,6 @@ export function UyeOlForm({
           className="text-terracotta hover:text-ink font-medium"
         >
           Giriş yap
-        </a>
-      </p>
-      <p className="mt-2 text-center text-sm text-ink-72">
-        Ajans mı yönetiyorsun?{" "}
-        <a href="/uye-ol/ajans" className="text-terracotta hover:text-ink font-medium">
-          Ajans hesabı oluştur
         </a>
       </p>
     </div>

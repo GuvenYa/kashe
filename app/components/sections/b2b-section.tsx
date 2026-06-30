@@ -9,23 +9,18 @@ type Feature = {
 const features: Feature[] = [
   {
     number: "1",
-    title: "Toplu iş ilanı.",
-    description: "Tek seferde 5-50 profesyonele aynı brief'i ilet.",
+    title: "Şirket adıyla ilan.",
+    description: "Kurumsal kimliğinle iş ilanı aç, doğru profesyonellere ulaş.",
   },
   {
     number: "2",
-    title: "Çoklu kullanıcı erişimi.",
-    description: "Ekibinden farklı kişiler aynı hesabı yönetir.",
+    title: "Tek brief, çok teklif.",
+    description: "Aynı brief'i çok sayıda profesyonele ilet, teklifleri topla.",
   },
   {
     number: "3",
-    title: "Konsolide fatura.",
-    description: "Aylık tek fatura, vergi dahil; muhasebe için hazır.",
-  },
-  {
-    number: "4",
-    title: "Özel komisyon.",
-    description: "Yıllık 100K+ TL hacim için %8'e kadar inen oranlar.",
+    title: "Doğrudan iletişim.",
+    description: "Profesyonellerle mesajlaş, tekliflerini tek yerden değerlendir.",
   },
 ];
 
@@ -41,7 +36,7 @@ export function B2BSection() {
             <div className="mb-6">
               <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta">
                 <span className="w-6 h-px bg-terracotta inline-block"></span>
-                Kurumsal · Faz 1.5
+                Kurumsal müşteriler için
               </span>
             </div>
 
@@ -51,9 +46,9 @@ export function B2BSection() {
             </h2>
 
             <p className="text-lg text-paper-72 leading-[1.55] mb-10 max-w-xl">
-              Otel, fuar şirketi, etkinlik ajansı veya kurumsal pazarlama ekibi misin?
-              İş ilanı oluştur, profesyonelleri toplu davet et, fatura yönetimini
-              tek yerden yap.
+              Otel, fuar şirketi veya kurumsal etkinlik ekibi misiniz? Şirket
+              adınızla iş ilanı açın, tek brief ile çok sayıda profesyonelden
+              teklif toplayın.
             </p>
 
             <div className="space-y-5 mb-10">
@@ -94,7 +89,7 @@ export function B2BSection() {
                 <MockupRow label="Etkinlik" value="Yıllık iftar daveti" />
                 <MockupRow label="Tarih" value="22 Mart 2026" />
                 <MockupRow label="Aranan" value="8 hostes · 1 sunucu" />
-                <MockupRow label="Davet edilen" value="42 profesyonel" />
+                <MockupRow label="Teklif istenen" value="42 profesyonel" />
                 <div className="pt-2">
                   <MockupRow label="Bütçe" value="28.000 ₺" highlight />
                 </div>
