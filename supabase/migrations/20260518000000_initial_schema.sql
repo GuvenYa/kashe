@@ -22,7 +22,9 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA public;
+-- IF NOT EXISTS: 'public' şeması Postgres/Supabase'de daima vardır; temiz shadow DB'ye
+-- (supabase db pull) uygulanırken çakışmasın. Prod'da zaten uygulı, şema/mantık değişmez.
+CREATE SCHEMA IF NOT EXISTS public;
 
 
 --
