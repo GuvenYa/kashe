@@ -39,17 +39,30 @@ export default async function IlanlarimPage({
   // Suspension kontrolü — askıdaki kullanıcı ilanlarını yönetemez
   if (profile?.suspended_at) return <SuspendedNotice />;
 
-  console.log('[ilanlarim] role:', profile?.role);
-
   const role = profile?.role;
-  if (role !== 'client' && role !== 'business') {
-    console.log('[ilanlarim] redirecting to profil (wrong role)');
+
+  // Kurumsal ekip üyeliği — owner OLMAYAN üyelikler, üyesi olunan kurumun
+  // ilanlarını (read-only) ayrı grupta göstermek için
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
+
+  const hasTeamAccess = teamBusinessIds.length > 0;
+
+  // client/business değilse ama bir kurumun ekip üyesiyse geçsin
+  // (professional bir üye de buraya girip kurum ilanlarını görebilmeli)
+  if (role !== 'client' && role !== 'business' && !hasTeamAccess) {
     redirect('/profil');
   }
 
-  console.log('[ilanlarim] passed checks, fetching listings');
-
-  // Tüm kendi ilanları
+  // Kendi ilanları + üyesi olunan kurumların ilanları
+  // (RLS: kendi ilanlar sahip politikasından, kurum ilanları business üye SELECT'inden geçer)
+  const creatorIds = [user.id, ...teamBusinessIds];
   const { data: listingsData } = await supabase
     .from('listings')
     .select(
@@ -59,7 +72,7 @@ export default async function IlanlarimPage({
       turkish_cities (id, name)
     `
     )
-    .eq('creator_id', user.id)
+    .in('creator_id', creatorIds)
     .order('updated_at', { ascending: false });
 
   const allListings = (listingsData ??
@@ -82,11 +95,32 @@ export default async function IlanlarimPage({
     });
   }
 
-  // Her listing'e application_count alanını ekle
-  const listingsWithCounts = allListings.map((l) => ({
-    ...l,
-    application_count: applicationCounts[l.id] ?? 0,
-  }));
+  // Üyesi olunan kurumların adları (kurum ilanlarını gruplamak için)
+  const businessProfiles: Record<string, { name: string }> = {};
+  if (teamBusinessIds.length > 0) {
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name')
+      .in('id', teamBusinessIds);
+    (profs ?? []).forEach((p) => {
+      businessProfiles[p.id] = {
+        name: p.company_name || p.full_name || 'Kurum',
+      };
+    });
+  }
+
+  // Her listing'e application_count + sahiplik/kaynak bilgisi ekle
+  const listingsWithCounts = allListings.map((l) => {
+    const isOwn = l.creator_id === user.id;
+    return {
+      ...l,
+      application_count: applicationCounts[l.id] ?? 0,
+      is_own: isOwn,
+      owner_business_name: isOwn
+        ? null
+        : businessProfiles[l.creator_id]?.name ?? 'Kurum',
+    };
+  });
 
   return (
     <>

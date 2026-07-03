@@ -37,9 +37,11 @@ import { Sparkles } from 'lucide-react';
 
 type Props = {
   listing: ListingWithRelations & { application_count: number };
+  /** Kurum (ekip üyesi) ilanı — sadece görüntüleme, mutasyon aksiyonları gizli */
+  readOnly?: boolean;
 };
 
-export function IlanSatiri({ listing }: Props) {
+export function IlanSatiri({ listing, readOnly = false }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +197,9 @@ export function IlanSatiri({ listing }: Props) {
           Detay
         </Link>
 
-        {canPromote && (
+        {/* Kurum (read-only) ilanında mutasyon aksiyonları gizli — yazma RLS yok,
+            buton göstermek kafa karıştırır. Sadece Detay kalır. */}
+        {!readOnly && canPromote && (
           <button
             onClick={() => setShowPromote(true)}
             disabled={isPending}
@@ -210,7 +214,7 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
 
-        {canPublishListing(listing.status) && (
+        {!readOnly && canPublishListing(listing.status) && (
           <button
             onClick={() => withConfirm('publish', handlePublish)}
             disabled={isPending}
@@ -225,10 +229,11 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
 
-        {(listing.status === 'draft' ||
-          listing.status === 'published' ||
-          listing.status === 'revision' ||
-          listing.status === 'rejected') && (
+        {!readOnly &&
+          (listing.status === 'draft' ||
+            listing.status === 'published' ||
+            listing.status === 'revision' ||
+            listing.status === 'rejected') && (
           <Link
             href={`/ilanlar/${listing.id}/duzenle`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
@@ -238,7 +243,7 @@ export function IlanSatiri({ listing }: Props) {
           </Link>
         )}
 
-        {canCloseListing(listing.status) && (
+        {!readOnly && canCloseListing(listing.status) && (
           <button
             onClick={() => withConfirm('close', handleClose)}
             disabled={isPending}
@@ -253,7 +258,7 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
 
-        {canCancelListing(listing.status) && (
+        {!readOnly && canCancelListing(listing.status) && (
           <button
             onClick={() => withConfirm('cancel', handleCancel)}
             disabled={isPending}
@@ -268,7 +273,7 @@ export function IlanSatiri({ listing }: Props) {
           </button>
         )}
 
-        {canDelete && (
+        {!readOnly && canDelete && (
           <button
             onClick={() => withConfirm('delete', handleDelete)}
             disabled={isPending}
@@ -284,7 +289,7 @@ export function IlanSatiri({ listing }: Props) {
         )}
       </div>
 
-      {showPromote && (
+      {!readOnly && showPromote && (
         <OneCikarModal listing={listing} onClose={() => setShowPromote(false)} />
       )}
     </div>
