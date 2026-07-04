@@ -30,23 +30,138 @@ export default async function TeklifTaleplerimPage() {
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
+  // Kurumsal ekip üyeliği — owner OLMAYAN üyelikler, üyesi olunan kurumun
+  // taleplerini (read-only) ayrı grupta göstermek için
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
 
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
 
-  // Kendi taleplerim + her birinin recipient'ları (teklif sayısı için)
+  // Kendi taleplerim + üyesi olunan kurumların talepleri (RLS: sahip + business üye SELECT)
+  const customerIds = [user.id, ...teamBusinessIds];
   const { data: requests } = await supabase
     .from('quote_requests')
     .select(
       `
-      id, status, recipient_count, created_at, response_deadline,
+      id, customer_id, status, recipient_count, created_at, response_deadline,
       service_categories (name_tr),
       turkish_cities (name),
       quote_request_recipients (id, status)
     `
     )
-    .eq('customer_id', user.id)
+    .in('customer_id', customerIds)
     .order('created_at', { ascending: false });
 
-  const list = requests || [];
+  // Üyesi olunan kurumların adları (kurum taleplerini gruplamak için)
+  const businessNames: Record<string, string> = {};
+  if (teamBusinessIds.length > 0) {
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name')
+      .in('id', teamBusinessIds);
+    (profs ?? []).forEach((p) => {
+      businessNames[p.id] = p.company_name || p.full_name || 'Kurum';
+    });
+  }
+
+  type RequestRow = {
+    id: string;
+    customer_id: string;
+    status: string;
+    recipient_count: number;
+    created_at: string;
+    service_categories: { name_tr: string } | null;
+    turkish_cities: { name: string } | null;
+    quote_request_recipients: { id: string; status: string }[] | null;
+    is_own: boolean;
+    owner_business_name: string | null;
+  };
+
+  const list = ((requests ?? []) as unknown as Omit<
+    RequestRow,
+    'is_own' | 'owner_business_name'
+  >[]).map((r): RequestRow => {
+    const isOwn = r.customer_id === user.id;
+    return {
+      ...r,
+      is_own: isOwn,
+      owner_business_name: isOwn ? null : businessNames[r.customer_id] ?? 'Kurum',
+    };
+  });
+
+  const ownRequests = list.filter((r) => r.is_own);
+  const teamRequests = list.filter((r) => !r.is_own);
+
+  // Kurum taleplerini kurum adına göre grupla
+  const teamGroups: { name: string; items: RequestRow[] }[] = [];
+  const teamGroupIndex: Record<string, number> = {};
+  teamRequests.forEach((r) => {
+    const name = r.owner_business_name ?? 'Kurum';
+    if (teamGroupIndex[name] === undefined) {
+      teamGroupIndex[name] = teamGroups.length;
+      teamGroups.push({ name, items: [] });
+    }
+    teamGroups[teamGroupIndex[name]].items.push(r);
+  });
+
+  // Kendi talep bölümü: kendi talebi varsa ya da hiç kurum talebi yoksa
+  // (sahip/normal client davranışı bire bir korunur)
+  const showOwnSection = ownRequests.length > 0 || teamRequests.length === 0;
+
+  const renderCard = (req: RequestRow) => {
+    const categoryName = req.service_categories?.name_tr;
+    const cityName = req.turkish_cities?.name;
+    const recipients = req.quote_request_recipients || [];
+    const offerCount = recipients.filter((r) => r.status === 'quoted').length;
+
+    return (
+      <Link
+        key={req.id}
+        href={`/teklif-taleplerim/${req.id}`}
+        className="block bg-card border border-line rounded-lg p-6 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+      >
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              {categoryName && (
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+                  {categoryName}
+                </span>
+              )}
+              {cityName && (
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                  {cityName}
+                </span>
+              )}
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                {STATUS_LABELS[req.status] ?? req.status}
+              </span>
+            </div>
+            <p className="text-sm text-ink-72">
+              {req.recipient_count} profesyonele gönderildi ·{' '}
+              {new Date(req.created_at).toLocaleDateString('tr-TR', {
+                day: 'numeric',
+                month: 'long',
+              })}
+            </p>
+          </div>
+
+          <div className="text-right">
+            <p className="font-display text-3xl text-ink leading-none">
+              {offerCount}
+            </p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-1">
+              teklif
+            </p>
+          </div>
+        </div>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -93,60 +208,25 @@ export default async function TeklifTaleplerimPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {list.map((req: any) => {
-              const categoryName = req.service_categories?.name_tr;
-              const cityName = req.turkish_cities?.name;
-              const recipients = req.quote_request_recipients || [];
-              const offerCount = recipients.filter(
-                (r: any) => r.status === 'quoted'
-              ).length;
+          <>
+            {/* Kendi taleplerin */}
+            {showOwnSection && (
+              <div className="space-y-4">{ownRequests.map(renderCard)}</div>
+            )}
 
-              return (
-                <Link
-                  key={req.id}
-                  href={`/teklif-taleplerim/${req.id}`}
-                  className="block bg-card border border-line rounded-lg p-6 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
-                >
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        {categoryName && (
-                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
-                            {categoryName}
-                          </span>
-                        )}
-                        {cityName && (
-                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-                            {cityName}
-                          </span>
-                        )}
-                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-                          {STATUS_LABELS[req.status] ?? req.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-ink-72">
-                        {req.recipient_count} profesyonele gönderildi ·{' '}
-                        {new Date(req.created_at).toLocaleDateString('tr-TR', {
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="font-display text-3xl text-ink leading-none">
-                        {offerCount}
-                      </p>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-1">
-                        {offerCount === 1 ? 'teklif' : 'teklif'}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+            {/* Kurum talepleri — üyesi olunan kurumlar adına (read-only, gruplu) */}
+            {teamGroups.map((group) => (
+              <section
+                key={group.name}
+                className={showOwnSection ? 'mt-12' : ''}
+              >
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                  Kurum: {group.name} adına
+                </p>
+                <div className="space-y-4">{group.items.map(renderCard)}</div>
+              </section>
+            ))}
+          </>
         )}
       </div>
     </div>

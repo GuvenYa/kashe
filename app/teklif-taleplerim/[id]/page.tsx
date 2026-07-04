@@ -21,7 +21,16 @@ export default async function TeklifKarsilastirPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/giris');
 
-  // Talep + sahiplik kontrolü
+  // Kurumsal ekip üyeliği (owner OLMAYAN) — üye kurum talebini görebilsin
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
+
+  // Talep + sahiplik/üyelik kontrolü
   const { data: request } = await supabase
     .from('quote_requests')
     .select(
@@ -36,7 +45,21 @@ export default async function TeklifKarsilastirPage({
     .single();
 
   if (!request) notFound();
-  if (request.customer_id !== user.id) redirect('/teklif-taleplerim');
+  const isOwn = request.customer_id === user.id;
+  const isTeam = teamBusinessIds.includes(request.customer_id);
+  // Sahip ya da üyesi olunan kurumun talebi değilse → engelle
+  if (!isOwn && !isTeam) redirect('/teklif-taleplerim');
+
+  // Kurum adı (isTeam banner + read-only gösterim için)
+  let ownerBusinessName = 'Kurum';
+  if (isTeam) {
+    const { data: bp } = await supabase
+      .from('profiles')
+      .select('full_name, company_name')
+      .eq('id', request.customer_id)
+      .single();
+    ownerBusinessName = bp?.company_name || bp?.full_name || 'Kurum';
+  }
 
   // Bu talebe teklif veren recipient'lar (quoted)
   const { data: quotedRecipients, error: recError } = await supabase
@@ -123,6 +146,14 @@ export default async function TeklifKarsilastirPage({
         >
           <span>←</span> Taleplerim
         </Link>
+
+        {isTeam && (
+          <div className="mb-6 bg-card border border-line rounded-lg px-4 py-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+              Kurum: {ownerBusinessName} adına — salt görüntüleme
+            </p>
+          </div>
+        )}
 
         <header className="mb-8">
           <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -244,14 +275,21 @@ export default async function TeklifKarsilastirPage({
                     </p>
                   )}
 
-                  {/* Aksiyon */}
+                  {/* Aksiyon — üye (isTeam) mesajlaşamaz: /mesajlar UI henüz uyarlanmadı */}
                   <div className="mt-4 pt-4 border-t border-line">
-                    <Link
-                      href={`/mesajlar/${recipient.conversation_id}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-ink/90 transition"
-                    >
-                      Teklifi incele &amp; mesajlaş →
-                    </Link>
+                    {isTeam ? (
+                      <p className="text-xs text-ink-72">
+                        Mesajlaşma ekip üyelerine bir sonraki güncellemede
+                        açılacak.
+                      </p>
+                    ) : (
+                      <Link
+                        href={`/mesajlar/${recipient.conversation_id}`}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-ink/90 transition"
+                      >
+                        Teklifi incele &amp; mesajlaş →
+                      </Link>
+                    )}
                   </div>
                 </div>
               );
