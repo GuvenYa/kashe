@@ -3,6 +3,31 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
+import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
+
+// brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
+function formatBriefValue(field: BriefField, value: string): string {
+  if (field.type === 'select') {
+    return field.options?.find((o) => o.value === value)?.label ?? value;
+  }
+  if (field.type === 'date') {
+    const d = new Date(value);
+    return isNaN(d.getTime())
+      ? value
+      : d.toLocaleDateString('tr-TR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+  }
+  return value;
+}
+
+// Config'te tanımı olmayan key'i insan-okur etiket yap (alt çizgi → boşluk, baş harf büyük)
+function humanizeKey(key: string): string {
+  const s = key.replace(/_/g, ' ');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export const metadata = {
   title: 'Teklif Karşılaştır — Kashe',
@@ -37,7 +62,7 @@ export default async function TeklifKarsilastirPage({
       `
       id, customer_id, status, recipient_count, brief_data, created_at,
       response_deadline, share_budget, budget_min, budget_max,
-      service_categories (name_tr),
+      service_categories (name_tr, slug),
       turkish_cities (name)
     `
     )
@@ -134,6 +159,34 @@ export default async function TeklifKarsilastirPage({
 
   const cheapest = offers.length > 0 ? offers[0].quote.total_amount : null;
 
+  // Talep detayları — brief_data'yı kategori config'iyle çevir (config sırasıyla)
+  const categorySlug = (request.service_categories as any)?.slug ?? null;
+  const briefFields = getBriefFields(categorySlug);
+  const briefData = (request.brief_data ?? {}) as Record<string, string>;
+  const configKeys = new Set(briefFields.map((f) => f.key));
+
+  const briefItems: { label: string; value: string; wide: boolean }[] = [];
+  // 1) Config sırasına göre (formdaki sırayla tanıdık)
+  for (const f of briefFields) {
+    const raw = briefData[f.key];
+    if (raw == null || String(raw).trim() === '') continue;
+    briefItems.push({
+      label: f.label,
+      value: formatBriefValue(f, String(raw)),
+      wide: f.type === 'textarea',
+    });
+  }
+  // 2) Config'te olmayan (eski/kalkan) key'ler — kullanıcı verisi kaybolmasın
+  for (const [k, v] of Object.entries(briefData)) {
+    if (configKeys.has(k)) continue;
+    if (v == null || String(v).trim() === '') continue;
+    briefItems.push({
+      label: humanizeKey(k),
+      value: String(v),
+      wide: String(v).length > 80,
+    });
+  }
+
   return (
     <>
     <TopNav />
@@ -168,6 +221,28 @@ export default async function TeklifKarsilastirPage({
               </span>
             )}
           </div>
+
+          {/* Talep detayları — müşterinin girdiği brief (sahip + kurum üyesi aynı görür) */}
+          {briefItems.length > 0 && (
+            <div className="bg-card border border-line rounded-lg p-5 mb-6 mt-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
+                Talep detayları
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                {briefItems.map((item, i) => (
+                  <div key={i} className={item.wide ? 'md:col-span-2' : ''}>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72 mb-1">
+                      {item.label}
+                    </p>
+                    <p className="text-sm text-ink whitespace-pre-wrap">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <h1 className="font-display text-3xl text-ink leading-tight">
             Gelen teklifler{' '}
             <span className="text-ink-72">({offers.length})</span>
