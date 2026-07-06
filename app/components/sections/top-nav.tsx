@@ -14,15 +14,17 @@ export async function TopNav() {
   let role: string | null = null;
   let fullName: string | null = null;
   let avatarUrl: string | null = null;
+  let isAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, full_name, avatar_url")
+      .select("role, full_name, avatar_url, is_admin")
       .eq("id", user.id)
       .single();
     role = profile?.role ?? null;
     fullName = profile?.full_name ?? null;
     avatarUrl = profile?.avatar_url ?? null;
+    isAdmin = !!profile?.is_admin;
   }
 
   const isProfessional = role === "professional";
@@ -160,6 +162,7 @@ export async function TopNav() {
                 initials={initials}
                 avatarUrl={avatarUrl}
                 links={menuLinks}
+                isAdmin={isAdmin}
               />
             </>
           ) : (
@@ -179,6 +182,7 @@ export async function TopNav() {
         {/* Mobil */}
         <MobileNav
           isLoggedIn={!!user}
+          isAdmin={isAdmin}
           isProfessional={isProfessional}
           isClient={isClient}
           isAgency={isAgency}

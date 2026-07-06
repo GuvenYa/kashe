@@ -10,10 +10,12 @@ export function UserMenu({
   initials,
   avatarUrl,
   links,
+  isAdmin = false,
 }: {
   initials: string;
   avatarUrl: string | null;
   links: MenuLink[];
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -81,6 +83,17 @@ export function UserMenu({
               {link.label}
             </a>
           ))}
+          {isAdmin && (
+            <>
+              <div className="border-t border-line my-1.5" />
+              <a
+                href="/admin"
+                className="block px-4 py-2.5 text-sm font-body text-ink hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+              >
+                Admin Paneli
+              </a>
+            </>
+          )}
           <div className="border-t border-line my-1.5" />
           <button
             type="button"

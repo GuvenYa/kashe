@@ -8,6 +8,7 @@ import { UnreadBadge } from './unread-badge';
 
 type Props = {
   isLoggedIn: boolean;
+  isAdmin: boolean;
   isProfessional: boolean;
   isClient: boolean;
   isAgency: boolean;
@@ -21,6 +22,7 @@ type Props = {
 
 export function MobileNav({
   isLoggedIn,
+  isAdmin,
   isProfessional,
   isClient,
   isAgency,
@@ -99,7 +101,7 @@ export function MobileNav({
             aria-hidden="true"
           />
 
-          <div className="md:hidden fixed top-[73px] left-0 right-0 bg-paper border-b border-line z-50 shadow-lg">
+          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100vh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-50 shadow-lg">
             <nav className="px-6 py-4">
               {/* PUBLIC NAV */}
               <a href="/kesfet" className={linkClass}>
@@ -168,6 +170,15 @@ export function MobileNav({
                       </span>
                     )}
                   </a>
+
+                  {isAdmin && (
+                    <>
+                      <div className="border-t border-line my-3" />
+                      <a href="/admin" className={linkClass}>
+                        Admin Paneli
+                      </a>
+                    </>
+                  )}
 
                   <div className="border-t border-line my-3" />
 
