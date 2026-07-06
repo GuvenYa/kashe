@@ -128,6 +128,9 @@ export function MobileNav({
               <a href="/#kurumsal" className={linkClass}>
                 Kurumsal
               </a>
+              <a href="/fiyatlandirma" className={linkClass}>
+                Fiyatlandırma
+              </a>
 
               <div className="border-t border-line my-3" />
 
@@ -145,12 +148,8 @@ export function MobileNav({
 
                   <div className="border-t border-line my-3" />
 
-                  {/* İŞLEMLER GRUBU */}
-                  {canReceiveOffers && (
-                    <a href="/teklif-talepleri" className={linkClass}>
-                      Teklif Talepleri
-                    </a>
-                  )}
+                  {/* İŞLEMLER GRUBU — Teklif Talepleri zaten menuLinks'te (çift göstermemek
+                      için burada tekrar edilmez); Teklif Topla menuLinks'te YOK, burada kalır */}
                   {canCollectOffers && (
                     <a href="/teklif-topla" className={linkClass}>
                       Teklif Topla

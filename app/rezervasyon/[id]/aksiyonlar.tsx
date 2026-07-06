@@ -83,7 +83,7 @@ export function RezervasyonAksiyonlari({
       {/* İPTAL MODAL */}
       {cancelOpen && (
         <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-line rounded-2xl max-w-md w-full p-6 md:p-7 shadow-xl">
+          <div className="bg-card border border-line rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 md:p-7 shadow-xl">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
               İptal onayı
             </p>
@@ -153,7 +153,7 @@ export function RezervasyonAksiyonlari({
       {/* TAMAMLAMA MODAL */}
       {completeOpen && (
         <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-line rounded-2xl max-w-md w-full p-6 md:p-7 shadow-xl">
+          <div className="bg-card border border-line rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 md:p-7 shadow-xl">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-moss mb-2">
               Tamamlama
             </p>
