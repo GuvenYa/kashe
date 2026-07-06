@@ -41,6 +41,11 @@ type Props = {
   isProfessional: boolean;
   isAssignedPro: boolean;
   isOwnerAgency: boolean;
+  /** Kurumsal ekip üyesi (pasif gözlemci) — salt görüntüleme, iz bırakmaz */
+  isTeam: boolean;
+  teamBusinessName: string | null;
+  /** isTeam'de "bizim taraf" (kurum/müşteri) id'si — balon hizalaması taraf bazlı olur */
+  teamCustomerId: string | null;
   assignedIds: string[];
   teamMembers: { id: string; full_name: string | null }[];
   senderNames: Record<string, { name: string; agencyTag: string | null }>;
@@ -127,6 +132,9 @@ export function KonusmaDetay({
   isProfessional,
   isAssignedPro,
   isOwnerAgency,
+  isTeam,
+  teamBusinessName,
+  teamCustomerId,
   assignedIds,
   teamMembers,
   senderNames,
@@ -234,8 +242,10 @@ export function KonusmaDetay({
   }, [initialQuotes]);
 
   useEffect(() => {
+    // Kurum üyesi (pasif gözlemci) okundu işaretlemez — sahibin unread'ini bozmaz
+    if (isTeam) return;
     markConversationRead(conversationId).catch(() => {});
-  }, [conversationId]);
+  }, [conversationId, isTeam]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -271,7 +281,8 @@ export function KonusmaDetay({
               if (prev.some((m) => m.id === newMessage.id)) return prev;
               return [...prev, newMessage];
             });
-            if (newMessage.sender_id !== currentUserId) {
+            // Kurum üyesi (pasif gözlemci) okundu işaretlemez
+            if (newMessage.sender_id !== currentUserId && !isTeam) {
               markConversationRead(conversationId).catch(() => {});
             }
           }
@@ -288,7 +299,8 @@ export function KonusmaDetay({
           }
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED' && channel) {
+          // Kurum üyesi (pasif gözlemci) presence bırakmaz — çevrimiçi görünmez
+          if (status === 'SUBSCRIBED' && channel && !isTeam) {
             await channel.track({});
           }
         });
@@ -303,7 +315,7 @@ export function KonusmaDetay({
       }
       channelRef.current = null;
     };
-  }, [conversationId, currentUserId, other.id]);
+  }, [conversationId, currentUserId, other.id, isTeam]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -483,6 +495,15 @@ export function KonusmaDetay({
 
   return (
     <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
+      {/* Kurum ekip üyesi — salt görüntüleme banner'ı */}
+      {isTeam && (
+        <div className="border-b border-plum/20 bg-plum/[0.06] px-4 md:px-5 py-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-plum">
+            Kurum: {teamBusinessName ?? 'Kurum'} adına — salt görüntüleme
+          </p>
+        </div>
+      )}
+
       {/* HEADER */}
       <div className="border-b border-line px-4 md:px-5 py-3 md:py-4 flex items-center gap-3 md:gap-4 bg-card">
         <Link
@@ -672,7 +693,12 @@ export function KonusmaDetay({
               );
             }
 
-            const isMine = msg.sender_id === currentUserId;
+            // Normal görünüm: "benim mesajım" = currentUserId.
+            // Kurum ekip (isTeam) görünümü: üye üçüncü göz → hizalama TARAF bazlı;
+            // kurum/müşteri tarafı (customer_id) SAĞDA "bizim taraf" sayılır.
+            const isMine = isTeam
+              ? msg.sender_id === teamCustomerId
+              : msg.sender_id === currentUserId;
             return (
               <div key={msg.id}>
                 {dayLabelEl}
@@ -686,16 +712,31 @@ export function KonusmaDetay({
                         : 'bg-card border border-line text-ink rounded-bl-md shadow-sm'
                     }`}
                   >
-                    {!isMine && showSenderNames && (
-                      <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-plum mb-1">
-                        {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
-                        {senderNames[msg.sender_id]?.agencyTag && (
-                          <span className="text-ink-72">
-                            {' '}
-                            • {senderNames[msg.sender_id]!.agencyTag}
-                          </span>
-                        )}
+                    {isTeam ? (
+                      // Kurum ekip görünümü: her balonda gönderen etiketi
+                      // (kurum tarafı → kurum adı, karşı taraf → gönderenin adı)
+                      <p
+                        className={`text-[10px] font-mono uppercase tracking-[0.14em] mb-1 ${
+                          isMine ? 'text-paper/80' : 'text-plum'
+                        }`}
+                      >
+                        {isMine
+                          ? teamBusinessName ?? 'Kurum'
+                          : senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
                       </p>
+                    ) : (
+                      !isMine &&
+                      showSenderNames && (
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-plum mb-1">
+                          {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
+                          {senderNames[msg.sender_id]?.agencyTag && (
+                            <span className="text-ink-72">
+                              {' '}
+                              • {senderNames[msg.sender_id]!.agencyTag}
+                            </span>
+                          )}
+                        </p>
+                      )
                     )}
                     {msg.message_type === 'file' && msg.attachment_path && (
                       <button
@@ -757,6 +798,13 @@ export function KonusmaDetay({
       </div>
 
       {/* INPUT */}
+      {isTeam ? (
+        <div className="border-t border-line p-3 md:p-4 bg-card">
+          <p className="text-xs text-ink-72 text-center">
+            Salt görüntüleme — mesaj gönderme yakında ekip üyelerine açılacak.
+          </p>
+        </div>
+      ) : (
       <form
         onSubmit={handleSubmit}
         className="border-t border-line p-3 md:p-4 bg-card"
@@ -905,6 +953,7 @@ export function KonusmaDetay({
           </button>
         </div>
       </form>
+      )}
 
       {(isProfessional || isAssignedPro) && (
         <QuoteModal

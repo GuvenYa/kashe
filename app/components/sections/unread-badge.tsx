@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/app/lib/supabase-browser';
-import { getUnreadMessageCount } from '@/app/mesajlar/actions';
+import {
+  getUnreadMessageCount,
+  getTeamConversationIds,
+} from '@/app/mesajlar/actions';
 
 type Props = {
   userId: string;
@@ -10,10 +13,17 @@ type Props = {
 
 export function UnreadBadge({ userId }: Props) {
   const [count, setCount] = useState<number>(0);
+  // Kurumsal ekip (pasif gözlemci) konuşmaları — realtime increment'te sayılmaz
+  const teamConvIdsRef = useRef<Set<string>>(new Set());
 
-  // İlk fetch
+  // İlk fetch + team konuşma id'leri (increment hariç tutma için)
   useEffect(() => {
     getUnreadMessageCount().then(setCount).catch(() => setCount(0));
+    getTeamConversationIds()
+      .then((ids) => {
+        teamConvIdsRef.current = new Set(ids);
+      })
+      .catch(() => {});
   }, []);
 
   // Realtime: INSERT artırır, UPDATE (read_at set) sayıyı re-sync
@@ -46,7 +56,10 @@ export function UnreadBadge({ userId }: Props) {
           const newMessage = payload.new as {
             sender_id: string;
             read_at: string | null;
+            conversation_id: string;
           };
+          // Kurumsal ekip (pasif gözlemci) konuşması → sayma (hayalet unread önle)
+          if (teamConvIdsRef.current.has(newMessage.conversation_id)) return;
           // RLS bizi sadece kendi konuşmalarımızdaki mesajlara sınırlar.
           // Kendi mesajlarımızı sayma.
           if (newMessage.sender_id !== userId && !newMessage.read_at) {

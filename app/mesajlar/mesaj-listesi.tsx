@@ -29,6 +29,9 @@ export type ConversationItem = {
     created_at: string;
   } | null;
   unread_count: number;
+  /** Kurumsal ekip konuşması (pasif gözlemci — kurum adına, salt görüntüleme) */
+  is_team: boolean;
+  team_business_name: string | null;
 };
 
 type Props = {
@@ -125,7 +128,12 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
               created_at: m.created_at,
             };
             updated.last_message_at = m.created_at;
-            if (m.sender_id !== currentUserId && !m.read_at) {
+            // Kurum konuşmasında unread ARTMAZ (pasif gözlemci — asla sıfırlanamaz)
+            if (
+              m.sender_id !== currentUserId &&
+              !m.read_at &&
+              !updated.is_team
+            ) {
               updated.unread_count = updated.unread_count + 1;
             }
 
@@ -265,6 +273,12 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                           </p>
                         )}
 
+                        {conv.is_team && conv.team_business_name && (
+                          <p className="text-[10px] text-plum mt-1 font-mono uppercase tracking-[0.14em]">
+                            Kurum: {conv.team_business_name}
+                          </p>
+                        )}
+
                         {(conv.event_type || conv.event_date) && (
                           <p className="text-xs text-ink-72 mt-1 font-mono uppercase tracking-[0.1em]">
                             {conv.event_type &&
@@ -276,7 +290,8 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                         )}
                       </div>
 
-                      {unreadCount > 0 && (
+                      {/* Kurum konuşmasında unread badge YOK (pasif gözlemci) */}
+                      {!conv.is_team && unreadCount > 0 && (
                         <div className="shrink-0 min-w-[24px] h-6 px-2 bg-terracotta text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
                           {unreadCount}
                         </div>

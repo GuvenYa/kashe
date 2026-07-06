@@ -57,12 +57,25 @@ export default async function MesajlarPage() {
 
   const assignedConvIds = (myAssignments ?? []).map((r) => r.conversation_id);
 
-  // .or() filtresi için atanan id'leri ekle (varsa)
+  // Kurumsal ekip üyeliği (owner OLMAYAN) — üyesi olunan kurumun konuşmaları (pasif gözlemci)
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
+  const teamBusinessSet = new Set(teamBusinessIds);
+
+  // .or() filtresi: kendi + atanan + kurum konuşmaları (kurum konuşması customer_id = business_id)
   const orFilter = [
     `customer_id.eq.${user.id}`,
     `professional_id.eq.${user.id}`,
     ...(assignedConvIds.length > 0
       ? [`id.in.(${assignedConvIds.join(',')})`]
+      : []),
+    ...(teamBusinessIds.length > 0
+      ? [`customer_id.in.(${teamBusinessIds.join(',')})`]
       : []),
   ].join(',');
 
@@ -105,6 +118,27 @@ export default async function MesajlarPage() {
   const rawConversations = (conversationsData || []) as unknown as RawRow[];
   const conversationIds = rawConversations.map((c) => c.id);
 
+  // Kurum konuşmaları (customer_id = business_id, üye müşteri değil) → pasif gözlemci
+  const teamConvIds = new Set(
+    rawConversations
+      .filter(
+        (c) => c.customer_id !== user.id && teamBusinessSet.has(c.customer_id)
+      )
+      .map((c) => c.id)
+  );
+
+  // Kurum adları (satır rozetinde göstermek için)
+  const businessNames: Record<string, string> = {};
+  if (teamBusinessIds.length > 0) {
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name')
+      .in('id', teamBusinessIds);
+    (profs ?? []).forEach((p) => {
+      businessNames[p.id] = p.company_name || p.full_name || 'Kurum';
+    });
+  }
+
   // Son mesaj + okunmamış sayıları için tek sorgu
   let lastMessagesByConv: Record<
     string,
@@ -127,7 +161,11 @@ export default async function MesajlarPage() {
           created_at: msg.created_at,
         };
       }
-      if (msg.sender_id !== user.id && !msg.read_at) {
+      if (
+        msg.sender_id !== user.id &&
+        !msg.read_at &&
+        !teamConvIds.has(msg.conversation_id)
+      ) {
         unreadCountsByConv[msg.conversation_id] =
           (unreadCountsByConv[msg.conversation_id] || 0) + 1;
       }
@@ -137,8 +175,11 @@ export default async function MesajlarPage() {
   // ConversationItem listesini hazırla (karşı tarafı çöz)
   const conversations: ConversationItem[] = rawConversations
     .map((conv): ConversationItem | null => {
-      const isCustomer = conv.customer_id === user.id;
-      const other = isCustomer ? conv.professional : conv.customer;
+      const isTeam =
+        conv.customer_id !== user.id && teamBusinessSet.has(conv.customer_id);
+      // Kurum üyesi müşteri-tarafı sayılır → karşı taraf = profesyonel (kendi kurumu değil)
+      const isCustomerSide = conv.customer_id === user.id || isTeam;
+      const other = isCustomerSide ? conv.professional : conv.customer;
       if (!other) return null;
       return {
         id: conv.id,
@@ -155,7 +196,11 @@ export default async function MesajlarPage() {
           role: other.role,
         },
         last_message: lastMessagesByConv[conv.id] ?? null,
-        unread_count: unreadCountsByConv[conv.id] || 0,
+        unread_count: isTeam ? 0 : unreadCountsByConv[conv.id] || 0,
+        is_team: isTeam,
+        team_business_name: isTeam
+          ? businessNames[conv.customer_id] ?? 'Kurum'
+          : null,
       };
     })
     .filter((c): c is ConversationItem => c !== null);

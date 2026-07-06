@@ -350,21 +350,14 @@ export default async function TeklifKarsilastirPage({
                     </p>
                   )}
 
-                  {/* Aksiyon — üye (isTeam) mesajlaşamaz: /mesajlar UI henüz uyarlanmadı */}
+                  {/* Aksiyon — /mesajlar artık kurum üyesini pasif gözlemci olarak kabul ediyor */}
                   <div className="mt-4 pt-4 border-t border-line">
-                    {isTeam ? (
-                      <p className="text-xs text-ink-72">
-                        Mesajlaşma ekip üyelerine bir sonraki güncellemede
-                        açılacak.
-                      </p>
-                    ) : (
-                      <Link
-                        href={`/mesajlar/${recipient.conversation_id}`}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-ink/90 transition"
-                      >
-                        Teklifi incele &amp; mesajlaş →
-                      </Link>
-                    )}
+                    <Link
+                      href={`/mesajlar/${recipient.conversation_id}`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-ink/90 transition"
+                    >
+                      Teklifi incele &amp; mesajlaş →
+                    </Link>
                   </div>
                 </div>
               );

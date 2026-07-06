@@ -58,6 +58,15 @@ export default async function KonusmaPage({
     .single();
   if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
 
+  // Kurumsal ekip üyeliği (owner OLMAYAN) — üye kurum konuşmasını PASİF izler
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
+
   const { data: convData } = await supabase
     .from('conversations')
     .select(
@@ -93,18 +102,27 @@ export default async function KonusmaPage({
 
   const assignedIds = (assigneeRows ?? []).map((r) => r.professional_id);
   const isAssignedPro = assignedIds.includes(user.id);
+  const isTeam =
+    conv.customer_id !== user.id &&
+    teamBusinessIds.includes(conv.customer_id);
 
-  // Erişim kontrolü — sahibi ajans, müşteri veya atanan profesyonel
+  // Erişim kontrolü — sahibi ajans, müşteri, atanan profesyonel VEYA kurum ekip üyesi
   if (
     conv.customer_id !== user.id &&
     conv.professional_id !== user.id &&
-    !isAssignedPro
+    !isAssignedPro &&
+    !isTeam
   ) {
     notFound();
   }
 
   const isCustomer = conv.customer_id === user.id;
-  const other = isCustomer ? conv.professional : conv.customer;
+  // Kurum üyesi müşteri-tarafı sayılır → karşı taraf = profesyonel (kendi kurumu değil)
+  const isCustomerSide = isCustomer || isTeam;
+  const other = isCustomerSide ? conv.professional : conv.customer;
+  const teamBusinessName = isTeam
+    ? conv.customer?.company_name || conv.customer?.full_name || 'Kurum'
+    : null;
 
   if (!other) {
     notFound();
@@ -250,6 +268,9 @@ export default async function KonusmaPage({
                 isProfessional={isProfessional}
                 isAssignedPro={isAssignedPro}
                 isOwnerAgency={isOwnerAgency}
+                isTeam={isTeam}
+                teamBusinessName={teamBusinessName}
+                teamCustomerId={isTeam ? conv.customer_id : null}
                 assignedIds={assignedIds}
                 teamMembers={teamMembers}
                 senderNames={senderNames}
@@ -261,7 +282,7 @@ export default async function KonusmaPage({
                   role: other.role,
                 }}
                 categorySlug={other.service_categories?.slug ?? null}
-                viewerRole={isCustomer ? 'customer' : 'professional'}
+                viewerRole={isCustomerSide ? 'customer' : 'professional'}
                 eventDate={conv.event_date}
                 eventType={conv.event_type}
                 location={conv.location}
@@ -285,7 +306,7 @@ export default async function KonusmaPage({
                 city: other.turkish_cities?.name ?? null,
                 last_seen_at: other.last_seen_at,
               }}
-              viewerRole={isCustomer ? 'customer' : 'professional'}
+              viewerRole={isCustomerSide ? 'customer' : 'professional'}
               contactUnlocked={contactUnlocked}
             />
           </div>

@@ -607,6 +607,39 @@ export async function markConversationRead(
   return { success: true };
 }
 
+/**
+ * Kurumsal ekip üyesi (owner OLMAYAN) olduğu kurumların konuşma id'leri.
+ * Üye bu konuşmalarda PASİF gözlemci — okunmamış sayımına GİRMEZ (markRead yapmaz,
+ * yoksa hayalet unread oluşur). Hem badge hem liste bu id'leri hariç tutar.
+ */
+export async function getTeamConversationIds(): Promise<string[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data: memberships } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+
+  const teamBusinessIds = (memberships ?? [])
+    .filter((m) => m.member_role !== 'owner')
+    .map((m) => m.business_id);
+
+  if (teamBusinessIds.length === 0) return [];
+
+  const { data: convs } = await supabase
+    .from('conversations')
+    .select('id')
+    .in('customer_id', teamBusinessIds);
+
+  return (convs ?? []).map((c) => c.id);
+}
+
 export async function getUnreadMessageCount(): Promise<number> {
   const supabase = await createClient();
 
@@ -616,11 +649,20 @@ export async function getUnreadMessageCount(): Promise<number> {
 
   if (!user) return 0;
 
-  const { count, error } = await supabase
+  // Kurumsal ekip (pasif gözlemci) konuşmalarını sayımdan çıkar
+  const teamConvIds = await getTeamConversationIds();
+
+  let query = supabase
     .from('messages')
     .select('id', { count: 'exact', head: true })
     .neq('sender_id', user.id)
     .is('read_at', null);
+
+  if (teamConvIds.length > 0) {
+    query = query.not('conversation_id', 'in', `(${teamConvIds.join(',')})`);
+  }
+
+  const { count, error } = await query;
 
   if (error) {
     console.error('getUnreadMessageCount error:', error);
