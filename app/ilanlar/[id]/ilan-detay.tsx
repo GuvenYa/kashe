@@ -63,6 +63,9 @@ type Props = {
   listing: ListingWithRelations;
   currentUserId: string | null;
   isOwner: boolean;
+  /** Başvuru kararı (kabul/red/shortlist) verebilir mi: sahip VEYA kurum ilanında
+   *  manager+ üye. Owner-only ilan yönetimi (close/cancel) hâlâ isOwner ile ayrı. */
+  canDecide: boolean;
   isProfessional: boolean;
   myApplication: Application | null;
   applications: ApplicationWithRelations[];
@@ -74,6 +77,7 @@ export function IlanDetay({
   listing,
   currentUserId,
   isOwner,
+  canDecide,
   isProfessional,
   myApplication,
   applications,
@@ -548,8 +552,8 @@ export function IlanDetay({
             )}
         </div>
 
-        {/* Başvurular bölümü — SADECE SAHİBİ GÖRÜR */}
-        {isOwner && (
+        {/* Başvurular bölümü — sahip VEYA kurum ilanında manager+ üye görür/karar verir */}
+        {canDecide && (
           <div className="mt-12">
             {acceptedConversationId && (
               <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">

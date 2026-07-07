@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 import {
   QUOTE_EXPIRY_OPTIONS,
   formatQuoteAmount,
@@ -194,7 +195,15 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     .eq('id', quote.conversation_id)
     .single();
 
-  if (!conv || conv.customer_id !== user.id) {
+  if (!conv) {
+    return { success: false, error: 'Bu teklifi onaylama yetkisi yok' };
+  }
+  // Müşteri (kurum) kendisi VEYA kurum adına manager+ üye kabul edebilir.
+  // NOT: iyzico gercek odeme baglaninca bu esik owner'a cekilecek mi? Fahri ile karar.
+  if (
+    conv.customer_id !== user.id &&
+    !(await canWriteForBusiness(conv.customer_id))
+  ) {
     return { success: false, error: 'Bu teklifi onaylama yetkisi yok' };
   }
 
@@ -255,7 +264,14 @@ export async function declineQuote(quoteId: string): Promise<ActionResult> {
     .eq('id', quote.conversation_id)
     .single();
 
-  if (!conv || conv.customer_id !== user.id) {
+  if (!conv) {
+    return { success: false, error: 'Bu teklifi reddetme yetkisi yok' };
+  }
+  // Müşteri (kurum) kendisi VEYA kurum adına manager+ üye reddedebilir.
+  if (
+    conv.customer_id !== user.id &&
+    !(await canWriteForBusiness(conv.customer_id))
+  ) {
     return { success: false, error: 'Bu teklifi reddetme yetkisi yok' };
   }
 

@@ -685,7 +685,11 @@ export function KonusmaDetay({
               return (
                 <div key={msg.id}>
                   {dayLabelEl}
-                  <QuoteCard quote={quote} currentUserId={currentUserId} />
+                  <QuoteCard
+                    quote={quote}
+                    currentUserId={currentUserId}
+                    canAct={!isTeam || canWrite}
+                  />
                 </div>
               );
             }

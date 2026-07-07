@@ -742,7 +742,11 @@ export async function acceptApplication(
     guest_count: number | null;
   };
   const listingCreator = listingRel?.creator_id;
-  if (listingCreator !== user.id) {
+  // Sahibi VEYA kurum adına manager+ üye kabul edebilir (kaynak üzerinde yetki).
+  if (
+    listingCreator !== user.id &&
+    !(await canWriteForBusiness(listingCreator))
+  ) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
   if (!canAcceptApplication(app.status as ApplicationStatus)) {
@@ -777,7 +781,10 @@ export async function acceptApplication(
 
   // 4) Müşteri ile kabul edilen profesyonel arasında konuşma aç (yoksa) +
   //    sistem mesajı düş. Böylece kabul sonrası iletişim kanalı hazır olur.
-  const customerId = user.id; // ilan sahibi = müşteri (kabul eden)
+  // Konuşma müşterisi = ilan SAHİBİ (creator_id). Kurum ilanında bu KURUMUN id'si
+  // (üyenin user.id'si DEĞİL) → attribution: pro her kanalda kurumu görür.
+  // Sahip kabul ederse listingCreator === user.id, davranış birebir aynı.
+  const customerId = listingCreator;
   const professionalId = app.applicant_id;
 
   // Var olan konuşmayı bul
@@ -818,23 +825,28 @@ export async function acceptApplication(
       .eq('id', conversationId);
   }
 
-  // Sistem mesajı ekle (sender = müşteri, çünkü kabul eden o)
+  // Sistem mesajı ekle. sender_id = aksiyonu alanın KENDİ uuid'si (attribution
+  // kuralı, dilim 1): kurum adına kabul eden üye kendi id'siyle yazar; pro
+  // tarafında ad kurum olarak görünür (konuşma customer_id = kurum). messages
+  // RLS'i manager+ üyeye kendi sender_id'siyle insert izni verir (dilim 1).
   if (conversationId) {
     await supabase.from('messages').insert({
       conversation_id: conversationId,
-      sender_id: customerId,
+      sender_id: user.id,
       body: 'Başvurun kabul edildi. Detayları buradan konuşabilirsiniz.',
       message_type: 'system',
     });
     revalidatePath(`/mesajlar/${conversationId}`);
   }
 
-  // Web push — başvurana "kabul edildin" bildirimi (sessiz fail)
+  // Web push — başvurana "kabul edildin" bildirimi (sessiz fail).
+  // ownerName = KURUM/sahip profilinden (listingCreator) — kurum adına kabul eden
+  // üyenin adı DEĞİL; pro her kanalda kurumu görür (attribution kuralı).
     try {
       const { data: ownerProfile } = await supabase
         .from('profiles')
         .select('full_name, company_name, role')
-        .eq('id', user.id)
+        .eq('id', listingCreator)
         .single();
       const ownerName =
         (ownerProfile?.role === 'business' ||
@@ -1039,7 +1051,11 @@ async function updateApplicationStatus(
       return { success: false, error: 'Bu başvuru senin değil' };
     }
   } else {
-    if (listingCreator !== user.id) {
+    // Sahibi VEYA kurum adına manager+ üye (shortlist/reject) — kaynak üzerinde yetki.
+    if (
+      listingCreator !== user.id &&
+      !(await canWriteForBusiness(listingCreator))
+    ) {
       return { success: false, error: 'Bu ilan senin değil' };
     }
   }

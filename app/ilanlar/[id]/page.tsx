@@ -5,6 +5,7 @@ import { incrementListingViews } from '../listings-actions';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getBadges } from '@/app/lib/badges';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 import type {
   ListingWithRelations,
   ApplicationWithRelations,
@@ -48,6 +49,16 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
   // değil — bu yüzden asıl notFound kontrolünü profile çekiminden sonraya aldık.
   const isOwner = !!user && listing.creator_id === user.id;
 
+  // Kurum ilanında manager+ üye de başvuru kararlarını (kabul/red/shortlist) verebilir.
+  // Perf: yalnız creator business hesabıysa ve isOwner değilse üyelik sorgusu atılır.
+  const creatorIsBusiness =
+    (listing.creator as { role?: string } | null)?.role === 'business';
+  const canDecide =
+    isOwner ||
+    (!!user &&
+      creatorIsBusiness &&
+      (await canWriteForBusiness(listing.creator_id)));
+
   // Kullanıcı profili (role + suspension + admin tespiti)
   let userRole: string | null = null;
   let isAdmin = false;
@@ -66,7 +77,8 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
   }
 
   // İzin kontrolü (admin dahil): published değilse sadece sahibi veya admin görebilir
-  if (listing.status !== 'published' && !isOwner && !isAdmin) {
+  // published olmayan ilanı sahibi, admin VEYA (kurum ilanıysa) manager+ üye görebilir
+  if (listing.status !== 'published' && !isOwner && !isAdmin && !canDecide) {
     notFound();
   }
 
@@ -85,9 +97,9 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     myApplication = (app as Application) ?? null;
   }
 
-  // Sahibi ise: gelen başvurular
+  // Sahibi VEYA manager+ üye ise: gelen başvurular (SELECT RLS manager'a açık — 3a migration)
   let applications: ApplicationWithRelations[] = [];
-  if (isOwner) {
+  if (canDecide) {
     const { data: appsData } = await supabase
       .from('applications')
       .select(
@@ -147,7 +159,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
   // Kabul edilen başvuru varsa, müşteri ↔ o profesyonel konuşmasının id'sini bul
   // (sahip için "Konuşmaya git" butonu)
   let acceptedConversationId: string | null = null;
-  if (isOwner) {
+  if (canDecide) {
     const acceptedApp = applications.find((a) => a.status === 'accepted');
     if (acceptedApp?.applicant?.id) {
       const { data: conv } = await supabase
@@ -184,6 +196,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         listing={listing}
         currentUserId={user?.id ?? null}
         isOwner={isOwner}
+        canDecide={canDecide}
         isProfessional={canApply}
         myApplication={myApplication}
         applications={applications}

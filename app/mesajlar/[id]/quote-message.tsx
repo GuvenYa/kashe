@@ -16,9 +16,17 @@ import { acceptQuote, declineQuote, withdrawQuote } from '../quote-actions';
 type QuoteCardProps = {
   quote: Quote;
   currentUserId: string;
+  /** Görüntüleyen bu teklife aksiyon alabilir mi? Pasif kurum üyesi (isTeam &&
+   *  !canWrite) için false → kabul/red butonu gizlenir (aksiyonu action'da zaten
+   *  alamaz; butonu görüp hata alması kötü UX). Varsayılan true (sahip/pro/manager). */
+  canAct?: boolean;
 };
 
-export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
+export function QuoteCard({
+  quote,
+  currentUserId,
+  canAct = true,
+}: QuoteCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +35,8 @@ export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
   >(null);
 
   const canAccept = canAcceptQuote(quote, currentUserId);
+  // Pasif üye kabul/red butonunu görmesin (action zaten reddeder)
+  const showAccept = canAccept && canAct;
   const canWithdraw = canWithdrawQuote(quote, currentUserId);
   const isPendingStatus = quote.status === 'pending';
   const tone = getQuoteStatusTone(quote.status);
@@ -184,9 +194,9 @@ export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
         )}
 
         {/* Aksiyonlar */}
-        {(canAccept || canWithdraw) && (
+        {(showAccept || canWithdraw) && (
           <div className="border-t border-line p-3 bg-paper-2/60">
-            {canAccept && (
+            {showAccept && (
               <div className="flex gap-2">
                 <button
                   onClick={handleDecline}
@@ -219,7 +229,7 @@ export function QuoteCard({ quote, currentUserId }: QuoteCardProps) {
               </div>
             )}
 
-            {canWithdraw && !canAccept && (
+            {canWithdraw && !showAccept && (
               <button
                 onClick={handleWithdraw}
                 disabled={isPending}
