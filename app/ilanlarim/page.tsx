@@ -7,7 +7,15 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import type { ListingWithRelations } from '../ilanlar/listings-data';
 
-type SearchParams = Promise<{ durum?: string }>;
+type SearchParams = Promise<{ durum?: string; bildirim?: string }>;
+
+// Create/edit sonrası /ilanlarim'a yönlendirmede gösterilen tek seferlik bildirim.
+const BILDIRIM_MESAJLARI: Record<string, string> = {
+  'onaya-gonderildi':
+    'İlanın onaya gönderildi. Admin onayladıktan sonra ilan tahtasında görünür ve başvuru kabul eder.',
+  'taslak-kaydedildi':
+    'İlan taslak olarak kaydedildi. Düzenleyip yayınlayabilirsin.',
+};
 
 export default async function IlanlarimPage({
   searchParams,
@@ -51,6 +59,13 @@ export default async function IlanlarimPage({
   const teamBusinessIds = (memberships ?? [])
     .filter((m) => m.member_role !== 'owner')
     .map((m) => m.business_id);
+
+  // manager+ (owner/manager) olduğu kurumlar → ilan yönetimi (edit/publish) açılır
+  const canManageBusinessSet = new Set(
+    (memberships ?? [])
+      .filter((m) => m.member_role === 'owner' || m.member_role === 'manager')
+      .map((m) => m.business_id)
+  );
 
   const hasTeamAccess = teamBusinessIds.length > 0;
 
@@ -116,6 +131,8 @@ export default async function IlanlarimPage({
       ...l,
       application_count: applicationCounts[l.id] ?? 0,
       is_own: isOwn,
+      // Kurum ilanı + manager+ → edit/publish açık (member için false)
+      can_manage: !isOwn && canManageBusinessSet.has(l.creator_id),
       owner_business_name: isOwn
         ? null
         : businessProfiles[l.creator_id]?.name ?? 'Kurum',
@@ -150,6 +167,17 @@ export default async function IlanlarimPage({
             Yeni ilan aç
           </Link>
         </div>
+
+        {params.bildirim && BILDIRIM_MESAJLARI[params.bildirim] && (
+          <div className="mb-8 flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 px-4 py-3">
+            <span className="mt-0.5 shrink-0 text-green-700" aria-hidden="true">
+              ✓
+            </span>
+            <p className="text-sm text-green-800">
+              {BILDIRIM_MESAJLARI[params.bildirim]}
+            </p>
+          </div>
+        )}
 
         <IlanlarimListesi
           listings={listingsWithCounts}

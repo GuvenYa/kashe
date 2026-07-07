@@ -203,7 +203,7 @@ export default async function TeklifKarsilastirPage({
         {isTeam && (
           <div className="mb-6 bg-card border border-line rounded-lg px-4 py-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
-              Kurum: {ownerBusinessName} adına — salt görüntüleme
+              Kurum: {ownerBusinessName} adına — teklifleri görüntülüyorsun
             </p>
           </div>
         )}

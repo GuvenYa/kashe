@@ -12,6 +12,10 @@ import {
   ATTACHMENT_ACCEPT,
   attachmentKind,
 } from '@/app/lib/attachments';
+import {
+  OnBehalfSelector,
+  type OnBehalfBusiness,
+} from '@/app/components/on-behalf-selector';
 
 type Props = {
   professionalId: string;
@@ -19,6 +23,7 @@ type Props = {
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
+  writableBusinesses?: OnBehalfBusiness[];
 };
 
 export function RezervasyonButton({
@@ -27,9 +32,15 @@ export function RezervasyonButton({
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
+  writableBusinesses = [],
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  // Profesyonel kendi adına rezerve edemez; ama manager+ kurum üyesiyse kurum adına edebilir
+  const canSelfCreate = !currentUserIsProfessional;
+  const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
+    canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
+  );
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -95,7 +106,12 @@ export function RezervasyonButton({
 
   // Anonim akış: kayıt/giriş sonrası profile dönünce bekleyen rezervasyonu gönder
   useEffect(() => {
-    if (!isLoggedIn || currentUserIsProfessional || isOwnProfile) return;
+    if (
+      !isLoggedIn ||
+      isOwnProfile ||
+      (currentUserIsProfessional && writableBusinesses.length === 0)
+    )
+      return;
 
     const key = `kashe_pending_booking_${professionalId}`;
     let stored: string | null = null;
@@ -190,6 +206,7 @@ export function RezervasyonButton({
       request_type: 'booking_request' as const,
       start_time: startTime || null,
       end_time: endTime || null,
+      on_behalf_business_id: onBehalfBusinessId,
     };
 
     if (!isLoggedIn) {
@@ -253,7 +270,11 @@ export function RezervasyonButton({
   }
 
   // Görünürlük: kendi profili veya profesyonel ise gösterme (kutu seviyesinde de kontrol var)
-  if (isOwnProfile || currentUserIsProfessional) return null;
+  if (
+    isOwnProfile ||
+    (currentUserIsProfessional && writableBusinesses.length === 0)
+  )
+    return null;
 
   return (
     <>
@@ -298,6 +319,16 @@ export function RezervasyonButton({
               <p className="text-sm text-ink-72">
                 Belirli bir tarih için doğrudan rezervasyon talebi gönder. Profesyonel uygunluğunu onaylarsa ilerleyebilirsiniz.
               </p>
+
+              {/* Kimin adına (manager+ kurum üyesine görünür) */}
+              {writableBusinesses.length > 0 && (
+                <OnBehalfSelector
+                  businesses={writableBusinesses}
+                  canSelfCreate={canSelfCreate}
+                  value={onBehalfBusinessId}
+                  onChange={setOnBehalfBusinessId}
+                />
+              )}
 
               <div>
                 <label htmlFor="booking-date" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">

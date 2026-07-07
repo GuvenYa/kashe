@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { isUserSuspended } from '@/app/lib/check-suspension';
 import { sendPushToUser } from '@/app/lib/push-server';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 import {
   validateListingInput,
   validateApplicationInput,
@@ -51,6 +52,8 @@ type CreateListingInput = {
   allowed_applicant_roles: string[] | null;
   // Eğer true, status = 'published'; false, status = 'draft'
   publish_immediately: boolean;
+  /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
+  on_behalf_business_id?: string | null;
 };
 
 /**
@@ -83,19 +86,32 @@ export async function createListing(
   });
   if (validationError) return { success: false, error: validationError };
 
-  // Rol kontrolü - sadece client veya business
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  // Sahiplik = kurum adına ise kurumun id'si, değilse kullanıcının kendisi
+  const ownerId = input.on_behalf_business_id ?? user.id;
 
-  if (!profile) return { success: false, error: 'Profil bulunamadı' };
-  if (profile.role !== 'client' && profile.role !== 'business') {
-    return {
-      success: false,
-      error: 'Sadece müşteri veya kurumsal hesaplar ilan açabilir',
-    };
+  if (input.on_behalf_business_id) {
+    // Kurum adına: profil rolü kontrolü ATLANIR; yetki üyelikten gelir (owner/manager)
+    if (!(await canWriteForBusiness(input.on_behalf_business_id))) {
+      return {
+        success: false,
+        error: 'Bu kurum adına ilan oluşturma yetkin yok.',
+      };
+    }
+  } else {
+    // Kendi adına: mevcut rol kuralı aynen (client/business)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) return { success: false, error: 'Profil bulunamadı' };
+    if (profile.role !== 'client' && profile.role !== 'business') {
+      return {
+        success: false,
+        error: 'Sadece müşteri veya kurumsal hesaplar ilan açabilir',
+      };
+    }
   }
 
   // Bütçe tutarlılığı (DB de kontrol ediyor ama erken hata daha iyi UX)
@@ -110,7 +126,10 @@ export async function createListing(
   const { data: newListing, error } = await supabase
     .from('listings')
     .insert({
-      creator_id: user.id,
+      creator_id: ownerId,
+      // Oluşturan üye izi: her zaman auth.uid() (kendi adına da, kurum adına da).
+      // Kurum adına oluşturmada creator_id=kurum, created_by=üye → ayrışır.
+      created_by: user.id,
       category_id: input.category_id,
       title: input.title.trim(),
       description: input.description.trim(),
@@ -176,7 +195,12 @@ export async function updateListing(
     .single();
 
   if (!existing) return { success: false, error: 'İlan bulunamadı' };
-  if (existing.creator_id !== user.id && !isAdmin) {
+  // Kurum ilanı ise manager+ üye de düzenleyebilir (kaynak üzerinde yetki)
+  const canEditThis =
+    existing.creator_id === user.id ||
+    isAdmin ||
+    (await canWriteForBusiness(existing.creator_id));
+  if (!canEditThis) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
   // Sahip için düzenlenebilirlik kontrolü; admin her durumda düzenleyebilir
@@ -324,7 +348,19 @@ async function updateListingStatus(
 
   if (!listing) return { success: false, error: 'İlan bulunamadı' };
   if (listing.creator_id !== user.id) {
-    return { success: false, error: 'Bu ilan senin değil' };
+    // Kurum ilanı: manager+ üye SADECE publish (→pending_approval, admin onayına)
+    // ve restore (→draft) yapabilir. close/cancel = kurum sahibine özel (dilim 3).
+    // NOT: publishListing 'published' DEĞİL 'pending_approval' üretir — gate buna göre.
+    const isBusinessManager = await canWriteForBusiness(listing.creator_id);
+    if (!isBusinessManager) {
+      return { success: false, error: 'Bu ilan senin değil' };
+    }
+    if (newStatus !== 'pending_approval' && newStatus !== 'draft') {
+      return {
+        success: false,
+        error: 'Bu işlem yalnızca kurum sahibine açıktır.',
+      };
+    }
   }
   if (!validator(listing.status as ListingStatus)) {
     return {

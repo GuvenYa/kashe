@@ -37,11 +37,20 @@ import { Sparkles } from 'lucide-react';
 
 type Props = {
   listing: ListingWithRelations & { application_count: number };
-  /** Kurum (ekip üyesi) ilanı — sadece görüntüleme, mutasyon aksiyonları gizli */
-  readOnly?: boolean;
+  /** Kendi hesabının ilanı — tüm aksiyonlar açık */
+  isOwn?: boolean;
+  /** Kurum ilanı + manager+ üye — SADECE edit + publish açık (promote/close/cancel/delete owner'a) */
+  canManage?: boolean;
 };
 
-export function IlanSatiri({ listing, readOnly = false }: Props) {
+export function IlanSatiri({
+  listing,
+  isOwn = true,
+  canManage = false,
+}: Props) {
+  // Tam yetki: kendi hesabı. Kısıtlı yetki (edit+publish): kurum manager+ üye.
+  const fullControl = isOwn;
+  const canEditPublish = isOwn || canManage;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -197,9 +206,8 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           Detay
         </Link>
 
-        {/* Kurum (read-only) ilanında mutasyon aksiyonları gizli — yazma RLS yok,
-            buton göstermek kafa karıştırır. Sadece Detay kalır. */}
-        {!readOnly && canPromote && (
+        {/* Öne çıkarma — yalnız kendi hesabı (kurum manager+'a kapalı, dilim 3) */}
+        {fullControl && canPromote && (
           <button
             onClick={() => setShowPromote(true)}
             disabled={isPending}
@@ -214,7 +222,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           </button>
         )}
 
-        {!readOnly && canPublishListing(listing.status) && (
+        {canEditPublish && canPublishListing(listing.status) && (
           <button
             onClick={() => withConfirm('publish', handlePublish)}
             disabled={isPending}
@@ -229,7 +237,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           </button>
         )}
 
-        {!readOnly &&
+        {canEditPublish &&
           (listing.status === 'draft' ||
             listing.status === 'published' ||
             listing.status === 'revision' ||
@@ -243,7 +251,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           </Link>
         )}
 
-        {!readOnly && canCloseListing(listing.status) && (
+        {fullControl && canCloseListing(listing.status) && (
           <button
             onClick={() => withConfirm('close', handleClose)}
             disabled={isPending}
@@ -258,7 +266,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           </button>
         )}
 
-        {!readOnly && canCancelListing(listing.status) && (
+        {fullControl && canCancelListing(listing.status) && (
           <button
             onClick={() => withConfirm('cancel', handleCancel)}
             disabled={isPending}
@@ -273,7 +281,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
           </button>
         )}
 
-        {!readOnly && canDelete && (
+        {fullControl && canDelete && (
           <button
             onClick={() => withConfirm('delete', handleDelete)}
             disabled={isPending}
@@ -289,7 +297,7 @@ export function IlanSatiri({ listing, readOnly = false }: Props) {
         )}
       </div>
 
-      {!readOnly && showPromote && (
+      {fullControl && showPromote && (
         <OneCikarModal listing={listing} onClose={() => setShowPromote(false)} />
       )}
     </div>

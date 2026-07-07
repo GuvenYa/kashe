@@ -18,6 +18,10 @@ import {
   getBriefIntro,
   type BriefField,
 } from '@/app/lib/brief-config';
+import {
+  OnBehalfSelector,
+  type OnBehalfBusiness,
+} from '@/app/components/on-behalf-selector';
 
 type Props = {
   professionalId: string;
@@ -26,6 +30,7 @@ type Props = {
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
+  writableBusinesses?: OnBehalfBusiness[];
   packageContext?: { title: string; price: string | null } | null;
   serviceContext?: {
     title: string;
@@ -42,11 +47,17 @@ export function IletisimButton({
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
+  writableBusinesses = [],
   packageContext = null,
   serviceContext = null,
   variant = 'default',
 }: Props) {
   const router = useRouter();
+  // Profesyonel kendi adına teklif isteyemez; ama manager+ kurum üyesiyse kurum adına isteyebilir
+  const canSelfCreate = !currentUserIsProfessional;
+  const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
+    canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -131,8 +142,13 @@ export function IletisimButton({
   // Kullanıcı anonimken brief doldurup kayda yönlendirildiyse, kayıt/giriş
   // sonrası bu profile döndüğünde sessionStorage'daki brief'i otomatik gönder.
   useEffect(() => {
-    // Sadece giriş yapmış müşteri için çalışır
-    if (!isLoggedIn || currentUserIsProfessional || isOwnProfile) return;
+    // Giriş yapmış müşteri VEYA manager+ kurum üyesi için çalışır (kurum adına)
+    if (
+      !isLoggedIn ||
+      (currentUserIsProfessional && writableBusinesses.length === 0) ||
+      isOwnProfile
+    )
+      return;
 
     const key = `kashe_pending_brief_${professionalId}`;
     let stored: string | null = null;
@@ -274,6 +290,7 @@ export function IletisimButton({
       guest_count: legacyGuestCount,
       budget_range: legacyBudget,
       brief_data: Object.keys(cleanBrief).length > 0 ? cleanBrief : null,
+      on_behalf_business_id: onBehalfBusinessId,
     };
 
     // ANONİM AKIŞ (Model A): brief'i sessionStorage'a yaz, kayda yönlendir.
@@ -352,8 +369,9 @@ export function IletisimButton({
     );
   }
 
-  // Profesyonelin başka profesyonele mesajı
-  if (currentUserIsProfessional) {
+  // Profesyonelin başka profesyonele mesajı — YALNIZ kurum üyeliği yoksa engelle.
+  // manager+ kurum üyesi ise kurum adına teklif isteyebilir (dilim 2).
+  if (currentUserIsProfessional && writableBusinesses.length === 0) {
     return (
       <div className="bg-paper border border-line rounded-lg p-6">
         <p className="text-ink-72 text-sm">
@@ -436,6 +454,16 @@ export function IletisimButton({
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {/* Kimin adına (manager+ kurum üyesine görünür) */}
+              {writableBusinesses.length > 0 && (
+                <OnBehalfSelector
+                  businesses={writableBusinesses}
+                  canSelfCreate={canSelfCreate}
+                  value={onBehalfBusinessId}
+                  onChange={setOnBehalfBusinessId}
+                />
+              )}
+
               {/* SECTION: Etkinlik detayları */}
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">

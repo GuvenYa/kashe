@@ -13,6 +13,7 @@ import type {
 type ListingItem = ListingWithRelations & {
   application_count: number;
   is_own: boolean;
+  can_manage: boolean;
   owner_business_name: string | null;
 };
 
@@ -146,14 +147,14 @@ export function IlanlarimListesi({ listings, activeStatus }: Props) {
           ) : (
             <div className="space-y-3">
               {filtered.map((listing) => (
-                <IlanSatiri key={listing.id} listing={listing} />
+                <IlanSatiri key={listing.id} listing={listing} isOwn />
               ))}
             </div>
           )}
         </>
       )}
 
-      {/* Kurum ilanları — üyesi olunan kurumlar adına (read-only, tab'sız) */}
+      {/* Kurum ilanları — üyesi olunan kurumlar adına (manager+ → edit/publish; member → salt) */}
       {teamGroups.map((group) => (
         <section key={group.name} className={showOwnSection ? 'mt-12' : ''}>
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
@@ -161,7 +162,12 @@ export function IlanlarimListesi({ listings, activeStatus }: Props) {
           </p>
           <div className="space-y-3">
             {group.items.map((listing) => (
-              <IlanSatiri key={listing.id} listing={listing} readOnly />
+              <IlanSatiri
+                key={listing.id}
+                listing={listing}
+                isOwn={false}
+                canManage={listing.can_manage}
+              />
             ))}
           </div>
         </section>

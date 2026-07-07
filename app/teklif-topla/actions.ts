@@ -7,6 +7,7 @@ import {
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -33,6 +34,8 @@ type CreateQuoteRequestInput = {
     type: 'image' | 'pdf' | 'doc';
     name: string;
   } | null;
+  /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
+  on_behalf_business_id?: string | null;
 };
 
 export async function createQuoteRequest(
@@ -45,18 +48,31 @@ export async function createQuoteRequest(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  // Rol kontrolü — sadece client/business teklif toplayabilir
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  if (!profile) return { success: false, error: 'Profil bulunamadı' };
-  if (profile.role !== 'client' && profile.role !== 'business') {
-    return {
-      success: false,
-      error: 'Sadece hizmet alan hesaplar teklif toplayabilir',
-    };
+  // Sahiplik = kurum adına ise kurumun id'si, değilse kullanıcının kendisi
+  const ownerId = input.on_behalf_business_id ?? user.id;
+
+  if (input.on_behalf_business_id) {
+    // Kurum adına: profil rolü kontrolü ATLANIR; yetki üyelikten gelir (owner/manager)
+    if (!(await canWriteForBusiness(input.on_behalf_business_id))) {
+      return {
+        success: false,
+        error: 'Bu kurum adına talep oluşturma yetkin yok.',
+      };
+    }
+  } else {
+    // Kendi adına: mevcut rol kuralı aynen (client/business)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (!profile) return { success: false, error: 'Profil bulunamadı' };
+    if (profile.role !== 'client' && profile.role !== 'business') {
+      return {
+        success: false,
+        error: 'Sadece hizmet alan hesaplar teklif toplayabilir',
+      };
+    }
   }
 
   if (!input.category_id) {
@@ -142,7 +158,8 @@ export async function createQuoteRequest(
   const { data: newRequest, error: reqError } = await supabase
     .from('quote_requests')
     .insert({
-      customer_id: user.id,
+      customer_id: ownerId,
+      created_by: user.id,
       category_id: input.category_id,
       city_id: input.city_id,
       brief_data: input.brief_data,

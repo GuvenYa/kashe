@@ -9,6 +9,10 @@ import {
   getBriefIntro,
   type BriefField,
 } from '@/app/lib/brief-config';
+import {
+  OnBehalfSelector,
+  type OnBehalfBusiness,
+} from '@/app/components/on-behalf-selector';
 
 type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
@@ -54,13 +58,22 @@ const TARGET_ROLE_OPTIONS: {
 export function TeklifToplaFormu({
   categories,
   cities,
+  writableBusinesses = [],
+  canSelfCreate = true,
 }: {
   categories: Category[];
   cities: City[];
+  writableBusinesses?: OnBehalfBusiness[];
+  canSelfCreate?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // "Kimin adına": null = kendi adına; kendi adına uygun değilse ilk kurum default
+  const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
+    canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
+  );
 
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [cityId, setCityId] = useState<number | ''>('');
@@ -208,6 +221,7 @@ export function TeklifToplaFormu({
       }
 
       const result = await createQuoteRequest({
+        on_behalf_business_id: onBehalfBusinessId,
         category_id: categoryId,
         city_id: cityId === '' ? null : cityId,
         brief_data: Object.keys(cleanBrief).length > 0 ? cleanBrief : null,
@@ -242,6 +256,18 @@ export function TeklifToplaFormu({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Kimin adına (manager+ kurum üyesine görünür) */}
+      {writableBusinesses.length > 0 && (
+        <section className="bg-card border border-line rounded-lg p-6">
+          <OnBehalfSelector
+            businesses={writableBusinesses}
+            canSelfCreate={canSelfCreate}
+            value={onBehalfBusinessId}
+            onChange={setOnBehalfBusinessId}
+          />
+        </section>
+      )}
+
       {/* Bölüm 1: Kategori + şehir */}
       <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">

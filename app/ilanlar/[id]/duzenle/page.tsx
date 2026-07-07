@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { YeniIlanFormu } from '../../yeni/yeni-ilan-formu';
 import { canEditListing, type Listing, type ListingStatus } from '../../listings-data';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 
 type Params = Promise<{ id: string }>;
 
@@ -43,8 +44,12 @@ export default async function IlanDuzenlePage({
     .single();
   const isAdmin = editorProfile?.is_admin ?? false;
 
-  // Sahibi veya admin mi?
-  if (listing.creator_id !== user.id && !isAdmin) {
+  // Yetki: sahibi VEYA admin VEYA kurum ilanında manager+ üye (kaynak üzerinde yetki).
+  // Kurum ilanında creator_id = kurumun id'si → sahiplik eşleşmez; üyelik üzerinden geçer.
+  const editorIsOwner = listing.creator_id === user.id;
+  const canEditThis =
+    editorIsOwner || isAdmin || (await canWriteForBusiness(listing.creator_id));
+  if (!canEditThis) {
     notFound();
   }
 
@@ -104,6 +109,7 @@ export default async function IlanDuzenlePage({
           categories={categoriesResult.data || []}
           cities={citiesResult.data || []}
           initialData={sanitizedListing}
+          editorIsOwner={editorIsOwner}
         />
       </div>
     </div>

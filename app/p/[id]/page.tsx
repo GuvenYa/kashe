@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
 import { RezervasyonButton } from './rezervasyon-button';
+import { getWritableBusinesses } from '@/app/lib/business-write';
 import { HizmetSecici } from './hizmet-secici';
 import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
@@ -239,6 +240,8 @@ export default async function PublicProfilePage({
   const isLoggedIn = !!user;
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
+  // manager+ kurum üyeliği — kurum adına rezervasyon/konuşma için
+  const writableBusinesses = isLoggedIn ? await getWritableBusinesses() : [];
 
   // Favori durumu — başkasının profesyonel veya ajans profilinde anlamlı
   const showFavoriteButton =
@@ -941,8 +944,13 @@ export default async function PublicProfilePage({
 
           {/* İLETİŞİM & YORUM BUTONLARI */}
           <div className="flex flex-col gap-3">
-            {/* Kendi profili veya profesyonel değilse: 3 aksiyon kutusu */}
-            {!isOwnProfile && !currentUserIsProfessional ? (
+            {/* Buton bölgesi: kendi profili DEĞİL + (müşteri VEYA manager+ kurum üyesi).
+                Profil rolü professional olsa da bir kurumda yazma yetkisi (owner/manager)
+                olan kullanıcı buraya girer → kurum adına Rezervasyon akışı açılır (dilim 2).
+                Yalnız üyeliksiz professional aşağıdaki else dalındaki "mesaj gönderemezsin"
+                bandını görür. */}
+            {!isOwnProfile &&
+            (!currentUserIsProfessional || writableBusinesses.length > 0) ? (
               <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
                 <h2 className="font-display text-xl text-ink mb-2">
                   Bu profesyonelle çalış
@@ -952,6 +960,8 @@ export default async function PublicProfilePage({
                   açık ilanına davet et.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Teklif Al: müşteri kendi adına; manager+ kurum üyesi kurum adına
+                      (IletisimButton içeride writableBusinesses'e göre gate + selector). */}
                   <IletisimButton
                     professionalId={profile.id}
                     professionalName={displayName}
@@ -959,6 +969,7 @@ export default async function PublicProfilePage({
                     isLoggedIn={isLoggedIn}
                     currentUserIsProfessional={currentUserIsProfessional}
                     isOwnProfile={isOwnProfile}
+                    writableBusinesses={writableBusinesses}
                     variant="inline"
                   />
                   <RezervasyonButton
@@ -967,6 +978,7 @@ export default async function PublicProfilePage({
                     isLoggedIn={isLoggedIn}
                     currentUserIsProfessional={currentUserIsProfessional}
                     isOwnProfile={isOwnProfile}
+                    writableBusinesses={writableBusinesses}
                   />
                   <DavetButton
                     professionalId={profile.id}

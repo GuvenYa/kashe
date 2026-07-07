@@ -3,6 +3,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
+import { canWriteForBusiness } from '@/app/lib/business-write';
 import {
   EVENT_TYPE_KEYS,
   BUDGET_RANGE_KEYS,
@@ -45,6 +46,8 @@ export type StartConversationData = {
   request_type?: 'quote' | 'booking_request';
   start_time?: string | null;
   end_time?: string | null;
+  /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
+  on_behalf_business_id?: string | null;
 };
 
 const SLIDING_WINDOW_MINUTES = 5;
@@ -323,7 +326,17 @@ export async function startConversation(
   if (data.message.length > 2000) {
     return { success: false, error: 'Mesaj 2000 karakterden uzun olamaz.' };
   }
-  if (data.professional_id === user.id) {
+  // Kurum adına ise sahiplik = kurum id; yetki üyelikten (owner/manager)
+  const ownerId = data.on_behalf_business_id ?? user.id;
+  if (data.on_behalf_business_id) {
+    if (!(await canWriteForBusiness(data.on_behalf_business_id))) {
+      return {
+        success: false,
+        error: 'Bu kurum adına konuşma başlatma yetkin yok.',
+      };
+    }
+  }
+  if (data.professional_id === user.id || data.professional_id === ownerId) {
     return { success: false, error: 'Kendine mesaj gönderemezsin.' };
   }
 
@@ -381,7 +394,7 @@ export async function startConversation(
   const { data: existing } = await supabase
     .from('conversations')
     .select('id')
-    .eq('customer_id', user.id)
+    .eq('customer_id', ownerId)
     .eq('professional_id', data.professional_id)
     .maybeSingle();
 
@@ -415,7 +428,7 @@ export async function startConversation(
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
       .insert({
-        customer_id: user.id,
+        customer_id: ownerId,
         professional_id: data.professional_id,
         event_date: data.event_date,
         event_type: data.event_type,
@@ -477,7 +490,7 @@ export async function startConversation(
     notifyNewConversation(
       supabase,
       conversationId,
-      user.id,
+      ownerId,
       data.professional_id,
       data.message.trim(),
       data.event_type

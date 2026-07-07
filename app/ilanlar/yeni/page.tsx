@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { orderCities } from '@/app/lib/city-order';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { YeniIlanFormu } from './yeni-ilan-formu';
+import { getWritableBusinesses } from '@/app/lib/business-write';
 
 export default async function YeniIlanPage() {
   const supabase = await createClient();
@@ -56,7 +57,10 @@ export default async function YeniIlanPage() {
   }
 
   const role = profile?.role;
-  const canCreate = role === 'client' || role === 'business';
+  const canSelfCreate = role === 'client' || role === 'business';
+  // manager+ kurum üyesi (profil rolü ne olursa olsun) kurum adına ilan açabilir
+  const writableBusinesses = await getWritableBusinesses();
+  const canCreate = canSelfCreate || writableBusinesses.length > 0;
 
   if (!canCreate) {
     return (
@@ -135,6 +139,8 @@ export default async function YeniIlanPage() {
           <YeniIlanFormu
             categories={categoriesResult.data || []}
             cities={orderCities(citiesResult.data || [])}
+            writableBusinesses={writableBusinesses}
+            canSelfCreate={canSelfCreate}
           />
         </div>
       </div>

@@ -10,6 +10,10 @@ import {
   type BudgetPresetKey,
   type Listing,
 } from '../listings-data';
+import {
+  OnBehalfSelector,
+  type OnBehalfBusiness,
+} from '@/app/components/on-behalf-selector';
 
 type Category = {
   id: number;
@@ -26,6 +30,12 @@ type Props = {
   categories: Category[];
   cities: City[];
   initialData?: Listing | null;
+  writableBusinesses?: OnBehalfBusiness[];
+  canSelfCreate?: boolean;
+  /** Düzenleme modunda: bu ilanın sahibi mi (creator_id === user.id)?
+   *  Kurum ilanını düzenleyen manager+ üye için false → kaydetince /ilan detayına
+   *  değil /ilanlarim'a döner (detay sayfası sahibi olmayana published-dışını 404'ler). */
+  editorIsOwner?: boolean;
 };
 
 const EVENT_TYPE_OPTIONS = [
@@ -138,7 +148,18 @@ function getPlaceholders(categoryName: string | undefined): {
   );
 }
 
-export function YeniIlanFormu({ categories, cities, initialData }: Props) {
+export function YeniIlanFormu({
+  categories,
+  cities,
+  initialData,
+  writableBusinesses = [],
+  canSelfCreate = true,
+  editorIsOwner = true,
+}: Props) {
+  // "Kimin adına" — yalnız yeni ilan (create) modunda anlamlı
+  const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
+    canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
+  );
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -321,13 +342,17 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
         });
 
         if (result.success) {
-          router.push(`/ilanlar/${initialData.id}`);
+          // Sahibi ilan detayına döner (published-dışı statüyü de görebilir).
+          // Kurum ilanını düzenleyen manager+ üye sahibi değildir → detay sayfası
+          // onu 404'ler; /ilanlarim'a döndür (kendi + kurum ilanlarını görür).
+          router.push(editorIsOwner ? `/ilanlar/${initialData.id}` : '/ilanlarim');
         } else {
           setError(result.error);
         }
       } else {
         // CREATE MODE
         const result = await createListing({
+          on_behalf_business_id: onBehalfBusinessId,
           category_id: categoryId,
           title: title.trim(),
           description: description.trim(),
@@ -347,7 +372,18 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
         });
 
         if (result.success && result.data) {
-          router.push(`/ilanlar/${result.data.id}`);
+          if (publishImmediately) {
+            // Yayınla = pending_approval (admin onayı). İlan detay sayfası published
+            // olmayanı sahibi-olmayana 404'ler (kurum adına oluşturmada üye ≠ sahip).
+            // /ilanlarim'a dön + "onaya gönderildi" bildirimi.
+            router.push('/ilanlarim?bildirim=onaya-gonderildi');
+          } else if (onBehalfBusinessId) {
+            // Kurum adına taslak: üye sahibi değil → detay 404. /ilanlarim'a dön.
+            router.push('/ilanlarim?bildirim=taslak-kaydedildi');
+          } else {
+            // Kendi adına taslak: sahibi detayını görebilir — mevcut davranış.
+            router.push(`/ilanlar/${result.data.id}`);
+          }
         } else if (!result.success) {
           setError(result.error);
         }
@@ -371,6 +407,18 @@ export function YeniIlanFormu({ categories, cities, initialData }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Kimin adına (yalnız yeni ilan + manager+ kurum üyesi) */}
+      {!initialData && writableBusinesses.length > 0 && (
+        <section className="bg-card border border-line rounded-lg p-6">
+          <OnBehalfSelector
+            businesses={writableBusinesses}
+            canSelfCreate={canSelfCreate}
+            value={onBehalfBusinessId}
+            onChange={setOnBehalfBusinessId}
+          />
+        </section>
+      )}
+
       {/* Bölüm 1: Temel */}
       <section className="bg-card border border-line rounded-lg p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">

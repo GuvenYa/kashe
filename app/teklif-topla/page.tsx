@@ -6,6 +6,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { TeklifToplaFormu } from './teklif-topla-formu';
+import { getWritableBusinesses } from '@/app/lib/business-write';
 
 export const metadata = {
   title: 'Teklif Topla — Kashe',
@@ -31,7 +32,11 @@ export default async function TeklifToplaPage() {
   if (profile?.suspended_at) return <SuspendedNotice />;
 
   const role = profile?.role;
-  if (role !== 'client' && role !== 'business') {
+  // manager+ kurum üyesi (profil rolü ne olursa olsun) kurum adına talep açabilir
+  const writableBusinesses = await getWritableBusinesses();
+  const canSelfCreate = role === 'client' || role === 'business';
+
+  if (!canSelfCreate && writableBusinesses.length === 0) {
     return (
       <>
       <TopNav />
@@ -97,6 +102,8 @@ export default async function TeklifToplaPage() {
         <TeklifToplaFormu
           categories={categoriesResult.data || []}
           cities={orderCities(citiesResult.data || [])}
+          writableBusinesses={writableBusinesses}
+          canSelfCreate={canSelfCreate}
         />
       </div>
     </div>
