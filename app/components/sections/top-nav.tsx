@@ -6,6 +6,7 @@ import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
+import { getWritableBusinesses } from "@/app/lib/business-write";
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -15,6 +16,9 @@ export async function TopNav() {
   let fullName: string | null = null;
   let avatarUrl: string | null = null;
   let isAdmin = false;
+  // Kurum manager+ üyeliği (owner/manager) — profil rolü ne olursa olsun kurum
+  // adına Teklif Topla + İlanlarım erişimi. Server tarafında tek sorgu (helper).
+  let isBusinessManager = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -25,6 +29,7 @@ export async function TopNav() {
     fullName = profile?.full_name ?? null;
     avatarUrl = profile?.avatar_url ?? null;
     isAdmin = !!profile?.is_admin;
+    isBusinessManager = (await getWritableBusinesses()).length > 0;
   }
 
   const isProfessional = role === "professional";
@@ -32,7 +37,8 @@ export async function TopNav() {
   const isAgency = role === "agency";
   const isBusiness = role === "business";
   const canReceiveOffers = isProfessional || isAgency;
-  const canCollectOffers = isClient || isBusiness;
+  // Teklif Topla: hizmet alan roller VEYA kurum adına yazabilen manager+ üye
+  const canCollectOffers = isClient || isBusiness || isBusinessManager;
 
   const notificationCount = user ? await getUnreadNotificationCount() : 0;
 
@@ -60,6 +66,11 @@ export async function TopNav() {
     menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
     menuLinks.push({ href: "/odemelerim", label: "Ödeme Geçmişi" });
     menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
+  }
+  // Kurum manager+ üyesi (client/business değilse) → İlanlarım (kurum ilanlarını yönetir).
+  // Yalnız bu link; Rezervasyonlarım/Ödeme/Teklif Taleplerim bu rötuş kapsamında değil.
+  if (isBusinessManager && !isClient && !isBusiness) {
+    menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
   }
   // İşletme → kurumsal ekip davetlerini görebilmesi için Davetlerim
   if (isBusiness) {

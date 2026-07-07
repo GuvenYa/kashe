@@ -103,7 +103,14 @@ export async function createQuoteRequest(
     return { success: false, error: 'Eşleştirme hatası: ' + matchError.message };
   }
 
-  const matchedList = matched || [];
+  // Havuzdan çıkar: kurumun kendisi (customer_id = ownerId) VE talebi oluşturan üye
+  // (created_by = user.id). Kurum (business rolü) zaten rol filtresiyle eşleşmez, ama
+  // kurum adına oluşturan üyenin pro/ajans profili eşleşebilir → kendi talebinin
+  // alıcısı olmasın. Kendi adına oluşturmada ownerId === user.id (tek eleme).
+  const excludedFromPool = new Set<string>([ownerId, user.id]);
+  const matchedList = (matched || []).filter(
+    (m) => !excludedFromPool.has(m.id)
+  );
   if (matchedList.length === 0) {
     return {
       success: false,
