@@ -575,7 +575,7 @@ export function KonusmaDetay({
             </div>
 
             {assignOpen && (
-              <div className="absolute right-0 top-full mt-2 z-20 w-60 max-h-[60vh] overflow-y-auto overscroll-contain bg-card border border-line rounded-xl shadow-lg py-1.5">
+              <div className="absolute right-0 top-full mt-2 z-20 w-60 max-h-[60dvh] overflow-y-auto overscroll-contain bg-card border border-line rounded-xl shadow-lg py-1.5">
                 {teamMembers.length === 0 ? (
                   <p className="px-3 py-2 text-xs text-ink-72">
                     Ekibinde henüz üye yok.

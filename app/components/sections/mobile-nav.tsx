@@ -101,7 +101,7 @@ export function MobileNav({
             aria-hidden="true"
           />
 
-          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100vh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-50 shadow-lg">
+          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-50 shadow-lg">
             <nav className="px-6 py-4">
               {/* PUBLIC NAV */}
               <a href="/kesfet" className={linkClass}>

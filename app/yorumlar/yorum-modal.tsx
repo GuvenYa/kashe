@@ -116,7 +116,7 @@ export function YorumModal({
       aria-labelledby="yorum-modal-title"
     >
       <div
-        className="bg-paper border border-line rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-xl"
+        className="bg-paper border border-line rounded-lg max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 md:p-8 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
