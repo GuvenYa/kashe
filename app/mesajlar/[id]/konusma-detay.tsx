@@ -41,11 +41,11 @@ type Props = {
   isProfessional: boolean;
   isAssignedPro: boolean;
   isOwnerAgency: boolean;
-  /** Kurumsal ekip üyesi (pasif gözlemci) — salt görüntüleme, iz bırakmaz */
+  /** Kurumsal ekip üyesi görünümü (kurum adına) */
   isTeam: boolean;
+  /** owner/manager üye → kurum adına yazma yetkisi; pasiflik kalkar (member için false) */
+  canWrite: boolean;
   teamBusinessName: string | null;
-  /** isTeam'de "bizim taraf" (kurum/müşteri) id'si — balon hizalaması taraf bazlı olur */
-  teamCustomerId: string | null;
   assignedIds: string[];
   teamMembers: { id: string; full_name: string | null }[];
   senderNames: Record<string, { name: string; agencyTag: string | null }>;
@@ -133,8 +133,8 @@ export function KonusmaDetay({
   isAssignedPro,
   isOwnerAgency,
   isTeam,
+  canWrite,
   teamBusinessName,
-  teamCustomerId,
   assignedIds,
   teamMembers,
   senderNames,
@@ -242,10 +242,11 @@ export function KonusmaDetay({
   }, [initialQuotes]);
 
   useEffect(() => {
-    // Kurum üyesi (pasif gözlemci) okundu işaretlemez — sahibin unread'ini bozmaz
-    if (isTeam) return;
+    // Pasif üye (canWrite yok) okundu işaretlemez — sahibin unread'ini bozmaz.
+    // canWrite (owner/manager) üye normal işaretler.
+    if (isTeam && !canWrite) return;
     markConversationRead(conversationId).catch(() => {});
-  }, [conversationId, isTeam]);
+  }, [conversationId, isTeam, canWrite]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -281,8 +282,11 @@ export function KonusmaDetay({
               if (prev.some((m) => m.id === newMessage.id)) return prev;
               return [...prev, newMessage];
             });
-            // Kurum üyesi (pasif gözlemci) okundu işaretlemez
-            if (newMessage.sender_id !== currentUserId && !isTeam) {
+            // Pasif üye okundu işaretlemez; canWrite (owner/manager) işaretler
+            if (
+              newMessage.sender_id !== currentUserId &&
+              (!isTeam || canWrite)
+            ) {
               markConversationRead(conversationId).catch(() => {});
             }
           }
@@ -299,8 +303,8 @@ export function KonusmaDetay({
           }
         })
         .subscribe(async (status) => {
-          // Kurum üyesi (pasif gözlemci) presence bırakmaz — çevrimiçi görünmez
-          if (status === 'SUBSCRIBED' && channel && !isTeam) {
+          // Pasif üye presence bırakmaz; canWrite (owner/manager) çevrimiçi görünür
+          if (status === 'SUBSCRIBED' && channel && (!isTeam || canWrite)) {
             await channel.track({});
           }
         });
@@ -315,7 +319,7 @@ export function KonusmaDetay({
       }
       channelRef.current = null;
     };
-  }, [conversationId, currentUserId, other.id, isTeam]);
+  }, [conversationId, currentUserId, other.id, isTeam, canWrite]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -495,11 +499,13 @@ export function KonusmaDetay({
 
   return (
     <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
-      {/* Kurum ekip üyesi — salt görüntüleme banner'ı */}
+      {/* Kurum ekip üyesi banner'ı — canWrite'ta "yazıyorsun", pasifte "salt görüntüleme" */}
       {isTeam && (
         <div className="border-b border-plum/20 bg-plum/[0.06] px-4 md:px-5 py-2">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-plum">
-            Kurum: {teamBusinessName ?? 'Kurum'} adına — salt görüntüleme
+            {canWrite
+              ? `Kurum: ${teamBusinessName ?? 'Kurum'} adına yazıyorsun`
+              : `Kurum: ${teamBusinessName ?? 'Kurum'} adına — salt görüntüleme`}
           </p>
         </div>
       )}
@@ -694,10 +700,10 @@ export function KonusmaDetay({
             }
 
             // Normal görünüm: "benim mesajım" = currentUserId.
-            // Kurum ekip (isTeam) görünümü: üye üçüncü göz → hizalama TARAF bazlı;
-            // kurum/müşteri tarafı (customer_id) SAĞDA "bizim taraf" sayılır.
+            // Kurum ekip görünümü: kurum tarafının TÜM mesajları (sahip + üyeler) SAĞDA.
+            // Kurum tarafı = profesyonel OLMAYAN (other.id = konuşmadaki profesyonel).
             const isMine = isTeam
-              ? msg.sender_id === teamCustomerId
+              ? msg.sender_id !== other.id
               : msg.sender_id === currentUserId;
             return (
               <div key={msg.id}>
@@ -713,16 +719,16 @@ export function KonusmaDetay({
                     }`}
                   >
                     {isTeam ? (
-                      // Kurum ekip görünümü: her balonda gönderen etiketi
-                      // (kurum tarafı → kurum adı, karşı taraf → gönderenin adı)
+                      // Kurum-içi görünüm: HER balonda gerçek gönderen (kim attı görünsün —
+                      // kurum hesabı → kurum adı, üye → üyenin adı, karşı taraf → pro adı)
                       <p
                         className={`text-[10px] font-mono uppercase tracking-[0.14em] mb-1 ${
                           isMine ? 'text-paper/80' : 'text-plum'
                         }`}
                       >
-                        {isMine
-                          ? teamBusinessName ?? 'Kurum'
-                          : senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
+                        {senderNames[msg.sender_id]?.name ||
+                          teamBusinessName ||
+                          'Bilinmeyen'}
                       </p>
                     ) : (
                       !isMine &&
@@ -797,11 +803,11 @@ export function KonusmaDetay({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT */}
-      {isTeam ? (
+      {/* INPUT — pasif üyede bilgi bandı; canWrite (owner/manager) üyede normal composer */}
+      {isTeam && !canWrite ? (
         <div className="border-t border-line p-3 md:p-4 bg-card">
           <p className="text-xs text-ink-72 text-center">
-            Salt görüntüleme — mesaj gönderme yakında ekip üyelerine açılacak.
+            Salt görüntüleme — mesaj gönderme yalnızca kurum yöneticilerine açıktır.
           </p>
         </div>
       ) : (

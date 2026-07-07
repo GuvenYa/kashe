@@ -165,16 +165,27 @@ async function notifyNewMessage(
       .single();
     if (!conv) return;
 
-    const recipientId =
-      conv.customer_id === senderId ? conv.professional_id : conv.customer_id;
+    // Gönderenin tarafını belirle: pro OLMAYAN herkes (kurum sahibi VE ekip üyeleri)
+    // müşteri tarafıdır. (Eski `customer_id===senderId` kalıbı üye gönderince bildirimi
+    // yanlışlıkla kuruma yolluyordu.)
+    const senderIsProfessional = senderId === conv.professional_id;
+    const recipientId = senderIsProfessional
+      ? conv.customer_id
+      : conv.professional_id;
     if (!recipientId) return;
+
+    // Attribution: müşteri tarafından yazılan mesajda karşı tarafa DAİMA kurum/müşteri
+    // adı gösterilir (ad müşteri profilinden çözülür) — üye adı sızmaz.
+    const senderAttributionId = senderIsProfessional
+      ? senderId
+      : conv.customer_id;
 
     const [{ data: senderProfile }, { data: recipientProfile }, toEmail] =
       await Promise.all([
         supabase
           .from('profiles')
           .select('full_name, company_name, role')
-          .eq('id', senderId)
+          .eq('id', senderAttributionId)
           .single(),
         supabase
           .from('profiles')
@@ -541,6 +552,19 @@ export async function sendMessage(
     hasAccess = !!assignee;
   }
 
+  // Kurumsal ekip: owner/manager kurum adına mesaj gönderebilir ('member' pasif kalır)
+  if (conv && !hasAccess) {
+    const { data: membership } = await supabase
+      .from('business_members')
+      .select('member_role')
+      .eq('business_id', conv.customer_id)
+      .eq('member_user_id', user.id)
+      .maybeSingle();
+    hasAccess =
+      membership?.member_role === 'owner' ||
+      membership?.member_role === 'manager';
+  }
+
   if (!conv || !hasAccess) {
     return { success: false, error: 'Bu konuşmaya erişimin yok.' };
   }
@@ -626,8 +650,10 @@ export async function getTeamConversationIds(): Promise<string[]> {
     .select('business_id, member_role')
     .eq('member_user_id', user.id);
 
+  // Yalnız PASİF ('member') üyelikler unread sayımından hariç tutulur.
+  // owner/manager (canWrite) kurum konuşmalarının unread'i normal sayılır.
   const teamBusinessIds = (memberships ?? [])
-    .filter((m) => m.member_role !== 'owner')
+    .filter((m) => m.member_role === 'member')
     .map((m) => m.business_id);
 
   if (teamBusinessIds.length === 0) return [];

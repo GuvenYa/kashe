@@ -67,6 +67,13 @@ export default async function MesajlarPage() {
     .map((m) => m.business_id);
   const teamBusinessSet = new Set(teamBusinessIds);
 
+  // Yazma yetkisi (owner/manager) olan kurumlar — konuşmada composer/unread/presence açılır
+  const canWriteBusinessSet = new Set(
+    (memberships ?? [])
+      .filter((m) => m.member_role === 'owner' || m.member_role === 'manager')
+      .map((m) => m.business_id)
+  );
+
   // .or() filtresi: kendi + atanan + kurum konuşmaları (kurum konuşması customer_id = business_id)
   const orFilter = [
     `customer_id.eq.${user.id}`,
@@ -118,11 +125,15 @@ export default async function MesajlarPage() {
   const rawConversations = (conversationsData || []) as unknown as RawRow[];
   const conversationIds = rawConversations.map((c) => c.id);
 
-  // Kurum konuşmaları (customer_id = business_id, üye müşteri değil) → pasif gözlemci
-  const teamConvIds = new Set(
+  // PASİF kurum konuşmaları (canWrite YOK) → unread hesaplanmaz.
+  // canWrite (owner/manager) kurum konuşmalarının unread'i normal sayılır.
+  const passiveTeamConvIds = new Set(
     rawConversations
       .filter(
-        (c) => c.customer_id !== user.id && teamBusinessSet.has(c.customer_id)
+        (c) =>
+          c.customer_id !== user.id &&
+          teamBusinessSet.has(c.customer_id) &&
+          !canWriteBusinessSet.has(c.customer_id)
       )
       .map((c) => c.id)
   );
@@ -164,7 +175,7 @@ export default async function MesajlarPage() {
       if (
         msg.sender_id !== user.id &&
         !msg.read_at &&
-        !teamConvIds.has(msg.conversation_id)
+        !passiveTeamConvIds.has(msg.conversation_id)
       ) {
         unreadCountsByConv[msg.conversation_id] =
           (unreadCountsByConv[msg.conversation_id] || 0) + 1;
@@ -177,6 +188,8 @@ export default async function MesajlarPage() {
     .map((conv): ConversationItem | null => {
       const isTeam =
         conv.customer_id !== user.id && teamBusinessSet.has(conv.customer_id);
+      // owner/manager üye → bu kurum konuşmasında yazma yetkisi (aktif)
+      const teamCanWrite = isTeam && canWriteBusinessSet.has(conv.customer_id);
       // Kurum üyesi müşteri-tarafı sayılır → karşı taraf = profesyonel (kendi kurumu değil)
       const isCustomerSide = conv.customer_id === user.id || isTeam;
       const other = isCustomerSide ? conv.professional : conv.customer;
@@ -196,8 +209,11 @@ export default async function MesajlarPage() {
           role: other.role,
         },
         last_message: lastMessagesByConv[conv.id] ?? null,
-        unread_count: isTeam ? 0 : unreadCountsByConv[conv.id] || 0,
+        // canWrite üyede gerçek unread; pasif kurum konuşmasında 0
+        unread_count:
+          isTeam && !teamCanWrite ? 0 : unreadCountsByConv[conv.id] || 0,
         is_team: isTeam,
+        team_can_write: teamCanWrite,
         team_business_name: isTeam
           ? businessNames[conv.customer_id] ?? 'Kurum'
           : null,

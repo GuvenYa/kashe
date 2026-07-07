@@ -178,9 +178,11 @@ Deno.serve(async (_req: Request) => {
       const conv = convMap.get(msg.conversation_id);
       if (!conv) continue;
 
-      const recipientId = conv.customer_id === msg.sender_id
-        ? conv.professional_id
-        : conv.customer_id;
+      // Pro OLMAYAN herkes (kurum sahibi + ekip üyeleri) müşteri tarafıdır.
+      const senderIsProfessional = msg.sender_id === conv.professional_id;
+      const recipientId = senderIsProfessional
+        ? conv.customer_id
+        : conv.professional_id;
 
       const recipientEmail = emailMap.get(recipientId);
       if (!recipientEmail) {
@@ -188,8 +190,13 @@ Deno.serve(async (_req: Request) => {
         continue;
       }
 
+      // Attribution: müşteri tarafı → karşı tarafa DAİMA kurum/müşteri adı (üye adı sızmaz).
+      const senderAttributionId = senderIsProfessional
+        ? msg.sender_id
+        : conv.customer_id;
+
       const recipientProfile = profileMap.get(recipientId);
-      const senderProfile = profileMap.get(msg.sender_id);
+      const senderProfile = profileMap.get(senderAttributionId);
       const recipientName = getName(recipientProfile);
       const senderName = getName(senderProfile);
 

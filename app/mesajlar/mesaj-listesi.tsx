@@ -29,8 +29,10 @@ export type ConversationItem = {
     created_at: string;
   } | null;
   unread_count: number;
-  /** Kurumsal ekip konuşması (pasif gözlemci — kurum adına, salt görüntüleme) */
+  /** Kurumsal ekip konuşması (kurum adına görünüm) */
   is_team: boolean;
+  /** owner/manager üye → aktif (unread sayılır, badge gösterilir); member → pasif */
+  team_can_write: boolean;
   team_business_name: string | null;
 };
 
@@ -128,11 +130,11 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
               created_at: m.created_at,
             };
             updated.last_message_at = m.created_at;
-            // Kurum konuşmasında unread ARTMAZ (pasif gözlemci — asla sıfırlanamaz)
+            // Pasif kurum konuşmasında unread ARTMAZ; canWrite (owner/manager) konuşmada sayılır
             if (
               m.sender_id !== currentUserId &&
               !m.read_at &&
-              !updated.is_team
+              (!updated.is_team || updated.team_can_write)
             ) {
               updated.unread_count = updated.unread_count + 1;
             }
@@ -290,8 +292,8 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                         )}
                       </div>
 
-                      {/* Kurum konuşmasında unread badge YOK (pasif gözlemci) */}
-                      {!conv.is_team && unreadCount > 0 && (
+                      {/* Pasif kurum konuşmasında badge YOK; canWrite konuşmada gösterilir */}
+                      {(!conv.is_team || conv.team_can_write) && unreadCount > 0 && (
                         <div className="shrink-0 min-w-[24px] h-6 px-2 bg-terracotta text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
                           {unreadCount}
                         </div>

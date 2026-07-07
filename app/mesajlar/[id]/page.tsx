@@ -105,6 +105,14 @@ export default async function KonusmaPage({
   const isTeam =
     conv.customer_id !== user.id &&
     teamBusinessIds.includes(conv.customer_id);
+  // owner/manager üye → kurum adına yazma yetkisi (pasiflik kalkar)
+  const canWrite =
+    isTeam &&
+    (memberships ?? []).some(
+      (m) =>
+        m.business_id === conv.customer_id &&
+        (m.member_role === 'owner' || m.member_role === 'manager')
+    );
 
   // Erişim kontrolü — sahibi ajans, müşteri, atanan profesyonel VEYA kurum ekip üyesi
   if (
@@ -196,6 +204,20 @@ export default async function KonusmaPage({
     }
   }
 
+  // Attribution (kurum-DIŞI görünüm): viewer PRO ise, kurum ekip üyelerinin (müşteri
+  // tarafı, katılımcı olmayan gönderenler) adı KURUM adıyla gösterilir — üye adı sızmaz.
+  // Kurum-içi görünümde (owner + üyeler) üyenin gerçek adı görünmeye devam eder.
+  const viewerIsProfessional = conv.professional_id === user.id || isAssignedPro;
+  const customerIsBusiness = conv.customer?.role === 'business';
+  if (viewerIsProfessional && customerIsBusiness && !ownerIsAgency && conv.customer) {
+    const orgName = profileName(conv.customer);
+    for (const sid of Object.keys(senderNames)) {
+      if (sid !== conv.customer_id && sid !== conv.professional_id) {
+        senderNames[sid] = { name: orgName, agencyTag: null };
+      }
+    }
+  }
+
   // Quote'ları çek — sadece bu konuşmadaki, message_type='quote' olanlar zaten quote_id taşıyor
   const quoteIds = messages
     .filter((m) => m.message_type === 'quote' && m.quote_id)
@@ -269,8 +291,8 @@ export default async function KonusmaPage({
                 isAssignedPro={isAssignedPro}
                 isOwnerAgency={isOwnerAgency}
                 isTeam={isTeam}
+                canWrite={canWrite}
                 teamBusinessName={teamBusinessName}
-                teamCustomerId={isTeam ? conv.customer_id : null}
                 assignedIds={assignedIds}
                 teamMembers={teamMembers}
                 senderNames={senderNames}
