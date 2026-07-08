@@ -280,9 +280,24 @@ export default async function ProfilPage() {
                 </div>
               )}
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
-                  {getRoleLabel(profile.role)}
-                </p>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
+                    {getRoleLabel(profile.role)}
+                  </p>
+                  {/* Yayın durumu ROZETİ — bilgi amaçlı (buton değil); aksiyon dipteki
+                      banttadır. Yalnız yayın kavramı olan roller (pro/business). */}
+                  {(isPro || isBusinessUser) && (
+                    <span
+                      className={`font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border ${
+                        profile.is_published
+                          ? 'bg-moss/10 text-moss border-moss/40'
+                          : 'bg-ink-72/10 text-ink-72 border-ink-72/25'
+                      }`}
+                    >
+                      {profile.is_published ? 'Yayında' : 'Yayında değil'}
+                    </span>
+                  )}
+                </div>
                 <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
                   {displayName}
                 </h1>
@@ -357,17 +372,6 @@ export default async function ProfilPage() {
                   </p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* PUBLISH TOGGLE — sadece approved profiller yayın kontrolü görür */}
-          {(isPro || isBusinessUser) && profile.approval_status === 'approved' && (
-            <div className="mb-8">
-              <PublishToggle
-                isPublished={profile.is_published}
-                canPublish={canPub}
-                missingFields={missingFields}
-              />
             </div>
           )}
 
@@ -466,7 +470,143 @@ export default async function ProfilPage() {
             )}
           </div>
 
+          {/* PROFESYONEL: Portföy */}
+          {isPro && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">Portföy</h2>
+                <Link
+                  href="/profil/portfoy"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {portfolioItems.length === 0
+                    ? 'Fotoğraf ekle →'
+                    : 'Tümünü yönet →'}
+                </Link>
+              </div>
+
+              {portfolioItems.length === 0 ? (
+                <p className="text-ink-72">
+                  Henüz portföy öğesi eklemedin.
+                </p>
+              ) : (
+                <PortfolioGallery items={portfolioItems} />
+              )}
+            </div>
+          )}
+
           {/* PROFESYONEL: Hizmetler */}
+          {isPro && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">Hizmetlerim</h2>
+                <Link
+                  href="/profil/hizmetlerim"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {services.length === 0 ? 'Hizmet ekle →' : 'Tümünü yönet →'}
+                </Link>
+              </div>
+
+              {services.length === 0 ? (
+                <p className="text-ink-72">
+                  Henüz hizmet eklemedin. Yayınlamak için en az 1 aktif hizmet gerekli.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {services.slice(0, 3).map((service) => {
+                    const priceLabel = formatPriceRange(
+                      service.price_min,
+                      service.price_max,
+                      service.price_on_request,
+                      service.price_unit,
+                      service.price_starting
+                    );
+                    const durationLabel = formatDuration(service.duration_hours);
+                    return (
+                      <div
+                        key={service.id}
+                        className={`border-l-2 pl-4 py-1 ${
+                          service.is_active
+                            ? 'border-terracotta'
+                            : 'border-line opacity-60'
+                        }`}
+                      >
+                        <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
+                          {service.service_categories
+                            ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
+                            : ''}
+                          {!service.is_active && (
+                            <span className="ml-2 text-terracotta">· Pasif</span>
+                          )}
+                        </p>
+                        <p className="font-display text-base text-ink">
+                          {service.title}
+                        </p>
+                        <p className="text-sm text-ink-72 mt-0.5">
+                          {[durationLabel, priceLabel].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {services.length > 3 && (
+                    <p className="text-sm text-ink-72 pt-2">
+                      ve {services.length - 3} hizmet daha...
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PROFESYONEL: Paketler */}
+          {isPro && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">
+                  Paketlerim{' '}
+                  <span className="text-ink-72 text-lg">({packageCount})</span>
+                </h2>
+                <Link
+                  href="/profil/paketler"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  {packageCount === 0 ? 'Paket oluştur →' : 'Tümünü yönet →'}
+                </Link>
+              </div>
+              {packageCount === 0 ? (
+                <p className="text-ink-72 text-sm">
+                  Birden çok hizmetini tek pakette topla (örn. &quot;Düğün
+                  Paketi&quot;). Müşteriler profilinde paketlerini görüp doğrudan
+                  iletişime geçebilir.
+                </p>
+              ) : (
+                <p className="text-ink-72 text-sm">
+                  Paketlerini düzenle, yeni paket ekle, aktif/pasif yap.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* PROFESYONEL: Başvurularım */}
+          {isPro && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">Başvurularım</h2>
+                <Link
+                  href="/basvurularim"
+                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                >
+                  Tümünü gör →
+                </Link>
+              </div>
+              <p className="text-ink-72 text-sm">
+                İlan tahtasından başvurduğun ilanları ve başvuru durumlarını
+                buradan takip et.
+              </p>
+            </div>
+          )}
+
           {/* PROFESYONEL: Üye olduğum ajanslar */}
           {isPro && (
             <div className="mt-5 bg-card border border-line rounded-xl p-6">
@@ -540,229 +680,6 @@ export default async function ProfilPage() {
                     );
                   })}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* PROFESYONEL: İstatistiklerim (premium) */}
-          {isPro && proIsPremium && (
-            <div className="mt-5 bg-card border border-line rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display font-semibold text-xl text-ink">
-                  İstatistiklerim
-                </h2>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
-                  Premium
-                </span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-paper rounded-lg p-4">
-                  <p className="font-display text-3xl text-ink leading-none">
-                    {stats.views}
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Profil görüntülenme</p>
-                </div>
-                <div className="bg-paper rounded-lg p-4">
-                  <p className="font-display text-3xl text-ink leading-none">
-                    {stats.favorites}
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Favoriye eklenme</p>
-                </div>
-                <div className="bg-paper rounded-lg p-4">
-                  <p className="font-display text-3xl text-ink leading-none">
-                    {stats.applications}
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">
-                    Yaptığın başvuru
-                    {stats.applications > 0 && (
-                      <span className="text-moss">
-                        {' '}
-                        · {stats.accepted} kabul
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="bg-paper rounded-lg p-4">
-                  <p className="font-display text-3xl text-ink leading-none">
-                    {stats.completedJobs}
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Tamamlanan iş</p>
-                </div>
-                <div className="bg-paper rounded-lg p-4">
-                  <p className="font-display text-3xl text-ink leading-none flex items-center gap-1">
-                    {stats.reviewCount > 0 ? stats.averageRating : '—'}
-                    {stats.reviewCount > 0 && (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                      </svg>
-                    )}
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">
-                    Ortalama puan
-                    {stats.reviewCount > 0 && (
-                      <span> · {stats.reviewCount} yorum</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PROFESYONEL: İstatistik teşvik (premium değilse) */}
-          {isPro && !proIsPremium && (
-            <div className="mt-8 bg-gradient-to-br from-[#F4E9C8]/60 to-paper border border-[#D9C179] rounded-lg p-8">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
-                    Premium
-                  </span>
-                  <h2 className="font-display font-semibold text-2xl text-ink mt-3">
-                    İstatistiklerini gör
-                  </h2>
-                  <p className="text-ink-72 text-sm mt-2 max-w-md">
-                    Profilin kaç kez görüntülendi, kaç kişi favoriledi, başvuru
-                    ve iş performansın nasıl? Premium ile tüm istatistiklerine
-                    eriş, keşfette üst sıralarda yer al.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3 mt-5 opacity-50 pointer-events-none select-none">
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ···
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Görüntülenme</p>
-                </div>
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ··
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Favori</p>
-                </div>
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ···
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Başvuru</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PROFESYONEL: Hizmetler */}
-          {isPro && (
-            <div className="mt-5 bg-card border border-line rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display font-semibold text-xl text-ink">Hizmetlerim</h2>
-                <Link
-                  href="/profil/hizmetlerim"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
-                >
-                  {services.length === 0 ? 'Hizmet ekle →' : 'Tümünü yönet →'}
-                </Link>
-              </div>
-
-              {services.length === 0 ? (
-                <p className="text-ink-72">
-                  Henüz hizmet eklemedin. Yayınlamak için en az 1 aktif hizmet gerekli.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {services.slice(0, 3).map((service) => {
-                    const priceLabel = formatPriceRange(
-                      service.price_min,
-                      service.price_max,
-                      service.price_on_request,
-                      service.price_unit,
-                      service.price_starting
-                    );
-                    const durationLabel = formatDuration(service.duration_hours);
-                    return (
-                      <div
-                        key={service.id}
-                        className={`border-l-2 pl-4 py-1 ${
-                          service.is_active
-                            ? 'border-terracotta'
-                            : 'border-line opacity-60'
-                        }`}
-                      >
-                        <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
-                          {service.service_categories
-                            ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
-                            : ''}
-                          {!service.is_active && (
-                            <span className="ml-2 text-terracotta">· Pasif</span>
-                          )}
-                        </p>
-                        <p className="font-display text-base text-ink">
-                          {service.title}
-                        </p>
-                        <p className="text-sm text-ink-72 mt-0.5">
-                          {[durationLabel, priceLabel].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                    );
-                  })}
-                  {services.length > 3 && (
-                    <p className="text-sm text-ink-72 pt-2">
-                      ve {services.length - 3} hizmet daha...
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* PROFESYONEL: Paketler */}
-          {isPro && (
-            <div className="mt-6 bg-card border border-line rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display font-semibold text-xl text-ink">
-                  Paketlerim{' '}
-                  <span className="text-ink-72 text-lg">({packageCount})</span>
-                </h2>
-                <Link
-                  href="/profil/paketler"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
-                >
-                  {packageCount === 0 ? 'Paket oluştur →' : 'Tümünü yönet →'}
-                </Link>
-              </div>
-              {packageCount === 0 ? (
-                <p className="text-ink-72 text-sm">
-                  Birden çok hizmetini tek pakette topla (örn. &quot;Düğün
-                  Paketi&quot;). Müşteriler profilinde paketlerini görüp doğrudan
-                  iletişime geçebilir.
-                </p>
-              ) : (
-                <p className="text-ink-72 text-sm">
-                  Paketlerini düzenle, yeni paket ekle, aktif/pasif yap.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* PROFESYONEL: Portföy */}
-          {isPro && (
-            <div className="mt-6 bg-card border border-line rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display font-semibold text-xl text-ink">Portföy</h2>
-                <Link
-                  href="/profil/portfoy"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
-                >
-                  {portfolioItems.length === 0
-                    ? 'Fotoğraf ekle →'
-                    : 'Tümünü yönet →'}
-                </Link>
-              </div>
-
-              {portfolioItems.length === 0 ? (
-                <p className="text-ink-72">
-                  Henüz portföy öğesi eklemedin.
-                </p>
-              ) : (
-                <PortfolioGallery items={portfolioItems} />
               )}
             </div>
           )}
@@ -890,25 +807,6 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* PROFESYONEL: Başvurularım */}
-          {isPro && (
-            <div className="mt-5 bg-card border border-line rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-                <h2 className="font-display font-semibold text-xl text-ink">Başvurularım</h2>
-                <Link
-                  href="/basvurularim"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
-                >
-                  Tümünü gör →
-                </Link>
-              </div>
-              <p className="text-ink-72 text-sm">
-                İlan tahtasından başvurduğun ilanları ve başvuru durumlarını
-                buradan takip et.
-              </p>
-            </div>
-          )}
-
           {/* MÜŞTERİ: Favorilerim */}
           {isClientUser && (
             <div className="mt-5 bg-card border border-line rounded-xl p-6">
@@ -976,6 +874,123 @@ export default async function ProfilPage() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* PROFESYONEL: İstatistiklerim (premium) */}
+          {isPro && proIsPremium && (
+            <div className="mt-5 bg-card border border-line rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+                <h2 className="font-display font-semibold text-xl text-ink">
+                  İstatistiklerim
+                </h2>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
+                  Premium
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.views}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Profil görüntülenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.favorites}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Favoriye eklenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.applications}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">
+                    Yaptığın başvuru
+                    {stats.applications > 0 && (
+                      <span className="text-moss">
+                        {' '}
+                        · {stats.accepted} kabul
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none">
+                    {stats.completedJobs}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Tamamlanan iş</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4">
+                  <p className="font-display text-3xl text-ink leading-none flex items-center gap-1">
+                    {stats.reviewCount > 0 ? stats.averageRating : '—'}
+                    {stats.reviewCount > 0 && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                      </svg>
+                    )}
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">
+                    Ortalama puan
+                    {stats.reviewCount > 0 && (
+                      <span> · {stats.reviewCount} yorum</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PROFESYONEL: İstatistik teşvik (premium değilse) */}
+          {isPro && !proIsPremium && (
+            <div className="mt-8 bg-gradient-to-br from-[#F4E9C8]/60 to-paper border border-[#D9C179] rounded-lg p-8">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
+                    Premium
+                  </span>
+                  <h2 className="font-display font-semibold text-2xl text-ink mt-3">
+                    İstatistiklerini gör
+                  </h2>
+                  <p className="text-ink-72 text-sm mt-2 max-w-md">
+                    Profilin kaç kez görüntülendi, kaç kişi favoriledi, başvuru
+                    ve iş performansın nasıl? Premium ile tüm istatistiklerine
+                    eriş, keşfette üst sıralarda yer al.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 mt-5 opacity-50 pointer-events-none select-none">
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ···
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Görüntülenme</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ··
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Favori</p>
+                </div>
+                <div className="bg-paper rounded-lg p-4 w-32">
+                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
+                    ···
+                  </p>
+                  <p className="text-xs text-ink-72 mt-1.5">Başvuru</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* YAYIN DURUMU BANDI — aksiyon (Yayınla / Yayından kaldır). Konum: en dipte,
+              ID'nin hemen üstünde (mevcut yeşil/uyarı band tasarımı korunur, yalnız konum). */}
+          {(isPro || isBusinessUser) && profile.approval_status === 'approved' && (
+            <div className="mb-8">
+              <PublishToggle
+                isPublished={profile.is_published}
+                canPublish={canPub}
+                missingFields={missingFields}
+              />
             </div>
           )}
 

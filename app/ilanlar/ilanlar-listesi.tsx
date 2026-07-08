@@ -286,6 +286,18 @@ function IlanCard({
   const urgent = isUrgent(listing);
   const featured = isFeaturedHome(listing) || isFeaturedCategory(listing);
 
+  // İlan veren — kamuya görünen ad/avatar DAİMA creator_id profili (kurum/kişi),
+  // ASLA created_by (üye) değil (attribution kuralı).
+  const creator = listing.creator;
+  const creatorName =
+    creator?.company_name || creator?.full_name || 'İlan sahibi';
+  const creatorRoleLabel =
+    creator?.role === 'business'
+      ? 'Kurumsal'
+      : creator?.role === 'agency'
+        ? 'Ajans'
+        : null;
+
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
@@ -345,6 +357,31 @@ function IlanCard({
       <h3 className="font-display text-lg text-ink leading-snug mb-3 line-clamp-2">
         {listing.title}
       </h3>
+
+      {/* İlan veren (creator_id profili) — kart tamamı zaten Link olduğundan düz metin */}
+      {creator && (
+        <div className="flex items-center gap-2 mb-3">
+          {creator.avatar_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={creator.avatar_url}
+              alt=""
+              className="w-6 h-6 rounded-full object-cover border border-line shrink-0"
+              aria-hidden="true"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-terracotta/80 flex items-center justify-center text-paper font-display font-semibold text-[10px] shrink-0">
+              {creatorName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="text-xs text-ink-72 truncate">{creatorName}</span>
+          {creatorRoleLabel && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-72 border border-line rounded-full px-1.5 py-0.5 shrink-0">
+              {creatorRoleLabel}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Meta */}
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-72 mb-3">

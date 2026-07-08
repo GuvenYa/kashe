@@ -55,39 +55,40 @@ export async function TopNav() {
   const menuLinks: { href: string; label: string }[] = [
     { href: "/profil", label: "Profilim" },
   ];
-  // Profesyonel/ajans → Takvimim + Kazançlarım, profilim'in hemen ardına
+  // MENÜ SADELEŞTİRME: /profil'de bölümü/giriş-linki OLAN sayfalar menüde TEKRAR
+  // ETMEZ; karşılığı OLMAYANLAR kalır. (Yetki/sayfa değişmez — yalnız menü içeriği.)
+
+  // Profesyonel/ajans → Takvimim + Kazançlarım (profilde bölüm yok → kalır)
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/takvimim", label: "Takvimim" });
     menuLinks.push({ href: "/kazanclarim", label: "Kazançlarım" });
   }
-  // Müşteri/işletme → İlanlarım + Rezervasyonlarım + Teklif Taleplerim
+  // Müşteri/işletme → İlanlarım (bilinçli korunur — asıl çalışma alanı) + profilde
+  // karşılığı olmayan Rezervasyonlarım/Ödeme/Teklif Taleplerim.
   if (isClient || isBusiness) {
     menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
     menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
     menuLinks.push({ href: "/odemelerim", label: "Ödeme Geçmişi" });
     menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
   }
-  // Kurum manager+ üyesi (client/business değilse) → İlanlarım (kurum ilanlarını yönetir).
-  // Yalnız bu link; Rezervasyonlarım/Ödeme/Teklif Taleplerim bu rötuş kapsamında değil.
+  // Kurum manager+ üyesi (client/business değilse) → İlanlarım (profilde karşılığı YOK,
+  // tek erişim menü). Üyelik-farkındalıklı görünürlük korunur.
   if (isBusinessManager && !isClient && !isBusiness) {
     menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
   }
-  // İşletme → kurumsal ekip davetlerini görebilmesi için Davetlerim
-  if (isBusiness) {
-    menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });
-  }
-  if (isProfessional || isAgency) {
+  // Ajans → Başvurularım: ajans /profil'inde Başvurularım bölümü YOK ({isPro && ...} pro'ya
+  // özel) → menüde kalır. Pro'da bölüm olduğundan pro'nun menüsünden çıkarıldı.
+  if (isAgency) {
     menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
-    menuLinks.push({ href: "/davetlerim", label: "Davetlerim" });
+  }
+  // Profesyonel/ajans → Teklif Talepleri (profilde bölüm yok → kalır)
+  if (isProfessional || isAgency) {
     menuLinks.push({ href: "/teklif-talepleri", label: "Teklif Talepleri" });
   }
-  if (isProfessional) {
-    menuLinks.push({ href: "/profil/hizmetlerim", label: "Hizmetlerim" });
-    menuLinks.push({ href: "/profil/portfoy", label: "Portföyüm" });
-  }
-  if (isClient) {
-    menuLinks.push({ href: "/favoriler", label: "Favoriler" });
-  }
+  // ÇIKARILDI (profilde bölüm/link var): pro'da Hizmetlerim (/profil/hizmetlerim),
+  // Portföyüm (/profil/portfoy), Paketlerim (/profil/paketler), Başvurularım; client'ta
+  // Favoriler; ayrıca TÜM rollerde Davetlerim (profildeki "Davetlerim →" + bildirimler
+  // yeterli). business'ta Kurumsal Ekip zaten menüde link olarak yoktu.
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/premium", label: "Premium" });
   }
@@ -131,11 +132,8 @@ export async function TopNav() {
             </a>
           {user ? (
             <>
-              {canReceiveOffers && (
-                <a href="/teklif-talepleri" className={navLinkClass}>
-                  Teklif Talepleri
-                </a>
-              )}
+              {/* "Teklif Talepleri" desktop orta nav'dan çıkarıldı — avatar/hamburger
+                  menüde (menuLinks, pro/agency) kalır. Teklif Topla burada kalır. */}
               {canCollectOffers && (
                 <a href="/teklif-topla" className={navLinkClass}>
                   Teklif Topla
