@@ -578,6 +578,10 @@ export async function applyToListing(
   if (listing.creator_id === user.id) {
     return { success: false, error: 'Kendi ilanına başvuramazsın' };
   }
+  // Yönettiğin kurum ilanına da başvuramazsın (dilim 3b rötuş — apply-side koruma).
+  if (await canWriteForBusiness(listing.creator_id)) {
+    return { success: false, error: 'Yönettiğin ilana başvuramazsın.' };
+  }
 
   // Başvuran rolü kısıtı — ilan override'ı varsa onu, yoksa ilan sahibinin
   // profil varsayılanını kullan. Başvuran bu role kümesinde değilse engelle.

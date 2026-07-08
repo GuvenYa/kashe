@@ -105,3 +105,58 @@ export async function getOwnedBusinessIds(): Promise<string[]> {
 
   return (data ?? []).map((m) => m.business_id);
 }
+
+/**
+ * Kurumsal ekip bağlamı — TEK sorguda üyelik id'leri + rol setleri. Sayfalarda
+ * kopyalanan "business_members çek + filtrele" bloğunu (5+ yer) tek kaynağa taşır.
+ *
+ * - teamBusinessIds: üyesi olunan TÜM kurumlar (owner/manager/member) — okuma
+ *   görünürlüğü. Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership),
+ *   o yüzden ayrıca filtre gerekmez.
+ * - canWriteSet: owner+manager (kurum adına yazma / yönetim — edit/publish/composer).
+ * - canOwnSet: yalnız owner (owner-only aksiyonlar — silme/close/cancel/promotion).
+ */
+export async function getTeamContext(): Promise<{
+  teamBusinessIds: string[];
+  canWriteSet: Set<string>;
+  canOwnSet: Set<string>;
+}> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      teamBusinessIds: [],
+      canWriteSet: new Set<string>(),
+      canOwnSet: new Set<string>(),
+    };
+  }
+
+  const { data } = await supabase
+    .from('business_members')
+    .select('business_id, member_role')
+    .eq('member_user_id', user.id);
+
+  const memberships = (data ?? []) as Array<{
+    business_id: string;
+    member_role: string;
+  }>;
+
+  return {
+    teamBusinessIds: memberships.map((m) => m.business_id),
+    canWriteSet: new Set(
+      memberships
+        .filter(
+          (m) => m.member_role === 'owner' || m.member_role === 'manager'
+        )
+        .map((m) => m.business_id)
+    ),
+    canOwnSet: new Set(
+      memberships
+        .filter((m) => m.member_role === 'owner')
+        .map((m) => m.business_id)
+    ),
+  };
+}

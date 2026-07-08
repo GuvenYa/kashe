@@ -4,6 +4,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
+import { getTeamContext } from '@/app/lib/business-write';
 
 export const metadata = {
   title: 'Teklif Taleplerim — Kashe',
@@ -30,15 +31,9 @@ export default async function TeklifTaleplerimPage() {
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
-  // Kurumsal ekip üyeliği — üyesi olunan kurumun taleplerini (read-only) ayrı grupta
-  // göstermek için. TÜM roller dahil (owner/manager/member); owner-rol üye de gerçek
-  // satırdır. Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership).
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-
-  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
+  // Kurumsal ekip bağlamı — tek sorgu (getTeamContext). teamBusinessIds = üyesi
+  // olunan tüm kurumlar; talepleri read-only ayrı grupta göstermek için.
+  const { teamBusinessIds } = await getTeamContext();
 
   // Kendi taleplerim + üyesi olunan kurumların talepleri (RLS: sahip + business üye SELECT)
   const customerIds = [user.id, ...teamBusinessIds];

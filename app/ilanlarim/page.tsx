@@ -5,6 +5,7 @@ import { IlanlarimListesi } from './ilanlarim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
+import { getTeamContext } from '@/app/lib/business-write';
 import type { ListingWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string; bildirim?: string }>;
@@ -49,29 +50,14 @@ export default async function IlanlarimPage({
 
   const role = profile?.role;
 
-  // Kurumsal ekip üyeliği — üyesi olunan kurumun ilanlarını (read-only) ayrı grupta
-  // göstermek için. TÜM roller dahil (owner/manager/member): owner-rol üye de gerçek
-  // bir satırdır ve erişmeli. Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership).
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-
-  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
-
-  // manager+ (owner/manager) olduğu kurumlar → ilan yönetimi (edit/publish) açılır
-  const canManageBusinessSet = new Set(
-    (memberships ?? [])
-      .filter((m) => m.member_role === 'owner' || m.member_role === 'manager')
-      .map((m) => m.business_id)
-  );
-
-  // owner-ROL olunan kurumlar → ilanda TÜM aksiyonlar (silme/close/cancel/promotion) açılır
-  const canOwnBusinessSet = new Set(
-    (memberships ?? [])
-      .filter((m) => m.member_role === 'owner')
-      .map((m) => m.business_id)
-  );
+  // Kurumsal ekip bağlamı — tek sorgu. teamBusinessIds = üyesi olunan tüm kurumlar
+  // (read-only görünürlük); canWriteSet = owner+manager (edit/publish); canOwnSet =
+  // owner (ilanda TÜM aksiyonlar: silme/close/cancel/promotion).
+  const {
+    teamBusinessIds,
+    canWriteSet: canManageBusinessSet,
+    canOwnSet: canOwnBusinessSet,
+  } = await getTeamContext();
 
   const hasTeamAccess = teamBusinessIds.length > 0;
 

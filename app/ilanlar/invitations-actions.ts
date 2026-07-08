@@ -305,8 +305,22 @@ export async function cancelListingInvitation(
     .single();
 
   if (!invite) return { success: false, error: 'Davet bulunamadı.' };
+  // Daveti gönderen ÜYE, ilan sahibi VEYA kurum ilanında manager+ üye iptal edebilir
+  // (dilim 3b rötuş — davet gönderebilen iptal de edebilmeli). has_business_role kurum
+  // HESABINI kapsamadığından sahip için ayrı creator_id dalı gerekir.
   if (invite.inviter_id !== user.id) {
-    return { success: false, error: 'Bu daveti iptal etme yetkin yok.' };
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('creator_id')
+      .eq('id', invite.listing_id)
+      .single();
+    const canCancel =
+      !!listing &&
+      (listing.creator_id === user.id ||
+        (await canWriteForBusiness(listing.creator_id)));
+    if (!canCancel) {
+      return { success: false, error: 'Bu daveti iptal etme yetkin yok.' };
+    }
   }
   if (invite.status !== 'pending') {
     return { success: false, error: 'Sadece yanıt bekleyen davetler iptal edilebilir.' };

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
-import { IlanDetay } from './ilan-detay';
+import { IlanDetay, type SentInvitation } from './ilan-detay';
 import { incrementListingViews } from '../listings-actions';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
@@ -181,6 +181,29 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     }
   }
 
+  // Gönderilen davetler (sahip + manager+ görür — RLS "Business members see team
+  // listing invitations"; app-gate canDecide ile başvurular bölümüyle tutarlı)
+  let sentInvitations: SentInvitation[] = [];
+  if (canDecide) {
+    const { data: invData, error: invError } = await supabase
+      .from('listing_invitations')
+      .select(
+        `
+        id, status, created_at,
+        professional:profiles!listing_invitations_professional_id_fkey (
+          id, full_name, company_name, avatar_url
+        )
+      `
+      )
+      .eq('listing_id', id)
+      .order('created_at', { ascending: false });
+    // listing_invitations DRIFT tablo — embed/FK adı sürüklenirse sessiz yutma yerine görünür olsun
+    if (invError) {
+      console.error('[ilan-detay] sentInvitations query error:', invError.message);
+    }
+    sentInvitations = (invData as unknown as SentInvitation[]) ?? [];
+  }
+
   // Başvuran (profesyonel) tarafı: kendi başvurusu kabul edildiyse konuşma id'si
   let myConversationId: string | null = null;
   if (user && canApply && myApplication?.status === 'accepted') {
@@ -210,6 +233,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         isProfessional={canApply}
         myApplication={myApplication}
         applications={applications}
+        sentInvitations={sentInvitations}
         acceptedConversationId={acceptedConversationId}
         myConversationId={myConversationId}
       />

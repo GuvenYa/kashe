@@ -55,9 +55,23 @@ import {
   rejectApplication,
   unrejectApplication,
 } from '../listings-actions';
+import { cancelListingInvitation } from '../invitations-actions';
 import { ApplyModal } from './apply-modal';
 import { ApplicationAttachment } from '@/app/components/application-attachment';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
+
+// Gönderilen davet satırı (KALEM 1) — ilanın listing_invitations kaydı + davet edilen pro
+export type SentInvitation = {
+  id: string;
+  status: string;
+  created_at: string;
+  professional: {
+    id: string;
+    full_name: string | null;
+    company_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
 
 type Props = {
   listing: ListingWithRelations;
@@ -72,6 +86,8 @@ type Props = {
   isProfessional: boolean;
   myApplication: Application | null;
   applications: ApplicationWithRelations[];
+  /** İlanın gönderdiği davetler (sahip + manager+ görür — KALEM 1) */
+  sentInvitations: SentInvitation[];
   acceptedConversationId: string | null;
   myConversationId: string | null;
 };
@@ -85,6 +101,7 @@ export function IlanDetay({
   isProfessional,
   myApplication,
   applications,
+  sentInvitations,
   acceptedConversationId,
   myConversationId,
 }: Props) {
@@ -479,8 +496,8 @@ export function IlanDetay({
             </div>
           )}
 
-          {/* PROFESYONEL — BAŞVURMAMIŞ */}
-          {isProfessional && !isOwner && !myApplication && applicationOpen && (
+          {/* PROFESYONEL — BAŞVURMAMIŞ (kendi yönettiği kurum ilanına başvuramaz → canDecide gizler) */}
+          {isProfessional && !canDecide && !myApplication && applicationOpen && (
             <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5">
               <p className="text-sm text-ink mb-4">
                 Bu ilana başvurmak ister misin? İlan sahibine başvuru
@@ -496,8 +513,9 @@ export function IlanDetay({
             </div>
           )}
 
-          {/* PROFESYONEL — BAŞVURMUŞ */}
-          {isProfessional && myApplication && (
+          {/* PROFESYONEL — BAŞVURMUŞ (karar-verici olan üye kendi başvurusunu
+              "Gelen başvurular" panelinde görür; burada çift render olmasın → !canDecide) */}
+          {isProfessional && !canDecide && myApplication && (
             <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F]">
@@ -541,9 +559,9 @@ export function IlanDetay({
             </div>
           )}
 
-          {/* PROFESYONEL — İlan published değil veya kendi ilanı veya başvuramıyor */}
+          {/* PROFESYONEL — İlan published değil veya başvuramıyor (canDecide olanlara gösterme) */}
           {isProfessional &&
-            !isOwner &&
+            !canDecide &&
             !myApplication &&
             !applicationOpen && (
               <div className="bg-ink-72/5 border border-line rounded-lg p-5 text-center">
@@ -646,10 +664,15 @@ export function IlanDetay({
             )}
           </div>
         )}
+
+        {/* Gönderilen davetler (sahip + manager+ görür) — KALEM 1 */}
+        {canDecide && sentInvitations.length > 0 && (
+          <GonderilenDavetler invitations={sentInvitations} />
+        )}
       </div>
 
-      {/* Apply Modal */}
-      {isProfessional && !isOwner && !myApplication && (
+      {/* Apply Modal — canDecide olan (sahip/manager+) için render edilmez */}
+      {isProfessional && !canDecide && !myApplication && (
         <ApplyModal
           listingId={listing.id}
           listingTitle={listing.title}
@@ -1089,6 +1112,134 @@ function ApplicationCompareColumn({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Gönderilen davetler — sahip + manager+ için (KALEM 1)
+// =============================================================================
+
+const INVITATION_STATUS_LABEL: Record<string, string> = {
+  pending: 'Bekliyor',
+  accepted: 'Kabul edildi',
+  declined: 'Reddedildi',
+  expired: 'Süresi doldu',
+  cancelled: 'İptal edildi',
+};
+
+const INVITATION_STATUS_CLASS: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-800 border-amber-200',
+  accepted: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+  declined: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+  expired: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
+  cancelled: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
+};
+
+function GonderilenDavetler({
+  invitations,
+}: {
+  invitations: SentInvitation[];
+}) {
+  return (
+    <div className="mt-12">
+      <h2 className="font-display text-2xl text-ink mb-4">
+        Gönderilen davetler{' '}
+        <span className="text-ink-72 text-lg">({invitations.length})</span>
+      </h2>
+      <div className="space-y-3">
+        {invitations.map((inv) => (
+          <DavetSatiri key={inv.id} invitation={inv} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DavetSatiri({ invitation }: { invitation: SentInvitation }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  const pro = invitation.professional;
+  const proName = pro?.company_name || pro?.full_name || 'Profesyonel';
+  const statusClass =
+    INVITATION_STATUS_CLASS[invitation.status] ??
+    INVITATION_STATUS_CLASS.expired;
+
+  function handleCancel() {
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const r = await cancelListingInvitation(invitation.id);
+      if (r.success) {
+        router.refresh();
+      } else {
+        setError(r.error || 'İptal edilemedi.');
+        setConfirming(false);
+      }
+    });
+  }
+
+  return (
+    <div className="bg-card border border-line rounded-lg p-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <Link
+          href={pro ? `/p/${pro.id}` : '#'}
+          className="flex items-center gap-3 group min-w-0"
+        >
+          {pro?.avatar_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={pro.avatar_url}
+              alt={proName}
+              className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
+              {proName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors truncate">
+              {proName}
+            </p>
+            <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+              {new Date(invitation.created_at).toLocaleDateString('tr-TR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border whitespace-nowrap ${statusClass}`}
+          >
+            {INVITATION_STATUS_LABEL[invitation.status] ?? invitation.status}
+          </span>
+          {invitation.status === 'pending' && (
+            <button
+              onClick={handleCancel}
+              disabled={isPending}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
+                confirming
+                  ? 'bg-terracotta text-paper border-terracotta'
+                  : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+              } disabled:opacity-50`}
+            >
+              {confirming ? 'Onayla' : 'İptal et'}
+            </button>
+          )}
+        </div>
+      </div>
+      {error && <p className="text-xs text-danger mt-2">{error}</p>}
     </div>
   );
 }

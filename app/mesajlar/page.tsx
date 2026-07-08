@@ -4,6 +4,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
 import { getCachedUser } from '@/app/lib/auth';
+import { getTeamContext } from '@/app/lib/business-write';
 
 export const metadata = {
   title: 'Mesajlar — Kashe',
@@ -57,22 +58,11 @@ export default async function MesajlarPage() {
 
   const assignedConvIds = (myAssignments ?? []).map((r) => r.conversation_id);
 
-  // Kurumsal ekip üyeliği — üyesi olunan kurumun konuşmaları. TÜM roller dahil
-  // (owner/manager/member); yazma yetkisi ayrıca canWriteBusinessSet ile ayrılır.
-  // Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership).
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
+  // Kurumsal ekip bağlamı — tek sorgu. teamBusinessIds = tüm üyelikler (görünürlük);
+  // canWriteSet = owner+manager (composer/unread/presence açılır).
+  const { teamBusinessIds, canWriteSet: canWriteBusinessSet } =
+    await getTeamContext();
   const teamBusinessSet = new Set(teamBusinessIds);
-
-  // Yazma yetkisi (owner/manager) olan kurumlar — konuşmada composer/unread/presence açılır
-  const canWriteBusinessSet = new Set(
-    (memberships ?? [])
-      .filter((m) => m.member_role === 'owner' || m.member_role === 'manager')
-      .map((m) => m.business_id)
-  );
 
   // .or() filtresi: kendi + atanan + kurum konuşmaları (kurum konuşması customer_id = business_id)
   const orFilter = [

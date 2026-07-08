@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
 import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
+import { getTeamContext } from '@/app/lib/business-write';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
 function formatBriefValue(field: BriefField, value: string): string {
@@ -46,13 +47,9 @@ export default async function TeklifKarsilastirPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/giris');
 
-  // Kurumsal ekip üyeliği — üye kurum talebini görebilsin. TÜM roller dahil
-  // (owner/manager/member). Kurum-kendine-üyelik DB'de imkânsız.
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
+  // Kurumsal ekip bağlamı — tek sorgu (getTeamContext). teamBusinessIds = üyesi
+  // olunan tüm kurumlar; üye kurum talebini görebilsin.
+  const { teamBusinessIds } = await getTeamContext();
 
   // Talep + sahiplik/üyelik kontrolü
   const { data: request } = await supabase

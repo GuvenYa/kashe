@@ -6,6 +6,7 @@ import { KonusmaDetay } from './konusma-detay';
 import { KarsiTarafPaneli } from './karsi-taraf-paneli';
 import type { Message } from '@/app/lib/types';
 import type { Quote } from '../quotes-data';
+import { getTeamContext } from '@/app/lib/business-write';
 
 type ConversationParticipant = {
   id: string;
@@ -58,13 +59,9 @@ export default async function KonusmaPage({
     .single();
   if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
 
-  // Kurumsal ekip üyeliği — üye kurum konuşmasını görür (yazma canWrite ile ayrı).
-  // TÜM roller dahil (owner/manager/member). Kurum-kendine-üyelik DB'de imkânsız.
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
+  // Kurumsal ekip bağlamı — tek sorgu. teamBusinessIds = tüm üyelikler (görünürlük);
+  // canWriteSet = owner+manager (kurum adına yazma → pasiflik kalkar).
+  const { teamBusinessIds, canWriteSet } = await getTeamContext();
 
   const { data: convData } = await supabase
     .from('conversations')
@@ -105,13 +102,7 @@ export default async function KonusmaPage({
     conv.customer_id !== user.id &&
     teamBusinessIds.includes(conv.customer_id);
   // owner/manager üye → kurum adına yazma yetkisi (pasiflik kalkar)
-  const canWrite =
-    isTeam &&
-    (memberships ?? []).some(
-      (m) =>
-        m.business_id === conv.customer_id &&
-        (m.member_role === 'owner' || m.member_role === 'manager')
-    );
+  const canWrite = isTeam && canWriteSet.has(conv.customer_id);
 
   // Erişim kontrolü — sahibi ajans, müşteri, atanan profesyonel VEYA kurum ekip üyesi
   if (
