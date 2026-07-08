@@ -30,16 +30,15 @@ export default async function TeklifTaleplerimPage() {
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
-  // Kurumsal ekip üyeliği — owner OLMAYAN üyelikler, üyesi olunan kurumun
-  // taleplerini (read-only) ayrı grupta göstermek için
+  // Kurumsal ekip üyeliği — üyesi olunan kurumun taleplerini (read-only) ayrı grupta
+  // göstermek için. TÜM roller dahil (owner/manager/member); owner-rol üye de gerçek
+  // satırdır. Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership).
   const { data: memberships } = await supabase
     .from('business_members')
     .select('business_id, member_role')
     .eq('member_user_id', user.id);
 
-  const teamBusinessIds = (memberships ?? [])
-    .filter((m) => m.member_role !== 'owner')
-    .map((m) => m.business_id);
+  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
 
   // Kendi taleplerim + üyesi olunan kurumların talepleri (RLS: sahip + business üye SELECT)
   const customerIds = [user.id, ...teamBusinessIds];

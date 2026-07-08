@@ -14,6 +14,7 @@ type ListingItem = ListingWithRelations & {
   application_count: number;
   is_own: boolean;
   can_manage: boolean;
+  can_own: boolean;
   owner_business_name: string | null;
 };
 
@@ -167,6 +168,7 @@ export function IlanlarimListesi({ listings, activeStatus }: Props) {
                 listing={listing}
                 isOwn={false}
                 canManage={listing.can_manage}
+                canOwn={listing.can_own}
               />
             ))}
           </div>

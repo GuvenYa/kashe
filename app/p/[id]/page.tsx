@@ -264,31 +264,52 @@ export default async function PublicProfilePage({
     body: string | null;
   } | null = null;
 
-  const canReview =
-    isLoggedIn && !isOwnProfile && currentUserRole === 'client';
+  // Yorum bağlamı adayları: kendi adına (client/business) + owner-ROL olunan kurumlar.
+  // Kurum adına yorum dilim 3b ile açıldı (bugüne dek yalnız client yazabiliyordu).
+  const reviewCandidateIds: string[] = [];
+  if (isLoggedIn && !isOwnProfile && user) {
+    if (currentUserRole === 'client' || currentUserRole === 'business') {
+      reviewCandidateIds.push(user.id);
+    }
+    const { data: ownerMemberships } = await supabase
+      .from('business_members')
+      .select('business_id')
+      .eq('member_user_id', user.id)
+      .eq('member_role', 'owner');
+    for (const m of ownerMemberships ?? []) {
+      reviewCandidateIds.push(m.business_id);
+    }
+  }
+  const canReview = reviewCandidateIds.length > 0;
 
   if (canReview) {
     const [{ data: bookingData }, { data: reviewData }] = await Promise.all([
       supabase
         .from('bookings')
-        .select('id')
-        .eq('customer_id', user!.id)
+        .select('customer_id')
+        .in('customer_id', reviewCandidateIds)
         .eq('professional_id', profile.id)
-        .eq('status', 'completed')
-        .limit(1)
-        .maybeSingle(),
+        .eq('status', 'completed'),
       supabase
         .from('reviews')
-        .select('id, rating, body')
-        .eq('customer_id', user!.id)
+        .select('id, rating, body, customer_id')
+        .in('customer_id', reviewCandidateIds)
         .eq('professional_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .order('created_at', { ascending: false }),
     ]);
 
-    hasCompletedBooking = !!bookingData;
-    existingReview = reviewData ?? null;
+    hasCompletedBooking = (bookingData ?? []).length > 0;
+    // Bağlam önceliği = aday sırası (self önce, sonra owner kurumlar).
+    const reviews = reviewData ?? [];
+    const ctxId = reviewCandidateIds.find((id) =>
+      reviews.some((r) => r.customer_id === id)
+    );
+    const ctxReview = ctxId
+      ? reviews.find((r) => r.customer_id === ctxId)
+      : null;
+    existingReview = ctxReview
+      ? { id: ctxReview.id, rating: ctxReview.rating, body: ctxReview.body }
+      : null;
   }
 
   // Yorumlar listesi + ortalama puan + profesyonel yanıtları + müşteri profilleri
@@ -986,6 +1007,7 @@ export default async function PublicProfilePage({
                     isLoggedIn={isLoggedIn}
                     currentUserIsProfessional={currentUserIsProfessional}
                     isOwnProfile={isOwnProfile}
+                    writableBusinesses={writableBusinesses}
                   />
                 </div>
               </div>

@@ -6,6 +6,7 @@ import {
   getMyListingsForInvite,
   inviteProfessionalToListing,
 } from '@/app/ilanlar/invitations-actions';
+import { type OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 
 type Props = {
   professionalId: string;
@@ -13,6 +14,9 @@ type Props = {
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
+  /** manager+ kurum üyeliği — doluysa profil rolü professional olsa da davet açık
+   *  (davet modalı kendi + kurum ilanlarını gösterir, dilim 3b). */
+  writableBusinesses?: OnBehalfBusiness[];
 };
 
 type ListingOption = {
@@ -28,6 +32,7 @@ export function DavetButton({
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
+  writableBusinesses = [],
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,8 +117,13 @@ export function DavetButton({
     });
   }
 
-  // Görünürlük: sadece giriş yapmış, müşteri/kurumsal, kendi profili değil
-  if (isOwnProfile || currentUserIsProfessional) return null;
+  // Görünürlük: kendi profili değil + (müşteri/kurumsal VEYA manager+ kurum üyesi).
+  // Profesyonel-üye kurum ilanına davet edebilir (dilim 3b) → writableBusinesses doluysa açık.
+  if (
+    isOwnProfile ||
+    (currentUserIsProfessional && writableBusinesses.length === 0)
+  )
+    return null;
 
   // Giriş yapmamışsa: tıklayınca üye ol'a yönlendir
   function handleClick() {

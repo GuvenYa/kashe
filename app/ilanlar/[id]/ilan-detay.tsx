@@ -64,8 +64,11 @@ type Props = {
   currentUserId: string | null;
   isOwner: boolean;
   /** Başvuru kararı (kabul/red/shortlist) verebilir mi: sahip VEYA kurum ilanında
-   *  manager+ üye. Owner-only ilan yönetimi (close/cancel) hâlâ isOwner ile ayrı. */
+   *  manager+ üye. */
   canDecide: boolean;
+  /** "İlanını yönet" (close/cancel/reopen/restore/delete): sahip VEYA kurum
+   *  ilanında owner-ROL üye (dilim 3b). manager YAPAMAZ. */
+  canOwnerManage: boolean;
   isProfessional: boolean;
   myApplication: Application | null;
   applications: ApplicationWithRelations[];
@@ -78,6 +81,7 @@ export function IlanDetay({
   currentUserId,
   isOwner,
   canDecide,
+  canOwnerManage,
   isProfessional,
   myApplication,
   applications,
@@ -384,8 +388,8 @@ export function IlanDetay({
             </div>
           )}
 
-          {/* SAHIBI */}
-          {isOwner && (
+          {/* SAHİP VEYA owner-ROL üye — ilan yönetimi (close/cancel/reopen/restore/delete) */}
+          {canOwnerManage && (
             <div className="bg-card border border-line rounded-lg p-5">
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
                 İlanını yönet

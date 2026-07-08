@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { isUserSuspended } from '@/app/lib/check-suspension';
 import { sendPushToUser } from '@/app/lib/push-server';
-import { canWriteForBusiness } from '@/app/lib/business-write';
+import { canWriteForBusiness, canOwnForBusiness } from '@/app/lib/business-write';
 import {
   validateListingInput,
   validateApplicationInput,
@@ -348,14 +348,18 @@ async function updateListingStatus(
 
   if (!listing) return { success: false, error: 'İlan bulunamadı' };
   if (listing.creator_id !== user.id) {
-    // Kurum ilanı: manager+ üye SADECE publish (→pending_approval, admin onayına)
-    // ve restore (→draft) yapabilir. close/cancel = kurum sahibine özel (dilim 3).
-    // NOT: publishListing 'published' DEĞİL 'pending_approval' üretir — gate buna göre.
+    // Kurum ilanı: manager+ üye publish (→pending_approval) + restore (→draft) yapar.
+    // Diğer geçişler (close→closed, cancel→cancelled) owner-ROL üyeye açık (dilim 3b);
+    // manager'a kapalı. NOT: publishListing 'published' DEĞİL 'pending_approval' üretir.
     const isBusinessManager = await canWriteForBusiness(listing.creator_id);
     if (!isBusinessManager) {
       return { success: false, error: 'Bu ilan senin değil' };
     }
-    if (newStatus !== 'pending_approval' && newStatus !== 'draft') {
+    if (
+      newStatus !== 'pending_approval' &&
+      newStatus !== 'draft' &&
+      !(await canOwnForBusiness(listing.creator_id))
+    ) {
       return {
         success: false,
         error: 'Bu işlem yalnızca kurum sahibine açıktır.',
@@ -462,7 +466,11 @@ export async function deleteListing(
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı' };
-  if (listing.creator_id !== user.id) {
+  // Sahibi VEYA kurum ilanında owner-ROL üye silebilir (manager YETMEZ — dilim 3b).
+  if (
+    listing.creator_id !== user.id &&
+    !(await canOwnForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
   if (listing.status !== 'draft' && listing.status !== 'cancelled') {
@@ -902,7 +910,11 @@ export async function reopenListing(
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı' };
-  if (listing.creator_id !== user.id) {
+  // Sahibi VEYA kurum ilanında owner-ROL üye ("İlanını yönet" bloğu owner-rol'e açık, dilim 3b).
+  if (
+    listing.creator_id !== user.id &&
+    !(await canOwnForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan senin değil' };
   }
   if (listing.status !== 'filled') {
@@ -1316,7 +1328,13 @@ export async function activateUrgentSimulation(
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı.' };
-  if (listing.creator_id !== user.id) {
+  // NOT: iyzico gercek odeme baglaninca (Phase 2) promotion satin alma
+  // akisi ve yetki esigi Fahri ile netlestirilecek.
+  // Sahibi VEYA kurum ilanında owner-ROL üye öne çıkarabilir (manager YETMEZ — dilim 3b).
+  if (
+    listing.creator_id !== user.id &&
+    !(await canOwnForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan senin değil.' };
   }
   if (listing.status !== 'published' && listing.status !== 'filled') {
@@ -1364,7 +1382,13 @@ export async function cancelUrgentSimulation(
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı.' };
-  if (listing.creator_id !== user.id) {
+  // NOT: iyzico gercek odeme baglaninca (Phase 2) promotion satin alma
+  // akisi ve yetki esigi Fahri ile netlestirilecek.
+  // Sahibi VEYA kurum ilanında owner-ROL üye kaldırabilir (manager YETMEZ — dilim 3b).
+  if (
+    listing.creator_id !== user.id &&
+    !(await canOwnForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan senin değil.' };
   }
 
@@ -1425,7 +1449,15 @@ async function setFeatured(
     .single();
   const isAdmin = profile?.is_admin === true;
 
-  if (requireOwner && !isAdmin && listing.creator_id !== user.id) {
+  // NOT: iyzico gercek odeme baglaninca (Phase 2) promotion satin alma
+  // akisi ve yetki esigi Fahri ile netlestirilecek.
+  // Sahibi VEYA kurum ilanında owner-ROL üye öne çıkarabilir (manager YETMEZ — dilim 3b).
+  if (
+    requireOwner &&
+    !isAdmin &&
+    listing.creator_id !== user.id &&
+    !(await canOwnForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan senin değil.' };
   }
   if (!requireOwner && !isAdmin) {

@@ -60,7 +60,10 @@ export default async function DavetlerimPage() {
     .select(
       `
       id, status, invitation_message, created_at,
-      listing:listings!listing_invitations_listing_id_fkey ( id, title ),
+      listing:listings!listing_invitations_listing_id_fkey (
+        id, title, creator_id,
+        creator:profiles!listings_creator_id_fkey ( id, full_name, company_name, avatar_url )
+      ),
       inviter:profiles!listing_invitations_inviter_id_fkey ( id, full_name, company_name, avatar_url )
     `
     )

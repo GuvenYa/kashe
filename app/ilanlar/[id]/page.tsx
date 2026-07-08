@@ -5,7 +5,10 @@ import { incrementListingViews } from '../listings-actions';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getBadges } from '@/app/lib/badges';
-import { canWriteForBusiness } from '@/app/lib/business-write';
+import {
+  canWriteForBusiness,
+  canOwnForBusiness,
+} from '@/app/lib/business-write';
 import type {
   ListingWithRelations,
   ApplicationWithRelations,
@@ -58,6 +61,12 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     (!!user &&
       creatorIsBusiness &&
       (await canWriteForBusiness(listing.creator_id)));
+  // Owner-only ilan yönetimi (close/cancel/reopen/restore/delete) — owner-ROL üye (dilim 3b)
+  const canOwnerManage =
+    isOwner ||
+    (!!user &&
+      creatorIsBusiness &&
+      (await canOwnForBusiness(listing.creator_id)));
 
   // Kullanıcı profili (role + suspension + admin tespiti)
   let userRole: string | null = null;
@@ -197,6 +206,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         currentUserId={user?.id ?? null}
         isOwner={isOwner}
         canDecide={canDecide}
+        canOwnerManage={canOwnerManage}
         isProfessional={canApply}
         myApplication={myApplication}
         applications={applications}

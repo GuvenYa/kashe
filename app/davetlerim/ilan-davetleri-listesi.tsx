@@ -17,6 +17,13 @@ export type IlanDaveti = {
   listing: {
     id: string;
     title: string;
+    creator_id: string;
+    creator: {
+      id: string;
+      full_name: string | null;
+      company_name: string | null;
+      avatar_url: string | null;
+    } | null;
   } | null;
   inviter: {
     id: string;
@@ -99,7 +106,13 @@ function IlanDavetKarti({
     null
   );
 
-  const inviter = invitation.inviter;
+  // Davet kurum ilanınaysa (listing.creator_id !== inviter_id) pro KURUM profilini
+  // görür (attribution kuralı); değilse davet edeni (bugünkü davranış).
+  const inviter =
+    invitation.listing?.creator &&
+    invitation.listing.creator_id !== invitation.inviter?.id
+      ? invitation.listing.creator
+      : invitation.inviter;
   const inviterName =
     inviter?.company_name || inviter?.full_name || 'Bir müşteri';
   const listingTitle = invitation.listing?.title || 'Bir ilan';

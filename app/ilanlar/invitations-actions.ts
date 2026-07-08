@@ -3,6 +3,10 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
+import {
+  canWriteForBusiness,
+  getWritableBusinesses,
+} from '@/app/lib/business-write';
 
 export type InvitationActionResult = {
   success: boolean;
@@ -43,7 +47,12 @@ export async function inviteProfessionalToListing(input: {
     .single();
 
   if (!listing) return { success: false, error: 'İlan bulunamadı.' };
-  if (listing.creator_id !== user.id) {
+  // Sahibi VEYA kurum ilanında manager+ üye davet edebilir (dilim 3b).
+  // inviter_id = user.id KALIR (iptal kapısı inviter_id'ye bağlı).
+  if (
+    listing.creator_id !== user.id &&
+    !(await canWriteForBusiness(listing.creator_id))
+  ) {
     return { success: false, error: 'Bu ilan sana ait değil.' };
   }
   if (listing.status !== 'published') {
@@ -339,11 +348,13 @@ export async function getMyListingsForInvite(professionalId: string): Promise<{
 
   if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
-  // Kendi yayındaki ilanları
+  // Kendi + yazma yetkisi (manager+) olunan kurumların yayındaki ilanları
+  const writable = await getWritableBusinesses();
+  const creatorIds = [user.id, ...writable.map((w) => w.business_id)];
   const { data: listings } = await supabase
     .from('listings')
     .select('id, title')
-    .eq('creator_id', user.id)
+    .in('creator_id', creatorIds)
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 

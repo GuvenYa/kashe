@@ -58,14 +58,13 @@ export default async function KonusmaPage({
     .single();
   if (suspensionCheck?.suspended_at) redirect('/askiya-alindi');
 
-  // Kurumsal ekip üyeliği (owner OLMAYAN) — üye kurum konuşmasını PASİF izler
+  // Kurumsal ekip üyeliği — üye kurum konuşmasını görür (yazma canWrite ile ayrı).
+  // TÜM roller dahil (owner/manager/member). Kurum-kendine-üyelik DB'de imkânsız.
   const { data: memberships } = await supabase
     .from('business_members')
     .select('business_id, member_role')
     .eq('member_user_id', user.id);
-  const teamBusinessIds = (memberships ?? [])
-    .filter((m) => m.member_role !== 'owner')
-    .map((m) => m.business_id);
+  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
 
   const { data: convData } = await supabase
     .from('conversations')

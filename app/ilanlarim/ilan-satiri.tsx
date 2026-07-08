@@ -41,15 +41,19 @@ type Props = {
   isOwn?: boolean;
   /** Kurum ilanı + manager+ üye — SADECE edit + publish açık (promote/close/cancel/delete owner'a) */
   canManage?: boolean;
+  /** Kurum ilanı + owner-ROL üye — tüm aksiyonlar açık (kendi ilanı gibi, dilim 3b) */
+  canOwn?: boolean;
 };
 
 export function IlanSatiri({
   listing,
   isOwn = true,
   canManage = false,
+  canOwn = false,
 }: Props) {
-  // Tam yetki: kendi hesabı. Kısıtlı yetki (edit+publish): kurum manager+ üye.
-  const fullControl = isOwn;
+  // Tam yetki: kendi hesabı VEYA kurum ilanında owner-rol üye.
+  // Kısıtlı yetki (edit+publish): kurum manager+ üye.
+  const fullControl = isOwn || canOwn;
   const canEditPublish = isOwn || canManage;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

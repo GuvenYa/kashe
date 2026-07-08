@@ -3,6 +3,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
+import { getOwnedBusinessIds } from '@/app/lib/business-write';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -42,18 +43,35 @@ export async function createOrUpdateReview(params: {
     return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
   }
 
-  // Müşteri ile profesyonel arasındaki konuşmayı bul (en sonuncu)
-  const { data: conversation, error: convError } = await supabase
+  // Yorum bağlamını çöz: önce kendi adına (customer_id = user.id); yoksa owner-ROL
+  // olunan kurumların konuşması → kurum adına yorum (dilim 3b). Bulunan konuşmanın
+  // customer_id'si (kişi VEYA kurum) yoruma yazılır; created_by daima user.id.
+  let conversation: { id: string; customer_id: string } | null = null;
+
+  const { data: selfConv } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id, customer_id')
     .eq('customer_id', user.id)
     .eq('professional_id', professionalId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (convError) {
-    return { success: false, error: convError.message };
+  if (selfConv) {
+    conversation = selfConv;
+  } else {
+    const ownedIds = await getOwnedBusinessIds();
+    if (ownedIds.length > 0) {
+      const { data: bizConv } = await supabase
+        .from('conversations')
+        .select('id, customer_id')
+        .in('customer_id', ownedIds)
+        .eq('professional_id', professionalId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (bizConv) conversation = bizConv;
+    }
   }
 
   if (!conversation) {
@@ -63,14 +81,15 @@ export async function createOrUpdateReview(params: {
     };
   }
 
+  const customerId = conversation.customer_id;
   const trimmedBody = body?.trim() || null;
 
-  // Mevcut yorumu kontrol et (upsert için)
+  // Mevcut yorumu kontrol et (upsert için) — UNIQUE (conversation_id, customer_id)
   const { data: existing } = await supabase
     .from('reviews')
     .select('id')
     .eq('conversation_id', conversation.id)
-    .eq('customer_id', user.id)
+    .eq('customer_id', customerId)
     .maybeSingle();
 
   let reviewId: string;
@@ -78,7 +97,7 @@ export async function createOrUpdateReview(params: {
   if (existing) {
     const { data: updated, error: updateError } = await supabase
       .from('reviews')
-      .update({ rating, body: trimmedBody })
+      .update({ rating, body: trimmedBody, created_by: user.id })
       .eq('id', existing.id)
       .select('id')
       .single();
@@ -92,10 +111,11 @@ export async function createOrUpdateReview(params: {
       .from('reviews')
       .insert({
         conversation_id: conversation.id,
-        customer_id: user.id,
+        customer_id: customerId,
         professional_id: professionalId,
         rating,
         body: trimmedBody,
+        created_by: user.id,
       })
       .select('id')
       .single();

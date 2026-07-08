@@ -62,3 +62,46 @@ export async function canWriteForBusiness(
     membership?.member_role === 'manager'
   );
 }
+
+/**
+ * Kullanıcı verilen kurumda 'owner' ROLÜNDE mi? (owner-only aksiyonlar:
+ * ilan silme, close/cancel, promotion, kurum adına yorum). manager YETMEZ.
+ */
+export async function canOwnForBusiness(businessId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: membership } = await supabase
+    .from('business_members')
+    .select('member_role')
+    .eq('business_id', businessId)
+    .eq('member_user_id', user.id)
+    .maybeSingle();
+
+  return membership?.member_role === 'owner';
+}
+
+/**
+ * Kullanıcının 'owner' rolünde olduğu kurumların id'leri (kurum adına yorum
+ * bağlamını çözmek için — self konuşma yoksa owner kurumların konuşması aranır).
+ */
+export async function getOwnedBusinessIds(): Promise<string[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('business_members')
+    .select('business_id')
+    .eq('member_user_id', user.id)
+    .eq('member_role', 'owner');
+
+  return (data ?? []).map((m) => m.business_id);
+}

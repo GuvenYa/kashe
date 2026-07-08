@@ -57,14 +57,14 @@ export default async function MesajlarPage() {
 
   const assignedConvIds = (myAssignments ?? []).map((r) => r.conversation_id);
 
-  // Kurumsal ekip üyeliği (owner OLMAYAN) — üyesi olunan kurumun konuşmaları (pasif gözlemci)
+  // Kurumsal ekip üyeliği — üyesi olunan kurumun konuşmaları. TÜM roller dahil
+  // (owner/manager/member); yazma yetkisi ayrıca canWriteBusinessSet ile ayrılır.
+  // Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership).
   const { data: memberships } = await supabase
     .from('business_members')
     .select('business_id, member_role')
     .eq('member_user_id', user.id);
-  const teamBusinessIds = (memberships ?? [])
-    .filter((m) => m.member_role !== 'owner')
-    .map((m) => m.business_id);
+  const teamBusinessIds = (memberships ?? []).map((m) => m.business_id);
   const teamBusinessSet = new Set(teamBusinessIds);
 
   // Yazma yetkisi (owner/manager) olan kurumlar — konuşmada composer/unread/presence açılır
