@@ -20,6 +20,27 @@ export const metadata = {
   title: 'Keşfet — Kashe',
 };
 
+// Yorum yazarı kısaltması: kurumsal müşteri → kurum adı; birey → "Ad S." (soyadın baş
+// harfi — tam ad kamuya yazılmaz). YALNIZ customer_id profili; created_by ASLA.
+function formatReviewAuthor(
+  customer: {
+    full_name: string | null;
+    company_name: string | null;
+    role: string | null;
+  } | null
+): string {
+  if (!customer) return 'Bir müşteri';
+  if (customer.role === 'business' && customer.company_name) {
+    return customer.company_name;
+  }
+  const name = (customer.full_name || '').trim();
+  if (!name) return 'Bir müşteri';
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const last = parts[parts.length - 1];
+  return `${parts[0]} ${last.charAt(0).toLocaleUpperCase('tr')}.`;
+}
+
 type PublishedProfile = {
   id: string;
   full_name: string | null;
@@ -228,6 +249,71 @@ export default async function KesfetPage({
     });
   }
 
+  // ---- KAPAK GÖRSELİ (portföy fallback): avatar yoksa portföyün İLK görseli (sort_order) ----
+  const portfolioCoverByProfile: Record<string, string> = {};
+  if (profileIds.length > 0) {
+    const { data: portfolioData } = await supabase
+      .from('portfolio_items')
+      .select('profile_id, media_url')
+      .eq('media_type', 'image')
+      .in('profile_id', profileIds)
+      .order('sort_order', { ascending: true });
+    (portfolioData || []).forEach((pi) => {
+      const pid = pi.profile_id as string;
+      if (!portfolioCoverByProfile[pid] && pi.media_url) {
+        portfolioCoverByProfile[pid] = pi.media_url as string;
+      }
+    });
+  }
+
+  // ---- TAMAMLANAN İŞ SAYISI: confirmed/completed bookings (professional_id bazlı, tüm zaman) ----
+  const jobsByProfile: Record<string, number> = {};
+  if (profileIds.length > 0) {
+    const { data: jobsData } = await supabase
+      .from('bookings')
+      .select('professional_id')
+      .in('professional_id', profileIds)
+      .in('status', ['confirmed', 'completed']);
+    (jobsData || []).forEach((b) => {
+      const pid = b.professional_id as string;
+      jobsByProfile[pid] = (jobsByProfile[pid] ?? 0) + 1;
+    });
+  }
+
+  // ---- YORUM ALINTISI: en yüksek puanlı / en yeni, body dolu yorum + yazar kısaltması ----
+  const quoteByProfile: Record<string, { text: string; author: string }> = {};
+  if (profileIds.length > 0) {
+    const { data: reviewsData } = await supabase
+      .from('reviews')
+      .select(
+        `professional_id, body, rating, created_at,
+         customer:profiles!reviews_customer_id_fkey ( full_name, company_name, role )`
+      )
+      .in('professional_id', profileIds)
+      .not('body', 'is', null)
+      .order('rating', { ascending: false })
+      .order('created_at', { ascending: false });
+    (
+      (reviewsData || []) as unknown as Array<{
+        professional_id: string;
+        body: string | null;
+        customer: {
+          full_name: string | null;
+          company_name: string | null;
+          role: string | null;
+        } | null;
+      }>
+    ).forEach((rv) => {
+      const body = rv.body?.trim();
+      if (!quoteByProfile[rv.professional_id] && body) {
+        quoteByProfile[rv.professional_id] = {
+          text: body,
+          author: formatReviewAuthor(rv.customer),
+        };
+      }
+    });
+  }
+
   // ---- MÜSAİTLİK (Sıra 3): önümüzdeki 7 gün dolu mu? ----
   // Dolu gün = availability_blocks (manuel) ∪ onaylı bookings event_date.
   // Pencere dışındaki kayıtları çekmemek için tarih aralığıyla sınırlıyoruz.
@@ -404,7 +490,7 @@ export default async function KesfetPage({
     <>
       <TopNav />
       <main className="min-h-screen bg-paper px-6 md:px-12 py-12">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[100rem] mx-auto">
           <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
               Keşfet
@@ -476,13 +562,19 @@ export default async function KesfetPage({
                     </p>
                     <SortDropdown currentSort={sortBy} />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 auto-rows-fr">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 xl:gap-6">
                     {profiles.map((profile) => (
                       <ProfileCard
                         key={profile.id}
                         profile={profile}
-                        services={servicesByProfile[profile.id] || []}
+                        cover={
+                          profile.avatar_url ||
+                          portfolioCoverByProfile[profile.id] ||
+                          null
+                        }
                         rating={ratingsByProfile[profile.id] || null}
+                        jobsCount={jobsByProfile[profile.id] ?? 0}
+                        quote={quoteByProfile[profile.id] ?? null}
                         isFavorited={favoritedIds.has(profile.id)}
                         isLoggedIn={isLoggedIn}
                         currentUserRole={currentUserRole}

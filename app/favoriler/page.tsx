@@ -197,6 +197,7 @@ const user = await getCachedUser();
     .select(
       `
       id, city_id, primary_category_id,
+      approval_status, premium_tier, premium_until, created_at, attributes,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -208,13 +209,24 @@ const user = await getCachedUser();
     {
       turkish_cities: { name: string } | null;
       service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
+      approval_status: string | null;
+      premium_tier: string | null;
+      premium_until: string | null;
+      created_at: string | null;
+      attributes: Record<string, string | string[]> | null;
     }
   >();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (profilesDetailData || []).forEach((p: any) => {
     cityCategoryMap.set(p.id, {
       turkish_cities: p.turkish_cities,
       service_categories: p.service_categories,
+      approval_status: p.approval_status ?? null,
+      premium_tier: p.premium_tier ?? null,
+      premium_until: p.premium_until ?? null,
+      created_at: p.created_at ?? null,
+      attributes: p.attributes ?? null,
     });
   });
 
@@ -298,6 +310,11 @@ const user = await getCachedUser();
                     bio: p.bio,
                     company_name: p.company_name,
                     role: p.role,
+                    approval_status: cityCat?.approval_status ?? null,
+                    premium_tier: cityCat?.premium_tier ?? null,
+                    premium_until: cityCat?.premium_until ?? null,
+                    created_at: cityCat?.created_at ?? null,
+                    attributes: cityCat?.attributes ?? null,
                     turkish_cities: cityCat?.turkish_cities ?? null,
                     service_categories: cityCat?.service_categories ?? null,
                   }}
