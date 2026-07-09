@@ -1,3 +1,5 @@
+import { KasheMark } from './kashe-mark';
+
 export function BrandMark({ size = "default" }: { size?: "default" | "lg" }) {
   const dimensions = {
     default: { box: "w-8 h-8", text: "text-2xl" },
@@ -6,8 +8,7 @@ export function BrandMark({ size = "default" }: { size?: "default" | "lg" }) {
   const d = dimensions[size];
   return (
     <a href="/" className="inline-flex items-center gap-2.5">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icon-192.png" alt="Kashe" className={`${d.box} rounded-lg`} />
+      <KasheMark className={d.box} />
       <span className={`font-display font-semibold ${d.text} text-ink tracking-tight`}>
         Kashe
       </span>

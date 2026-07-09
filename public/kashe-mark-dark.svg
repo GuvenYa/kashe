@@ -1,0 +1,13 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kashe">
+  <!-- Koyu zemin varyantı: krem daire, "k" oyuğu koyu zemini gösterir, mercan nokta -->
+  <defs>
+    <mask id="kashe-k">
+      <circle cx="48" cy="48" r="44" fill="white"/>
+      <rect x="31" y="20" width="12" height="56" rx="2" fill="black"/>
+      <polygon points="47,44 60,16 82,28 54,52" fill="black"/>
+      <polygon points="47,49 76,71 67,83 47,61" fill="black"/>
+    </mask>
+  </defs>
+  <circle cx="48" cy="48" r="44" fill="#F3EEE3" mask="url(#kashe-k)"/>
+  <circle cx="71" cy="23" r="4.5" fill="#E2674A"/>
+</svg>

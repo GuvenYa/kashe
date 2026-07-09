@@ -1,3 +1,5 @@
+import { KasheMark } from "@/app/components/ui/kashe-mark";
+
 export function Footer() {
   const year = new Date().getFullYear();
 
@@ -8,13 +10,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="/" className="flex items-center gap-2.5 mb-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icon-192.png"
-                alt=""
-                aria-hidden="true"
-                className="w-8 h-8 rounded-md"
-              />
+              <KasheMark variant="dark" className="w-8 h-8" title="" />
               <span className="font-display font-semibold text-xl text-paper tracking-tight">
                 Kashe
               </span>

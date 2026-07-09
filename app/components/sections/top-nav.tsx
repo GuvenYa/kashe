@@ -1,4 +1,5 @@
 import { Button } from "@/app/components/ui/button";
+import { KasheMark } from "@/app/components/ui/kashe-mark";
 import { createClient } from "@/app/lib/supabase-server";
 import { MobileNav } from "./mobile-nav";
 import { UnreadBadge } from "./unread-badge";
@@ -102,12 +103,7 @@ export async function TopNav() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
         <a href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icon-192.png"
-            alt="Kashe"
-            className="w-8 h-8 rounded-md kashe-logo-mark"
-          />
+          <KasheMark className="w-8 h-8 kashe-logo-mark" />
           <span className="font-display font-semibold text-xl text-ink tracking-tight">
             Kashe
           </span>
