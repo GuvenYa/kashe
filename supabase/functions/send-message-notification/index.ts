@@ -40,8 +40,18 @@ function buildEmailHtml(params: {
   const { recipientName, senderName, messagePreview, conversationUrl } = params;
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FAF8FC; color: #1A120E; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .kashe-btn:hover { background: #143D31 !important; }
+  </style>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FBF8F4; color: #1A120E; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
+  <div style="text-align: center; margin: 0 0 20px 0;">
+    <img src="${APP_URL}/icon-192.png" width="44" height="44" alt="Kashe" style="display: inline-block; vertical-align: middle; border-radius: 10px;">
+    <span style="display: inline-block; vertical-align: middle; font-size: 22px; font-weight: 600; color: #1F5C4A; margin-left: 8px; letter-spacing: -0.5px;">Kashe</span>
+  </div>
   <div style="background: white; border-radius: 12px; padding: 32px;">
     <h1 style="font-size: 20px; margin: 0 0 16px 0; color: #1A120E;">
       Merhaba ${recipientName},
@@ -49,12 +59,12 @@ function buildEmailHtml(params: {
     <p style="font-size: 16px; line-height: 1.5; margin: 0 0 24px 0;">
       Kashe'de <strong>${senderName}</strong> sana yeni bir mesaj gönderdi:
     </p>
-    <div style="background: #F5EEFB; border-left: 3px solid #9333EA; padding: 16px; margin: 0 0 24px 0; border-radius: 4px;">
+    <div style="background: #EEF3F0; border-left: 3px solid #1F5C4A; padding: 16px; margin: 0 0 24px 0; border-radius: 4px;">
       <p style="font-size: 15px; line-height: 1.5; margin: 0; color: #1A120E;">
         ${messagePreview}
       </p>
     </div>
-    <a href="${conversationUrl}" style="display: inline-block; background: #9333EA; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+    <a href="${conversationUrl}" class="kashe-btn" style="display: inline-block; background: #1F5C4A; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
       Mesajı görüntüle
     </a>
     <p style="font-size: 13px; color: #6B5F58; margin: 32px 0 0 0;">
