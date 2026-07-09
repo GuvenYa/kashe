@@ -28,9 +28,13 @@ type Props = {
   jobsCount?: number;
   /** En iyi yorum alıntısı (yoksa/undefined → alıntı kutusu render edilmez, panel kısalır). */
   quote?: { text: string; author: string } | null;
-  isFavorited: boolean;
-  isLoggedIn: boolean;
-  currentUserRole: string | null;
+  /** 'default' = Keşfet/favoriler/kategori/p[id] (mobil+masaüstü hover paneli, favori kalbi).
+   *  'compact' = ana sayfa öne çıkanlar (tek foto-hero, hover paneli/kalp YOK, whole-card link). */
+  variant?: 'default' | 'compact';
+  /** default varyantta favori kalbi için; compact'ta kullanılmaz (opsiyonel). */
+  isFavorited?: boolean;
+  isLoggedIn?: boolean;
+  currentUserRole?: string | null;
   /** Geriye dönük uyum: eski çağıranlar (favoriler/kategori/benzer profiller) fiyat için
    *  geçiyordu; kartta ARTIK kullanılmıyor (fiyat karttan kalktı). */
   services?: {
@@ -187,9 +191,10 @@ export function ProfileCard({
   rating,
   jobsCount = 0,
   quote = null,
-  isFavorited,
-  isLoggedIn,
-  currentUserRole,
+  variant = 'default',
+  isFavorited = false,
+  isLoggedIn = false,
+  currentUserRole = null,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
@@ -263,6 +268,46 @@ export function ProfileCard({
       Premium
     </span>
   ) : null;
+
+  // ===================== KOMPAKT (ana sayfa öne çıkanlar) =====================
+  // Tek foto-hero: tam-kanvas foto + alt gradient şerit (ad + doğrulanmış + ★puan(n)·şehir).
+  // Favori kalbi YOK, hover paneli YOK, iş sayısı YOK; kartın TAMAMI profil linki.
+  if (variant === 'compact') {
+    return (
+      <Link
+        href={profileHref}
+        aria-label={displayName}
+        className={`group relative block rounded-2xl overflow-hidden bg-card border transition-all duration-300 hover:-translate-y-1 ${
+          isPremium
+            ? 'border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[0_16px_36px_-16px_rgba(138,109,31,0.35)]'
+            : 'border-line hover:border-terracotta hover:shadow-[0_16px_36px_-18px_rgba(20,61,49,0.35)]'
+        }`}
+      >
+        <div className="relative aspect-[4/5]">
+          <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
+          <div
+            className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
+            aria-hidden="true"
+          />
+          <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
+          {isPremium && (
+            <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-[0.14em] bg-plum text-paper px-2 py-1 rounded-md shadow-sm">
+              Premium
+            </span>
+          )}
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-center gap-1.5">
+              <span className="truncate">{displayName}</span>
+              {verified && <VerifiedIcon size={15} />}
+            </h3>
+            <div className="mt-1">
+              <MetaRow light rating={rating} jobsCount={0} cityName={cityName} />
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <div className="relative group">
@@ -385,10 +430,10 @@ export function ProfileCard({
                 </p>
               </div>
             )}
-            {/* Teklif Al — Mercan, tam genişlik */}
+            {/* Teklif Al — Zümrüt (mobil ile tutarlı), tam genişlik */}
             <Link
               href={profileHref}
-              className="mt-2.5 block w-full text-center bg-plum text-paper rounded-lg py-2 font-display font-semibold text-sm hover:brightness-95 transition-all"
+              className="mt-2.5 block w-full text-center bg-terracotta text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-ember transition-colors"
             >
               Teklif Al
             </Link>

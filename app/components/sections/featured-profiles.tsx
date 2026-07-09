@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
-import { getCategoryIcon } from "@/app/lib/category-icon";
+import { ProfileCard } from "@/app/kesfet/profile-card";
 
 // Üst filtre çıtası için popüler kategoriler (slug'larla)
 const TOP_CATEGORIES = [
@@ -11,39 +11,22 @@ const TOP_CATEGORIES = [
   { slug: "sunucu", label: "Sunucu" },
 ];
 
-// Profil kartı üst zemin renkleri — DESIGN.md §1 çok renkli sistem.
-// Kategori kartlarıyla tutarlı pastel rotasyon.
-const TONES = [
-  { headerBg: "#EAE4F5" }, // mor
-  { headerBg: "#E2EEFB" }, // mavi
-  { headerBg: "#FFF1DC" }, // altın
-  { headerBg: "#FCEAE4" }, // mercan
-  { headerBg: "#E6F6EE" }, // yeşil
-];
-
 type FeaturedProfile = {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
   company_name: string | null;
   role: string;
+  approval_status: string | null;
+  premium_tier: string | null;
+  premium_until: string | null;
+  created_at: string | null;
   city: string | null;
   category: string | null;
   categorySlug: string | null;
   rating: number | null;
   reviewCount: number;
-  priceFrom: number | null;
-  isNew: boolean;
-  isPremium: boolean;
 };
-
-function formatPrice(n: number): string {
-  if (n >= 1000) {
-    const k = Math.floor(n / 100) / 10;
-    return `₺${k.toLocaleString("tr-TR")}K`;
-  }
-  return `₺${n.toLocaleString("tr-TR")}`;
-}
 
 export async function FeaturedProfiles() {
   const supabase = await createClient();
@@ -63,7 +46,7 @@ export async function FeaturedProfiles() {
     .from("profiles")
     .select(
       `
-      id, full_name, avatar_url, company_name, role, created_at, premium_tier, premium_until,
+      id, full_name, avatar_url, company_name, role, created_at, premium_tier, premium_until, approval_status,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, slug)
     `
@@ -82,6 +65,7 @@ export async function FeaturedProfiles() {
     created_at: string | null;
     premium_tier: string | null;
     premium_until: string | null;
+    approval_status: string | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; slug: string } | null;
   }>;
@@ -121,48 +105,26 @@ export async function FeaturedProfiles() {
     };
   });
 
-  // En düşük fiyat (services'tan)
-  const { data: servicesData } = await supabase
-    .from("services")
-    .select("profile_id, price_min, price_on_request")
-    .eq("is_active", true)
-    .in("profile_id", ids);
+  // NOT: fiyat (services) sorgusu kaldırıldı — kompakt foto-hero kartında fiyat yok.
+  // Kapak için Keşfet fallback zinciri (avatar → placeholder); portföy fallback'i bu
+  // bölümün sorgusunu ağırlaştırmamak için ATLANDI (ProfileCard cover verilmezse avatar'a düşer).
 
-  const priceFromByProfile: Record<string, number> = {};
-  (servicesData || []).forEach((s) => {
-    if (s.price_on_request || s.price_min === null) return;
-    const cur = priceFromByProfile[s.profile_id];
-    if (cur === undefined || s.price_min < cur) {
-      priceFromByProfile[s.profile_id] = s.price_min;
-    }
-  });
-
-  const featured: FeaturedProfile[] = list.map((p) => {
-    let isNew = false;
-    if (p.created_at) {
-      const days = (Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24);
-      isNew = days <= 30;
-    }
-    const premiumActive =
-      !!p.premium_tier &&
-      p.premium_tier !== "none" &&
-      (!p.premium_until || new Date(p.premium_until).getTime() > Date.now());
-    return {
-      id: p.id,
-      full_name: p.full_name,
-      avatar_url: p.avatar_url,
-      company_name: p.company_name,
-      role: p.role,
-      city: p.turkish_cities?.name ?? null,
-      category: p.service_categories?.name_tr ?? null,
-      categorySlug: p.service_categories?.slug ?? null,
-      rating: ratingsByProfile[p.id]?.average ?? null,
-      reviewCount: ratingsByProfile[p.id]?.count ?? 0,
-      priceFrom: priceFromByProfile[p.id] ?? null,
-      isNew,
-      isPremium: premiumActive,
-    };
-  });
+  const featured: FeaturedProfile[] = list.map((p) => ({
+    id: p.id,
+    full_name: p.full_name,
+    avatar_url: p.avatar_url,
+    company_name: p.company_name,
+    role: p.role,
+    approval_status: p.approval_status,
+    premium_tier: p.premium_tier,
+    premium_until: p.premium_until,
+    created_at: p.created_at,
+    city: p.turkish_cities?.name ?? null,
+    category: p.service_categories?.name_tr ?? null,
+    categorySlug: p.service_categories?.slug ?? null,
+    rating: ratingsByProfile[p.id]?.average ?? null,
+    reviewCount: ratingsByProfile[p.id]?.count ?? 0,
+  }));
 
   return (
     <section className="bg-paper border-t border-line">
@@ -208,111 +170,36 @@ export async function FeaturedProfiles() {
           })}
         </div>
 
-        {/* Profil kartları — 3'lü grid */}
+        {/* Profil kartları — kompakt foto-hero (Keşfet ile aynı görsel dil); kolon yapısı korundu */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featured.map((p, i) => {
-            const tone = TONES[i % TONES.length];
-            const displayName =
-              (p.role === "business" || p.role === "agency") && p.company_name
-                ? p.company_name
-                : p.full_name || "İsimsiz";
-            const initials = (p.full_name || p.company_name || "K")
-              .split(" ")
-              .map((s) => s[0])
-              .filter(Boolean)
-              .slice(0, 2)
-              .join("")
-              .toUpperCase();
-            const iconUrl = getCategoryIcon(p.categorySlug);
-
-            return (
-              <Link
-                key={p.id}
-                href={`/p/${p.id}`}
-                className={`group bg-card border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
-                  p.isPremium
-                    ? "border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[0_18px_40px_-16px_rgba(138,109,31,0.30)]"
-                    : "border-line hover:border-terracotta hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)]"
-                }`}
-              >
-                {/* Üst — renkli ikon/avatar zemini */}
-                <div
-                  className="h-28 flex items-center justify-center transition-colors duration-300"
-                  style={{ background: tone.headerBg }}
-                >
-                  {p.avatar_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={p.avatar_url}
-                      alt={displayName}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-paper shadow-sm"
-                    />
-                  ) : iconUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={iconUrl}
-                      alt=""
-                      className="w-14 h-14 object-contain kashe-icon-pop"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <span className="font-display text-2xl text-terracotta">{initials}</span>
-                  )}
-                </div>
-
-                {/* Alt — isim/kategori/puan/fiyat */}
-                <div className="p-5">
-                  <h3 className="font-display text-lg text-ink leading-tight truncate group-hover:text-terracotta transition-colors">
-                    {displayName}
-                  </h3>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-1.5 flex items-center gap-2 flex-wrap">
-                    <span>
-                      {p.category ?? "Profesyonel"}
-                      {p.city ? ` · ${p.city}` : ""}
-                    </span>
-                    {p.isPremium && (
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-1.5 py-0.5 rounded">
-                        Premium
-                      </span>
-                    )}
-                    {p.isNew && !p.isPremium && (
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-moss bg-moss/10 border border-moss/30 px-1.5 py-0.5 rounded">
-                        Yeni
-                      </span>
-                    )}
-                  </p>
-
-                  <div className="mt-4 pt-4 border-t border-line flex items-center justify-between">
-                    {p.rating !== null && p.reviewCount > 0 ? (
-                      <div className="flex items-center gap-1.5">
-                        <svg
-                          width="13" height="13" viewBox="0 0 24 24"
-                          fill="var(--color-plum)" stroke="var(--color-plum)"
-                          strokeWidth="1.5" strokeLinejoin="round"
-                          xmlns="http://www.w3.org/2000/svg"
-                          aria-hidden="true"
-                          className="kashe-star"
-                        >
-                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                        </svg>
-                        <span className="font-display font-semibold text-sm text-ink">{p.rating}</span>
-                        <span className="text-xs text-ink-50">({p.reviewCount})</span>
-                      </div>
-                    ) : (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">Yeni</span>
-                    )}
-                    {p.priceFrom !== null ? (
-                      <span className="font-display font-semibold text-sm text-ink">
-                        {formatPrice(p.priceFrom)}<span className="text-ink-50 font-normal">'den</span>
-                      </span>
-                    ) : (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">Fiyat görüşülür</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {featured.map((p) => (
+            <ProfileCard
+              key={p.id}
+              variant="compact"
+              profile={{
+                id: p.id,
+                full_name: p.full_name,
+                avatar_url: p.avatar_url,
+                bio: null,
+                company_name: p.company_name,
+                role: p.role,
+                approval_status: p.approval_status,
+                premium_tier: p.premium_tier,
+                premium_until: p.premium_until,
+                created_at: p.created_at,
+                attributes: null,
+                turkish_cities: p.city ? { name: p.city } : null,
+                service_categories: p.category
+                  ? { name_tr: p.category, emoji: null, slug: p.categorySlug ?? '' }
+                  : null,
+              }}
+              rating={
+                p.reviewCount > 0 && p.rating !== null
+                  ? { count: p.reviewCount, average: p.rating }
+                  : null
+              }
+            />
+          ))}
         </div>
       </div>
     </section>
