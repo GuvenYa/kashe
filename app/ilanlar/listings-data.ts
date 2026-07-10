@@ -37,6 +37,8 @@ export type Listing = {
   title: string;
   description: string;
   requirements: string | null;
+  project_details: string | null;
+  work_conditions: string | null;
   event_date: string | null;
   event_type: EventTypeKey | null;
   location: string | null;
@@ -88,8 +90,21 @@ export type ListingWithRelations = Listing & {
     avatar_url: string | null;
     company_name: string | null;
     role: string;
+    created_at?: string | null;
+    approval_status?: string | null;
   } | null;
   application_count?: number;
+};
+
+// Benzer ilanlar (detay sayfası sağ/alt bölüm) — kompakt kart için minimum alan.
+export type SimilarListing = {
+  id: string;
+  title: string;
+  budget_min: number | null;
+  budget_max: number | null;
+  currency: string;
+  city_id: number | null;
+  service_categories: { name_tr: string; emoji: string | null } | null;
 };
 
 export type ApplicationWithRelations = Application & {

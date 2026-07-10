@@ -17,6 +17,8 @@ import {
   Pencil,
   Lock,
   Trash2,
+  Share2,
+  BadgeCheck,
 } from 'lucide-react';
 import {
   formatBudgetRange,
@@ -29,7 +31,7 @@ import {
   getApplicationStatusLabel,
   getApplicationStatusTone,
   formatProposedAmount,
-  canApplyToListing,
+  canEditListing,
   canCloseListing,
   canCancelListing,
   canRestoreListing,
@@ -42,6 +44,7 @@ import {
   type ListingWithRelations,
   type Application,
   type ApplicationWithRelations,
+  type SimilarListing,
 } from '../listings-data';
 import { BADGE_TONE_CLASS } from '@/app/lib/badges';
 import {
@@ -90,6 +93,10 @@ type Props = {
   sentInvitations: SentInvitation[];
   acceptedConversationId: string | null;
   myConversationId: string | null;
+  /** Benzer ilanlar (aynı kategori, published, kendisi hariç — en fazla 3) */
+  similarListings: SimilarListing[];
+  /** İlan sahibinin yayında ilan sayısı (sahip kartı sinyali) */
+  ownerListingCount: number;
 };
 
 export function IlanDetay({
@@ -104,6 +111,8 @@ export function IlanDetay({
   sentInvitations,
   acceptedConversationId,
   myConversationId,
+  similarListings,
+  ownerListingCount,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -139,6 +148,32 @@ export function IlanDetay({
     listing.status,
     listing.application_deadline
   );
+  // Son başvuru kritik mi (48 saatten az kaldı) — mercan vurgu için
+  const deadlineCritical = (() => {
+    if (!listing.application_deadline) return false;
+    const diff = new Date(listing.application_deadline).getTime() - Date.now();
+    return diff > 0 && diff < 48 * 3600 * 1000;
+  })();
+
+  const budgetLabel = formatBudgetRange(
+    listing.budget_min,
+    listing.budget_max,
+    listing.currency
+  );
+  const publishedDateLabel = listing.published_at
+    ? new Date(listing.published_at).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '—';
+  const deadlineDateOnly = listing.application_deadline
+    ? new Date(listing.application_deadline).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
 
   // Action handlers
   function withConfirm(actionKey: string, action: () => Promise<void>) {
@@ -196,480 +231,570 @@ export function IlanDetay({
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
+  // Owner kartı (masaüstü sağ kolon + mobil içerik sonu, aynı içerik)
+  const ownerCard = listing.creator ? (
+    <OwnerInfoCard
+      creator={listing.creator}
+      creatorName={creatorName}
+      listingId={listing.id}
+      isOwner={isOwner}
+      isLoggedIn={!!currentUserId}
+      listingCount={ownerListingCount}
+    />
+  ) : null;
+
+  // Mercan (mockup) birincil CTA sınıfı
+  const mercanCta =
+    'inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#cc5636] transition-colors';
+
   return (
-    <div className="bg-paper min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
+    <div className="bg-paper min-h-screen pb-24 lg:pb-12">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-8 md:py-10">
         {/* Geri linki */}
         <Link
           href="/ilanlar"
-          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta mb-8 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta transition-colors"
         >
           <span>←</span> Tüm ilanlar
         </Link>
 
-        {/* Hero */}
-        <header className="mb-8">
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-terracotta/8 text-terracotta rounded-full text-xs font-mono uppercase tracking-[0.1em]">
-              {categoryEmoji && <span>{categoryEmoji}</span>}
-              {categoryLabel}
-            </span>
-            {listing.status !== 'published' && (
-              <span
-                className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${badgeStyles[statusTone]}`}
-              >
-                {statusLabel}
-              </span>
-            )}
-          </div>
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* ═══════════ SOL KOLON (2/3) ═══════════ */}
+          <div className="lg:col-span-2 min-w-0 space-y-6">
+            {/* Hero */}
+            <header>
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-terracotta/8 text-terracotta rounded-full text-xs font-mono uppercase tracking-[0.1em]">
+                  {categoryEmoji && <span>{categoryEmoji}</span>}
+                  {categoryLabel}
+                </span>
+                {listing.status !== 'published' && (
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${badgeStyles[statusTone]}`}
+                  >
+                    {statusLabel}
+                  </span>
+                )}
+              </div>
 
-          <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight mb-3">
-            {listing.title}
-          </h1>
+              <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight mb-3">
+                {listing.title}
+              </h1>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-72 font-mono">
-            <span className="flex items-center gap-1">
-              <Clock size={12} strokeWidth={1.75} />
-              {formatListingAge(listing.published_at)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Eye size={12} strokeWidth={1.75} />
-              {listing.views_count} görüntülenme
-            </span>
-            {deadlineInfo && (
-              <span
-                className={`flex items-center gap-1 ${
-                  deadlineInfo.passed ? 'text-terracotta' : ''
-                }`}
-              >
-                <Clock size={12} strokeWidth={1.75} />
-                {deadlineInfo.label}
-              </span>
-            )}
-          </div>
-        </header>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-72 font-mono">
+                <span className="flex items-center gap-1">
+                  <Clock size={12} strokeWidth={1.75} />
+                  {formatListingAge(listing.published_at)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Eye size={12} strokeWidth={1.75} />
+                  {listing.views_count} görüntülenme
+                </span>
+              </div>
+            </header>
 
-        {/* Etkinlik özeti kartı */}
-        {(eventTypeLabel ||
-          eventDateFormatted ||
-          listing.location ||
-          listing.guest_count !== null) && (
-          <div className="bg-card border border-line rounded-lg p-5 mb-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-              Etkinlik özeti
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              {eventTypeLabel && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5">
-                    Tür
-                  </p>
-                  <p className="text-ink font-medium">{eventTypeLabel}</p>
-                </div>
-              )}
-              {eventDateFormatted && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5">
-                    Tarih
-                  </p>
-                  <p className="text-ink font-medium">
-                    {eventDateFormatted}
-                  </p>
-                </div>
-              )}
-              {listing.location && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5">
-                    Lokasyon
-                  </p>
-                  <p className="text-ink font-medium">{listing.location}</p>
-                  {cityName && (
-                    <p className="text-xs text-ink-72">{cityName}</p>
+            {/* Etkinlik özeti */}
+            {(eventTypeLabel ||
+              eventDateFormatted ||
+              listing.location ||
+              listing.guest_count !== null) && (
+              <div className="bg-card border border-line rounded-lg p-5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                  Etkinlik özeti
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {eventTypeLabel && (
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
+                        <Tag size={11} strokeWidth={1.75} /> Tür
+                      </p>
+                      <p className="text-ink font-medium">{eventTypeLabel}</p>
+                    </div>
+                  )}
+                  {eventDateFormatted && (
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
+                        <Calendar size={11} strokeWidth={1.75} /> Tarih
+                      </p>
+                      <p className="text-ink font-medium">{eventDateFormatted}</p>
+                    </div>
+                  )}
+                  {listing.location && (
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
+                        <MapPin size={11} strokeWidth={1.75} /> Lokasyon
+                      </p>
+                      <p className="text-ink font-medium">{listing.location}</p>
+                      {cityName && (
+                        <p className="text-xs text-ink-72">{cityName}</p>
+                      )}
+                    </div>
+                  )}
+                  {listing.guest_count !== null && (
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
+                        <Users size={11} strokeWidth={1.75} /> Kişi sayısı
+                      </p>
+                      <p className="text-ink font-medium">
+                        {listing.guest_count}
+                      </p>
+                    </div>
                   )}
                 </div>
-              )}
-              {listing.guest_count !== null && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5">
-                    Kişi sayısı
-                  </p>
-                  <p className="text-ink font-medium">
-                    {listing.guest_count}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Bütçe + Açıklama */}
-        <div className="bg-card border border-line rounded-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-5 pb-4 border-b border-line">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
-              Bütçe
-            </p>
-            <p className="font-display text-2xl text-ink font-medium">
-              {formatBudgetRange(
-                listing.budget_min,
-                listing.budget_max,
-                listing.currency
-              )}
-            </p>
-          </div>
-
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Açıklama
-          </p>
-          <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
-            {listing.description}
-          </p>
-
-          {listing.requirements && (
-            <>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mt-6 mb-2">
-                Gereksinimler
+            {/* Genel açıklama */}
+            <div className="bg-card border border-line rounded-lg p-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+                Genel açıklama
               </p>
               <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
-                {listing.requirements}
+                {listing.description}
               </p>
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* İlan sahibi kartı */}
-        {listing.creator && (
-          <div className="bg-card border border-line rounded-lg p-5 mb-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-              İlan sahibi
-            </p>
-            <div className="flex items-center gap-3">
-              {listing.creator.avatar_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={listing.creator.avatar_url}
-                  alt={creatorName}
-                  className="w-12 h-12 rounded-full object-cover border border-line"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold">
-                  {creatorName.charAt(0).toUpperCase()}
+            {/* Yapılandırılmış bölümler — koşullu (NULL/boşsa hiç render edilmez) */}
+            <StructuredSection
+              label="Proje detayları"
+              content={listing.project_details}
+            />
+            <StructuredSection
+              label="Aranan nitelikler"
+              content={listing.requirements}
+            />
+            <StructuredSection
+              label="Çalışma koşulları"
+              content={listing.work_conditions}
+            />
+
+            {/* Başvurular bölümü — sahip VEYA kurum ilanında manager+ üye görür */}
+            {canDecide && (
+              <div id="basvurular" className="scroll-mt-24 pt-2">
+                {acceptedConversationId && (
+                  <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
+                        Başvuru kabul edildi
+                      </p>
+                      <p className="text-sm text-ink">
+                        Kabul ettiğin profesyonelle mesajlaşarak detayları
+                        konuşabilirsin.
+                      </p>
+                    </div>
+                    <Link
+                      href={`/mesajlar/${acceptedConversationId}`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] transition-all shrink-0"
+                    >
+                      <Send size={14} strokeWidth={1.75} />
+                      Konuşmaya git
+                    </Link>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+                  <h2 className="font-display text-2xl text-ink">
+                    Gelen başvurular{' '}
+                    <span className="text-ink-72 text-lg">
+                      ({applications.length})
+                    </span>
+                  </h2>
+                  {applications.length > 1 && (
+                    <div className="inline-flex rounded-lg border border-line overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setAppViewMode('list')}
+                        className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
+                          appViewMode === 'list'
+                            ? 'bg-ink text-paper'
+                            : 'bg-card text-ink-72 hover:text-ink'
+                        }`}
+                      >
+                        Liste
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAppViewMode('compare')}
+                        className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
+                          appViewMode === 'compare'
+                            ? 'bg-ink text-paper'
+                            : 'bg-card text-ink-72 hover:text-ink'
+                        }`}
+                      >
+                        Karşılaştır
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-              <div>
-                <p className="font-display font-semibold text-ink">
-                  {creatorName}
-                </p>
-                <p className="text-xs text-ink-72 font-mono uppercase tracking-[0.1em]">
-                  {listing.creator.role === 'business'
-                    ? 'Kurumsal'
-                    : 'Müşteri'}
-                </p>
-              </div>
-            </div>
 
-            {/* Şikayet — sahibi olmayan herkese */}
-            {!isOwner && (
-              <div className="mt-4 pt-4 border-t border-line flex justify-end">
-                <SikayetButton
-                  targetType="listing"
-                  targetId={listing.id}
-                  isLoggedIn={!!currentUserId}
-                  variant="link"
-                  label="İlanı şikayet et"
-                />
+                {applications.length === 0 ? (
+                  <div className="bg-card border border-line rounded-lg p-8 text-center">
+                    <p className="text-sm text-ink-72">
+                      Henüz başvuru yok. İlanın yayında, profesyoneller görüp
+                      başvurabilir.
+                    </p>
+                  </div>
+                ) : appViewMode === 'compare' ? (
+                  <div className="-mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto">
+                    <div className="flex gap-4 min-w-min pb-2">
+                      {applications.map((app) => (
+                        <ApplicationCompareColumn
+                          key={app.id}
+                          application={app}
+                          onAction={() => router.refresh()}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {applications.map((app) => (
+                      <ApplicationCard
+                        key={app.id}
+                        application={app}
+                        onAction={() => router.refresh()}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {error && (
-          <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3 mb-4">
-            {error}
-          </div>
-        )}
-
-        {/* Aksiyonlar — koşullu */}
-        <div className="mb-8">
-          {/* ANONIM */}
-          {!currentUserId && (
-            <div className="bg-card border-2 border-terracotta/20 rounded-lg p-5 text-center">
-              <p className="text-sm text-ink mb-3">
-                Bu ilana başvurmak için giriş yapmalısın.
-              </p>
-              <Link
-                href="/giris"
-                className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
-              >
-                Giriş yap
-              </Link>
-            </div>
-          )}
-
-          {/* SAHİP VEYA owner-ROL üye — ilan yönetimi (close/cancel/reopen/restore/delete) */}
-          {canOwnerManage && (
-            <div className="bg-card border border-line rounded-lg p-5">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-                İlanını yönet
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {canCloseListing(listing.status) && (
-                  <button
-                    onClick={() => withConfirm('close', handleClose)}
-                    disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
-                      confirming === 'close'
-                        ? 'bg-ink text-paper border-ink'
-                        : 'border-line text-ink-72 hover:border-ink hover:text-ink'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Lock size={14} strokeWidth={1.75} />
-                    {confirming === 'close'
-                      ? 'Eminsen tekrar tıkla'
-                      : 'Başvuruları kapat'}
-                  </button>
-                )}
-                {canReopenListing(listing.status) && (
-                  <button
-                    onClick={() => withConfirm('reopen', handleReopen)}
-                    disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
-                      confirming === 'reopen'
-                        ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
-                        : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Send size={14} strokeWidth={1.75} />
-                    {confirming === 'reopen'
-                      ? 'Eminsen tekrar tıkla'
-                      : 'Başvuruları tekrar aç'}
-                  </button>
-                )}
-                {canCancelListing(listing.status) && (
-                  <button
-                    onClick={() => withConfirm('cancel', handleCancel)}
-                    disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
-                      confirming === 'cancel'
-                        ? 'bg-terracotta text-paper border-terracotta'
-                        : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Trash2 size={14} strokeWidth={1.75} />
-                    {confirming === 'cancel'
-                      ? 'Eminsen tekrar tıkla'
-                      : 'İlanı iptal et'}
-                  </button>
-                )}
-                {canRestoreListing(listing.status) && (
-                  <button
-                    onClick={() => withConfirm('restore', handleRestore)}
-                    disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
-                      confirming === 'restore'
-                        ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
-                        : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Pencil size={14} strokeWidth={1.75} />
-                    {confirming === 'restore'
-                      ? 'Eminsen tekrar tıkla'
-                      : 'Taslağa geri al'}
-                  </button>
-                )}
-                {canDeleteListing(listing.status) && (
-                  <button
-                    onClick={() => withConfirm('delete', handleDelete)}
-                    disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm border transition ${
-                      confirming === 'delete'
-                        ? 'bg-danger text-paper border-danger'
-                        : 'border-line text-ink-72 hover:border-danger hover:text-danger'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Trash2 size={14} strokeWidth={1.75} />
-                    {confirming === 'delete'
-                      ? 'Kalıcı olarak sil'
-                      : 'İlanı sil'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* PROFESYONEL — BAŞVURMAMIŞ (kendi yönettiği kurum ilanına başvuramaz → canDecide gizler) */}
-          {isProfessional && !canDecide && !myApplication && applicationOpen && (
-            <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5">
-              <p className="text-sm text-ink mb-4">
-                Bu ilana başvurmak ister misin? İlan sahibine başvuru
-                mesajın ve (varsa) fiyat teklifini iletilir.
-              </p>
-              <button
-                onClick={() => setApplyModalOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
-              >
-                <Send size={14} strokeWidth={1.75} />
-                Başvur
-              </button>
-            </div>
-          )}
-
-          {/* PROFESYONEL — BAŞVURMUŞ (karar-verici olan üye kendi başvurusunu
-              "Gelen başvurular" panelinde görür; burada çift render olmasın → !canDecide) */}
-          {isProfessional && !canDecide && myApplication && (
-            <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F]">
-                  Başvurun
-                </p>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${
-                    badgeStyles[
-                      getApplicationStatusTone(myApplication.status)
-                    ]
-                  }`}
-                >
-                  {getApplicationStatusLabel(myApplication.status)}
-                </span>
-              </div>
-              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap mb-2">
-                {myApplication.cover_message}
-              </p>
-              {myApplication.proposed_amount !== null && (
-                <p className="text-sm text-ink mt-2">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 block mb-0.5">
-                    Fiyat teklifin
-                  </span>
-                  <span className="font-display text-lg font-medium text-[#1E3A5F]">
-                    {formatProposedAmount(
-                      myApplication.proposed_amount,
-                      myApplication.currency
-                    )}
-                  </span>
-                </p>
-              )}
-              {myApplication.status === 'accepted' && myConversationId && (
-                <Link
-                  href={`/mesajlar/${myConversationId}`}
-                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
-                >
-                  <Send size={14} strokeWidth={1.75} />
-                  Konuşmaya git
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* PROFESYONEL — İlan published değil veya başvuramıyor (canDecide olanlara gösterme) */}
-          {isProfessional &&
-            !canDecide &&
-            !myApplication &&
-            !applicationOpen && (
-              <div className="bg-ink-72/5 border border-line rounded-lg p-5 text-center">
-                <p className="text-sm text-ink-72">
-                  {deadlineInfo?.passed
-                    ? 'Bu ilanın başvuru süresi doldu.'
-                    : 'Bu ilan artık başvuru kabul etmiyor.'}
-                </p>
-              </div>
+            {/* Gönderilen davetler (sahip + manager+ görür) — KALEM 1 */}
+            {canDecide && sentInvitations.length > 0 && (
+              <GonderilenDavetler invitations={sentInvitations} />
             )}
-        </div>
 
-        {/* Başvurular bölümü — sahip VEYA kurum ilanında manager+ üye görür/karar verir */}
-        {canDecide && (
-          <div className="mt-12">
-            {acceptedConversationId && (
-              <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+            {/* Benzer ilanlar — 0 ise gizli */}
+            {similarListings.length > 0 && (
+              <SimilarListingsBlock listings={similarListings} />
+            )}
+
+            {/* Sahip kartı — MOBİLDE içerik sonunda */}
+            {ownerCard && <div className="lg:hidden">{ownerCard}</div>}
+          </div>
+
+          {/* ═══════════ SAĞ KOLON (1/3, sticky) ═══════════ */}
+          <aside className="lg:col-span-1">
+            <div className="lg:sticky lg:top-24 space-y-4">
+              {/* Bütçe + tarihler + CTA/yönetim */}
+              <div className="bg-card border border-line rounded-lg p-5">
+                {/* Bütçe */}
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
-                    Başvuru kabul edildi
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
+                    Bütçe
                   </p>
-                  <p className="text-sm text-ink">
-                    Kabul ettiğin profesyonelle mesajlaşarak detayları
-                    konuşabilirsin.
+                  <p className="font-display text-2xl md:text-[28px] leading-tight text-ink font-medium">
+                    {budgetLabel}
                   </p>
                 </div>
-                <Link
-                  href={`/mesajlar/${acceptedConversationId}`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all shrink-0"
-                >
-                  <Send size={14} strokeWidth={1.75} />
-                  Konuşmaya git
-                </Link>
+
+                {/* Tarihler */}
+                <div className="mt-4 pt-4 border-t border-line space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+                      İlan tarihi
+                    </span>
+                    <span className="text-ink">{publishedDateLabel}</span>
+                  </div>
+                  {deadlineDateOnly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+                        Son başvuru
+                      </span>
+                      <span
+                        className={
+                          deadlineInfo?.passed || deadlineCritical
+                            ? 'text-[#E2674A] font-medium'
+                            : 'text-ink'
+                        }
+                      >
+                        {deadlineDateOnly}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="mt-4 bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-3 py-2">
+                    {error}
+                  </div>
+                )}
+
+                {/* CTA / yönetim paneli / kapalı bandı */}
+                <div className="mt-4 pt-4 border-t border-line">
+                  {canDecide ? (
+                    /* ── YÖNETİM PANELİ (mockup 1d) — sahip/manager+ ── */
+                    <div>
+                      <p className="font-display font-semibold text-ink mb-1">
+                        Bu senin ilanın
+                      </p>
+                      <p className="text-xs text-ink-72 mb-3">
+                        Başvuruları değerlendir, ilanını yönet.
+                      </p>
+                      <div className="space-y-2">
+                        <a
+                          href="#basvurular"
+                          className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-ink/90 transition-colors"
+                        >
+                          <Users size={14} strokeWidth={1.75} />
+                          Başvuruları görüntüle ({applications.length})
+                        </a>
+                        {canEditListing(listing.status) && (
+                          <Link
+                            href={`/ilanlar/${listing.id}/duzenle`}
+                            className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-line text-ink-72 rounded-lg font-display font-semibold text-sm hover:border-ink hover:text-ink transition-colors"
+                          >
+                            <Pencil size={14} strokeWidth={1.75} />
+                            Düzenle
+                          </Link>
+                        )}
+                      </div>
+
+                      {/* Owner-rol aksiyonları (close/cancel/reopen/restore/delete) —
+                          canOwnerManage koşulu ve mevcut yetki kuralları AYNEN. */}
+                      {canOwnerManage &&
+                        (canCloseListing(listing.status) ||
+                          canReopenListing(listing.status) ||
+                          canCancelListing(listing.status) ||
+                          canRestoreListing(listing.status) ||
+                          canDeleteListing(listing.status)) && (
+                          <div className="mt-3 pt-3 border-t border-line">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-2">
+                              İlanını yönet
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {canCloseListing(listing.status) && (
+                                <button
+                                  onClick={() => withConfirm('close', handleClose)}
+                                  disabled={isPending}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
+                                    confirming === 'close'
+                                      ? 'bg-ink text-paper border-ink'
+                                      : 'border-line text-ink-72 hover:border-ink hover:text-ink'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Lock size={13} strokeWidth={1.75} />
+                                  {confirming === 'close'
+                                    ? 'Eminsen tekrar tıkla'
+                                    : 'Başvuruları kapat'}
+                                </button>
+                              )}
+                              {canReopenListing(listing.status) && (
+                                <button
+                                  onClick={() => withConfirm('reopen', handleReopen)}
+                                  disabled={isPending}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
+                                    confirming === 'reopen'
+                                      ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                                      : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Send size={13} strokeWidth={1.75} />
+                                  {confirming === 'reopen'
+                                    ? 'Eminsen tekrar tıkla'
+                                    : 'Tekrar aç'}
+                                </button>
+                              )}
+                              {canCancelListing(listing.status) && (
+                                <button
+                                  onClick={() => withConfirm('cancel', handleCancel)}
+                                  disabled={isPending}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
+                                    confirming === 'cancel'
+                                      ? 'bg-terracotta text-paper border-terracotta'
+                                      : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Trash2 size={13} strokeWidth={1.75} />
+                                  {confirming === 'cancel'
+                                    ? 'Eminsen tekrar tıkla'
+                                    : 'İlanı iptal et'}
+                                </button>
+                              )}
+                              {canRestoreListing(listing.status) && (
+                                <button
+                                  onClick={() => withConfirm('restore', handleRestore)}
+                                  disabled={isPending}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
+                                    confirming === 'restore'
+                                      ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                                      : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Pencil size={13} strokeWidth={1.75} />
+                                  {confirming === 'restore'
+                                    ? 'Eminsen tekrar tıkla'
+                                    : 'Taslağa geri al'}
+                                </button>
+                              )}
+                              {canDeleteListing(listing.status) && (
+                                <button
+                                  onClick={() => withConfirm('delete', handleDelete)}
+                                  disabled={isPending}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
+                                    confirming === 'delete'
+                                      ? 'bg-danger text-paper border-danger'
+                                      : 'border-line text-ink-72 hover:border-danger hover:text-danger'
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Trash2 size={13} strokeWidth={1.75} />
+                                  {confirming === 'delete'
+                                    ? 'Kalıcı olarak sil'
+                                    : 'İlanı sil'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  ) : isProfessional && myApplication ? (
+                    /* ── PROFESYONEL — BAŞVURMUŞ ── */
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F]">
+                          Başvurun
+                        </p>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${
+                            badgeStyles[
+                              getApplicationStatusTone(myApplication.status)
+                            ]
+                          }`}
+                        >
+                          {getApplicationStatusLabel(myApplication.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">
+                        {myApplication.cover_message}
+                      </p>
+                      {myApplication.proposed_amount !== null && (
+                        <p className="text-sm text-ink mt-3">
+                          <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 block mb-0.5">
+                            Fiyat teklifin
+                          </span>
+                          <span className="font-display text-lg font-medium text-[#1E3A5F]">
+                            {formatProposedAmount(
+                              myApplication.proposed_amount,
+                              myApplication.currency
+                            )}
+                          </span>
+                        </p>
+                      )}
+                      {myApplication.status === 'accepted' &&
+                        myConversationId && (
+                          <Link
+                            href={`/mesajlar/${myConversationId}`}
+                            className="mt-4 inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] transition-all"
+                          >
+                            <Send size={14} strokeWidth={1.75} />
+                            Konuşmaya git
+                          </Link>
+                        )}
+                    </div>
+                  ) : !applicationOpen ? (
+                    /* ── KAPALI/DOLU İLAN BANDI (Design rötuşu: belirgin) ── */
+                    <div className="bg-terracotta/8 border border-terracotta/25 rounded-lg px-4 py-3.5 text-center">
+                      <p className="font-display font-semibold text-terracotta text-sm">
+                        {deadlineInfo?.passed
+                          ? 'Başvurular kapandı'
+                          : 'Bu ilan başvuru kabul etmiyor'}
+                      </p>
+                      {deadlineInfo?.passed && deadlineDateOnly && (
+                        <p className="text-xs text-ink-72 mt-1">
+                          Son başvuru: {deadlineDateOnly}
+                        </p>
+                      )}
+                    </div>
+                  ) : !currentUserId ? (
+                    /* ── ANONİM ── */
+                    <div className="text-center">
+                      <p className="text-sm text-ink mb-3">
+                        Bu ilana başvurmak için giriş yapmalısın.
+                      </p>
+                      <Link href="/giris" className={mercanCta}>
+                        Giriş yap
+                      </Link>
+                    </div>
+                  ) : isProfessional ? (
+                    /* ── PROFESYONEL — BAŞVURABİLİR ── */
+                    <div>
+                      <p className="text-sm text-ink mb-3">
+                        İlan sahibine başvuru mesajın ve (varsa) fiyat teklifin
+                        iletilir.
+                      </p>
+                      <button
+                        onClick={() => setApplyModalOpen(true)}
+                        className={mercanCta}
+                      >
+                        <Send size={15} strokeWidth={1.75} />
+                        Başvur
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            )}
-            <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-              <h2 className="font-display text-2xl text-ink">
-                Gelen başvurular{' '}
-                <span className="text-ink-72 text-lg">
-                  ({applications.length})
-                </span>
-              </h2>
-              {applications.length > 1 && (
-                <div className="inline-flex rounded-lg border border-line overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setAppViewMode('list')}
-                    className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
-                      appViewMode === 'list'
-                        ? 'bg-ink text-paper'
-                        : 'bg-card text-ink-72 hover:text-ink'
-                    }`}
-                  >
-                    Liste
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAppViewMode('compare')}
-                    className={`px-3 py-1.5 text-xs font-display font-semibold transition ${
-                      appViewMode === 'compare'
-                        ? 'bg-ink text-paper'
-                        : 'bg-card text-ink-72 hover:text-ink'
-                    }`}
-                  >
-                    Karşılaştır
-                  </button>
-                </div>
-              )}
+
+              {/* Sahip kartı — masaüstünde sağ kolonda */}
+              {ownerCard && <div className="hidden lg:block">{ownerCard}</div>}
+
+              {/* Paylaş */}
+              <ShareButton title={listing.title} />
             </div>
-
-            {applications.length === 0 ? (
-              <div className="bg-card border border-line rounded-lg p-8 text-center">
-                <p className="text-sm text-ink-72">
-                  Henüz başvuru yok. İlanın yayında, profesyoneller görüp
-                  başvurabilir.
-                </p>
-              </div>
-            ) : appViewMode === 'compare' ? (
-              <div className="-mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto">
-                <div className="flex gap-4 min-w-min pb-2">
-                  {applications.map((app) => (
-                    <ApplicationCompareColumn
-                      key={app.id}
-                      application={app}
-                      onAction={() => router.refresh()}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {applications.map((app) => (
-                  <ApplicationCard
-                    key={app.id}
-                    application={app}
-                    onAction={() => router.refresh()}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Gönderilen davetler (sahip + manager+ görür) — KALEM 1 */}
-        {canDecide && sentInvitations.length > 0 && (
-          <GonderilenDavetler invitations={sentInvitations} />
-        )}
+          </aside>
+        </div>
       </div>
+
+      {/* MOBİL — alta sabit çubuk (mockup 1c) */}
+      {(canDecide ||
+        isProfessional ||
+        !currentUserId ||
+        !applicationOpen) && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-line px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
+              Bütçe
+            </p>
+            <p className="font-display text-ink font-medium truncate leading-tight">
+              {budgetLabel}
+            </p>
+          </div>
+          {canDecide ? (
+            <a
+              href="#basvurular"
+              className="inline-flex items-center gap-1.5 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm shrink-0"
+            >
+              Başvurular ({applications.length})
+            </a>
+          ) : isProfessional && myApplication ? (
+            <span
+              className={`px-3 py-2 rounded-full text-[11px] font-mono uppercase tracking-[0.08em] font-medium border shrink-0 ${
+                badgeStyles[getApplicationStatusTone(myApplication.status)]
+              }`}
+            >
+              {getApplicationStatusLabel(myApplication.status)}
+            </span>
+          ) : !applicationOpen ? (
+            <span className="px-4 py-2.5 rounded-lg text-xs font-display font-semibold bg-terracotta/10 text-terracotta border border-terracotta/30 shrink-0">
+              {deadlineInfo?.passed ? 'Kapandı' : 'Kapalı'}
+            </span>
+          ) : !currentUserId ? (
+            <Link
+              href="/giris"
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm shrink-0"
+            >
+              Giriş yap
+            </Link>
+          ) : isProfessional ? (
+            <button
+              onClick={() => setApplyModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm shrink-0"
+            >
+              <Send size={15} strokeWidth={1.75} />
+              Başvur
+            </button>
+          ) : null}
+        </div>
+      )}
 
       {/* Apply Modal — canDecide olan (sahip/manager+) için render edilmez */}
       {isProfessional && !canDecide && !myApplication && (
@@ -680,6 +805,218 @@ export function IlanDetay({
           open={applyModalOpen}
           onClose={() => setApplyModalOpen(false)}
         />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Yapılandırılmış bölüm — satırlara böl, boş olmayan her satır madde
+// =============================================================================
+
+function StructuredSection({
+  label,
+  content,
+}: {
+  label: string;
+  content: string | null;
+}) {
+  if (!content || !content.trim()) return null;
+  const lines = content
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="bg-card border border-line rounded-lg p-6">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+        {label}
+      </p>
+      <ul className="space-y-2">
+        {lines.map((line, i) => (
+          <li
+            key={i}
+            className="flex gap-2.5 text-sm text-ink leading-relaxed"
+          >
+            <span
+              className="shrink-0 w-1.5 h-1.5 rounded-full bg-terracotta mt-[7px]"
+              aria-hidden="true"
+            />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// =============================================================================
+// Benzer ilanlar — masaüstü 3'lü grid, mobil yatay kaydırma
+// =============================================================================
+
+function SimilarListingsBlock({ listings }: { listings: SimilarListing[] }) {
+  return (
+    <div className="pt-2">
+      <h2 className="font-display text-xl text-ink mb-4">Benzer ilanlar</h2>
+      <div className="-mx-6 md:mx-0 px-6 md:px-0 flex md:grid md:grid-cols-3 gap-4 overflow-x-auto pb-2 snap-x">
+        {listings.map((l) => (
+          <Link
+            key={l.id}
+            href={`/ilanlar/${l.id}`}
+            className="snap-start shrink-0 w-64 md:w-auto bg-card border border-line rounded-lg p-4 hover:border-terracotta hover:-translate-y-0.5 transition-all flex flex-col"
+          >
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.1em] text-terracotta mb-2">
+              {l.service_categories?.emoji && (
+                <span>{l.service_categories.emoji}</span>
+              )}
+              {l.service_categories?.name_tr ?? 'Kategori'}
+            </span>
+            <p className="font-display font-medium text-ink leading-tight line-clamp-2 mb-3 flex-1">
+              {l.title}
+            </p>
+            <p className="font-display text-sm text-ink font-medium">
+              {formatBudgetRange(l.budget_min, l.budget_max, l.currency)}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Paylaş — navigator.share varsa native, yoksa panoya kopyala
+// =============================================================================
+
+function ShareButton({ title }: { title: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (!url) return;
+    // Native paylaşım (mobil) — iptal edilirse sessizce çık
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        /* kullanıcı iptal etti */
+      }
+      return;
+    }
+    // Fallback: panoya kopyala
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* pano erişimi yok — sessiz */
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-card border border-line rounded-lg font-display font-semibold text-sm text-ink-72 hover:text-ink hover:border-ink transition-colors"
+    >
+      <Share2 size={14} strokeWidth={1.75} />
+      {copied ? 'Bağlantı kopyalandı ✓' : 'Paylaş'}
+    </button>
+  );
+}
+
+// =============================================================================
+// İlan sahibi kartı — avatar + ad + doğrulanmış + tip + sinyaller
+// =============================================================================
+
+function OwnerInfoCard({
+  creator,
+  creatorName,
+  listingId,
+  isOwner,
+  isLoggedIn,
+  listingCount,
+}: {
+  creator: NonNullable<ListingWithRelations['creator']>;
+  creatorName: string;
+  listingId: string;
+  isOwner: boolean;
+  isLoggedIn: boolean;
+  listingCount: number;
+}) {
+  const isVerified = creator.approval_status === 'approved';
+  const typeLabel = creator.role === 'business' ? 'Kurumsal' : 'Müşteri';
+  const memberSince = creator.created_at
+    ? new Date(creator.created_at).toLocaleDateString('tr-TR', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
+  // Kamuya açık profil sayfası olan hesaplar (kurumsal) için profil linki
+  const showProfileLink = creator.role === 'business';
+
+  return (
+    <div className="bg-card border border-line rounded-lg p-5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+        İlan sahibi
+      </p>
+      <div className="flex items-center gap-3">
+        {creator.avatar_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={creator.avatar_url}
+            alt={creatorName}
+            className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+            {creatorName.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="font-display font-semibold text-ink flex items-center gap-1.5">
+            <span className="truncate">{creatorName}</span>
+            {isVerified && (
+              <BadgeCheck
+                size={15}
+                strokeWidth={2}
+                className="text-[#1F5C4A] shrink-0"
+                aria-label="Doğrulanmış"
+              />
+            )}
+          </p>
+          <p className="text-[10px] text-ink-72 font-mono uppercase tracking-[0.1em]">
+            {typeLabel}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-line text-xs text-ink-72">
+        {listingCount} ilan yayınladı
+        {memberSince && ` · Üye: ${memberSince}`}
+      </div>
+
+      {showProfileLink && (
+        <Link
+          href={`/p/${creator.id}`}
+          className="mt-3 inline-flex items-center gap-1 text-xs font-mono uppercase tracking-[0.1em] text-terracotta hover:text-ember transition-colors"
+        >
+          Profil görüntüle →
+        </Link>
+      )}
+
+      {/* Şikayet — sahibi olmayan herkese */}
+      {!isOwner && (
+        <div className="mt-4 pt-4 border-t border-line flex justify-end">
+          <SikayetButton
+            targetType="listing"
+            targetId={listingId}
+            isLoggedIn={isLoggedIn}
+            variant="link"
+            label="İlanı şikayet et"
+          />
+        </div>
       )}
     </div>
   );
@@ -821,9 +1158,7 @@ function ApplicationCard({
         </div>
       )}
 
-      {error && (
-        <p className="text-xs text-danger mb-2">{error}</p>
-      )}
+      {error && <p className="text-xs text-danger mb-2">{error}</p>}
 
       {/* Aksiyon butonları */}
       <div className="flex flex-wrap gap-2 pt-3 border-t border-line">
@@ -883,12 +1218,9 @@ function ApplicationCard({
             {confirming === 'unreject' ? 'Onayla' : 'Geri al'}
           </button>
         )}
-      </div> 
-      
-</div>
+      </div>
+    </div>
   );
-
-
 }
 
 // =============================================================================
@@ -1142,7 +1474,7 @@ function GonderilenDavetler({
   invitations: SentInvitation[];
 }) {
   return (
-    <div className="mt-12">
+    <div className="pt-2">
       <h2 className="font-display text-2xl text-ink mb-4">
         Gönderilen davetler{' '}
         <span className="text-ink-72 text-lg">({invitations.length})</span>

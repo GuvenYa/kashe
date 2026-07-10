@@ -13,6 +13,7 @@ import type {
   ListingWithRelations,
   ApplicationWithRelations,
   Application,
+  SimilarListing,
 } from '../listings-data';
 
 type Params = Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
       service_categories (id, slug, name_tr, emoji),
       turkish_cities (id, name),
       creator:profiles!listings_creator_id_fkey (
-        id, full_name, avatar_url, company_name, role, bio
+        id, full_name, avatar_url, company_name, role, bio, created_at, approval_status
       )
     `
     )
@@ -216,6 +217,41 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
     myConversationId = conv?.id ?? null;
   }
 
+  // Benzer ilanlar: aynı kategori, published, kendisi hariç. Aynı şehir öncelikli,
+  // sonra tarihe göre. Tek sorgu + JS'te stable-sort (N+1 yok), 3'e indir.
+  let similarListings: SimilarListing[] = [];
+  {
+    const { data: simData } = await supabase
+      .from('listings')
+      .select(
+        'id, title, budget_min, budget_max, currency, city_id, service_categories (name_tr, emoji)'
+      )
+      .eq('category_id', listing.category_id)
+      .eq('status', 'published')
+      .neq('id', listing.id)
+      .order('published_at', { ascending: false })
+      .limit(12);
+    const sims = (simData as unknown as SimilarListing[]) ?? [];
+    // Aynı şehir önce (JS sort stable → tarih sırası korunur)
+    sims.sort((a, b) => {
+      const aCity = a.city_id === listing.city_id ? 0 : 1;
+      const bCity = b.city_id === listing.city_id ? 0 : 1;
+      return aCity - bCity;
+    });
+    similarListings = sims.slice(0, 3);
+  }
+
+  // İlan sahibinin yayında ilan sayısı (sahip kartı sinyali) — tek sayım sorgusu
+  let ownerListingCount = 0;
+  {
+    const { count } = await supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('creator_id', listing.creator_id)
+      .eq('status', 'published');
+    ownerListingCount = count ?? 0;
+  }
+
   // View counter (fire-and-forget, sahibi kendi sayfasını sayılmaz)
   incrementListingViews(id).catch(() => {
     // sessiz fail
@@ -236,6 +272,8 @@ export default async function IlanDetayPage({ params }: { params: Params }) {
         sentInvitations={sentInvitations}
         acceptedConversationId={acceptedConversationId}
         myConversationId={myConversationId}
+        similarListings={similarListings}
+        ownerListingCount={ownerListingCount}
       />
     </>
   );

@@ -40,6 +40,8 @@ type CreateListingInput = {
   title: string;
   description: string;
   requirements: string | null;
+  project_details: string | null;
+  work_conditions: string | null;
   event_date: string | null;
   event_type: string | null;
   location: string | null;
@@ -134,6 +136,8 @@ export async function createListing(
       title: input.title.trim(),
       description: input.description.trim(),
       requirements: input.requirements?.trim() || null,
+      project_details: input.project_details?.trim() || null,
+      work_conditions: input.work_conditions?.trim() || null,
       event_date: input.event_date || null,
       event_type: input.event_type || null,
       location: input.location?.trim() || null,
@@ -222,6 +226,10 @@ export async function updateListing(
     updateData.description = input.description.trim();
   if (input.requirements !== undefined)
     updateData.requirements = input.requirements?.trim() || null;
+  if (input.project_details !== undefined)
+    updateData.project_details = input.project_details?.trim() || null;
+  if (input.work_conditions !== undefined)
+    updateData.work_conditions = input.work_conditions?.trim() || null;
   if (input.event_date !== undefined) updateData.event_date = input.event_date;
   if (input.event_type !== undefined) updateData.event_type = input.event_type;
   if (input.location !== undefined)

@@ -207,6 +207,12 @@ export function YeniIlanFormu({
   const [requirements, setRequirements] = useState(
     initialData?.requirements ?? ''
   );
+  const [projectDetails, setProjectDetails] = useState(
+    initialData?.project_details ?? ''
+  );
+  const [workConditions, setWorkConditions] = useState(
+    initialData?.work_conditions ?? ''
+  );
   const [eventDate, setEventDate] = useState(initialData?.event_date ?? '');
   const [eventType, setEventType] = useState<string>(
     initialData?.event_type ?? ''
@@ -328,6 +334,8 @@ export function YeniIlanFormu({
           title: title.trim(),
           description: description.trim(),
           requirements: requirements.trim() || null,
+          project_details: projectDetails.trim() || null,
+          work_conditions: workConditions.trim() || null,
           event_date: eventDate || null,
           event_type: eventType || null,
           location: location.trim() || null,
@@ -357,6 +365,8 @@ export function YeniIlanFormu({
           title: title.trim(),
           description: description.trim(),
           requirements: requirements.trim() || null,
+          project_details: projectDetails.trim() || null,
+          work_conditions: workConditions.trim() || null,
           event_date: eventDate || null,
           event_type: eventType || null,
           location: location.trim() || null,
@@ -479,7 +489,7 @@ export function YeniIlanFormu({
           {/* Açıklama */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Açıklama <span className="text-danger">*</span>
+              Genel açıklama <span className="text-danger">*</span>
             </label>
             <div className="mb-3 bg-paper border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -527,10 +537,31 @@ export function YeniIlanFormu({
             </p>
           </div>
 
-          {/* Gereksinimler */}
+          {/* Proje detayları (opsiyonel — yapılandırılmış bölüm) */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-              Gereksinimler{' '}
+              Proje detayları{' '}
+              <span className="text-ink-72 normal-case tracking-normal">
+                (opsiyonel)
+              </span>
+            </label>
+            <textarea
+              value={projectDetails}
+              onChange={(e) => setProjectDetails(e.target.value)}
+              placeholder="Örn: Sahne kurulumu ve ışık gerekli&#10;Çekim sonrası kısa kurgu video"
+              rows={3}
+              maxLength={3000}
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
+            />
+            <p className="text-[10px] text-ink-72 mt-1 font-mono">
+              Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
+            </p>
+          </div>
+
+          {/* Aranan nitelikler (opsiyonel — mevcut requirements kolonu) */}
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
+              Aranan nitelikler{' '}
               <span className="text-ink-72 normal-case tracking-normal">
                 (opsiyonel)
               </span>
@@ -538,13 +569,34 @@ export function YeniIlanFormu({
             <textarea
               value={requirements}
               onChange={(e) => setRequirements(e.target.value)}
-              placeholder="Profesyonelin sahip olması gereken nitelikler, deneyim, sertifika, ekipman vs."
+              placeholder="Örn: En az 3 yıl deneyim&#10;Kendi ekipmanıyla gelmeli"
               rows={3}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
-              {requirements.length} / 2000 karakter
+              Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
+            </p>
+          </div>
+
+          {/* Çalışma koşulları (opsiyonel — yapılandırılmış bölüm) */}
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
+              Çalışma koşulları{' '}
+              <span className="text-ink-72 normal-case tracking-normal">
+                (opsiyonel)
+              </span>
+            </label>
+            <textarea
+              value={workConditions}
+              onChange={(e) => setWorkConditions(e.target.value)}
+              placeholder="Örn: 4 saatlik etkinlik&#10;Ulaşım ve yemek karşılanır"
+              rows={3}
+              maxLength={2000}
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
+            />
+            <p className="text-[10px] text-ink-72 mt-1 font-mono">
+              Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
             </p>
           </div>
         </div>
