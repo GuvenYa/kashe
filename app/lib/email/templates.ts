@@ -55,7 +55,10 @@ function baseLayout(opts: {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
 <title>${escapeHtml(opts.title)}</title>
+<style>:root{color-scheme:light only;supported-color-schemes:light;}</style>
 </head>
 <body style="margin:0;padding:0;background-color:${COLORS.paper};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${COLORS.ink};">
 <div style="display:none;max-height:0;overflow:hidden;color:${COLORS.paper};">${escapeHtml(opts.preheader)}</div>
@@ -68,8 +71,8 @@ function baseLayout(opts: {
           <td style="padding:28px 32px 0 32px;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
               <tr>
-                <td style="background-color:${COLORS.terracotta};width:28px;height:28px;border-radius:6px;text-align:center;vertical-align:middle;">
-                  <span style="color:#FFFFFF;font-weight:600;font-size:18px;line-height:28px;">k</span>
+                <td style="vertical-align:middle;">
+                  <img src="${SITE_URL}/icon-192.png?v=2" width="28" height="28" alt="Kashe" style="display:block;border-radius:6px;" />
                 </td>
                 <td style="padding-left:10px;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:${COLORS.ink};">Kashe</td>
               </tr>
@@ -100,7 +103,7 @@ function baseLayout(opts: {
             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
               <tr>
                 <td style="background-color:${ctaColor};border-radius:10px;">
-                  <a href="${opts.ctaUrl}" style="display:inline-block;padding:12px 22px;color:${COLORS.paper};text-decoration:none;font-size:15px;font-weight:600;">${escapeHtml(opts.ctaText)}</a>
+                  <a href="${opts.ctaUrl}" style="display:inline-block;padding:12px 22px;color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:600;">${escapeHtml(opts.ctaText)}</a>
                 </td>
               </tr>
             </table>
@@ -114,7 +117,7 @@ function baseLayout(opts: {
               Bu e-postayı Kashe'deki etkinliklerin için aldın. Bildirim ayarlarını <a href="${SITE_URL}/profil" style="color:${COLORS.terracotta};text-decoration:none;">profil sayfandan</a> yönetebilirsin.
             </p>
             <p style="margin:10px 0 0 0;font-size:12px;color:${COLORS.ink50};">
-              <a href="${SITE_URL}" style="color:${COLORS.ink50};text-decoration:none;">kashe.app</a> · Türkiye'nin etkinlik pazaryeri
+              <a href="${SITE_URL}" style="color:${COLORS.ink50};text-decoration:none;">Kashe</a> · Türkiye'nin etkinlik pazaryeri
             </p>
           </td>
         </tr>
