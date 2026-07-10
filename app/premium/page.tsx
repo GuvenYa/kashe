@@ -15,7 +15,7 @@ export default async function PremiumPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/premium');
   }
 
   const { data: profile } = await supabase

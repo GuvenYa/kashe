@@ -34,7 +34,7 @@ export default async function KazanclarimPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/kazanclarim');
   }
 
   // Rol + suspension kontrolü — kazançlarım sadece profesyonel/ajans için

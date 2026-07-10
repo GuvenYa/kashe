@@ -6,8 +6,8 @@ import GirisForm from './giris-form';
 // Güvenlik: sadece site-içi (relative) yollara redirect izni ver.
 // Açık yönlendirme (open redirect) saldırısını engeller — //evil.com gibi.
 function sanitizeRedirect(raw: string | undefined): string {
-  if (!raw) return '/profil';
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/profil';
+  if (!raw) return '/';
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
   return raw;
 }
 

@@ -59,7 +59,7 @@ export default async function OdemelerimPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/odemelerim');
   }
 
   const { data: profile } = await supabase

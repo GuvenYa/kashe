@@ -131,7 +131,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect(`/giris?redirect=/rezervasyon/${id}`);
   }
 
   // Suspension kontrolü — askıdaki kullanıcı rezervasyon detayına giremez

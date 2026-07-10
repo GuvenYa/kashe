@@ -44,7 +44,7 @@ export default async function TakvimimPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/takvimim');
   }
 
   // Sadece profesyonel/ajans rolleri buraya gelmeli — diğerlerini ana sayfaya yolla

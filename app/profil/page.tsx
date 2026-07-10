@@ -32,7 +32,7 @@ export default async function ProfilPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/profil');
   }
 
   const { data: profileData } = await supabase

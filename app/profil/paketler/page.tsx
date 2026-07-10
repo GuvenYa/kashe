@@ -18,7 +18,7 @@ export default async function PaketlerPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/profil/paketler');
   }
 
   const { data: profileData } = await supabase

@@ -20,7 +20,7 @@ function translateError(message: string): string {
 }
 
 export default function GirisForm({
-  redirectTo = '/profil',
+  redirectTo = '/',
 }: {
   redirectTo?: string;
 }) {

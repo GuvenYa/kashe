@@ -17,7 +17,7 @@ export default async function ProfilDuzenlePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/profil/duzenle');
   }
 
   const [{ data: profile }, { data: cities }, { data: categories }] = await Promise.all([

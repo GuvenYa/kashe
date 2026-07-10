@@ -47,7 +47,7 @@ export default async function RezervasyonlarimPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/rezervasyonlarim');
   }
 
   // Suspension kontrolü — askıdaki kullanıcı rezervasyon göremez

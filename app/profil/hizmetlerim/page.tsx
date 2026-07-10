@@ -22,7 +22,7 @@ export default async function HizmetlerimPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/profil/hizmetlerim');
   }
 
   const { data: profileData } = await supabase

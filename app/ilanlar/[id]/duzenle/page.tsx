@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { YeniIlanFormu } from '../../yeni/yeni-ilan-formu';
 import { canEditListing, type Listing, type ListingStatus } from '../../listings-data';
 import { canWriteForBusiness } from '@/app/lib/business-write';
+import { orderCities } from '@/app/lib/city-order';
 
 type Params = Promise<{ id: string }>;
 
@@ -107,7 +108,7 @@ export default async function IlanDuzenlePage({
 
         <YeniIlanFormu
           categories={categoriesResult.data || []}
-          cities={citiesResult.data || []}
+          cities={orderCities(citiesResult.data || [])}
           initialData={sanitizedListing}
           editorIsOwner={editorIsOwner}
         />

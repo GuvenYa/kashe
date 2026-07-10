@@ -45,7 +45,7 @@ export default async function TeklifKarsilastirPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/giris');
+  if (!user) redirect(`/giris?redirect=/teklif-taleplerim/${id}`);
 
   // Kurumsal ekip bağlamı — tek sorgu (getTeamContext). teamBusinessIds = üyesi
   // olunan tüm kurumlar; üye kurum talebini görebilsin.

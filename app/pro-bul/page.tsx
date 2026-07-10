@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ProBulClient } from './pro-bul-client';
+import { orderCities } from '@/app/lib/city-order';
 
 export const metadata = {
   title: 'Profesyonel Bul — Kashe',
@@ -45,7 +46,7 @@ export default async function ProBulPage() {
 
           <ProBulClient
             categories={categoriesRes.data ?? []}
-            cities={citiesRes.data ?? []}
+            cities={orderCities(citiesRes.data ?? [])}
           />
         </div>
       </main>

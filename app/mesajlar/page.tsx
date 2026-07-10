@@ -39,7 +39,7 @@ export default async function MesajlarPage() {
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/mesajlar');
   }
 
   // Suspension kontrolü — askıdaki kullanıcı mesajlaşamaz

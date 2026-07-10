@@ -48,7 +48,7 @@ export default async function KonusmaPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect(`/giris?redirect=/mesajlar/${id}`);
   }
 
   // Suspension kontrolü — askıdaki kullanıcı mesajlaşamaz

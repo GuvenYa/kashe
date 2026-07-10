@@ -21,7 +21,7 @@ export default async function PortfoyPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/giris');
+    redirect('/giris?redirect=/profil/portfoy');
   }
 
   const { data: profileData } = await supabase
