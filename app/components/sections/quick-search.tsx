@@ -95,7 +95,7 @@ export function QuickSearch({
             }}
             onFocus={() => setShowSuggestions(true)}
             autoComplete="off"
-            placeholder="örn. düğün fotoğrafçısı"
+            placeholder="örn. oyuncu, model"
             className="w-full bg-transparent text-ink text-base placeholder:text-ink-32 focus:outline-none"
           />
         </div>

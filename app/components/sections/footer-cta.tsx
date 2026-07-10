@@ -26,7 +26,8 @@ export function FooterCTA() {
           {/* Alt metin */}
           <p className="font-body text-lg md:text-xl text-white/65 leading-[1.55] mb-10 max-w-xl mx-auto">
             Ücretsiz hesap aç, profilini oluştur, hizmet ver ya da ihtiyacın
-            olan profesyoneli bul. Komisyon sadece iş tamamlanınca.
+            olan profesyoneli bul. Lansman döneminde komisyonsuz; sonrasında
+            yalnız tamamlanan işten.
           </p>
 
           {/* CTA butonları */}

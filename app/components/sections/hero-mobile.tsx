@@ -1,5 +1,6 @@
 import { QuickSearch } from "./quick-search";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
+import { StatCounter } from "./stat-counter";
 
 type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
@@ -9,8 +10,9 @@ type Props = {
   categories: Category[];
   cities: City[];
   popularLinks: PopularLink[];
-  formattedProCount: string;
+  proCount: number;
   cityCount: number;
+  eventCount: number;
 };
 
 /**
@@ -22,8 +24,9 @@ export function HeroMobile({
   categories,
   cities,
   popularLinks,
-  formattedProCount,
+  proCount,
   cityCount,
+  eventCount,
 }: Props) {
   return (
     <div className="bg-paper">
@@ -131,27 +134,33 @@ export function HeroMobile({
         {/* İstatistikler */}
         <div className="kashe-rise flex items-center justify-center gap-6 mt-7 pt-6 border-t border-line w-full max-w-[420px]">
           <div className="text-center">
-            <span className="font-display font-semibold text-[24px] text-ink leading-none block">
-              {formattedProCount}
-            </span>
+            <StatCounter
+              value={proCount}
+              suffix="+"
+              className="font-display font-semibold text-[24px] text-ink leading-none block"
+            />
             <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
               Profesyonel
             </small>
           </div>
           <div className="w-px h-7 bg-line shrink-0" />
           <div className="text-center">
-            <span className="font-display font-semibold text-[24px] text-ink leading-none block">
-              {cityCount}+
-            </span>
+            <StatCounter
+              value={cityCount}
+              suffix="+"
+              className="font-display font-semibold text-[24px] text-ink leading-none block"
+            />
             <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
               Şehir
             </small>
           </div>
           <div className="w-px h-7 bg-line shrink-0" />
           <div className="text-center">
-            <span className="font-display font-semibold text-[24px] text-ink leading-none block">
-              12.000+
-            </span>
+            <StatCounter
+              value={eventCount}
+              suffix="+"
+              className="font-display font-semibold text-[24px] text-ink leading-none block"
+            />
             <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
               Etkinlik
             </small>

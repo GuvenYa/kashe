@@ -117,7 +117,7 @@ function baseLayout(opts: {
               Bu e-postayı Kashe'deki etkinliklerin için aldın. Bildirim ayarlarını <a href="${SITE_URL}/profil" style="color:${COLORS.terracotta};text-decoration:none;">profil sayfandan</a> yönetebilirsin.
             </p>
             <p style="margin:10px 0 0 0;font-size:12px;color:${COLORS.ink50};">
-              <a href="${SITE_URL}" style="color:${COLORS.ink50};text-decoration:none;">Kashe</a> · Türkiye'nin etkinlik pazaryeri
+              <a href="${SITE_URL}" style="color:${COLORS.ink50};text-decoration:none;">Kashe</a> · Türkiye'nin etkinlik ve yetenek pazaryeri
             </p>
           </td>
         </tr>

@@ -2,6 +2,7 @@ import { Eyebrow } from "@/app/components/ui/eyebrow";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { getCategoryIcon } from "@/app/lib/category-icon";
+import { CategoryIcon } from "@/app/components/ui/category-icon";
 import { KategoriTalepCta } from "@/app/components/kategori-talep-cta";
 
 type CategoryRow = {
@@ -100,11 +101,10 @@ export async function Categories() {
                     style={{ background: tone.iconBg }}
                   >
                     {iconUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
+                      <CategoryIcon
                         src={iconUrl}
-                        alt={cat.name_tr}
-                        className="w-full h-full object-contain p-1 kashe-icon-pop"
+                        name={cat.name_tr}
+                        initials={initials}
                       />
                     ) : (
                       <span className="font-display font-medium text-terracotta text-2xl">

@@ -89,7 +89,7 @@ export function B2BSection() {
                 <MockupRow label="Etkinlik" value="Yıllık iftar daveti" />
                 <MockupRow label="Tarih" value="22 Mart 2026" />
                 <MockupRow label="Aranan" value="8 hostes · 1 sunucu" />
-                <MockupRow label="Teklif istenen" value="42 profesyonel" />
+                <MockupRow label="Teklif istenen" value="18 profesyonel" />
                 <div className="pt-2">
                   <MockupRow label="Bütçe" value="28.000 ₺" highlight />
                 </div>

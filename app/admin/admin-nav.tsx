@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/yorumlar', label: 'Yorumlar' },
   { href: '/admin/sikayetler', label: 'Şikayetler' },
   { href: '/admin/blog', label: 'Blog' },
+  { href: '/admin/gorusler', label: 'Görüşler' },
   { href: '/admin/istatistikler', label: 'İstatistikler' },
 ];
 

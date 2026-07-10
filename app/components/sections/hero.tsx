@@ -3,6 +3,7 @@ import { orderCities } from "@/app/lib/city-order";
 import { QuickSearch } from "./quick-search";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
 import { HeroMobile } from "./hero-mobile";
+import { StatCounter } from "./stat-counter";
 
 export async function Hero() {
   const supabase = await createClient();
@@ -41,10 +42,10 @@ export async function Hero() {
     { label: "Hostes", slug: "hostes" },
   ];
 
-  const formattedProCount =
-    (proCount ?? 0) > 0
-      ? `${(proCount ?? 0).toLocaleString("tr-TR")}+`
-      : "2.400+";
+  // İstatistik değerleri — tek kaynak (mobil + masaüstü aynı), ileride güncellenecek.
+  const proNum = (proCount ?? 0) > 0 ? (proCount ?? 0) : 2400;
+  const cityNum = cityCount ?? 81;
+  const eventNum = 12000;
 
   return (
     <section className="relative bg-paper">
@@ -54,8 +55,9 @@ export async function Hero() {
           categories={categories}
           cities={cities}
           popularLinks={popularLinks}
-          formattedProCount={formattedProCount}
-          cityCount={cityCount ?? 81}
+          proCount={proNum}
+          cityCount={cityNum}
+          eventCount={eventNum}
         />
       </div>
 
@@ -138,27 +140,33 @@ export async function Hero() {
               style={{ animationDelay: "320ms" }}
             >
               <div>
-                <span className="font-display font-semibold text-[28px] text-ink leading-none block">
-                  {formattedProCount}
-                </span>
+                <StatCounter
+                  value={proNum}
+                  suffix="+"
+                  className="font-display font-semibold text-[28px] text-ink leading-none block"
+                />
                 <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
                   Profesyonel
                 </small>
               </div>
               <div className="w-px h-7 bg-line shrink-0" />
               <div>
-                <span className="font-display font-semibold text-[28px] text-ink leading-none block">
-                  {cityCount ?? 81}+
-                </span>
+                <StatCounter
+                  value={cityNum}
+                  suffix="+"
+                  className="font-display font-semibold text-[28px] text-ink leading-none block"
+                />
                 <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
                   Şehir
                 </small>
               </div>
               <div className="w-px h-7 bg-line shrink-0" />
               <div>
-                <span className="font-display font-semibold text-[28px] text-ink leading-none block">
-                  12.000+
-                </span>
+                <StatCounter
+                  value={eventNum}
+                  suffix="+"
+                  className="font-display font-semibold text-[28px] text-ink leading-none block"
+                />
                 <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
                   Etkinlik
                 </small>

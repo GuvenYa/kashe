@@ -13,7 +13,7 @@ const PROMISES: Promise[] = [
     number: "1",
     title: "Komisyonsuz başlangıç.",
     description:
-      "İlk dönemde gelen tüm işler senin. Komisyon yok, gizli ücret yok.",
+      "Lansman döneminde komisyon yok; sonrasında yalnız tamamlanan işten alınır.",
   },
   {
     number: "2",

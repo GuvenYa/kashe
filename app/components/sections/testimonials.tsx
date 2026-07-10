@@ -1,4 +1,5 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
+import { getPublishedTestimonials } from "@/app/lib/testimonials";
 
 type Testimonial = {
   quote: string;
@@ -14,6 +15,9 @@ const TONES = {
   plum:       { bg: "#E9F1ED", fg: "#1F5C4A" }, // zümrüt
   moss:       { bg: "#FFF1DC", fg: "#B5851F" }, // altın
 };
+
+// Renk rotasyonu — DB görüşleri sırayla bu tonları alır.
+const TONE_ROTATION = [TONES.terracotta, TONES.plum, TONES.moss];
 
 // NOT: Bu yorumlar şu an temsilidir — gerçek müşteri/profesyonel
 // yorumları toplandığında değiştirilecek.
@@ -44,16 +48,41 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-function StarRow() {
+// GEÇİŞ BAYRAĞI: Gerçek kullanıcı yorumları birikince true yapılacak.
+// false → mevcut temsili üçlü (ana sayfa değişmez).
+// true  → getPublishedTestimonials()'tan (is_published, sort_order, ilk 3);
+//         DB boşsa güvenli şekilde temsili üçlüye düşer (bölüm asla boş kalmaz).
+const USE_DB_TESTIMONIALS: boolean = false;
+
+// Kartın beklediği normalize şekil (hem temsili hem DB kaynağı buna eşlenir).
+type Card = {
+  quote: string;
+  name: string;
+  roleLine: string;
+  rating: number;
+  tone: { bg: string; fg: string };
+};
+
+function fromHardcoded(): Card[] {
+  return TESTIMONIALS.map((t) => ({
+    quote: t.quote,
+    name: t.name,
+    roleLine: `${t.role} · ${t.city}`,
+    rating: 5,
+    tone: t.tone,
+  }));
+}
+
+function StarRow({ count = 5 }: { count?: number }) {
   return (
-    <div className="flex gap-0.5 mb-4" aria-label="5 yıldız">
+    <div className="flex gap-0.5 mb-4" aria-label={`${count} yıldız`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <svg
           key={i}
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill="var(--color-plum)"
+          fill={i < count ? "var(--color-plum)" : "rgba(26,18,14,0.15)"}
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
@@ -64,7 +93,23 @@ function StarRow() {
   );
 }
 
-export function Testimonials() {
+export async function Testimonials() {
+  let cards: Card[] = fromHardcoded();
+
+  if (USE_DB_TESTIMONIALS) {
+    const rows = await getPublishedTestimonials(3);
+    if (rows.length > 0) {
+      cards = rows.map((r, i) => ({
+        quote: r.body,
+        name: r.author_name,
+        roleLine: r.author_role ?? "",
+        rating: r.rating,
+        tone: TONE_ROTATION[i % TONE_ROTATION.length],
+      }));
+    }
+    // rows boşsa temsili üçlü kalır.
+  }
+
   return (
     <section className="bg-paper border-t border-line">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
@@ -80,7 +125,7 @@ export function Testimonials() {
 
         {/* Yorum kartları */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-          {TESTIMONIALS.map((t) => {
+          {cards.map((t, idx) => {
             const initials = t.name
               .split(" ")
               .map((s) => s[0])
@@ -90,10 +135,10 @@ export function Testimonials() {
               .toUpperCase();
             return (
               <div
-                key={t.name}
+                key={`${idx}-${t.name}`}
                 className="group bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] flex flex-col"
               >
-                <StarRow />
+                <StarRow count={t.rating} />
 
                 {/* Alıntı */}
                 <blockquote className="font-display text-lg leading-[1.5] text-ink mb-6 flex-1">
@@ -119,7 +164,7 @@ export function Testimonials() {
                       {t.name}
                     </p>
                     <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50 truncate">
-                      {t.role} · {t.city}
+                      {t.roleLine}
                     </p>
                   </div>
                 </div>

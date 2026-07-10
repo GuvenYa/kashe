@@ -16,7 +16,7 @@ export function Footer() {
               </span>
             </a>
             <p className="text-paper/70 max-w-xs leading-relaxed">
-              Türkiye&apos;nin etkinlik pazaryeri. Doğru profesyoneli ajanssız, şeffaf fiyatla bul.
+              Türkiye&apos;nin etkinlik ve yetenek pazaryeri. Doğru profesyoneli ajanssız, şeffaf fiyatla bul.
             </p>
           </div>
 
@@ -56,7 +56,7 @@ export function Footer() {
             </p>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="/#hakkimizda" className="text-paper/80 hover:text-paper transition-colors">
+                <a href="/hakkimizda" className="text-paper/80 hover:text-paper transition-colors">
                   Hakkımızda
                 </a>
               </li>

@@ -22,10 +22,10 @@ export default function Home() {
         <Hero />
         <CategoryMarquee />
         <Reveal>
-          <KasheAiSection />
+          <FeaturedProfiles />
         </Reveal>
         <Reveal>
-          <FeaturedProfiles />
+          <KasheAiSection />
         </Reveal>
         <Reveal>
           <Categories />
