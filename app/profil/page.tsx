@@ -55,6 +55,7 @@ export default async function ProfilPage() {
   const profile = profileData as Profile & {
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null } | null;
+    category_attributes: Record<string, unknown> | null;
   };
 
   const isPro = isProfessional(profile);
@@ -246,6 +247,30 @@ export default async function ProfilPage() {
   const canPub = canPublish(profile, services);
   const completeness = getCompletenessPercent(profile, services);
 
+  // D1/D5 — professional yönetim kartları: deneyim sayıları + kategori doluluk + portföy
+  const expCounts = { work: 0, education: 0, award: 0 };
+  if (isPro) {
+    const { data: expRows } = await supabase
+      .from('profile_experiences')
+      .select('kind')
+      .eq('profile_id', user.id);
+    for (const r of expRows ?? []) {
+      const k = r.kind as 'work' | 'education' | 'award';
+      if (k in expCounts) expCounts[k] += 1;
+    }
+  }
+  const expTotal = expCounts.work + expCounts.education + expCounts.award;
+  const catFilledCount = Object.values(
+    (profile.category_attributes ?? {}) as Record<string, unknown>
+  ).filter((v) => {
+    if (v == null) return false;
+    if (typeof v === 'string') return v.trim().length > 0;
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === 'object') return Object.keys(v as object).length > 0;
+    return true;
+  }).length;
+  const hasPortfolio = portfolioItems.length > 0;
+
   const initials = (profile.full_name || '')
     .split(' ')
     .map((s: string) => s[0])
@@ -319,6 +344,18 @@ export default async function ProfilPage() {
             </Link>
           </div>
 
+          {/* D2 — kendi public profilini görüntüle (professional; normal link) */}
+          {isPro && (
+            <div className="-mt-8 mb-10">
+              <Link
+                href={`/p/${user.id}`}
+                className="inline-flex items-center gap-1.5 font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+              >
+                Profilimi görüntüle →
+              </Link>
+            </div>
+          )}
+
           {/* ONAY DURUMU GÖSTERGESİ — client hariç */}
           {!isClientUser && profile.approval_status !== 'approved' && (
             <div className="mb-8">
@@ -375,8 +412,10 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* COMPLETENESS BAR */}
-          {completeness < 100 && (
+          {/* COMPLETENESS BAR (+ D5 professional zenginlik sinyalleri) */}
+          {(completeness < 100 ||
+            (isPro &&
+              (expTotal === 0 || catFilledCount === 0 || !hasPortfolio))) && (
             <div className="mb-8 bg-card border border-line rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
@@ -428,47 +467,153 @@ export default async function ProfilPage() {
                   </ul>
                 </div>
               )}
+
+              {/* D5 — professional zenginlik sinyalleri (deneyim · kategori · portföy) */}
+              {isPro && (
+                <div className="mt-4 pt-4 border-t border-line">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                    Profili zenginleştir
+                  </p>
+                  <ul className="space-y-1.5">
+                    {[
+                      { done: expTotal > 0, label: 'Deneyim / eğitim kaydı', href: '/profil/deneyim' },
+                      { done: catFilledCount > 0, label: 'Kategori bilgileri', href: '/profil/kategori-bilgileri' },
+                      { done: hasPortfolio, label: 'Portföy görseli', href: '/profil/portfoy' },
+                    ].map((s) => (
+                      <li key={s.label}>
+                        <Link
+                          href={s.href}
+                          className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-terracotta transition-colors"
+                        >
+                          {s.done ? (
+                            <span className="w-4 h-4 rounded-full bg-moss/15 flex items-center justify-center shrink-0">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4 4 10-10" /></svg>
+                            </span>
+                          ) : (
+                            <span className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-terracotta shrink-0 transition-colors" aria-hidden="true" />
+                          )}
+                          <span className={`flex-1 ${s.done ? 'line-through text-ink-72/60' : ''}`}>{s.label}</span>
+                          {!s.done && (
+                            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">Ekle →</span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
-          {/* INFO CARD */}
+          {/* INFO CARD — D1/D3: emerald eyebrow bölüm başı + normal-case alan etiketleri */}
           <div className="bg-card border border-line rounded-xl p-6 space-y-4">
+            <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+              Hesap Bilgileri
+            </p>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
-                Email
-              </p>
+              <p className="text-xs text-ink-72 mb-1">E-posta</p>
               <p className="text-ink text-sm">{user.email}</p>
             </div>
 
             {profile.phone && (
               <div className="border-t border-line pt-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
-                  Telefon
-                </p>
+                <p className="text-xs text-ink-72 mb-1">Telefon</p>
                 <p className="text-ink text-sm">{profile.phone}</p>
               </div>
             )}
 
             {cityName && (
               <div className="border-t border-line pt-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
-                  Şehir
-                </p>
+                <p className="text-xs text-ink-72 mb-1">Şehir</p>
                 <p className="text-ink text-sm">{cityName}</p>
               </div>
             )}
 
             {profile.bio && (
               <div className="border-t border-line pt-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
-                  Hakkımda
-                </p>
+                <p className="text-xs text-ink-72 mb-1">Hakkımda</p>
                 <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
                   {profile.bio}
                 </p>
               </div>
             )}
           </div>
+
+          {/* D1 — YENİ YÖNETİM KARTLARI: Deneyim & Eğitim + Kategori bilgileri (professional) */}
+          {isPro && (
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Deneyim & Eğitim */}
+              <div className="bg-card border border-line rounded-xl p-6 flex flex-col">
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+                  Profil İçeriği
+                </p>
+                <h2 className="font-display font-semibold text-xl text-ink mt-1">
+                  Deneyim &amp; Eğitim
+                </h2>
+                {expTotal === 0 ? (
+                  <>
+                    <p className="text-ink-72 text-sm mt-2 mb-4 flex-1">
+                      Henüz deneyim, eğitim veya ödül eklemedin.
+                    </p>
+                    <Link
+                      href="/profil/deneyim"
+                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                    >
+                      İlk kaydını ekle →
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-ink-72 text-sm mt-2 mb-4 flex-1">
+                      {expCounts.work} iş · {expCounts.education} eğitim ·{' '}
+                      {expCounts.award} ödül
+                    </p>
+                    <Link
+                      href="/profil/deneyim"
+                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                    >
+                      Yönet →
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              {/* Kategori bilgileri */}
+              <div className="bg-card border border-line rounded-xl p-6 flex flex-col">
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+                  Profil İçeriği
+                </p>
+                <h2 className="font-display font-semibold text-xl text-ink mt-1">
+                  Kategori bilgileri
+                </h2>
+                {catFilledCount === 0 ? (
+                  <>
+                    <p className="text-ink-72 text-sm mt-2 mb-4 flex-1">
+                      Kategorine özel alanlar (hızlı bilgiler, modüller) henüz boş.
+                    </p>
+                    <Link
+                      href="/profil/kategori-bilgileri"
+                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                    >
+                      Doldurmaya başla →
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-ink-72 text-sm mt-2 mb-4 flex-1">
+                      {catFilledCount} bölüm dolu.
+                    </p>
+                    <Link
+                      href="/profil/kategori-bilgileri"
+                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                    >
+                      Düzenle →
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* PROFESYONEL: Portföy */}
           {isPro && (

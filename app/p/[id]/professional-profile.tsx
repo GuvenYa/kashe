@@ -14,6 +14,7 @@ import {
   getCategoryFields,
   getModuleTitle,
   MODULE_REGISTRY,
+  QUICK_LABELS,
   type LeveledSkill,
   type ProfileExperience,
 } from '@/app/lib/category-fields';
@@ -22,21 +23,6 @@ import type {
   ServicePackage,
   PortfolioItem,
 } from '@/app/lib/types';
-
-// quickInfo alan key → görünen (normal case) etiket. Tüm 16 kategorinin key'leri.
-const QUICK_LABELS: Record<string, string> = {
-  turler: 'Türler', deneyim: 'Deneyim', set_suresi: 'Set süresi',
-  ekipman_durumu: 'Ekipman', enstruman: 'Enstrüman', ekip_boyutu: 'Ekip',
-  dans_turleri: 'Dans türleri', gosteri_suresi: 'Gösteri süresi',
-  gosteri_turu: 'Gösteri türü', dil: 'Dil', yas_grubu: 'Yaş grubu',
-  sunuculuk_turu: 'Sunuculuk türü', etkinlik_turleri: 'Etkinlik türleri',
-  oynayabildigi_yas_araligi: 'Oynayabildiği yaş', boy: 'Boy',
-  calisma_sekli: 'Çalışma şekli', uzmanlik: 'Uzmanlık',
-  teslim_suresi: 'Teslim süresi', drone: 'Drone', hizmet_turu: 'Hizmet türü',
-  ekipman_kapasitesi: 'Ekipman kapasitesi', kurulum_suresi: 'Kurulum süresi',
-  dil_cifti: 'Dil çifti', ceviri_turleri: 'Çeviri türleri', yeminli: 'Yeminli',
-  cizim_turu: 'Çizim türü',
-};
 
 type AttrRecord = Record<string, unknown>;
 
@@ -207,98 +193,64 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   const canTransact =
     !isOwnProfile && (!currentUserIsProfessional || writableBusinesses.length > 0);
 
-  // ── CTA sarmalayıcı stilleri (MOCKUP kaynak-doğru): Teklif Al = MERCAN dolgu (#E2674A =
-  //    plum token) + beyaz metin + tam genişlik, hover koyu mercan (#C7522F); rail'deki TEK
-  //    dolgulu buton budur. Rezervasyon = ZÜMRÜT outline (terracotta token border+metin),
-  //    hover hafif zümrüt zemin. Not: kullanıcının "bg-terracotta/ember" ipucu token-adı
-  //    karışıklığıydı; mockup #E2674A/#1F5C4A gösteriyor.
-  //    Modal bileşenlerinin İÇ MANTIĞINA dokunulmaz — className/variant almadıkları için ince
-  //    sarmalayıcı + [&>button] ile YALNIZ trigger <button> stili ezilir. Trigger her bileşende
-  //    fragment'ın DOĞRUDAN çocuğu; modal 'fixed' kardeş → [&>button] güvenli. (#C7522F: mockup
-  //    hover değeri; koyu-mercan token yok, tek hover-darken hex.)
-  const TEKLIF_WRAP =
-    'flex [&>button]:!bg-plum [&>button]:!text-white [&>button]:hover:!bg-[#C7522F] [&>button]:hover:!translate-x-0 [&>button]:hover:!translate-y-0 [&>button]:hover:!shadow-none';
-  const REZ_WRAP =
-    'flex [&>button]:!bg-transparent [&>button]:!text-terracotta [&>button]:!border [&>button]:!border-terracotta [&>button]:hover:!bg-terracotta/5 [&>button]:hover:!text-terracotta [&>button]:hover:!translate-x-0 [&>button]:hover:!translate-y-0 [&>button]:hover:!shadow-none';
-
   // ── Aksiyon çubuğu: Davet / Favori / Paylaş / Şikayet — tek tutarlı dizi, eşit ağırlık
-  //    (flex-1 hücreler + ayırıcı), ikon + kısa etiket. İşlevler ve modallar AYNEN.
-  //    Davet: görünmez-overlay tetik — büyük outline butonu diziye indirir, etiketi "Davet"e
-  //    kısaltır (bileşenin uzun "İlanıma Davet Et" metni text-transparent ile gizlenir; buton
-  //    hücreyi kaplayan şeffaf tıklama katmanı olur, modal/akış değişmez).
+  //    (flex-1 hücreler + ayırıcı). Her bileşen kendi 'bare' varyantını render eder →
+  //    hücrenin TAMAMI (ikon + etiket) tıklanabilir tetik. Sarmalayıcı hack / !important YOK.
   const actionBar = !isOwnProfile ? (
     <div className="flex items-stretch rounded-xl border border-line overflow-hidden bg-card divide-x divide-line">
       {canTransact && (
-        <div className="relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:bg-terracotta/5 transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="10" cy="8" r="3.5" />
-            <path d="M4 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
-            <path d="M19 7v6M16 10h6" />
-          </svg>
-          <span className="text-[10.5px] font-medium">Davet</span>
-          <div className="absolute inset-0 [&>button]:!absolute [&>button]:!inset-0 [&>button]:!w-full [&>button]:!h-full [&>button]:!p-0 [&>button]:!border-0 [&>button]:!bg-transparent [&>button]:!text-transparent [&>button]:!rounded-none [&>button]:!flex-none [&>button]:hover:!bg-transparent [&>button]:hover:!text-transparent [&>button]:hover:!translate-x-0 [&>button]:hover:!translate-y-0 [&>button]:hover:!shadow-none">
-            <DavetButton
-              professionalId={profile.id}
-              professionalName={displayName}
-              isLoggedIn={isLoggedIn}
-              currentUserIsProfessional={currentUserIsProfessional}
-              isOwnProfile={isOwnProfile}
-              writableBusinesses={writableBusinesses}
-            />
-          </div>
-        </div>
+        <DavetButton
+          professionalId={profile.id}
+          professionalName={displayName}
+          isLoggedIn={isLoggedIn}
+          currentUserIsProfessional={currentUserIsProfessional}
+          isOwnProfile={isOwnProfile}
+          writableBusinesses={writableBusinesses}
+          variant="bare-icon"
+        />
       )}
       {showFavoriteButton && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-1 py-2 hover:bg-terracotta/5 transition-colors">
-          <FavoriteButton
-            professionalId={profile.id}
-            initialFavorited={initialFavorited}
-            isLoggedIn={isLoggedIn}
-            userRole={currentUserRole}
-            variant="card"
-          />
-          <span className="text-[10.5px] font-medium text-ink-72">Favori</span>
-        </div>
-      )}
-      <div className="flex-1 flex items-center justify-center py-2.5 hover:bg-terracotta/5 transition-colors">
-        <ShareButton title={displayName} />
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 hover:bg-danger/5 transition-colors">
-        <SikayetButton
-          targetType="profile"
-          targetId={profile.id}
+        <FavoriteButton
+          professionalId={profile.id}
+          initialFavorited={initialFavorited}
           isLoggedIn={isLoggedIn}
-          variant="icon"
+          userRole={currentUserRole}
+          variant="bare"
         />
-        <span className="text-[10.5px] font-medium text-ink-72">Şikayet</span>
-      </div>
+      )}
+      <ShareButton title={displayName} />
+      <SikayetButton
+        targetType="profile"
+        targetId={profile.id}
+        isLoggedIn={isLoggedIn}
+        variant="bare"
+      />
     </div>
   ) : null;
 
+  // Birincil CTA'lar variant prop'uyla (MOCKUP): Teklif Al = mercan dolgu (primary-coral),
+  // Rezervasyon = zümrüt outline (outline-emerald). Sarmalayıcı override YOK.
   const ctaBlock = canTransact ? (
     <div className="flex flex-col gap-2.5">
-      <div className={TEKLIF_WRAP}>
-        <IletisimButton
-          professionalId={profile.id}
-          professionalName={displayName}
-          categorySlug={slug}
-          isLoggedIn={isLoggedIn}
-          currentUserIsProfessional={currentUserIsProfessional}
-          isOwnProfile={isOwnProfile}
-          writableBusinesses={writableBusinesses}
-          variant="inline"
-        />
-      </div>
-      <div className={REZ_WRAP}>
-        <RezervasyonButton
-          professionalId={profile.id}
-          professionalName={displayName}
-          isLoggedIn={isLoggedIn}
-          currentUserIsProfessional={currentUserIsProfessional}
-          isOwnProfile={isOwnProfile}
-          writableBusinesses={writableBusinesses}
-        />
-      </div>
+      <IletisimButton
+        professionalId={profile.id}
+        professionalName={displayName}
+        categorySlug={slug}
+        isLoggedIn={isLoggedIn}
+        currentUserIsProfessional={currentUserIsProfessional}
+        isOwnProfile={isOwnProfile}
+        writableBusinesses={writableBusinesses}
+        variant="primary-coral"
+      />
+      <RezervasyonButton
+        professionalId={profile.id}
+        professionalName={displayName}
+        isLoggedIn={isLoggedIn}
+        currentUserIsProfessional={currentUserIsProfessional}
+        isOwnProfile={isOwnProfile}
+        writableBusinesses={writableBusinesses}
+        variant="outline-emerald"
+      />
       {actionBar}
     </div>
   ) : !isOwnProfile ? (
@@ -313,7 +265,15 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
       />
       {actionBar}
     </div>
-  ) : null;
+  ) : (
+    // D4 — sahibi kendi public sayfasına bakarken CTA yerine tek düzenle linki
+    <Link
+      href="/profil"
+      className="block w-full text-center px-5 py-3 bg-transparent border-[1.5px] border-terracotta text-terracotta rounded-xl font-display font-semibold text-[15px] hover:bg-terracotta/5 transition-colors"
+    >
+      Profilini düzenle →
+    </Link>
+  );
 
   return (
     <div className="bg-paper min-h-screen pb-24 lg:pb-12">
@@ -697,7 +657,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
       {canTransact && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-line px-4 py-3">
           <div className="flex gap-2">
-            <div className={`flex-1 ${TEKLIF_WRAP}`}>
+            <div className="flex-1">
               <IletisimButton
                 professionalId={profile.id}
                 professionalName={displayName}
@@ -706,10 +666,10 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 currentUserIsProfessional={currentUserIsProfessional}
                 isOwnProfile={isOwnProfile}
                 writableBusinesses={writableBusinesses}
-                variant="inline"
+                variant="primary-coral"
               />
             </div>
-            <div className={`flex-1 ${REZ_WRAP}`}>
+            <div className="flex-1">
               <RezervasyonButton
                 professionalId={profile.id}
                 professionalName={displayName}
@@ -717,6 +677,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 currentUserIsProfessional={currentUserIsProfessional}
                 isOwnProfile={isOwnProfile}
                 writableBusinesses={writableBusinesses}
+                variant="outline-emerald"
               />
             </div>
           </div>

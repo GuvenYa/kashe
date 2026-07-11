@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createOrUpdateReview, deleteReview } from '@/app/yorumlar/actions';
 
@@ -107,9 +108,9 @@ export function YorumModal({
   const isEditing = existingReview !== null;
   const displayRating = hoverRating > 0 ? hoverRating : rating;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink/40"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -251,7 +252,8 @@ export function YorumModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

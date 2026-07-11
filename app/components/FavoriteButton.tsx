@@ -10,7 +10,7 @@ type FavoriteButtonProps = {
   initialFavorited: boolean;
   isLoggedIn: boolean;
   userRole: string | null;
-  variant?: 'card' | 'detail';
+  variant?: 'card' | 'detail' | 'bare';
 };
 
 export default function FavoriteButton({
@@ -79,8 +79,61 @@ export default function FavoriteButton({
   const sizes = {
     card: { btn: 36, icon: 18 },
     detail: { btn: 44, icon: 22 },
+    bare: { btn: 0, icon: 18 },
   };
   const { btn, icon } = sizes[variant];
+
+  // Toast (her varyantta ortak)
+  const toastEl = toast ? (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        backgroundColor: '#1A120E',
+        color: '#FAF7F0',
+        padding: '12px 20px',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontFamily: 'var(--font-geist), sans-serif',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
+        zIndex: 9999,
+        animation: 'kasheFadeInUpToast 0.25s ease-out',
+      }}
+    >
+      {toast}
+    </div>
+  ) : null;
+
+  // 'bare': aksiyon dizisinde dairesiz ikon + etiket, tam hücre tetik (professional rail)
+  if (variant === 'bare') {
+    return (
+      <>
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={handleClick}
+          aria-label={favorited ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+          aria-pressed={favorited}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:text-plum hover:bg-terracotta/5 transition-colors"
+        >
+          <Heart
+            className={popping ? 'kashe-heart-pop' : ''}
+            size={18}
+            strokeWidth={2}
+            fill={favorited ? '#E2674A' : 'none'}
+            color={favorited ? '#E2674A' : 'currentColor'}
+            style={{ transition: 'fill 0.2s ease' }}
+          />
+          <span className="text-[10.5px] font-medium">Favori</span>
+        </button>
+        {toastEl}
+      </>
+    );
+  }
 
   return (
     <>
@@ -125,30 +178,7 @@ export default function FavoriteButton({
         />
       </button>
 
-      {/* Toast — fixed position, ekranın altında */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: '#1A120E',
-            color: '#FAF7F0',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontFamily: 'var(--font-geist), sans-serif',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
-            zIndex: 9999,
-            animation: 'kasheFadeInUpToast 0.25s ease-out',
-          }}
-        >
-          {toast}
-        </div>
-      )}
+      {toastEl}
     </>
   );
 }

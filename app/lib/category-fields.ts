@@ -11,7 +11,7 @@
 // profiles.category_attributes JSONB ŞEMASI (kategori bağımsız ortak anahtarlar):
 // {
 //   "service_region": "Türkiye geneli + çevrimiçi",   // Şehir dışına çıkar | Türkiye geneli | Türkiye geneli + çevrimiçi
-//   "experience_label": "9 yıl · 400+ etkinlik",        // rozet/başlık için serbest metin
+//   "experience_label": "9 yıl · 400+ etkinlik",        // rozet/başlık için serbest metin — DENEYİM tek kaynağı
 //   "summary": { "title": "...", "body": "...", "stats": [{ "label": "...", "value": "..." }] },
 //                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine zümrüt özet bandı
 //                                                       // (başlık + kısa metin + stat çipleri)
@@ -19,6 +19,8 @@
 //   "skills": [{ "name": "Vals", "level": 3 }],           // seviyeli yetenekler (1-3); cast kategorileri
 //   "section_taglines": { "performans": "..." },          // modül key -> kategoriye özel tagline override (kullanıcı)
 //   "quick": { "<quickInfoKey>": "<değer>" },             // Hakkımda altı 4'lü hızlı bilgi değerleri
+//                                                       // NOT: quick.deneyim TÜRETİLMİŞTİR — experience_label'dan
+//                                                       // kayıtta yazılır; formda ayrı girdisi yoktur (drift önlenir).
 //   "modules": {                                          // modül key -> modüle özel veri (ModuleDefinition.fields şekline göre)
 //     "repertuar": { "genres": ["House","Techno"], "notes": "..." },
 //     "sosyal_erisim": { "platforms": [{ "platform": "instagram", "followers_range": "10k-50k" }] },
@@ -138,6 +140,37 @@ export const SERVICE_REGION_OPTIONS = [
   'Türkiye geneli',
   'Türkiye geneli + çevrimiçi',
 ] as const;
+
+// =============================================================================
+// FORM OPTION SABİTLERİ — tek doğruluk kaynağı (form + public render + actions ortak)
+// NOT: 'use server' dosyalarından sabit export ETME; Next onları server-action
+// referansına çevirir → client'ta ".map is not a function". Sabitler BURADA yaşar.
+// =============================================================================
+
+/** Sosyal erişim takipçi ARALIĞI seçenekleri (C3 — kesin sayı/URL yok). */
+export const FOLLOWERS_RANGES = ['10B altı', '10–50B', '50–250B', '250B+'] as const;
+
+/** Seviyeli yetenek seçenekleri (cast kategorileri formu). */
+export const SKILL_LEVELS = [
+  { value: 1, label: '1 · Temel' },
+  { value: 2, label: '2 · İyi' },
+  { value: 3, label: '3 · Uzman' },
+] as const;
+
+/** quickInfo alan key → görünen (normal case) etiket. Public render + form ortak sözlük. */
+export const QUICK_LABELS: Record<string, string> = {
+  turler: 'Türler', deneyim: 'Deneyim', set_suresi: 'Set süresi',
+  ekipman_durumu: 'Ekipman', enstruman: 'Enstrüman', ekip_boyutu: 'Ekip',
+  dans_turleri: 'Dans türleri', gosteri_suresi: 'Gösteri süresi',
+  gosteri_turu: 'Gösteri türü', dil: 'Dil', yas_grubu: 'Yaş grubu',
+  sunuculuk_turu: 'Sunuculuk türü', etkinlik_turleri: 'Etkinlik türleri',
+  oynayabildigi_yas_araligi: 'Oynayabildiği yaş aralığı', boy: 'Boy',
+  calisma_sekli: 'Çalışma şekli', uzmanlik: 'Uzmanlık',
+  teslim_suresi: 'Teslim süresi', drone: 'Drone', hizmet_turu: 'Hizmet türü',
+  ekipman_kapasitesi: 'Ekipman kapasitesi', kurulum_suresi: 'Kurulum süresi',
+  dil_cifti: 'Dil çifti', ceviri_turleri: 'Çeviri türleri', yeminli: 'Yeminli',
+  cizim_turu: 'Çizim türü',
+};
 
 // =============================================================================
 // MODÜL KAYIT DEFTERİ — 9 modül

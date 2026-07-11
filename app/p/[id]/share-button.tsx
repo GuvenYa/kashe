@@ -33,12 +33,12 @@ export function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={handleShare}
-      className="flex flex-col items-center gap-1.5 text-ink-72 hover:text-terracotta transition-colors"
+      className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:text-terracotta hover:bg-terracotta/5 transition-colors"
       aria-label="Paylaş"
     >
       <svg
-        width="17"
-        height="17"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

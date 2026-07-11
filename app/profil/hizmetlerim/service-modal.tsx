@@ -289,7 +289,7 @@ export function ServiceModal({
                 className="w-4 h-4 accent-terracotta"
               />
               <span className="text-sm text-ink">
-                Fiyatı görüşülür olarak işaretle
+                Fiyat görüşülür olarak işaretle
               </span>
             </label>
             <p className="text-xs text-ink-72 mt-1.5 ml-7">

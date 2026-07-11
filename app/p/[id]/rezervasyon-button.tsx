@@ -25,6 +25,7 @@ type Props = {
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   writableBusinesses?: OnBehalfBusiness[];
+  variant?: 'default' | 'outline-emerald';
 };
 
 export function RezervasyonButton({
@@ -34,6 +35,7 @@ export function RezervasyonButton({
   currentUserIsProfessional,
   isOwnProfile,
   writableBusinesses = [],
+  variant = 'default',
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -282,7 +284,11 @@ export function RezervasyonButton({
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="flex-1 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all text-center"
+        className={
+          variant === 'outline-emerald'
+            ? 'w-full py-3 bg-transparent border-[1.5px] border-terracotta text-terracotta rounded-xl font-display font-semibold text-[15px] hover:bg-terracotta/5 transition-colors text-center'
+            : 'flex-1 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all text-center'
+        }
       >
         Rezervasyon Talebi
       </button>

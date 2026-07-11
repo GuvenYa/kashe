@@ -9,8 +9,8 @@ type Props = {
   targetType: ReportTargetType;
   targetId: string;
   isLoggedIn: boolean;
-  /** Görsel varyant: 'link' (metin), 'icon' (yorum kartı), 'button' (çerçeveli) */
-  variant?: 'link' | 'icon' | 'button';
+  /** Görsel varyant: 'link' (metin), 'icon' (yorum kartı), 'button' (çerçeveli), 'bare' (ikon+etiket, tam hücre — profil aksiyon dizisi) */
+  variant?: 'link' | 'icon' | 'button' | 'bare';
   /** Buton etiketi (link/button için) */
   label?: string;
 };
@@ -86,7 +86,19 @@ export function SikayetButton({
   }
 
   const trigger =
-    variant === 'icon' ? (
+    variant === 'bare' ? (
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:text-danger hover:bg-danger/5 transition-colors"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+          <line x1="4" y1="22" x2="4" y2="15" />
+        </svg>
+        <span className="text-[10.5px] font-medium">Şikayet</span>
+      </button>
+    ) : variant === 'icon' ? (
       <button
         type="button"
         onClick={handleOpen}

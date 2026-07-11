@@ -38,7 +38,7 @@ type Props = {
     addons: { title: string; price: number }[];
     estimatedTotal: number | null;
   } | null;
-  variant?: 'default' | 'package' | 'inline';
+  variant?: 'default' | 'package' | 'inline' | 'primary-coral';
 };
 
 export function IletisimButton({
@@ -398,6 +398,14 @@ export function IletisimButton({
               ? 'Seçili ekstralarla ilet'
               : 'Bu hizmet için ilet'
             : 'Bu paket için ilet'}
+        </button>
+      ) : variant === 'primary-coral' ? (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="w-full py-3.5 bg-plum text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#C7522F] transition-colors text-center"
+        >
+          Teklif Al
         </button>
       ) : variant === 'inline' ? (
         <button
