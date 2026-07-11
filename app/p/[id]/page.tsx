@@ -22,7 +22,10 @@ import {
 } from '@/app/lib/profile-helpers';
 import type { ServiceWithCategory, PortfolioItem, ServicePackage } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
-import { getBadges, isVerified, BADGE_TONE_CLASS } from '@/app/lib/badges';
+import { getBadges, isVerified, BADGE_TONE_CLASS, getBadgeCards, isPremiumActive, isBusy } from '@/app/lib/badges';
+import type { PremiumTier } from '@/app/lib/badges';
+import { ProfessionalProfile } from './professional-profile';
+import type { ProfileExperience } from '@/app/lib/category-fields';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { incrementProfileViews } from './profile-views-actions';
@@ -41,6 +44,9 @@ type PublicProfile = {
   approval_status: string | null;
   created_at: string | null;
   attributes: Record<string, string | string[]> | null;
+  category_attributes: Record<string, unknown> | null;
+  premium_tier: string | null;
+  premium_until: string | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
@@ -90,7 +96,7 @@ export default async function PublicProfilePage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes, approval_status, created_at,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes, category_attributes, premium_tier, premium_until, approval_status, created_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -417,6 +423,133 @@ export default async function PublicProfilePage({
       );
       attrGroups.push({ label: field.label, values: labels });
     }
+  }
+
+  // ═══════════════ PROFESYONEL REDESIGN DALI (Adım 2) ═══════════════
+  // Ajans/kurumsal MEVCUT render'ı aynen korur; yalnız professional yeni 2-kolon
+  // düzene geçer. Erken return — benzer-profil sorguları professional'da hiç koşmaz.
+  if (profile.role === 'professional') {
+    // Deneyim (work / education / award) — kind + sort sırasıyla
+    const { data: expData } = await supabase
+      .from('profile_experiences')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .order('kind', { ascending: true })
+      .order('sort_order', { ascending: true });
+    const experiences = (expData ?? []) as ProfileExperience[];
+
+    // Tekrar-tercih sinyali — tamamlanmış rezervasyonları müşteriye göre grupla (indexli).
+    // "deal" = completed booking. (Kabul edilmiş teklif birleşimi Faz-2'ye bırakıldı.)
+    const { data: dealRows } = await supabase
+      .from('bookings')
+      .select('customer_id')
+      .eq('professional_id', profile.id)
+      .eq('status', 'completed');
+    const dealCounts = new Map<string, number>();
+    for (const d of dealRows ?? []) {
+      const cid = d.customer_id as string;
+      dealCounts.set(cid, (dealCounts.get(cid) ?? 0) + 1);
+    }
+    const distinctCustomers = dealCounts.size;
+    const repeatCustomers = [...dealCounts.values()].filter((n) => n > 1).length;
+    const repeatSignal =
+      distinctCustomers > 0
+        ? { distinctCustomers, repeatRate: repeatCustomers / distinctCustomers }
+        : null;
+
+    const badgeCards = getBadgeCards({
+      verified: profileVerified,
+      premiumActive: isPremiumActive(
+        profile.premium_tier as PremiumTier | null,
+        profile.premium_until
+      ),
+      responseTime: null, // fastResponse Faz-2 (pahalı ilk-yanıt taraması — şimdilik atla)
+      repeat: repeatSignal,
+    });
+
+    const isBusyNow = isBusy(new Set(blockedDates));
+
+    // "Onaylı yorum" — gösterilen yorumların müşterilerinden GERÇEK anlaşması olanlar.
+    // Deal = SIRA1 tanımı (bookings confirmed/completed; kabul edilmiş teklif trigger ile
+    // buraya düşer). bookings RLS üçüncü kişiye kapalı olduğundan public sayfada istemci
+    // sorgusu boş döner → SECURITY DEFINER RPC ile TEK batch çağrı (yalnız üyelik döner).
+    // Konuşma varlığı (yalnız mesajlaşma) deal DEĞİL → o kartlar rozetsiz kalır.
+    // RPC henüz uygulanmamışsa error döner, set boş → hiçbir kartta rozet (güvenli: over-claim yok).
+    const verifiedCustomerIds = new Set<string>();
+    if (recentReviews.length > 0) {
+      const reviewCustomerIds = [
+        ...new Set(recentReviews.map((r) => r.customer_id)),
+      ];
+      const { data: dealIds } = await supabase.rpc(
+        'deal_confirmed_customer_ids',
+        { p_professional: profile.id, p_customers: reviewCustomerIds }
+      );
+      for (const row of (dealIds ?? []) as { customer_id: string }[]) {
+        if (row.customer_id) verifiedCustomerIds.add(row.customer_id);
+      }
+    }
+
+    // Temsil eden ajans (mini kart) — ilki
+    const repAg = representingAgencies[0]?.agency ?? null;
+    const representingAgency = repAg
+      ? {
+          id: repAg.id,
+          name: repAg.company_name || repAg.full_name || 'İsimsiz ajans',
+          initials: (repAg.company_name || repAg.full_name || 'A')
+            .split(' ')
+            .map((s) => s[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join('')
+            .toUpperCase(),
+        }
+      : null;
+
+    return (
+      <>
+        <TopNav />
+        <ProfessionalProfile
+          profile={{
+            id: profile.id,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url,
+            bio: profile.bio,
+            role: profile.role,
+            approval_status: profile.approval_status,
+            category_attributes: profile.category_attributes,
+            service_categories: profile.service_categories,
+          }}
+          displayName={displayName}
+          initials={initials}
+          categorySubtitle={profile.service_categories?.name_tr ?? 'Profesyonel'}
+          cityName={cityName}
+          averageRating={averageRating}
+          reviewCount={reviewCount}
+          badgeCards={badgeCards}
+          isBusyNow={isBusyNow}
+          services={services}
+          packages={packages}
+          portfolioItems={portfolioItems}
+          experiences={experiences}
+          representingAgency={representingAgency}
+          recentReviews={recentReviews}
+          verifiedCustomerIds={verifiedCustomerIds}
+          customerMap={customerMap}
+          replyMap={replyMap}
+          reviewsHref={`/p/${profile.id}/yorumlar`}
+          isLoggedIn={isLoggedIn}
+          isOwnProfile={isOwnProfile}
+          currentUserIsProfessional={currentUserIsProfessional}
+          currentUserRole={currentUserRole}
+          writableBusinesses={writableBusinesses}
+          showFavoriteButton={showFavoriteButton}
+          initialFavorited={initialFavorited}
+          canReview={canReview}
+          hasCompletedBooking={hasCompletedBooking}
+          existingReview={existingReview}
+        />
+      </>
+    );
   }
 
   // ---- BENZER PROFİLLER (additive) ----
@@ -752,58 +885,8 @@ export default async function PublicProfilePage({
             </div>
           )}
 
-          {/* TEMSİL EDEN AJANSLAR (profesyonel) */}
-          {profile.role === 'professional' &&
-            representingAgencies.length > 0 && (
-              <div className="bg-[#1E3A5F]/5 border border-[#1E3A5F]/15 rounded-lg p-6 mb-6">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-3">
-                  Ajans temsili
-                </p>
-                <p className="text-sm text-ink-72 mb-4">
-                  Bu profesyonel şu ajans
-                  {representingAgencies.length > 1 ? 'lar' : ''} tarafından
-                  temsil ediliyor:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {representingAgencies.map((r) => {
-                    const ag = r.agency;
-                    if (!ag) return null;
-                    const agName =
-                      ag.company_name || ag.full_name || 'İsimsiz ajans';
-                    const agInitials = agName
-                      .split(' ')
-                      .map((s) => s[0])
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase();
-                    return (
-                      <Link
-                        key={r.id}
-                        href={`/p/${ag.id}`}
-                        className="inline-flex items-center gap-2 bg-card border border-[#1E3A5F]/20 rounded-full pl-1.5 pr-4 py-1.5 hover:border-[#1E3A5F] hover:shadow-[2px_2px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
-                      >
-                        {ag.avatar_url ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img
-                            src={ag.avatar_url}
-                            alt={agName}
-                            className="w-7 h-7 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-display font-semibold text-xs shrink-0">
-                            {agInitials}
-                          </div>
-                        )}
-                        <span className="font-display font-medium text-sm text-ink group-hover:text-[#1E3A5F] transition-colors">
-                          {agName}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          {/* NOT: "Ajans temsili" bloğu professional dalına (yeni redesign) taşındı —
+              rail'de mini ajans kartı olarak. Bu fallback yalnız agency/business render eder. */}
 
           {/* PORTFÖY GALERİ */}
           {portfolioItems.length > 0 && (

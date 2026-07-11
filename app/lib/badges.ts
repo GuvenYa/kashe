@@ -102,6 +102,94 @@ export function getCardBadges(input: BadgeInput, limit = 2): Badge[] {
   return badges.slice(0, limit);
 }
 
+// =============================================================================
+// ROZET V2 — rail'de kartlı format (başlık + tek cümle açıklama) + hesaplananlar
+// =============================================================================
+
+/** Rail rozet kartı: başlık + tek cümle açıklama. */
+export type BadgeCard = { key: string; label: string; description: string };
+
+/** Mevcut rozetlerin açıklama metinleri (kartlı format için). */
+export const BADGE_DESCRIPTIONS: Record<BadgeKey, string> = {
+  premium: 'Öne çıkan premium profil.',
+  verified: 'Kimlik ve portföy incelendi.',
+  topRated: 'Ortalama 4,5+ puan ile yüksek memnuniyet.',
+  popular: 'Çok sayıda müşteri tarafından tercih edildi.',
+  new: 'Kashe’ye yeni katıldı.',
+};
+
+// ---- Hesaplanan rozet eşikleri (server-side; EŞİK ALTINDA HİÇ render YOK) ----
+export const FAST_RESPONSE_MAX_HOURS = 6; // son 90 gün ort. ilk yanıt < 6 saat
+export const FAST_RESPONSE_MIN_CONVERSATIONS = 10; // ve en az 10 konuşma
+export const REPEAT_CHOICE_MIN_CUSTOMERS = 5; // en az 5 farklı müşteriyle deal
+export const REPEAT_CHOICE_MIN_RATE = 0.3; // ve tekrar oranı %30+
+
+/** Hesaplanan rozetler için ham sinyaller (page.tsx sorgularından türetilir). */
+export type ComputedBadgeSignals = {
+  verified: boolean;
+  premiumActive: boolean;
+  /** Son 90 gün ilk yanıt: ortalama saat + konuşma sayısı (yoksa null → rozet yok). */
+  responseTime?: { avgHours: number; conversationCount: number } | null;
+  /** Tekrar tercih: farklı müşteri sayısı + tekrar oranı 0-1 (yoksa null → rozet yok). */
+  repeat?: { distinctCustomers: number; repeatRate: number } | null;
+};
+
+/**
+ * Rail'de gösterilecek rozet KARTLARI — öncelik: verified → hesaplananlar → premium.
+ * En fazla 2. Hesaplanan rozetler YALNIZ eşiği geçerse eklenir (eşik altında hiç render yok).
+ */
+export function getBadgeCards(signals: ComputedBadgeSignals): BadgeCard[] {
+  const cards: BadgeCard[] = [];
+
+  if (signals.verified) {
+    cards.push({
+      key: 'verified',
+      label: 'Doğrulanmış',
+      description: BADGE_DESCRIPTIONS.verified,
+    });
+  }
+
+  // Hızlı yanıt — ort. ilk yanıt < 6 saat VE >= 10 konuşma
+  const rt = signals.responseTime;
+  if (
+    rt &&
+    rt.conversationCount >= FAST_RESPONSE_MIN_CONVERSATIONS &&
+    rt.avgHours < FAST_RESPONSE_MAX_HOURS
+  ) {
+    const n = Math.max(1, Math.round(rt.avgHours));
+    cards.push({
+      key: 'fastResponse',
+      label: 'Hızlı yanıt',
+      description: `Tekliflere ortalama ${n} saatte döner.`,
+    });
+  }
+
+  // Tekrar tercih ediliyor — >= 5 farklı müşteri VE tekrar oranı %30+
+  const rp = signals.repeat;
+  if (
+    rp &&
+    rp.distinctCustomers >= REPEAT_CHOICE_MIN_CUSTOMERS &&
+    rp.repeatRate >= REPEAT_CHOICE_MIN_RATE
+  ) {
+    const pct = Math.round(rp.repeatRate * 100);
+    cards.push({
+      key: 'repeatChoice',
+      label: 'Tekrar tercih ediliyor',
+      description: `Müşterilerin yüzde ${pct}’i ikinci kez çalıştı.`,
+    });
+  }
+
+  if (signals.premiumActive) {
+    cards.push({
+      key: 'premium',
+      label: 'Premium',
+      description: BADGE_DESCRIPTIONS.premium,
+    });
+  }
+
+  return cards.slice(0, 2);
+}
+
 /** Tailwind sınıfları — ton bazlı (rozet pill stili) */
 export const BADGE_TONE_CLASS: Record<Badge['tone'], string> = {
   moss: 'text-moss bg-moss/10 border-moss/30',
