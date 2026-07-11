@@ -266,20 +266,20 @@ export default async function ProfilPage() {
         <div className="max-w-3xl mx-auto">
           {/* HEADER */}
           <div className="flex items-start justify-between mb-12 gap-4">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-5 min-w-0">
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatar_url}
                   alt={displayName}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-line"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-line shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl">
+                <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
                   {initials || '?'}
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
                     {getRoleLabel(profile.role)}
@@ -298,7 +298,7 @@ export default async function ProfilPage() {
                     </span>
                   )}
                 </div>
-                <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
+                <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight break-words">
                   {displayName}
                 </h1>
                 {isBusinessUser && profile.company_name && profile.full_name && (
@@ -313,7 +313,7 @@ export default async function ProfilPage() {
             </div>
             <Link
               href="/profil/duzenle"
-              className="shrink-0 px-5 py-2.5 border border-ink text-ink rounded-lg font-display font-medium hover:bg-ink hover:text-paper transition-colors"
+              className="shrink-0 whitespace-nowrap px-5 py-2.5 border border-ink text-ink rounded-lg font-display font-medium hover:bg-ink hover:text-paper transition-colors"
             >
               Düzenle
             </Link>
