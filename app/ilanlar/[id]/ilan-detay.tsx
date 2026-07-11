@@ -148,13 +148,6 @@ export function IlanDetay({
     listing.status,
     listing.application_deadline
   );
-  // Son başvuru kritik mi (48 saatten az kaldı) — mercan vurgu için
-  const deadlineCritical = (() => {
-    if (!listing.application_deadline) return false;
-    const diff = new Date(listing.application_deadline).getTime() - Date.now();
-    return diff > 0 && diff < 48 * 3600 * 1000;
-  })();
-
   const budgetLabel = formatBudgetRange(
     listing.budget_min,
     listing.budget_max,
@@ -277,7 +270,7 @@ export function IlanDetay({
                 )}
               </div>
 
-              <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight mb-3">
+              <h1 className="font-display text-3xl md:text-4xl font-bold text-ink leading-tight mb-3">
                 {listing.title}
               </h1>
 
@@ -299,7 +292,7 @@ export function IlanDetay({
               listing.location ||
               listing.guest_count !== null) && (
               <div className="bg-card border border-line rounded-lg p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
                   Etkinlik özeti
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -308,7 +301,7 @@ export function IlanDetay({
                       <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
                         <Tag size={11} strokeWidth={1.75} /> Tür
                       </p>
-                      <p className="text-ink font-medium">{eventTypeLabel}</p>
+                      <p className="text-ink font-semibold">{eventTypeLabel}</p>
                     </div>
                   )}
                   {eventDateFormatted && (
@@ -316,7 +309,7 @@ export function IlanDetay({
                       <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
                         <Calendar size={11} strokeWidth={1.75} /> Tarih
                       </p>
-                      <p className="text-ink font-medium">{eventDateFormatted}</p>
+                      <p className="text-ink font-semibold">{eventDateFormatted}</p>
                     </div>
                   )}
                   {listing.location && (
@@ -324,7 +317,7 @@ export function IlanDetay({
                       <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
                         <MapPin size={11} strokeWidth={1.75} /> Lokasyon
                       </p>
-                      <p className="text-ink font-medium">{listing.location}</p>
+                      <p className="text-ink font-semibold">{listing.location}</p>
                       {cityName && (
                         <p className="text-xs text-ink-72">{cityName}</p>
                       )}
@@ -335,7 +328,7 @@ export function IlanDetay({
                       <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-0.5 flex items-center gap-1">
                         <Users size={11} strokeWidth={1.75} /> Kişi sayısı
                       </p>
-                      <p className="text-ink font-medium">
+                      <p className="text-ink font-semibold">
                         {listing.guest_count}
                       </p>
                     </div>
@@ -346,7 +339,7 @@ export function IlanDetay({
 
             {/* Genel açıklama */}
             <div className="bg-card border border-line rounded-lg p-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
                 Genel açıklama
               </p>
               <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
@@ -480,7 +473,7 @@ export function IlanDetay({
               <div className="bg-card border border-line rounded-lg p-5">
                 {/* Bütçe */}
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-1">
                     Bütçe
                   </p>
                   <p className="font-display text-2xl md:text-[28px] leading-tight text-ink font-medium">
@@ -491,23 +484,13 @@ export function IlanDetay({
                 {/* Tarihler */}
                 <div className="mt-4 pt-4 border-t border-line space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
-                      İlan tarihi
-                    </span>
+                    <span className="text-sm text-ink-72">İlan tarihi</span>
                     <span className="text-ink">{publishedDateLabel}</span>
                   </div>
                   {deadlineDateOnly && (
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
-                        Son başvuru
-                      </span>
-                      <span
-                        className={
-                          deadlineInfo?.passed || deadlineCritical
-                            ? 'text-[#E2674A] font-medium'
-                            : 'text-ink'
-                        }
-                      >
+                      <span className="text-sm text-ink-72">Son başvuru</span>
+                      <span className="text-[#E2674A] font-medium">
                         {deadlineDateOnly}
                       </span>
                     </div>
@@ -718,10 +701,6 @@ export function IlanDetay({
                   ) : isProfessional ? (
                     /* ── PROFESYONEL — BAŞVURABİLİR ── */
                     <div>
-                      <p className="text-sm text-ink mb-3">
-                        İlan sahibine başvuru mesajın ve (varsa) fiyat teklifin
-                        iletilir.
-                      </p>
                       <button
                         onClick={() => setApplyModalOpen(true)}
                         className={mercanCta}
@@ -729,6 +708,9 @@ export function IlanDetay({
                         <Send size={15} strokeWidth={1.75} />
                         Başvur
                       </button>
+                      <p className="text-xs text-ink-72 text-center mt-2">
+                        Başvurun ilan sahibine iletilir.
+                      </p>
                     </div>
                   ) : null}
                 </div>
@@ -830,7 +812,7 @@ function StructuredSection({
 
   return (
     <div className="bg-card border border-line rounded-lg p-6">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
         {label}
       </p>
       <ul className="space-y-2">
@@ -840,9 +822,11 @@ function StructuredSection({
             className="flex gap-2.5 text-sm text-ink leading-relaxed"
           >
             <span
-              className="shrink-0 w-1.5 h-1.5 rounded-full bg-terracotta mt-[7px]"
+              className="shrink-0 select-none text-[#E2674A]"
               aria-hidden="true"
-            />
+            >
+              —
+            </span>
             <span>{line}</span>
           </li>
         ))}
@@ -918,10 +902,10 @@ function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={handleShare}
-      className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-card border border-line rounded-lg font-display font-semibold text-sm text-ink-72 hover:text-ink hover:border-ink transition-colors"
+      className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-line rounded-lg font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta hover:border-terracotta transition-colors"
     >
-      <Share2 size={14} strokeWidth={1.75} />
-      {copied ? 'Bağlantı kopyalandı ✓' : 'Paylaş'}
+      <Share2 size={13} strokeWidth={1.75} />
+      {copied ? 'Kopyalandı ✓' : 'İlanı paylaş'}
     </button>
   );
 }
@@ -958,7 +942,7 @@ function OwnerInfoCard({
 
   return (
     <div className="bg-card border border-line rounded-lg p-5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
         İlan sahibi
       </p>
       <div className="flex items-center gap-3">
@@ -1000,9 +984,9 @@ function OwnerInfoCard({
       {showProfileLink && (
         <Link
           href={`/p/${creator.id}`}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-mono uppercase tracking-[0.1em] text-terracotta hover:text-ember transition-colors"
+          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-terracotta hover:text-ember transition-colors"
         >
-          Profil görüntüle →
+          Profili görüntüle →
         </Link>
       )}
 

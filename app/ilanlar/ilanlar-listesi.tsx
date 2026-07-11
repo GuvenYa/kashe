@@ -741,7 +741,7 @@ function IlanCard({
       </div>
 
       {/* Başlık */}
-      <h3 className="font-display text-lg text-ink leading-snug mb-3 line-clamp-2">
+      <h3 className="font-display text-lg font-semibold text-ink leading-snug mb-3 line-clamp-2">
         {listing.title}
       </h3>
 
