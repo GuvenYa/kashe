@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   startConversation,
@@ -286,9 +287,9 @@ export function RezervasyonButton({
         Rezervasyon Talebi
       </button>
 
-      {modalOpen && (
+      {modalOpen && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setModalOpen(false)}
         >
           <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden="true" />
@@ -520,7 +521,8 @@ export function RezervasyonButton({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

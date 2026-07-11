@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import { reportContent, type ReportResult } from './actions';
 import type { ReportReason, ReportTargetType } from '@/app/lib/types';
 
@@ -120,9 +121,9 @@ export function SikayetButton({
     <>
       {trigger}
 
-      {open && (
+      {open && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setOpen(false)}
         >
           <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden="true" />
@@ -253,7 +254,8 @@ export function SikayetButton({
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

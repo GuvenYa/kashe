@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   getMyListingsForInvite,
@@ -148,9 +149,9 @@ export function DavetButton({
         İlanıma Davet Et
       </button>
 
-      {modalOpen && (
+      {modalOpen && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setModalOpen(false)}
         >
           <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden="true" />
@@ -300,7 +301,8 @@ export function DavetButton({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

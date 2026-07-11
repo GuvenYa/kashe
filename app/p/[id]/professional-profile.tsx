@@ -755,16 +755,29 @@ function OfferRow({ title, description, price }: { title: string; description: s
 }
 
 function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean }) {
+  const orgText = [exp.organization, exp.location].filter(Boolean).join(', ');
+  const border = last ? '' : 'border-b border-line';
+  const metaLine = [exp.period_label, orgText].filter(Boolean).join(' · ');
   return (
-    <div className={`grid grid-cols-[92px_1fr_auto] gap-4 items-start py-3.5 ${last ? '' : 'border-b border-line'}`}>
-      <div className="text-[12.5px] text-ink-72 pt-0.5">{exp.period_label}</div>
-      <div>
-        <div className="text-[14.5px] font-bold text-ink">{exp.title}</div>
+    <>
+      {/* Mobil (md altı): dikey yığın — üst satır tarih · organizasyon, sonra başlık/alt başlık/açıklama */}
+      <div className={`md:hidden py-3.5 ${border}`}>
+        {metaLine && <div className="text-[12px] text-ink-72">{metaLine}</div>}
+        <div className="text-[14.5px] font-bold text-ink mt-1">{exp.title}</div>
         {exp.subtitle && <div className="text-[13px] text-ink-72 mt-0.5">{exp.subtitle}</div>}
-        {exp.description && <p className="text-[13px] text-ink-72 leading-relaxed mt-2 max-w-[520px]">{exp.description}</p>}
+        {exp.description && <p className="text-[13px] text-ink-72 leading-relaxed mt-1.5">{exp.description}</p>}
       </div>
-      <div className="text-[13px] text-ink-72 text-right pt-0.5">{exp.organization}{exp.location ? `, ${exp.location}` : ''}</div>
-    </div>
+      {/* md ve üzeri: mevcut üç kolon aynen */}
+      <div className={`hidden md:grid grid-cols-[92px_1fr_auto] gap-4 items-start py-3.5 ${border}`}>
+        <div className="text-[12.5px] text-ink-72 pt-0.5">{exp.period_label}</div>
+        <div>
+          <div className="text-[14.5px] font-bold text-ink">{exp.title}</div>
+          {exp.subtitle && <div className="text-[13px] text-ink-72 mt-0.5">{exp.subtitle}</div>}
+          {exp.description && <p className="text-[13px] text-ink-72 leading-relaxed mt-2 max-w-[520px]">{exp.description}</p>}
+        </div>
+        <div className="text-[13px] text-ink-72 text-right pt-0.5">{orgText}</div>
+      </div>
+    </>
   );
 }
 
