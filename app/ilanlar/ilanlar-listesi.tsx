@@ -40,6 +40,26 @@ type ActiveFilters = {
   sirala: string;
 };
 
+// URL query string'i filtre değerlerinden kurar (Keşfet ile aynı desen) — debounce
+// REPLACE (local state) ve prop-sync karşılaştırması (props) aynı mantığı paylaşır.
+function buildQs(v: {
+  cats: number[];
+  city: string;
+  etkinlik: string;
+  fiyat: string;
+  onlyOpen: boolean;
+  sirala: string;
+}): string {
+  const params = new URLSearchParams();
+  if (v.cats.length > 0) params.set('kategori', v.cats.join(','));
+  if (v.city) params.set('sehir', v.city);
+  if (v.etkinlik) params.set('etkinlik', v.etkinlik);
+  if (v.fiyat) params.set('fiyat', v.fiyat);
+  if (!v.onlyOpen) params.set('acik', '0');
+  if (v.sirala !== 'yeni') params.set('sirala', v.sirala);
+  return params.toString();
+}
+
 type Props = {
   listings: ListingWithRelations[];
   categories: Category[];
@@ -173,56 +193,48 @@ export function IlanlarListesi({
   const [cityQuery, setCityQuery] = useState('');
   const cityRef = useRef<HTMLDivElement>(null);
   const isFirst = useRef(true);
+  // Kendi push'umuzun ürettiği qs — prop-sync'te "bizim yankımız mı?" ayrımı için.
+  const lastPushedRef = useRef<string | null>(null);
 
-  // Debounce'lu URL senkronu (Keşfet deseni)
+  // Anlık filtreleme — debounce'lu URL REPLACE (Keşfet ile aynı desen).
+  // REPLACE (push değil): ara filtre halleri history'ye yazılmaz.
   useEffect(() => {
     if (isFirst.current) {
       isFirst.current = false;
       return;
     }
     const t = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (cats.length > 0) params.set('kategori', cats.join(','));
-      if (city) params.set('sehir', city);
-      if (etkinlik) params.set('etkinlik', etkinlik);
-      if (fiyat) params.set('fiyat', fiyat);
-      if (!onlyOpen) params.set('acik', '0');
-      if (sirala !== 'yeni') params.set('sirala', sirala);
-      const qs = params.toString();
-      // URL zaten bu filtreleri yansıtıyorsa push etme (Geri/İleri senkronunda
-      // gereksiz/döngüsel push'u önler; canlı URL'i okur).
-      const current =
-        typeof window !== 'undefined'
-          ? window.location.search.replace(/^\?/, '')
-          : '';
-      if (qs === current) return;
+      const qs = buildQs({ cats, city, etkinlik, fiyat, onlyOpen, sirala });
+      lastPushedRef.current = qs; // kendi yankımızı prop-sync'te tanımak için
       startTransition(() => {
-        router.push(qs ? `/ilanlar?${qs}` : '/ilanlar', { scroll: false });
+        router.replace(qs ? `/ilanlar?${qs}` : '/ilanlar', { scroll: false });
       });
     }, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cats, city, etkinlik, fiyat, onlyOpen, sirala]);
 
-  // Prop (URL) değişince state'i yeniden senkronla — tarayıcı Geri/İleri'de
-  // sidebar kontrolleri URL/sonuçla tutarlı kalsın (soft-nav'da remount yok).
-  const filterSig = JSON.stringify([
-    activeFilters.categoryIds,
-    activeFilters.sehir,
-    activeFilters.etkinlik,
-    activeFilters.fiyat,
-    activeFilters.onlyOpen,
-    activeFilters.sirala,
-  ]);
+  // Prop (URL) → local state re-sync (Geri/İleri/link). GUARD: gelen qs bizim son
+  // push'umuzun yankısıysa ATLA — kullanıcının o an yazmakta olduğunu ezme.
+  const propQs = buildQs({
+    cats: activeFilters.categoryIds,
+    city: activeFilters.sehir ?? '',
+    etkinlik: activeFilters.etkinlik ?? '',
+    fiyat: activeFilters.fiyat ?? '',
+    onlyOpen: activeFilters.onlyOpen,
+    sirala: activeFilters.sirala,
+  });
   useEffect(() => {
+    if (propQs === lastPushedRef.current) return; // kendi yankımız → dokunma
     setCats(activeFilters.categoryIds);
     setCity(activeFilters.sehir ?? '');
     setEtkinlik(activeFilters.etkinlik ?? '');
     setFiyat(activeFilters.fiyat ?? '');
     setOnlyOpen(activeFilters.onlyOpen);
     setSirala(activeFilters.sirala);
+    lastPushedRef.current = propQs;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterSig]);
+  }, [propQs]);
 
   // Şehir dropdown dışarı tıklama
   useEffect(() => {

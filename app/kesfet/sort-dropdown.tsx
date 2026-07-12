@@ -35,7 +35,8 @@ export function SortDropdown({ currentSort }: Props) {
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
 
     startTransition(() => {
-      router.push(newUrl, { scroll: false });
+      // REPLACE: sıralama değişikliği ara history entry'si yaratmasın (keşfet içi hijyen).
+      router.replace(newUrl, { scroll: false });
     });
   }
 

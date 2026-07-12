@@ -20,6 +20,39 @@ const RATING_OPTIONS = [
   { value: '3', label: '3 ve üzeri' },
 ];
 
+// URL query string'i filtre değerlerinden kurar — hem debounce REPLACE (local state)
+// hem prop-sync karşılaştırması (props) AYNI mantığı kullansın diye tek yerde.
+function buildQs(v: {
+  search: string;
+  cats: number[];
+  city: string;
+  type: string;
+  attrs: Record<string, string[]>;
+  maxPrice: string;
+  minRating: string;
+  badgeKeys: string[];
+  onlyAvailable: boolean;
+  experience: string[];
+}): string {
+  const params = new URLSearchParams();
+  if (v.search.trim()) params.set('q', v.search.trim());
+  if (v.cats.length > 0) params.set('kategori', v.cats.join(','));
+  if (v.city) params.set('sehir', v.city);
+  if (v.type) params.set('tip', v.type);
+  if (v.maxPrice) params.set('fiyat', v.maxPrice);
+  if (v.minRating) params.set('puan', v.minRating);
+  if (v.badgeKeys.includes('premium')) params.set('premium', '1');
+  if (v.badgeKeys.includes('verified')) params.set('dogrulanmis', '1');
+  if (v.badgeKeys.includes('topRated')) params.set('yuksekpuan', '1');
+  if (v.badgeKeys.includes('popular')) params.set('coktercih', '1');
+  if (v.onlyAvailable) params.set('musait', '1');
+  if (v.experience.length > 0) params.set('deneyim', v.experience.join(','));
+  for (const [key, vals] of Object.entries(v.attrs)) {
+    if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
+  }
+  return params.toString();
+}
+
 type Props = {
   categories: ServiceCategory[];
   cities: TurkishCity[];
@@ -101,41 +134,47 @@ export function KesfetFilters({
 
   // İlk render'da otomatik uygulama yapma (sadece kullanıcı etkileşiminde)
   const isFirst = useRef(true);
+  // Kendi push'umuzun ürettiği qs — prop-sync'te "bizim yankımız mı?" ayrımı için.
+  const lastPushedRef = useRef<string | null>(null);
+  // Bekleyen debounce timer'ı — mobil "göster" flush edebilsin diye ref'te tutulur.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sayfa açılır açılmaz başa kaydır (FeaturedProfiles/popüler linklerden gelirken)
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Anlık filtreleme — state değişince debounce'lu URL push
+  // TEK HAT — buildQs + lastPushedRef + router.replace(scroll:false). Hem debounce
+  // hem mobil "göster" apply buradan geçer (ayrı push/qs-kurucu YOK).
+  const currentQs = () =>
+    buildQs({
+      search, cats, city, type, attrs, maxPrice, minRating,
+      badgeKeys, onlyAvailable, experience,
+    });
+  const commit = (qs: string) => {
+    lastPushedRef.current = qs; // kendi yankımızı prop-sync'te tanımak için
+    startTransition(() => {
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    });
+  };
+  // Mobil "N sonucu göster": bekleyen debounce'ı flush edip HEMEN uygula (gecikme/yarış yok).
+  function applyNow() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    commit(currentQs());
+  }
+
+  // Anlık filtreleme — state değişince debounce'lu URL REPLACE.
+  // REPLACE (push değil): ara filtre halleri history'ye yazılmaz → profile gidip
+  // dönünce tek geri ile son filtreli hale döner, ikinci geri keşfet'ten çıkar.
   useEffect(() => {
     if (isFirst.current) {
       isFirst.current = false;
       return;
     }
-    const t = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (search.trim()) params.set('q', search.trim());
-      if (cats.length > 0) params.set('kategori', cats.join(','));
-      if (city) params.set('sehir', city);
-      if (type) params.set('tip', type);
-      if (maxPrice) params.set('fiyat', maxPrice);
-      if (minRating) params.set('puan', minRating);
-      if (badgeKeys.includes('premium')) params.set('premium', '1');
-      if (badgeKeys.includes('verified')) params.set('dogrulanmis', '1');
-      if (badgeKeys.includes('topRated')) params.set('yuksekpuan', '1');
-      if (badgeKeys.includes('popular')) params.set('coktercih', '1');
-      if (onlyAvailable) params.set('musait', '1');
-      if (experience.length > 0) params.set('deneyim', experience.join(','));
-      for (const [key, vals] of Object.entries(attrs)) {
-        if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      });
-    }, 400);
-    return () => clearTimeout(t);
+    debounceRef.current = setTimeout(() => commit(currentQs()), 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     search,
@@ -149,6 +188,49 @@ export function KesfetFilters({
     onlyAvailable,
     experience,
   ]);
+
+  // Prop (URL) → local state re-sync. Geri/İleri/link ile props değişince sidebar
+  // kontrolleri URL/sonuçla tutarlı kalsın (soft-nav'da remount yok).
+  // GUARD: gelen qs bizim son push'umuzun yankısıysa ATLA — kullanıcının o an
+  // yazmakta olduğu (henüz push edilmemiş) değeri eski URL ile ezme.
+  const propQs = buildQs({
+    search: currentSearch,
+    cats: currentCategories,
+    city: currentCity ? String(currentCity) : '',
+    type: currentType ?? '',
+    attrs: currentAttrs,
+    maxPrice: currentMaxPrice !== null ? String(currentMaxPrice) : '',
+    minRating: currentMinRating !== null ? String(currentMinRating) : '',
+    badgeKeys: currentBadgeKeys,
+    onlyAvailable: currentOnlyAvailable,
+    experience: currentExperience,
+  });
+  useEffect(() => {
+    if (propQs === lastPushedRef.current) return; // kendi yankımız → dokunma
+    // Dış navigasyon (geri/ileri/link) → local state'i props'a eşitle
+    setSearch(currentSearch);
+    setCats(currentCategories);
+    setCity(currentCity ? String(currentCity) : '');
+    setType(currentType ?? '');
+    setAttrs(currentAttrs);
+    setMaxPrice(currentMaxPrice !== null ? String(currentMaxPrice) : '');
+    setMinRating(currentMinRating !== null ? String(currentMinRating) : '');
+    setBadgeKeys(currentBadgeKeys);
+    setOnlyAvailable(currentOnlyAvailable);
+    setExperience(currentExperience);
+    lastPushedRef.current = propQs;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propQs]);
+
+  // BFCACHE tazeleme — tarayıcı Geri/İleri sayfayı bfcache'ten dondurulmuş geri
+  // yüklerse (persisted) RSC'yi tazele. Yalnız keşfet kapsamında.
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) router.refresh();
+    }
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, [router]);
 
   // Şehir dropdown dışarı tıklama
   useEffect(() => {
@@ -750,7 +832,10 @@ export function KesfetFilters({
             <div className="border-t border-line px-6 py-4 shrink-0">
               <button
                 type="button"
-                onClick={() => setMobileOpen(false)}
+                onClick={() => {
+                  applyNow(); // bekleyen debounce'ı flush et → anında uygula
+                  setMobileOpen(false);
+                }}
                 className="kashe-tap w-full px-4 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:bg-ember transition-colors"
               >
                 {isPending ? 'Yükleniyor...' : `${resultCount} sonucu göster`}

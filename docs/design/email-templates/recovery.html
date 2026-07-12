@@ -1,0 +1,21 @@
+<!--
+  Kashe — Supabase Auth "Reset Password" (Recovery) e-posta sablonu
+  Uygulama: Supabase Dashboard -> Authentication -> Email Templates -> Reset Password
+  Konu satiri (Subject) ayni kalabilir: Kashe — Şifreni sıfırla
+  ONEMLI: Yapistirdiktan sonra kaydetmeden once govdede "<a href" ifadesinin
+  iki yerde de aynen durdugunu gozle dogrula (< dusmesi kontrolu).
+  Repo kopyasi: docs/email-templates/recovery.html
+-->
+<h2 style="font-family:Arial,Helvetica,sans-serif;color:#1F5C4A;font-size:22px;margin:0 0 16px">Şifreni sıfırla</h2>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#1D2723;font-size:15px;line-height:1.6;margin:0 0 20px">Aşağıdaki butona tıklayarak yeni şifreni belirleyebilirsin:</p>
+
+<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="background:#E2674A;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px">Şifremi sıfırla</a></p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#1D2723;font-size:14px;line-height:1.6;margin:0 0 8px">Eğer butona tıklayamazsan, bu linki tarayıcına kopyala:</p>
+
+<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="font-family:Arial,Helvetica,sans-serif;color:#1F5C4A;font-size:13px;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#5C665F;font-size:13px;line-height:1.6;margin:0 0 4px">Bağlantı tek kullanımlık ve 1 saat geçerlidir. Bu isteği sen yapmadıysan bu e-postayı dikkate alma; şifren değişmez.</p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#5C665F;font-size:13px;margin:16px 0 0">— Kashe ekibi</p>

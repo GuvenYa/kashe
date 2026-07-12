@@ -1,15 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { sanitizeReturnPath } from '@/app/lib/safe-redirect';
 import GirisForm from './giris-form';
-
-// Güvenlik: sadece site-içi (relative) yollara redirect izni ver.
-// Açık yönlendirme (open redirect) saldırısını engeller — //evil.com gibi.
-function sanitizeRedirect(raw: string | undefined): string {
-  if (!raw) return '/';
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
-  return raw;
-}
 
 export const metadata = {
   title: 'Giriş yap — Kashe',
@@ -22,7 +15,7 @@ export default async function GirisPage({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const params = await searchParams;
-  const redirectTo = sanitizeRedirect(params.redirect);
+  const redirectTo = sanitizeReturnPath(params.redirect);
 
   const supabase = await createClient();
   const {
