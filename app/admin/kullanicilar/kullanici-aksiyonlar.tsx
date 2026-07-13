@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import {
   banUser,
@@ -51,10 +51,37 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  // Portallanan menünün fixed konumu (getBoundingClientRect'ten). top VEYA bottom dolu (flip).
+  const [menuPos, setMenuPos] = useState<{
+    left: number;
+    top: number | null;
+    bottom: number | null;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Menüyü buton konumundan aç; altta yer yoksa yukarı açıl (flip).
+  function openMenu() {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const MENU_W = 208; // w-52
+    const EST_H = 168; // ~3 madde üst sınırı (yalnız flip kararı için)
+    const left = Math.max(
+      8,
+      Math.min(rect.right - MENU_W, window.innerWidth - MENU_W - 8)
+    );
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < EST_H && rect.top > spaceBelow) {
+      setMenuPos({ left, top: null, bottom: window.innerHeight - rect.top + 4 });
+    } else {
+      setMenuPos({ left, top: rect.bottom + 4, bottom: null });
+    }
+    setMenuOpen(true);
+  }
 
   // Menu dışı tıklama
   useEffect(() => {
@@ -67,6 +94,29 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
     }
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
+  }, [menuOpen]);
+
+  // Scroll/resize → menüyü kapat (yeniden konumlandırma yerine kapatmak yeterli).
+  // capture:true — overflow'lu tablo sarmalayıcısının scroll'unu da yakala (scroll bubble etmez).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [menuOpen]);
+
+  // Esc → menüyü kapat
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
   const displayName =
@@ -347,72 +397,87 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
     </div>
   ) : null;
 
+  // Aksiyon menüsü — body'ye portallanır (overflow'lu tablo sarmalayıcısı kırpmasın),
+  // konum fixed (getBoundingClientRect). Portallanınca dışarı-tıkla eşleşmesi için
+  // data-aksiyon-menu korunur.
+  const menuContent =
+    menuOpen && menuPos ? (
+      <div
+        data-aksiyon-menu
+        style={{
+          position: 'fixed',
+          left: menuPos.left,
+          top: menuPos.top ?? undefined,
+          bottom: menuPos.bottom ?? undefined,
+        }}
+        className="w-52 bg-card border border-line rounded-xl shadow-[0_12px_40px_-12px_rgba(26,18,14,0.22)] py-1 z-[100]"
+      >
+        {user.suspended_at ? (
+          <MenuItem
+            onClick={() => openModal('unban')}
+            color="moss"
+            label="Askıyı kaldır"
+          />
+        ) : (
+          <MenuItem
+            onClick={() => openModal('ban')}
+            color="terracotta"
+            label="Askıya al"
+          />
+        )}
+
+        {user.is_admin ? (
+          <MenuItem
+            onClick={() => openModal('remove-admin')}
+            color="danger"
+            label="Admin yetkisini kaldır"
+          />
+        ) : (
+          <MenuItem
+            onClick={() => openModal('make-admin')}
+            color="ink"
+            label="Admin yap"
+          />
+        )}
+
+        {canHavePremium &&
+          (premiumActive ? (
+            <MenuItem
+              onClick={() => openModal('revoke-premium')}
+              color="danger"
+              label={`Premium kaldır (${tierLabel(
+                user.premium_tier as
+                  | 'none'
+                  | 'premium'
+                  | 'plus'
+                  | 'agency'
+                  | null
+              )})`}
+            />
+          ) : (
+            <MenuItem
+              onClick={() => openModal('grant-premium')}
+              color="ink"
+              label="Premium ver"
+            />
+          ))}
+      </div>
+    ) : null;
+
   return (
     <>
-      <div className="relative inline-block" data-aksiyon-menu>
+      <div className="inline-block" data-aksiyon-menu>
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => (menuOpen ? setMenuOpen(false) : openMenu())}
           className="kashe-tap px-3 py-1.5 rounded-lg border border-line text-ink-72 hover:text-ink hover:border-ink-72 transition font-mono text-[10px] uppercase tracking-[0.14em]"
         >
           Aksiyonlar ▾
         </button>
-
-        {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 w-52 bg-card border border-line rounded-xl shadow-[0_12px_40px_-12px_rgba(26,18,14,0.22)] py-1 z-30">
-            {user.suspended_at ? (
-              <MenuItem
-                onClick={() => openModal('unban')}
-                color="moss"
-                label="Askıyı kaldır"
-              />
-            ) : (
-              <MenuItem
-                onClick={() => openModal('ban')}
-                color="terracotta"
-                label="Askıya al"
-              />
-            )}
-
-            {user.is_admin ? (
-              <MenuItem
-                onClick={() => openModal('remove-admin')}
-                color="danger"
-                label="Admin yetkisini kaldır"
-              />
-            ) : (
-              <MenuItem
-                onClick={() => openModal('make-admin')}
-                color="ink"
-                label="Admin yap"
-              />
-            )}
-
-            {canHavePremium &&
-              (premiumActive ? (
-                <MenuItem
-                  onClick={() => openModal('revoke-premium')}
-                  color="danger"
-                  label={`Premium kaldır (${tierLabel(
-                    user.premium_tier as
-                      | 'none'
-                      | 'premium'
-                      | 'plus'
-                      | 'agency'
-                      | null
-                  )})`}
-                />
-              ) : (
-                <MenuItem
-                  onClick={() => openModal('grant-premium')}
-                  color="ink"
-                  label="Premium ver"
-                />
-              ))}
-          </div>
-        )}
       </div>
 
+      {mounted && menuContent ? createPortal(menuContent, document.body) : null}
       {mounted && modalContent
         ? createPortal(modalContent, document.body)
         : null}
