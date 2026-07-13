@@ -738,6 +738,43 @@ function OfferRow({ title, description, price }: { title: string; description: s
   );
 }
 
+// ---- Etiket-üstte/değer-altta KV kutuları — TEK bileşen, iki kırılım ----
+// md ve üzeri: mevcut kutu grid'i PİKSEL PİKSEL aynen.
+// md altı: ince satır (rail meta anatomisi) — etiket sol/soluk, değer sağ/kalın,
+//          satırlar arası hairline; uzun değer SAĞDA SARAR, asla kırpılmaz (truncate yok).
+function KvChips({ entries, cols }: { entries: [string, string][]; cols: number }) {
+  return (
+    <>
+      <div
+        className="hidden md:grid gap-3"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}
+      >
+        {entries.map(([k, v]) => (
+          <div key={k} className="bg-paper rounded-xl px-4 py-3">
+            <div className="text-xs text-ink-72">{k}</div>
+            <div className="text-[14.5px] font-semibold text-ink mt-1">{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="md:hidden bg-paper rounded-xl px-4">
+        {entries.map(([k, v], i) => (
+          <div
+            key={k}
+            className={`flex items-baseline justify-between gap-3 py-2.5 ${
+              i === entries.length - 1 ? '' : 'border-b border-line'
+            }`}
+          >
+            <span className="text-[13px] text-ink-72 shrink-0">{k}</span>
+            <span className="text-[13.5px] font-semibold text-ink text-right min-w-0 break-words">
+              {v}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean }) {
   const orgText = [exp.organization, exp.location].filter(Boolean).join(', ');
   const border = last ? '' : 'border-b border-line';
@@ -780,17 +817,14 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
       </div>
     ) : null;
 
-  const kv = (obj: unknown, cols = 3) =>
-    obj && typeof obj === 'object' && Object.keys(obj as object).length > 0 ? (
-      <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
-        {Object.entries(obj as Record<string, string>).map(([k, v]) => (
-          <div key={k} className="bg-paper rounded-xl px-4 py-3">
-            <div className="text-xs text-ink-72">{k}</div>
-            <div className="text-[14.5px] font-semibold text-ink mt-1">{v}</div>
-          </div>
-        ))}
-      </div>
-    ) : null;
+  // Etiket/değer kutuları — TEK bileşen (KvChips): md üstü kutu grid'i aynen, md altı ince satır.
+  // null döndürme sözleşmesi korunur (boş-gövde denetimindeki `detailsEl || ...` için).
+  const kv = (obj: unknown, cols = 3) => {
+    if (!obj || typeof obj !== 'object') return null;
+    const entries = Object.entries(obj as Record<string, string>);
+    if (entries.length === 0) return null;
+    return <KvChips entries={entries} cols={cols} />;
+  };
 
   let body: React.ReactNode = null;
   if (moduleKey === 'repertuar') {
