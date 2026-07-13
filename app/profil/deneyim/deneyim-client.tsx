@@ -56,9 +56,11 @@ type FormState = {
 export function DeneyimClient({
   experiences,
   workGroups,
+  archetype,
 }: {
   experiences: ProfileExperience[];
   workGroups: ExperienceGroup[];
+  archetype: string | null;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState | null>(null);
@@ -239,6 +241,7 @@ export function DeneyimClient({
           kind={form.kind}
           row={form.row}
           workGroups={workGroups}
+          archetype={archetype}
           onClose={() => setForm(null)}
           onSaved={() => {
             setForm(null);
@@ -256,16 +259,30 @@ const KIND_TITLES: Record<ExperienceKind, string> = {
   award: 'Ödül',
 };
 
+// A4 — arketipe göre örnek başlık/kurum/ödül placeholder'ları.
+const EXP_EXAMPLES: Record<
+  string,
+  { work: string; education: string; award: string; org: string; subtitle: string }
+> = {
+  sahne: { work: 'Rezidan DJ', education: 'Ses Mühendisliği Sertifikası', award: 'Yılın Çıkış DJ’i — Local Beats Awards', org: 'Klein Garten', subtitle: 'Haftalık set' },
+  cast: { work: 'Ana rol / Defile', education: 'Oyunculuk Atölyesi', award: 'En İyi Yeni Yüz — Fashion TV Model Awards', org: 'XYZ Ajans / Vogue TR', subtitle: 'Kampanya / sezon' },
+  produksiyon: { work: 'Düğün & Etkinlik Çekimi', education: 'Fotoğrafçılık Sertifikası', award: 'Yılın Düğün Fotoğrafçısı', org: 'Studio Işık', subtitle: 'Proje / seri' },
+  uzmanlik: { work: 'Konferans Çevirmeni', education: 'Mütercim-Tercümanlık Lisansı', award: 'Yılın Çevirmeni', org: 'TÜYAP / Kurumsal', subtitle: 'Görev / dönem' },
+};
+const DEFAULT_EXP = EXP_EXAMPLES.sahne;
+
 function ExperienceModal({
   kind,
   row,
   workGroups,
+  archetype,
   onClose,
   onSaved,
 }: {
   kind: ExperienceKind;
   row: ProfileExperience | null;
   workGroups: ExperienceGroup[];
+  archetype: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -278,6 +295,7 @@ function ExperienceModal({
   const [groupKey, setGroupKey] = useState(row?.group_key ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const ex = EXP_EXAMPLES[archetype ?? ''] ?? DEFAULT_EXP;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -338,7 +356,7 @@ function ExperienceModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={150}
-              placeholder={kind === 'work' ? 'Rezidan DJ' : kind === 'education' ? 'Ses Mühendisliği Sertifikası' : 'Yılın Çıkış DJ’i'}
+              placeholder={kind === 'work' ? ex.work : kind === 'education' ? ex.education : ex.award}
               className={INPUT}
             />
           </div>
@@ -350,7 +368,7 @@ function ExperienceModal({
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               maxLength={150}
-              placeholder="Haftalık set / Online program"
+              placeholder={ex.subtitle}
               className={INPUT}
             />
           </div>
@@ -363,7 +381,7 @@ function ExperienceModal({
                 value={organization}
                 onChange={(e) => setOrganization(e.target.value)}
                 maxLength={150}
-                placeholder="Klein Garten"
+                placeholder={ex.org}
                 className={INPUT}
               />
             </div>

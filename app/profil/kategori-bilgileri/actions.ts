@@ -7,6 +7,7 @@ import {
   getCategoryFields,
   MODULE_REGISTRY,
   SERVICE_REGION_OPTIONS,
+  CALISMA_SEKLI_OPTIONS,
   FOLLOWERS_RANGES,
   type ModuleKey,
 } from '@/app/lib/category-fields';
@@ -107,6 +108,15 @@ export async function saveCategoryAttributes(
     if ('experience_label' in payload) {
       next.experience_label = cleanStr(payload.experience_label, 120) ?? undefined;
     }
+    // calisma_sekli — ORTAK alan (select: sabit liste veya boş)
+    if ('calisma_sekli' in payload) {
+      const v = payload.calisma_sekli;
+      next.calisma_sekli =
+        typeof v === 'string' &&
+        (CALISMA_SEKLI_OPTIONS as readonly string[]).includes(v)
+          ? v
+          : undefined;
+    }
     // logistics (preset.logisticsChecks anahtarları, yalnız true)
     if (
       'logistics' in payload &&
@@ -168,16 +178,6 @@ export async function saveCategoryAttributes(
       }
       next.quick = out;
     }
-    // quick.deneyim TÜRETİLMİŞ alan: rail experience_label ile TEK KAYNAK.
-    // Formda ayrı quick 'deneyim' girdisi yok; her kayıtta experience_label'dan yazılır →
-    // eski çift-kayıtlar bir sonraki kayıtta kendini onarır. Renderer'a dokunulmaz.
-    if (preset.quickInfo.includes('deneyim')) {
-      const q = { ...((next.quick as Record<string, string>) ?? {}) };
-      const exp = next.experience_label;
-      if (typeof exp === 'string' && exp.trim()) q.deneyim = exp;
-      else delete q.deneyim;
-      next.quick = q;
-    }
     // summary (yalnız uzmanlik)
     if (
       'summary' in payload &&
@@ -190,12 +190,12 @@ export async function saveCategoryAttributes(
         body?: unknown;
         stats?: unknown;
       };
-      const stats: { label: string; value: string }[] = [];
+      // C1 — stat çipi TEK metin (string[]); en fazla 3.
+      const stats: string[] = [];
       if (Array.isArray(s.stats)) {
-        for (const st of s.stats as { label?: unknown; value?: unknown }[]) {
-          const label = cleanStr(st?.label, 40);
-          const value = cleanStr(st?.value, 40);
-          if (label && value) stats.push({ label, value });
+        for (const st of s.stats as unknown[]) {
+          const v = cleanStr(st, 60);
+          if (v) stats.push(v);
           if (stats.length >= 3) break;
         }
       }
@@ -243,6 +243,14 @@ export async function saveCategoryAttributes(
             case 'physical': {
               const v = cleanStr(raw, 60);
               if (v) sanitized[field.key] = v;
+              break;
+            }
+            case 'age_range': {
+              // "min–max" — yalnız rakam + ayraç (kesin yaş/serbest metin YOK).
+              const v = cleanStr(raw, 20);
+              if (v && /^\d{0,3}\s*[–-]\s*\d{0,3}$/.test(v)) {
+                sanitized[field.key] = v;
+              }
               break;
             }
             case 'key_value':

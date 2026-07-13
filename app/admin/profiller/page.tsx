@@ -187,8 +187,6 @@ export default async function AdminProfillerPage({
                       )}
                       <a
                         href={`/p/${p.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="inline-block mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
                       >
                         Profili önizle →

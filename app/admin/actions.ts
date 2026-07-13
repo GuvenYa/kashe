@@ -292,20 +292,32 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
   const { supabase, adminId, error } = await requireAdmin();
   if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
-  const { error: updateError } = await supabase
+  // NOT: kaynak durum guard'ı YOK — pending/revision/rejected'in HEPSİNDEN onaylanır.
+  // .select() ile etkilenen satırı doğrula: 0 satır → SESSİZ BAŞARI YOK, kullanıcıya hata.
+  const { data: updated, error: updateError } = await supabase
     .from('profiles')
-    .update({ approval_status: 'approved', approval_note: null })
-    .eq('id', profileId);
+    .update({ approval_status: 'approved', approval_note: null }) // onayda not TEMİZLENİR
+    .eq('id', profileId)
+    .select('id, approval_status');
 
   if (updateError) {
     console.error('[admin] approve profile error:', updateError);
     return { success: false, error: 'Profil onaylanamadı: ' + updateError.message };
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
+  }
+  // Değer gerçekten değişti mi? (bir koruma trigger'ı OLD'a geri sarmış olabilir → sessiz başarı YOK)
+  if (updated[0].approval_status !== 'approved') {
+    return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
 
   await logAction(supabase, adminId, 'approve_profile', 'user', profileId);
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');
+  revalidatePath('/profil'); // kullanıcı kendi görünümü
+  revalidatePath(`/p/${profileId}`); // public profil (artık onaylı → görünür)
   return { success: true };
 }
 
@@ -324,20 +336,29 @@ export async function rejectProfile(
     return { success: false, error: 'Red sebebi en fazla 1000 karakter olabilir.' };
   }
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from('profiles')
     .update({ approval_status: 'rejected', approval_note: trimmedNote })
-    .eq('id', profileId);
+    .eq('id', profileId)
+    .select('id, approval_status');
 
   if (updateError) {
     console.error('[admin] reject profile error:', updateError);
     return { success: false, error: 'Profil reddedilemedi: ' + updateError.message };
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
+  }
+  if (updated[0].approval_status !== 'rejected') {
+    return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
 
   await logAction(supabase, adminId, 'reject_profile', 'user', profileId, trimmedNote);
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');
+  revalidatePath('/profil');
+  revalidatePath(`/p/${profileId}`);
   return { success: true };
 }
 
@@ -356,20 +377,29 @@ export async function requestProfileRevision(
     return { success: false, error: 'Revizyon notu en fazla 1000 karakter olabilir.' };
   }
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from('profiles')
     .update({ approval_status: 'revision', approval_note: trimmedNote })
-    .eq('id', profileId);
+    .eq('id', profileId)
+    .select('id, approval_status');
 
   if (updateError) {
     console.error('[admin] request profile revision error:', updateError);
     return { success: false, error: 'Revizyon istenemedi: ' + updateError.message };
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
+  }
+  if (updated[0].approval_status !== 'revision') {
+    return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
 
   await logAction(supabase, adminId, 'request_profile_revision', 'user', profileId, trimmedNote);
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');
+  revalidatePath('/profil');
+  revalidatePath(`/p/${profileId}`);
   return { success: true };
 }
 // ============================================================

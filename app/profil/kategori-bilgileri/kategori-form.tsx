@@ -4,12 +4,17 @@ import { useState, useTransition } from 'react';
 import {
   getCategoryFields,
   getModuleTitle,
+  getQuickLabel,
+  getFieldExample,
   MODULE_REGISTRY,
   SERVICE_REGION_OPTIONS,
+  CALISMA_SEKLI_OPTIONS,
   FOLLOWERS_RANGES,
   SKILL_LEVELS,
-  QUICK_LABELS,
+  CATEGORY_PARAM_SUGGESTIONS,
+  ARCHETYPE_TAGLINE_EXAMPLES,
   type ModuleKey,
+  type ModuleFieldDef,
 } from '@/app/lib/category-fields';
 import { saveCategoryAttributes } from './actions';
 
@@ -42,6 +47,7 @@ function initModules(
           break;
         case 'text':
         case 'physical':
+        case 'age_range':
           fs[f.key] = typeof ev === 'string' ? ev : '';
           break;
         case 'key_value':
@@ -84,6 +90,7 @@ function buildModulesPayload(
           break;
         case 'text':
         case 'physical':
+        case 'age_range':
           data[f.key] = v ?? '';
           break;
         case 'key_value': {
@@ -111,8 +118,9 @@ export function KategoriForm({
 }) {
   const preset = getCategoryFields(slug)!;
   const moduleKeys = preset.modules.map((m) => m.key);
-  // 'deneyim' quick alanı experience_label'dan TÜRETİLİR → formda ayrı girdi gösterme.
-  const quickKeys = preset.quickInfo.filter((k) => k !== 'deneyim');
+  // TEK-YER: quick bölümü preset.quickInfo'nun tamamını gösterir; türetilmiş anahtarlar
+  // (boy/yaş/dil_cifti) zaten quickInfo'dan çıkarıldı, ilgili modüllerinde düzenlenir.
+  const quickKeys = preset.quickInfo;
 
   const init = initialAttributes;
   const [serviceRegion, setServiceRegion] = useState(
@@ -120,6 +128,11 @@ export function KategoriForm({
   );
   const [experienceLabel, setExperienceLabel] = useState(
     (init.experience_label as string) ?? ''
+  );
+  // Çalışma şekli — ORTAK alan; yoksa eski quick.calisma_sekli'den OKU (tek yön, çift yazma yok).
+  const [calismaSekli, setCalismaSekli] = useState(
+    (init.calisma_sekli as string) ??
+      ((init.quick as Record<string, string> | undefined)?.calisma_sekli ?? '')
   );
   const [logistics, setLogistics] = useState<Record<string, boolean>>(
     (init.logistics as Record<string, boolean>) ?? {}
@@ -139,15 +152,18 @@ export function KategoriForm({
   const summaryInit = (init.summary as {
     title?: string;
     body?: string;
-    stats?: { label: string; value: string }[];
+    stats?: string[];
   }) ?? {};
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState<{
+    title: string;
+    body: string;
+    stats: string[];
+  }>({
     title: summaryInit.title ?? '',
     body: summaryInit.body ?? '',
     stats: summaryInit.stats ?? [],
   });
 
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -159,6 +175,7 @@ export function KategoriForm({
     const payload: Record<string, unknown> = {
       service_region: serviceRegion,
       experience_label: experienceLabel,
+      calisma_sekli: calismaSekli,
       logistics,
       skills,
       section_taglines: taglines,
@@ -235,7 +252,7 @@ export function KategoriForm({
               <QuickField
                 key={k}
                 fieldKey={k}
-                label={QUICK_LABELS[k] ?? k}
+                label={getQuickLabel(preset, k)}
                 value={quick[k] ?? ''}
                 onChange={(v) => setQuick((q) => ({ ...q, [k]: v }))}
               />
@@ -243,6 +260,36 @@ export function KategoriForm({
           </div>
         </section>
       )}
+
+      {/* D1 — Bölüm sloganları (Özet/Hızlı bilgilerden hemen sonra; katlanır DEĞİL) */}
+      <section className={CARD}>
+        <div className={EYEBROW}>Bölüm sloganları</div>
+        <p className="text-[13px] text-ink-72 mt-1 mb-4">
+          Bölüm başlıklarının altında görünen vitrin cümleleri — profilini
+          listeden ayıran satırlar.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(
+            [
+              ['hakkimda', 'Hakkımda'],
+              ['hizmetler', 'Hizmetler'],
+              ['deneyim', 'Deneyim'],
+              ['egitim', 'Eğitim'],
+            ] as const
+          ).map(([k, label]) => (
+            <div key={k}>
+              <label className={LABEL}>{label}</label>
+              <input
+                value={taglines[k] ?? ''}
+                onChange={(e) => setTaglines((t) => ({ ...t, [k]: e.target.value }))}
+                maxLength={200}
+                className={INPUT}
+                placeholder={ARCHETYPE_TAGLINE_EXAMPLES[preset.archetype]?.[k]}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Ortak alanlar */}
       <section className={CARD}>
@@ -263,14 +310,30 @@ export function KategoriForm({
               </select>
             </div>
             <div>
+              <label className={LABEL}>Çalışma şekli</label>
+              <select
+                value={calismaSekli}
+                onChange={(e) => setCalismaSekli(e.target.value)}
+                className={INPUT}
+              >
+                <option value="">Belirtilmemiş</option>
+                {CALISMA_SEKLI_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className={LABEL}>Deneyim</label>
               <input
                 value={experienceLabel}
                 onChange={(e) => setExperienceLabel(e.target.value)}
                 maxLength={120}
-                placeholder="9 yıl · 400+ etkinlik"
+                placeholder="örn. 6 yıl · 150+ etkinlik"
                 className={INPUT}
               />
+              <p className="text-[11px] text-ink-72/70 mt-1">
+                Süre + iş kalıbı yaz (rail&apos;de tek satır gösterilir); çıplak sayı girme.
+              </p>
             </div>
           </div>
 
@@ -328,8 +391,14 @@ export function KategoriForm({
                 <ModuleField
                   key={f.key}
                   type={f.type}
-                  label={f.label}
+                  label={preset.labelOverrides?.[f.key] ?? f.label}
                   note={f.note}
+                  example={getFieldExample(slug, f)}
+                  suggestions={
+                    f.type === 'key_value'
+                      ? CATEGORY_PARAM_SUGGESTIONS[slug]?.[f.key]
+                      : undefined
+                  }
                   value={modules[ref.key]?.[f.key]}
                   onChange={(v) => setModuleField(ref.key, f.key, v)}
                 />
@@ -339,48 +408,6 @@ export function KategoriForm({
         );
       })}
 
-      {/* Gelişmiş — section taglines (katlanır) */}
-      <section className={CARD}>
-        <button
-          type="button"
-          onClick={() => setAdvancedOpen((v) => !v)}
-          className="w-full flex items-center justify-between"
-        >
-          <span className={EYEBROW}>Gelişmiş — Bölüm başlıkları</span>
-          <svg
-            width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className={`text-ink-72 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-        {advancedOpen && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {(
-              [
-                ['hakkimda', 'Hakkımda tagline'],
-                ['hizmetler', 'Hizmetler tagline'],
-                ['deneyim', 'Deneyim tagline'],
-                ['egitim', 'Eğitim tagline'],
-              ] as const
-            ).map(([k, label]) => (
-              <div key={k}>
-                <label className={LABEL}>{label}</label>
-                <input
-                  value={taglines[k] ?? ''}
-                  onChange={(e) =>
-                    setTaglines((t) => ({ ...t, [k]: e.target.value }))
-                  }
-                  maxLength={200}
-                  className={INPUT}
-                  placeholder="Kısa başlık"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* Sabit kaydet çubuğu */}
       <div className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-line px-6 py-3">
@@ -402,7 +429,9 @@ export function KategoriForm({
   );
 }
 
-// ─── Quick alanı (yaş aralığı özel: iki sayı) ───
+const CEVIRI_OPTIONS = ['Simultane', 'Ardıl', 'Yazılı', 'Fısıltı'];
+
+// ─── Quick alanı — yeminli (Evet/Hayır select) + ceviri_turleri (çoklu çip) + serbest metin ───
 function QuickField({
   fieldKey,
   label,
@@ -414,31 +443,49 @@ function QuickField({
   value: string;
   onChange: (v: string) => void;
 }) {
-  if (fieldKey === 'oynayabildigi_yas_araligi') {
-    const [min, max] = value.split(/[–-]/).map((s) => s.trim());
-    const set = (lo: string, hi: string) =>
-      onChange(lo || hi ? `${lo || ''}–${hi || ''}` : '');
+  // C2 — Yeminli: seçmeli (serbest metin değil)
+  if (fieldKey === 'yeminli') {
     return (
       <div>
         <label className={LABEL}>{label}</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={0}
-            value={min ?? ''}
-            onChange={(e) => set(e.target.value, max ?? '')}
-            placeholder="Alt"
-            className={INPUT}
-          />
-          <span className="text-ink-72">–</span>
-          <input
-            type="number"
-            min={0}
-            value={max ?? ''}
-            onChange={(e) => set(min ?? '', e.target.value)}
-            placeholder="Üst"
-            className={INPUT}
-          />
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={INPUT}>
+          <option value="">Belirtilmemiş</option>
+          <option value="Evet">Evet</option>
+          <option value="Hayır">Hayır</option>
+        </select>
+      </div>
+    );
+  }
+  // C2 — Çeviri türleri: çoklu seçim çipleri; " · " ile birleşir
+  if (fieldKey === 'ceviri_turleri') {
+    const selected = value ? value.split('·').map((s) => s.trim()).filter(Boolean) : [];
+    const toggle = (opt: string) => {
+      const next = selected.includes(opt)
+        ? selected.filter((s) => s !== opt)
+        : [...selected, opt];
+      onChange(CEVIRI_OPTIONS.filter((o) => next.includes(o)).join(' · '));
+    };
+    return (
+      <div className="md:col-span-2">
+        <label className={LABEL}>{label}</label>
+        <div className="flex flex-wrap gap-2">
+          {CEVIRI_OPTIONS.map((opt) => {
+            const on = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggle(opt)}
+                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
+                  on
+                    ? 'bg-terracotta text-white border-terracotta'
+                    : 'bg-card text-ink-72 border-line hover:border-terracotta'
+                }`}
+              >
+                {opt}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -461,12 +508,16 @@ function ModuleField({
   type,
   label,
   note,
+  example,
+  suggestions,
   value,
   onChange,
 }: {
   type: string;
   label: string;
   note?: string;
+  example?: string;
+  suggestions?: string[];
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
@@ -477,7 +528,7 @@ function ModuleField({
     </label>
   );
 
-  if (type === 'chips' || type === 'bullet_list' || type === 'language_pairs') {
+  if (type === 'chips' || type === 'bullet_list') {
     const arr = (value as string[]) ?? [];
     const multiline = type !== 'chips';
     const sep = multiline ? '\n' : ', ';
@@ -494,17 +545,44 @@ function ModuleField({
             value={display}
             onChange={(e) => onText(e.target.value)}
             rows={3}
-            placeholder={type === 'language_pairs' ? 'Her satıra bir çift: TR → EN' : 'Her satıra bir madde'}
+            placeholder={example ?? 'Her satıra bir madde'}
             className={`${INPUT} resize-none`}
           />
         ) : (
           <input
             value={display}
             onChange={(e) => onText(e.target.value)}
-            placeholder="Virgülle ayır: House, Techno, Deep House"
+            placeholder={example ? `Virgülle ayır: ${example}` : 'Virgülle ayır'}
             className={INPUT}
           />
         )}
+      </div>
+    );
+  }
+
+  // C3 — Dil çiftleri: çift ekleme satırları (her satır bir "TR ↔ EN")
+  if (type === 'language_pairs') {
+    const arr = (value as string[]) ?? [];
+    const update = (i: number, v: string) =>
+      onChange(arr.map((x, idx) => (idx === i ? v : x)));
+    return (
+      <div>
+        {labelEl}
+        <div className="flex flex-col gap-2">
+          {arr.map((pair, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={pair}
+                onChange={(e) => update(i, e.target.value)}
+                placeholder="TR ↔ EN"
+                maxLength={80}
+                className={`${INPUT} flex-1`}
+              />
+              <RemoveBtn onClick={() => onChange(arr.filter((_, idx) => idx !== i))} />
+            </div>
+          ))}
+          <AddBtn label="Dil çifti ekle" onClick={() => onChange([...arr, ''])} />
+        </div>
       </div>
     );
   }
@@ -517,6 +595,7 @@ function ModuleField({
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
           rows={2}
+          placeholder={example}
           className={`${INPUT} resize-none`}
         />
       </div>
@@ -531,8 +610,41 @@ function ModuleField({
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
           maxLength={60}
+          placeholder={example}
           className={INPUT}
         />
+      </div>
+    );
+  }
+
+  // Yaş ARALIĞI — iki sayı (min–max); kesin yaş YOK. Fiziksel modülünde.
+  if (type === 'age_range') {
+    const raw = (value as string) ?? '';
+    const [min, max] = raw.split(/[–-]/).map((s) => s.trim());
+    const set = (lo: string, hi: string) =>
+      onChange(lo || hi ? `${lo || ''}–${hi || ''}` : '');
+    return (
+      <div>
+        {labelEl}
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            value={min ?? ''}
+            onChange={(e) => set(e.target.value, max ?? '')}
+            placeholder="Alt"
+            className={INPUT}
+          />
+          <span className="text-ink-72">–</span>
+          <input
+            type="number"
+            min={0}
+            value={max ?? ''}
+            onChange={(e) => set(min ?? '', e.target.value)}
+            placeholder="Üst"
+            className={INPUT}
+          />
+        </div>
       </div>
     );
   }
@@ -541,22 +653,39 @@ function ModuleField({
     const rows = (value as { key: string; value: string }[]) ?? [];
     const update = (i: number, patch: Partial<{ key: string; value: string }>) =>
       onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+    // C4 — kullanılmamış önerilen etiketler (tek tıkla satır ekler)
+    const usedKeys = rows.map((r) => r.key.trim());
+    const openSuggestions = (suggestions ?? []).filter((s) => !usedKeys.includes(s));
     return (
       <div>
         {labelEl}
+        {openSuggestions.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {openSuggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onChange([...rows, { key: s, value: '' }])}
+                className="px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-terracotta/5 border border-terracotta/20 text-terracotta hover:bg-terracotta/10 transition-colors"
+              >
+                + {s}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           {rows.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <input
                 value={r.key}
                 onChange={(e) => update(i, { key: e.target.value })}
-                placeholder="Etiket"
+                placeholder="örn. Minimum süre"
                 className={`${INPUT} flex-1`}
               />
               <input
                 value={r.value}
                 onChange={(e) => update(i, { value: e.target.value })}
-                placeholder="Değer"
+                placeholder="örn. Yarım gün"
                 className={`${INPUT} flex-1`}
               />
               <RemoveBtn onClick={() => onChange(rows.filter((_, idx) => idx !== i))} />
@@ -635,17 +764,17 @@ function SkillsEditor({
             <input
               value={s.name}
               onChange={(e) => update(i, { name: e.target.value })}
-              placeholder="Beatmatching"
+              placeholder="Yetenek adı"
               maxLength={60}
-              className={`${INPUT} flex-1`}
+              className={`${INPUT} flex-1 min-w-0`}
             />
             {withLevels && (
               <select
                 value={s.level || ''}
                 onChange={(e) => update(i, { level: Number(e.target.value) })}
-                className={`${INPUT} w-28`}
+                className={`${INPUT} w-36 shrink-0`}
               >
-                <option value="">Seviye</option>
+                <option value="">Seviye (opsiyonel)</option>
                 {SKILL_LEVELS.map((lv) => (
                   <option key={lv.value} value={lv.value}>{lv.label}</option>
                 ))}
@@ -663,16 +792,16 @@ function SkillsEditor({
   );
 }
 
-// ─── Stat çipleri (uzmanlik, max 3) ───
+// ─── Stat çipleri (uzmanlik, max 3) — C1: TEK metin input ───
 function StatsEditor({
   stats,
   onChange,
 }: {
-  stats: { label: string; value: string }[];
-  onChange: (s: { label: string; value: string }[]) => void;
+  stats: string[];
+  onChange: (s: string[]) => void;
 }) {
-  const update = (i: number, patch: Partial<{ label: string; value: string }>) =>
-    onChange(stats.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const update = (i: number, v: string) =>
+    onChange(stats.map((s, idx) => (idx === i ? v : s)));
   return (
     <div>
       <label className={LABEL}>İstatistik çipleri (en fazla 3)</label>
@@ -680,27 +809,17 @@ function StatsEditor({
         {stats.map((s, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
-              value={s.value}
-              onChange={(e) => update(i, { value: e.target.value })}
-              placeholder="400+"
-              maxLength={40}
-              className={`${INPUT} w-32`}
-            />
-            <input
-              value={s.label}
-              onChange={(e) => update(i, { label: e.target.value })}
-              placeholder="etkinlik"
-              maxLength={40}
+              value={s}
+              onChange={(e) => update(i, e.target.value)}
+              placeholder="örn. 300+ konferans"
+              maxLength={60}
               className={`${INPUT} flex-1`}
             />
             <RemoveBtn onClick={() => onChange(stats.filter((_, idx) => idx !== i))} />
           </div>
         ))}
         {stats.length < 3 && (
-          <AddBtn
-            label="Çip ekle"
-            onClick={() => onChange([...stats, { label: '', value: '' }])}
-          />
+          <AddBtn label="Çip ekle" onClick={() => onChange([...stats, ''])} />
         )}
       </div>
     </div>

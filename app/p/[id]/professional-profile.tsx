@@ -13,8 +13,8 @@ import type { BadgeCard } from '@/app/lib/badges';
 import {
   getCategoryFields,
   getModuleTitle,
+  getQuickLabel,
   MODULE_REGISTRY,
-  QUICK_LABELS,
   type LeveledSkill,
   type ProfileExperience,
 } from '@/app/lib/category-fields';
@@ -110,9 +110,15 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   const logistics = (attrs.logistics as Record<string, boolean>) ?? {};
   const serviceRegion = attrs.service_region as string | undefined;
   const experienceLabel = attrs.experience_label as string | undefined;
+  // Çalışma şekli — ORTAK alan; yoksa eski quick.calisma_sekli'den OKU (tek yön; anayasa: boşsa satır yok).
+  const calismaSekli =
+    (attrs.calisma_sekli as string | undefined) ??
+    ((attrs.quick as Record<string, unknown> | undefined)?.calisma_sekli as
+      | string
+      | undefined);
   const taglines = (attrs.section_taglines as Record<string, string>) ?? {};
   const modulesData = (attrs.modules as Record<string, AttrRecord>) ?? {};
-  const summary = attrs.summary as { title?: string; body?: string; stats?: { label: string; value: string }[] } | undefined;
+  const summary = attrs.summary as { title?: string; body?: string; stats?: string[] } | undefined;
   const archetype = preset?.archetype ?? 'produksiyon';
 
   // ---- Fiyat aralığı (yayındaki hizmetler; tümü talep-üzerine ise gizle) ----
@@ -121,7 +127,12 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   if (priceable.length > 0) {
     const min = Math.min(...priceable.map((s) => s.price_min as number));
     const max = Math.max(...priceable.map((s) => (s.price_max ?? s.price_min) as number));
-    priceRange = formatPriceRange(min, max, false);
+    // C4 — para birimi SONDA (formatPriceRange tek kaynak). Tek fiyat noktası → "X ₺'den başlar";
+    // gerçek aralık → "min – max ₺". (min===max'ta leading-₺ formatPrice'tan kaçınılır.)
+    priceRange =
+      min === max
+        ? formatPriceRange(min, min, false, 'total', true)
+        : formatPriceRange(min, max, false);
   }
 
   // ---- Hero medyası ----
@@ -129,10 +140,14 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     id: p.id, type: p.media_type, url: p.media_url, caption: p.caption,
   }));
 
-  // ---- quickInfo hücreleri (dolu olanlar; 2'den az doluysa satır yok) ----
+  // ---- quickInfo hücreleri — TEK-YER: yalnız quick{} kendi değerleri (modül-fallback YOK).
+  //      Eşik: 2'den az dolu hücre → quick satırı hiç çizilmez.
   const quickCells = (preset?.quickInfo ?? [])
-    .map((k) => ({ label: QUICK_LABELS[k] ?? k, value: quick[k] }))
-    .filter((c) => c.value && String(c.value).trim());
+    .map((k) => ({ key: k, label: getQuickLabel(preset, k), value: quick[k] as unknown }))
+    .filter((c) => {
+      if (c.key === 'yeminli') return c.value === 'Evet'; // yalnız "Evet" gösterilir
+      return c.value && String(c.value).trim();
+    });
   const showQuick = quickCells.length >= 2;
 
   // ---- Lojistik satırları (logistics{} ∩ preset açıklamaları) ----
@@ -390,6 +405,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
             <div className="bg-card border border-line rounded-2xl px-4 py-1.5">
               <MetaRow label="Şehir" value={cityName} />
               <MetaRow label="Hizmet bölgesi" value={serviceRegion} />
+              <MetaRow label="Çalışma şekli" value={calismaSekli} />
               <MetaRow label="Fiyat aralığı" value={priceRange} />
               <MetaRow label="Deneyim" value={experienceLabel} />
               <MetaRow
@@ -468,9 +484,8 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 {summary.stats && summary.stats.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {summary.stats.map((st, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 bg-white/12 rounded-full px-3 py-1 text-sm">
-                        <span className="font-semibold">{st.value}</span>
-                        <span className="text-paper/75">{st.label}</span>
+                      <span key={i} className="inline-flex items-center bg-white/12 rounded-full px-3 py-1 text-sm font-semibold">
+                        {st}
                       </span>
                     ))}
                   </div>
@@ -493,7 +508,14 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                     {quickCells.map((c) => (
                       <div key={c.label} className="bg-card border border-line rounded-xl px-4 py-3.5">
                         <div className="text-xs text-ink-72">{c.label}</div>
-                        <div className="font-display text-[15px] font-semibold text-ink mt-1">{String(c.value)}</div>
+                        {c.key === 'yeminli' ? (
+                          <div className="flex items-center gap-1.5 font-display text-[15px] font-semibold text-ink mt-1">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                            Yeminli
+                          </div>
+                        ) : (
+                          <div className="font-display text-[15px] font-semibold text-ink mt-1">{String(c.value)}</div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -508,6 +530,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 title={getModuleTitle(ref)}
                 moduleKey={ref.key}
                 data={modulesData[ref.key] ?? null}
+                labelOverrides={preset?.labelOverrides}
               />
             ))}
 
@@ -743,7 +766,7 @@ function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean })
 }
 
 // ---- Modül renderer (koşullu; veri yoksa null) ----
-function ModuleSection({ title, moduleKey, data }: { title: string; moduleKey: string; data: AttrRecord | null }) {
+function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: string; moduleKey: string; data: AttrRecord | null; labelOverrides?: Record<string, string> }) {
   if (!data || Object.keys(data).length === 0) return null;
   const def = MODULE_REGISTRY[moduleKey as keyof typeof MODULE_REGISTRY];
   const eyebrow = <div className={EYEBROW}>{title}</div>;
@@ -771,38 +794,65 @@ function ModuleSection({ title, moduleKey, data }: { title: string; moduleKey: s
 
   let body: React.ReactNode = null;
   if (moduleKey === 'repertuar') {
-    body = <>{chips(data.genres)}{typeof data.notes === 'string' && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-3.5">{data.notes}</p>}</>;
+    const g = chips(data.genres);
+    const hasNotes = typeof data.notes === 'string' && data.notes.trim().length > 0;
+    body =
+      g || hasNotes ? (
+        <>
+          {g}
+          {hasNotes && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-3.5">{data.notes as string}</p>}
+        </>
+      ) : null;
   } else if (moduleKey === 'ekipman') {
-    body = (
-      <>
-        {Array.isArray(data.items) && (
-          <div className="flex flex-col gap-2 text-sm text-ink-72">
-            {(data.items as string[]).map((it, i) => (
-              <div key={i} className="flex gap-2.5"><span className="text-terracotta font-bold shrink-0">—</span>{it}</div>
-            ))}
-          </div>
-        )}
-        {typeof data.venue_requirements === 'string' && (
-          <div className="mt-4 px-4 py-3 bg-paper rounded-lg text-[12.5px] text-ink-72 leading-relaxed">
-            <span className="font-semibold text-ink">Mekan gereksinimleri: </span>{data.venue_requirements}
-          </div>
-        )}
-      </>
-    );
+    const hasItems = Array.isArray(data.items) && (data.items as unknown[]).length > 0;
+    const hasVenue = typeof data.venue_requirements === 'string' && data.venue_requirements.trim().length > 0;
+    body =
+      hasItems || hasVenue ? (
+        <>
+          {hasItems && (
+            <div className="flex flex-col gap-2 text-sm text-ink-72">
+              {(data.items as string[]).map((it, i) => (
+                <div key={i} className="flex gap-2.5"><span className="text-terracotta font-bold shrink-0">—</span>{it}</div>
+              ))}
+            </div>
+          )}
+          {hasVenue && (
+            <div className="mt-4 px-4 py-3 bg-paper rounded-lg text-[12.5px] text-ink-72 leading-relaxed">
+              <span className="font-semibold text-ink">Mekan gereksinimleri: </span>{data.venue_requirements as string}
+            </div>
+          )}
+        </>
+      ) : null;
   } else if (moduleKey === 'performans') {
-    body = (
-      <>
-        {kv(data.details, 3)}
-        {typeof data.what_to_expect === 'string' && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-4">{data.what_to_expect}</p>}
-        {typeof data.setup_logistics === 'string' && (
-          <div className="mt-3.5 border border-dashed border-terracotta/25 rounded-lg px-4 py-3 text-[13px] text-ink-72 leading-relaxed">
-            <span className="font-semibold text-ink">Kurulum &amp; lojistik notları: </span>{data.setup_logistics}
-          </div>
-        )}
-      </>
-    );
+    const detailsEl = kv(data.details, 3);
+    const hasExpect = typeof data.what_to_expect === 'string' && data.what_to_expect.trim().length > 0;
+    const hasSetup = typeof data.setup_logistics === 'string' && data.setup_logistics.trim().length > 0;
+    body =
+      detailsEl || hasExpect || hasSetup ? (
+        <>
+          {detailsEl}
+          {hasExpect && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-4">{data.what_to_expect as string}</p>}
+          {hasSetup && (
+            <div className="mt-3.5 border border-dashed border-terracotta/25 rounded-lg px-4 py-3 text-[13px] text-ink-72 leading-relaxed">
+              <span className="font-semibold text-ink">Kurulum &amp; lojistik notları: </span>{data.setup_logistics as string}
+            </div>
+          )}
+        </>
+      ) : null;
   } else if (moduleKey === 'fiziksel') {
-    body = kv({ Boy: data.height, Beden: data.size, Ayak: data.shoe, Saç: data.hair, Göz: data.eyes }, 5);
+    // Yaş aralığı (etiket override: model → "Görünüm yaş aralığı") + boy/beden/... — boş olanlar elenir.
+    const yasLabel = labelOverrides?.['oynayabildigi_yas_araligi'] ?? 'Oynayabildiği yaş aralığı';
+    const fz: Record<string, string> = {};
+    const put = (label: string, v: unknown) => {
+      if (typeof v === 'string' && v.trim()) fz[label] = v;
+    };
+    put(yasLabel, data.oynayabildigi_yas_araligi);
+    put('Boy', data.height);
+    put('Beden', data.size);
+    put('Ayak', data.shoe);
+    put('Saç', data.hair);
+    put('Göz', data.eyes);
+    body = kv(fz, 5);
   } else if (moduleKey === 'sosyal_erisim') {
     const platforms = Array.isArray(data.platforms) ? (data.platforms as { platform: string; followers_range: string }[]) : [];
     body = platforms.length > 0 ? (
@@ -821,31 +871,38 @@ function ModuleSection({ title, moduleKey, data }: { title: string; moduleKey: s
   } else if (moduleKey === 'diller_belgeler') {
     const pairs = Array.isArray(data.language_pairs) ? (data.language_pairs as unknown[]) : [];
     const docs = Array.isArray(data.documents) ? (data.documents as { name: string; date?: string }[]) : [];
-    body = (
-      <>
-        {pairs.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {pairs.map((p, i) => (
-              <span key={i} className="px-3.5 py-1.5 bg-terracotta/5 border border-terracotta/15 rounded-full text-[12.5px] font-medium text-ink">{String(p)}</span>
-            ))}
-          </div>
-        )}
-        {docs.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {docs.map((d, i) => (
-              <div key={i} className="flex items-center gap-2 text-[13.5px] text-ink-72">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
-                {d.name} — <span className="text-ink">Belge yüklendi{d.date ? ` · ${d.date}` : ''}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    );
+    // Dil çifti kartları (mockup 1c anatomisi). Boş → başlık dahil hiçbir şey.
+    body =
+      pairs.length > 0 || docs.length > 0 ? (
+        <>
+          {pairs.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3">
+              {pairs.map((p, i) => (
+                <div key={i} className="px-4 py-3 bg-paper border border-line rounded-xl text-[13.5px] font-semibold text-ink text-center">{String(p)}</div>
+              ))}
+            </div>
+          )}
+          {docs.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {docs.map((d, i) => (
+                <div key={i} className="flex items-center gap-2 text-[13.5px] text-ink-72">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                  {d.name} — <span className="text-ink">Belge yüklendi{d.date ? ` · ${d.date}` : ''}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : null;
   } else if (moduleKey === 'uzmanlik_alanlari') {
     body = chips(data.areas);
   } else if (moduleKey === 'calisma_parametreleri') {
-    body = <>{kv(data.params, 3)}{typeof data.notes === 'string' && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-3.5">{data.notes}</p>}</>;
+    const paramsEl = kv(data.params, 3);
+    const hasNotes = typeof data.notes === 'string' && data.notes.trim().length > 0;
+    body =
+      paramsEl || hasNotes ? (
+        <>{paramsEl}{hasNotes && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-3.5">{data.notes as string}</p>}</>
+      ) : null;
   } else if (moduleKey === 'teknik_teslimat') {
     body = kv(data.delivery, 3);
   }

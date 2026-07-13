@@ -1088,40 +1088,32 @@ export default async function ProfilPage() {
 
           {/* PROFESYONEL: İstatistik teşvik (premium değilse) */}
           {isPro && !proIsPremium && (
-            <div className="mt-8 bg-gradient-to-br from-[#F4E9C8]/60 to-paper border border-[#D9C179] rounded-lg p-8">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
-                    Premium
-                  </span>
-                  <h2 className="font-display font-semibold text-2xl text-ink mt-3">
-                    İstatistiklerini gör
-                  </h2>
-                  <p className="text-ink-72 text-sm mt-2 max-w-md">
-                    Profilin kaç kez görüntülendi, kaç kişi favoriledi, başvuru
-                    ve iş performansın nasıl? Premium ile tüm istatistiklerine
-                    eriş, keşfette üst sıralarda yer al.
-                  </p>
-                </div>
+            // D3 — yatay düzen: sol metin bloğu + sağda üç stat yan yana (kart yüksekliği düşer)
+            <div className="mt-5 bg-gradient-to-br from-[#F4E9C8]/60 to-paper border border-[#D9C179] rounded-lg p-5 flex flex-col md:flex-row md:items-center gap-5">
+              <div className="flex-1 min-w-0 max-w-md">
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179] px-2 py-0.5 rounded-full">
+                  Premium
+                </span>
+                <h2 className="font-display font-semibold text-xl text-ink mt-2">
+                  İstatistiklerini gör
+                </h2>
+                <p className="text-ink-72 text-sm mt-1.5">
+                  Profilin kaç kez görüntülendi, kaç kişi favoriledi, başvuru ve
+                  iş performansın nasıl? Premium ile tüm istatistiklerine eriş.
+                </p>
               </div>
-              <div className="flex flex-wrap gap-3 mt-5 opacity-50 pointer-events-none select-none">
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ···
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Görüntülenme</p>
+              <div className="flex gap-2.5 shrink-0 opacity-50 pointer-events-none select-none">
+                <div className="bg-paper rounded-lg p-3 w-24">
+                  <p className="font-display text-lg text-ink leading-none blur-[3px]">···</p>
+                  <p className="text-[11px] text-ink-72 mt-1">Görüntülenme</p>
                 </div>
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ··
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Favori</p>
+                <div className="bg-paper rounded-lg p-3 w-24">
+                  <p className="font-display text-lg text-ink leading-none blur-[3px]">··</p>
+                  <p className="text-[11px] text-ink-72 mt-1">Favori</p>
                 </div>
-                <div className="bg-paper rounded-lg p-4 w-32">
-                  <p className="font-display text-2xl text-ink leading-none blur-[3px]">
-                    ···
-                  </p>
-                  <p className="text-xs text-ink-72 mt-1.5">Başvuru</p>
+                <div className="bg-paper rounded-lg p-3 w-24">
+                  <p className="font-display text-lg text-ink leading-none blur-[3px]">···</p>
+                  <p className="text-[11px] text-ink-72 mt-1">Başvuru</p>
                 </div>
               </div>
             </div>

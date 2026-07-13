@@ -47,6 +47,7 @@ export default async function DeneyimPage() {
 
   const preset = getCategoryFields(profile.service_categories?.slug ?? null);
   const workGroups = preset?.experienceGroups ?? [];
+  const archetype = preset?.archetype ?? null;
 
   return (
     <>
@@ -71,7 +72,11 @@ export default async function DeneyimPage() {
             </p>
           </div>
 
-          <DeneyimClient experiences={experiences} workGroups={workGroups} />
+          <DeneyimClient
+            experiences={experiences}
+            workGroups={workGroups}
+            archetype={archetype}
+          />
         </div>
       </main>
     </>

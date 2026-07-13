@@ -110,11 +110,29 @@ export default async function PublicProfilePage({
 
   const profile = profileData as unknown as PublicProfile;
 
-  // Kamu profili sadece profesyonel ve kurumsal için açık
-  // Müşteri profilleri kapalı — sadece mesajlaşma sayfasındaki panel üzerinden görünür
-  if (!profile.is_published) {
+  // Mevcut kullanıcı + admin kontrolü — is_published guard'ından ÖNCE (D2 admin önizleme).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let currentUserRole: string | null = null;
+  let viewerIsAdmin = false;
+  if (user) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role, is_admin')
+      .eq('id', user.id)
+      .single();
+    currentUserRole = currentProfile?.role ?? null;
+    viewerIsAdmin = currentProfile?.is_admin === true;
+  }
+
+  // D2 — Admin, yayında OLMAYAN profili ÖNİZLEYEBİLİR (üstte uyarı bandı ile).
+  // Non-admin davranışı + SIRA1 AYNEN: yayında değilse 404.
+  const isAdminPreview = !profile.is_published && viewerIsAdmin;
+  if (!profile.is_published && !viewerIsAdmin) {
     notFound();
   }
+  // Kamu profili yalnız profesyonel/kurumsal/ajans (müşteri profilleri kapalı)
   if (
     profile.role !== 'professional' &&
     profile.role !== 'business' &&
@@ -228,22 +246,15 @@ export default async function PublicProfilePage({
     (b) => b.blocked_date as string
   );
 
-  // Mevcut kullanıcı bilgisi
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let currentUserRole: string | null = null;
-  if (user) {
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    currentUserRole = currentProfile?.role ?? null;
-  }
-
+  // (user + currentUserRole + viewerIsAdmin yukarıda, is_published guard'ından önce alındı)
   const isLoggedIn = !!user;
+
+  // D2 — admin önizleme bandı (yayında olmayan profil; yalnız admin görür)
+  const previewBand = isAdminPreview ? (
+    <div className="bg-amber-500/15 border-b border-amber-500/40 px-6 md:px-12 py-2.5 text-center text-sm font-medium text-ink">
+      Önizleme — profil yayında değil (yalnız admin görebilir)
+    </div>
+  ) : null;
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
   // manager+ kurum üyeliği — kurum adına rezervasyon/konuşma için
@@ -508,6 +519,7 @@ export default async function PublicProfilePage({
     return (
       <>
         <TopNav />
+        {previewBand}
         <ProfessionalProfile
           profile={{
             id: profile.id,
@@ -654,6 +666,7 @@ export default async function PublicProfilePage({
   return (
     <>
       <TopNav />
+      {previewBand}
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
           <Link

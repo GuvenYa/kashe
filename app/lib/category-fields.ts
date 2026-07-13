@@ -12,15 +12,17 @@
 // {
 //   "service_region": "Türkiye geneli + çevrimiçi",   // Şehir dışına çıkar | Türkiye geneli | Türkiye geneli + çevrimiçi
 //   "experience_label": "9 yıl · 400+ etkinlik",        // rozet/başlık için serbest metin — DENEYİM tek kaynağı
+//   "calisma_sekli": "Freelance + Ajansa bağlı",        // ORTAK alan (rail meta). Eski quick.calisma_sekli
+//                                                       // OKUMA sırasında buraya fallback edilir (tek yön; çift yazma YOK).
 //   "summary": { "title": "...", "body": "...", "stats": [{ "label": "...", "value": "..." }] },
 //                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine zümrüt özet bandı
 //                                                       // (başlık + kısa metin + stat çipleri)
 //   "logistics": { "ehliyet": true, "sehir_disi": true }, // logisticsChecks key -> boolean
 //   "skills": [{ "name": "Vals", "level": 3 }],           // seviyeli yetenekler (1-3); cast kategorileri
 //   "section_taglines": { "performans": "..." },          // modül key -> kategoriye özel tagline override (kullanıcı)
-//   "quick": { "<quickInfoKey>": "<değer>" },             // Hakkımda altı 4'lü hızlı bilgi değerleri
-//                                                       // NOT: quick.deneyim TÜRETİLMİŞTİR — experience_label'dan
-//                                                       // kayıtta yazılır; formda ayrı girdisi yoktur (drift önlenir).
+//   "quick": { "<quickInfoKey>": "<değer>" },             // Hakkımda altı hızlı bilgi değerleri
+//                                                       // NOT: 'deneyim' quick anahtarı YOK (rail experience_label tek kaynak);
+//                                                       // 'boy' / 'oynayabildigi_yas_araligi' render'da fiziksel modülünden okunur (C1).
 //   "modules": {                                          // modül key -> modüle özel veri (ModuleDefinition.fields şekline göre)
 //     "repertuar": { "genres": ["House","Techno"], "notes": "..." },
 //     "sosyal_erisim": { "platforms": [{ "platform": "instagram", "followers_range": "10k-50k" }] },
@@ -58,6 +60,7 @@ export type ModuleFieldType =
   | 'physical' // Boy/Beden/Ayak/Saç/Göz
   | 'social_reach' // platform + takipçi aralığı (link YOK)
   | 'language_pairs' // dil çifti kartları
+  | 'age_range' // yaş aralığı (iki sayı: min–max) — kesin yaş YOK
   | 'documents'; // belge satırı ("Belge yüklendi")
 
 export interface ModuleFieldDef {
@@ -65,6 +68,8 @@ export interface ModuleFieldDef {
   type: ModuleFieldType;
   label: string;
   note?: string;
+  /** Kategoriye özel örnek/placeholder metni (preset.examples ile de override edilebilir). */
+  example?: string;
 }
 
 export interface ModuleDefinition {
@@ -110,6 +115,10 @@ export interface CategoryFieldConfig {
   skillsWithLevels: boolean;
   /** Hibrit: cast'ten portföy grid'i açık mı (ör. karikatürist) */
   portfolioGrid?: boolean;
+  /** Quick/modül alan etiketi override (key -> etiket). Ör. model: oynayabildigi_yas_araligi -> "Görünüm yaş aralığı" */
+  labelOverrides?: Record<string, string>;
+  /** Serbest-metin/çip modül alanları için kategoriye özel örnek (fieldKey -> örnek metin). */
+  examples?: Record<string, string>;
 }
 
 // ---- DB satırı: public.profile_experiences ----
@@ -139,6 +148,13 @@ export const SERVICE_REGION_OPTIONS = [
   'Şehir dışına çıkar',
   'Türkiye geneli',
   'Türkiye geneli + çevrimiçi',
+] as const;
+
+/** Çalışma şekli — ORTAK alan (rail meta). Eski quick.calisma_sekli kayıtları okuma sırasında buraya fallback edilir. */
+export const CALISMA_SEKLI_OPTIONS = [
+  'Freelance',
+  'Ajansa bağlı',
+  'Freelance + Ajansa bağlı',
 ] as const;
 
 // =============================================================================
@@ -215,6 +231,8 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDefinition> = {
     key: 'fiziksel',
     defaultTitle: 'Fiziksel Özellikler',
     fields: [
+      // Yaş ARALIĞI (kesin yaş YOK). Etiket kategoriye göre override edilir (model → "Görünüm yaş aralığı").
+      { key: 'oynayabildigi_yas_araligi', type: 'age_range', label: 'Oynayabildiği yaş aralığı' },
       { key: 'height', type: 'physical', label: 'Boy' },
       { key: 'size', type: 'physical', label: 'Beden' },
       { key: 'shoe', type: 'physical', label: 'Ayak' },
@@ -277,7 +295,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // ---------------------------- SAHNE ----------------------------
   dj: {
     archetype: 'sahne',
-    quickInfo: ['turler', 'deneyim', 'set_suresi', 'ekipman_durumu'],
+    quickInfo: ['turler', 'set_suresi', 'ekipman_durumu'],
     modules: [
       { key: 'repertuar' },
       { key: 'ekipman' },
@@ -298,7 +316,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   muzisyen: {
     archetype: 'sahne',
-    quickInfo: ['turler', 'enstruman', 'deneyim', 'ekip_boyutu'],
+    quickInfo: ['turler', 'enstruman', 'ekip_boyutu'],
     modules: [
       { key: 'repertuar' },
       { key: 'ekipman' },
@@ -319,7 +337,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   dansci: {
     archetype: 'sahne',
-    quickInfo: ['dans_turleri', 'deneyim', 'ekip_boyutu', 'gosteri_suresi'],
+    quickInfo: ['dans_turleri', 'ekip_boyutu', 'gosteri_suresi'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
       { key: 'uzmanlik_alanlari', title: 'Dans Türleri' },
@@ -338,7 +356,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   'stand-up-komedyen': {
     archetype: 'sahne',
-    quickInfo: ['gosteri_turu', 'deneyim', 'gosteri_suresi', 'dil'],
+    quickInfo: ['gosteri_turu', 'gosteri_suresi', 'dil'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
       { key: 'sosyal_erisim' },
@@ -355,7 +373,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   illuzyonist: {
     archetype: 'sahne',
-    quickInfo: ['gosteri_turu', 'deneyim', 'gosteri_suresi', 'yas_grubu'],
+    quickInfo: ['gosteri_turu', 'gosteri_suresi', 'yas_grubu'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
       { key: 'ekipman' },
@@ -373,7 +391,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   palyaco: {
     archetype: 'sahne',
-    quickInfo: ['gosteri_turu', 'deneyim', 'gosteri_suresi', 'yas_grubu'],
+    quickInfo: ['gosteri_turu', 'gosteri_suresi', 'yas_grubu'],
     modules: [{ key: 'performans', title: 'Gösteri Bilgileri' }],
     experienceGroups: [
       { key: 'cocuk_etkinligi', label: 'Çocuk Etkinliği' },
@@ -387,7 +405,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   sunucu: {
     archetype: 'sahne',
-    quickInfo: ['sunuculuk_turu', 'deneyim', 'dil', 'etkinlik_turleri'],
+    quickInfo: ['sunuculuk_turu', 'dil', 'etkinlik_turleri'],
     modules: [
       { key: 'performans', title: 'Sunum Bilgileri' },
       { key: 'diller_belgeler', title: 'Diller' },
@@ -407,7 +425,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // ---------------------------- CAST ----------------------------
   model: {
     archetype: 'cast',
-    quickInfo: ['oynayabildigi_yas_araligi', 'boy', 'deneyim', 'calisma_sekli'],
+    quickInfo: [],
     modules: [
       { key: 'fiziksel' },
       { key: 'uzmanlik_alanlari', title: 'Çalışma Alanları' },
@@ -423,10 +441,12 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı çekimlere katılır' },
     ],
     skillsWithLevels: true,
+    // A2 — model yaş aralığı etiketi "Görünüm yaş aralığı" (oyuncu/hostes default "Oynayabildiği...").
+    labelOverrides: { oynayabildigi_yas_araligi: 'Görünüm yaş aralığı' },
   },
   oyuncu: {
     archetype: 'cast',
-    quickInfo: ['oynayabildigi_yas_araligi', 'deneyim', 'uzmanlik', 'dil'],
+    quickInfo: ['uzmanlik', 'dil'],
     modules: [
       { key: 'fiziksel' },
       { key: 'diller_belgeler', title: 'Diller' },
@@ -446,7 +466,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   hostes: {
     archetype: 'cast',
-    quickInfo: ['deneyim', 'dil', 'etkinlik_turleri', 'calisma_sekli'],
+    quickInfo: ['dil', 'etkinlik_turleri'],
     modules: [
       { key: 'fiziksel' },
       { key: 'diller_belgeler', title: 'Diller' },
@@ -467,7 +487,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // ------------------------- PRODÜKSİYON -------------------------
   fotografci: {
     archetype: 'produksiyon',
-    quickInfo: ['uzmanlik', 'deneyim', 'teslim_suresi', 'ekipman_durumu'],
+    quickInfo: ['uzmanlik', 'teslim_suresi', 'ekipman_durumu'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Çekim Alanları' },
       { key: 'ekipman' },
@@ -487,7 +507,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   videograf: {
     archetype: 'produksiyon',
-    quickInfo: ['uzmanlik', 'deneyim', 'teslim_suresi', 'drone'],
+    quickInfo: ['uzmanlik', 'teslim_suresi', 'drone'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Çekim Alanları' },
       { key: 'ekipman' },
@@ -508,7 +528,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   'ses-isik': {
     archetype: 'produksiyon',
-    quickInfo: ['hizmet_turu', 'deneyim', 'ekipman_kapasitesi', 'kurulum_suresi'],
+    quickInfo: ['hizmet_turu', 'ekipman_kapasitesi', 'kurulum_suresi'],
     modules: [
       { key: 'ekipman' },
       { key: 'teknik_teslimat', title: 'Teknik Kapasite' },
@@ -529,7 +549,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // --------------------------- UZMANLIK ---------------------------
   tercuman: {
     archetype: 'uzmanlik',
-    quickInfo: ['dil_cifti', 'ceviri_turleri', 'yeminli', 'deneyim'],
+    quickInfo: ['ceviri_turleri', 'yeminli'],
     modules: [
       { key: 'diller_belgeler' },
       { key: 'uzmanlik_alanlari', title: 'Çeviri Alanları' },
@@ -548,7 +568,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   organizasyon: {
     archetype: 'uzmanlik',
-    quickInfo: ['hizmet_turu', 'deneyim', 'ekip_boyutu', 'etkinlik_turleri'],
+    quickInfo: ['hizmet_turu', 'ekip_boyutu', 'etkinlik_turleri'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Hizmet Alanları' },
       { key: 'calisma_parametreleri' },
@@ -567,7 +587,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // Karikatürist HİBRİT: uzmanlik arketipi + portföy grid (cast) + performans (sahne)
   karikaturist: {
     archetype: 'uzmanlik',
-    quickInfo: ['cizim_turu', 'deneyim', 'teslim_suresi', 'calisma_sekli'],
+    quickInfo: ['cizim_turu', 'teslim_suresi'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Çizim Alanları' },
       { key: 'performans', title: 'Etkinlik / Canlı Çizim Bilgileri' },
@@ -605,3 +625,156 @@ export function getModuleDefinition(key: ModuleKey): ModuleDefinition {
 export function getModuleTitle(ref: ModuleRef): string {
   return ref.title ?? MODULE_REGISTRY[ref.key].defaultTitle;
 }
+
+// TEK-YER KURALI: quick hücreleri YALNIZ quick{} içindeki kendi anahtarlarını gösterir.
+// Değeri kendi modül bölümünde girilip görünen anahtarlar quickInfo'da yer ALMAZ
+// (boy/yaş → Fiziksel, dil_cifti → Diller & Belgeler). Modül-fallback mekanizması YOK.
+
+/** Quick/alan etiketi — preset override varsa onu, yoksa QUICK_LABELS, yoksa key. */
+export function getQuickLabel(
+  preset: CategoryFieldConfig | null,
+  key: string
+): string {
+  return preset?.labelOverrides?.[key] ?? QUICK_LABELS[key] ?? key;
+}
+
+// =============================================================================
+// A4 — Kategoriye özel örnek/placeholder metinleri (slug -> fieldKey -> örnek).
+// Serbest-metin/çip modül alanlarına kategoriye uygun örnek; DJ örneği YALNIZ DJ'de.
+// =============================================================================
+export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
+  dj: {
+    genres: 'House, Techno, Deep House, Melodic',
+    notes: 'Açılıştan peak-time geçişi; mekana göre özelleştirilmiş set',
+    items: 'Pioneer CDJ-3000 x2, DJM-900NXS2 mikser, monitör kulaklık',
+    venue_requirements: '2 kanal DI + topraklı priz yeterli; kalan ekipman bende',
+    what_to_expect: 'Kalabalığı okuyan, akışı bozmayan bir gece',
+  },
+  muzisyen: {
+    genres: 'Pop, Jazz, Akustik, Türkçe',
+    items: 'Akustik gitar, vokal mikrofonu, kombo amfi',
+    what_to_expect: 'Canlı, esnek repertuar; isteklere açık',
+  },
+  dansci: {
+    areas: 'Modern, Hip-hop, Latin, Show dans',
+    what_to_expect: 'Koreografi + kostümlü sahne gösterisi',
+  },
+  'stand-up-komedyen': {
+    what_to_expect: 'Etkileşimli, güncel, doğaçlamaya açık gösteri',
+  },
+  illuzyonist: {
+    what_to_expect: 'Sahne illüzyonu + close-up + mentalizm',
+    items: 'Kendi sahne düzeni ve malzemeleri',
+  },
+  palyaco: {
+    what_to_expect: 'Balon, yüz boyama, interaktif çocuk oyunları',
+  },
+  sunucu: {
+    what_to_expect: 'Akışı yöneten, sahne hakimiyeti yüksek sunum',
+    language_pairs: 'Türkçe, İngilizce',
+  },
+  model: {
+    areas: 'Defile, Katalog, Editoryal, Reklam',
+  },
+  oyuncu: {
+    areas: 'Dövüş, at binme, dans, aksan',
+    language_pairs: 'Türkçe, İngilizce',
+  },
+  hostes: {
+    notes: 'Karşılama, yönlendirme, protokol; kurumsal görünüm',
+  },
+  fotografci: {
+    areas: 'Düğün, Ürün, Portre, Moda',
+    items: 'Full-frame gövde, 24-70mm, flaş seti',
+  },
+  videograf: {
+    areas: 'Düğün, Reklam, Klip, Kurumsal tanıtım',
+    items: 'Sinema kamera, gimbal, ışık seti',
+  },
+  'ses-isik': {
+    items: 'Line-array ses, hareketli ışık, LED ekran',
+  },
+  tercuman: {
+    areas: 'Hukuki, Tıbbi, Teknik, Ticari',
+    language_pairs: 'TR ↔ EN, TR ↔ DE',
+  },
+  organizasyon: {
+    areas: 'Düğün, Kurumsal etkinlik, Konser, Fuar',
+  },
+  karikaturist: {
+    areas: 'Portre karikatür, Canlı çizim, Dijital illüstrasyon',
+    what_to_expect: 'Etkinlikte canlı çizim; misafirlere hediyelik',
+  },
+};
+
+/** Bir alanın kategoriye özel örneğini döndürür (yoksa modül-default example). */
+export function getFieldExample(
+  slug: string | null | undefined,
+  field: ModuleFieldDef
+): string | undefined {
+  if (slug && CATEGORY_EXAMPLES[slug]?.[field.key]) {
+    return CATEGORY_EXAMPLES[slug][field.key];
+  }
+  return field.example;
+}
+
+// =============================================================================
+// C4 — calisma_parametreleri (params) için kategoriye önerilen ETİKET setleri.
+// Formda tek tıkla satır ekler (etiket ön-dolu, değer boş). calisma_parametreleri
+// modülü olan kategoriler: hostes, fotografci, videograf, ses-isik, tercuman,
+// organizasyon, karikaturist.
+// =============================================================================
+// slug -> fieldKey -> önerilen etiketler. Alanlar: performans.details (sahne),
+// calisma_parametreleri.params (cast/produksiyon/uzmanlik).
+export const CATEGORY_PARAM_SUGGESTIONS: Record<
+  string,
+  Record<string, string[]>
+> = {
+  // ---- sahne: performans.details ----
+  dj: { details: ['Ekip', 'Tarz', 'Set süresi', 'Kurulum süresi', 'Elektrik'] },
+  muzisyen: { details: ['Kadro', 'Set süresi', 'Ses ihtiyacı', 'Prova'] },
+  dansci: { details: ['Ekip', 'Gösteri süresi', 'Sahne ihtiyacı', 'Kostüm'] },
+  'stand-up-komedyen': { details: ['Gösteri süresi', 'Dil', 'Sahne ihtiyacı'] },
+  illuzyonist: { details: ['Gösteri süresi', 'Sahne düzeni', 'Yaş grubu'] },
+  palyaco: { details: ['Süre', 'Yaş grubu', 'Malzeme'] },
+  sunucu: { details: ['Süre', 'Dil', 'Prompter'] },
+  // ---- calisma_parametreleri.params ----
+  hostes: { params: ['Vardiya süresi', 'Kıyafet', 'Ekip', 'Diller'] },
+  fotografci: { params: ['Teslim süresi', 'Çekim süresi', 'Fotoğraf sayısı', 'Albüm'] },
+  videograf: { params: ['Teslim süresi', 'Video süresi', 'Kurgu', 'Format'] },
+  'ses-isik': { params: ['Kurulum süresi', 'Kapasite', 'Ekip', 'Sahne boyutu'] },
+  tercuman: { params: ['Kabin deneyimi', 'Minimum süre', 'Ekipman', 'Fısıltı çeviri'] },
+  organizasyon: { params: ['Ekip', 'Tedarikçi ağı', 'Minimum bütçe', 'Planlama süresi'] },
+  karikaturist: { params: ['Çizim süresi', 'Kişi/saat', 'Teslim', 'Format'] },
+};
+
+/** section_taglines placeholder'ları — arketip × tagline anahtarı (4×4). */
+export const ARCHETYPE_TAGLINE_EXAMPLES: Record<
+  Archetype,
+  Record<string, string>
+> = {
+  sahne: {
+    hakkimda: 'Sahneye çıktığı an salonun enerjisini yükselten bir isim.',
+    hizmetler: 'Kulüpten kurumsala, her sahnenin kendi kurgusu.',
+    deneyim: 'Yüzlerce gece, dolu sahneler.',
+    egitim: 'Tekniğini sürekli tazeleyen bir icra.',
+  },
+  cast: {
+    hakkimda: 'Kadraja girdiği anda hikâyeyi taşıyan bir yüz.',
+    hizmetler: 'Defileden kampanyaya, her projede doğru duruş.',
+    deneyim: 'Sezonlara yayılan çekimler ve podyumlar.',
+    egitim: 'Kamera ve sahne önünde eğitimli bir hazırlık.',
+  },
+  produksiyon: {
+    hakkimda: 'Anı en doğru ışıkla kadraja alan bir bakış.',
+    hizmetler: 'Düğünden reklama, teslimde titiz bir prodüksiyon.',
+    deneyim: 'Yüzlerce proje, zamanında teslim.',
+    egitim: 'Ekipman ve tekniğe hâkim, sertifikalı bir altyapı.',
+  },
+  uzmanlik: {
+    hakkimda: 'Kelimenin değil anlamın çevirisi.',
+    hizmetler: 'Konferanstan kurumsala, doğru tonla aktarım.',
+    deneyim: 'Yıllara dayanan saha ve kabin deneyimi.',
+    egitim: 'Alanında sertifikalı, sürekli gelişen bir uzmanlık.',
+  },
+};
