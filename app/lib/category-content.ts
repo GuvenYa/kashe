@@ -334,6 +334,86 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
     landingText:
       "Modeller ve mankenler kategorisi; katalog, moda çekimi, defile ve marka kampanyaları için profesyonel model ve mankenlere ulaşmayı sağlar.",
   },
+
+  dansci: {
+    heroHeadline: "Sahneni Profesyonel Dansçı ve Gösteri Ekipleriyle Hareketlendir",
+    description:
+      "Dansçılar kategorisi; düğün, kına, açılış, lansman, kurumsal etkinlik, festival, konser, sahne gösterisi, gala ve özel davetlerde performans sunacak solo dansçı, dans ekibi ve koreograf profesyonellerini kapsar. Kullanıcılar dans türü, ekip boyutu, gösteri süresi, şehir, fiyat aralığı, puan, yorum ve müsaitliğe göre profilleri karşılaştırabilir.",
+    subServices: [
+      { name: "Modern / Show Dans Ekibi", description: "Sahne gösterisi, açılış ve kurumsal etkinlik koreografileri" },
+      { name: "Latin Dans Performansı", description: "Salsa, bachata, tango ve sosyal dans gösterileri" },
+      { name: "Hip-hop / Sokak Dansı", description: "Konser, festival ve marka etkinliği performansları" },
+      { name: "Halk Oyunları Ekibi", description: "Düğün, kına ve kültürel etkinlikler için yöresel gösteriler" },
+      { name: "Oryantal / Sahne Dansı", description: "Özel davet, gece kulübü ve sahne programları" },
+      { name: "Düğün Açılış Dansı Koreografisi", description: "Çiftlere özel ilk dans hazırlığı ve prova" },
+      { name: "Karşılama / Animasyon Ekibi", description: "Açılış, kortej, fuar ve marka aktivasyonu" },
+      { name: "Koreograf", description: "Etkinlik, klip ve sahne projeleri için koreografi tasarımı" },
+    ],
+    seoTitle: "Dansçılar Bul | Kashe",
+    seoDescription:
+      "Dansçılar kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+    landingText:
+      "Dansçılar kategorisi; düğün, festival, konser, kurumsal etkinlik ve özel davetler için solo dansçı, dans ekibi ve koreograflara ulaşmayı sağlar.",
+  },
+
+  "stand-up-komedyen": {
+    heroHeadline: "Etkinliğine Kahkahayı Profesyonel Stand-up Komedyenlerle Getir",
+    description:
+      "Stand-up komedyenler kategorisi; kurumsal etkinlik, gala, açılış, lansman, özel davet, sahne programı, üniversite etkinliği ve eğlence geceleri için sahne alacak stand-up sanatçısı ve doğaçlama komedyenlerini kapsar. Kullanıcılar gösteri türü, süre, dil, şehir, fiyat aralığı, puan, yorum ve müsaitliğe göre profilleri karşılaştırabilir.",
+    subServices: [
+      { name: "Kurumsal Etkinlik Komedyeni", description: "Gala, bayi buluşması, şirket partisi ve marka etkinlikleri" },
+      { name: "Özel Davet Stand-up'ı", description: "Doğum günü, yıl dönümü ve özel kutlamalar" },
+      { name: "Sahne / Kulüp Programı", description: "Biletli gösteri, komedi kulübü ve turne performansı" },
+      { name: "Doğaçlama (Improv) Gösterisi", description: "Etkileşimli, seyirciyle kurgulanan doğaçlama sahne" },
+      { name: "Üniversite / Topluluk Etkinliği", description: "Kampüs etkinlikleri, festival ve öğrenci organizasyonları" },
+      { name: "Çok Dilli Stand-up", description: "Türkçe veya İngilizce sahne gösterisi" },
+      { name: "MC / Sahne Aracısı Komedyen", description: "Program aralarında akışı canlı tutan sahne performansı" },
+    ],
+    seoTitle: "Stand-up Komedyenler Bul | Kashe",
+    seoDescription:
+      "Stand-up komedyenler kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+    landingText:
+      "Stand-up komedyenler kategorisi; kurumsal etkinlik, gala, özel davet ve sahne programları için stand-up sanatçısı ve doğaçlama komedyenlerine ulaşmayı sağlar.",
+  },
+
+  tercuman: {
+    heroHeadline: "Toplantı ve Etkinliklerini Profesyonel Tercümanlarla Dile Getir",
+    description:
+      "Tercümanlar / çevirmenler kategorisi; konferans, panel, zirve, kurumsal toplantı, fuar, resmi görüşme, canlı yayın ve hibrit etkinliklerde simultane, ardıl, fısıltı ve yazılı çeviri sağlayacak profesyonelleri kapsar. Kullanıcılar dil çifti, çeviri türü, yeminli belgesi, uzmanlık alanı, şehir, fiyat aralığı ve müsaitliğe göre profilleri karşılaştırabilir.",
+    subServices: [
+      { name: "Simultane Tercüman", description: "Konferans, zirve ve büyük ölçekli etkinliklerde eşzamanlı çeviri" },
+      { name: "Ardıl Tercüman", description: "Toplantı, görüşme, basın ve resmi programlarda ardışık çeviri" },
+      { name: "Fısıltı (Chuchotage) Tercümanı", description: "Küçük gruplar ve ikili görüşmeler için sessiz çeviri" },
+      { name: "Yeminli Tercüman", description: "Noter onaylı, resmi ve hukuki belge çevirileri" },
+      { name: "Yazılı Çeviri / Editör", description: "Sözleşme, katalog, teknik doküman ve kurumsal metinler" },
+      { name: "Hukuki / Tıbbi Uzman Tercüman", description: "Terminoloji gerektiren uzmanlık alanı çevirileri" },
+      { name: "Çevrim İçi / Hibrit Etkinlik Tercümanı", description: "Uzaktan simultane ve canlı yayın çevirisi" },
+    ],
+    seoTitle: "Tercümanlar / Çevirmenler Bul | Kashe",
+    seoDescription:
+      "Tercümanlar / çevirmenler kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+    landingText:
+      "Tercümanlar / çevirmenler kategorisi; konferans, kurumsal toplantı, fuar ve resmi görüşmeler için simultane, ardıl ve yeminli çeviri sağlayan profesyonellere ulaşmayı sağlar.",
+  },
+
+  karikaturist: {
+    heroHeadline: "Etkinliğine Renk Katacak Profesyonel Karikatürist ve Çizerleri Bul",
+    description:
+      "Karikatüristler kategorisi; düğün, kına, doğum günü, kurumsal etkinlik, fuar, lansman, marka aktivasyonu ve özel davetlerde canlı çizim yapacak ya da dijital illüstrasyon üretecek karikatürist ve çizer profesyonellerini kapsar. Kullanıcılar çizim türü, teslim süresi, şehir, fiyat aralığı, puan, yorum ve müsaitliğe göre profilleri karşılaştırabilir.",
+    subServices: [
+      { name: "Etkinlik Canlı Çizim", description: "Misafirlere anında portre karikatür; düğün, kına ve özel davet" },
+      { name: "Kurumsal Etkinlik Karikatüristi", description: "Fuar, lansman, stand ve marka aktivasyonu için canlı çizim" },
+      { name: "Portre Karikatür", description: "Hediyelik ve kişiye özel portre karikatür çalışmaları" },
+      { name: "Dijital Karikatür / İllüstrasyon", description: "Tablet üzerinde dijital çizim ve baskıya hazır teslim" },
+      { name: "Marka / Ürün İllüstrasyonu", description: "Kampanya, ambalaj ve içerik için özgün çizim" },
+      { name: "Etkinlik Hediyelik Çizim Standı", description: "Konuklara anlık hediyelik üreten çizim köşesi kurulumu" },
+    ],
+    seoTitle: "Karikatüristler Bul | Kashe",
+    seoDescription:
+      "Karikatüristler kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+    landingText:
+      "Karikatüristler kategorisi; düğün, kurumsal etkinlik, fuar ve özel davetler için canlı çizim ve dijital illüstrasyon üreten karikatüristlere ulaşmayı sağlar.",
+  },
 };
 
 /**

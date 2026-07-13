@@ -9,6 +9,7 @@ import {
   SERVICE_REGION_OPTIONS,
   CALISMA_SEKLI_OPTIONS,
   FOLLOWERS_RANGES,
+  PLATFORM_OPTIONS,
   type ModuleKey,
 } from '@/app/lib/category-fields';
 
@@ -263,7 +264,12 @@ export async function saveCategoryAttributes(
                   platform?: unknown;
                   followers_range?: unknown;
                 }[]) {
-                  const platform = cleanStr(p?.platform, 40);
+                  // Platform kapalı küme (PLATFORM_OPTIONS) — serbest metin/link kabul edilmez.
+                  const platform =
+                    typeof p?.platform === 'string' &&
+                    (PLATFORM_OPTIONS as readonly string[]).includes(p.platform)
+                      ? p.platform
+                      : null;
                   const fr =
                     typeof p?.followers_range === 'string' &&
                     (FOLLOWERS_RANGES as readonly string[]).includes(

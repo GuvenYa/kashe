@@ -70,6 +70,10 @@ export interface ModuleFieldDef {
   note?: string;
   /** Kategoriye özel örnek/placeholder metni (preset.examples ile de override edilebilir). */
   example?: string;
+  /** 'physical' alanları için select seçenekleri (hair/eyes). */
+  options?: readonly string[];
+  /** options ile birlikte: seçenek dışı serbest giriş (datalist) izinli mi (hair). */
+  allowCustom?: boolean;
 }
 
 export interface ModuleDefinition {
@@ -173,6 +177,102 @@ export const SKILL_LEVELS = [
   { value: 3, label: '3 · Uzman' },
 ] as const;
 
+// =============================================================================
+// QUICK ALAN SEÇENEK SETLERİ (B — select/çip dönüşümleri; tek doğruluk kaynağı)
+// Sayfada boş değer ÇİZİLMEZ (anayasa); formda tüm select'lerde "Belirtilmemiş".
+// =============================================================================
+export const SET_SURESI_OPTIONS = ['1–2 saat', '2–4 saat', '4–6 saat', '6+ saat'] as const;
+export const GOSTERI_SURESI_OPTIONS = ['30 dk altı', '30–60 dk', '60–90 dk', '90+ dk'] as const;
+export const EKIP_BOYUTU_OPTIONS = ['Solo', 'Duo', 'Trio', 'Grup (4+)'] as const;
+export const EKIPMAN_DURUMU_OPTIONS = ['Kendi ekipmanı', 'Kısmi', 'Mekandan bekler'] as const;
+export const YAS_GRUBU_OPTIONS = ['Çocuk', 'Yetişkin', 'Her yaş'] as const;
+export const EKIPMAN_KAPASITESI_OPTIONS = ['200 kişi altı', '200–500', '500–1000', '1000+'] as const;
+export const KURULUM_SURESI_OPTIONS = ['1 saat altı', '1–2 saat', '2–4 saat', '4+ saat'] as const;
+
+// Çoklu-çip setleri (ceviri_turleri kalıbı — değerler " · " ile birleşir).
+export const CEVIRI_OPTIONS = ['Simultane', 'Ardıl', 'Yazılı', 'Fısıltı'] as const;
+export const ENSTRUMAN_OPTIONS = ['Gitar', 'Piyano', 'Keman', 'Vokal', 'Bateri', 'Bas', 'Saksafon', 'Perküsyon'] as const;
+export const ETKINLIK_TURLERI_OPTIONS = ['Düğün', 'Kurumsal', 'Fuar/Lansman', 'Konser/Festival', 'Özel davet'] as const;
+
+// Fiziksel modül select setleri (hair serbest eklemeye açık; eyes sabit).
+export const HAIR_OPTIONS = ['Siyah', 'Kahverengi', 'Sarı', 'Kızıl', 'Gri/Beyaz'] as const;
+export const EYES_OPTIONS = ['Kahverengi', 'Yeşil', 'Mavi', 'Ela'] as const;
+
+// Sosyal erişim platform seçenekleri (link YOK; kapalı küme + "Diğer").
+export const PLATFORM_OPTIONS = ['Instagram', 'TikTok', 'YouTube', 'X', 'Diğer'] as const;
+
+// Kategori-bağımlı quick SELECT setleri (slug -> quickKey -> seçenekler).
+export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly string[]>> = {
+  dj: { set_suresi: SET_SURESI_OPTIONS, ekipman_durumu: EKIPMAN_DURUMU_OPTIONS },
+  muzisyen: { ekip_boyutu: EKIP_BOYUTU_OPTIONS },
+  dansci: { ekip_boyutu: EKIP_BOYUTU_OPTIONS, gosteri_suresi: GOSTERI_SURESI_OPTIONS },
+  'stand-up-komedyen': {
+    gosteri_turu: ['Kısa set', 'Tam gösteri', 'Doğaçlama'],
+    gosteri_suresi: GOSTERI_SURESI_OPTIONS,
+  },
+  illuzyonist: {
+    gosteri_turu: ['Sahne', 'Close-up', 'Mentalizm'],
+    gosteri_suresi: GOSTERI_SURESI_OPTIONS,
+    yas_grubu: YAS_GRUBU_OPTIONS,
+  },
+  palyaco: {
+    gosteri_turu: ['Çocuk şovu', 'Balon/Yüz boyama', 'Maskot'],
+    gosteri_suresi: GOSTERI_SURESI_OPTIONS,
+    yas_grubu: YAS_GRUBU_OPTIONS,
+  },
+  sunucu: { sunuculuk_turu: ['Kurumsal', 'Düğün', 'Sahne/Festival', 'TV/Yayın'] },
+  fotografci: {
+    teslim_suresi: ['1–3 gün', '1 hafta', '2 hafta', '1 ay+'],
+    ekipman_durumu: EKIPMAN_DURUMU_OPTIONS,
+  },
+  videograf: {
+    teslim_suresi: ['1–3 gün', '1 hafta', '2 hafta', '1 ay+'],
+    ekipman_durumu: EKIPMAN_DURUMU_OPTIONS,
+  },
+  'ses-isik': {
+    hizmet_turu: ['Ses', 'Işık', 'Ses+Işık', 'Sahne/LED'],
+    ekipman_kapasitesi: EKIPMAN_KAPASITESI_OPTIONS,
+    kurulum_suresi: KURULUM_SURESI_OPTIONS,
+  },
+  organizasyon: {
+    hizmet_turu: ['Düğün', 'Kurumsal', 'Festival', 'Full kapsam'],
+    ekip_boyutu: ['1–5 kişi', '5–15 kişi', '15+ kişi'],
+  },
+  karikaturist: {
+    cizim_turu: ['Portre karikatür', 'Canlı çizim', 'Dijital illüstrasyon', 'Karma'],
+    teslim_suresi: ['Anında (canlı)', '1–3 gün', '1 hafta'],
+  },
+};
+
+// Çoklu-çip quick anahtarları (slug bağımsız). allowCustom → serbest çip ekleme.
+export const QUICK_MULTI_OPTIONS: Record<
+  string,
+  { options: readonly string[]; allowCustom?: boolean }
+> = {
+  ceviri_turleri: { options: CEVIRI_OPTIONS },
+  enstruman: { options: ENSTRUMAN_OPTIONS, allowCustom: true },
+  etkinlik_turleri: { options: ETKINLIK_TURLERI_OPTIONS },
+};
+
+export type QuickInput =
+  | { kind: 'multi'; options: readonly string[]; allowCustom: boolean }
+  | { kind: 'select'; options: readonly string[] }
+  | { kind: 'text' };
+
+/** Quick alanının giriş tipini çözer (form + gelecekte doğrulama ortak). */
+export function getQuickInput(
+  slug: string | null | undefined,
+  key: string
+): QuickInput {
+  if (key === 'yeminli') return { kind: 'select', options: ['Evet', 'Hayır'] };
+  const multi = QUICK_MULTI_OPTIONS[key];
+  if (multi)
+    return { kind: 'multi', options: multi.options, allowCustom: !!multi.allowCustom };
+  const bySlug = slug ? QUICK_OPTIONS_BY_SLUG[slug]?.[key] : undefined;
+  if (bySlug) return { kind: 'select', options: bySlug };
+  return { kind: 'text' };
+}
+
 /** quickInfo alan key → görünen (normal case) etiket. Public render + form ortak sözlük. */
 export const QUICK_LABELS: Record<string, string> = {
   turler: 'Türler', deneyim: 'Deneyim', set_suresi: 'Set süresi',
@@ -236,8 +336,8 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDefinition> = {
       { key: 'height', type: 'physical', label: 'Boy' },
       { key: 'size', type: 'physical', label: 'Beden' },
       { key: 'shoe', type: 'physical', label: 'Ayak' },
-      { key: 'hair', type: 'physical', label: 'Saç' },
-      { key: 'eyes', type: 'physical', label: 'Göz' },
+      { key: 'hair', type: 'physical', label: 'Saç', options: HAIR_OPTIONS, allowCustom: true },
+      { key: 'eyes', type: 'physical', label: 'Göz', options: EYES_OPTIONS },
     ],
     disclaimer: 'Kullanıcı beyanı', // KVKK — UI'da zorunlu etiket
   },
@@ -295,7 +395,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // ---------------------------- SAHNE ----------------------------
   dj: {
     archetype: 'sahne',
-    quickInfo: ['turler', 'set_suresi', 'ekipman_durumu'],
+    quickInfo: ['set_suresi', 'ekipman_durumu'],
     modules: [
       { key: 'repertuar' },
       { key: 'ekipman' },
@@ -316,7 +416,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   muzisyen: {
     archetype: 'sahne',
-    quickInfo: ['turler', 'enstruman', 'ekip_boyutu'],
+    quickInfo: ['enstruman', 'ekip_boyutu'],
     modules: [
       { key: 'repertuar' },
       { key: 'ekipman' },
@@ -337,7 +437,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   dansci: {
     archetype: 'sahne',
-    quickInfo: ['dans_turleri', 'ekip_boyutu', 'gosteri_suresi'],
+    quickInfo: ['ekip_boyutu', 'gosteri_suresi'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
       { key: 'uzmanlik_alanlari', title: 'Dans Türleri' },
@@ -356,9 +456,10 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   'stand-up-komedyen': {
     archetype: 'sahne',
-    quickInfo: ['gosteri_turu', 'gosteri_suresi', 'dil'],
+    quickInfo: ['gosteri_turu', 'gosteri_suresi'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
+      { key: 'diller_belgeler', title: 'Diller' },
       { key: 'sosyal_erisim' },
     ],
     experienceGroups: [
@@ -405,7 +506,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   sunucu: {
     archetype: 'sahne',
-    quickInfo: ['sunuculuk_turu', 'dil', 'etkinlik_turleri'],
+    quickInfo: ['sunuculuk_turu', 'etkinlik_turleri'],
     modules: [
       { key: 'performans', title: 'Sunum Bilgileri' },
       { key: 'diller_belgeler', title: 'Diller' },
@@ -446,11 +547,10 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   oyuncu: {
     archetype: 'cast',
-    quickInfo: ['uzmanlik', 'dil'],
+    quickInfo: [],
     modules: [
       { key: 'fiziksel' },
       { key: 'diller_belgeler', title: 'Diller' },
-      { key: 'uzmanlik_alanlari', title: 'Özel Yetenekler' },
     ],
     experienceGroups: [
       { key: 'tiyatro', label: 'Tiyatro' },
@@ -466,10 +566,11 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   hostes: {
     archetype: 'cast',
-    quickInfo: ['dil', 'etkinlik_turleri'],
+    quickInfo: [],
     modules: [
       { key: 'fiziksel' },
       { key: 'diller_belgeler', title: 'Diller' },
+      { key: 'uzmanlik_alanlari', title: 'Etkinlik Türleri' },
       { key: 'calisma_parametreleri' },
     ],
     experienceGroups: [
@@ -487,7 +588,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   // ------------------------- PRODÜKSİYON -------------------------
   fotografci: {
     archetype: 'produksiyon',
-    quickInfo: ['uzmanlik', 'teslim_suresi', 'ekipman_durumu'],
+    quickInfo: ['teslim_suresi', 'ekipman_durumu'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Çekim Alanları' },
       { key: 'ekipman' },
@@ -507,7 +608,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   videograf: {
     archetype: 'produksiyon',
-    quickInfo: ['uzmanlik', 'teslim_suresi', 'drone'],
+    quickInfo: ['teslim_suresi', 'ekipman_durumu'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Çekim Alanları' },
       { key: 'ekipman' },
@@ -580,7 +681,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı organizasyon yürütür' },
-      { key: 'tedarikci_agi', label: 'Tedarikçi ağı', description: 'Kendi tedarikçi ağıyla çalışır' },
     ],
     skillsWithLevels: false,
   },
@@ -661,6 +761,7 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
   },
   'stand-up-komedyen': {
     what_to_expect: 'Etkileşimli, güncel, doğaçlamaya açık gösteri',
+    language_pairs: 'Türkçe, İngilizce',
   },
   illuzyonist: {
     what_to_expect: 'Sahne illüzyonu + close-up + mentalizm',
@@ -682,6 +783,8 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
   },
   hostes: {
     notes: 'Karşılama, yönlendirme, protokol; kurumsal görünüm',
+    areas: 'Kurumsal, Fuar, Lansman, Özel davet',
+    language_pairs: 'Türkçe, İngilizce',
   },
   fotografci: {
     areas: 'Düğün, Ürün, Portre, Moda',
@@ -730,22 +833,31 @@ export const CATEGORY_PARAM_SUGGESTIONS: Record<
   string,
   Record<string, string[]>
 > = {
-  // ---- sahne: performans.details ----
-  dj: { details: ['Ekip', 'Tarz', 'Set süresi', 'Kurulum süresi', 'Elektrik'] },
-  muzisyen: { details: ['Kadro', 'Set süresi', 'Ses ihtiyacı', 'Prova'] },
-  dansci: { details: ['Ekip', 'Gösteri süresi', 'Sahne ihtiyacı', 'Kostüm'] },
-  'stand-up-komedyen': { details: ['Gösteri süresi', 'Dil', 'Sahne ihtiyacı'] },
-  illuzyonist: { details: ['Gösteri süresi', 'Sahne düzeni', 'Yaş grubu'] },
-  palyaco: { details: ['Süre', 'Yaş grubu', 'Malzeme'] },
-  sunucu: { details: ['Süre', 'Dil', 'Prompter'] },
-  // ---- calisma_parametreleri.params ----
-  hostes: { params: ['Vardiya süresi', 'Kıyafet', 'Ekip', 'Diller'] },
-  fotografci: { params: ['Teslim süresi', 'Çekim süresi', 'Fotoğraf sayısı', 'Albüm'] },
-  videograf: { params: ['Teslim süresi', 'Video süresi', 'Kurgu', 'Format'] },
-  'ses-isik': { params: ['Kurulum süresi', 'Kapasite', 'Ekip', 'Sahne boyutu'] },
+  // ---- sahne: performans.details (quick'te/lojistikte evlenen etiketler ayıklandı) ----
+  dj: { details: ['Ekip', 'Tarz', 'Kurulum süresi', 'Elektrik'] },
+  muzisyen: { details: ['Set süresi', 'Ses ihtiyacı', 'Prova'] },
+  dansci: { details: ['Sahne ihtiyacı', 'Kostüm'] },
+  'stand-up-komedyen': { details: ['Sahne ihtiyacı', 'Mikrofon', 'İçerik/tema'] },
+  illuzyonist: { details: ['Sahne düzeni', 'Malzeme', 'Asistan'] },
+  palyaco: { details: ['Malzeme', 'Aktiviteler', 'Kostüm'] },
+  sunucu: { details: ['Süre', 'Prompter', 'Akış'] },
+  // ---- calisma_parametreleri.params + teknik_teslimat.delivery (ayrık: çalışma vs teslimat) ----
+  hostes: { params: ['Vardiya süresi', 'Kıyafet', 'Ekip'] },
+  fotografci: {
+    params: ['Çekim süresi', 'Ekip', 'İkinci fotoğrafçı'],
+    delivery: ['Fotoğraf sayısı', 'Albüm', 'Ham dosya'],
+  },
+  videograf: {
+    params: ['Çekim süresi', 'Kurgu', 'Ekip'],
+    delivery: ['Video süresi', 'Format', 'Revizyon'],
+  },
+  'ses-isik': {
+    params: ['Ekip', 'Jeneratör', 'Teknik rider'],
+    delivery: ['Sahne boyutu', 'Yedek ekipman', 'Hat/kanal sayısı'],
+  },
   tercuman: { params: ['Kabin deneyimi', 'Minimum süre', 'Ekipman', 'Fısıltı çeviri'] },
-  organizasyon: { params: ['Ekip', 'Tedarikçi ağı', 'Minimum bütçe', 'Planlama süresi'] },
-  karikaturist: { params: ['Çizim süresi', 'Kişi/saat', 'Teslim', 'Format'] },
+  organizasyon: { params: ['Tedarikçi ağı', 'Minimum bütçe', 'Planlama süresi'] },
+  karikaturist: { params: ['Çizim süresi', 'Kişi/saat', 'Format'] },
 };
 
 /** section_taglines placeholder'ları — arketip × tagline anahtarı (4×4). */

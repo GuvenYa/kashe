@@ -5,11 +5,13 @@ import {
   getCategoryFields,
   getModuleTitle,
   getQuickLabel,
+  getQuickInput,
   getFieldExample,
   MODULE_REGISTRY,
   SERVICE_REGION_OPTIONS,
   CALISMA_SEKLI_OPTIONS,
   FOLLOWERS_RANGES,
+  PLATFORM_OPTIONS,
   SKILL_LEVELS,
   CATEGORY_PARAM_SUGGESTIONS,
   ARCHETYPE_TAGLINE_EXAMPLES,
@@ -251,6 +253,7 @@ export function KategoriForm({
             {quickKeys.map((k) => (
               <QuickField
                 key={k}
+                slug={slug}
                 fieldKey={k}
                 label={getQuickLabel(preset, k)}
                 value={quick[k] ?? ''}
@@ -383,7 +386,7 @@ export function KategoriForm({
             {ref.key === 'diller_belgeler' && (
               <p className="text-[12px] text-ink-72/80 mt-1">
                 Belge yükleme ve doğrulama süreci ayrıca yapılacak — burada yalnız
-                dil çiftlerini düzenlersin.
+                dilleri eklersin.
               </p>
             )}
             <div className="space-y-4 mt-3">
@@ -394,6 +397,8 @@ export function KategoriForm({
                   label={preset.labelOverrides?.[f.key] ?? f.label}
                   note={f.note}
                   example={getFieldExample(slug, f)}
+                  options={f.options}
+                  allowCustom={f.allowCustom}
                   suggestions={
                     f.type === 'key_value'
                       ? CATEGORY_PARAM_SUGGESTIONS[slug]?.[f.key]
@@ -429,67 +434,48 @@ export function KategoriForm({
   );
 }
 
-const CEVIRI_OPTIONS = ['Simultane', 'Ardıl', 'Yazılı', 'Fısıltı'];
-
-// ─── Quick alanı — yeminli (Evet/Hayır select) + ceviri_turleri (çoklu çip) + serbest metin ───
+// ─── Quick alanı — getQuickInput ile select / çoklu-çip / serbest metin ───
 function QuickField({
+  slug,
   fieldKey,
   label,
   value,
   onChange,
 }: {
+  slug: string;
   fieldKey: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
 }) {
-  // C2 — Yeminli: seçmeli (serbest metin değil)
-  if (fieldKey === 'yeminli') {
+  const input = getQuickInput(slug, fieldKey);
+
+  if (input.kind === 'multi') {
+    return (
+      <MultiChipField
+        label={label}
+        value={value}
+        options={input.options}
+        allowCustom={input.allowCustom}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (input.kind === 'select') {
     return (
       <div>
         <label className={LABEL}>{label}</label>
         <select value={value} onChange={(e) => onChange(e.target.value)} className={INPUT}>
           <option value="">Belirtilmemiş</option>
-          <option value="Evet">Evet</option>
-          <option value="Hayır">Hayır</option>
+          {input.options.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
         </select>
       </div>
     );
   }
-  // C2 — Çeviri türleri: çoklu seçim çipleri; " · " ile birleşir
-  if (fieldKey === 'ceviri_turleri') {
-    const selected = value ? value.split('·').map((s) => s.trim()).filter(Boolean) : [];
-    const toggle = (opt: string) => {
-      const next = selected.includes(opt)
-        ? selected.filter((s) => s !== opt)
-        : [...selected, opt];
-      onChange(CEVIRI_OPTIONS.filter((o) => next.includes(o)).join(' · '));
-    };
-    return (
-      <div className="md:col-span-2">
-        <label className={LABEL}>{label}</label>
-        <div className="flex flex-wrap gap-2">
-          {CEVIRI_OPTIONS.map((opt) => {
-            const on = selected.includes(opt);
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => toggle(opt)}
-                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
-                  on
-                    ? 'bg-terracotta text-white border-terracotta'
-                    : 'bg-card text-ink-72 border-line hover:border-terracotta'
-                }`}
-              >
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+
   return (
     <div>
       <label className={LABEL}>{label}</label>
@@ -503,12 +489,85 @@ function QuickField({
   );
 }
 
+// ─── Çoklu-çip alanı (ceviri/enstruman/etkinlik) — değerler " · " ile birleşir ───
+function MultiChipField({
+  label,
+  value,
+  options,
+  allowCustom,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  allowCustom: boolean;
+  onChange: (v: string) => void;
+}) {
+  const [custom, setCustom] = useState('');
+  const selected = value ? value.split('·').map((s) => s.trim()).filter(Boolean) : [];
+  const commit = (arr: string[]) => onChange(arr.join(' · '));
+  const toggle = (opt: string) =>
+    commit(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
+  const addCustom = () => {
+    const t = custom.trim();
+    if (t && !selected.includes(t)) commit([...selected, t]);
+    setCustom('');
+  };
+  const customChips = selected.filter((s) => !options.includes(s));
+
+  const chip = (opt: string, on: boolean) => (
+    <button
+      key={opt}
+      type="button"
+      onClick={() => toggle(opt)}
+      className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
+        on
+          ? 'bg-terracotta text-white border-terracotta'
+          : 'bg-card text-ink-72 border-line hover:border-terracotta'
+      }`}
+    >
+      {opt}
+      {on && allowCustom && !options.includes(opt) ? ' ×' : ''}
+    </button>
+  );
+
+  return (
+    <div className="md:col-span-2">
+      <label className={LABEL}>{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => chip(opt, selected.includes(opt)))}
+        {allowCustom && customChips.map((opt) => chip(opt, true))}
+      </div>
+      {allowCustom && (
+        <div className="flex items-center gap-2 mt-2">
+          <input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+            placeholder="Başka bir seçenek ekle"
+            maxLength={40}
+            className={INPUT}
+          />
+          <AddBtn label="Ekle" onClick={addCustom} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Modül alanı (tipe göre kontrol) ───
 function ModuleField({
   type,
   label,
   note,
   example,
+  options,
+  allowCustom,
   suggestions,
   value,
   onChange,
@@ -517,6 +576,8 @@ function ModuleField({
   label: string;
   note?: string;
   example?: string;
+  options?: readonly string[];
+  allowCustom?: boolean;
   suggestions?: string[];
   value: unknown;
   onChange: (v: unknown) => void;
@@ -560,28 +621,37 @@ function ModuleField({
     );
   }
 
-  // C3 — Dil çiftleri: çift ekleme satırları (her satır bir "TR ↔ EN")
+  // C3 — Diller: tercüman'da çeviri yönü ("TR ↔ EN"), diğerlerinde tek dil ("Türkçe").
+  // Placeholder + etiket kategoriye göre example'dan türetilir.
   if (type === 'language_pairs') {
     const arr = (value as string[]) ?? [];
+    const isPair = (example ?? '').includes('↔');
+    const ph = example ? example.split(',')[0].trim() : 'Türkçe';
     const update = (i: number, v: string) =>
       onChange(arr.map((x, idx) => (idx === i ? v : x)));
     return (
       <div>
         {labelEl}
+        <p className="text-[11px] text-ink-72/70 mb-2">
+          {isPair ? 'Her satır bir çeviri yönü — örn. TR ↔ EN.' : 'Her satıra bir dil ekle.'}
+        </p>
         <div className="flex flex-col gap-2">
           {arr.map((pair, i) => (
             <div key={i} className="flex items-center gap-2">
               <input
                 value={pair}
                 onChange={(e) => update(i, e.target.value)}
-                placeholder="TR ↔ EN"
+                placeholder={ph}
                 maxLength={80}
                 className={`${INPUT} flex-1`}
               />
               <RemoveBtn onClick={() => onChange(arr.filter((_, idx) => idx !== i))} />
             </div>
           ))}
-          <AddBtn label="Dil çifti ekle" onClick={() => onChange([...arr, ''])} />
+          <AddBtn
+            label={isPair ? 'Dil çifti ekle' : 'Dil ekle'}
+            onClick={() => onChange([...arr, ''])}
+          />
         </div>
       </div>
     );
@@ -603,11 +673,51 @@ function ModuleField({
   }
 
   if (type === 'physical') {
+    const cur = (value as string) ?? '';
+    // hair/eyes → select; hair ayrıca serbest giriş (datalist). Boy/Beden/Ayak serbest metin.
+    if (options && options.length > 0) {
+      if (allowCustom) {
+        const listId = `dl-${label}`;
+        return (
+          <div>
+            {labelEl}
+            <input
+              value={cur}
+              onChange={(e) => onChange(e.target.value)}
+              list={listId}
+              maxLength={60}
+              placeholder={example ?? 'Seç ya da yaz'}
+              className={INPUT}
+            />
+            <datalist id={listId}>
+              {options.map((o) => (
+                <option key={o} value={o} />
+              ))}
+            </datalist>
+          </div>
+        );
+      }
+      return (
+        <div>
+          {labelEl}
+          <select
+            value={cur}
+            onChange={(e) => onChange(e.target.value)}
+            className={INPUT}
+          >
+            <option value="">Belirtilmemiş</option>
+            {options.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+      );
+    }
     return (
       <div>
         {labelEl}
         <input
-          value={(value as string) ?? ''}
+          value={cur}
           onChange={(e) => onChange(e.target.value)}
           maxLength={60}
           placeholder={example}
@@ -712,12 +822,16 @@ function ModuleField({
         <div className="flex flex-col gap-2">
           {rows.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
-              <input
+              <select
                 value={r.platform}
                 onChange={(e) => update(i, { platform: e.target.value })}
-                placeholder="Instagram"
                 className={`${INPUT} flex-1`}
-              />
+              >
+                <option value="">Platform</option>
+                {PLATFORM_OPTIONS.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
               <select
                 value={r.followers_range}
                 onChange={(e) => update(i, { followers_range: e.target.value })}
