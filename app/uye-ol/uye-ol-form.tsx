@@ -25,6 +25,8 @@ function translateError(message: string): string {
       "Geçerli bir email adresi gir.",
     "Signup requires a valid password":
       "Geçerli bir şifre girmelisin.",
+    "Error sending confirmation email":
+      "Doğrulama e-postası gönderilemedi. Lütfen birkaç dakika sonra tekrar dene.",
   };
 
   if (errorMap[message]) return errorMap[message];
@@ -34,6 +36,27 @@ function translateError(message: string): string {
   }
 
   return message;
+}
+
+/**
+ * Hatadan GÜVENLİ metin çıkarır. Error nesnesi JSON.stringify'dan geçirilmez
+ * (message non-enumerable → "{}"): mesaj Error/düz nesne/string'ten okunur;
+ * anlamsız serileştirme çıktıları ("{}", "[]", "[object Object]", boş) → "" (genel mesaja düş).
+ */
+function errorToMessage(err: unknown): string {
+  let raw = "";
+  if (typeof err === "string") raw = err;
+  else if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    raw = (err as { message: string }).message;
+  }
+  raw = raw.trim();
+  if (!raw || raw === "{}" || raw === "[]" || raw === "[object Object]") return "";
+  return raw;
 }
 
 const roleConfig = {
@@ -193,8 +216,14 @@ export function UyeOlForm({
       router.refresh();
       return;
     } catch (err: unknown) {
-      const rawMessage = err instanceof Error ? err.message : "Bir hata oluştu";
-      setError(translateError(rawMessage));
+      // Ham hatayı teşhis için logla (kaybolmasın); kullanıcıya ASLA stringify'lı nesne gösterme.
+      console.error("[uye-ol] signUp hata:", err);
+      const raw = errorToMessage(err);
+      setError(
+        raw
+          ? translateError(raw)
+          : "Kayıt sırasında bir sorun oluştu. Lütfen tekrar dene."
+      );
     } finally {
       setLoading(false);
     }

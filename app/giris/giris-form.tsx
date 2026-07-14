@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-browser';
@@ -15,8 +15,40 @@ function translateError(message: string): string {
     return 'Çok fazla deneme yaptın. Birkaç dakika sonra tekrar dene.';
   if (m.includes('user not found'))
     return 'Bu email ile kayıtlı bir hesap bulunamadı.';
+  if (m.includes('error sending confirmation email'))
+    return 'Doğrulama e-postası gönderilemedi. Lütfen birkaç dakika sonra tekrar dene.';
   if (m.includes('network')) return 'Bağlantı hatası. İnternetini kontrol et.';
   return message;
+}
+
+/**
+ * Hatadan GÜVENLİ metin çıkarır (Error/düz nesne/string). Anlamsız serileştirme
+ * çıktıları ("{}", "[]", "[object Object]", boş) → "" → çağıran genel mesaja düşer.
+ */
+function errorToMessage(err: unknown): string {
+  let raw = '';
+  if (typeof err === 'string') raw = err;
+  else if (
+    err &&
+    typeof err === 'object' &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string'
+  ) {
+    raw = (err as { message: string }).message;
+  }
+  raw = raw.trim();
+  if (!raw || raw === '{}' || raw === '[]' || raw === '[object Object]') return '';
+  return raw;
+}
+
+/** URL fragmanındaki auth hata kodunu (otp_expired vb.) TR mesaja çevirir. */
+function hashErrorToTr(code: string, description: string): string {
+  const c = `${code} ${description}`.toLowerCase();
+  if (c.includes('otp_expired') || c.includes('expired'))
+    return 'Bağlantının süresi dolmuş veya geçersiz. Lütfen işlemi yeniden başlat.';
+  if (c.includes('access_denied'))
+    return 'Bağlantı geçersiz ya da reddedildi. Lütfen tekrar dene.';
+  return 'Bağlantı doğrulanamadı. Lütfen tekrar dene.';
 }
 
 export default function GirisForm({
@@ -35,6 +67,26 @@ export default function GirisForm({
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
+  // URL fragmanındaki auth hatası (ör. #error=access_denied&error_code=otp_expired&
+  // error_description=...) → TR mesaj + fragmanı temizle. Supabase'in süresi dolmuş/geçersiz
+  // link geri dönüşü giris sayfasına hash ile gelir; sunucuya gitmez, client'ta yakalanır.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (!hash || !hash.toLowerCase().includes('error')) return;
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const code = params.get('error_code') || params.get('error') || '';
+    const desc = params.get('error_description') || '';
+    if (!code && !desc) return;
+    setHata(hashErrorToTr(code, desc));
+    // Fragmanı temizle — yenilemede tekrar görünmesin, paylaşımda sızmasın.
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search
+    );
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -49,9 +101,15 @@ export default function GirisForm({
     });
 
     if (error) {
-      setHata(translateError(error.message));
+      console.error('[giris] signIn hata:', error);
+      const raw = errorToMessage(error);
+      setHata(
+        raw
+          ? translateError(raw)
+          : 'Giriş sırasında bir sorun oluştu. Lütfen tekrar dene.'
+      );
       // Doğrulanmamış hesap → "yeniden gönder" butonu göster
-      if (error.message.toLowerCase().includes('email not confirmed')) {
+      if (raw.toLowerCase().includes('email not confirmed')) {
         setNotConfirmed(true);
       }
       setLoading(false);
@@ -90,7 +148,12 @@ export default function GirisForm({
     });
     setResending(false);
     if (error) {
-      setResendMsg('Yeniden gönderilemedi: ' + translateError(error.message));
+      console.error('[giris] resend hata:', error);
+      const raw = errorToMessage(error);
+      setResendMsg(
+        'Yeniden gönderilemedi: ' +
+          (raw ? translateError(raw) : 'lütfen biraz sonra tekrar dene.')
+      );
     } else {
       setResendMsg(
         'Doğrulama e-postası yeniden gönderildi. Gelen kutunu (ve spam klasörünü) kontrol et.'
