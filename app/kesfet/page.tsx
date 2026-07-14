@@ -15,6 +15,7 @@ import {
 } from '@/app/lib/badges';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
+import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
 export const metadata = {
   title: 'Keşfet — Kashe',
@@ -80,6 +81,7 @@ type SearchParams = {
   coktercih?: string; // '1' → "Çok Tercih Edilen" rozeti
   musait?: string; // '1' → yoğun olanları gizle (AND kısıt)
   deneyim?: string; // 'junior,senior' → bu deneyimdekiler önce (sıralama)
+  etkinlik?: string; // ilanlar taksonomisi key'i → category_attributes.etkinlik_turleri contains
   [key: `attr_${string}`]: string | undefined;
 };
 
@@ -120,6 +122,14 @@ export default async function KesfetPage({
   // Deneyim (sıralama, eleme değil): bu değerlere sahip olanlar üste
   const wantedExperience = params.deneyim
     ? params.deneyim.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  // Etkinlik türleri (ORTAK, tüm kategoriler) — çoklu key (OR); geçersizler ayıklanır.
+  const eventTypes = params.etkinlik
+    ? params.etkinlik
+        .split(',')
+        .map((s) => s.trim())
+        .filter((k) => (EVENT_TYPE_KEYS as readonly string[]).includes(k))
     : [];
 
   const [{ data: categories }, { data: cities }] = await Promise.all([
@@ -173,6 +183,16 @@ export default async function KesfetPage({
       orConditions.push(`primary_category_id.in.(${matchedCategoryIds.join(',')})`);
     }
     query = query.or(orConditions.join(','));
+  }
+
+  // Etkinlik türleri — seçili key'lerin OR'u; her koşul ayrı jsonb @> containment.
+  // GIN (jsonb_path_ops) index → planlayıcı BitmapOr ile birleştirir. Key'ler EVENT_TYPE_KEYS'e
+  // göre doğrulanmış (enjeksiyon yok). Boş beyanlı profiller filtre aktifken elenir.
+  if (eventTypes.length > 0) {
+    const orConds = eventTypes
+      .map((k) => `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`)
+      .join(',');
+    query = query.or(orConds);
   }
 
   const { data: profilesData, error } = await query;
@@ -463,7 +483,8 @@ export default async function KesfetPage({
     minRating !== null ||
     badgeKeys.length > 0 ||
     onlyAvailable ||
-    wantedExperience.length > 0
+    wantedExperience.length > 0 ||
+    eventTypes.length > 0
   );
 
   const user = await getCachedUser();
@@ -524,6 +545,7 @@ export default async function KesfetPage({
                 currentBadgeKeys={badgeKeys}
                 currentOnlyAvailable={onlyAvailable}
                 currentExperience={wantedExperience}
+                currentEventTypes={eventTypes}
                 resultCount={profiles.length}
                 isLoggedIn={isLoggedIn}
               />

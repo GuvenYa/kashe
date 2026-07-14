@@ -127,6 +127,9 @@ export default async function AdminProfillerPage({
         <h1 className="font-display text-4xl text-ink tracking-tight">
           Profiller
         </h1>
+        <p className="text-sm text-ink-72 mt-2">
+          Bu panel onaya tabi profilleri listeler: profesyonel, işletme, ajans.
+        </p>
       </div>
 
       {/* Sekmeler */}
@@ -269,7 +272,7 @@ export default async function AdminProfillerPage({
                     </div>
 
                     <div className="shrink-0 md:w-72">
-                      <ProfilOnayAksiyonlari profileId={p.id} />
+                      <ProfilOnayAksiyonlari profileId={p.id} status={p.approval_status} />
                     </div>
                   </div>
                 </div>

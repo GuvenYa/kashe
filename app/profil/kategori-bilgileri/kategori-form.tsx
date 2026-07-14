@@ -18,6 +18,7 @@ import {
   type ModuleKey,
   type ModuleFieldDef,
 } from '@/app/lib/category-fields';
+import { EVENT_TYPES } from '@/app/mesajlar/data';
 import { saveCategoryAttributes } from './actions';
 
 const INPUT =
@@ -136,6 +137,10 @@ export function KategoriForm({
     (init.calisma_sekli as string) ??
       ((init.quick as Record<string, string> | undefined)?.calisma_sekli ?? '')
   );
+  // Etkinlik türleri — ORTAK alan (tüm kategoriler); ilanlar taksonomisi (EVENT_TYPES key'leri).
+  const [etkinlikTurleri, setEtkinlikTurleri] = useState<string[]>(
+    Array.isArray(init.etkinlik_turleri) ? (init.etkinlik_turleri as string[]) : []
+  );
   const [logistics, setLogistics] = useState<Record<string, boolean>>(
     (init.logistics as Record<string, boolean>) ?? {}
   );
@@ -178,6 +183,7 @@ export function KategoriForm({
       service_region: serviceRegion,
       experience_label: experienceLabel,
       calisma_sekli: calismaSekli,
+      etkinlik_turleri: etkinlikTurleri,
       logistics,
       skills,
       section_taglines: taglines,
@@ -338,6 +344,39 @@ export function KategoriForm({
                 Süre + iş kalıbı yaz (rail&apos;de tek satır gösterilir); çıplak sayı girme.
               </p>
             </div>
+          </div>
+
+          {/* Etkinlik türleri — ORTAK çoklu çip (ilanlar taksonomisi; Keşfet filtresine bağlı) */}
+          <div>
+            <label className={LABEL}>Hizmet verdiğin etkinlik türleri</label>
+            <div className="flex flex-wrap gap-2">
+              {EVENT_TYPES.map((et) => {
+                const on = etkinlikTurleri.includes(et.key);
+                return (
+                  <button
+                    key={et.key}
+                    type="button"
+                    onClick={() =>
+                      setEtkinlikTurleri((prev) =>
+                        prev.includes(et.key)
+                          ? prev.filter((k) => k !== et.key)
+                          : [...prev, et.key]
+                      )
+                    }
+                    className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
+                      on
+                        ? 'bg-terracotta text-white border-terracotta'
+                        : 'bg-card text-ink-72 border-line hover:border-terracotta'
+                    }`}
+                  >
+                    {et.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-ink-72/70 mt-1.5">
+              Keşfet&apos;te etkinlik türüne göre filtrelenirsin.
+            </p>
           </div>
 
           {preset.logisticsChecks.length > 0 && (

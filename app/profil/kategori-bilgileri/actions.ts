@@ -12,6 +12,7 @@ import {
   PLATFORM_OPTIONS,
   type ModuleKey,
 } from '@/app/lib/category-fields';
+import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
 export type SaveResult = { success: boolean; error?: string };
 
@@ -117,6 +118,20 @@ export async function saveCategoryAttributes(
         (CALISMA_SEKLI_OPTIONS as readonly string[]).includes(v)
           ? v
           : undefined;
+    }
+    // etkinlik_turleri — ORTAK çoklu alan (ilanlar taksonomisi; yalnız izinli EVENT_TYPE key'leri)
+    if ('etkinlik_turleri' in payload) {
+      const raw = payload.etkinlik_turleri;
+      const allowed = new Set(EVENT_TYPE_KEYS as readonly string[]);
+      const out: string[] = [];
+      if (Array.isArray(raw)) {
+        for (const v of raw) {
+          if (typeof v === 'string' && allowed.has(v) && !out.includes(v)) {
+            out.push(v);
+          }
+        }
+      }
+      next.etkinlik_turleri = out;
     }
     // logistics (preset.logisticsChecks anahtarları, yalnız true)
     if (

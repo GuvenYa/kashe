@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
 import { KategoriTalepCta } from '@/app/components/kategori-talep-cta';
+import { EVENT_TYPES } from '@/app/mesajlar/data';
 
 const PRICE_OPTIONS = [
   { value: '5000', label: "5.000 ₺'ye kadar" },
@@ -33,6 +34,7 @@ function buildQs(v: {
   badgeKeys: string[];
   onlyAvailable: boolean;
   experience: string[];
+  eventTypes: string[];
 }): string {
   const params = new URLSearchParams();
   if (v.search.trim()) params.set('q', v.search.trim());
@@ -47,6 +49,7 @@ function buildQs(v: {
   if (v.badgeKeys.includes('popular')) params.set('coktercih', '1');
   if (v.onlyAvailable) params.set('musait', '1');
   if (v.experience.length > 0) params.set('deneyim', v.experience.join(','));
+  if (v.eventTypes.length > 0) params.set('etkinlik', v.eventTypes.join(','));
   for (const [key, vals] of Object.entries(v.attrs)) {
     if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
   }
@@ -66,6 +69,7 @@ type Props = {
   currentBadgeKeys: string[];
   currentOnlyAvailable: boolean;
   currentExperience: string[];
+  currentEventTypes: string[];
   resultCount: number;
   isLoggedIn: boolean;
 };
@@ -83,6 +87,7 @@ export function KesfetFilters({
   currentBadgeKeys,
   currentOnlyAvailable,
   currentExperience,
+  currentEventTypes,
   resultCount,
   isLoggedIn,
 }: Props) {
@@ -109,6 +114,8 @@ export function KesfetFilters({
     currentOnlyAvailable
   );
   const [experience, setExperience] = useState<string[]>(currentExperience);
+  // Etkinlik türleri — ORTAK filtre (tüm kategoriler), ÇOKLU seçim (OR); kategori tickbox kalıbı.
+  const [eventTypes, setEventTypes] = useState<string[]>(currentEventTypes);
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(
     currentBadgeKeys.length > 0 ||
       currentOnlyAvailable ||
@@ -124,6 +131,12 @@ export function KesfetFilters({
   function toggleExperience(val: string) {
     setExperience((prev) =>
       prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    );
+  }
+
+  function toggleEventType(key: string) {
+    setEventTypes((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   }
 
@@ -149,7 +162,7 @@ export function KesfetFilters({
   const currentQs = () =>
     buildQs({
       search, cats, city, type, attrs, maxPrice, minRating,
-      badgeKeys, onlyAvailable, experience,
+      badgeKeys, onlyAvailable, experience, eventTypes,
     });
   const commit = (qs: string) => {
     lastPushedRef.current = qs; // kendi yankımızı prop-sync'te tanımak için
@@ -187,6 +200,7 @@ export function KesfetFilters({
     badgeKeys,
     onlyAvailable,
     experience,
+    eventTypes,
   ]);
 
   // Prop (URL) → local state re-sync. Geri/İleri/link ile props değişince sidebar
@@ -204,6 +218,7 @@ export function KesfetFilters({
     badgeKeys: currentBadgeKeys,
     onlyAvailable: currentOnlyAvailable,
     experience: currentExperience,
+    eventTypes: currentEventTypes,
   });
   useEffect(() => {
     if (propQs === lastPushedRef.current) return; // kendi yankımız → dokunma
@@ -218,6 +233,7 @@ export function KesfetFilters({
     setBadgeKeys(currentBadgeKeys);
     setOnlyAvailable(currentOnlyAvailable);
     setExperience(currentExperience);
+    setEventTypes(currentEventTypes);
     lastPushedRef.current = propQs;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propQs]);
@@ -300,6 +316,7 @@ export function KesfetFilters({
     setBadgeKeys([]);
     setOnlyAvailable(false);
     setExperience([]);
+    setEventTypes([]);
   }
 
   const selectedCity = cities.find((c) => String(c.id) === city);
@@ -315,6 +332,7 @@ export function KesfetFilters({
     (type ? 1 : 0) +
     (maxPrice ? 1 : 0) +
     (minRating ? 1 : 0) +
+    eventTypes.length +
     badgeKeys.length +
     (onlyAvailable ? 1 : 0) +
     experience.length +
@@ -400,6 +418,40 @@ export function KesfetFilters({
                   }`}
                 >
                   {cat.name_tr}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Etkinlik türü — ORTAK filtre (tüm kategoriler), ÇOKLU tickbox (OR). Kategori kalıbıyla
+          birebir aynı davranış. URL param: etkinlik (virgülle ayrık key'ler) */}
+      <div>
+        <p className="font-display text-base text-ink mb-3">Etkinlik türü</p>
+        <div className="space-y-1.5">
+          {EVENT_TYPES.map((et) => {
+            const on = eventTypes.includes(et.key);
+            return (
+              <button
+                key={et.key}
+                type="button"
+                onClick={() => toggleEventType(et.key)}
+                className="flex items-center gap-2.5 w-full text-left group"
+              >
+                <span
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                  }`}
+                >
+                  {on && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                  {et.label}
                 </span>
               </button>
             );

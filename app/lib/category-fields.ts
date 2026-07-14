@@ -192,7 +192,9 @@ export const KURULUM_SURESI_OPTIONS = ['1 saat altı', '1–2 saat', '2–4 saat
 // Çoklu-çip setleri (ceviri_turleri kalıbı — değerler " · " ile birleşir).
 export const CEVIRI_OPTIONS = ['Simultane', 'Ardıl', 'Yazılı', 'Fısıltı'] as const;
 export const ENSTRUMAN_OPTIONS = ['Gitar', 'Piyano', 'Keman', 'Vokal', 'Bateri', 'Bas', 'Saksafon', 'Perküsyon'] as const;
-export const ETKINLIK_TURLERI_OPTIONS = ['Düğün', 'Kurumsal', 'Fuar/Lansman', 'Konser/Festival', 'Özel davet'] as const;
+// NOT: etkinlik türleri artık ORTAK bir alan (category_attributes.etkinlik_turleri) ve
+// değer kümesi ilanlar taksonomisinden (app/mesajlar/data → EVENT_TYPES) TEK KAYNAK gelir.
+// Eski quick-kopya listesi (ETKINLIK_TURLERI_OPTIONS) kaldırıldı (iki kopya yasak).
 
 // Fiziksel modül select setleri (hair serbest eklemeye açık; eyes sabit).
 export const HAIR_OPTIONS = ['Siyah', 'Kahverengi', 'Sarı', 'Kızıl', 'Gri/Beyaz'] as const;
@@ -251,7 +253,6 @@ export const QUICK_MULTI_OPTIONS: Record<
 > = {
   ceviri_turleri: { options: CEVIRI_OPTIONS },
   enstruman: { options: ENSTRUMAN_OPTIONS, allowCustom: true },
-  etkinlik_turleri: { options: ETKINLIK_TURLERI_OPTIONS },
 };
 
 export type QuickInput =
@@ -506,7 +507,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   sunucu: {
     archetype: 'sahne',
-    quickInfo: ['sunuculuk_turu', 'etkinlik_turleri'],
+    quickInfo: ['sunuculuk_turu'],
     modules: [
       { key: 'performans', title: 'Sunum Bilgileri' },
       { key: 'diller_belgeler', title: 'Diller' },
@@ -570,7 +571,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     modules: [
       { key: 'fiziksel' },
       { key: 'diller_belgeler', title: 'Diller' },
-      { key: 'uzmanlik_alanlari', title: 'Etkinlik Türleri' },
       { key: 'calisma_parametreleri' },
     ],
     experienceGroups: [
@@ -669,7 +669,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   organizasyon: {
     archetype: 'uzmanlik',
-    quickInfo: ['hizmet_turu', 'ekip_boyutu', 'etkinlik_turleri'],
+    quickInfo: ['hizmet_turu', 'ekip_boyutu'],
     modules: [
       { key: 'uzmanlik_alanlari', title: 'Hizmet Alanları' },
       { key: 'calisma_parametreleri' },

@@ -98,6 +98,7 @@ export async function banUser(
       suspended_at: new Date().toISOString(),
       suspension_reason: trimmedReason,
       suspended_by: adminId,
+      is_published: false, // askıdaki profil yayında kalmamalı → yayından çıkar
     })
     .eq('id', userId);
 
@@ -294,11 +295,14 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
 
   // NOT: kaynak durum guard'ı YOK — pending/revision/rejected'in HEPSİNDEN onaylanır.
   // .select() ile etkilenen satırı doğrula: 0 satır → SESSİZ BAŞARI YOK, kullanıcıya hata.
+  // Onay = otomatik YAYIN. Self-view kopyası "Onaylandığında otomatik olarak yayına
+  // alınacak" diyor; ayrı bir "yayın niyeti" alanı YOK → onay, profili yayına da alır
+  // (kopya ↔ davranış birebir). approval_note onayda TEMİZLENİR.
   const { data: updated, error: updateError } = await supabase
     .from('profiles')
-    .update({ approval_status: 'approved', approval_note: null }) // onayda not TEMİZLENİR
+    .update({ approval_status: 'approved', approval_note: null, is_published: true })
     .eq('id', profileId)
-    .select('id, approval_status');
+    .select('id, approval_status, is_published');
 
   if (updateError) {
     console.error('[admin] approve profile error:', updateError);
@@ -310,6 +314,11 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
   // Değer gerçekten değişti mi? (bir koruma trigger'ı OLD'a geri sarmış olabilir → sessiz başarı YOK)
   if (updated[0].approval_status !== 'approved') {
     return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
+  }
+  // is_published tutmadıysa (protect_sensitive_profile_fields trigger'ı engellemiş olabilir)
+  // onay yine de geçerli; yalnız log'a düş (sessiz kalmasın, Dashboard'da trigger'ı kontrol et).
+  if (updated[0].is_published !== true) {
+    console.warn('[admin] approveProfile: onay OK ama is_published flip etmedi (koruma trigger?) —', profileId);
   }
 
   await logAction(supabase, adminId, 'approve_profile', 'user', profileId);
@@ -336,9 +345,10 @@ export async function rejectProfile(
     return { success: false, error: 'Red sebebi en fazla 1000 karakter olabilir.' };
   }
 
+  // Reddedilen profil YAYINDA KALMAMALI → yayından da çıkar.
   const { data: updated, error: updateError } = await supabase
     .from('profiles')
-    .update({ approval_status: 'rejected', approval_note: trimmedNote })
+    .update({ approval_status: 'rejected', approval_note: trimmedNote, is_published: false })
     .eq('id', profileId)
     .select('id, approval_status');
 
@@ -377,9 +387,10 @@ export async function requestProfileRevision(
     return { success: false, error: 'Revizyon notu en fazla 1000 karakter olabilir.' };
   }
 
+  // Revizyondaki profil yayında kalmamalı → yayından çıkar (yeniden onayda tekrar yayına alınır).
   const { data: updated, error: updateError } = await supabase
     .from('profiles')
-    .update({ approval_status: 'revision', approval_note: trimmedNote })
+    .update({ approval_status: 'revision', approval_note: trimmedNote, is_published: false })
     .eq('id', profileId)
     .select('id, approval_status');
 

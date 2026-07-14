@@ -18,6 +18,7 @@ import {
   type LeveledSkill,
   type ProfileExperience,
 } from '@/app/lib/category-fields';
+import { getEventTypeLabel } from '@/app/mesajlar/data';
 import type {
   ServiceWithCategory,
   ServicePackage,
@@ -119,6 +120,10 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   const taglines = (attrs.section_taglines as Record<string, string>) ?? {};
   const modulesData = (attrs.modules as Record<string, AttrRecord>) ?? {};
   const summary = attrs.summary as { title?: string; body?: string; stats?: string[] } | undefined;
+  // Etkinlik türleri — ORTAK alan (category_attributes.etkinlik_turleri; ilanlar taksonomisi key'leri).
+  const eventTypes = Array.isArray(attrs.etkinlik_turleri)
+    ? (attrs.etkinlik_turleri as string[])
+    : [];
   const archetype = preset?.archetype ?? 'produksiyon';
 
   // ---- Fiyat aralığı (yayındaki hizmetler; tümü talep-üzerine ise gizle) ----
@@ -451,6 +456,24 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                       )}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Etkinlik türleri — ORTAK alan (dolu ise). Giriş tek yerde (kategori-bilgileri Genel). */}
+            {eventTypes.length > 0 && (
+              <div>
+                <div className={`${EYEBROW} mb-2.5`}>Etkinlik türleri</div>
+                <div className="flex flex-wrap gap-2">
+                  {eventTypes.map((k) => {
+                    const label = getEventTypeLabel(k);
+                    if (!label) return null;
+                    return (
+                      <span key={k} className="inline-flex items-center px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
+                        {label}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}

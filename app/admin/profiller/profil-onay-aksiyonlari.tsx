@@ -10,7 +10,13 @@ import {
 
 type Mode = 'idle' | 'reject' | 'revision';
 
-export function ProfilOnayAksiyonlari({ profileId }: { profileId: string }) {
+export function ProfilOnayAksiyonlari({
+  profileId,
+  status,
+}: {
+  profileId: string;
+  status: string | null;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<Mode>('idle');
@@ -41,6 +47,11 @@ export function ProfilOnayAksiyonlari({ profileId }: { profileId: string }) {
           ? await rejectProfile(profileId, note)
           : await requestProfileRevision(profileId, note);
       if (result.success) {
+        // Başarı → formu kapat + textarea'yı temizle (satır yeni durumla yeniden çizilir).
+        // (router.refresh sonrası aynı key'li bileşen state'i koruduğundan explicit reset şart.)
+        setMode('idle');
+        setNote('');
+        setError(null);
         router.refresh();
       } else {
         setError(result.error || 'Bir hata oluştu.');
@@ -92,31 +103,47 @@ export function ProfilOnayAksiyonlari({ profileId }: { profileId: string }) {
     );
   }
 
+  // Duruma göre buton seti (backend her durumdan çalışır; UI yalnız anlamlı olanları gösterir):
+  //  pending  → Onayla(primary) + Revizyon + Reddet
+  //  revision → Onayla(primary) + Reddet
+  //  rejected → Onayla ("Yeniden değerlendir")
+  //  approved → primary YOK; yalnız Revizyon iste + Reddet
+  const showApprove = status !== 'approved';
+  const approveLabel = status === 'rejected' ? 'Yeniden değerlendir' : 'Onayla';
+  const showRevision = status === 'pending' || status === 'approved';
+  const showReject = status !== 'rejected';
+
   return (
     <div>
       {error && <p className="text-xs text-danger mb-2">{error}</p>}
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={handleApprove}
-          disabled={isPending}
-          className="px-4 py-2 bg-moss text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:opacity-90 disabled:opacity-50 transition"
-        >
-          {isPending ? 'İşleniyor...' : 'Onayla'}
-        </button>
-        <button
-          onClick={() => setMode('revision')}
-          disabled={isPending}
-          className="px-4 py-2 border border-line text-ink rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:border-ink disabled:opacity-50 transition"
-        >
-          Revizyon iste
-        </button>
-        <button
-          onClick={() => setMode('reject')}
-          disabled={isPending}
-          className="px-4 py-2 border border-danger text-danger rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-danger-08 disabled:opacity-50 transition"
-        >
-          Reddet
-        </button>
+        {showApprove && (
+          <button
+            onClick={handleApprove}
+            disabled={isPending}
+            className="px-4 py-2 bg-moss text-paper rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:opacity-90 disabled:opacity-50 transition"
+          >
+            {isPending ? 'İşleniyor...' : approveLabel}
+          </button>
+        )}
+        {showRevision && (
+          <button
+            onClick={() => setMode('revision')}
+            disabled={isPending}
+            className="px-4 py-2 border border-line text-ink rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:border-ink disabled:opacity-50 transition"
+          >
+            Revizyon iste
+          </button>
+        )}
+        {showReject && (
+          <button
+            onClick={() => setMode('reject')}
+            disabled={isPending}
+            className="px-4 py-2 border border-danger text-danger rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-danger-08 disabled:opacity-50 transition"
+          >
+            Reddet
+          </button>
+        )}
       </div>
     </div>
   );
