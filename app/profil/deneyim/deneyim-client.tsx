@@ -3,7 +3,11 @@
 import { useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import type { ProfileExperience, ExperienceGroup } from '@/app/lib/category-fields';
+import {
+  formatExperiencePeriod,
+  type ProfileExperience,
+  type ExperienceGroup,
+} from '@/app/lib/category-fields';
 import {
   createExperience,
   updateExperience,
@@ -17,6 +21,14 @@ const INPUT =
   'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition text-sm';
 const LABEL =
   'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
+
+// Tarih select'leri — ay (opsiyonel) + yıl (1970-2030).
+const EXP_MONTHS = [
+  { v: 1, l: 'Ocak' }, { v: 2, l: 'Şubat' }, { v: 3, l: 'Mart' }, { v: 4, l: 'Nisan' },
+  { v: 5, l: 'Mayıs' }, { v: 6, l: 'Haziran' }, { v: 7, l: 'Temmuz' }, { v: 8, l: 'Ağustos' },
+  { v: 9, l: 'Eylül' }, { v: 10, l: 'Ekim' }, { v: 11, l: 'Kasım' }, { v: 12, l: 'Aralık' },
+];
+const EXP_YEARS = Array.from({ length: 2030 - 1970 + 1 }, (_, i) => 2030 - i);
 
 const SECTIONS: {
   kind: ExperienceKind;
@@ -136,7 +148,9 @@ export function DeneyimClient({
                   const orgText = [row.organization, row.location]
                     .filter(Boolean)
                     .join(', ');
-                  const meta = [row.period_label, orgText].filter(Boolean).join(' · ');
+                  const meta = [formatExperiencePeriod(row), orgText]
+                    .filter(Boolean)
+                    .join(' · ');
                   const groupLabel =
                     section.kind === 'work' && row.group_key
                       ? workGroups.find((g) => g.key === row.group_key)?.label ??
@@ -290,7 +304,14 @@ function ExperienceModal({
   const [subtitle, setSubtitle] = useState(row?.subtitle ?? '');
   const [organization, setOrganization] = useState(row?.organization ?? '');
   const [location, setLocation] = useState(row?.location ?? '');
-  const [periodLabel, setPeriodLabel] = useState(row?.period_label ?? '');
+  const [startMonth, setStartMonth] = useState(row?.start_month ? String(row.start_month) : '');
+  const [startYear, setStartYear] = useState(row?.start_year ? String(row.start_year) : '');
+  const [endMonth, setEndMonth] = useState(row?.end_month ? String(row.end_month) : '');
+  const [endYear, setEndYear] = useState(row?.end_year ? String(row.end_year) : '');
+  const [isCurrent, setIsCurrent] = useState<boolean>(row?.is_current ?? false);
+  // Legacy miras: tarih kolonları boş + period_label doluysa salt-okunur bilgi satırı.
+  const hasDbDates = !!(row?.start_year || row?.end_year || row?.is_current);
+  const legacyLabel = !hasDbDates ? (row?.period_label ?? '') : '';
   const [description, setDescription] = useState(row?.description ?? '');
   const [groupKey, setGroupKey] = useState(row?.group_key ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -300,6 +321,18 @@ function ExperienceModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Client doğrulama: bitiş başlangıçtan önce olamaz (work/education, devam-etmiyor).
+    if (kind !== 'award' && !isCurrent && startYear && endYear) {
+      const sm = startMonth ? Number(startMonth) : 1;
+      const em = endMonth ? Number(endMonth) : 12;
+      if (
+        Number(endYear) < Number(startYear) ||
+        (Number(endYear) === Number(startYear) && em < sm)
+      ) {
+        setError('Bitiş tarihi başlangıçtan önce olamaz.');
+        return;
+      }
+    }
     const data: ExperienceFormData = {
       kind,
       group_key: kind === 'work' ? (groupKey || null) : null,
@@ -307,8 +340,12 @@ function ExperienceModal({
       subtitle: subtitle || null,
       organization: organization || null,
       location: location || null,
-      period_label: periodLabel || null,
       description: description || null,
+      start_year: startYear ? Number(startYear) : null,
+      start_month: startMonth ? Number(startMonth) : null,
+      end_year: kind === 'award' || isCurrent ? null : endYear ? Number(endYear) : null,
+      end_month: kind === 'award' || isCurrent ? null : endMonth ? Number(endMonth) : null,
+      is_current: kind === 'award' ? false : isCurrent,
     };
     startTransition(async () => {
       const result = row
@@ -398,32 +435,111 @@ function ExperienceModal({
             </div>
           </div>
 
-          <div className={kind === 'work' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
-            <div>
-              <label htmlFor="exp-period" className={LABEL}>Dönem</label>
-              <input
-                id="exp-period"
-                value={periodLabel}
-                onChange={(e) => setPeriodLabel(e.target.value)}
-                maxLength={80}
-                placeholder="2022 – halen / Mayıs 2026"
-                className={INPUT}
-              />
-            </div>
-            {kind === 'work' && (
+          {/* Tarih alanları — period_label yerine ay/yıl select'leri */}
+          <div className="space-y-4">
+            {legacyLabel && (
+              <div className="px-3 py-2 bg-paper-2/50 border border-line rounded-lg text-[12px] text-ink-72 leading-relaxed">
+                <span className="font-mono uppercase text-[10px] tracking-[0.12em] text-ink-72/70">
+                  Eski dönem etiketi:
+                </span>{' '}
+                <span className="text-ink">{legacyLabel}</span> — tarihleri girdiğinde bu
+                etiketin yerini alır.
+              </div>
+            )}
+            <div className={kind === 'work' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
               <div>
-                <label htmlFor="exp-group" className={LABEL}>Grup</label>
-                <select
-                  id="exp-group"
-                  value={groupKey}
-                  onChange={(e) => setGroupKey(e.target.value)}
-                  className={INPUT}
-                >
-                  {workGroups.map((g) => (
-                    <option key={g.key} value={g.key}>{g.label}</option>
-                  ))}
-                  <option value="">Diğer</option>
-                </select>
+                <label className={LABEL}>
+                  {kind === 'award' ? 'Tarih' : 'Başlangıç'}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={startMonth}
+                    onChange={(e) => setStartMonth(e.target.value)}
+                    className={INPUT}
+                    aria-label="Başlangıç ayı"
+                  >
+                    <option value="">Ay</option>
+                    {EXP_MONTHS.map((m) => (
+                      <option key={m.v} value={m.v}>{m.l}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={startYear}
+                    onChange={(e) => setStartYear(e.target.value)}
+                    className={INPUT}
+                    aria-label="Başlangıç yılı"
+                  >
+                    <option value="">Yıl</option>
+                    {EXP_YEARS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {kind === 'work' && (
+                <div>
+                  <label htmlFor="exp-group" className={LABEL}>Grup</label>
+                  <select
+                    id="exp-group"
+                    value={groupKey}
+                    onChange={(e) => setGroupKey(e.target.value)}
+                    className={INPUT}
+                  >
+                    {workGroups.map((g) => (
+                      <option key={g.key} value={g.key}>{g.label}</option>
+                    ))}
+                    <option value="">Diğer</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {kind !== 'award' && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={`${LABEL} mb-0`}>Bitiş</label>
+                  <label className="flex items-center gap-1.5 text-[12px] text-ink-72 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isCurrent}
+                      onChange={(e) => {
+                        setIsCurrent(e.target.checked);
+                        if (e.target.checked) {
+                          setEndMonth('');
+                          setEndYear('');
+                        }
+                      }}
+                      className="accent-terracotta w-4 h-4"
+                    />
+                    Devam ediyor
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={endMonth}
+                    onChange={(e) => setEndMonth(e.target.value)}
+                    disabled={isCurrent}
+                    className={`${INPUT} disabled:opacity-50`}
+                    aria-label="Bitiş ayı"
+                  >
+                    <option value="">Ay</option>
+                    {EXP_MONTHS.map((m) => (
+                      <option key={m.v} value={m.v}>{m.l}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={endYear}
+                    onChange={(e) => setEndYear(e.target.value)}
+                    disabled={isCurrent}
+                    className={`${INPUT} disabled:opacity-50`}
+                    aria-label="Bitiş yılı"
+                  >
+                    <option value="">Yıl</option>
+                    {EXP_YEARS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
           </div>

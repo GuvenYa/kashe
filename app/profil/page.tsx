@@ -269,7 +269,6 @@ export default async function ProfilPage() {
     if (typeof v === 'object') return Object.keys(v as object).length > 0;
     return true;
   }).length;
-  const hasPortfolio = portfolioItems.length > 0;
 
   const initials = (profile.full_name || '')
     .split(' ')
@@ -412,10 +411,8 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* COMPLETENESS BAR (+ D5 professional zenginlik sinyalleri) */}
-          {(completeness < 100 ||
-            (isPro &&
-              (expTotal === 0 || catFilledCount === 0 || !hasPortfolio))) && (
+          {/* PROFİL TAMLIĞI — yalnız yayın gereksinimleri + yüzde */}
+          {completeness < 100 && (
             <div className="mb-8 bg-card border border-line rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
@@ -468,40 +465,6 @@ export default async function ProfilPage() {
                 </div>
               )}
 
-              {/* D5 — professional zenginlik sinyalleri (deneyim · kategori · portföy) */}
-              {isPro && (
-                <div className="mt-4 pt-4 border-t border-line">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
-                    Profili zenginleştir
-                  </p>
-                  <ul className="space-y-1.5">
-                    {[
-                      { done: expTotal > 0, label: 'Deneyim / eğitim kaydı', href: '/profil/deneyim' },
-                      { done: catFilledCount > 0, label: 'Kategori bilgileri', href: '/profil/kategori-bilgileri' },
-                      { done: hasPortfolio, label: 'Portföy görseli', href: '/profil/portfoy' },
-                    ].map((s) => (
-                      <li key={s.label}>
-                        <Link
-                          href={s.href}
-                          className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-terracotta transition-colors"
-                        >
-                          {s.done ? (
-                            <span className="w-4 h-4 rounded-full bg-moss/15 flex items-center justify-center shrink-0">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4 4 10-10" /></svg>
-                            </span>
-                          ) : (
-                            <span className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-terracotta shrink-0 transition-colors" aria-hidden="true" />
-                          )}
-                          <span className={`flex-1 ${s.done ? 'line-through text-ink-72/60' : ''}`}>{s.label}</span>
-                          {!s.done && (
-                            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">Ekle →</span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           )}
 

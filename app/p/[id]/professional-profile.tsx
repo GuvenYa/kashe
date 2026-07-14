@@ -14,6 +14,7 @@ import {
   getCategoryFields,
   getModuleTitle,
   getQuickLabel,
+  formatExperiencePeriod,
   MODULE_REGISTRY,
   type LeveledSkill,
   type ProfileExperience,
@@ -190,7 +191,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
 
   // ---- Bölüm başlıkları: section_taglines doluysa onu, yoksa generic default ----
   const servicesTitle = taglines.hizmetler || 'Çalışma modelleri';
-  const experienceTitle = taglines.deneyim || 'Seçili krediler';
+  const experienceTitle = taglines.deneyim || 'Öne çıkan işler';
   const educationTitle = taglines.egitim || 'Teknik altyapı';
 
   const showMediaHero =
@@ -676,13 +677,16 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               <section>
                 <div className={EYEBROW}>Öne Çıkanlar &amp; Ödüller</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                  {awardRows.map((a) => (
-                    <div key={a.id} className={`${CARD} p-4`}>
-                      <div className="font-display font-semibold text-ink">{a.title}</div>
-                      {a.organization && <div className="text-sm text-ink-72 mt-0.5">{a.organization}</div>}
-                      {a.period_label && <div className="text-xs text-ink-72 mt-1 font-mono">{a.period_label}</div>}
-                    </div>
-                  ))}
+                  {awardRows.map((a) => {
+                    const aPeriod = formatExperiencePeriod(a);
+                    return (
+                      <div key={a.id} className={`${CARD} p-4`}>
+                        <div className="font-display font-semibold text-ink">{a.title}</div>
+                        {a.organization && <div className="text-sm text-ink-72 mt-0.5">{a.organization}</div>}
+                        {aPeriod && <div className="text-xs text-ink-72 mt-1 font-mono">{aPeriod}</div>}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -801,7 +805,8 @@ function KvChips({ entries, cols }: { entries: [string, string][]; cols: number 
 function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean }) {
   const orgText = [exp.organization, exp.location].filter(Boolean).join(', ');
   const border = last ? '' : 'border-b border-line';
-  const metaLine = [exp.period_label, orgText].filter(Boolean).join(' · ');
+  const period = formatExperiencePeriod(exp);
+  const metaLine = [period, orgText].filter(Boolean).join(' · ');
   return (
     <>
       {/* Mobil (md altı): dikey yığın — üst satır tarih · organizasyon, sonra başlık/alt başlık/açıklama */}
@@ -813,7 +818,7 @@ function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean })
       </div>
       {/* md ve üzeri: mevcut üç kolon aynen */}
       <div className={`hidden md:grid grid-cols-[92px_1fr_auto] gap-4 items-start py-3.5 ${border}`}>
-        <div className="text-[12.5px] text-ink-72 pt-0.5">{exp.period_label}</div>
+        <div className="text-[12.5px] text-ink-72 pt-0.5">{period}</div>
         <div>
           <div className="text-[14.5px] font-bold text-ink">{exp.title}</div>
           {exp.subtitle && <div className="text-[13px] text-ink-72 mt-0.5">{exp.subtitle}</div>}

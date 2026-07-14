@@ -12,8 +12,13 @@ export type ExperienceFormData = {
   subtitle: string | null;
   organization: string | null;
   location: string | null;
-  period_label: string | null;
   description: string | null;
+  // Yapılandırılmış tarihler. period_label formdan YAZILMAZ (okuma-yalnız miras).
+  start_year: number | null;
+  start_month: number | null;
+  end_year: number | null;
+  end_month: number | null;
+  is_current: boolean;
 };
 
 export type ExperienceActionResult = {
@@ -30,6 +35,19 @@ function clean(v: string | null | undefined): string | null {
   return t.length === 0 ? null : t;
 }
 
+/** Yıl 1970-2030 aralığında değilse null. */
+function yearOrNull(v: number | null | undefined): number | null {
+  if (v == null) return null;
+  const n = Math.trunc(v);
+  return n >= 1970 && n <= 2030 ? n : null;
+}
+/** Ay 1-12 aralığında değilse null. */
+function monthOrNull(v: number | null | undefined): number | null {
+  if (v == null) return null;
+  const n = Math.trunc(v);
+  return n >= 1 && n <= 12 ? n : null;
+}
+
 function validate(data: ExperienceFormData): string | null {
   if (!KINDS.includes(data.kind)) return 'Geçersiz kayıt türü.';
   const title = clean(data.title);
@@ -39,17 +57,37 @@ function validate(data: ExperienceFormData): string | null {
     [data.subtitle, 150, 'Alt başlık'],
     [data.organization, 150, 'Kurum'],
     [data.location, 120, 'Konum'],
-    [data.period_label, 80, 'Dönem'],
     [data.description, 2000, 'Açıklama'],
   ];
   for (const [val, max, label] of caps) {
     if (val && val.length > max) return `${label} ${max} karakterden uzun olamaz.`;
   }
+  // Tarih: yıl 1970-2030; bitiş başlangıçtan önce olamaz (work/education, devam-etmiyor).
+  if (data.start_year != null && yearOrNull(data.start_year) == null)
+    return 'Başlangıç yılı 1970-2030 aralığında olmalı.';
+  if (data.end_year != null && yearOrNull(data.end_year) == null)
+    return 'Bitiş yılı 1970-2030 aralığında olmalı.';
+  if (data.kind !== 'award' && !data.is_current) {
+    const sy = yearOrNull(data.start_year);
+    const ey = yearOrNull(data.end_year);
+    if (sy && ey) {
+      const sm = monthOrNull(data.start_month) ?? 1;
+      const em = monthOrNull(data.end_month) ?? 12;
+      if (ey < sy || (ey === sy && em < sm))
+        return 'Bitiş tarihi başlangıçtan önce olamaz.';
+    }
+  }
   return null;
 }
 
-/** Form verisini DB satırına normalize eder (group_key yalnız work'te korunur). */
+/**
+ * Form verisini DB satırına normalize eder. period_label KASITEN yok:
+ * update'te dokunulmaz (eski etiket korunur), insert'te DB default (null).
+ * award → bitiş/devam yok; is_current → bitiş temizlenir.
+ */
 function toRow(data: ExperienceFormData) {
+  const isAward = data.kind === 'award';
+  const isCurrent = isAward ? false : !!data.is_current;
   return {
     kind: data.kind,
     group_key: data.kind === 'work' ? clean(data.group_key) : null,
@@ -57,8 +95,12 @@ function toRow(data: ExperienceFormData) {
     subtitle: clean(data.subtitle),
     organization: clean(data.organization),
     location: clean(data.location),
-    period_label: clean(data.period_label),
     description: clean(data.description),
+    start_year: yearOrNull(data.start_year),
+    start_month: monthOrNull(data.start_month),
+    end_year: isAward || isCurrent ? null : yearOrNull(data.end_year),
+    end_month: isAward || isCurrent ? null : monthOrNull(data.end_month),
+    is_current: isCurrent,
   };
 }
 

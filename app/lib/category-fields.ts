@@ -135,11 +135,51 @@ export interface ProfileExperience {
   subtitle: string | null;
   organization: string | null;
   location: string | null;
-  period_label: string | null;
+  period_label: string | null; // ESKİ serbest metin (okuma-yalnız miras)
+  start_year: number | null;
+  start_month: number | null;
+  end_year: number | null;
+  end_month: number | null;
+  is_current: boolean;
   description: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
+}
+
+/** TR ay kısaltmaları (deneyim tarih etiketleri). */
+const EXP_MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+function fmtYm(year: number | null, month: number | null): string {
+  if (!year) return '';
+  const m = month && month >= 1 && month <= 12 ? `${EXP_MONTHS_TR[month - 1]} ` : '';
+  return `${m}${year}`;
+}
+
+/**
+ * Deneyim dönem etiketini türetir. Tarih kolonları doluysa TR etiket:
+ * ay varsa "Mar 2024", yoksa "2024"; is_current → "– Halen"; award tek tarih.
+ * Kolonlar boşsa eski period_label AYNEN döner (okuma-yalnız miras).
+ */
+export function formatExperiencePeriod(exp: {
+  kind: string;
+  start_year: number | null;
+  start_month: number | null;
+  end_year: number | null;
+  end_month: number | null;
+  is_current: boolean;
+  period_label: string | null;
+}): string {
+  const hasDates =
+    exp.start_year != null || exp.end_year != null || exp.is_current === true;
+  if (!hasDates) return exp.period_label ?? '';
+  const start = fmtYm(exp.start_year, exp.start_month);
+  if (exp.kind === 'award') return start || exp.period_label || '';
+  const end = exp.is_current ? 'Halen' : fmtYm(exp.end_year, exp.end_month);
+  if (start && end) return `${start} – ${end}`;
+  if (start) return start;
+  if (end) return `– ${end}`;
+  return exp.period_label ?? '';
 }
 
 // ---- category_attributes içindeki ortak yapı ----
