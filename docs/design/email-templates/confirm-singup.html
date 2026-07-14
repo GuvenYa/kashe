@@ -1,0 +1,21 @@
+<!--
+  Kashe — Supabase Auth "Confirm signup" e-posta sablonu
+  Uygulama: Supabase Dashboard -> Authentication -> Email Templates -> Confirm signup
+  Konu satiri (Subject) onerisi: Kashe — E-posta adresini doğrula
+  ONEMLI: Yapistirdiktan sonra kaydetmeden once govdede "<a href" ifadesinin
+  iki yerde de aynen durdugunu gozle dogrula (< dusmesi kontrolu).
+  Repo kopyasi: docs/email-templates/confirm-signup.html
+-->
+<h2 style="font-family:Arial,Helvetica,sans-serif;color:#1F5C4A;font-size:22px;margin:0 0 16px">E-posta adresini doğrula</h2>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#1D2723;font-size:15px;line-height:1.6;margin:0 0 20px">Kashe hesabını oluşturduğun için teşekkürler. Hesabını kullanmaya başlamak için e-posta adresini doğrula:</p>
+
+<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="background:#E2674A;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px">E-postamı doğrula</a></p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#1D2723;font-size:14px;line-height:1.6;margin:0 0 8px">Eğer butona tıklayamazsan, bu linki tarayıcına kopyala:</p>
+
+<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="font-family:Arial,Helvetica,sans-serif;color:#1F5C4A;font-size:13px;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#5C665F;font-size:13px;line-height:1.6;margin:0 0 4px">Bağlantı tek kullanımlıktır. Bu hesabı sen oluşturmadıysan bu e-postayı dikkate alma.</p>
+
+<p style="font-family:Arial,Helvetica,sans-serif;color:#5C665F;font-size:13px;margin:16px 0 0">— Kashe ekibi</p>

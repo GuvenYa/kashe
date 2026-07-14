@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createClient } from '@/app/lib/supabase-server';
 import { sanitizeReturnPath } from '@/app/lib/safe-redirect';
+import { hosgeldinEmail, sendAccountEmail } from '@/app/lib/email/account-emails';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -10,6 +11,8 @@ export async function GET(request: Request) {
     requestUrl.searchParams.get('next'),
     '/sifre-sifirla'
   );
+  // Recovery (şifre sıfırlama) akışı next=/sifre-sifirla ile gelir → hoşgeldin TETİKLENMEZ.
+  const isRecovery = next.startsWith('/sifre-sifirla');
 
   if (code) {
     const supabase = await createClient();
@@ -20,6 +23,39 @@ export async function GET(request: Request) {
       return NextResponse.redirect(
         `${requestUrl.origin}/sifre-sifirla?error=invalid_or_expired`
       );
+    }
+
+    // Hoşgeldin — YALNIZ signup onayı (recovery hariç). Fire-and-forget (after):
+    // redirect'i geciktirmez, auth akışını bloklamaz. Idempotent: welcome_email_sent_at
+    // null ise gönder + damgala.
+    // NOT: E-posta doğrulaması KAPALIYKEN signup bu callback'e uğramaz → pratikte PASİF
+    // (doğrulama açıldığında + signup emailRedirectTo /auth/callback iken aktifleşir).
+    if (!isRecovery) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        after(async () => {
+          try {
+            const { data: p } = await supabase
+              .from('profiles')
+              .select('role, email, full_name, welcome_email_sent_at')
+              .eq('id', user.id)
+              .single();
+            if (!p || p.welcome_email_sent_at || !p.email) return;
+            const mail = hosgeldinEmail({ role: p.role, name: p.full_name });
+            const res = await sendAccountEmail({ to: p.email, ...mail });
+            if (res.sent) {
+              await supabase
+                .from('profiles')
+                .update({ welcome_email_sent_at: new Date().toISOString() })
+                .eq('id', user.id);
+            }
+          } catch (e) {
+            console.error('[welcome-email]', e);
+          }
+        });
+      }
     }
   }
 

@@ -2,6 +2,12 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
+import {
+  profilOnaylandiEmail,
+  profilRevizyonEmail,
+  sendAccountEmail,
+} from '@/app/lib/email/account-emails';
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -302,7 +308,7 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
     .from('profiles')
     .update({ approval_status: 'approved', approval_note: null, is_published: true })
     .eq('id', profileId)
-    .select('id, approval_status, is_published');
+    .select('id, approval_status, is_published, email, full_name');
 
   if (updateError) {
     console.error('[admin] approve profile error:', updateError);
@@ -322,6 +328,19 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
   }
 
   await logAction(supabase, adminId, 'approve_profile', 'user', profileId);
+
+  // Onay e-postası — fire-and-forget (after): admin aksiyonunu bloklamaz, redirect'i geciktirmez.
+  const approvedRow = updated[0] as { email: string | null; full_name: string | null };
+  after(async () => {
+    try {
+      if (approvedRow.email) {
+        const mail = profilOnaylandiEmail({ name: approvedRow.full_name, profileId });
+        await sendAccountEmail({ to: approvedRow.email, ...mail });
+      }
+    } catch (e) {
+      console.error('[approve-email]', e);
+    }
+  });
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');
@@ -392,7 +411,7 @@ export async function requestProfileRevision(
     .from('profiles')
     .update({ approval_status: 'revision', approval_note: trimmedNote, is_published: false })
     .eq('id', profileId)
-    .select('id, approval_status');
+    .select('id, approval_status, email, full_name');
 
   if (updateError) {
     console.error('[admin] request profile revision error:', updateError);
@@ -406,6 +425,19 @@ export async function requestProfileRevision(
   }
 
   await logAction(supabase, adminId, 'request_profile_revision', 'user', profileId, trimmedNote);
+
+  // Revizyon e-postası — fire-and-forget (after); admin notu gövdede.
+  const revRow = updated[0] as { email: string | null; full_name: string | null };
+  after(async () => {
+    try {
+      if (revRow.email) {
+        const mail = profilRevizyonEmail({ name: revRow.full_name, note: trimmedNote });
+        await sendAccountEmail({ to: revRow.email, ...mail });
+      }
+    } catch (e) {
+      console.error('[revision-email]', e);
+    }
+  });
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');

@@ -30,11 +30,17 @@ export default function GirisForm({
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [showSifre, setShowSifre] = useState(false);
+  // Doğrulanmamış hesap: "yeniden gönder" akışı
+  const [notConfirmed, setNotConfirmed] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setHata(null);
+    setNotConfirmed(false);
+    setResendMsg(null);
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -44,6 +50,10 @@ export default function GirisForm({
 
     if (error) {
       setHata(translateError(error.message));
+      // Doğrulanmamış hesap → "yeniden gönder" butonu göster
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        setNotConfirmed(true);
+      }
       setLoading(false);
       return;
     }
@@ -65,6 +75,27 @@ export default function GirisForm({
 
     router.push(redirectTo);
     router.refresh();
+  }
+
+  async function handleResend() {
+    setResending(true);
+    setResendMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
+      },
+    });
+    setResending(false);
+    if (error) {
+      setResendMsg('Yeniden gönderilemedi: ' + translateError(error.message));
+    } else {
+      setResendMsg(
+        'Doğrulama e-postası yeniden gönderildi. Gelen kutunu (ve spam klasörünü) kontrol et.'
+      );
+    }
   }
 
   return (
@@ -151,6 +182,24 @@ export default function GirisForm({
         {hata && (
           <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
             {hata}
+            {notConfirmed && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="mt-2 block font-medium text-terracotta hover:text-ink disabled:opacity-50 transition-colors"
+              >
+                {resending
+                  ? 'Gönderiliyor…'
+                  : 'Doğrulama e-postasını yeniden gönder →'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {resendMsg && (
+          <div className="px-4 py-3 bg-moss/10 border border-moss/30 rounded-lg text-sm text-moss">
+            {resendMsg}
           </div>
         )}
 

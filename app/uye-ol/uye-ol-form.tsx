@@ -155,11 +155,11 @@ export function UyeOlForm({
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/profil`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
           data: {
             full_name: fullName.trim(),
             role: config.role,
@@ -171,8 +171,24 @@ export function UyeOlForm({
       });
 
       if (error) throw error;
-      // Email doğrulama kapalı — kayıt sonrası oturum anında açılır.
-      // Success ekranı yerine doğrudan hedefe yönlendir.
+
+      // "Confirm email" AÇIK + e-posta enumeration koruması: ZATEN KAYITLI e-posta →
+      // user döner ama identities BOŞ, error gelmez. Kullanıcıya anlaşılır mesaj.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError("Bu e-posta zaten kayıtlı. Giriş yapmayı ya da şifreni sıfırlamayı dene.");
+        setLoading(false);
+        return;
+      }
+
+      // Confirm AÇIK → signUp oturum DÖNDÜRMEZ → /profil'e redirect DENEME;
+      // yerinde "e-postanı doğrula" durumunu göster.
+      if (!data.session) {
+        setSuccess(true);
+        setLoading(false);
+        return;
+      }
+
+      // Oturum var (confirm KAPALI / otomatik onay) → mevcut davranış: hedefe yönlendir.
       router.push(redirectTo);
       router.refresh();
       return;
@@ -188,16 +204,20 @@ export function UyeOlForm({
     return (
       <div className="max-w-xl mx-auto text-center py-20">
         <div className="mb-6 flex justify-center">
-          <Eyebrow variant="pill">Kayıt başarılı</Eyebrow>
+          <Eyebrow variant="pill">Kayıt alındı</Eyebrow>
         </div>
         <h1 className="font-display font-semibold text-4xl md:text-5xl leading-[1] tracking-[-0.03em] text-ink mb-6">
-          Email&apos;ini <em>kontrol</em> et.
+          E-postanı <em>doğrula</em>.
         </h1>
-        <p className="text-lg text-ink-72 leading-[1.55] mb-10">
-          {email} adresine bir doğrulama emaili gönderdik. Hesabını aktifleştirmek için emaildeki linke tıkla.
+        <p className="text-lg text-ink-72 leading-[1.55] mb-6">
+          <strong className="text-ink">{email}</strong> adresine bir doğrulama bağlantısı
+          gönderdik. Hesabını aktifleştirmek için bağlantıya tıkla.
+        </p>
+        <p className="text-base text-ink-72 mb-8">
+          Gelen kutunu <em>(ve spam klasörünü)</em> kontrol et.
         </p>
         <p className="text-sm text-ink-50">
-          Email gelmediyse spam klasörünü kontrol et.
+          Doğruladıktan sonra otomatik giriş yapılır ve profiline yönlendirilirsin.
         </p>
       </div>
     );

@@ -55,7 +55,7 @@ export function AjansUyeOlForm() {
         email: email.toLowerCase().trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/profil`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
           data: {
             full_name: contactName.trim(),
             company_name: agencyName.trim(),
