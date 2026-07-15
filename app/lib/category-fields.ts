@@ -17,7 +17,7 @@
 //   "summary": { "title": "...", "body": "...", "stats": [{ "label": "...", "value": "..." }] },
 //                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine zümrüt özet bandı
 //                                                       // (başlık + kısa metin + stat çipleri)
-//   "logistics": { "ehliyet": true, "sehir_disi": true }, // logisticsChecks key -> boolean
+//   "logistics": { "ehliyet": true, "kendi_ekipmani": true }, // logisticsChecks key -> boolean
 //   "skills": [{ "name": "Vals", "level": 3 }],           // seviyeli yetenekler (1-3); cast kategorileri
 //   "section_taglines": { "performans": "..." },          // modül key -> kategoriye özel tagline override (kullanıcı)
 //   "quick": { "<quickInfoKey>": "<değer>" },             // Hakkımda altı hızlı bilgi değerleri
@@ -189,6 +189,7 @@ export interface LeveledSkill {
 }
 
 export const SERVICE_REGION_OPTIONS = [
+  'Yalnızca kendi şehri',
   'Şehir dışına çıkar',
   'Türkiye geneli',
   'Türkiye geneli + çevrimiçi',
@@ -450,7 +451,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'ehliyet', label: 'Ehliyet', description: 'Kendi ekipmanını taşır' },
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı etkinliklere gider' },
       { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Kendi ses sistemiyle gelebilir' },
     ],
     skillsWithLevels: false,
@@ -471,7 +471,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'ehliyet', label: 'Ehliyet', description: 'Enstrüman/ekipman ulaşımı' },
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı sahnelere gider' },
       { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Kendi enstrüman/ekipmanı ile' },
     ],
     skillsWithLevels: false,
@@ -490,7 +489,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'kurumsal_ozel', label: 'Kurumsal & Özel Davet' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı gösterilere gider' },
       { key: 'kostum', label: 'Kostüm', description: 'Kendi kostümüyle gelir' },
     ],
     skillsWithLevels: false,
@@ -509,7 +507,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'ozel_davet', label: 'Özel Davet' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı sahnelere gider' },
     ],
     skillsWithLevels: false,
   },
@@ -526,7 +523,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'kurumsal_ozel', label: 'Kurumsal & Özel Davet' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı gösterilere gider' },
       { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Sahne düzenini kendi kurar' },
     ],
     skillsWithLevels: false,
@@ -541,7 +537,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'ozel_davet', label: 'Özel Davet' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı etkinliklere gider' },
     ],
     skillsWithLevels: false,
   },
@@ -559,7 +554,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'sahne_festival', label: 'Sahne & Festival' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı etkinliklere gider' },
     ],
     skillsWithLevels: false,
   },
@@ -580,7 +574,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'ulasim', label: 'Ulaşım', description: 'Set lokasyonlarına ulaşım' },
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı çekimlere katılır' },
     ],
     skillsWithLevels: true,
     // A2 — model yaş aralığı etiketi "Görünüm yaş aralığı" (oyuncu/hostes default "Oynayabildiği...").
@@ -601,7 +594,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'ulasim', label: 'Ulaşım', description: 'Set/prova lokasyonlarına ulaşım' },
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı projelere katılır' },
     ],
     skillsWithLevels: true,
   },
@@ -620,7 +612,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     logisticsChecks: [
       { key: 'ulasim', label: 'Ulaşım', description: 'Etkinlik lokasyonlarına ulaşım' },
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı etkinliklere gider' },
     ],
     skillsWithLevels: true,
   },
@@ -641,7 +632,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'urun_moda', label: 'Ürün & Moda' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı çekimlere gider' },
       { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Tam çekim ekipmanı ile gelir' },
     ],
     skillsWithLevels: false,
@@ -661,7 +651,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'reklam_klip', label: 'Reklam & Klip' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı çekimlere gider' },
       { key: 'drone', label: 'Drone', description: 'Drone çekimi yapabilir' },
       { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Tam video ekipmanı ile gelir' },
     ],
@@ -681,7 +670,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'dugun_ozel', label: 'Düğün & Özel Davet' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı kurulum yapar' },
       { key: 'kurulum_ekibi', label: 'Kurulum ekibi', description: 'Kurulum/söküm ekibiyle gelir' },
     ],
     skillsWithLevels: false,
@@ -702,7 +690,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'yayin', label: 'Yayın' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı görevlere gider' },
       { key: 'cevrimici', label: 'Çevrimiçi', description: 'Uzaktan/çevrimiçi çeviri yapar' },
     ],
     skillsWithLevels: false,
@@ -720,7 +707,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'festival_konser', label: 'Festival & Konser' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı organizasyon yürütür' },
     ],
     skillsWithLevels: false,
   },
@@ -739,7 +725,6 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'dijital_illustrasyon', label: 'Dijital & İllüstrasyon' },
     ],
     logisticsChecks: [
-      { key: 'sehir_disi', label: 'Şehir dışı', description: 'Şehir dışı etkinliklere gider' },
       { key: 'canli_cizim', label: 'Canlı çizim', description: 'Etkinlikte canlı çizim yapar' },
     ],
     skillsWithLevels: false,
