@@ -28,9 +28,10 @@ const SECTIONS: Section[] = [
     id: 'etkinlik-sahipleri',
     title: 'Etkinlik sahipleri için',
     body: [
-      `Bir düğün, bir doğum günü, bir mezuniyet... İyi bir etkinliğin arkasında doğru insanlar vardır. Kashe'de 16 kategoride — DJ'den fotoğrafçıya, sunucudan illüzyoniste — profesyonelleri tek yerden keşfedersin. Şehre, bütçene, müsaitliğe ve etkinlik türüne göre filtrele; profillerde fiyat aralıklarını, geçmiş işleri, deneyim ve eğitim kayıtlarını gör.`,
-      `Karar vermeden önce iki yolun var: beğendiğin profesyonelden doğrudan teklif iste ya da Teklif Topla ile ihtiyacını bir kez yaz, uygun profesyonellerden teklifler sana gelsin. Tarihini seç, rezervasyon talebini gönder, tüm süreci Kashe mesajları üzerinden yürüt. Ne arayacağından emin değilsen Kashe AI etkinlik planlayıcısı ihtiyaç listeni saniyeler içinde çıkarır.`,
-      `Güvenin altyapısı: her profil yayına alınmadan önce ekibimiz tarafından incelenir; gerçekleşmiş çalışmalardan gelen değerlendirmeler "Onaylı yorum" rozetiyle ayrışır; iletişim platform üzerinde, kayıt altında ilerler.`,
+      `Bir düğün, bir doğum günü, bir mezuniyet... İyi bir etkinliğin arkasında doğru insanlar vardır. DJ'den fotoğrafçıya, sunucudan illüzyoniste 16 kategorideki profesyonelleri Kashe'de tek yerden keşfedersin. Şehre, bütçene, müsaitliğe ve etkinlik türüne göre filtrele. Profillerde fiyat aralıklarını, geçmiş işleri, deneyim ve eğitim kayıtlarını gör.`,
+      `Karar vermeden önce iki yolun var: beğendiğin profesyonelden doğrudan teklif iste ya da Teklif Topla ile ihtiyacını bir kez yaz, teklifler sana gelsin. Tarihini seç, rezervasyon talebini gönder, tüm süreci Kashe mesajları üzerinden yürüt.`,
+      `Ne arayacağından emin değilsen Kashe AI etkinlik planlayıcısı ihtiyaç listeni saniyeler içinde çıkarır.`,
+      `Güvenin altyapısı da hazır: her profil yayına alınmadan önce ekibimiz tarafından incelenir. Gerçekleşmiş çalışmalardan gelen değerlendirmeler "Onaylı yorum" rozetiyle ayrışır. İletişim platform üzerinde, kayıt altında ilerler.`,
     ],
     ctas: [
       { label: 'Profesyonelleri keşfet', href: '/kesfet' },
@@ -41,8 +42,8 @@ const SECTIONS: Section[] = [
     id: 'kurumsal',
     title: 'Kurumsal müşteriler için',
     body: [
-      `Lansman, bayi toplantısı, yıl sonu daveti, fuar... Kurumsal etkinlikler ritim ister. Kurumsal hesabınla ekip arkadaşlarını Kashe'ye davet et; teklifleri ve rezervasyon taleplerini ekipçe tek yerden takip edin. Aynı anda birden çok etkinlik yürütürken hangi talebin hangi aşamada olduğu herkes için görünür kalır.`,
-      `Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve etkinlik türü beyanları kararlarını hızlandırır; kurumsal davet deneyimi olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsin.`,
+      `Lansman, bayi toplantısı, yıl sonu daveti, fuar... Kurumsal etkinlikler ritim ister. Kurumsal hesabınla ekip arkadaşlarını Kashe'ye davet et. Teklifleri ve rezervasyon taleplerini ekipçe tek yerden takip edin. Aynı anda birden çok etkinlik yürütsen de hangi talebin hangi aşamada olduğu herkes için görünür kalır.`,
+      `Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve etkinlik türü beyanları kararlarını hızlandırır. Kurumsal davet deneyimi olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsin.`,
     ],
     ctas: [{ label: 'Kurumsal hesap aç', href: '/uye-ol?rol=kurumsal' }],
   },
@@ -50,8 +51,8 @@ const SECTIONS: Section[] = [
     id: 'profesyoneller',
     title: 'Profesyoneller için',
     body: [
-      `Kashe'de profilin bir ilan değil, bir vitrin. Kategorine özel alanlarla — DJ'sen repertuarın ve sahne bilgilerin, modelsen ölçülerin ve çalışma şeklin, tercümansan dil çiftlerin — kendini tam anlatırsın. Deneyimlerini, eğitimlerini ve ödüllerini ekle; portföyünü yükle; hizmetlerini ister sabit fiyatla, ister aralıkla, ister "fiyat görüşülür" olarak yayınla; birden çok hizmeti tek pakette topla.`,
-      `Müşteriler sana Teklif Al ve Rezervasyon Talebi ile ulaşır; ilan tahtasındaki işlere sen de başvurursun. "Doğrulanmış" ve "Tekrar tercih ediliyor" gibi rozetler gerçek performansından beslenir. Profil metnin için Kashe AI'dan destek alabilir, daha fazla görünürlük için Premium ile keşfetin üst sıralarında yer alabilirsin.`,
+      `Kashe'de profilin bir ilan değil, bir vitrin. Kategorine özel alanlarla kendini tam anlatırsın: DJ'sen repertuarın ve sahne bilgilerin, modelsen ölçülerin ve çalışma şeklin, tercümansan dil çiftlerin. Deneyimlerini, eğitimlerini ve ödüllerini ekle, portföyünü yükle. Hizmetlerini ister sabit fiyatla, ister aralıkla, ister "fiyat görüşülür" olarak yayınla. Birden çok hizmeti tek pakette topla.`,
+      `Müşteriler sana Teklif Al ve Rezervasyon Talebi ile ulaşır. İlan tahtasındaki işlere sen de başvurursun. "Doğrulanmış" ve "Tekrar tercih ediliyor" gibi rozetler gerçek performansından beslenir. Profil metnin için Kashe AI'dan destek al; daha fazla görünürlük istersen Premium seni keşfetin üst sıralarına taşır.`,
       `Telefonun ve e-postan, anlaşma netleşene kadar gizli kalır — vitrindesin ama kontrol sende.`,
     ],
     ctas: [
@@ -63,7 +64,7 @@ const SECTIONS: Section[] = [
     id: 'ajanslar',
     title: 'Ajanslar için',
     body: [
-      `Ekibin tek çatı altında. Ajans profili aç, profesyonellerini davet et; kabul eden her üyenin profilinde ajansın görünür, ajans sayfanda ekibin listelenir. Müşteriler hem tek tek profesyonellerini hem ajansını keşfedebilir; davetleri ve üyelikleri ajans panelinden yönetirsin.`,
+      `Ekibin tek çatı altında. Ajans profili aç, profesyonellerini davet et. Kabul eden her üyenin profilinde ajansın görünür, ajans sayfanda ekibin listelenir. Müşteriler hem tek tek profesyonellerini hem ajansını keşfedebilir. Davetleri ve üyelikleri ajans panelinden yönetirsin.`,
     ],
     ctas: [{ label: 'Ajans hesabı oluştur', href: '/uye-ol/ajans' }],
   },
@@ -102,14 +103,16 @@ export default function HakkimizdaPage() {
               const paras = Array.isArray(s.body) ? s.body : [s.body];
               return (
                 <div key={s.title} id={s.id} className="scroll-mt-24">
-                  <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-3">
+                  <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-4 text-balance">
                     {s.title}
                   </h2>
-                  {paras.map((para, i) => (
-                    <p
-                      key={i}
-                      className="text-ink-72 text-lg leading-relaxed mt-3 first:mt-0"
-                    >
+                  {/* Okuma kolonu (~65ch) + paragraf ritmi; başlık tam hizada kalır */}
+                  <div className="max-w-2xl space-y-5">
+                    {paras.map((para, i) => (
+                      <p
+                        key={i}
+                        className="text-ink-72 text-base md:text-lg leading-relaxed text-pretty"
+                      >
                       {para}
                       {i === paras.length - 1 && s.email && (
                         <a
@@ -119,10 +122,11 @@ export default function HakkimizdaPage() {
                           {s.email}
                         </a>
                       )}
-                    </p>
-                  ))}
+                      </p>
+                    ))}
+                  </div>
                   {s.ctas && s.ctas.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                    <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
                       {s.ctas.map((c) => (
                         <a
                           key={c.label}
