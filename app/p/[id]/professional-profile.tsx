@@ -211,7 +211,10 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   // ---- CTA blok ----
   // İşlem yetkisi: kendi profili DEĞİL + (müşteri VEYA manager+ kurum üyesi).
   // Üyeliksiz professional ziyaretçi → yalnız bilgi kutusu (mevcut davranış korunur).
-  const canTransact =
+  // Pro-as-buyer: professional ziyaretçi de alıcı koltuğuna oturur → Teklif Al / Rezervasyon.
+  const canTransact = !isOwnProfile;
+  // "İlanıma Davet Et" MEVCUT davranışında kalır (plain professional'da gösterilmez).
+  const canInvite =
     !isOwnProfile && (!currentUserIsProfessional || writableBusinesses.length > 0);
 
   // ── Aksiyon çubuğu: Davet / Favori / Paylaş / Şikayet — tek tutarlı dizi, eşit ağırlık
@@ -219,7 +222,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   //    hücrenin TAMAMI (ikon + etiket) tıklanabilir tetik. Sarmalayıcı hack / !important YOK.
   const actionBar = !isOwnProfile ? (
     <div className="flex items-stretch rounded-xl border border-line overflow-hidden bg-card divide-x divide-line">
-      {canTransact && (
+      {canInvite && (
         <DavetButton
           professionalId={profile.id}
           professionalName={displayName}
@@ -271,18 +274,6 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
         isOwnProfile={isOwnProfile}
         writableBusinesses={writableBusinesses}
         variant="outline-emerald"
-      />
-      {actionBar}
-    </div>
-  ) : !isOwnProfile ? (
-    <div className="flex flex-col gap-2.5">
-      <IletisimButton
-        professionalId={profile.id}
-        professionalName={displayName}
-        categorySlug={slug}
-        isLoggedIn={isLoggedIn}
-        currentUserIsProfessional={currentUserIsProfessional}
-        isOwnProfile={isOwnProfile}
       />
       {actionBar}
     </div>

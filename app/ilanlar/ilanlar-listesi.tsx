@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { EmptyState } from '@/app/components/EmptyState';
+import { EVENT_TYPES } from '@/app/mesajlar/data';
 import {
   SearchX,
   Briefcase,
@@ -70,16 +71,8 @@ type Props = {
   currentUserId: string | null;
 };
 
-const EVENT_TYPE_OPTIONS = [
-  { key: 'wedding', label: 'Düğün' },
-  { key: 'engagement', label: 'Nişan' },
-  { key: 'birthday', label: 'Doğum günü' },
-  { key: 'baby_shower', label: 'Baby shower' },
-  { key: 'graduation', label: 'Mezuniyet' },
-  { key: 'circumcision', label: 'Sünnet' },
-  { key: 'corporate', label: 'Kurumsal' },
-  { key: 'other', label: 'Diğer' },
-];
+// Tek kaynak: app/mesajlar/data.ts → EVENT_TYPES (ilan taksonomisi = listings.event_type CHECK).
+const EVENT_TYPE_OPTIONS = EVENT_TYPES;
 
 // Bütçe tavanı (budget_max bazlı) — Keşfet fiyat kalıbı
 const PRICE_OPTIONS = [

@@ -1,14 +1,30 @@
 // Pure data/constants — no 'use server' directive
 // Bu dosya hem server actions'tan hem client component'lerden import edilebilir.
 
+// TEK KAYNAK — etkinlik taksonomisi. Bu listeyi güncellemek TÜM türetilen yüzeyleri
+// (Teklif Al brief formu · keşfet etkinlik filtresi · kategori-bilgileri etkinlik_turleri
+// çipleri · ilan formu/filtresi) otomatik genişletir; DB tarafında constraint'ler ayrı
+// migration ile eşlenir. Sıra: sosyal blok → kurumsal blok → Diğer.
+// NOT: Çekim/iş türleri (product, fashion, social, promo, ad, kids, stage, school, mall,
+// family, outdoor, activation) etkinlik DEĞİLDİR ve buraya GİRMEZ (ayrı brief alanı — backlog).
 export const EVENT_TYPES = [
+  // Sosyal
   { key: 'wedding', label: 'Düğün' },
   { key: 'engagement', label: 'Nişan' },
+  { key: 'henna', label: 'Kına gecesi' },
   { key: 'birthday', label: 'Doğum günü' },
   { key: 'baby_shower', label: 'Baby shower' },
   { key: 'graduation', label: 'Mezuniyet' },
   { key: 'circumcision', label: 'Sünnet' },
+  // Kurumsal
   { key: 'corporate', label: 'Kurumsal' },
+  { key: 'launch', label: 'Lansman' },
+  { key: 'fair', label: 'Fuar' },
+  { key: 'conference', label: 'Konferans' },
+  { key: 'congress', label: 'Kongre' },
+  { key: 'gala', label: 'Gala' },
+  { key: 'concert', label: 'Konser' },
+  // Diğer
   { key: 'other', label: 'Diğer' },
 ] as const;
 

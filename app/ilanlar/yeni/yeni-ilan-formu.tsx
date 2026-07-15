@@ -10,6 +10,7 @@ import {
   type BudgetPresetKey,
   type Listing,
 } from '../listings-data';
+import { EVENT_TYPES } from '@/app/mesajlar/data';
 import {
   OnBehalfSelector,
   type OnBehalfBusiness,
@@ -38,16 +39,8 @@ type Props = {
   editorIsOwner?: boolean;
 };
 
-const EVENT_TYPE_OPTIONS = [
-  { key: 'wedding', label: 'Düğün' },
-  { key: 'engagement', label: 'Nişan' },
-  { key: 'birthday', label: 'Doğum günü' },
-  { key: 'baby_shower', label: 'Baby shower' },
-  { key: 'graduation', label: 'Mezuniyet' },
-  { key: 'circumcision', label: 'Sünnet' },
-  { key: 'corporate', label: 'Kurumsal' },
-  { key: 'other', label: 'Diğer' },
-];
+// Tek kaynak: app/mesajlar/data.ts → EVENT_TYPES (ilan taksonomisi = listings.event_type CHECK).
+const EVENT_TYPE_OPTIONS = EVENT_TYPES;
 
 // Proje-temelli kategoriler (etkinlik türü alakasız: oyuncu, model).
 // Bunlarda "düğün/sünnet" sormak anlamsız — etkinlik türü alanı gizlenir.

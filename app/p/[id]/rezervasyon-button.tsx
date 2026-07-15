@@ -39,8 +39,8 @@ export function RezervasyonButton({
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  // Profesyonel kendi adına rezerve edemez; ama manager+ kurum üyesiyse kurum adına edebilir
-  const canSelfCreate = !currentUserIsProfessional;
+  // Pro-as-buyer: her ziyaretçi kendi adına — customer koltuğu — rezervasyon talebi gönderebilir.
+  const canSelfCreate = true;
   const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
     canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
   );
@@ -109,12 +109,7 @@ export function RezervasyonButton({
 
   // Anonim akış: kayıt/giriş sonrası profile dönünce bekleyen rezervasyonu gönder
   useEffect(() => {
-    if (
-      !isLoggedIn ||
-      isOwnProfile ||
-      (currentUserIsProfessional && writableBusinesses.length === 0)
-    )
-      return;
+    if (!isLoggedIn || isOwnProfile) return;
 
     const key = `kashe_pending_booking_${professionalId}`;
     let stored: string | null = null;
@@ -272,12 +267,8 @@ export function RezervasyonButton({
     });
   }
 
-  // Görünürlük: kendi profili veya profesyonel ise gösterme (kutu seviyesinde de kontrol var)
-  if (
-    isOwnProfile ||
-    (currentUserIsProfessional && writableBusinesses.length === 0)
-  )
-    return null;
+  // Görünürlük: yalnız kendi profilinde gizle (pro-as-buyer: professional ziyaretçi de görür).
+  if (isOwnProfile) return null;
 
   return (
     <>

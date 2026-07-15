@@ -54,8 +54,8 @@ export function IletisimButton({
   variant = 'default',
 }: Props) {
   const router = useRouter();
-  // Profesyonel kendi adına teklif isteyemez; ama manager+ kurum üyesiyse kurum adına isteyebilir
-  const canSelfCreate = !currentUserIsProfessional;
+  // Pro-as-buyer: her ziyaretçi (professional dahil) kendi adına — customer koltuğu — teklif isteyebilir.
+  const canSelfCreate = true;
   const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
     canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
   );
@@ -143,13 +143,8 @@ export function IletisimButton({
   // Kullanıcı anonimken brief doldurup kayda yönlendirildiyse, kayıt/giriş
   // sonrası bu profile döndüğünde sessionStorage'daki brief'i otomatik gönder.
   useEffect(() => {
-    // Giriş yapmış müşteri VEYA manager+ kurum üyesi için çalışır (kurum adına)
-    if (
-      !isLoggedIn ||
-      (currentUserIsProfessional && writableBusinesses.length === 0) ||
-      isOwnProfile
-    )
-      return;
+    // Giriş yapmış her alıcı için çalışır (pro-as-buyer dahil); yalnız kendi profilinde değil.
+    if (!isLoggedIn || isOwnProfile) return;
 
     const key = `kashe_pending_brief_${professionalId}`;
     let stored: string | null = null;
@@ -370,19 +365,6 @@ export function IletisimButton({
     );
   }
 
-  // Profesyonelin başka profesyonele mesajı — YALNIZ kurum üyeliği yoksa engelle.
-  // manager+ kurum üyesi ise kurum adına teklif isteyebilir (dilim 2).
-  if (currentUserIsProfessional && writableBusinesses.length === 0) {
-    return (
-      <div className="bg-paper border border-line rounded-lg p-6">
-        <p className="text-ink-72 text-sm">
-          Profesyonel hesabıyla başka profesyonellere mesaj gönderemezsin.
-        </p>
-      </div>
-    );
-  }
-
-  
 
   // Login + müşteri → İletişim butonu (varyanta göre: package=sade buton, inline=tek buton kutusuz, default=kutu)
   return (

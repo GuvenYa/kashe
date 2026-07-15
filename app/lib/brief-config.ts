@@ -8,6 +8,8 @@
 // - Cevaplar conversations.brief_data (jsonb) içinde { [key]: value } olarak saklanır.
 // - 'message' alanı her formda zorunlu ve sabittir (config'e koymuyoruz, modal kendi ekler).
 
+import { EVENT_TYPES } from '../mesajlar/data';
+
 export type BriefFieldType =
   | 'select'
   | 'text'
@@ -57,16 +59,13 @@ const BUDGET_OPTIONS: BriefFieldOption[] = [
   { value: 'open', label: 'Açık / Görüşülecek' },
 ];
 
-const EVENT_TYPE_OPTIONS: BriefFieldOption[] = [
-  { value: 'wedding', label: 'Düğün' },
-  { value: 'engagement', label: 'Nişan' },
-  { value: 'henna', label: 'Kına' },
-  { value: 'birthday', label: 'Doğum günü' },
-  { value: 'corporate', label: 'Kurumsal etkinlik' },
-  { value: 'launch', label: 'Açılış / Lansman' },
-  { value: 'fair', label: 'Fuar' },
-  { value: 'other', label: 'Diğer' },
-];
+// TEK KAYNAK: app/mesajlar/data.ts → EVENT_TYPES. Yerel kopya YOK.
+// Değer kümesi conversations/listings event_type CHECK constraint'i + keşfet
+// etkinlik filtresi ile birebir aynıdır (taksonomi değişirse yalnız data.ts güncellenir).
+const EVENT_TYPE_OPTIONS: BriefFieldOption[] = EVENT_TYPES.map((e) => ({
+  value: e.key,
+  label: e.label,
+}));
 
 // -----------------------------------------------------------------------------
 // Default fallback — config'de tanımsız kategoriler bunu kullanır
@@ -132,16 +131,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'wedding', label: 'Düğün' },
-          { value: 'engagement', label: 'Nişan / Kına' },
-          { value: 'birthday', label: 'Doğum günü' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'product', label: 'Ürün / Katalog çekimi' },
-          { value: 'fashion', label: 'Moda / Model çekimi' },
-          { value: 'social', label: 'Sosyal medya içeriği' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -390,15 +380,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'conference', label: 'Konferans / Panel' },
-          { value: 'gala', label: 'Gala / Ödül töreni' },
-          { value: 'launch', label: 'Açılış / Lansman' },
-          { value: 'wedding', label: 'Düğün / Nişan' },
-          { value: 'fair', label: 'Fuar / Stand' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -491,15 +473,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'fair', label: 'Fuar / Stand' },
-          { value: 'launch', label: 'Lansman / Açılış' },
-          { value: 'congress', label: 'Kongre / Konferans' },
-          { value: 'gala', label: 'Gala / Davet' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'activation', label: 'Marka aktivasyonu' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -589,16 +563,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'wedding', label: 'Düğün' },
-          { value: 'engagement', label: 'Nişan / Kına' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'promo', label: 'Tanıtım filmi' },
-          { value: 'social', label: 'Sosyal medya içeriği' },
-          { value: 'product', label: 'Ürün / Katalog' },
-          { value: 'ad', label: 'Reklam filmi' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -913,14 +878,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'birthday', label: 'Doğum günü' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'wedding', label: 'Düğün / Nişan' },
-          { value: 'kids', label: 'Çocuk etkinliği' },
-          { value: 'stage', label: 'Sahne gösterisi' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -1002,13 +960,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'birthday', label: 'Doğum günü' },
-          { value: 'school', label: 'Okul etkinliği' },
-          { value: 'mall', label: 'AVM / Kurumsal çocuk etkinliği' },
-          { value: 'family', label: 'Aile günü' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -1093,15 +1045,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'wedding', label: 'Düğün' },
-          { value: 'engagement', label: 'Nişan / Kına' },
-          { value: 'birthday', label: 'Doğum günü' },
-          { value: 'baby_shower', label: 'Baby shower / Gender reveal' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'launch', label: 'Açılış / Lansman' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',
@@ -1175,15 +1119,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         type: 'select',
         required: true,
         legacyColumn: 'event_type',
-        options: [
-          { value: 'wedding', label: 'Düğün' },
-          { value: 'concert', label: 'Konser / Sahne' },
-          { value: 'corporate', label: 'Kurumsal etkinlik' },
-          { value: 'conference', label: 'Konferans / Panel' },
-          { value: 'fair', label: 'Fuar / Lansman' },
-          { value: 'outdoor', label: 'Açık hava etkinliği' },
-          { value: 'other', label: 'Diğer' },
-        ],
+        options: EVENT_TYPE_OPTIONS,
       },
       {
         key: 'event_date',

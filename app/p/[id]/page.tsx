@@ -1061,13 +1061,10 @@ export default async function PublicProfilePage({
 
           {/* İLETİŞİM & YORUM BUTONLARI */}
           <div className="flex flex-col gap-3">
-            {/* Buton bölgesi: kendi profili DEĞİL + (müşteri VEYA manager+ kurum üyesi).
-                Profil rolü professional olsa da bir kurumda yazma yetkisi (owner/manager)
-                olan kullanıcı buraya girer → kurum adına Rezervasyon akışı açılır (dilim 2).
-                Yalnız üyeliksiz professional aşağıdaki else dalındaki "mesaj gönderemezsin"
-                bandını görür. */}
-            {!isOwnProfile &&
-            (!currentUserIsProfessional || writableBusinesses.length > 0) ? (
+            {/* Buton bölgesi: pro-as-buyer — kendi profili DEĞİL her ziyaretçi (professional dahil)
+                alıcı koltuğuna oturur → Teklif Al / Rezervasyon. "Davet" aşağıda ayrı gate'te
+                MEVCUT davranışında kalır. */}
+            {!isOwnProfile ? (
               <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
                 <h2 className="font-display text-xl text-ink mb-2">
                   Bu profesyonelle çalış
@@ -1097,14 +1094,18 @@ export default async function PublicProfilePage({
                     isOwnProfile={isOwnProfile}
                     writableBusinesses={writableBusinesses}
                   />
-                  <DavetButton
-                    professionalId={profile.id}
-                    professionalName={displayName}
-                    isLoggedIn={isLoggedIn}
-                    currentUserIsProfessional={currentUserIsProfessional}
-                    isOwnProfile={isOwnProfile}
-                    writableBusinesses={writableBusinesses}
-                  />
+                  {/* Davet MEVCUT davranışında: plain professional'da gösterilmez */}
+                  {(!currentUserIsProfessional ||
+                    writableBusinesses.length > 0) && (
+                    <DavetButton
+                      professionalId={profile.id}
+                      professionalName={displayName}
+                      isLoggedIn={isLoggedIn}
+                      currentUserIsProfessional={currentUserIsProfessional}
+                      isOwnProfile={isOwnProfile}
+                      writableBusinesses={writableBusinesses}
+                    />
+                  )}
                 </div>
               </div>
             ) : (

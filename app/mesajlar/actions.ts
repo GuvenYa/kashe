@@ -401,6 +401,14 @@ export async function startConversation(
   let conversationId: string;
   const isNewConversation = !existing;
 
+  // Tek-kaynak güvence: taksonomi-dışı event_type DB'ye ulaşmadan null'a indirilir
+  // (kaynak: EVENT_TYPE_KEYS). Ayrıntı brief_data'da korunur → CHECK ihlali olmaz.
+  const safeEventType =
+    data.event_type &&
+    (EVENT_TYPE_KEYS as readonly string[]).includes(data.event_type)
+      ? data.event_type
+      : null;
+
   if (existing) {
     conversationId = existing.id;
     // Mevcut konuşmaya yeni talep geldi — çubuğu en güncel talebe göre güncelle.
@@ -409,7 +417,7 @@ export async function startConversation(
       request_type: data.request_type ?? 'quote',
     };
     if (data.event_date !== null) updateFields.event_date = data.event_date;
-    if (data.event_type !== null) updateFields.event_type = data.event_type;
+    if (safeEventType !== null) updateFields.event_type = safeEventType;
     if (data.location !== null)
       updateFields.location = data.location?.trim() || null;
     if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
@@ -431,7 +439,7 @@ export async function startConversation(
         customer_id: ownerId,
         professional_id: data.professional_id,
         event_date: data.event_date,
-        event_type: data.event_type,
+        event_type: safeEventType,
         location: data.location?.trim() || null,
         guest_count: data.guest_count,
         budget_range: data.budget_range,
@@ -493,7 +501,7 @@ export async function startConversation(
       ownerId,
       data.professional_id,
       data.message.trim(),
-      data.event_type
+      safeEventType
     ).catch(() => {});
   } else {
     notifyNewMessage(
