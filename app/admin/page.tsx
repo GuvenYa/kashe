@@ -116,16 +116,28 @@ export default async function AdminDashboardPage() {
   return (
     <>
       {/* Header */}
-      <div className="mb-8 md:mb-10">
-        <Eyebrow variant="inline" className="mb-2">
-          Admin Paneli
-        </Eyebrow>
-        <h1 className="font-display font-light text-3xl md:text-4xl text-ink tracking-[-0.02em] leading-tight">
-          Dashboard
-        </h1>
-        <p className="text-sm text-ink-72 mt-2">
-          Platformun canlı durumu ve hızlı aksiyonlar.
-        </p>
+      <div className="mb-8 md:mb-10 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <Eyebrow variant="inline" className="mb-2">
+            Admin Paneli
+          </Eyebrow>
+          <h1 className="font-display font-light text-3xl md:text-4xl text-ink tracking-[-0.02em] leading-tight">
+            Dashboard
+          </h1>
+          <p className="text-sm text-ink-72 mt-2">
+            Platformun canlı durumu ve hızlı aksiyonlar.
+          </p>
+        </div>
+        {/* Excel raporu — admin-only route handler (server üretim) */}
+        <a
+          href="/admin/rapor"
+          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:bg-ember transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          Rapor indir (.xlsx)
+        </a>
       </div>
 
       {/* 4 büyük sayı kartı */}
