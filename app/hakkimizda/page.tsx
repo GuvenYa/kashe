@@ -6,7 +6,14 @@ export const metadata = {
     "Kashe, etkinlik düzenleyenlerle sahne profesyonellerini doğrudan buluşturan Türkiye'nin etkinlik ve yetenek pazaryeri.",
 };
 
-type Section = { title: string; body: string; email?: string };
+type Cta = { label: string; href: string };
+type Section = {
+  id?: string;
+  title: string;
+  body: string | string[];
+  email?: string;
+  ctas?: Cta[];
+};
 
 const SECTIONS: Section[] = [
   {
@@ -18,8 +25,47 @@ const SECTIONS: Section[] = [
     body: 'Etkinlik sektöründe işler çoğu zaman tanıdık tavsiyesi ve telefon trafiğiyle döner: fiyatlar belirsiz, portfolyo dağınık, güvence yok. Kashe bu süreci tek çatı altında toplar — doğrulanmış profiller, gerçek yorumlar, karşılaştırılabilir teklifler ve platform içinde güvenli iletişim.',
   },
   {
+    id: 'etkinlik-sahipleri',
+    title: 'Etkinlik sahipleri için',
+    body: [
+      `Bir düğün, bir doğum günü, bir mezuniyet... İyi bir etkinliğin arkasında doğru insanlar vardır. Kashe'de 16 kategoride — DJ'den fotoğrafçıya, sunucudan illüzyoniste — profesyonelleri tek yerden keşfedersin. Şehre, bütçene, müsaitliğe ve etkinlik türüne göre filtrele; profillerde fiyat aralıklarını, geçmiş işleri, deneyim ve eğitim kayıtlarını gör.`,
+      `Karar vermeden önce iki yolun var: beğendiğin profesyonelden doğrudan teklif iste ya da Teklif Topla ile ihtiyacını bir kez yaz, uygun profesyonellerden teklifler sana gelsin. Tarihini seç, rezervasyon talebini gönder, tüm süreci Kashe mesajları üzerinden yürüt. Ne arayacağından emin değilsen Kashe AI etkinlik planlayıcısı ihtiyaç listeni saniyeler içinde çıkarır.`,
+      `Güvenin altyapısı: her profil yayına alınmadan önce ekibimiz tarafından incelenir; gerçekleşmiş çalışmalardan gelen değerlendirmeler "Onaylı yorum" rozetiyle ayrışır; iletişim platform üzerinde, kayıt altında ilerler.`,
+    ],
+    ctas: [
+      { label: 'Profesyonelleri keşfet', href: '/kesfet' },
+      { label: 'Etkinliğini planla', href: '/etkinlik-planla' },
+    ],
+  },
+  {
+    id: 'kurumsal',
+    title: 'Kurumsal müşteriler için',
+    body: [
+      `Lansman, bayi toplantısı, yıl sonu daveti, fuar... Kurumsal etkinlikler ritim ister. Kurumsal hesabınla ekip arkadaşlarını Kashe'ye davet et; teklifleri ve rezervasyon taleplerini ekipçe tek yerden takip edin. Aynı anda birden çok etkinlik yürütürken hangi talebin hangi aşamada olduğu herkes için görünür kalır.`,
+      `Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve etkinlik türü beyanları kararlarını hızlandırır; kurumsal davet deneyimi olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsin.`,
+    ],
+    ctas: [{ label: 'Kurumsal hesap aç', href: '/uye-ol?rol=kurumsal' }],
+  },
+  {
+    id: 'profesyoneller',
     title: 'Profesyoneller için',
-    body: 'Kashe, yeteneğin vitrini: profilini aç, portfolyonu yükle, müşterin sana doğrudan ulaşsın. Emeğinin karşılığını aracısız al; yorumların ve çalışma geçmişin hep seninle.',
+    body: [
+      `Kashe'de profilin bir ilan değil, bir vitrin. Kategorine özel alanlarla — DJ'sen repertuarın ve sahne bilgilerin, modelsen ölçülerin ve çalışma şeklin, tercümansan dil çiftlerin — kendini tam anlatırsın. Deneyimlerini, eğitimlerini ve ödüllerini ekle; portföyünü yükle; hizmetlerini ister sabit fiyatla, ister aralıkla, ister "fiyat görüşülür" olarak yayınla; birden çok hizmeti tek pakette topla.`,
+      `Müşteriler sana Teklif Al ve Rezervasyon Talebi ile ulaşır; ilan tahtasındaki işlere sen de başvurursun. "Doğrulanmış" ve "Tekrar tercih ediliyor" gibi rozetler gerçek performansından beslenir. Profil metnin için Kashe AI'dan destek alabilir, daha fazla görünürlük için Premium ile keşfetin üst sıralarında yer alabilirsin.`,
+      `Telefonun ve e-postan, anlaşma netleşene kadar gizli kalır — vitrindesin ama kontrol sende.`,
+    ],
+    ctas: [
+      { label: 'Profilini aç', href: '/uye-ol?rol=profesyonel' },
+      { label: "Premium'u incele", href: '/premium' },
+    ],
+  },
+  {
+    id: 'ajanslar',
+    title: 'Ajanslar için',
+    body: [
+      `Ekibin tek çatı altında. Ajans profili aç, profesyonellerini davet et; kabul eden her üyenin profilinde ajansın görünür, ajans sayfanda ekibin listelenir. Müşteriler hem tek tek profesyonellerini hem ajansını keşfedebilir; davetleri ve üyelikleri ajans panelinden yönetirsin.`,
+    ],
+    ctas: [{ label: 'Ajans hesabı oluştur', href: '/uye-ol/ajans' }],
   },
   {
     title: 'Yolculuğun başındayız',
@@ -52,24 +98,45 @@ export default function HakkimizdaPage() {
         {/* İÇERİK */}
         <section className="max-w-3xl mx-auto px-6 md:px-12 py-14 md:py-20">
           <div className="space-y-12">
-            {SECTIONS.map((s) => (
-              <div key={s.title}>
-                <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-3">
-                  {s.title}
-                </h2>
-                <p className="text-ink-72 text-lg leading-relaxed">
-                  {s.body}
-                  {s.email && (
-                    <a
-                      href={`mailto:${s.email}`}
-                      className="text-terracotta font-medium hover:underline underline-offset-4"
+            {SECTIONS.map((s) => {
+              const paras = Array.isArray(s.body) ? s.body : [s.body];
+              return (
+                <div key={s.title} id={s.id} className="scroll-mt-24">
+                  <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-3">
+                    {s.title}
+                  </h2>
+                  {paras.map((para, i) => (
+                    <p
+                      key={i}
+                      className="text-ink-72 text-lg leading-relaxed mt-3 first:mt-0"
                     >
-                      {s.email}
-                    </a>
+                      {para}
+                      {i === paras.length - 1 && s.email && (
+                        <a
+                          href={`mailto:${s.email}`}
+                          className="text-terracotta font-medium hover:underline underline-offset-4"
+                        >
+                          {s.email}
+                        </a>
+                      )}
+                    </p>
+                  ))}
+                  {s.ctas && s.ctas.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                      {s.ctas.map((c) => (
+                        <a
+                          key={c.label}
+                          href={c.href}
+                          className="font-display font-semibold text-terracotta hover:text-ember transition-colors"
+                        >
+                          {c.label} →
+                        </a>
+                      ))}
+                    </div>
                   )}
-                </p>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </section>
       </main>

@@ -61,12 +61,22 @@ export function Footer() {
                 </a>
               </li>
               <li>
+                <a href="/hakkimizda#kurumsal" className="text-paper/80 hover:text-paper transition-colors">
+                  Kurumsal müşteriler
+                </a>
+              </li>
+              <li>
+                <a href="/hakkimizda#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
+                  Ajanslar
+                </a>
+              </li>
+              <li>
                 <a href="/#nasil-calisir" className="text-paper/80 hover:text-paper transition-colors">
                   Nasıl çalışır
                 </a>
               </li>
               <li>
-                <a href="/uye-ol" className="text-paper/80 hover:text-paper transition-colors">
+                <a href="/uye-ol?rol=profesyonel" className="text-paper/80 hover:text-paper transition-colors">
                   Profesyonel ol
                 </a>
               </li>

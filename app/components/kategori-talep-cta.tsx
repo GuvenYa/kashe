@@ -200,7 +200,7 @@ export function KategoriTalepCta({
                 Vazgeç
               </button>
               <a
-                href="/uye-ol"
+                href="/uye-ol?rol=profesyonel"
                 className="kashe-tap flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition text-center shadow-[3px_3px_0_var(--color-terracotta-12)]"
               >
                 Üye ol →

@@ -33,7 +33,7 @@ Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve
 etkinlik türü beyanları kararlarını hızlandırır; kurumsal davet deneyimi
 olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsin.
 
-CTA: Kurumsal hesap aç → /uye-ol
+CTA: Kurumsal hesap aç → /uye-ol?rol=kurumsal
 
 
 Profesyoneller için
@@ -54,7 +54,7 @@ keşfetin üst sıralarında yer alabilirsin.
 Telefonun ve e-postan, anlaşma netleşene kadar gizli kalır — vitrindesin
 ama kontrol sende.
 
-CTA: Profilini aç → /uye-ol · Premium'u incele → /premium
+CTA: Profilini aç → /uye-ol?rol=profesyonel · Premium'u incele → /premium
 
 
 Ajanslar için
