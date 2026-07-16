@@ -1,6 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
@@ -8,12 +7,12 @@ import { RezervasyonKarti } from './rezervasyon-karti';
 import { Calendar } from 'lucide-react';
 import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { getEventTypeLabel } from '@/app/mesajlar/data';
 
 type BookingRow = {
   id: string;
   quote_id: string;
   conversation_id: string;
+  customer_id: string;
   professional_id: string;
   event_date: string | null;
   start_time: string | null;
@@ -27,6 +26,13 @@ type BookingRow = {
   created_at: string;
   completed_at: string | null;
   cancelled_at: string | null;
+  customer: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    company_name: string | null;
+    role: string;
+  } | null;
   professional: {
     id: string;
     full_name: string | null;
@@ -40,6 +46,81 @@ type BookingRow = {
 export const metadata = {
   title: 'Rezervasyonlarım — Kashe',
 };
+
+// Yaklaşan / geçmiş ayrımı — koltuktan bağımsız (her grup içinde uygulanır).
+function splitByTime(list: BookingRow[]) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming: BookingRow[] = [];
+  const past: BookingRow[] = [];
+  for (const b of list) {
+    if (b.status === 'cancelled' || b.status === 'completed') {
+      past.push(b);
+      continue;
+    }
+    // confirmed
+    if (b.event_date) {
+      const ed = new Date(b.event_date);
+      ed.setHours(0, 0, 0, 0);
+      (ed >= today ? upcoming : past).push(b);
+    } else {
+      // tarih netleşmemiş → yaklaşan
+      upcoming.push(b);
+    }
+  }
+  return { upcoming, past };
+}
+
+// Bir koltuk grubu ("Aldığın" / "Verdiğin"). Anayasa: boş grup RENDER EDİLMEZ.
+function SeatGroup({
+  title,
+  list,
+  viewer,
+}: {
+  title: string;
+  list: BookingRow[];
+  viewer: 'customer' | 'professional';
+}) {
+  if (list.length === 0) return null;
+  const { upcoming, past } = splitByTime(list);
+  return (
+    <section>
+      <h2 className="font-display font-semibold text-xl md:text-2xl text-ink tracking-tight mb-5">
+        {title}{' '}
+        <span className="text-ink-50 font-normal text-base">
+          ({list.length})
+        </span>
+      </h2>
+      <div className="space-y-10">
+        {upcoming.length > 0 && (
+          <div>
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-terracotta mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-terracotta inline-block kashe-pulse" />
+              Yaklaşan ({upcoming.length})
+            </h3>
+            <div className="space-y-3">
+              {upcoming.map((b) => (
+                <RezervasyonKarti key={b.id} booking={b} viewer={viewer} />
+              ))}
+            </div>
+          </div>
+        )}
+        {past.length > 0 && (
+          <div>
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-50 mb-4">
+              Geçmiş ({past.length})
+            </h3>
+            <div className="space-y-3">
+              {past.map((b) => (
+                <RezervasyonKarti key={b.id} booking={b} viewer={viewer} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default async function RezervasyonlarimPage() {
   const supabase = await createClient();
@@ -58,54 +139,35 @@ export default async function RezervasyonlarimPage() {
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
+  // KOLTUK-FARKINDA: kullanıcının HER İKİ koltuğu (alıcı=customer VEYA satıcı=professional).
+  // RLS zaten katılımcıya kısıtlar; .or() takım rezervasyonlarını dışta bırakıp yalnız
+  // kişinin kendi iki koltuğunu getirir. customer + professional join'leri birlikte gelir.
   const { data: bookingsData } = await supabase
     .from('bookings')
     .select(
       `
-      id, quote_id, conversation_id, professional_id,
+      id, quote_id, conversation_id, customer_id, professional_id,
       event_date, start_time, end_time, event_type, location, guest_count,
       total_amount, currency, status,
       created_at, completed_at, cancelled_at,
+      customer:profiles!bookings_customer_id_fkey (
+        id, full_name, avatar_url, company_name, role
+      ),
       professional:profiles!bookings_professional_id_fkey (
         id, full_name, avatar_url, company_name, role,
         service_categories!profiles_primary_category_id_fkey (name_tr, slug)
       )
     `
     )
-    .eq('customer_id', user.id)
+    .or(`customer_id.eq.${user.id},professional_id.eq.${user.id}`)
     .order('event_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   const bookings = (bookingsData ?? []) as unknown as BookingRow[];
 
-  // Bugün ve geleceğe ait (confirmed) — yaklaşan
-  // Geçmiş ve tamamlanmış/iptal — geçmiş
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const upcoming: BookingRow[] = [];
-  const past: BookingRow[] = [];
-
-  for (const b of bookings) {
-    if (b.status === 'cancelled') {
-      past.push(b);
-      continue;
-    }
-    if (b.status === 'completed') {
-      past.push(b);
-      continue;
-    }
-    // confirmed
-    if (b.event_date) {
-      const ed = new Date(b.event_date);
-      ed.setHours(0, 0, 0, 0);
-      if (ed >= today) upcoming.push(b);
-      else past.push(b);
-    } else {
-      // event_date yoksa "yaklaşan"a koy (henüz tarih netleşmemiş olabilir)
-      upcoming.push(b);
-    }
-  }
+  // Koltuk ayrımı (self-guard sayesinde bir kayıt iki koltukta birden olamaz).
+  const asBuyer = bookings.filter((b) => b.customer_id === user.id);
+  const asSeller = bookings.filter((b) => b.professional_id === user.id);
 
   return (
     <>
@@ -121,7 +183,7 @@ export default async function RezervasyonlarimPage() {
               <em>Rezervasyonlarım</em>.
             </h1>
             <p className="text-base text-ink-72 mt-3 max-w-xl leading-relaxed">
-              Onayladığın teklifler, yaklaşan ve geçmiş işlerin burada.
+              Aldığın ve verdiğin hizmetler, yaklaşan ve geçmişiyle burada.
             </p>
           </div>
 
@@ -129,47 +191,21 @@ export default async function RezervasyonlarimPage() {
             <EmptyState
               icon={Calendar}
               title="Henüz rezervasyon yok"
-              description="Bir profesyonelden teklif al, onayladığında burada görünür."
+              description="Aldığın ve verdiğin onaylı hizmetler burada görünür."
               action={{ label: 'Profesyonelleri keşfet', href: '/kesfet' }}
             />
           ) : (
-            <div className="space-y-12">
-              {/* Yaklaşan */}
-              {upcoming.length > 0 && (
-                <section>
-                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-terracotta mb-5 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-terracotta inline-block kashe-pulse" />
-                    Yaklaşan ({upcoming.length})
-                  </h2>
-                  <div className="space-y-3">
-                    {upcoming.map((b) => (
-                      <RezervasyonKarti
-                        key={b.id}
-                        booking={b}
-                        viewer="customer"
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Geçmiş */}
-              {past.length > 0 && (
-                <section>
-                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-50 mb-5">
-                    Geçmiş ({past.length})
-                  </h2>
-                  <div className="space-y-3">
-                    {past.map((b) => (
-                      <RezervasyonKarti
-                        key={b.id}
-                        booking={b}
-                        viewer="customer"
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
+            <div className="space-y-14">
+              <SeatGroup
+                title="Aldığın hizmetler"
+                list={asBuyer}
+                viewer="customer"
+              />
+              <SeatGroup
+                title="Verdiğin hizmetler"
+                list={asSeller}
+                viewer="professional"
+              />
             </div>
           )}
         </div>

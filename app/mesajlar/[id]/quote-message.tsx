@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   type Quote,
   formatQuoteAmount,
@@ -20,12 +21,15 @@ type QuoteCardProps = {
    *  !canWrite) için false → kabul/red butonu gizlenir (aksiyonu action'da zaten
    *  alamaz; butonu görüp hata alması kötü UX). Varsayılan true (sahip/pro/manager). */
   canAct?: boolean;
+  /** Kabul edilmiş teklife bağlı booking id (varsa) → rezervasyona köprü (her iki koltuk) */
+  bookingId?: string | null;
 };
 
 export function QuoteCard({
   quote,
   currentUserId,
   canAct = true,
+  bookingId = null,
 }: QuoteCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -294,6 +298,19 @@ export function QuoteCard({
                 </span>
               )}
             </p>
+          </div>
+        )}
+
+        {/* Kabul edilmiş teklif → rezervasyon köprüsü (her iki koltuk) */}
+        {quote.status === 'accepted' && bookingId && (
+          <div className="border-t border-line px-5 py-3">
+            <Link
+              href={`/rezervasyon/${bookingId}`}
+              className="kashe-tap flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-xl bg-moss/10 text-moss border border-moss/30 font-display font-semibold text-sm hover:bg-moss/15 transition"
+            >
+              Rezervasyonu görüntüle
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
         )}
       </div>

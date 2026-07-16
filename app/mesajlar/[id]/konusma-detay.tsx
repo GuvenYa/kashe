@@ -59,6 +59,8 @@ type Props = {
   budgetRange: string | null;
   initialMessages: Message[];
   initialQuotes: Record<string, Quote>;
+  /** quote.id → booking.id (kabul edilmiş teklif kartından rezervasyona köprü) */
+  bookingIdByQuoteId: Record<string, string>;
 };
 
 const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -148,6 +150,7 @@ export function KonusmaDetay({
   budgetRange,
   initialMessages,
   initialQuotes,
+  bookingIdByQuoteId,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -689,6 +692,7 @@ export function KonusmaDetay({
                     quote={quote}
                     currentUserId={currentUserId}
                     canAct={!isTeam || canWrite}
+                    bookingId={bookingIdByQuoteId[quote.id] ?? null}
                   />
                 </div>
               );
@@ -889,11 +893,14 @@ export function KonusmaDetay({
             <button
               type="button"
               onClick={() => setQuoteModalOpen(true)}
-              aria-label="Teklif gönder"
-              title="Teklif gönder"
-              className="kashe-tap shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl border border-plum/30 bg-plum/8 text-plum hover:bg-plum/15 hover:border-plum/50 transition flex items-center justify-center font-display text-xl leading-none"
+              aria-label="Teklif oluştur"
+              title="Teklif oluştur"
+              className="kashe-tap shrink-0 h-11 md:h-12 px-3 md:px-4 rounded-xl border border-plum/30 bg-plum/8 text-plum hover:bg-plum/15 hover:border-plum/50 transition flex items-center gap-1.5 font-display font-semibold text-xs md:text-sm whitespace-nowrap"
             >
-              +
+              <span className="text-base leading-none" aria-hidden="true">₺</span>
+              <span>
+                Teklif<span className="hidden sm:inline"> oluştur</span>
+              </span>
             </button>
           )}
           <input

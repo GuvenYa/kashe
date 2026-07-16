@@ -228,14 +228,21 @@ export default async function KonusmaPage({
   // İLETİŞİM GATE (komisyon-kritik) — telefon yalnızca gerçek anlaşmada açılır.
   // Anlaşma = bu konuşmaya bağlı onaylı/tamamlanmış rezervasyon (bookings).
   // Kilitliyken telefon client'a HİÇ gitmez (data katmanı, görsel gizleme değil).
-  const { data: dealRows } = await supabase
+  // Bu konuşmadaki tüm rezervasyonlar (id + quote_id + status):
+  //  - contactUnlocked (iletişim gate): confirmed/completed varsa açılır
+  //  - bookingIdByQuoteId (köprü): kabul edilmiş teklif kartından /rezervasyon/[id]
+  const { data: convBookings } = await supabase
     .from('bookings')
-    .select('id')
-    .eq('conversation_id', id)
-    .in('status', ['confirmed', 'completed'])
-    .limit(1);
+    .select('id, quote_id, status')
+    .eq('conversation_id', id);
 
-  const contactUnlocked = (dealRows?.length ?? 0) > 0;
+  const contactUnlocked = (convBookings ?? []).some(
+    (b) => b.status === 'confirmed' || b.status === 'completed'
+  );
+  const bookingIdByQuoteId: Record<string, string> = {};
+  for (const b of convBookings ?? []) {
+    if (b.quote_id) bookingIdByQuoteId[b.quote_id] = b.id;
+  }
 
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
@@ -302,6 +309,7 @@ export default async function KonusmaPage({
                 budgetRange={conv.budget_range}
                 initialMessages={messages}
                 initialQuotes={quotesById}
+                bookingIdByQuoteId={bookingIdByQuoteId}
               />
             </div>
 

@@ -285,9 +285,10 @@ export default async function PublicProfilePage({
   // Kurum adına yorum dilim 3b ile açıldı (bugüne dek yalnız client yazabiliyordu).
   const reviewCandidateIds: string[] = [];
   if (isLoggedIn && !isOwnProfile && user) {
-    if (currentUserRole === 'client' || currentUserRole === 'business') {
-      reviewCandidateIds.push(user.id);
-    }
+    // Pro-as-buyer: yorum yetkisi ROL değil KOLTUK. Kendi adına (customer_id)
+    // tamamlanmış rezervasyonu olan her ziyaretçi (professional dahil) aday olur;
+    // gerçek yetki aşağıdaki completed-booking sorgusu + action/RLS ile belirlenir.
+    reviewCandidateIds.push(user.id);
     const { data: ownerMemberships } = await supabase
       .from('business_members')
       .select('business_id')

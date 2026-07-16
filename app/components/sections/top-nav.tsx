@@ -59,8 +59,10 @@ export async function TopNav() {
   // MENÜ SADELEŞTİRME: /profil'de bölümü/giriş-linki OLAN sayfalar menüde TEKRAR
   // ETMEZ; karşılığı OLMAYANLAR kalır. (Yetki/sayfa değişmez — yalnız menü içeriği.)
 
-  // Profesyonel/ajans → Takvimim + Kazançlarım (profilde bölüm yok → kalır)
+  // Profesyonel/ajans → Rezervasyonlarım (satıcı koltuğu: "Verdiğin hizmetler";
+  // pro-alıcıysa "Aldığın hizmetler" de aynı listede) + Takvimim + Kazançlarım.
   if (isProfessional || isAgency) {
+    menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
     menuLinks.push({ href: "/takvimim", label: "Takvimim" });
     menuLinks.push({ href: "/kazanclarim", label: "Kazançlarım" });
   }
