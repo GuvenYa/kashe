@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
@@ -74,8 +75,10 @@ export function MobileNav({
   const linkClassInlineBadge =
     'flex py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors items-center gap-2';
 
+  // Grup başlıkları: zümrüt eyebrow tonu (link renginden ayrışır; profil bölüm
+  // eyebrow'larıyla aynı) — link renkleri değişmez.
   const groupLabel =
-    'font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 pt-1 pb-1.5';
+    'font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-terracotta pt-1 pb-1.5';
 
   // menuLinks (tek kaynak) → gruplara ayrım:
   //  - Profilim: İşlerim BAŞINA (özgün düzen)  - Premium: Hesap
@@ -124,15 +127,18 @@ export function MobileNav({
         )}
       </button>
 
-      {open && (
+      {open &&
+        createPortal(
         <>
+          {/* Portal → document.body: üst bardaki backdrop-filter'ın fixed
+              containing-block etkisinden kaç → viewport-göreli konumlan. */}
           <div
-            className="md:hidden fixed inset-0 top-[73px] bg-ink/20 z-40"
+            className="md:hidden fixed inset-0 top-[73px] bg-ink/40 backdrop-blur-sm z-[90]"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
 
-          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-50 shadow-lg">
+          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-[100] shadow-lg">
             <nav className="px-6 py-4">
               {isLoggedIn ? (
                 <>
@@ -227,7 +233,8 @@ export function MobileNav({
               )}
             </nav>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   );

@@ -94,9 +94,16 @@ export default function GirisForm({
     setNotConfirmed(false);
     setResendMsg(null);
 
+    const mail = email.trim();
+    if (!mail) {
+      setHata('E-posta adresini gir.');
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: mail,
       password: sifre,
     });
 
@@ -138,10 +145,16 @@ export default function GirisForm({
   async function handleResend() {
     setResending(true);
     setResendMsg(null);
+    const mail = email.trim();
+    if (!mail) {
+      setResendMsg('E-posta adresini gir.');
+      setResending(false);
+      return;
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email: email.trim(),
+      email: mail,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
       },

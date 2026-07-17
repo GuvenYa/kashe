@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createClient } from '@/app/lib/supabase-browser';
 import {
   getUnreadMessageCount,
@@ -15,6 +15,11 @@ export function UnreadBadge({ userId }: Props) {
   const [count, setCount] = useState<number>(0);
   // Kurumsal ekip (pasif gözlemci) konuşmaları — realtime increment'te sayılmaz
   const teamConvIdsRef = useRef<Set<string>>(new Set());
+  // Instance-benzersiz kanal adı: UnreadBadge hem masaüstü nav'da hem mobil
+  // hamburger'de aynı anda mount olur; tek client (singleton) üzerinde AYNI
+  // topic'e ikinci abonelik "cannot add postgres_changes after subscribe()"
+  // hatası verir. useId ile her instance'a ayrı topic.
+  const channelId = useId().replace(/:/g, '');
 
   // İlk fetch + team konuşma id'leri (increment hariç tutma için)
   useEffect(() => {
@@ -44,7 +49,7 @@ export function UnreadBadge({ userId }: Props) {
       if (isCancelled) return;
 
       channel = supabase
-        .channel(`unread-badge:${userId}`)
+        .channel(`unread-badge:${userId}:${channelId}`)
         .on(
         'postgres_changes',
         {
@@ -90,7 +95,7 @@ export function UnreadBadge({ userId }: Props) {
         supabase.removeChannel(channel);
       }
     };
-  }, [userId]);
+  }, [userId, channelId]);
 
   // Tab focus'a geri dönünce drift'i temizle
   useEffect(() => {

@@ -25,10 +25,17 @@ export function SifremiUnuttumForm() {
     setLoading(true);
     setHata(null);
 
+    const mail = email.trim();
+    if (!mail) {
+      setHata('E-posta adresini gir.');
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/callback?next=/sifre-sifirla`;
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error } = await supabase.auth.resetPasswordForEmail(mail, {
       redirectTo,
     });
 

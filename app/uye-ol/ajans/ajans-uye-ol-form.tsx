@@ -51,8 +51,14 @@ export function AjansUyeOlForm() {
     setLoading(true);
 
     try {
+      const mail = email.toLowerCase().trim();
+      if (!mail) {
+        setError("E-posta adresini gir.");
+        setLoading(false);
+        return;
+      }
       const { error } = await supabase.auth.signUp({
-        email: email.toLowerCase().trim(),
+        email: mail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,

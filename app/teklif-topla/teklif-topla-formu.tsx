@@ -430,7 +430,7 @@ export function TeklifToplaFormu({
               <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                 Kimlere gönderilsin?
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {TARGET_ROLE_OPTIONS.map((opt) => (
                   <label
                     key={opt.value}
