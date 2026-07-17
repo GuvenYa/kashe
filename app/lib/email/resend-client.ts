@@ -18,4 +18,4 @@ export const EMAIL_FROM =
   process.env.EMAIL_FROM || 'Kashe <onboarding@resend.dev>';
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://kashe-rho.vercel.app';
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://kashe.net';
