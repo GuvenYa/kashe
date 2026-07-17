@@ -155,9 +155,12 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                       key={i}
                       type="button"
                       onClick={() => setDescription(tpl)}
-                      className="text-left text-[12px] leading-snug text-ink bg-card border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all line-clamp-2"
+                      className="text-left text-[12px] leading-snug text-ink bg-card border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all overflow-hidden"
                     >
-                      {tpl}
+                      {/* Clamp iç span'de: <button> üzerinde line-clamp mobil tarayıcılarda güvenilmez */}
+                      <span className="line-clamp-2 overflow-hidden break-words">
+                        {tpl}
+                      </span>
                     </button>
                   ))}
                 </div>

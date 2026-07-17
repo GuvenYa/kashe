@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
 import { UnreadBadge } from './unread-badge';
+import { DISCOVERY_LINKS, MARKETING_LINKS } from '@/app/lib/nav-links';
 
 type Props = {
   isLoggedIn: boolean;
@@ -73,6 +74,36 @@ export function MobileNav({
   const linkClassInlineBadge =
     'flex py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors items-center gap-2';
 
+  const groupLabel =
+    'font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 pt-1 pb-1.5';
+
+  // menuLinks (tek kaynak) → gruplara ayrım:
+  //  - Profilim: İşlerim BAŞINA (özgün düzen)  - Premium: Hesap
+  //  - Bildirimler: Hesap'ta badge'li ayrı render  - kalanı: İşlerim
+  const profileLink = menuLinks.find((l) => l.href === '/profil');
+  const premiumLink = menuLinks.find((l) => l.href === '/premium');
+  const workLinks = menuLinks.filter(
+    (l) => !['/profil', '/premium', '/bildirimler'].includes(l.href)
+  );
+
+  // Keşif linkleri (tek kaynak nav-links; üst bar ile parite) — iki dalda da kullanılır
+  const discoveryItems = DISCOVERY_LINKS.map((link) => (
+    <a
+      key={link.href}
+      href={link.href}
+      className={
+        link.ai ? linkClass + ' inline-flex items-center gap-1.5' : linkClass
+      }
+    >
+      {link.ai && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
+          <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
+        </svg>
+      )}
+      {link.label}
+    </a>
+  ));
+
   return (
     <>
       <button
@@ -103,64 +134,48 @@ export function MobileNav({
 
           <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-50 shadow-lg">
             <nav className="px-6 py-4">
-              {/* PUBLIC NAV */}
-              <a href="/kesfet" className={linkClass}>
-                Keşfet
-              </a>
-              <a href="/ilanlar" className={linkClass}>
-                İlanlar
-              </a>
-              <a href="/blog" className={linkClass}>
-                Blog
-              </a>
-              <a href="/kashe-ai" className={linkClass + " inline-flex items-center gap-1.5"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
-                  <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
-                </svg>
-                Kashe AI
-              </a>
-              <a href="/#hizmetler" className={linkClass}>
-                Hizmetler
-              </a>
-              <a href="/#nasil-calisir" className={linkClass}>
-                Nasıl çalışır
-              </a>
-              <a href="/#kurumsal" className={linkClass}>
-                Kurumsal
-              </a>
-              <a href="/fiyatlandirma" className={linkClass}>
-                Fiyatlandırma
-              </a>
-
-              <div className="border-t border-line my-3" />
-
               {isLoggedIn ? (
                 <>
-                  {/* PROFİL GRUBU — tek kaynak: TopNav'dan gelen menuLinks.
-                      Bildirimler aşağıda badge'li ayrı render edildiği için hariç tutulur. */}
-                  {menuLinks
-                    .filter((link) => link.href !== '/bildirimler')
-                    .map((link) => (
-                      <a key={link.href} href={link.href} className={linkClass}>
-                        {link.label}
-                      </a>
-                    ))}
-
-                  <div className="border-t border-line my-3" />
-
-                  {/* İŞLEMLER GRUBU — Teklif Talepleri zaten menuLinks'te (çift göstermemek
-                      için burada tekrar edilmez); Teklif Topla menuLinks'te YOK, burada kalır */}
+                  {/* İŞLERİM — Profilim başta (özgün düzen), sonra çalışma yüzeyleri.
+                      Pazarlama linkleri girişli kullanıcıda YOK. */}
+                  <p className={groupLabel}>İşlerim</p>
+                  {profileLink && (
+                    <a href={profileLink.href} className={linkClass}>
+                      {profileLink.label}
+                    </a>
+                  )}
+                  <a href="/mesajlar" className={linkClassInlineBadge}>
+                    Mesajlar
+                    {userId && <UnreadBadge userId={userId} />}
+                  </a>
+                  {/* Teklif Topla: yalnız teklif toplayabilen roller (client/business/manager).
+                      Pro/ajans canCollectOffers=false → zaten gizli (v1 kararı). */}
                   {canCollectOffers && (
                     <a href="/teklif-topla" className={linkClass}>
                       Teklif Topla
                     </a>
                   )}
+                  {workLinks.map((link) => (
+                    <a key={link.href} href={link.href} className={linkClass}>
+                      {link.label}
+                    </a>
+                  ))}
 
-                  <a href="/mesajlar" className={linkClassInlineBadge}>
-                    Mesajlar
-                    {userId && <UnreadBadge userId={userId} />}
-                  </a>
+                  <div className="border-t border-line my-3" />
 
+                  {/* KEŞİF — tek kaynak (nav-links); üst bar ile parite (Blog dahil) */}
+                  <p className={groupLabel}>Keşif</p>
+                  {discoveryItems}
+
+                  <div className="border-t border-line my-3" />
+
+                  {/* HESAP — Premium + Bildirimler + Admin + Çıkış */}
+                  <p className={groupLabel}>Hesap</p>
+                  {premiumLink && (
+                    <a href={premiumLink.href} className={linkClass}>
+                      {premiumLink.label}
+                    </a>
+                  )}
                   <a href="/bildirimler" className={linkClassInlineBadge}>
                     Bildirimler
                     {notificationCount > 0 && (
@@ -169,18 +184,11 @@ export function MobileNav({
                       </span>
                     )}
                   </a>
-
                   {isAdmin && (
-                    <>
-                      <div className="border-t border-line my-3" />
-                      <a href="/admin" className={linkClass}>
-                        Admin Paneli
-                      </a>
-                    </>
+                    <a href="/admin" className={linkClass}>
+                      Admin Paneli
+                    </a>
                   )}
-
-                  <div className="border-t border-line my-3" />
-
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -190,20 +198,32 @@ export function MobileNav({
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col gap-3 pt-2">
-                  <a
-                    href="/giris"
-                    className="px-4 py-3 border border-line text-ink rounded-lg font-display font-medium text-center hover:bg-line transition-colors"
-                  >
-                    Giriş yap
-                  </a>
-                  <a
-                    href="/uye-ol"
-                    className="px-4 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-center hover:opacity-90 transition-opacity"
-                  >
-                    Üye ol
-                  </a>
-                </div>
+                <>
+                  {/* PUBLIC — tek kaynak (nav-links); üst bar girişsiz seti ile birebir */}
+                  {discoveryItems}
+                  {MARKETING_LINKS.map((link) => (
+                    <a key={link.href} href={link.href} className={linkClass}>
+                      {link.label}
+                    </a>
+                  ))}
+
+                  <div className="border-t border-line my-3" />
+
+                  <div className="flex flex-col gap-3 pt-2">
+                    <a
+                      href="/giris"
+                      className="px-4 py-3 border border-line text-ink rounded-lg font-display font-medium text-center hover:bg-line transition-colors"
+                    >
+                      Giriş yap
+                    </a>
+                    <a
+                      href="/uye-ol"
+                      className="px-4 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-center hover:opacity-90 transition-opacity"
+                    >
+                      Üye ol
+                    </a>
+                  </div>
+                </>
               )}
             </nav>
           </div>

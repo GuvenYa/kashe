@@ -8,6 +8,7 @@ import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
+import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -111,48 +112,41 @@ export async function TopNav() {
           </span>
         </a>
 
-        {/* Orta nav */}
+        {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}
         <div className="hidden md:flex items-center gap-7">
-          <a href="/kesfet" className={navLinkClass}>
-            Keşfet
-          </a>
-          <a href="/ilanlar" className={navLinkClass}>
-            İlanlar
-          </a>
-          <a href="/blog" className={navLinkClass}>
-              Blog
-            </a>
-            <a href="/kashe-ai" className={navLinkClass + " inline-flex items-center gap-1.5"}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
-                <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
-              </svg>
-              Kashe AI
-            </a>
-          {user ? (
-            <>
-              {/* "Teklif Talepleri" desktop orta nav'dan çıkarıldı — avatar/hamburger
-                  menüde (menuLinks, pro/agency) kalır. Teklif Topla burada kalır. */}
-              {canCollectOffers && (
-                <a href="/teklif-topla" className={navLinkClass}>
-                  Teklif Topla
-                </a>
+          {/* İşlevsel keşif — her kullanıcıya */}
+          {DISCOVERY_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className={
+                link.ai
+                  ? navLinkClass + " inline-flex items-center gap-1.5"
+                  : navLinkClass
+              }
+            >
+              {link.ai && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
+                  <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
+                </svg>
               )}
-            </>
+              {link.label}
+            </a>
+          ))}
+          {user ? (
+            // Teklif Topla: girişli + teklif toplayabilen roller (menuLinks/gate ile tutarlı)
+            canCollectOffers && (
+              <a href="/teklif-topla" className={navLinkClass}>
+                Teklif Topla
+              </a>
+            )
           ) : (
-            <>
-              <a href="/#hizmetler" className={navLinkClass}>
-                Hizmetler
+            // Pazarlama — yalnız girişsiz
+            MARKETING_LINKS.map((link) => (
+              <a key={link.href} href={link.href} className={navLinkClass}>
+                {link.label}
               </a>
-              <a href="/#nasil-calisir" className={navLinkClass}>
-                Nasıl çalışır
-              </a>
-              <a href="/#kurumsal" className={navLinkClass}>
-                Kurumsal
-              </a>
-              <a href="/fiyatlandirma" className={navLinkClass}>
-                Fiyatlandırma
-              </a>
-            </>
+            ))
           )}
         </div>
 
