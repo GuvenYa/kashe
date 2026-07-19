@@ -149,14 +149,18 @@ export async function createQuote(
   }
 
   // E-POSTA: müşteriye yeni teklif bildirimi
-  notifyNewQuote(
-    supabase,
-    input.conversationId,
-    conv.customer_id,
-    conv.professional_id,
-    quote.total_amount,
-    quote.currency ?? 'TRY'
-  ).catch(() => {});
+  try {
+    await notifyNewQuote(
+      supabase,
+      input.conversationId,
+      conv.customer_id,
+      conv.professional_id,
+      quote.total_amount,
+      quote.currency ?? 'TRY'
+    );
+  } catch (e) {
+    console.error('[mail:new-quote]', e);
+  }
 
   revalidatePath(`/mesajlar/${input.conversationId}`);
   return { success: true };
@@ -225,14 +229,18 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     .eq('status', 'pending');
 
   // E-POSTA: profesyonele "teklifin onaylandı" bildirimi
-  notifyQuoteAccepted(
-    supabase,
-    quote.conversation_id,
-    conv.customer_id,
-    conv.professional_id,
-    quote.total_amount,
-    quote.currency ?? 'TRY'
-  ).catch(() => {});
+  try {
+    await notifyQuoteAccepted(
+      supabase,
+      quote.conversation_id,
+      conv.customer_id,
+      conv.professional_id,
+      quote.total_amount,
+      quote.currency ?? 'TRY'
+    );
+  } catch (e) {
+    console.error('[mail:quote-accepted]', e);
+  }
 
   revalidatePath(`/mesajlar/${quote.conversation_id}`);
   return { success: true };

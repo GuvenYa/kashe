@@ -2,7 +2,6 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
-import { after } from 'next/server';
 import {
   profilOnaylandiEmail,
   profilRevizyonEmail,
@@ -329,18 +328,17 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
 
   await logAction(supabase, adminId, 'approve_profile', 'user', profileId);
 
-  // Onay e-postası — fire-and-forget (after): admin aksiyonunu bloklamaz, redirect'i geciktirmez.
+  // Onay e-postası — inline await: Vercel serverless'te after()/fire-and-forget
+  // response sonrası donup gönderim tamamlanmıyordu. Mail hatası aksiyonu bozmaz.
   const approvedRow = updated[0] as { email: string | null; full_name: string | null };
-  after(async () => {
-    try {
-      if (approvedRow.email) {
-        const mail = profilOnaylandiEmail({ name: approvedRow.full_name, profileId });
-        await sendAccountEmail({ to: approvedRow.email, ...mail });
-      }
-    } catch (e) {
-      console.error('[approve-email]', e);
+  try {
+    if (approvedRow.email) {
+      const mail = profilOnaylandiEmail({ name: approvedRow.full_name, profileId });
+      await sendAccountEmail({ to: approvedRow.email, ...mail });
     }
-  });
+  } catch (e) {
+    console.error('[mail:profile-approved]', e);
+  }
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');
@@ -426,18 +424,17 @@ export async function requestProfileRevision(
 
   await logAction(supabase, adminId, 'request_profile_revision', 'user', profileId, trimmedNote);
 
-  // Revizyon e-postası — fire-and-forget (after); admin notu gövdede.
+  // Revizyon e-postası — inline await (after() Vercel'de gönderimi tamamlamıyordu);
+  // admin notu gövdede. Mail hatası aksiyonu bozmaz.
   const revRow = updated[0] as { email: string | null; full_name: string | null };
-  after(async () => {
-    try {
-      if (revRow.email) {
-        const mail = profilRevizyonEmail({ name: revRow.full_name, note: trimmedNote });
-        await sendAccountEmail({ to: revRow.email, ...mail });
-      }
-    } catch (e) {
-      console.error('[revision-email]', e);
+  try {
+    if (revRow.email) {
+      const mail = profilRevizyonEmail({ name: revRow.full_name, note: trimmedNote });
+      await sendAccountEmail({ to: revRow.email, ...mail });
     }
-  });
+  } catch (e) {
+    console.error('[mail:profile-revision]', e);
+  }
 
   revalidatePath('/admin');
   revalidatePath('/admin/profiller');

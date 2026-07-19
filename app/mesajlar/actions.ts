@@ -495,21 +495,29 @@ export async function startConversation(
 
   // E-POSTA: yeni konuşma ise "new_conversation", değilse "new_message"
   if (isNewConversation) {
-    notifyNewConversation(
-      supabase,
-      conversationId,
-      ownerId,
-      data.professional_id,
-      data.message.trim(),
-      safeEventType
-    ).catch(() => {});
+    try {
+      await notifyNewConversation(
+        supabase,
+        conversationId,
+        ownerId,
+        data.professional_id,
+        data.message.trim(),
+        safeEventType
+      );
+    } catch (e) {
+      console.error('[mail:new-conversation]', e);
+    }
   } else {
-    notifyNewMessage(
-      supabase,
-      conversationId,
-      user.id,
-      data.message.trim()
-    ).catch(() => {});
+    try {
+      await notifyNewMessage(
+        supabase,
+        conversationId,
+        user.id,
+        data.message.trim()
+      );
+    } catch (e) {
+      console.error('[mail:new-message]', e);
+    }
   }
 
   revalidatePath('/mesajlar');
@@ -601,9 +609,11 @@ export async function sendMessage(
   }
 
   // E-POSTA: karşı tarafa yeni mesaj bildirimi
-  notifyNewMessage(supabase, conversationId, user.id, body.trim()).catch(
-    () => {}
-  );
+  try {
+    await notifyNewMessage(supabase, conversationId, user.id, body.trim());
+  } catch (e) {
+    console.error('[mail:new-message]', e);
+  }
 
   revalidatePath('/mesajlar');
   revalidatePath(`/mesajlar/${conversationId}`);
@@ -915,12 +925,16 @@ export async function sendMessageWithAttachment(
     return { success: false, error: 'Dosya gönderilemedi: ' + error.message };
   }
 
-  notifyNewMessage(
-    supabase,
-    conversationId,
-    user.id,
-    trimmedBody || '📎 Dosya'
-  ).catch(() => {});
+  try {
+    await notifyNewMessage(
+      supabase,
+      conversationId,
+      user.id,
+      trimmedBody || '📎 Dosya'
+    );
+  } catch (e) {
+    console.error('[mail:new-message]', e);
+  }
 
   revalidatePath('/mesajlar');
   revalidatePath(`/mesajlar/${conversationId}`);

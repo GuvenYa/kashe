@@ -116,18 +116,20 @@ export async function cancelBooking(
     : booking.customer_id;
 
   console.log('[email] notifyBookingCancelled tetikleniyor — recipientId:', recipientId, 'isCustomer:', isCustomer);
-  notifyBookingCancelled(
-    supabase,
-    booking.conversation_id,
-    bookingId,
-    user.id,
-    recipientId,
-    isCustomer,
-    booking.event_date,
-    reason
-  ).catch((err) => {
-    console.error('[email] notifyBookingCancelled .catch:', err);
-  });
+  try {
+    await notifyBookingCancelled(
+      supabase,
+      booking.conversation_id,
+      bookingId,
+      user.id,
+      recipientId,
+      isCustomer,
+      booking.event_date,
+      reason
+    );
+  } catch (err) {
+    console.error('[mail:booking-cancelled]', err);
+  }
 
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/takvimim');
@@ -217,13 +219,17 @@ export async function completeBooking(
     });
 
   // E-posta — müşteriye "yorum bırak"
-  notifyBookingCompleted(
-    supabase,
-    booking.conversation_id,
-    bookingId,
-    booking.customer_id,
-    booking.professional_id
-  ).catch(() => {});
+  try {
+    await notifyBookingCompleted(
+      supabase,
+      booking.conversation_id,
+      bookingId,
+      booking.customer_id,
+      booking.professional_id
+    );
+  } catch (e) {
+    console.error('[mail:booking-completed]', e);
+  }
 
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/takvimim');

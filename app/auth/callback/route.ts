@@ -1,4 +1,4 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/app/lib/supabase-server';
 import { sanitizeReturnPath } from '@/app/lib/safe-redirect';
 import { hosgeldinEmail, sendAccountEmail } from '@/app/lib/email/account-emails';
@@ -35,14 +35,17 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        after(async () => {
-          try {
-            const { data: p } = await supabase
-              .from('profiles')
-              .select('role, email, full_name, welcome_email_sent_at')
-              .eq('id', user.id)
-              .single();
-            if (!p || p.welcome_email_sent_at || !p.email) return;
+        // Inline await (after() DEĞİL): Vercel serverless'te response sonrası deferred
+        // iş donuyor → mail hiç gitmiyordu. Redirect öncesi await ile gönderim garanti.
+        // Pozitif koşul kullanılır (çıplak return GET'i erken bitirir → redirect atlanır).
+        // Damga YALNIZ res.sent (2xx) ise — idempotent kural korunur.
+        try {
+          const { data: p } = await supabase
+            .from('profiles')
+            .select('role, email, full_name, welcome_email_sent_at')
+            .eq('id', user.id)
+            .single();
+          if (p && !p.welcome_email_sent_at && p.email) {
             const mail = hosgeldinEmail({ role: p.role, name: p.full_name });
             const res = await sendAccountEmail({ to: p.email, ...mail });
             if (res.sent) {
@@ -51,10 +54,10 @@ export async function GET(request: Request) {
                 .update({ welcome_email_sent_at: new Date().toISOString() })
                 .eq('id', user.id);
             }
-          } catch (e) {
-            console.error('[welcome-email]', e);
           }
-        });
+        } catch (e) {
+          console.error('[mail:welcome]', e);
+        }
       }
     }
   }
