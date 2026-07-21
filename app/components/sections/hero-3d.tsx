@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { HeroCollage } from './hero-collage';
+import { HeroPlaceholder } from './hero-placeholder';
 
 /* Hover etiketi için kart meta: kategori adı + keşfet arama terimi.
    NOT: /kesfet 'kategori' param'ı NUMERIC ID ister (slug değil). Bu yüzden
@@ -87,19 +87,37 @@ const BASE_IMAGES: CardMeta[] = [
 ];
 const IMAGE_SRCS = BASE_IMAGES.map((b) => b.src);
 
-/* ─── Error Boundary: WebGL yoksa kolaj göster ─── */
+/* ─── WebGL yetenek probu: geçici canvas'ta context al — yoksa Canvas HİÇ kurulmaz ─── */
+function probeWebGL(): boolean {
+  if (typeof document === 'undefined') return true; // SSR: iyimser; client'ta yeniden bakılır
+  try {
+    const c = document.createElement('canvas');
+    return !!(
+      c.getContext('webgl2') ||
+      c.getContext('webgl') ||
+      c.getContext('experimental-webgl')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* ─── Error Boundary: R3F/WebGL hata fırlatırsa placeholder'a düş + üst state'i bilgilendir ─── */
 class Hero3DErrorBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode },
+  { children: ReactNode; fallback: ReactNode; onError?: () => void },
   { hasError: boolean }
 > {
-  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+  constructor(props: { children: ReactNode; fallback: ReactNode; onError?: () => void }) {
     super(props);
     this.state = { hasError: false };
   }
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch(_: Error, __: ErrorInfo) {}
+  componentDidCatch(_: Error, __: ErrorInfo) {
+    // Üst bileşen tam-opaklık placeholder'a geçsin (fade-in sarmalayıcısı içinde kalmasın)
+    this.props.onError?.();
+  }
   render() {
     if (this.state.hasError) return this.props.fallback;
     return this.props.children;
@@ -429,6 +447,7 @@ function Hero3DCanvas({
   onHover,
   onHoverOut,
   onPick,
+  onContextLost,
 }: {
   reducedMotion: boolean;
   isMobile: boolean;
@@ -437,6 +456,7 @@ function Hero3DCanvas({
   onHover: (meta: CardMeta, clientX: number, clientY: number) => void;
   onHoverOut: () => void;
   onPick: (meta: CardMeta) => void;
+  onContextLost: () => void;
 }) {
   return (
     <Canvas
@@ -445,8 +465,19 @@ function Hero3DCanvas({
       camera={{ fov: FOV, position: [0, 0, camZ] }}
       style={{ width: '100%', height: '100%', background: 'transparent' }}
       gl={{ alpha: true, antialias: false }}
+      onCreated={({ gl }) => {
+        // Çalışma anı güvencesi: bağlam kaybında placeholder'a düş (siyah panel yerine)
+        gl.domElement.addEventListener(
+          'webglcontextlost',
+          (e) => {
+            e.preventDefault();
+            onContextLost();
+          },
+          false
+        );
+      }}
     >
-      <fog attach="fog" args={['#fbf8f4', FOG_NEAR, FOG_FAR]} />
+      <fog attach="fog" args={['#f7f9fc', FOG_NEAR, FOG_FAR]} />
       <ambientLight intensity={1} />
       <SpiralScene
         reducedMotion={reducedMotion}
@@ -469,7 +500,7 @@ function CategoryLabel({ label, x, y }: { label: string; x: number; y: number })
         left: x,
         top: y,
         transform: 'translate(-50%, calc(-100% - 14px))', // imlecin hemen üstünde
-        background: 'var(--color-terracotta)', // zümrüt #1F5C4A
+        background: 'var(--color-terracotta)', // zümrüt #040D26
         color: '#fff',
         fontFamily: 'var(--font-body)', // Inter
         fontSize: '13px',
@@ -499,6 +530,8 @@ export default function Hero3D() {
   );
   const [hover, setHover] = useState<{ label: string; x: number; y: number } | null>(null);
   const [ready, setReady] = useState(false); // davul ilk frame çizilince fade-in
+  // WebGL yeteneği: mount öncesi prob (ssr:false → client). Yoksa Canvas HİÇ kurulmaz.
+  const [webglOk, setWebglOk] = useState<boolean>(() => probeWebGL());
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -529,6 +562,11 @@ export default function Hero3D() {
     const id = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(id);
   }, [reducedMotion]);
+
+  /* WebGL yetenek güvencesi (SSR safety-net): client'ta prob başarısızsa placeholder. */
+  useEffect(() => {
+    if (!probeWebGL()) setWebglOk(false);
+  }, []);
 
   /* Hover: client koordinatını container'a göreceli pill konumuna çevir */
   const handleHover = useCallback(
@@ -561,35 +599,51 @@ export default function Hero3D() {
       className={isMobile ? 'absolute inset-0' : 'relative'}
       style={isMobile ? { width: '100%', height: '100%' } : { height: '540px' }}
     >
-      {/* Zümrüt zemin gradyanı */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(31,92,74,0.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Fade-in: davul ilk frame'de opacity 0→1 (KÖK DOM opacity, materyal değil).
-          Arkasında zümrüt gradyan + placeholder zemini → swap'ta boşluk/flash yok. */}
-      <div
-        className="absolute inset-0 transition-opacity duration-500 ease-out"
-        style={{ opacity: ready ? 1 : 0 }}
-      >
-        <Hero3DErrorBoundary fallback={<HeroCollage />}>
-          <Hero3DCanvas
-            reducedMotion={reducedMotion}
-            isMobile={isMobile}
-            camZ={camZ}
-            onFirstFrame={handleFirstFrame}
-            onHover={handleHover}
-            onHoverOut={handleHoverOut}
-            onPick={handlePick}
+      {webglOk ? (
+        <>
+          {/* Zemin gradyanı — HeroPlaceholder ile BİREBİR aynı (swap'ta flash yok):
+              nötr lacivert merkez + çok düşük opaklık cyan/pembe dokunuş. */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: [
+                'radial-gradient(ellipse 70% 55% at 28% 22%, rgba(0,172,226,0.06) 0%, transparent 60%)',
+                'radial-gradient(ellipse 65% 55% at 78% 82%, rgba(250,11,150,0.05) 0%, transparent 60%)',
+                'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(4,13,38,0.07) 0%, transparent 70%)',
+              ].join(', '),
+              pointerEvents: 'none',
+            }}
           />
-        </Hero3DErrorBoundary>
-      </div>
+
+          {/* Fade-in: davul ilk frame'de opacity 0→1 (KÖK DOM opacity, materyal değil).
+              Arkasında zemin gradyan + placeholder → swap'ta boşluk/flash yok. */}
+          <div
+            className="absolute inset-0 transition-opacity duration-500 ease-out"
+            style={{ opacity: ready ? 1 : 0 }}
+          >
+            <Hero3DErrorBoundary
+              fallback={<HeroPlaceholder />}
+              onError={() => setWebglOk(false)}
+            >
+              <Hero3DCanvas
+                reducedMotion={reducedMotion}
+                isMobile={isMobile}
+                camZ={camZ}
+                onFirstFrame={handleFirstFrame}
+                onHover={handleHover}
+                onHoverOut={handleHoverOut}
+                onPick={handlePick}
+                onContextLost={() => setWebglOk(false)}
+              />
+            </Hero3DErrorBoundary>
+          </div>
+        </>
+      ) : (
+        /* WebGL yok/kayıp → nötr enriched placeholder (siyah panel YERİNE) */
+        <HeroPlaceholder />
+      )}
 
       {!isMobile && hover && (
         <CategoryLabel label={hover.label} x={hover.x} y={hover.y} />
