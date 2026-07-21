@@ -56,7 +56,7 @@ const TONES = [
   { bg: 'rgba(109,79,176,0.12)', fg: '#6D4FB0' }, // mor
   { bg: 'rgba(45,111,184,0.12)', fg: '#2D6FB8' }, // mavi
   { bg: 'rgba(181,133,31,0.12)', fg: '#B5851F' }, // altın
-  { bg: 'rgba(226,103,74,0.12)', fg: '#E2674A' }, // mercan
+  { bg: 'rgba(250,11,150,0.12)', fg: '#FA0B96' }, // mercan
   { bg: 'rgba(31,138,95,0.12)', fg: '#1F8A5F' },  // yeşil
 ];
 

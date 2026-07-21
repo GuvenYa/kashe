@@ -1,8 +1,8 @@
 // Hafif, bağımlılıksız mikro-konfeti. Bir ekran noktasından renkli parçacık saçar.
 // Kullanım: burstConfetti(x, y)  — x,y ekran koordinatı (clientX/clientY)
-// Kashe P6 paleti: zümrüt, mercan, altın, mavi, yeşil.
+// Faz-1 rebrand paleti: cyan, pembe, lacivert, beyaz.
 
-const COLORS = ["#1F5C4A", "#E2674A", "#B5851F", "#2D6FB8", "#1F8A5F"];
+const COLORS = ["#00ACE2", "#FA0B96", "#040D26", "#FFFFFF"];
 
 export function burstConfetti(x: number, y: number, count = 14) {
   if (typeof window === "undefined") return;

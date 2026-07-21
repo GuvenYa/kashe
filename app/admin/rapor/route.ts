@@ -197,7 +197,7 @@ export async function GET() {
   // ============================ WORKBOOK ============================
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Kashe Admin';
-  const HEADER_FILL = 'FF1F5C4A'; // zümrüt
+  const HEADER_FILL = 'FF040D26'; // Faz-1: lacivert (ARGB)
   const headerStyle = (ws: ExcelJS.Worksheet) => {
     const row = ws.getRow(1);
     row.font = { bold: true, color: { argb: 'FFFFFFFF' } };

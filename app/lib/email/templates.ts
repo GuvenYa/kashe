@@ -2,16 +2,16 @@ import { SITE_URL } from './resend-client';
 
 // Kashe paleti — inline kullanım için
 const COLORS = {
-  paper: '#FBF8F4',
-  paper2: '#FBEEE8',
+  paper: '#F7F9FC',
+  paper2: '#EDF2FA',
   card: '#FFFFFF',
-  ink: '#1A120E',
-  ink72: 'rgba(26, 18, 14, 0.72)',
-  ink50: 'rgba(26, 18, 14, 0.5)',
-  terracotta: '#1F5C4A',
-  ember: '#143D31',
+  ink: '#040D26',
+  ink72: 'rgba(4, 13, 38, 0.72)',
+  ink50: 'rgba(4, 13, 38, 0.5)',
+  terracotta: '#040D26',
+  ember: '#0D1F4E',
   moss: '#3F6B47',
-  line: 'rgba(26, 18, 14, 0.12)',
+  line: 'rgba(4, 13, 38, 0.12)',
 };
 
 function escapeHtml(text: string): string {
@@ -72,7 +72,7 @@ function baseLayout(opts: {
             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
               <tr>
                 <td style="vertical-align:middle;">
-                  <img src="${SITE_URL}/icon-192.png?v=2" width="28" height="28" alt="Kashe" style="display:block;border-radius:6px;" />
+                  <img src="${SITE_URL}/icon-192.png?v=3" width="28" height="28" alt="Kashe" style="display:block;border-radius:6px;" />
                 </td>
                 <td style="padding-left:10px;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:${COLORS.ink};">Kashe</td>
               </tr>

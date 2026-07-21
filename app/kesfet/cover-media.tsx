@@ -20,7 +20,7 @@ export function CoverMedia({
 
   if (!src || failed) {
     return (
-      <div className="absolute inset-0 bg-[#143D31] overflow-hidden">
+      <div className="absolute inset-0 bg-[#0D1F4E] overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
@@ -31,7 +31,7 @@ export function CoverMedia({
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-full ring-1 ring-white/15 bg-white/[0.03] flex items-center justify-center">
-            <span className="font-display font-semibold text-3xl md:text-4xl text-[#E9F1ED]">
+            <span className="font-display font-semibold text-3xl md:text-4xl text-[#EAF0F8]">
               {initials}
             </span>
           </div>

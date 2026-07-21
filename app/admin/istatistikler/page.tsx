@@ -22,11 +22,11 @@ import {
 // Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
 const C = {
   paper: '#FFFFFF',
-  terracotta: '#1F5C4A', // zümrüt
-  ink: '#1A120E',
-  plum: '#E2674A',       // mercan
-  moss: '#3F6B47',       // yeşil (başarı/onay)
-  ember: '#143D31',      // koyu zümrüt
+  terracotta: '#00ACE2', // Faz-1: CYAN — başat seri (lacivert grafikte siyaha kaçar, tek taşımaz)
+  ink: '#040D26',        // lacivert — eksen/ızgara/metin
+  plum: '#FA0B96',       // Faz-1: pembe seri
+  moss: '#1F8A5F',       // yeşil — SEMANTİK başarı/onay (korunur)
+  ember: '#040D26',      // lacivert — ikincil seri
 }
 
 const ROLE_LABELS: Record<string, string> = {

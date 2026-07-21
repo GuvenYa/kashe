@@ -238,7 +238,7 @@ export function IlanDetay({
 
   // Mercan (mockup) birincil CTA sınıfı
   const mercanCta =
-    'inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#cc5636] transition-colors';
+    'inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#FA0B96] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#D50880] transition-colors';
 
   return (
     <div className="bg-paper min-h-screen pb-24 lg:pb-12">
@@ -490,7 +490,7 @@ export function IlanDetay({
                   {deadlineDateOnly && (
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-ink-72">Son başvuru</span>
-                      <span className="text-[#E2674A] font-medium">
+                      <span className="text-[#FA0B96] font-medium">
                         {deadlineDateOnly}
                       </span>
                     </div>
@@ -762,14 +762,14 @@ export function IlanDetay({
           ) : !currentUserId ? (
             <Link
               href="/giris"
-              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm shrink-0"
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#FA0B96] text-white rounded-lg font-display font-semibold text-sm shrink-0"
             >
               Giriş yap
             </Link>
           ) : isProfessional ? (
             <button
               onClick={() => setApplyModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#E2674A] text-white rounded-lg font-display font-semibold text-sm shrink-0"
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#FA0B96] text-white rounded-lg font-display font-semibold text-sm shrink-0"
             >
               <Send size={15} strokeWidth={1.75} />
               Başvur
@@ -822,7 +822,7 @@ function StructuredSection({
             className="flex gap-2.5 text-sm text-ink leading-relaxed"
           >
             <span
-              className="shrink-0 select-none text-[#E2674A]"
+              className="shrink-0 select-none text-[#FA0B96]"
               aria-hidden="true"
             >
               —
@@ -965,7 +965,7 @@ function OwnerInfoCard({
               <BadgeCheck
                 size={15}
                 strokeWidth={2}
-                className="text-[#1F5C4A] shrink-0"
+                className="text-[#040D26] shrink-0"
                 aria-label="Doğrulanmış"
               />
             )}

@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#1F5C4A", /* Zümrüt — eski mor #9333EA terk edildi */
+  themeColor: "#040D26", /* Zümrüt — eski mor #9333EA terk edildi */
 };
 
 export default function RootLayout({

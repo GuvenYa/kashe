@@ -93,7 +93,7 @@ export default function FavoriteButton({
         bottom: '24px',
         left: '50%',
         transform: 'translateX(-50%)',
-        backgroundColor: '#1A120E',
+        backgroundColor: '#040D26',
         color: '#FAF7F0',
         padding: '12px 20px',
         borderRadius: '8px',
@@ -124,8 +124,8 @@ export default function FavoriteButton({
             className={popping ? 'kashe-heart-pop' : ''}
             size={18}
             strokeWidth={2}
-            fill={favorited ? '#E2674A' : 'none'}
-            color={favorited ? '#E2674A' : 'currentColor'}
+            fill={favorited ? '#FA0B96' : 'none'}
+            color={favorited ? '#FA0B96' : 'currentColor'}
             style={{ transition: 'fill 0.2s ease' }}
           />
           <span className="text-[10.5px] font-medium">Favori</span>
@@ -170,8 +170,8 @@ export default function FavoriteButton({
           className={popping ? 'kashe-heart-pop' : ''}
           size={icon}
           strokeWidth={2}
-          fill={favorited ? '#E2674A' : 'none'}
-          color={favorited ? '#E2674A' : '#1A120E'}
+          fill={favorited ? '#FA0B96' : 'none'}
+          color={favorited ? '#FA0B96' : '#040D26'}
           style={{
             transition: 'fill 0.2s ease',
           }}

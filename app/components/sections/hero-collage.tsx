@@ -22,7 +22,7 @@ export function HeroCollage() {
         style={{
           top: "-14px",
           right: "-14px",
-          background: "var(--color-plum)", /* mercan #E2674A */
+          background: "var(--color-plum)", /* mercan #FA0B96 */
           color: "#fff",
           width: "84px",
           height: "84px",

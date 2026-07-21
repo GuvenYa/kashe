@@ -2,45 +2,50 @@
 
 @theme {
   /* === Zemin renkleri (Light Mode) === */
-  --color-paper: #FBF8F4;   /* ARTIK SICAK KIRIK BEYAZ — ana sayfa zemini (eski: #FFFFFF saf beyaz) */
-  --color-paper-2: #FBEEE8; /* ARTIK ŞEFTALI ZEMİN — ikincil bölüm zemini (eski: #FAF8FC mor-tint) */
-  --color-card: #FFFFFF;    /* Kart/panel zemini — saf beyaz, paper üzerinde yükselir */
+  --color-paper: #F7F9FC;   /* Faz-1 rebrand: soğuk kırık beyaz */
+  --color-paper-2: #EDF2FA; /* Faz-1: soğuk ikincil zemin */
+  --color-card: #FFFFFF;    /* Kart/panel zemini — saf beyaz */
 
   /* === İnk = ana metin/koyu zemin === */
-  --color-ink: #16140F;     /* Ana metin — neredeyse siyah, hafif sıcak */
-  --color-ink-2: #2D1F18;
+  --color-ink: #040D26;     /* Faz-1: lacivert ana metin */
+  --color-ink-2: #2A3452;   /* Faz-1 */
 
   /* === Metin opasiteli === */
-  --color-ink-72: rgba(22, 20, 15, 0.72);
-  --color-ink-50: rgba(22, 20, 15, 0.50);
-  --color-ink-32: rgba(22, 20, 15, 0.32);
-  --color-ink-20: rgba(22, 20, 15, 0.20);
-  --color-ink-12: rgba(22, 20, 15, 0.12);
+  --color-ink-72: rgba(4, 13, 38, 0.72);
+  --color-ink-50: rgba(4, 13, 38, 0.50);
+  --color-ink-32: rgba(4, 13, 38, 0.32);
+  --color-ink-20: rgba(4, 13, 38, 0.20);
+  --color-ink-12: rgba(4, 13, 38, 0.12);
 
-  --color-paper-72: rgba(251, 248, 244, 0.72);
-  --color-paper-50: rgba(251, 248, 244, 0.50);
-  --color-paper-24: rgba(251, 248, 244, 0.24);
-  --color-paper-14: rgba(251, 248, 244, 0.14);
+  --color-paper-72: rgba(247, 249, 252, 0.72);
+  --color-paper-50: rgba(247, 249, 252, 0.50);
+  --color-paper-24: rgba(247, 249, 252, 0.24);
+  --color-paper-14: rgba(247, 249, 252, 0.14);
 
-  /* === Marka renkleri — token isimleri eski kaldı, değerler YENİ sisteme güncellendi === */
-  --color-terracotta: #1F5C4A;               /* ARTIK ZÜMRÜT — birincil marka rengi (eski: #9333EA mor) */
-  --color-terracotta-soft: #E9F1ED;          /* ARTIK AÇIK ZÜMRÜT — yumuşak arka plan (eski: #C084FC açık mor) */
-  --color-terracotta-08: rgba(31, 92, 74, 0.08);  /* ARTIK ZÜMRÜT %8 — hover/zemin tint (eski: mor %8) */
-  --color-terracotta-12: rgba(31, 92, 74, 0.12);  /* ARTIK ZÜMRÜT %12 — seçili zemin (eski: mor %12) */
+  /* === Marka renkleri — Faz-1 rebrand: token ADLARI korundu, DEĞERLER lacivert/pembe === */
+  --color-terracotta: #040D26;               /* Faz-1: LACİVERT birincil */
+  --color-terracotta-soft: #EAF0F8;          /* Faz-1: açık lacivert zemin */
+  --color-terracotta-08: rgba(4, 13, 38, 0.08);  /* Faz-1: lacivert %8 — hover/zemin tint */
+  --color-terracotta-12: rgba(4, 13, 38, 0.12);  /* Faz-1: lacivert %12 — seçili zemin */
 
   /* === Çizgi & sınır === */
-  --color-line: rgba(22, 20, 15, 0.12);      /* Kenarlıklar, ayırıcılar — sıcak açık ton */
-  --color-line-strong: rgba(22, 20, 15, 0.20);
+  --color-line: rgba(4, 13, 38, 0.12);      /* Kenarlıklar, ayırıcılar — soğuk ton */
+  --color-line-strong: rgba(4, 13, 38, 0.20);
 
   /* === İkincil renkler === */
-  --color-plum: #E2674A;    /* ARTIK MERCAN AKSAN — ikincil vurgu (eski: #EC4899 pembe) */
-  --color-moss: #1F8A5F;    /* YEŞİL — başarı/onay durumları */
-  --color-ember: #143D31;   /* ARTIK KOYU ZÜMRÜT — hover/koyu varyant (eski: #7C3AED koyu mor) */
-  --color-danger: #DC2626;       /* Kırmızı — yıkıcı aksiyon (sil/iptal/askıya al) */
+  --color-plum: #FA0B96;    /* Faz-1: PEMBE aksan */
+  --color-moss: #1F8A5F;    /* YEŞİL — başarı/onay (semantik, değişmedi) */
+  --color-ember: #0D1F4E;   /* Faz-1: hover artık hafif AÇILMA — lacivert dipte */
+  --color-danger: #DC2626;       /* Kırmızı — yıkıcı aksiyon (semantik, değişmedi) */
   --color-danger-08: rgba(220, 38, 38, 0.08);
 
-  /* === Marka gradyanı — zümrüt tonları (eski: mor-pembe terk edildi) === */
-  --gradient-brand: linear-gradient(135deg, #1F5C4A, #143D31); /* ARTIK ZÜMRÜT GRADYAN */
+  /* === Faz-1 YENİ — cyan (bilgi / gradyan) === */
+  --color-sky: #00ACE2;
+  --color-sky-soft: #E5F6FC;
+  --color-sky-12: rgba(0, 172, 226, 0.12);
+
+  /* === Marka gradyanı — Faz-1: cyan → pembe === */
+  --gradient-brand: linear-gradient(135deg, #00ACE2, #FA0B96);
 
   /* === Fontlar === */
   --font-display: var(--font-space-grotesk); /* Space Grotesk — başlıklar (eski: Bricolage Grotesque) */

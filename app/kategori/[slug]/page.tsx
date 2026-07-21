@@ -292,7 +292,7 @@ export default async function KategoriPage({ params }: Props) {
               {iconUrl && (
                 <div
                   className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ background: "#E9F1ED" }}
+                  style={{ background: "#EAF0F8" }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

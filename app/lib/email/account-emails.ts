@@ -1,5 +1,5 @@
 // Hesap/işlemsel e-posta ailesi — hoşgeldin, profil onaylandı, profil revizyon.
-// Stil: recovery.html kalıbı (Arial, zümrüt #1F5C4A başlık, mercan #E2674A buton, kısa TR).
+// Stil: recovery.html kalıbı (Arial, lacivert #040D26 başlık, pembe #FA0B96 buton, kısa TR).
 // Kampanya/tanıtım YASAK — işlemsel sınır. Tasarım referansı: docs/email-templates/*.html
 //
 // Bu şablonlar APP tarafında render edilir (Edge Function'a dokunmadan kopya değişir);
@@ -17,14 +17,14 @@ function esc(text: string): string {
 }
 
 const C = {
-  bg: '#FBF8F4',
+  bg: '#F7F9FC',
   card: '#FFFFFF',
-  emerald: '#1F5C4A', // zümrüt — başlık + marka
-  coral: '#E2674A', // mercan — buton
-  body: '#1D2723',
+  emerald: '#040D26', // Faz-1: lacivert — başlık + marka
+  coral: '#FA0B96', // Faz-1: pembe — buton
+  body: '#040D26',
   muted: '#5C665F',
-  line: 'rgba(26,18,14,0.10)',
-  box: '#FBEEE8',
+  line: 'rgba(4,13,38,0.10)',
+  box: '#EDF2FA',
 };
 
 function accountLayout(opts: {

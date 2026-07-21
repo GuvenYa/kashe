@@ -19,7 +19,7 @@ export function SifreSifirlaInvalid() {
 
       <Link
         href="/sifremi-unuttum"
-        className="inline-block px-6 py-3 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(31,92,74,0.5)] transition-all"
+        className="inline-block px-6 py-3 bg-gradient-brand text-white rounded-lg font-display font-semibold hover:shadow-[0_10px_28px_-8px_rgba(4,13,38,0.5)] transition-all"
       >
         Yeni bağlantı iste
       </Link>

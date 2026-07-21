@@ -717,7 +717,7 @@ function IlanCard({
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] border ${
                 deadlineBadge.passed
                   ? 'text-ink-72 bg-ink-72/10 border-ink-72/25'
-                  : 'text-[#E2674A] bg-[#E2674A]/10 border-[#E2674A]/30'
+                  : 'text-[#FA0B96] bg-[#FA0B96]/10 border-[#FA0B96]/30'
               }`}
             >
               {deadlineBadge.text}
@@ -771,7 +771,7 @@ function IlanCard({
             <BadgeCheck
               size={13}
               strokeWidth={2}
-              className="text-[#1F5C4A] shrink-0"
+              className="text-[#040D26] shrink-0"
               aria-label="Doğrulanmış"
             />
           )}

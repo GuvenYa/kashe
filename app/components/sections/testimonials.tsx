@@ -11,8 +11,8 @@ type Testimonial = {
 
 // Avatar arka plan renkleri — DESIGN.md §1 pastel palette.
 const TONES = {
-  terracotta: { bg: "#FCEAE4", fg: "#E2674A" }, // mercan
-  plum:       { bg: "#E9F1ED", fg: "#1F5C4A" }, // zümrüt
+  terracotta: { bg: "#FCEAE4", fg: "#FA0B96" }, // mercan
+  plum:       { bg: "#EAF0F8", fg: "#040D26" }, // zümrüt
   moss:       { bg: "#FFF1DC", fg: "#B5851F" }, // altın
 };
 

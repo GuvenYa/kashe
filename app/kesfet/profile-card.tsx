@@ -152,7 +152,7 @@ function TopChips({
   return (
     <div className="absolute top-3 left-3 flex items-center gap-2 max-w-[calc(100%-4.5rem)]">
       {isAgency && (
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-[#143D31] text-[#E9F1ED] px-2 py-1 rounded-md shrink-0">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0">
           Ajans
         </span>
       )}
