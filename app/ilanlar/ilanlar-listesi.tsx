@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef, useTransition } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useTransition,
+  type CSSProperties,
+  type ReactNode,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import Masonry from 'react-masonry-css';
 import { EmptyState } from '@/app/components/EmptyState';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
@@ -10,9 +18,17 @@ import { SearchX, Briefcase } from 'lucide-react';
 import {
   formatBudgetRange,
   isUrgent,
+  isFeaturedHome,
+  isFeaturedCategory,
   type ListingWithRelations,
 } from './listings-data';
-import { getPanoTilt } from '@/app/lib/pano-hash';
+import {
+  getPanoProps,
+  getPanoSize,
+  PANO_COLORS,
+  PANO_TINTS,
+  type PinCorner,
+} from '@/app/lib/pano-hash';
 
 type Category = {
   id: number;
@@ -628,10 +644,75 @@ export function IlanlarListesi({
 // İlan kartı — zenginleştirilmiş (başvuru sayısı + deadline rozeti + doğrulanmış)
 // =============================================================================
 
-// PanoCard — Commit A: TEK sade pano kartı (beyaz kart + tek iğne + deterministik
-// eğim). Çoklu stil / rastgele renk-boyut / hover / featured-vurgu / tam rozet
-// sistemi Commit B'de (aynı hash altyapısından türetilecek).
-// Not: count/isOwn prop imzası KORUNUR (çağrı yerleri aynı) — Commit B'de kullanılacak.
+// =============================================================================
+// Pano kart görsel yardımcıları (Commit B) — kabuk parçaları
+// =============================================================================
+
+// Köşe-iğne konumu (styleIndex 3).
+function cornerPinPos(corner: PinCorner): CSSProperties {
+  switch (corner) {
+    case 'tl':
+      return { top: -8, left: 12 };
+    case 'tr':
+      return { top: -8, right: 12 };
+    case 'bl':
+      return { bottom: -8, left: 12 };
+    case 'br':
+      return { bottom: -8, right: 12 };
+  }
+}
+
+// İğne — hover'da yukarı uçup solar (.pano-pin). Konumda transform YOK (hover
+// transform'u temiz ezsin diye left/right ile hizalanır).
+function PanoPin({
+  color,
+  glow,
+  style,
+}: {
+  color: string;
+  glow: boolean;
+  style: CSSProperties;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="pano-pin absolute rounded-full"
+      style={{
+        width: 13,
+        height: 13,
+        background: color,
+        zIndex: 2,
+        boxShadow: glow ? `0 0 10px ${color}99` : '0 1px 2px rgba(0,0,0,0.25)',
+        ...style,
+      }}
+    />
+  );
+}
+
+// Washi bant — eğim CSS custom property (--tape-rot) ile verilir ki hover'daki
+// transform (uçup solma) inline transform'a takılmadan ezebilsin.
+function PanoTape({
+  color,
+  rot,
+  style,
+}: {
+  color: string;
+  rot: number;
+  style: CSSProperties;
+}) {
+  const s: CSSProperties & Record<string, string | number> = {
+    background: `${color}59`, // ~%35 saydam bant
+    '--tape-rot': `${rot}deg`,
+  };
+  Object.assign(s, style);
+  return <span aria-hidden="true" className="pano-tape absolute" style={s} />;
+}
+
+// =============================================================================
+// PanoCard — Commit B: 8 kabuk stili + karakter-bazlı boyut + featured/urgent
+// vurgusu. Tüm görsel kararlar getPanoProps (tek deterministik hash) + boyut
+// getPanoSize (karakter sayısı). İçerik HER stilde AYNI; sadece KABUK değişir.
+// count/isOwn imzası KORUNUR (çağrı yerleri aynı; A'daki gibi kullanılmıyor).
 function PanoCard({
   listing,
 }: {
@@ -639,6 +720,15 @@ function PanoCard({
   count: number;
   isOwn?: boolean;
 }) {
+  const router = useRouter();
+
+  const props = getPanoProps(listing.id);
+  const featured = isFeaturedHome(listing) || isFeaturedCategory(listing);
+  const size = getPanoSize(listing.title, listing.description, featured);
+  const urgent = isUrgent(listing);
+  const color = PANO_COLORS[props.colorIndex];
+  const tint = PANO_TINTS[props.colorIndex];
+
   const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
   const cityName = listing.turkish_cities?.name;
   const budgetText = formatBudgetRange(
@@ -646,67 +736,191 @@ function PanoCard({
     listing.budget_max,
     listing.currency
   );
-  const urgent = isUrgent(listing);
 
   // İlan veren — kamuya görünen ad DAİMA creator profili (attribution).
   const creator = listing.creator;
   const creatorName =
     creator?.company_name || creator?.full_name || 'İlan sahibi';
 
-  // Deterministik eğim: aynı id → aynı açı (Commit B'de renk/boyut/stil de aynı hash'ten).
-  const tilt = getPanoTilt(listing.id);
+  const eventDateLabel = listing.event_date
+    ? new Date(listing.event_date).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : null;
+
+  // Urgent rozet metni: son başvuru tarihinden gün → "SON X GÜN"; yoksa "ACİL".
+  let urgentLabel = 'ACİL';
+  if (urgent && listing.application_deadline) {
+    const diffMs =
+      new Date(listing.application_deadline).getTime() - Date.now();
+    if (diffMs > 0) {
+      const days = Math.ceil(diffMs / 86400000);
+      urgentLabel = days <= 1 ? 'SON GÜN' : `SON ${days} GÜN`;
+    }
+  }
+
+  // ── Kabuk (styleIndex 0-7): dekor + polaroid/tint bayrakları ──
+  const centerPin: CSSProperties = { top: -8, left: 'calc(50% - 6.5px)' };
+  let deco: ReactNode = null;
+  let polaroid = false;
+  let tintBg = false;
+  switch (props.styleIndex) {
+    case 0: // washi-bant-pembe (üst-sol)
+      deco = (
+        <PanoTape
+          color="#FA0B96"
+          rot={-8}
+          style={{ top: -6, left: 16, width: 56, height: 16 }}
+        />
+      );
+      break;
+    case 1: // washi-bant-cyan (üst-sağ)
+      deco = (
+        <PanoTape
+          color="#00ACE2"
+          rot={7}
+          style={{ top: -6, right: 16, width: 56, height: 16 }}
+        />
+      );
+      break;
+    case 2: // iğne üst-orta
+      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+      break;
+    case 3: // iğne köşe (parlak)
+      deco = <PanoPin color={color} glow style={cornerPinPos(props.pinCorner)} />;
+      break;
+    case 4: // polaroid (üst iğne + alt şerit bütçe)
+      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+      polaroid = true;
+      break;
+    case 5: // sol kenar şerit (iğne yok)
+      deco = (
+        <span
+          aria-hidden="true"
+          className="absolute"
+          style={{
+            left: 0,
+            top: 8,
+            bottom: 8,
+            width: 4,
+            background: color,
+            borderRadius: 4,
+          }}
+        />
+      );
+      break;
+    case 6: // kağıt-tint zemin + üst iğne
+      tintBg = true;
+      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+      break;
+    case 7: // washi-alt (alt-sağ köşe küçük bant)
+      deco = (
+        <PanoTape
+          color={color}
+          rot={6}
+          style={{ bottom: -6, right: 14, width: 44, height: 14 }}
+        />
+      );
+      break;
+  }
+
+  // Kart style: --tilt custom prop (hover rotate(0)'ın temiz ezmesi için) + tint/featured.
+  const cardStyle: CSSProperties & Record<string, string | number> = {
+    '--tilt': `${props.tilt}deg`,
+  };
+  if (tintBg) cardStyle.background = tint;
+  if (featured) cardStyle.border = `2px solid ${color}`;
+
+  // Tıklama: masaüstünde (fine pointer) sağa çevir + gecikmeli git; mobilde normal Link.
+  const handleClick = (e: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(pointer: fine)').matches
+    ) {
+      e.preventDefault();
+      const el = e.currentTarget;
+      el.classList.add('pano-leaving');
+      window.setTimeout(() => router.push(`/ilanlar/${listing.id}`), 380);
+    }
+  };
 
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
-      className="pano-card block relative"
-      style={{ transform: `rotate(${tilt}deg)` }}
+      onClick={handleClick}
+      className={`pano-card pano-${size} block relative`}
+      style={cardStyle}
     >
-      {/* Tek iğne — üst-orta (renk çeşitliliği Commit B; şimdilik sabit pembe) */}
-      <span
-        aria-hidden="true"
-        className="absolute left-1/2 -translate-x-1/2 rounded-full"
-        style={{
-          top: '-8px',
-          width: '13px',
-          height: '13px',
-          background: '#FA0B96',
-          zIndex: 1,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
-        }}
-      />
+      {deco}
 
-      {/* Kategori etiketi — küçük, pembe */}
+      {/* Featured / urgent rozetleri — üst satır (dekorla çakışmasın diye inline) */}
+      {(featured || urgent) && (
+        <div className="flex items-center gap-1.5 mb-2">
+          {featured && (
+            <span
+              className="font-mono text-[8px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
+              style={{ background: tint, color }}
+            >
+              Öne çıkan
+            </span>
+          )}
+          {urgent && (
+            <span className="font-mono text-[8px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-danger text-white">
+              {urgentLabel}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Kategori etiketi — küçük, renk aksanı */}
       <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-brand-accent mb-2">
         {categoryLabel}
       </span>
 
-      {/* Başlık — TÜM kartlarda AYNI boyut (15px / 600) */}
+      {/* Başlık — HER boyutta 15px / 600 (Güven kararı) */}
       <h3 className="font-display text-[15px] font-semibold text-ink leading-snug mb-2 line-clamp-3">
-        {urgent && (
-          <span
-            aria-label="Acil"
-            className="inline-block w-2 h-2 rounded-full bg-danger align-middle mr-1.5"
-          />
-        )}
         {listing.title}
       </h3>
 
-      {/* İlan veren + şehir — tek satır, küçük gri */}
+      {/* Açıklama — yalnız lg kartta önizleme */}
+      {size === 'lg' && listing.description && (
+        <p className="text-xs text-ink-72 leading-relaxed mb-2.5 line-clamp-2">
+          {listing.description}
+        </p>
+      )}
+
+      {/* İlan veren (+ şehir md/lg, + tarih lg) — tek satır, küçük gri */}
       <p className="text-xs text-ink-72 truncate mb-3">
         {creatorName}
-        {cityName ? ` · ${cityName}` : ''}
+        {size !== 'sm' && cityName ? ` · ${cityName}` : ''}
+        {size === 'lg' && eventDateLabel ? ` · ${eventDateLabel}` : ''}
       </p>
 
-      {/* Bütçe — alt, border-top ile ayrık, kalın */}
-      <div className="border-t border-line pt-2.5 flex items-center justify-between">
-        <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
-          Bütçe
-        </span>
-        <span className="font-display text-sm text-ink font-semibold">
-          {budgetText}
-        </span>
-      </div>
+      {/* Bütçe — polaroid ise alt şerit (kesikli ayraç), değilse normal */}
+      {polaroid ? (
+        <div className="pano-polaroid-foot flex items-center justify-between">
+          <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
+            Bütçe
+          </span>
+          <span className="font-display text-sm text-ink font-semibold">
+            {budgetText}
+          </span>
+        </div>
+      ) : (
+        <div className="border-t border-line pt-2.5 flex items-center justify-between">
+          <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
+            Bütçe
+          </span>
+          <span className="font-display text-sm text-ink font-semibold">
+            {budgetText}
+          </span>
+        </div>
+      )}
+
+      {/* Gizli satır — masaüstü hover'da açılır (mobilde CSS ile gizli) */}
+      <span className="pano-reveal-row">→ İlanı görüntüle</span>
     </Link>
   );
 }

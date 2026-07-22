@@ -429,7 +429,7 @@ i {
 .kashe-prose td { border: 1px solid var(--color-line); padding: 0.5rem 0.75rem; text-align: left; }
 .kashe-prose th { background: var(--color-paper-2, rgba(0,0,0,0.03)); font-weight: 600; }
 
-/* ============ İLAN PANOSU (Commit A — masonry + kork zemin + pano kart) ============ */
+/* ============ İLAN PANOSU (Commit B — masonry + 8 stil + hover + tıklama) ============ */
 
 /* react-masonry-css düzeni (sıra soldan-sağa korunur → sıralama select doğru) */
 .pano-masonry-grid {
@@ -454,10 +454,97 @@ i {
   padding: 34px 20px 24px;
 }
 
-/* Tek sade pano kartı (Commit A: tek stil; çoklu stil/hover Commit B) */
+/* Pano kart — ortak kabuk. Eğim --tilt custom prop'undan gelir ki hover rotate(0)
+   inline transform çakışması olmadan temiz ezebilsin. */
 .pano-card {
+  position: relative;
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(60, 40, 20, 0.16);
-  padding: 17px;
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: center;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.4, 0.5, 1),
+    box-shadow 0.3s ease;
+  will-change: transform;
+}
+
+/* Boyut → dolgu (karakter sayısından; başlık boyutu HER boyutta sabit) */
+.pano-sm { padding: 12px; }
+.pano-md { padding: 16px; }
+.pano-lg { padding: 19px; }
+
+/* İğne / bant — hover'da yukarı uçup solar */
+.pano-pin,
+.pano-tape {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.pano-tape {
+  transform: rotate(var(--tape-rot, 0deg));
+  border-radius: 3px;
+}
+
+/* Polaroid alt şerit (styleIndex 4) — kesikli ayraç + hafif gri zemin */
+.pano-polaroid-foot {
+  margin: 10px -6px 0;
+  padding: 10px 6px 0;
+  border-top: 1px dashed rgba(60, 40, 20, 0.25);
+  background: rgba(60, 40, 20, 0.03);
+}
+
+/* Gizli satır — masaüstü hover'da açılır */
+.pano-reveal-row {
+  display: block;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  color: #00ace2;
+  font-size: 11px;
+  font-weight: 600;
+  transition: max-height 0.34s ease, opacity 0.34s ease, margin-top 0.34s ease;
+}
+
+/* HOVER (masaüstü) — zıpla (yaylı) + iğne uçsun + gizli satır açılsın */
+.pano-card:hover {
+  transform: rotate(0deg) translateY(-7px) scale(1.04);
+  box-shadow: 0 18px 34px rgba(60, 40, 20, 0.24);
+  z-index: 10;
+}
+.pano-card:hover .pano-pin,
+.pano-card:hover .pano-tape {
+  transform: translateY(-15px) scale(0.6);
+  opacity: 0;
+}
+.pano-card:hover .pano-reveal-row {
+  max-height: 28px;
+  opacity: 1;
+  margin-top: 8px;
+}
+
+/* TIKLAMA (masaüstü) — sağa 3D çevrilerek kalkar, sonra navigasyon (JS: 380ms).
+   :hover ile EŞİT özgüllük → kaynak sırası kazanır; bu blok hover'dan SONRA. */
+.pano-card.pano-leaving {
+  transform: perspective(900px) rotateY(-24deg) translateX(34px)
+    translateY(-10px) scale(1.05);
+  box-shadow: -18px 22px 40px rgba(60, 40, 20, 0.3);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  z-index: 20;
+}
+.pano-card.pano-leaving .pano-pin,
+.pano-card.pano-leaving .pano-tape {
+  opacity: 0;
+}
+
+/* MOBİL — eğim sıfır (dar ekranda taşmasın), hover efekti yok, gizli satır kalkar */
+@media (max-width: 640px) {
+  .pano-card,
+  .pano-card:hover {
+    transform: none;
+  }
+  .pano-card:hover {
+    box-shadow: 0 6px 16px rgba(60, 40, 20, 0.16);
+  }
+  .pano-reveal-row {
+    display: none;
+  }
 }
