@@ -73,7 +73,7 @@ export function HowItWorks() {
                 <div className="flex items-baseline gap-3 mb-6 font-body text-[11px] uppercase tracking-[0.18em]">
                   <span className="text-white font-bold text-base">{step.number}</span>
                   <span className="w-3 h-px bg-white/40 inline-block" />
-                  <span className="text-white/70">{step.eyebrow}</span>
+                  <span className="text-white/85">{step.eyebrow}</span>
                 </div>
 
                 {/* Başlık */}
