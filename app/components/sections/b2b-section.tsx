@@ -28,7 +28,7 @@ export function B2BSection() {
   return (
     <section
       id="kurumsal"
-      className="dark-section bg-ink"
+      className="bg-paper-2"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -40,27 +40,33 @@ export function B2BSection() {
               </span>
             </div>
 
-            <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-paper mb-6">
+            <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-brand-ink mb-6">
               Kurumsal etkinlikler için{" "}
               <span className="text-brand-accent">tek panel.</span>
             </h2>
 
-            <p className="text-lg text-paper-72 leading-[1.55] mb-10 max-w-xl">
+            <p className="text-lg text-ink-72 leading-[1.55] mb-10 max-w-xl">
               Otel, fuar şirketi veya kurumsal etkinlik ekibi misiniz? Şirket
               adınızla iş ilanı açın, tek brief ile çok sayıda profesyonelden
               teklif toplayın.
             </p>
 
             <div className="space-y-5 mb-10">
-              {features.map((feat) => (
+              {features.map((feat, i) => (
                 <div key={feat.number} className="flex gap-4 items-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-brand-accent text-brand-accent flex items-center justify-center font-mono text-xs">
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full border flex items-center justify-center font-mono text-xs ${
+                      i === 1
+                        ? "border-brand-accent text-brand-accent"
+                        : "border-sky text-sky"
+                    }`}
+                  >
                     {feat.number}
                   </div>
                   <div className="pt-1">
-                    <p className="text-base text-paper leading-[1.5]">
+                    <p className="text-base text-brand-ink leading-[1.5]">
                       <span className="font-medium">{feat.title}</span>{" "}
-                      <span className="text-paper-72">{feat.description}</span>
+                      <span className="text-ink-72">{feat.description}</span>
                     </p>
                   </div>
                 </div>
@@ -96,7 +102,7 @@ export function B2BSection() {
               </div>
             </div>
 
-            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-paper-50 text-center">
+            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 text-center">
               ↑ Örnek bir kurumsal ilan kartı
             </p>
           </div>
