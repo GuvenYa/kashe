@@ -48,9 +48,9 @@
   --gradient-brand: linear-gradient(135deg, #00ACE2, #FA0B96);
 
   /* === Fontlar === */
-  --font-display: var(--font-space-grotesk); /* Space Grotesk — başlıklar (eski: Bricolage Grotesque) */
-  --font-body: var(--font-inter);            /* Inter — gövde metin (eski: Outfit) */
-  --font-mono: var(--font-inter);            /* Inter — label/nav/mono (eski: Outfit) */
+  --font-display: var(--font-gilroy), var(--font-inter), system-ui, -apple-system, sans-serif; /* Gilroy — başlık */
+  --font-body: var(--font-gilroy), var(--font-inter), system-ui, -apple-system, sans-serif;    /* Gilroy — gövde */
+  --font-mono: var(--font-inter);            /* Inter — eyebrow/label (kasıtlı, DEĞİŞMEDİ) */
 
   /* === Radius === */
   --radius-pill: 9999px;
@@ -378,7 +378,7 @@ i {
 .kashe-prose h1,
 .kashe-prose h2,
 .kashe-prose h3 {
-  font-family: var(--font-display); /* Space Grotesk */
+  font-family: var(--font-display); /* Gilroy */
   font-weight: 600;
   color: var(--color-ink);
   line-height: 1.25;

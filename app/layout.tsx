@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { CerezBanner } from "@/app/components/cerez-banner";
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
+// Gilroy (marka fontu) — next/font/local. Ağırlıklar BİZ atarız: dosyaların OS/2
+// meta'sı bozuk (hepsi 400 der), dosya içeriğine değil bu eşlemeye güvenilir.
+// SemiBold dosyası yok → 600 boşluğu gerçek Bold gliflemesiyle doldurulur (sahte-bold yok).
+const gilroy = localFont({
+  src: [
+    { path: './fonts/Gilroy-Regular.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/Gilroy-Medium.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/Gilroy-Bold.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/Gilroy-Bold.woff2', weight: '700', style: 'normal' },
+    { path: './fonts/Gilroy-Heavy.woff2', weight: '800', style: 'normal' },
+  ],
+  variable: '--font-gilroy',
+  display: 'swap',
 });
 
 const inter = Inter({
@@ -50,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={`${spaceGrotesk.variable} ${inter.variable}`}
+      className={`${gilroy.variable} ${inter.variable}`}
     >
       <body className="font-body antialiased">
         {children}
