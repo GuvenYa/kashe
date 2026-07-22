@@ -113,7 +113,7 @@ export default async function OdemelerimPage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               Ödeme Geçmişi
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

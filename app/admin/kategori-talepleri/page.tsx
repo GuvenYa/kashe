@@ -38,8 +38,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: 'bg-terracotta/10 text-terracotta border-terracotta/30',
-  reviewing: 'bg-plum/10 text-plum border-plum/30',
+  pending: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
+  reviewing: 'bg-brand-accent/10 text-brand-accent border-brand-accent/30',
   approved: 'bg-moss/10 text-moss border-moss/30',
   declined: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
 };
@@ -161,8 +161,8 @@ export default async function AdminCategoryRequestsPage({
       {/* Status filtre chip'leri */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {[
-          { key: 'pending', label: 'Bekleyen', accent: 'terracotta' },
-          { key: 'reviewing', label: 'İnceleniyor', accent: 'plum' },
+          { key: 'pending', label: 'Bekleyen', accent: 'brandInk' },
+          { key: 'reviewing', label: 'İnceleniyor', accent: 'brandAccent' },
           { key: 'approved', label: 'Onaylı', accent: 'moss' },
           { key: 'declined', label: 'Reddedilen', accent: 'ink-72' },
           { key: 'all', label: 'Tümü', accent: 'ink' },
@@ -236,7 +236,7 @@ export default async function AdminCategoryRequestsPage({
                       </h2>
                       {popularity > 1 && (
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-terracotta/10 text-terracotta border border-terracotta/30"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-brand-ink/10 text-brand-ink border border-brand-ink/30"
                           title="Bu kategori için toplam talep sayısı"
                         >
                           {popularity}× istendi

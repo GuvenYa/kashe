@@ -152,7 +152,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
@@ -314,7 +314,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
             {showProfessionalFields && (
               <div className="mb-3 bg-paper border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={14} className="text-terracotta" />
+                  <Sparkles size={14} className="text-brand-ink" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
                     AI ile Hakkımda yaz
                   </span>
@@ -336,7 +336,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
                   type="button"
                   onClick={handleGenerateBio}
                   disabled={aiBioLoading}
-                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-brand-ink text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-brand-ink-deep transition disabled:opacity-50"
                 >
                   <Sparkles size={13} />
                   {aiBioLoading ? 'Yazıyor…' : 'AI ile yaz'}
@@ -384,8 +384,8 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
                   key={opt.key}
                   className={`flex items-center gap-2 bg-card border rounded-lg p-3 cursor-pointer transition ${
                     defaultApplicantRoles === opt.key
-                      ? 'border-terracotta'
-                      : 'border-line hover:border-terracotta/50'
+                      ? 'border-brand-ink'
+                      : 'border-line hover:border-brand-ink/50'
                   }`}
                 >
                   <input
@@ -393,7 +393,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
                     name="default-applicant-roles"
                     checked={defaultApplicantRoles === opt.key}
                     onChange={() => setDefaultApplicantRoles(opt.key)}
-                    className="accent-terracotta"
+                    className="accent-brand-ink"
                   />
                   <span className="text-sm text-ink">{opt.label}</span>
                 </label>
@@ -418,7 +418,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
           <button
             type="submit"
             disabled={isPending}
-            className="px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isPending ? 'Kaydediliyor...' : 'Kaydet'}
           </button>

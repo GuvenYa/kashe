@@ -23,19 +23,19 @@
   --color-paper-14: rgba(247, 249, 252, 0.14);
 
   /* === Marka renkleri — Faz-1 rebrand: token ADLARI korundu, DEĞERLER lacivert/pembe === */
-  --color-terracotta: #040D26;               /* Faz-1: LACİVERT birincil */
-  --color-terracotta-soft: #EAF0F8;          /* Faz-1: açık lacivert zemin */
-  --color-terracotta-08: rgba(4, 13, 38, 0.08);  /* Faz-1: lacivert %8 — hover/zemin tint */
-  --color-terracotta-12: rgba(4, 13, 38, 0.12);  /* Faz-1: lacivert %12 — seçili zemin */
+  --color-brand-ink: #040D26;               /* Faz-1: LACİVERT birincil */
+  --color-brand-ink-soft: #EAF0F8;          /* Faz-1: açık lacivert zemin */
+  --color-brand-ink-08: rgba(4, 13, 38, 0.08);  /* Faz-1: lacivert %8 — hover/zemin tint */
+  --color-brand-ink-12: rgba(4, 13, 38, 0.12);  /* Faz-1: lacivert %12 — seçili zemin */
 
   /* === Çizgi & sınır === */
   --color-line: rgba(4, 13, 38, 0.12);      /* Kenarlıklar, ayırıcılar — soğuk ton */
   --color-line-strong: rgba(4, 13, 38, 0.20);
 
   /* === İkincil renkler === */
-  --color-plum: #FA0B96;    /* Faz-1: PEMBE aksan */
+  --color-brand-accent: #FA0B96;    /* Faz-1: PEMBE aksan */
   --color-moss: #1F8A5F;    /* YEŞİL — başarı/onay (semantik, değişmedi) */
-  --color-ember: #0D1F4E;   /* Faz-1: hover artık hafif AÇILMA — lacivert dipte */
+  --color-brand-ink-deep: #0D1F4E;   /* Faz-1: hover artık hafif AÇILMA — lacivert dipte */
   --color-danger: #DC2626;       /* Kırmızı — yıkıcı aksiyon (semantik, değişmedi) */
   --color-danger-08: rgba(220, 38, 38, 0.08);
 
@@ -65,7 +65,7 @@ body {
 
 /* === Marka gradyanı yardımcı sınıfları — zümrüt tonlarına güncellendi === */
 .text-gradient-brand {
-  color: var(--color-terracotta); /* Düz zümrüt — gradient yerine kararlı renk */
+  color: var(--color-brand-ink); /* Düz zümrüt — gradient yerine kararlı renk */
 }
 
 .bg-gradient-brand {
@@ -78,7 +78,7 @@ body {
 em {
   font-style: normal;
   font-weight: 600;
-  color: var(--color-terracotta); /* Zümrüt vurgu */
+  color: var(--color-brand-ink); /* Zümrüt vurgu */
 }
 
 i {
@@ -87,7 +87,7 @@ i {
 
 /* === Seçim rengi === */
 ::selection {
-  background: var(--color-terracotta);
+  background: var(--color-brand-ink);
   color: #FFFFFF;
 }
 
@@ -243,7 +243,7 @@ i {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-terracotta); /* Zümrüt odak çizgisi */
+  background: var(--color-brand-ink); /* Zümrüt odak çizgisi */
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -390,7 +390,7 @@ i {
 .kashe-prose h3 { font-size: 1.25rem; }
 .kashe-prose p { margin: 0 0 1.15rem; }
 .kashe-prose a {
-  color: var(--color-terracotta); /* Zümrüt link */
+  color: var(--color-brand-ink); /* Zümrüt link */
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -400,7 +400,7 @@ i {
 .kashe-prose ol { list-style: decimal; }
 .kashe-prose li { margin: 0.3rem 0; }
 .kashe-prose blockquote {
-  border-left: 3px solid var(--color-terracotta); /* Zümrüt sol kenarlık */
+  border-left: 3px solid var(--color-brand-ink); /* Zümrüt sol kenarlık */
   padding-left: 1rem;
   margin: 0 0 1.15rem;
   color: var(--color-ink-72);

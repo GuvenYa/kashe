@@ -56,15 +56,15 @@ export function SifremiUnuttumForm() {
           <BrandMark size="lg" />
         </div>
 
-        <div className="inline-flex px-4 py-1.5 rounded-full border border-terracotta/30 mb-6">
-          <span className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta">
+        <div className="inline-flex px-4 py-1.5 rounded-full border border-brand-ink/30 mb-6">
+          <span className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink">
             + Email gönderildi
           </span>
         </div>
 
         <h1 className="font-display text-3xl md:text-4xl text-ink mb-4 tracking-tight">
           Gelen kutunu{' '}
-          <em className="text-terracotta not-italic italic font-medium">
+          <em className="text-brand-ink not-italic italic font-medium">
             kontrol et
           </em>
           .
@@ -85,7 +85,7 @@ export function SifremiUnuttumForm() {
         <div className="mt-8 pt-8 border-t border-line">
           <Link
             href="/giris"
-            className="text-sm text-terracotta hover:underline font-medium"
+            className="text-sm text-brand-ink hover:underline font-medium"
           >
             ← Giriş sayfasına dön
           </Link>
@@ -102,7 +102,7 @@ export function SifremiUnuttumForm() {
         </div>
         <h1 className="font-display text-3xl md:text-4xl text-ink mb-3 tracking-tight">
           Şifreni{' '}
-          <em className="text-terracotta not-italic italic font-medium">
+          <em className="text-brand-ink not-italic italic font-medium">
             sıfırla
           </em>
           .
@@ -126,7 +126,7 @@ export function SifremiUnuttumForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             placeholder="seninadin@email.com"
             autoComplete="email"
           />
@@ -151,7 +151,7 @@ export function SifremiUnuttumForm() {
         Şifreni hatırladın mı?{' '}
         <Link
           href="/giris"
-          className="text-terracotta hover:underline font-medium"
+          className="text-brand-ink hover:underline font-medium"
         >
           Giriş yap
         </Link>

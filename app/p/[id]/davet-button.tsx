@@ -148,7 +148,7 @@ export function DavetButton({
         <button
           type="button"
           onClick={handleClick}
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:text-terracotta hover:bg-terracotta/5 transition-colors"
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-ink-72 hover:text-brand-ink hover:bg-brand-ink/5 transition-colors"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="10" cy="8" r="3.5" />
@@ -179,7 +179,7 @@ export function DavetButton({
           >
             <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
               <h2 className="font-display text-xl text-ink">
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   {professionalName}
                 </em>
                 {' '}ilanına davet et
@@ -207,7 +207,7 @@ export function DavetButton({
                   <button
                     type="button"
                     onClick={() => router.push('/ilanlar/yeni')}
-                    className="inline-block px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+                    className="inline-block px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
                   >
                     Yeni ilan aç
                   </button>
@@ -221,7 +221,7 @@ export function DavetButton({
                     <button
                       type="button"
                       onClick={() => setSuccess(null)}
-                      className="text-sm text-terracotta hover:text-ink font-medium transition-colors"
+                      className="text-sm text-brand-ink hover:text-ink font-medium transition-colors"
                     >
                       Başka bir ilana da davet et →
                     </button>
@@ -252,8 +252,8 @@ export function DavetButton({
                               disabled
                                 ? 'border-line bg-paper/50 opacity-60 cursor-not-allowed'
                                 : selectedId === l.id
-                                ? 'border-terracotta bg-terracotta/5 cursor-pointer'
-                                : 'border-line hover:border-terracotta/50 cursor-pointer'
+                                ? 'border-brand-ink bg-brand-ink/5 cursor-pointer'
+                                : 'border-line hover:border-brand-ink/50 cursor-pointer'
                             }`}
                           >
                             <input
@@ -263,7 +263,7 @@ export function DavetButton({
                               checked={selectedId === l.id}
                               disabled={disabled}
                               onChange={() => setSelectedId(l.id)}
-                              className="accent-terracotta"
+                              className="accent-brand-ink"
                             />
                             <span className="flex-1 text-sm text-ink">{l.title}</span>
                             {note && (
@@ -288,7 +288,7 @@ export function DavetButton({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Profilini beğendim, ilanım için seni davet etmek istiyorum..."
-                      className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+                      className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
                     />
                   </div>
 
@@ -310,7 +310,7 @@ export function DavetButton({
                     <button
                       type="submit"
                       disabled={isPending || !selectedId}
-                      className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {isPending ? 'Gönderiliyor...' : 'Daveti gönder'}
                     </button>

@@ -252,7 +252,7 @@ export function TeklifToplaFormu({
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -350,7 +350,7 @@ export function TeklifToplaFormu({
                   >
                     {field.label}
                     {field.required && (
-                      <span className="text-terracotta"> *</span>
+                      <span className="text-brand-ink"> *</span>
                     )}
                   </label>
                   {field.type === 'select' ? (
@@ -436,8 +436,8 @@ export function TeklifToplaFormu({
                     key={opt.value}
                     className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
                       targetRole === opt.value
-                        ? 'border-terracotta'
-                        : 'border-line hover:border-terracotta/50'
+                        ? 'border-brand-ink'
+                        : 'border-line hover:border-brand-ink/50'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export function TeklifToplaFormu({
                         name="targetRole"
                         checked={targetRole === opt.value}
                         onChange={() => setTargetRole(opt.value)}
-                        className="accent-terracotta"
+                        className="accent-brand-ink"
                       />
                       <span className="text-sm text-ink font-medium">
                         {opt.label}
@@ -473,8 +473,8 @@ export function TeklifToplaFormu({
                     key={opt.value}
                     className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
                       recipientCount === opt.value
-                        ? 'border-terracotta'
-                        : 'border-line hover:border-terracotta/50'
+                        ? 'border-brand-ink'
+                        : 'border-line hover:border-brand-ink/50'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -483,7 +483,7 @@ export function TeklifToplaFormu({
                         name="recipientCount"
                         checked={recipientCount === opt.value}
                         onChange={() => setRecipientCount(opt.value)}
-                        className="accent-terracotta"
+                        className="accent-brand-ink"
                       />
                       <span className="text-sm text-ink font-medium">
                         {opt.label}
@@ -556,8 +556,8 @@ export function TeklifToplaFormu({
               />
               {file ? (
                 <div className="flex items-center gap-3 bg-card border border-line rounded-lg px-3 py-2.5">
-                  <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                  <span className="shrink-0 w-9 h-9 rounded-lg bg-brand-ink/10 flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>
@@ -576,7 +576,7 @@ export function TeklifToplaFormu({
                       setFile(null);
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
-                    className="shrink-0 text-ink-72 hover:text-terracotta text-lg leading-none w-7 h-7 flex items-center justify-center"
+                    className="shrink-0 text-ink-72 hover:text-brand-ink text-lg leading-none w-7 h-7 flex items-center justify-center"
                     aria-label="Dosyayı kaldır"
                   >
                     ×
@@ -585,7 +585,7 @@ export function TeklifToplaFormu({
               ) : (
                 <label
                   htmlFor="brief-file-input"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-line rounded-lg text-sm text-ink-72 hover:text-brand-ink hover:border-brand-ink transition cursor-pointer"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
@@ -603,7 +603,7 @@ export function TeklifToplaFormu({
                 type="checkbox"
                 checked={shareBudget}
                 onChange={(e) => setShareBudget(e.target.checked)}
-                className="mt-0.5 w-4 h-4 shrink-0 accent-terracotta cursor-pointer"
+                className="mt-0.5 w-4 h-4 shrink-0 accent-brand-ink cursor-pointer"
               />
               <span className="text-sm text-ink-72 leading-snug">
                 Bütçe bilgimi profesyonellerle paylaş. Kapatırsan teklifler
@@ -625,7 +625,7 @@ export function TeklifToplaFormu({
           <button
             type="submit"
             disabled={isPending}
-            className="flex-1 px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
+            className="flex-1 px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
           >
             {uploading
               ? 'Dosya yükleniyor...'

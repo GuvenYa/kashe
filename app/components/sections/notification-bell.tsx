@@ -99,13 +99,13 @@ export function NotificationBell({ userId, initialCount }: Props) {
   return (
     <Link
       href="/bildirimler"
-      className="relative inline-flex items-center justify-center w-7 h-7 text-ink-72 hover:text-terracotta transition-colors"
+      className="relative inline-flex items-center justify-center w-7 h-7 text-ink-72 hover:text-brand-ink transition-colors"
       aria-label={hasUnread ? `${count} okunmamış bildirim` : 'Bildirimler'}
     >
       <Bell size={18} strokeWidth={1.75} />
       {hasUnread && (
         <span
-          className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 bg-terracotta text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none"
+          className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 bg-brand-ink text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none"
           aria-hidden="true"
         >
           {displayCount}

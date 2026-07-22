@@ -10,7 +10,7 @@ interface PillProps extends HTMLAttributes<HTMLDivElement> {
 const variantClasses: Record<PillVariant, string> = {
   default: "bg-transparent border border-line text-ink-72",
   active: "bg-ink text-paper border border-ink",
-  featured: "bg-terracotta text-paper border border-terracotta",
+  featured: "bg-brand-ink text-paper border border-brand-ink",
 };
 
 export const Pill = forwardRef<HTMLDivElement, PillProps>(

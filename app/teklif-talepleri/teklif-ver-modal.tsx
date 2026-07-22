@@ -106,7 +106,7 @@ export function TeklifVerModal({
       >
         <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-xl text-ink">
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               {customerName}
             </em>
             &apos;a teklif ver
@@ -140,10 +140,10 @@ export function TeklifVerModal({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Örn: 15.000"
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             />
             {overBudgetWarning && (
-              <p className="mt-2 text-xs text-plum bg-plum/8 border border-plum/25 rounded-lg px-3 py-2">
+              <p className="mt-2 text-xs text-brand-accent bg-brand-accent/8 border border-brand-accent/25 rounded-lg px-3 py-2">
                 Bu tutar müşterinin belirttiği bütçeyi (
                 {new Intl.NumberFormat('tr-TR').format(budgetMax as number)} ₺)
                 aşıyor. Yine de gönderebilirsiniz.
@@ -162,7 +162,7 @@ export function TeklifVerModal({
               value={servicesDescription}
               onChange={(e) => setServicesDescription(e.target.value)}
               placeholder="Teklife neler dahil? Süre, kapsam, ekipman, teslimat vb."
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {servicesDescription.length}/2000
@@ -183,7 +183,7 @@ export function TeklifVerModal({
                   key={t.key}
                   type="button"
                   onClick={() => setCancellationPolicy(t.text)}
-                  className="px-3 py-1.5 border border-line rounded-lg text-xs text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+                  className="px-3 py-1.5 border border-line rounded-lg text-xs text-ink-72 hover:border-brand-ink hover:text-brand-ink transition"
                 >
                   {t.label}
                 </button>
@@ -195,7 +195,7 @@ export function TeklifVerModal({
               value={cancellationPolicy}
               onChange={(e) => setCancellationPolicy(e.target.value)}
               placeholder="İade ve iptal koşulların..."
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
             />
           </div>
 
@@ -207,7 +207,7 @@ export function TeklifVerModal({
             <select
               value={expiryKey}
               onChange={(e) => setExpiryKey(e.target.value as QuoteExpiryKey)}
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             >
               {QUOTE_EXPIRY_OPTIONS.map((opt) => (
                 <option key={opt.key} value={opt.key}>
@@ -228,7 +228,7 @@ export function TeklifVerModal({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Merhaba, talebinizi inceledim. Şöyle bir teklif sunuyorum..."
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
             />
           </div>
 
@@ -250,7 +250,7 @@ export function TeklifVerModal({
             <button
               type="submit"
               disabled={isPending}
-              className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 transition-all"
+              className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 transition-all"
             >
               {isPending ? 'Gönderiliyor...' : 'Teklifi gönder'}
             </button>

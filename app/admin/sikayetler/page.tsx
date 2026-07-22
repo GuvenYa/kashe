@@ -213,7 +213,7 @@ export default async function AdminReportsPage({
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-ink/8 text-ink border border-line">
                         {TARGET_LABEL[report.target_type]}
                       </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-terracotta/10 text-terracotta border border-terracotta/30">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-brand-ink/10 text-brand-ink border border-brand-ink/30">
                         {REASON_LABEL[report.reason]}
                       </span>
                       <span
@@ -238,7 +238,7 @@ export default async function AdminReportsPage({
                         <Link
                           href={t.href}
                           target="_blank"
-                          className="text-ink font-medium underline-offset-2 hover:underline hover:text-terracotta transition-colors"
+                          className="text-ink font-medium underline-offset-2 hover:underline hover:text-brand-ink transition-colors"
                         >
                           {t.label}
                         </Link>

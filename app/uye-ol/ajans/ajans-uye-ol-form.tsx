@@ -108,7 +108,7 @@ export function AjansUyeOlForm() {
         </div>
         <h1 className="font-display font-light text-3xl md:text-4xl leading-[1.1] tracking-[-0.03em] text-ink mb-4">
           Profesyonel ekibini{" "}
-          <em className="text-terracotta">tek panelde</em> yönet.
+          <em className="text-brand-ink">tek panelde</em> yönet.
         </h1>
         <p className="text-base text-ink-72 leading-[1.55]">
           Etkinlik ajansı, menajerlik şirketi veya stüdyo musun? Sanatçılarını
@@ -119,7 +119,7 @@ export function AjansUyeOlForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Ajans Adı
           </label>
           <Input
@@ -133,7 +133,7 @@ export function AjansUyeOlForm() {
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             İletişim Kişisi
           </label>
           <Input
@@ -150,7 +150,7 @@ export function AjansUyeOlForm() {
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             E-posta
           </label>
           <Input
@@ -164,7 +164,7 @@ export function AjansUyeOlForm() {
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Telefon
           </label>
           <Input
@@ -180,7 +180,7 @@ export function AjansUyeOlForm() {
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Şifre
           </label>
           <Input
@@ -216,13 +216,13 @@ export function AjansUyeOlForm() {
 
       <p className="mt-8 text-center text-sm text-ink-72">
         Zaten üye misin?{" "}
-        <a href="/giris" className="text-terracotta hover:text-ink font-medium">
+        <a href="/giris" className="text-brand-ink hover:text-ink font-medium">
           Giriş yap
         </a>
       </p>
       <p className="mt-2 text-center text-sm text-ink-72">
         Profesyonel veya müşteri olarak mı kayıt olmak istiyorsun?{" "}
-        <a href="/uye-ol" className="text-terracotta hover:text-ink font-medium">
+        <a href="/uye-ol" className="text-brand-ink hover:text-ink font-medium">
           Buraya bak
         </a>
       </p>

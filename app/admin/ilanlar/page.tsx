@@ -168,7 +168,7 @@ export default async function AdminIlanlarPage({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       {categoryName && (
-                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
                           {categoryName}
                         </span>
                       )}
@@ -202,7 +202,7 @@ export default async function AdminIlanlarPage({
                         href={`/ilanlar/${l.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
+                        className="inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:text-ink transition-colors"
                       >
                         İlanı önizle →
                       </a>

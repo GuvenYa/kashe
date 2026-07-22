@@ -194,7 +194,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               Hesabı askıya al
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-terracotta">{displayName}</em>&apos;ı askıya al?
+              <em className="text-brand-ink">{displayName}</em>&apos;ı askıya al?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
               Kullanıcı login olamayacak ve &ldquo;Hesabın askıya alındı&rdquo;
@@ -212,7 +212,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                 rows={3}
                 maxLength={500}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none disabled:opacity-60"
               />
               <p className="text-[10px] text-ink-50 mt-1 text-right font-mono">
                 {banReason.length}/500
@@ -248,11 +248,11 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
 
         {modalMode === 'make-admin' && (
           <>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
               Admin yetkisi ver
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-terracotta">{displayName}</em>&apos;a admin
+              <em className="text-brand-ink">{displayName}</em>&apos;a admin
               yetkisi verilsin mi?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
@@ -284,7 +284,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               Premium ver
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-terracotta">{displayName}</em>&apos;a premium
+              <em className="text-brand-ink">{displayName}</em>&apos;a premium
               ver
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
@@ -304,7 +304,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                   )
                 }
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition disabled:opacity-60"
               >
                 <option value="premium">Premium</option>
                 <option value="plus">Plus</option>
@@ -320,7 +320,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
                 value={premiumMonths}
                 onChange={(e) => setPremiumMonths(Number(e.target.value))}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition disabled:opacity-60"
               >
                 {PREMIUM_DURATIONS.map((d) => (
                   <option key={d.months} value={d.months}>
@@ -421,7 +421,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
         ) : (
           <MenuItem
             onClick={() => openModal('ban')}
-            color="terracotta"
+            color="brandInk"
             label="Askıya al"
           />
         )}
@@ -491,11 +491,11 @@ function MenuItem({
   label,
 }: {
   onClick: () => void;
-  color: 'terracotta' | 'moss' | 'danger' | 'ink';
+  color: 'brandInk' | 'moss' | 'danger' | 'ink';
   label: string;
 }) {
   const colorClass = {
-    terracotta: 'text-terracotta hover:bg-terracotta/8',
+    brandInk: 'text-brand-ink hover:bg-brand-ink/8',
     moss: 'text-moss hover:bg-moss/8',
     danger: 'text-danger hover:bg-danger/8',
     ink: 'text-ink-72 hover:bg-paper-2 hover:text-ink',

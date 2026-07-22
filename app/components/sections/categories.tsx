@@ -85,7 +85,7 @@ export async function Categories() {
               <Link
                 key={cat.id}
                 href={`/kategori/${cat.slug}`}
-                className="group relative bg-card border border-line rounded-2xl p-6 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
+                className="group relative bg-card border border-line rounded-2xl p-6 transition-all duration-300 hover:border-brand-ink hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
               >
                 {/* Hover'da hafif renk yıkaması (zemin) */}
                 <div
@@ -107,7 +107,7 @@ export async function Categories() {
                         initials={initials}
                       />
                     ) : (
-                      <span className="font-display font-medium text-terracotta text-2xl">
+                      <span className="font-display font-medium text-brand-ink text-2xl">
                         {initials}
                       </span>
                     )}
@@ -120,7 +120,7 @@ export async function Categories() {
 
                   {/* Link + (boşsa) Yakında etiketi */}
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta inline-flex items-center gap-1 transition-transform duration-200 group-hover:translate-x-1">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink inline-flex items-center gap-1 transition-transform duration-200 group-hover:translate-x-1">
                       Keşfet
                       <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                     </div>

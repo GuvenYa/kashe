@@ -45,7 +45,7 @@ function DavetSatiri({
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -123,8 +123,8 @@ function DavetSatiri({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition shrink-0 ${
               confirming
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <X size={12} strokeWidth={1.75} />

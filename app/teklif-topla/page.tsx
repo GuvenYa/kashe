@@ -42,12 +42,12 @@ export default async function TeklifToplaPage() {
       <TopNav />
       <div className="bg-paper min-h-screen">
         <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
             Erişim yok
           </p>
           <h1 className="font-display text-4xl text-ink mb-3">
             Teklif toplamak için{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               müşteri
             </em>{' '}
             hesabı gerek
@@ -57,7 +57,7 @@ export default async function TeklifToplaPage() {
           </p>
           <Link
             href="/kesfet"
-            className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+            className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
           >
             Profesyonelleri keşfet
           </Link>
@@ -87,7 +87,7 @@ export default async function TeklifToplaPage() {
           </p>
           <h1 className="font-display text-4xl text-ink leading-tight">
             Birden fazla profesyonelden{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               özel teklif
             </em>{' '}
             al

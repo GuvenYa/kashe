@@ -117,20 +117,20 @@ export function OneCikarModal({ listing, onClose }: Props) {
                 key={plan.type}
                 className={`border rounded-xl p-4 transition ${
                   active
-                    ? 'border-terracotta bg-terracotta/5'
+                    ? 'border-brand-ink bg-brand-ink/5'
                     : 'border-line bg-card'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 shrink-0 rounded-xl bg-terracotta/10 flex items-center justify-center">
-                    <Icon size={18} className="text-terracotta" />
+                  <div className="w-10 h-10 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">
+                    <Icon size={18} className="text-brand-ink" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <p className="font-display font-semibold text-ink">
                         {plan.label}
                       </p>
-                      <span className="font-display font-semibold text-terracotta text-sm">
+                      <span className="font-display font-semibold text-brand-ink text-sm">
                         {formatTRY(plan.price)}
                         <span className="text-ink-72 font-normal text-xs">
                           {' '}
@@ -147,7 +147,7 @@ export function OneCikarModal({ listing, onClose }: Props) {
                         <button
                           onClick={() => deactivate(plan.type)}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-terracotta/40 text-terracotta hover:bg-terracotta/5 transition disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-brand-ink/40 text-brand-ink hover:bg-brand-ink/5 transition disabled:opacity-50"
                         >
                           <Check size={13} />
                           Aktif — kaldır
@@ -156,7 +156,7 @@ export function OneCikarModal({ listing, onClose }: Props) {
                         <button
                           onClick={() => activate(plan.type)}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-display font-semibold bg-terracotta text-paper hover:bg-ember transition disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-display font-semibold bg-brand-ink text-paper hover:bg-brand-ink-deep transition disabled:opacity-50"
                         >
                           {isPending ? 'İşleniyor…' : 'Öne çıkar'}
                         </button>

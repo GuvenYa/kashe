@@ -49,7 +49,7 @@ export function SortDropdown({ currentSort }: Props) {
         value={currentSort}
         onChange={handleChange}
         disabled={isPending}
-        className="text-sm font-display text-ink bg-card border border-line rounded px-2 py-1.5 focus:outline-none focus:border-terracotta cursor-pointer disabled:opacity-50"
+        className="text-sm font-display text-ink bg-card border border-line rounded px-2 py-1.5 focus:outline-none focus:border-brand-ink cursor-pointer disabled:opacity-50"
       >
         {OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

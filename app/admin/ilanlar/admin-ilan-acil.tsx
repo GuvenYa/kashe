@@ -50,9 +50,9 @@ export function AdminIlanAcil({
   }
 
   const onClass =
-    'w-full px-3 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.1em] border border-terracotta text-terracotta hover:bg-terracotta/5 transition disabled:opacity-50 text-left';
+    'w-full px-3 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.1em] border border-brand-ink text-brand-ink hover:bg-brand-ink/5 transition disabled:opacity-50 text-left';
   const offClass =
-    'w-full px-3 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.1em] border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition disabled:opacity-50 text-left';
+    'w-full px-3 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.1em] border border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink transition disabled:opacity-50 text-left';
 
   return (
     <div className="space-y-2">

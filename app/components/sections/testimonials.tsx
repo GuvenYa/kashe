@@ -11,13 +11,13 @@ type Testimonial = {
 
 // Avatar arka plan renkleri — DESIGN.md §1 pastel palette.
 const TONES = {
-  terracotta: { bg: "#FCEAE4", fg: "#FA0B96" }, // mercan
-  plum:       { bg: "#EAF0F8", fg: "#040D26" }, // zümrüt
+  brandInk: { bg: "#FCEAE4", fg: "#FA0B96" }, // mercan
+  brandAccent:       { bg: "#EAF0F8", fg: "#040D26" }, // zümrüt
   moss:       { bg: "#FFF1DC", fg: "#B5851F" }, // altın
 };
 
 // Renk rotasyonu — DB görüşleri sırayla bu tonları alır.
-const TONE_ROTATION = [TONES.terracotta, TONES.plum, TONES.moss];
+const TONE_ROTATION = [TONES.brandInk, TONES.brandAccent, TONES.moss];
 
 // NOT: Bu yorumlar şu an temsilidir — gerçek müşteri/profesyonel
 // yorumları toplandığında değiştirilecek.
@@ -28,7 +28,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Selin A.",
     role: "Müşteri",
     city: "İstanbul",
-    tone: TONES.terracotta,
+    tone: TONES.brandInk,
   },
   {
     quote:
@@ -36,7 +36,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Mert K.",
     role: "DJ",
     city: "Ankara",
-    tone: TONES.plum,
+    tone: TONES.brandAccent,
   },
   {
     quote:
@@ -82,7 +82,7 @@ function StarRow({ count = 5 }: { count?: number }) {
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill={i < count ? "var(--color-plum)" : "rgba(26,18,14,0.15)"}
+          fill={i < count ? "var(--color-brand-accent)" : "rgba(26,18,14,0.15)"}
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
@@ -136,7 +136,7 @@ export async function Testimonials() {
             return (
               <div
                 key={`${idx}-${t.name}`}
-                className="group bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] flex flex-col"
+                className="group bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-brand-ink hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] flex flex-col"
               >
                 <StarRow count={t.rating} />
 
@@ -144,7 +144,7 @@ export async function Testimonials() {
                 <blockquote className="font-display text-lg leading-[1.5] text-ink mb-6 flex-1">
                   <span
                     aria-hidden="true"
-                    className="font-display italic text-3xl leading-none text-plum mr-1 align-top"
+                    className="font-display italic text-3xl leading-none text-brand-accent mr-1 align-top"
                   >
                     “
                   </span>

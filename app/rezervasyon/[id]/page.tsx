@@ -113,7 +113,7 @@ const STATUS_STYLES = {
   },
   cancelled: {
     label: 'İptal edildi',
-    classes: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    classes: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
   },
 } as const;
 
@@ -209,7 +209,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
           {/* Geri linki */}
           <Link
             href={backHref}
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-terracotta transition-colors mb-6"
+            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-brand-ink transition-colors mb-6"
           >
             <span>←</span>
             {backLabel}
@@ -241,7 +241,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 </Eyebrow>
                 <Link
                   href={viewer === 'customer' ? `/p/${otherParty?.id}` : '#'}
-                  className="font-display font-semibold text-2xl text-ink hover:text-terracotta transition-colors block"
+                  className="font-display font-semibold text-2xl text-ink hover:text-brand-ink transition-colors block"
                 >
                   {otherName}
                 </Link>
@@ -262,8 +262,8 @@ export default async function RezervasyonDetayPage({ params }: Props) {
 
           {/* İPTAL DETAYI (varsa) */}
           {booking.status === 'cancelled' && (
-            <div className="bg-terracotta/[0.04] border border-terracotta/20 rounded-2xl p-5 md:p-6 mb-6">
-              <Eyebrow variant="inline" className="mb-2 text-terracotta">
+            <div className="bg-brand-ink/[0.04] border border-brand-ink/20 rounded-2xl p-5 md:p-6 mb-6">
+              <Eyebrow variant="inline" className="mb-2 text-brand-ink">
                 İptal kaydı
               </Eyebrow>
               <p className="text-sm text-ink leading-relaxed">
@@ -401,17 +401,17 @@ export default async function RezervasyonDetayPage({ params }: Props) {
           {/* KONUŞMAYA GİT */}
           <Link
             href={`/mesajlar/${booking.conversation_id}`}
-            className="block bg-card border border-line rounded-2xl p-5 mb-6 hover:border-terracotta transition-colors group"
+            className="block bg-card border border-line rounded-2xl p-5 mb-6 hover:border-brand-ink transition-colors group"
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-terracotta/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-brand-ink/10 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="var(--color-terracotta)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="var(--color-brand-ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-base text-ink group-hover:text-terracotta transition-colors">
+                  <p className="font-display font-semibold text-base text-ink group-hover:text-brand-ink transition-colors">
                     Konuşmaya git
                   </p>
                   <p className="text-xs text-ink-72 mt-0.5">
@@ -419,7 +419,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                   </p>
                 </div>
               </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta inline-flex items-center gap-1 transition-transform group-hover:translate-x-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink inline-flex items-center gap-1 transition-transform group-hover:translate-x-1">
                 Aç
                 <span>→</span>
               </span>

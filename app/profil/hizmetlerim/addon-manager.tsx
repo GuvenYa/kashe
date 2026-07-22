@@ -124,7 +124,7 @@ export function AddonManager({ serviceId, addons }: Props) {
           <button
             type="button"
             onClick={openCreate}
-            className="text-xs text-terracotta hover:underline"
+            className="text-xs text-brand-ink hover:underline"
           >
             + Ekstra ekle
           </button>
@@ -166,7 +166,7 @@ export function AddonManager({ serviceId, addons }: Props) {
                   type="button"
                   onClick={() => openEdit(addon)}
                   disabled={isPending}
-                  className="text-ink hover:text-terracotta disabled:opacity-50"
+                  className="text-ink hover:text-brand-ink disabled:opacity-50"
                 >
                   Düzenle
                 </button>
@@ -174,7 +174,7 @@ export function AddonManager({ serviceId, addons }: Props) {
                   type="button"
                   onClick={() => handleDelete(addon.id)}
                   disabled={isPending}
-                  className="text-ink-72 hover:text-terracotta disabled:opacity-50"
+                  className="text-ink-72 hover:text-brand-ink disabled:opacity-50"
                 >
                   Sil
                 </button>
@@ -194,7 +194,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
               placeholder="Ekstra adı (örn. Drone çekimi)"
-              className="flex-1 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+              className="flex-1 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-brand-ink transition"
             />
             <input
               type="text"
@@ -202,7 +202,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Fiyat ₺"
-              className="w-28 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+              className="w-28 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-brand-ink transition"
             />
           </div>
           <input
@@ -211,7 +211,7 @@ export function AddonManager({ serviceId, addons }: Props) {
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             placeholder="Kısa açıklama (opsiyonel)"
-            className="w-full px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+            className="w-full px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-brand-ink transition"
           />
           {error && <p className="text-xs text-danger">{error}</p>}
           <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               type="button"
               onClick={handleSubmit}
               disabled={isPending}
-              className="text-xs px-3 py-1.5 bg-terracotta text-paper rounded font-medium hover:opacity-90 disabled:opacity-50"
+              className="text-xs px-3 py-1.5 bg-brand-ink text-paper rounded font-medium hover:opacity-90 disabled:opacity-50"
             >
               {isPending ? 'Kaydediliyor...' : editingId ? 'Kaydet' : 'Ekle'}
             </button>

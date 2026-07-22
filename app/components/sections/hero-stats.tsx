@@ -33,7 +33,7 @@ function useCountUp(target: number, run: boolean, duration = 1200) {
 function StatItem({ stat, run }: { stat: Stat; run: boolean }) {
   const counted = useCountUp(stat.target ?? 0, run && stat.target !== null);
   return (
-    <div className="group bg-card border border-line rounded-2xl p-5 md:p-6 transition-all hover:-translate-y-0.5 hover:border-terracotta hover:shadow-[0_12px_30px_-14px_rgba(26,18,14,0.2)]">
+    <div className="group bg-card border border-line rounded-2xl p-5 md:p-6 transition-all hover:-translate-y-0.5 hover:border-brand-ink hover:shadow-[0_12px_30px_-14px_rgba(26,18,14,0.2)]">
       <div className="mb-3" style={{ color: stat.color }}>
         {stat.icon}
       </div>
@@ -99,7 +99,7 @@ export function HeroStats({
       target: proCount,
       suffix: "+",
       label: "Profesyonel",
-      color: "var(--color-terracotta)",
+      color: "var(--color-brand-ink)",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="9" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.6" />

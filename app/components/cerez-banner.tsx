@@ -66,7 +66,7 @@ export function CerezBanner() {
           <div className="flex-1 min-w-0">
             <p
               id="cerez-banner-title"
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-1.5"
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-1.5"
             >
               Çerez bildirimi
             </p>
@@ -78,7 +78,7 @@ export function CerezBanner() {
               kullanır. Pazarlama veya reklam çerezi kullanmıyoruz.{' '}
               <Link
                 href="/gizlilik"
-                className="text-terracotta hover:underline"
+                className="text-brand-ink hover:underline"
               >
                 Gizlilik Politikası
               </Link>

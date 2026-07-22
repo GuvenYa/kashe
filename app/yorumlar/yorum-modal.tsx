@@ -129,7 +129,7 @@ export function YorumModal({
             id="yorum-modal-title"
             className="font-display text-2xl text-ink tracking-tight"
           >
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               {professionalName}
             </em>
             {' '}için deneyimini paylaş.
@@ -152,7 +152,7 @@ export function YorumModal({
                   type="button"
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoverRating(star)}
-                  className="p-1 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-terracotta/40 rounded"
+                  className="p-1 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-brand-ink/40 rounded"
                   aria-label={`${star} yıldız ver`}
                 >
                   <Star filled={star <= displayRating} />
@@ -181,7 +181,7 @@ export function YorumModal({
               maxLength={1000}
               rows={5}
               placeholder="Profesyonelle nasıl bir deneyim yaşadın? Diğer müşterilere yardımcı olur."
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none text-sm leading-relaxed"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none text-sm leading-relaxed"
             />
             <p className="text-xs text-ink-72 mt-1.5 text-right">
               {body.length} / 1000
@@ -202,7 +202,7 @@ export function YorumModal({
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="px-3 py-2 text-xs font-mono uppercase tracking-[0.12em] text-terracotta border border-terracotta rounded hover:bg-terracotta hover:text-paper transition-colors disabled:opacity-50"
+                    className="px-3 py-2 text-xs font-mono uppercase tracking-[0.12em] text-brand-ink border border-brand-ink rounded hover:bg-brand-ink hover:text-paper transition-colors disabled:opacity-50"
                   >
                     {isDeleting ? 'Siliniyor...' : 'Evet, sil'}
                   </button>
@@ -219,7 +219,7 @@ export function YorumModal({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-terracotta transition-colors self-start md:self-auto"
+                  className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-brand-ink transition-colors self-start md:self-auto"
                 >
                   Yorumu Sil
                 </button>
@@ -240,7 +240,7 @@ export function YorumModal({
               <button
                 type="submit"
                 disabled={isPending || isDeleting || rating < 1}
-                className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isPending
                   ? '...'
@@ -263,8 +263,8 @@ function Star({ filled }: { filled: boolean }) {
       width="28"
       height="28"
       viewBox="0 0 24 24"
-      fill={filled ? 'var(--color-plum)' : 'none'}
-      stroke={filled ? 'var(--color-plum)' : 'var(--color-ink-72)'}
+      fill={filled ? 'var(--color-brand-accent)' : 'none'}
+      stroke={filled ? 'var(--color-brand-accent)' : 'var(--color-ink-72)'}
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

@@ -53,10 +53,10 @@ export function UserMenu({
           <img
             src={avatarUrl}
             alt=""
-            className="w-9 h-9 rounded-full object-cover border border-line group-hover:border-terracotta transition-colors"
+            className="w-9 h-9 rounded-full object-cover border border-line group-hover:border-brand-ink transition-colors"
           />
         ) : (
-          <span className="w-9 h-9 rounded-full bg-terracotta text-paper font-display font-semibold text-sm flex items-center justify-center group-hover:bg-ember transition-colors">
+          <span className="w-9 h-9 rounded-full bg-brand-ink text-paper font-display font-semibold text-sm flex items-center justify-center group-hover:bg-brand-ink-deep transition-colors">
             {initials}
           </span>
         )}
@@ -78,7 +78,7 @@ export function UserMenu({
             <a
               key={link.href}
               href={link.href}
-              className="block px-4 py-2.5 text-sm font-body text-ink hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+              className="block px-4 py-2.5 text-sm font-body text-ink hover:bg-brand-ink-08 hover:text-brand-ink transition-colors"
             >
               {link.label}
             </a>
@@ -88,7 +88,7 @@ export function UserMenu({
               <div className="border-t border-line my-1.5" />
               <a
                 href="/admin"
-                className="block px-4 py-2.5 text-sm font-body text-ink hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+                className="block px-4 py-2.5 text-sm font-body text-ink hover:bg-brand-ink-08 hover:text-brand-ink transition-colors"
               >
                 Admin Paneli
               </a>
@@ -98,7 +98,7 @@ export function UserMenu({
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2.5 text-sm font-body text-ink-72 hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+            className="w-full text-left px-4 py-2.5 text-sm font-body text-ink-72 hover:bg-brand-ink-08 hover:text-brand-ink transition-colors"
           >
             Çıkış yap
           </button>

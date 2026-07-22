@@ -64,7 +64,7 @@ export function ProfilArama({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="İsim veya e-posta ara…"
-        className="w-full pl-9 pr-9 py-2.5 bg-card border border-line rounded-lg text-sm text-ink placeholder:text-ink-72/60 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+        className="w-full pl-9 pr-9 py-2.5 bg-card border border-line rounded-lg text-sm text-ink placeholder:text-ink-72/60 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
       />
       {query && (
         <button

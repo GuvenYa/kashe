@@ -504,8 +504,8 @@ export function KonusmaDetay({
     <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
       {/* Kurum ekip üyesi banner'ı — canWrite'ta "yazıyorsun", pasifte "salt görüntüleme" */}
       {isTeam && (
-        <div className="border-b border-plum/20 bg-plum/[0.06] px-4 md:px-5 py-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-plum">
+        <div className="border-b border-brand-accent/20 bg-brand-accent/[0.06] px-4 md:px-5 py-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-accent">
             {canWrite
               ? `Kurum: ${teamBusinessName ?? 'Kurum'} adına yazıyorsun`
               : `Kurum: ${teamBusinessName ?? 'Kurum'} adına — salt görüntüleme`}
@@ -543,11 +543,11 @@ export function KonusmaDetay({
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-display font-semibold text-base text-ink truncate group-hover:text-terracotta transition-colors">
+            <p className="font-display font-semibold text-base text-ink truncate group-hover:text-brand-ink transition-colors">
               {otherName}
             </p>
             {isOtherTyping ? (
-              <p className="text-[11px] text-terracotta font-mono uppercase tracking-[0.14em] italic">
+              <p className="text-[11px] text-brand-ink font-mono uppercase tracking-[0.14em] italic">
                 yazıyor...
               </p>
             ) : isOtherOnline ? (
@@ -577,7 +577,7 @@ export function KonusmaDetay({
                 type="button"
                 onClick={() => setAssignOpen((v) => !v)}
                 disabled={isAssigning || teamMembers.length === 0}
-                className="kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 bg-plum/10 hover:bg-plum/15 text-plum rounded-full text-[10px] font-mono uppercase tracking-[0.14em] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/10 hover:bg-brand-accent/15 text-brand-accent rounded-full text-[10px] font-mono uppercase tracking-[0.14em] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {assignedMembers.length > 0 ? 'Düzenle' : 'Ekibe ata'}
               </button>
@@ -606,7 +606,7 @@ export function KonusmaDetay({
                         <span
                           className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
                             isOn
-                              ? 'bg-plum border-plum text-paper'
+                              ? 'bg-brand-accent border-brand-accent text-paper'
                               : 'border-line'
                           }`}
                         >
@@ -624,9 +624,9 @@ export function KonusmaDetay({
 
       {/* ETKİNLİK ÖZETİ ÇITASI */}
       {hasBrief && (
-        <div className="border-b border-line bg-terracotta/[0.04] px-4 md:px-5 py-2">
+        <div className="border-b border-line bg-brand-ink/[0.04] px-4 md:px-5 py-2">
           <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap kashe-no-scrollbar">
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta shrink-0">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink shrink-0">
               Etkinlik
             </span>
             {briefBits.map((b, i) => (
@@ -722,7 +722,7 @@ export function KonusmaDetay({
                   <div
                     className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 ${
                       isMine
-                        ? 'bg-terracotta text-paper rounded-br-md shadow-[0_4px_12px_-4px_rgba(4,13,38,0.35)]'
+                        ? 'bg-brand-ink text-paper rounded-br-md shadow-[0_4px_12px_-4px_rgba(4,13,38,0.35)]'
                         : 'bg-card border border-line text-ink rounded-bl-md shadow-sm'
                     }`}
                   >
@@ -731,7 +731,7 @@ export function KonusmaDetay({
                       // kurum hesabı → kurum adı, üye → üyenin adı, karşı taraf → pro adı)
                       <p
                         className={`text-[10px] font-mono uppercase tracking-[0.14em] mb-1 ${
-                          isMine ? 'text-paper/80' : 'text-plum'
+                          isMine ? 'text-paper/80' : 'text-brand-accent'
                         }`}
                       >
                         {senderNames[msg.sender_id]?.name ||
@@ -741,7 +741,7 @@ export function KonusmaDetay({
                     ) : (
                       !isMine &&
                       showSenderNames && (
-                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-plum mb-1">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-brand-accent mb-1">
                           {senderNames[msg.sender_id]?.name || 'Bilinmeyen'}
                           {senderNames[msg.sender_id]?.agencyTag && (
                             <span className="text-ink-72">
@@ -759,22 +759,22 @@ export function KonusmaDetay({
                         className={`mb-2 flex items-center gap-2.5 rounded-lg border px-3 py-2 w-full text-left transition ${
                           isMine
                             ? 'border-paper/30 bg-paper/10 hover:bg-paper/20'
-                            : 'border-line bg-paper hover:border-terracotta'
+                            : 'border-line bg-paper hover:border-brand-ink'
                         }`}
                       >
                         <span
                           className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
-                            isMine ? 'bg-paper/20' : 'bg-terracotta/10'
+                            isMine ? 'bg-paper/20' : 'bg-brand-ink/10'
                           }`}
                         >
                           {msg.attachment_type === 'image' ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-terracotta)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-brand-ink)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                               <rect x="3" y="3" width="18" height="18" rx="2" />
                               <circle cx="8.5" cy="8.5" r="1.5" />
                               <path d="M21 15l-5-5L5 21" />
                             </svg>
                           ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-terracotta)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMine ? 'var(--color-paper)' : 'var(--color-brand-ink)'} strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                               <path d="M14 2v6h6" />
                             </svg>
@@ -829,7 +829,7 @@ export function KonusmaDetay({
             <button
               type="button"
               onClick={() => setTemplatesOpen((v) => !v)}
-              className="kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+              className="kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] border border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink transition"
             >
               Hazır mesajlar
               <span aria-hidden="true">{templatesOpen ? '×' : '+'}</span>
@@ -841,7 +841,7 @@ export function KonusmaDetay({
                     key={i}
                     type="button"
                     onClick={() => applyTemplate(tpl)}
-                    className="kashe-tap text-left text-[12px] leading-snug text-ink bg-paper border border-line rounded-lg px-2.5 py-1.5 hover:border-terracotta hover:bg-terracotta/[0.04] transition max-w-full"
+                    className="kashe-tap text-left text-[12px] leading-snug text-ink bg-paper border border-line rounded-lg px-2.5 py-1.5 hover:border-brand-ink hover:bg-brand-ink/[0.04] transition max-w-full"
                   >
                     {tpl}
                   </button>
@@ -853,7 +853,7 @@ export function KonusmaDetay({
 
         {/* Güvenlik uyarısı — anlık */}
         {securityWarning && (
-          <div className="mb-3 flex items-start gap-2 bg-terracotta-08 border border-terracotta/25 rounded-xl px-3 py-2.5">
+          <div className="mb-3 flex items-start gap-2 bg-brand-ink-08 border border-brand-ink/25 rounded-xl px-3 py-2.5">
             <svg
               width="16"
               height="16"
@@ -867,16 +867,16 @@ export function KonusmaDetay({
                 cx="12"
                 cy="12"
                 r="10"
-                stroke="var(--color-terracotta)"
+                stroke="var(--color-brand-ink)"
                 strokeWidth="1.5"
               />
               <path
                 d="M12 8v4"
-                stroke="var(--color-terracotta)"
+                stroke="var(--color-brand-ink)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
-              <circle cx="12" cy="16" r="1" fill="var(--color-terracotta)" />
+              <circle cx="12" cy="16" r="1" fill="var(--color-brand-ink)" />
             </svg>
             <p className="text-[12px] leading-relaxed text-ink">
               {securityWarning}
@@ -895,7 +895,7 @@ export function KonusmaDetay({
               onClick={() => setQuoteModalOpen(true)}
               aria-label="Teklif oluştur"
               title="Teklif oluştur"
-              className="kashe-tap shrink-0 h-11 md:h-12 px-3 md:px-4 rounded-xl border border-plum/30 bg-plum/8 text-plum hover:bg-plum/15 hover:border-plum/50 transition flex items-center gap-1.5 font-display font-semibold text-xs md:text-sm whitespace-nowrap"
+              className="kashe-tap shrink-0 h-11 md:h-12 px-3 md:px-4 rounded-xl border border-brand-accent/30 bg-brand-accent/8 text-brand-accent hover:bg-brand-accent/15 hover:border-brand-accent/50 transition flex items-center gap-1.5 font-display font-semibold text-xs md:text-sm whitespace-nowrap"
             >
               <span className="text-base leading-none" aria-hidden="true">₺</span>
               <span>
@@ -916,7 +916,7 @@ export function KonusmaDetay({
             disabled={uploadingFile}
             aria-label="Dosya ekle"
             title="Dosya ekle"
-            className="kashe-tap shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl border border-line bg-paper text-ink-72 hover:text-terracotta hover:border-terracotta transition flex items-center justify-center disabled:opacity-50"
+            className="kashe-tap shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl border border-line bg-paper text-ink-72 hover:text-brand-ink hover:border-brand-ink transition flex items-center justify-center disabled:opacity-50"
           >
             {uploadingFile ? (
               <span className="font-mono text-[10px]">...</span>
@@ -953,8 +953,8 @@ export function KonusmaDetay({
             }}
             className={`flex-1 px-4 py-3 bg-paper border rounded-xl text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition resize-none text-sm ${
               securityWarning
-                ? 'border-terracotta/50 focus:border-terracotta focus:ring-terracotta-08'
-                : 'border-line focus:border-terracotta focus:ring-terracotta-08'
+                ? 'border-brand-ink/50 focus:border-brand-ink focus:ring-brand-ink-08'
+                : 'border-line focus:border-brand-ink focus:ring-brand-ink-08'
             }`}
           />
           <button
@@ -962,8 +962,8 @@ export function KonusmaDetay({
             disabled={!canSend}
             className={`kashe-tap shrink-0 px-5 py-3 rounded-xl font-display font-semibold text-sm transition-all whitespace-nowrap ${
               canSend
-                ? 'bg-terracotta text-paper hover:bg-ember shadow-[3px_3px_0_var(--color-terracotta-12)]'
-                : 'bg-terracotta/40 text-paper cursor-not-allowed'
+                ? 'bg-brand-ink text-paper hover:bg-brand-ink-deep shadow-[3px_3px_0_var(--color-brand-ink-12)]'
+                : 'bg-brand-ink/40 text-paper cursor-not-allowed'
             }`}
           >
             {isPending ? '...' : 'Gönder'}

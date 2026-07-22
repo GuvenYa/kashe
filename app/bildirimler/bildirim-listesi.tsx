@@ -174,7 +174,7 @@ export function BildirimListesi({
               type="button"
               onClick={handleMarkAll}
               disabled={isPending}
-              className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta hover:underline disabled:opacity-50 disabled:cursor-wait transition-opacity"
+              className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink hover:underline disabled:opacity-50 disabled:cursor-wait transition-opacity"
             >
               Tümünü okundu işaretle
             </button>
@@ -183,7 +183,7 @@ export function BildirimListesi({
         <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
           {unreadCount > 0 ? (
             <>
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 {unreadCount} yeni
               </em>{' '}
               bildirimin var.
@@ -217,13 +217,13 @@ export function BildirimListesi({
                       onClick={() => handleClick(notif)}
                       className={`w-full text-left px-6 py-4 flex items-start gap-4 transition-colors hover:bg-paper ${
                         !isLast ? 'border-b border-line' : ''
-                      } ${isUnread ? 'bg-terracotta/5' : ''}`}
+                      } ${isUnread ? 'bg-brand-ink/5' : ''}`}
                     >
                       {/* Okunmamış indikatörü */}
                       <div className="pt-1.5 shrink-0">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            isUnread ? 'bg-terracotta' : 'bg-transparent'
+                            isUnread ? 'bg-brand-ink' : 'bg-transparent'
                           }`}
                           aria-hidden="true"
                         />

@@ -236,7 +236,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                   <Link
                     key={conv.id}
                     href={`/mesajlar/${conv.id}`}
-                    className="block bg-card border border-line rounded-lg p-5 hover:border-terracotta transition-colors"
+                    className="block bg-card border border-line rounded-lg p-5 hover:border-brand-ink transition-colors"
                   >
                     <div className="flex items-start gap-4">
                       {other.avatar_url ? (
@@ -247,7 +247,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                           className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
                           {initials}
                         </div>
                       )}
@@ -276,7 +276,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                         )}
 
                         {conv.is_team && conv.team_business_name && (
-                          <p className="text-[10px] text-plum mt-1 font-mono uppercase tracking-[0.14em]">
+                          <p className="text-[10px] text-brand-accent mt-1 font-mono uppercase tracking-[0.14em]">
                             Kurum: {conv.team_business_name}
                           </p>
                         )}
@@ -294,7 +294,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
 
                       {/* Pasif kurum konuşmasında badge YOK; canWrite konuşmada gösterilir */}
                       {(!conv.is_team || conv.team_can_write) && unreadCount > 0 && (
-                        <div className="shrink-0 min-w-[24px] h-6 px-2 bg-terracotta text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
+                        <div className="shrink-0 min-w-[24px] h-6 px-2 bg-brand-ink text-paper rounded-full flex items-center justify-center text-xs font-display font-semibold">
                           {unreadCount}
                         </div>
                       )}

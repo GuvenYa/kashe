@@ -30,7 +30,7 @@ export function SuspendedNotice() {
           </p>
           <a
             href="mailto:kasheofficial@gmail.com?subject=Hesap%20Askısı%20İtirazı"
-            className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+            className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
           >
             Destek ekibine yaz →
           </a>

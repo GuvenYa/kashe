@@ -20,7 +20,7 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-xl text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-xl text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   return (
     <div className="bg-card border border-line rounded-2xl p-7 md:p-8">
@@ -50,7 +50,7 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
                     {field.label}
                   </p>
                   {selected.length > 0 && (
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta-08 px-2 py-0.5 rounded-full">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink-08 px-2 py-0.5 rounded-full">
                       {selected.length} seçili
                     </span>
                   )}
@@ -72,14 +72,14 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
                         aria-pressed={isOn}
                         className={`kashe-tap group flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                           isOn
-                            ? 'bg-terracotta-08 text-ink'
+                            ? 'bg-brand-ink-08 text-ink'
                             : 'bg-transparent text-ink-72 hover:bg-paper-2 hover:text-ink'
                         }`}
                       >
                         <span
                           className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                             isOn
-                              ? 'bg-terracotta border-terracotta'
+                              ? 'bg-brand-ink border-brand-ink'
                               : 'bg-card border-line group-hover:border-ink-72'
                           }`}
                           aria-hidden="true"
@@ -129,7 +129,7 @@ export function AttributesEditor({ fields, values, onChange }: Props) {
                   {field.label}
                 </label>
                 {current && (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta-08 px-2 py-0.5 rounded-full">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink-08 px-2 py-0.5 rounded-full">
                     Seçili
                   </span>
                 )}

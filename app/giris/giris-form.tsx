@@ -200,7 +200,7 @@ export default function GirisForm({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             placeholder="seninadin@email.com"
             autoComplete="email"
           />
@@ -216,7 +216,7 @@ export default function GirisForm({
             </label>
             <Link
               href="/sifremi-unuttum"
-              className="text-sm text-terracotta hover:underline"
+              className="text-sm text-brand-ink hover:underline"
             >
               Şifremi unuttum
             </Link>
@@ -228,7 +228,7 @@ export default function GirisForm({
               required
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
               placeholder="••••••••"
               autoComplete="current-password"
             />
@@ -263,7 +263,7 @@ export default function GirisForm({
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
-                className="mt-2 block font-medium text-terracotta hover:text-ink disabled:opacity-50 transition-colors"
+                className="mt-2 block font-medium text-brand-ink hover:text-ink disabled:opacity-50 transition-colors"
               >
                 {resending
                   ? 'Gönderiliyor…'
@@ -282,7 +282,7 @@ export default function GirisForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3.5 bg-terracotta text-white rounded-lg font-display font-semibold hover:bg-ember disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full px-6 py-3.5 bg-brand-ink text-white rounded-lg font-display font-semibold hover:bg-brand-ink-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
         </button>
@@ -290,7 +290,7 @@ export default function GirisForm({
 
       <p className="text-center text-sm text-ink-50 mt-8">
         Hesabın yok mu?{' '}
-        <Link href="/uye-ol" className="text-terracotta hover:underline font-medium">
+        <Link href="/uye-ol" className="text-brand-ink hover:underline font-medium">
           Üye ol
         </Link>
       </p>

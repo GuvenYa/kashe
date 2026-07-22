@@ -62,7 +62,7 @@ export function GorusForm({ testimonial }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 
@@ -135,7 +135,7 @@ export function GorusForm({ testimonial }: Props) {
                 aria-label={`${n} yıldız`}
                 className={`w-10 h-10 rounded-lg border text-lg leading-none transition-colors ${
                   n <= rating
-                    ? 'bg-terracotta/10 border-terracotta text-plum'
+                    ? 'bg-brand-ink/10 border-brand-ink text-brand-accent'
                     : 'bg-card border-line text-ink-50/40 hover:border-ink-72'
                 }`}
               >
@@ -195,7 +195,7 @@ export function GorusForm({ testimonial }: Props) {
               onClick={() => setIsPublished(opt.key)}
               className={`px-4 py-2 rounded-lg text-sm font-display font-medium border transition-colors ${
                 isPublished === opt.key
-                  ? 'bg-terracotta text-paper border-terracotta'
+                  ? 'bg-brand-ink text-paper border-brand-ink'
                   : 'bg-card text-ink-72 border-line hover:border-ink-72'
               }`}
             >
@@ -219,7 +219,7 @@ export function GorusForm({ testimonial }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isPending
             ? 'Kaydediliyor...'

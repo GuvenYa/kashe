@@ -54,7 +54,7 @@ export function BasvuruSatiri({ application }: Props) {
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -64,7 +64,7 @@ export function BasvuruSatiri({ application }: Props) {
     <div className="bg-card border border-line rounded-lg p-5">
       {/* Header: kategori + status */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-ink/8 text-brand-ink rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
           {categoryEmoji && <span>{categoryEmoji}</span>}
           {categoryName}
         </span>
@@ -81,7 +81,7 @@ export function BasvuruSatiri({ application }: Props) {
           href={`/ilanlar/${listing.id}`}
           className="block mb-3 group"
         >
-          <h3 className="font-display text-lg text-ink leading-snug group-hover:text-terracotta transition-colors line-clamp-2">
+          <h3 className="font-display text-lg text-ink leading-snug group-hover:text-brand-ink transition-colors line-clamp-2">
             {listing.title}
           </h3>
         </Link>
@@ -155,7 +155,7 @@ export function BasvuruSatiri({ application }: Props) {
         {listing && (
           <Link
             href={`/ilanlar/${listing.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink transition"
           >
             <Eye size={12} strokeWidth={1.75} />
             İlanı gör
@@ -168,8 +168,8 @@ export function BasvuruSatiri({ application }: Props) {
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <Trash2 size={12} strokeWidth={1.75} />

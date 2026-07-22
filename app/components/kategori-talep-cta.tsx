@@ -120,18 +120,18 @@ export function KategoriTalepCta({
       <button
         type="button"
         onClick={handleOpen}
-        className="kashe-tap w-full bg-card border border-line rounded-2xl p-5 text-left hover:border-terracotta transition-all group"
+        className="kashe-tap w-full bg-card border border-line rounded-2xl p-5 text-left hover:border-brand-ink transition-all group"
       >
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-1.5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-1.5">
           Aklında başka bir şey mi var?
         </p>
-        <p className="font-display font-semibold text-base text-ink leading-snug mb-1 group-hover:text-terracotta transition-colors">
-          Aradığın <em className="text-terracotta">kategori</em> burada yok mu?
+        <p className="font-display font-semibold text-base text-ink leading-snug mb-1 group-hover:text-brand-ink transition-colors">
+          Aradığın <em className="text-brand-ink">kategori</em> burada yok mu?
         </p>
         <p className="text-xs text-ink-72 leading-relaxed">
           Bize öner — Kashe'ye eklemeyi değerlendirelim.
         </p>
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta inline-flex items-center gap-1 mt-3 group-hover:translate-x-1 transition-transform">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink inline-flex items-center gap-1 mt-3 group-hover:translate-x-1 transition-transform">
           Kategori öner →
         </span>
       </button>
@@ -139,9 +139,9 @@ export function KategoriTalepCta({
       <button
         type="button"
         onClick={handleOpen}
-        className="kashe-tap inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-terracotta hover:text-ember transition-colors group"
+        className="kashe-tap inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-brand-ink hover:text-brand-ink-deep transition-colors group"
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-terracotta inline-block" />
+        <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block" />
         Aradığın kategori yok mu? Bize öner
         <span className="transition-transform group-hover:translate-x-0.5">→</span>
       </button>
@@ -181,11 +181,11 @@ export function KategoriTalepCta({
         ) : !isLoggedIn ? (
           // Giriş yapmamışsa — kısa CTA modal'da
           <div className="text-center py-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
               Kategori önerisi
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              Önce <em className="text-terracotta">üye ol</em>.
+              Önce <em className="text-brand-ink">üye ol</em>.
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
               Kategori önerisi göndermek için kısa bir kayıt gerekiyor —
@@ -201,7 +201,7 @@ export function KategoriTalepCta({
               </button>
               <a
                 href="/uye-ol?rol=profesyonel"
-                className="kashe-tap flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition text-center shadow-[3px_3px_0_var(--color-terracotta-12)]"
+                className="kashe-tap flex-1 px-4 py-2.5 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition text-center shadow-[3px_3px_0_var(--color-brand-ink-12)]"
               >
                 Üye ol →
               </a>
@@ -210,11 +210,11 @@ export function KategoriTalepCta({
         ) : (
           // Asıl form
           <form onSubmit={handleSubmit}>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
               Kategori önerisi
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              Aradığın <em className="text-terracotta">kategori</em> yok mu?
+              Aradığın <em className="text-brand-ink">kategori</em> yok mu?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
               Önerini gönder — talep yoğunluğuna göre yeni kategori
@@ -236,12 +236,12 @@ export function KategoriTalepCta({
                 disabled={isPending}
                 className={`w-full px-3 py-2.5 bg-paper border rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
                   matchedExisting
-                    ? 'border-terracotta focus:border-terracotta focus:ring-terracotta-08'
-                    : 'border-line focus:border-terracotta focus:ring-terracotta-08'
+                    ? 'border-brand-ink focus:border-brand-ink focus:ring-brand-ink-08'
+                    : 'border-line focus:border-brand-ink focus:ring-brand-ink-08'
                 }`}
               />
               {matchedExisting && (
-                <p className="text-[11px] text-terracotta mt-1.5 leading-relaxed">
+                <p className="text-[11px] text-brand-ink mt-1.5 leading-relaxed">
                   Bu kategori zaten mevcut. Keşfet sayfasından filtreleyerek
                   bulabilirsin.
                 </p>
@@ -260,7 +260,7 @@ export function KategoriTalepCta({
                 rows={3}
                 maxLength={280}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none disabled:opacity-60"
               />
               <p className="text-[10px] text-ink-50 mt-1 text-right font-mono">
                 {description.length}/280
@@ -276,7 +276,7 @@ export function KategoriTalepCta({
                 value={eventContext}
                 onChange={(e) => setEventContext(e.target.value)}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition disabled:opacity-60"
               >
                 {EVENT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -302,7 +302,7 @@ export function KategoriTalepCta({
               <button
                 type="submit"
                 disabled={isPending || name.trim().length < 2 || matchedExisting}
-                className="kashe-tap flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-60 shadow-[3px_3px_0_var(--color-terracotta-12)]"
+                className="kashe-tap flex-1 px-4 py-2.5 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-60 shadow-[3px_3px_0_var(--color-brand-ink-12)]"
               >
                 {isPending ? '...' : 'Gönder'}
               </button>

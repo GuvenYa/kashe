@@ -31,12 +31,12 @@ export default async function YeniIlanPage() {
         <TopNav />
         <div className="bg-paper min-h-screen">
           <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
               Hesap askıda
             </p>
             <h1 className="font-display text-4xl text-ink mb-3">
               Hesabın şu an{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 askıya alınmış
               </em>
             </h1>
@@ -46,7 +46,7 @@ export default async function YeniIlanPage() {
             </p>
             <a
               href="mailto:kasheofficial@gmail.com"
-              className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+              className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
             >
               Destek ekibine yaz
             </a>
@@ -68,12 +68,12 @@ export default async function YeniIlanPage() {
         <TopNav />
         <div className="bg-paper min-h-screen">
           <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
               Erişim yok
             </p>
             <h1 className="font-display text-4xl text-ink mb-3">
               İlan açmak için{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 müşteri
               </em>{' '}
               hesabı gerek
@@ -84,7 +84,7 @@ export default async function YeniIlanPage() {
             </p>
             <Link
               href="/ilanlar"
-              className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+              className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
             >
               İlanları gör
             </Link>
@@ -114,7 +114,7 @@ export default async function YeniIlanPage() {
         <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
           <Link
             href="/ilanlar"
-            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta mb-8 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink mb-8 transition-colors"
           >
             <span>←</span> Tüm ilanlar
           </Link>
@@ -124,7 +124,7 @@ export default async function YeniIlanPage() {
               Yeni ilan
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 Etkinliğin
               </em>{' '}
               için profesyonel ara

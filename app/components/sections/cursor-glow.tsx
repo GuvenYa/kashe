@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-// Hero içinde fareyi takip eden çok hafif terracotta glow.
+// Hero içinde fareyi takip eden çok hafif brand-ink glow.
 // Abartısız: sadece sezilen bir sıcaklık. Fare hero dışına çıkınca solar.
 export function CursorGlow() {
   const ref = useRef<HTMLDivElement>(null);

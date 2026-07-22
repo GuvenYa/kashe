@@ -110,7 +110,7 @@ function MetaRow({
     >
       {hasRating ? (
         <span className="inline-flex items-center gap-1">
-          <StarIcon className={light ? 'text-[#F2C879]' : 'text-plum'} />
+          <StarIcon className={light ? 'text-[#F2C879]' : 'text-brand-accent'} />
           <span
             className={`font-display font-semibold ${
               light ? 'text-white' : 'text-ink'
@@ -159,7 +159,7 @@ function TopChips({
       {categoryName && (
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 shrink-0 shadow-sm">
           <span
-            className="w-1.5 h-1.5 rounded-full bg-plum shrink-0"
+            className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0"
             aria-hidden="true"
           />
           <span className="truncate max-w-[130px]">{categoryName}</span>
@@ -264,7 +264,7 @@ export function ProfileCard({
   const profileHref = `/p/${profile.id}`;
 
   const PremiumBadge = isPremium ? (
-    <span className="absolute top-3 right-14 font-mono text-[10px] uppercase tracking-[0.14em] bg-plum text-paper px-2 py-1 rounded-md shadow-sm">
+    <span className="absolute top-3 right-14 font-mono text-[10px] uppercase tracking-[0.14em] bg-brand-accent text-paper px-2 py-1 rounded-md shadow-sm">
       Premium
     </span>
   ) : null;
@@ -280,7 +280,7 @@ export function ProfileCard({
         className={`group relative block rounded-2xl overflow-hidden bg-card border transition-all duration-300 hover:-translate-y-1 ${
           isPremium
             ? 'border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[0_16px_36px_-16px_rgba(138,109,31,0.35)]'
-            : 'border-line hover:border-terracotta hover:shadow-[0_16px_36px_-18px_rgba(20,61,49,0.35)]'
+            : 'border-line hover:border-brand-ink hover:shadow-[0_16px_36px_-18px_rgba(20,61,49,0.35)]'
         }`}
       >
         <div className="relative aspect-[4/5]">
@@ -291,7 +291,7 @@ export function ProfileCard({
           />
           <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
           {isPremium && (
-            <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-[0.14em] bg-plum text-paper px-2 py-1 rounded-md shadow-sm">
+            <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-[0.14em] bg-brand-accent text-paper px-2 py-1 rounded-md shadow-sm">
               Premium
             </span>
           )}
@@ -365,7 +365,7 @@ export function ProfileCard({
             {/* Teklif Al — mobilde HER ZAMAN görünür, zümrüt, tam genişlik */}
             <Link
               href={profileHref}
-              className="relative z-20 mt-auto block w-full text-center bg-terracotta text-paper rounded-lg py-2.5 font-display font-semibold text-sm hover:bg-ember transition-colors"
+              className="relative z-20 mt-auto block w-full text-center bg-brand-ink text-paper rounded-lg py-2.5 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
             >
               Teklif Al
             </Link>
@@ -433,7 +433,7 @@ export function ProfileCard({
             {/* Teklif Al — Zümrüt (mobil ile tutarlı), tam genişlik */}
             <Link
               href={profileHref}
-              className="mt-2.5 block w-full text-center bg-terracotta text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-ember transition-colors"
+              className="mt-2.5 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
             >
               Teklif Al
             </Link>

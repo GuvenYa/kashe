@@ -92,7 +92,7 @@ export function PortfolioItemCard({ item }: Props) {
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="absolute top-3 right-3 w-9 h-9 bg-ink/70 hover:bg-terracotta text-paper rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 flex items-center justify-center"
+          className="absolute top-3 right-3 w-9 h-9 bg-ink/70 hover:bg-brand-ink text-paper rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 flex items-center justify-center"
           title="Sil"
           aria-label="Fotoğrafı sil"
         >
@@ -111,7 +111,7 @@ export function PortfolioItemCard({ item }: Props) {
               onChange={(e) => setCaption(e.target.value)}
               maxLength={200}
               autoFocus
-              className="w-full px-3 py-2 bg-paper border border-line rounded text-sm text-ink focus:outline-none focus:border-terracotta transition"
+              className="w-full px-3 py-2 bg-paper border border-line rounded text-sm text-ink focus:outline-none focus:border-brand-ink transition"
               placeholder="Açıklama ekle (opsiyonel)"
             />
             <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ export function PortfolioItemCard({ item }: Props) {
                 type="button"
                 onClick={handleSaveCaption}
                 disabled={isPending}
-                className="text-xs text-terracotta hover:underline disabled:opacity-50"
+                className="text-xs text-brand-ink hover:underline disabled:opacity-50"
               >
                 Kaydet
               </button>

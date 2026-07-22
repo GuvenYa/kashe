@@ -116,12 +116,12 @@ export default function FiyatlandirmaPage() {
         {/* HERO */}
         <section className="border-b border-line">
           <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-24 text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-4">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-4">
               Fiyatlandırma
             </p>
             <h1 className="font-display font-semibold text-4xl md:text-6xl text-ink tracking-tight leading-[1.05]">
               Görünürlüğünü{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 büyüt
               </em>
               .
@@ -190,7 +190,7 @@ export default function FiyatlandirmaPage() {
                   }
                   className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-display font-semibold text-sm transition-all ${
                     plan.highlight
-                      ? 'bg-terracotta text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
+                      ? 'bg-brand-ink text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
                       : 'border border-ink text-ink hover:bg-ink hover:text-paper'
                   }`}
                 >
@@ -209,12 +209,12 @@ export default function FiyatlandirmaPage() {
         <section className="border-t border-line bg-card">
           <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-20">
             <div className="text-center mb-12">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
                 İlan öne çıkarma
               </p>
               <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
                 İlanını{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   öne çıkar
                 </em>
               </h2>
@@ -238,7 +238,7 @@ export default function FiyatlandirmaPage() {
                       {boost.desc}
                     </p>
                   </div>
-                  <span className="font-display text-lg text-terracotta font-medium shrink-0">
+                  <span className="font-display text-lg text-brand-ink font-medium shrink-0">
                     {boost.price}
                   </span>
                 </div>
@@ -261,7 +261,7 @@ export default function FiyatlandirmaPage() {
           <div className="max-w-4xl mx-auto px-6 md:px-12 py-16 text-center">
             <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
               Sahnede{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 yerini al
               </em>
             </h2>
@@ -272,7 +272,7 @@ export default function FiyatlandirmaPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-7">
               <Link
                 href="/uye-ol?rol=profesyonel"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
                 Ücretsiz üye ol
               </Link>

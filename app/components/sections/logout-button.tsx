@@ -20,7 +20,7 @@ export function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors disabled:opacity-50"
+      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors disabled:opacity-50"
     >
       {loading ? 'Çıkılıyor...' : 'Çıkış yap'}
     </button>

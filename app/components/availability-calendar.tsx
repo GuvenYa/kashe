@@ -139,7 +139,7 @@ export function AvailabilityCalendar({
             }}
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] border transition ${
               rangeMode
-                ? 'bg-terracotta text-paper border-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
                 : 'bg-card text-ink-72 border-line hover:border-ink-72'
             }`}
           >
@@ -149,7 +149,7 @@ export function AvailabilityCalendar({
             {rangeMode ? 'Aralık modu açık' : 'Aralık seç'}
           </button>
           {rangeMode && (
-            <span className="font-mono text-[10px] text-terracotta">
+            <span className="font-mono text-[10px] text-brand-ink">
               {rangeStart ? 'Bitiş gününe tıkla' : 'Başlangıca tıkla'}
             </span>
           )}
@@ -215,13 +215,13 @@ export function AvailabilityCalendar({
             // Rezervasyon — gri/kilitli (kaldırılamaz)
             cls += ' bg-ink-72/10 text-ink-72 font-medium';
           } else if (isBlocked) {
-            // Manuel dolu — terracotta
-            cls += ' bg-terracotta/12 text-terracotta font-medium';
+            // Manuel dolu — brand-ink
+            cls += ' bg-brand-ink/12 text-brand-ink font-medium';
           } else {
             cls += ' text-ink';
             if (editable) cls += ' hover:bg-moss/10 cursor-pointer';
           }
-          if (rangeStart === dateStr) cls += ' ring-2 ring-inset ring-terracotta bg-terracotta/8';
+          if (rangeStart === dateStr) cls += ' ring-2 ring-inset ring-brand-ink bg-brand-ink/8';
           else if (isToday) cls += ' ring-1 ring-inset ring-ink-72/40';
 
           const clickable = editable && !isBooked && !isPast;
@@ -247,7 +247,7 @@ export function AvailabilityCalendar({
               {isFull && !isPast && (
                 <span
                   className={`absolute bottom-1 w-1 h-1 rounded-full ${
-                    isBooked ? 'bg-ink-72' : 'bg-terracotta'
+                    isBooked ? 'bg-ink-72' : 'bg-brand-ink'
                   }`}
                   aria-hidden="true"
                 />
@@ -260,7 +260,7 @@ export function AvailabilityCalendar({
       {/* Açıklama (legend) */}
       <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-line">
         <span className="flex items-center gap-1.5 text-xs text-ink-72">
-          <span className="w-3 h-3 rounded bg-terracotta/12 border border-terracotta/30" />
+          <span className="w-3 h-3 rounded bg-brand-ink/12 border border-brand-ink/30" />
           Dolu (sen)
         </span>
         <span className="flex items-center gap-1.5 text-xs text-ink-72">

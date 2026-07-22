@@ -109,7 +109,7 @@ export function UnreadBadge({ userId }: Props) {
   if (count === 0) return null;
 
   return (
-    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-terracotta text-paper rounded-full text-[10px] font-display font-semibold leading-none">
+    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-brand-ink text-paper rounded-full text-[10px] font-display font-semibold leading-none">
       {count > 99 ? '99+' : count}
     </span>
   );

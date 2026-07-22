@@ -14,7 +14,7 @@ export const Eyebrow = forwardRef<HTMLDivElement, EyebrowProps>(
         <div
           ref={ref}
           className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 border border-terracotta bg-terracotta-08 rounded-full font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta",
+            "inline-flex items-center gap-2 px-3 py-1.5 border border-brand-ink bg-brand-ink-08 rounded-full font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink",
             className
           )}
           {...props}
@@ -30,12 +30,12 @@ export const Eyebrow = forwardRef<HTMLDivElement, EyebrowProps>(
       <div
         ref={ref}
         className={cn(
-          "flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta",
+          "flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink",
           className
         )}
         {...props}
       >
-        <span className="w-6 h-px bg-terracotta"></span>
+        <span className="w-6 h-px bg-brand-ink"></span>
         {children}
       </div>
     );

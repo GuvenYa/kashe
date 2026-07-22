@@ -81,7 +81,7 @@ export function QuickSearch({
         <div className="px-4 py-2.5 rounded-xl hover:bg-paper-2/40 transition-colors h-full flex flex-col justify-center">
           <label
             htmlFor="qs-query"
-            className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta mb-1"
+            className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink mb-1"
           >
             Ne arıyorsun?
           </label>
@@ -107,7 +107,7 @@ export function QuickSearch({
                 <button
                   type="button"
                   onClick={() => goToCategory(cat.id)}
-                  className="w-full text-left px-4 py-2.5 text-ink hover:bg-terracotta-08 hover:text-terracotta transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-ink hover:bg-brand-ink-08 hover:text-brand-ink transition-colors flex items-center gap-2"
                 >
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-32">
                     Kategori
@@ -122,14 +122,14 @@ export function QuickSearch({
 
       {/* Ayırıcı — masaüstü dikey, mobil yatay */}
       <div className="hidden md:flex flex-col items-center justify-center self-stretch my-2 px-1" aria-hidden="true">
-        <div className="flex-1 w-px bg-terracotta/20" />
-        <div className="w-1 h-1 rounded-full bg-terracotta/40 my-1" />
-        <div className="flex-1 w-px bg-terracotta/20" />
+        <div className="flex-1 w-px bg-brand-ink/20" />
+        <div className="w-1 h-1 rounded-full bg-brand-ink/40 my-1" />
+        <div className="flex-1 w-px bg-brand-ink/20" />
       </div>
       <div className="flex md:hidden items-center justify-center mx-4" aria-hidden="true">
-        <div className="flex-1 h-px bg-terracotta/20" />
-        <div className="w-1 h-1 rounded-full bg-terracotta/40 mx-2" />
-        <div className="flex-1 h-px bg-terracotta/20" />
+        <div className="flex-1 h-px bg-brand-ink/20" />
+        <div className="w-1 h-1 rounded-full bg-brand-ink/40 mx-2" />
+        <div className="flex-1 h-px bg-brand-ink/20" />
       </div>
 
       {/* Şehir */}
@@ -140,7 +140,7 @@ export function QuickSearch({
       {/* Ara butonu */}
       <button
         type="submit"
-        className="shrink-0 bg-terracotta text-white rounded-lg px-7 py-4 md:py-0 font-display font-semibold transition-all hover:bg-ember flex items-center justify-center gap-2"
+        className="shrink-0 bg-brand-ink text-white rounded-lg px-7 py-4 md:py-0 font-display font-semibold transition-all hover:bg-brand-ink-deep flex items-center justify-center gap-2"
       >
         <svg
           width="18"

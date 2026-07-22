@@ -32,7 +32,7 @@ export default async function AdminBlogPage() {
         </div>
         <Link
           href="/admin/blog/yeni"
-          className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+          className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
         >
           + Yeni yazı
         </Link>
@@ -46,7 +46,7 @@ export default async function AdminBlogPage() {
           </p>
           <Link
             href="/admin/blog/yeni"
-            className="inline-block px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="inline-block px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             + Yeni yazı
           </Link>

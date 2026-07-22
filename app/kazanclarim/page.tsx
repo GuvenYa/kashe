@@ -102,7 +102,7 @@ export default async function KazanclarimPage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               Kazançlarım
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
@@ -146,7 +146,7 @@ export default async function KazanclarimPage() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1.5">
                     Komisyon (%{Math.round(COMMISSION_RATE * 100)})
                   </p>
-                  <p className="font-display text-3xl text-ember tabular-nums leading-none">
+                  <p className="font-display text-3xl text-brand-ink-deep tabular-nums leading-none">
                     −{formatTRY(summary.commission)}
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export default async function KazanclarimPage() {
                                 <td className="px-4 py-3 text-right text-sm text-ink tabular-nums whitespace-nowrap">
                                   {formatTRY(c.gross)}
                                 </td>
-                                <td className="px-4 py-3 text-right text-sm text-ember tabular-nums whitespace-nowrap">
+                                <td className="px-4 py-3 text-right text-sm text-brand-ink-deep tabular-nums whitespace-nowrap">
                                   −{formatTRY(c.commission)}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-semibold text-moss tabular-nums whitespace-nowrap">

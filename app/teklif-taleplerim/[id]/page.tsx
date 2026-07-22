@@ -191,7 +191,7 @@ export default async function TeklifKarsilastirPage({
         
         <Link
           href="/teklif-taleplerim"
-          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta mb-8 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink mb-8 transition-colors"
         >
           <span>←</span> Taleplerim
         </Link>
@@ -207,7 +207,7 @@ export default async function TeklifKarsilastirPage({
         <header className="mb-8">
           <div className="flex items-center gap-2 flex-wrap mb-2">
             {categoryName && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
                 {categoryName}
               </span>
             )}
@@ -286,7 +286,7 @@ export default async function TeklifKarsilastirPage({
                           className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-terracotta/10 flex items-center justify-center text-terracotta font-display font-semibold shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-brand-ink/10 flex items-center justify-center text-brand-ink font-display font-semibold shrink-0">
                           {proName.charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -313,7 +313,7 @@ export default async function TeklifKarsilastirPage({
                             href={`/p/${pro.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-block mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
+                            className="inline-block mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:text-ink transition-colors"
                           >
                             Profili gör →
                           </a>

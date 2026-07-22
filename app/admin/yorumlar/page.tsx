@@ -71,7 +71,7 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <span
           key={i}
-          className={i <= rating ? 'text-plum' : 'text-ink-50/30'}
+          className={i <= rating ? 'text-brand-accent' : 'text-ink-50/30'}
         >
           ★
         </span>
@@ -287,7 +287,7 @@ export default async function AdminReviewsPage({
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <StarRating rating={review.rating} />
                       {isLowRating && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-terracotta/10 text-terracotta border border-terracotta/30">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-brand-ink/10 text-brand-ink border border-brand-ink/30">
                           Düşük puan
                         </span>
                       )}
@@ -327,8 +327,8 @@ export default async function AdminReviewsPage({
 
                 {/* Yanıt (varsa) */}
                 {review.reply && (
-                  <div className="bg-plum/[0.06] border border-plum/20 rounded-xl p-3 mb-3 ml-4">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-plum mb-1">
+                  <div className="bg-brand-accent/[0.06] border border-brand-accent/20 rounded-xl p-3 mb-3 ml-4">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-accent mb-1">
                       Profesyonelin yanıtı · {formatRelative(review.reply.created_at)}
                     </p>
                     <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">

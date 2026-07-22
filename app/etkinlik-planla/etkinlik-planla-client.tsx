@@ -52,7 +52,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
           rows={4}
           maxLength={1000}
           placeholder="Örn: Eylül ayında İstanbul'da 150 kişilik bir düğün yapıyoruz. Bahçe düğünü olacak, akşam başlayıp gece devam edecek. Hem fotoğraf hem eğlence tarafını düşünüyoruz."
-          className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+          className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
         />
         <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
           <span className="text-[11px] text-ink-72 font-mono">
@@ -62,7 +62,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
             type="button"
             onClick={handleAnalyze}
             disabled={loading || description.trim().length < 10}
-            className="kashe-tap inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-terracotta text-paper font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-50"
+            className="kashe-tap inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-ink text-paper font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-50"
           >
             <Sparkles size={16} />
             {loading ? 'Analiz ediliyor…' : 'Analiz et'}
@@ -83,7 +83,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
               <Link
                 key={cat.slug}
                 href={`/kategori/${cat.slug}`}
-                className="kashe-tap group block bg-card border border-line rounded-xl p-4 hover:border-terracotta transition"
+                className="kashe-tap group block bg-card border border-line rounded-xl p-4 hover:border-brand-ink transition"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -98,7 +98,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
                   </div>
                   <ArrowRight
                     size={18}
-                    className="shrink-0 mt-1 text-ink-72 group-hover:text-terracotta transition"
+                    className="shrink-0 mt-1 text-ink-72 group-hover:text-brand-ink transition"
                   />
                 </div>
               </Link>
@@ -108,7 +108,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
           {/* Bütçe */}
           {result.budgetEstimate && (
             <div className="mt-4 flex items-start gap-3 bg-card border border-line rounded-xl p-4">
-              <Wallet size={18} className="shrink-0 mt-0.5 text-terracotta" />
+              <Wallet size={18} className="shrink-0 mt-0.5 text-brand-ink" />
               <div>
                 <p className="font-display font-semibold text-ink text-sm mb-0.5">
                   Tahmini bütçe
@@ -120,8 +120,8 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
 
           {/* İpucu */}
           {result.tip && (
-            <div className="mt-3 flex items-start gap-3 bg-terracotta/5 border border-terracotta/20 rounded-xl p-4">
-              <Lightbulb size={18} className="shrink-0 mt-0.5 text-terracotta" />
+            <div className="mt-3 flex items-start gap-3 bg-brand-ink/5 border border-brand-ink/20 rounded-xl p-4">
+              <Lightbulb size={18} className="shrink-0 mt-0.5 text-brand-ink" />
               <p className="text-sm text-ink-72 leading-relaxed">{result.tip}</p>
             </div>
           )}

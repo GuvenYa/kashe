@@ -43,7 +43,7 @@ export function BlogRowActions({ postId, slug, status }: Props) {
           href={`/blog/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-ink-72 hover:text-terracotta px-2 py-1 transition-colors"
+          className="text-sm text-ink-72 hover:text-brand-ink px-2 py-1 transition-colors"
           title="Yayındaki yazıyı gör"
         >
           Gör
@@ -59,7 +59,7 @@ export function BlogRowActions({ postId, slug, status }: Props) {
       </button>
       <Link
         href={`/admin/blog/${postId}`}
-        className="text-sm text-ink hover:text-terracotta px-2 py-1 transition-colors"
+        className="text-sm text-ink hover:text-brand-ink px-2 py-1 transition-colors"
       >
         Düzenle
       </Link>

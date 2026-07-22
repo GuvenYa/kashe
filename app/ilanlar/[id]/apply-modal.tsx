@@ -311,7 +311,7 @@ export function ApplyModal({ listingId, listingTitle, categorySlug, open, onClos
                     setFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
-                  className="shrink-0 text-ink-72 hover:text-terracotta text-lg leading-none w-7 h-7 flex items-center justify-center"
+                  className="shrink-0 text-ink-72 hover:text-brand-ink text-lg leading-none w-7 h-7 flex items-center justify-center"
                   aria-label="Dosyayı kaldır"
                 >
                   ×

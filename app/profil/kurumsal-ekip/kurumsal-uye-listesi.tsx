@@ -73,7 +73,7 @@ function UyeSatiri({ member }: { member: BusinessMemberWithProfile }) {
               className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+            <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
               {name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -95,8 +95,8 @@ function UyeSatiri({ member }: { member: BusinessMemberWithProfile }) {
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <Trash2 size={12} strokeWidth={1.75} />

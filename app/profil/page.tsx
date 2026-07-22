@@ -299,7 +299,7 @@ export default async function ProfilPage() {
                   className="w-20 h-20 rounded-full object-cover border-2 border-line shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
+                <div className="w-20 h-20 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
                   {initials || '?'}
                 </div>
               )}
@@ -348,7 +348,7 @@ export default async function ProfilPage() {
             <div className="-mt-8 mb-10">
               <Link
                 href={`/p/${user.id}`}
-                className="inline-flex items-center gap-1.5 font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                className="inline-flex items-center gap-1.5 font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
               >
                 Profilimi görüntüle →
               </Link>
@@ -360,7 +360,7 @@ export default async function ProfilPage() {
             <div className="mb-8">
               {profile.approval_status === 'pending' && (
                 <div className="bg-card border border-line rounded-lg p-5 flex items-start gap-3">
-                  <span className="mt-0.5 w-2.5 h-2.5 rounded-full bg-terracotta shrink-0 animate-pulse" />
+                  <span className="mt-0.5 w-2.5 h-2.5 rounded-full bg-brand-ink shrink-0 animate-pulse" />
                   <div>
                     <p className="font-display text-base text-ink">
                       Profilin onay bekliyor
@@ -424,7 +424,7 @@ export default async function ProfilPage() {
               </div>
               <div className="w-full h-2 bg-paper rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-terracotta transition-all"
+                  className="h-full bg-brand-ink transition-all"
                   style={{ width: `${completeness}%` }}
                 />
               </div>
@@ -444,15 +444,15 @@ export default async function ProfilPage() {
                         <li key={field}>
                           <Link
                             href={href}
-                            className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-terracotta transition-colors"
+                            className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-brand-ink transition-colors"
                           >
                             <span
-                              className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-terracotta shrink-0 transition-colors"
+                              className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-brand-ink shrink-0 transition-colors"
                               aria-hidden="true"
                             />
                             <span className="flex-1">{field}</span>
                             <span
-                              className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink opacity-0 group-hover:opacity-100 transition-opacity"
                               aria-hidden="true"
                             >
                               Tamamla →
@@ -470,7 +470,7 @@ export default async function ProfilPage() {
 
           {/* INFO CARD — D1/D3: emerald eyebrow bölüm başı + normal-case alan etiketleri */}
           <div className="bg-card border border-line rounded-xl p-6 space-y-4">
-            <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+            <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
               Hesap Bilgileri
             </p>
             <div>
@@ -507,7 +507,7 @@ export default async function ProfilPage() {
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Deneyim & Eğitim */}
               <div className="bg-card border border-line rounded-xl p-6 flex flex-col">
-                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
                   Profil İçeriği
                 </p>
                 <h2 className="font-display font-semibold text-xl text-ink mt-1">
@@ -520,7 +520,7 @@ export default async function ProfilPage() {
                     </p>
                     <Link
                       href="/profil/deneyim"
-                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                      className="font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
                     >
                       İlk kaydını ekle →
                     </Link>
@@ -533,7 +533,7 @@ export default async function ProfilPage() {
                     </p>
                     <Link
                       href="/profil/deneyim"
-                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                      className="font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
                     >
                       Yönet →
                     </Link>
@@ -543,7 +543,7 @@ export default async function ProfilPage() {
 
               {/* Kategori bilgileri */}
               <div className="bg-card border border-line rounded-xl p-6 flex flex-col">
-                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta">
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
                   Profil İçeriği
                 </p>
                 <h2 className="font-display font-semibold text-xl text-ink mt-1">
@@ -556,7 +556,7 @@ export default async function ProfilPage() {
                     </p>
                     <Link
                       href="/profil/kategori-bilgileri"
-                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                      className="font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
                     >
                       Doldurmaya başla →
                     </Link>
@@ -568,7 +568,7 @@ export default async function ProfilPage() {
                     </p>
                     <Link
                       href="/profil/kategori-bilgileri"
-                      className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                      className="font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
                     >
                       Düzenle →
                     </Link>
@@ -585,7 +585,7 @@ export default async function ProfilPage() {
                 <h2 className="font-display font-semibold text-xl text-ink">Portföy</h2>
                 <Link
                   href="/profil/portfoy"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                  className="text-sm font-display font-medium text-brand-ink hover:underline"
                 >
                   {portfolioItems.length === 0
                     ? 'Fotoğraf ekle →'
@@ -610,7 +610,7 @@ export default async function ProfilPage() {
                 <h2 className="font-display font-semibold text-xl text-ink">Hizmetlerim</h2>
                 <Link
                   href="/profil/hizmetlerim"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                  className="text-sm font-display font-medium text-brand-ink hover:underline"
                 >
                   {services.length === 0 ? 'Hizmet ekle →' : 'Tümünü yönet →'}
                 </Link>
@@ -636,7 +636,7 @@ export default async function ProfilPage() {
                         key={service.id}
                         className={`border-l-2 pl-4 py-1 ${
                           service.is_active
-                            ? 'border-terracotta'
+                            ? 'border-brand-ink'
                             : 'border-line opacity-60'
                         }`}
                       >
@@ -645,7 +645,7 @@ export default async function ProfilPage() {
                             ? `${service.service_categories.emoji || ''} ${service.service_categories.name_tr}`.trim()
                             : ''}
                           {!service.is_active && (
-                            <span className="ml-2 text-terracotta">· Pasif</span>
+                            <span className="ml-2 text-brand-ink">· Pasif</span>
                           )}
                         </p>
                         <p className="font-display text-base text-ink">
@@ -677,7 +677,7 @@ export default async function ProfilPage() {
                 </h2>
                 <Link
                   href="/profil/paketler"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                  className="text-sm font-display font-medium text-brand-ink hover:underline"
                 >
                   {packageCount === 0 ? 'Paket oluştur →' : 'Tümünü yönet →'}
                 </Link>
@@ -703,7 +703,7 @@ export default async function ProfilPage() {
                 <h2 className="font-display font-semibold text-xl text-ink">Başvurularım</h2>
                 <Link
                   href="/basvurularim"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                  className="text-sm font-display font-medium text-brand-ink hover:underline"
                 >
                   Tümünü gör →
                 </Link>
@@ -738,7 +738,7 @@ export default async function ProfilPage() {
                   Henüz bir ajansa üye değilsin. Bir ajans seni davet ettiğinde{' '}
                   <Link
                     href="/davetlerim"
-                    className="text-terracotta hover:underline"
+                    className="text-brand-ink hover:underline"
                   >
                     Davetlerim
                   </Link>{' '}
@@ -805,7 +805,7 @@ export default async function ProfilPage() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/profil/ekibim"
-                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                    className="text-sm font-display font-medium text-brand-ink hover:underline"
                   >
                     {agencyMemberCount === 0
                       ? 'İlk üyeyi davet et →'
@@ -865,7 +865,7 @@ export default async function ProfilPage() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/profil/kurumsal-ekip"
-                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                    className="text-sm font-display font-medium text-brand-ink hover:underline"
                   >
                     {businessMemberCount === 0
                       ? 'İlk üyeyi davet et →'
@@ -895,13 +895,13 @@ export default async function ProfilPage() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/ilanlarim"
-                    className="text-sm font-display font-medium text-terracotta hover:underline"
+                    className="text-sm font-display font-medium text-brand-ink hover:underline"
                   >
                     Tümünü yönet →
                   </Link>
                   <Link
                     href="/ilanlar/yeni"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
                   >
                     <span className="text-base leading-none">+</span>
                     Yeni ilan aç
@@ -922,7 +922,7 @@ export default async function ProfilPage() {
                 <h2 className="font-display font-semibold text-xl text-ink">Favorilerim</h2>
                 <Link
                   href="/favoriler"
-                  className="text-sm font-display font-medium text-terracotta hover:underline"
+                  className="text-sm font-display font-medium text-brand-ink hover:underline"
                 >
                   {favoritesTotal === 0 ? 'Keşfet\'e git →' : 'Tümünü gör →'}
                 </Link>
@@ -961,14 +961,14 @@ export default async function ProfilPage() {
                             <img
                               src={pro.avatar_url}
                               alt={displayName}
-                              className="w-16 h-16 rounded-full object-cover border-2 border-line group-hover:border-terracotta transition-colors"
+                              className="w-16 h-16 rounded-full object-cover border-2 border-line group-hover:border-brand-ink transition-colors"
                             />
                           ) : (
-                            <div className="w-16 h-16 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-lg">
+                            <div className="w-16 h-16 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-lg">
                               {proInitials}
                             </div>
                           )}
-                          <p className="font-display text-sm text-ink text-center line-clamp-1 group-hover:text-terracotta transition-colors">
+                          <p className="font-display text-sm text-ink text-center line-clamp-1 group-hover:text-brand-ink transition-colors">
                             {displayName}
                           </p>
                         </Link>
@@ -1033,7 +1033,7 @@ export default async function ProfilPage() {
                   <p className="font-display text-3xl text-ink leading-none flex items-center gap-1">
                     {stats.reviewCount > 0 ? stats.averageRating : '—'}
                     {stats.reviewCount > 0 && (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-brand-accent)" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                       </svg>
                     )}

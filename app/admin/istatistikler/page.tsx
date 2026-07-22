@@ -22,11 +22,11 @@ import {
 // Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
 const C = {
   paper: '#FFFFFF',
-  terracotta: '#00ACE2', // Faz-1: CYAN — başat seri (lacivert grafikte siyaha kaçar, tek taşımaz)
+  brandInk: '#00ACE2', // Faz-1: CYAN — başat seri (lacivert grafikte siyaha kaçar, tek taşımaz)
   ink: '#040D26',        // lacivert — eksen/ızgara/metin
-  plum: '#FA0B96',       // Faz-1: pembe seri
+  brandAccent: '#FA0B96',       // Faz-1: pembe seri
   moss: '#1F8A5F',       // yeşil — SEMANTİK başarı/onay (korunur)
-  ember: '#040D26',      // lacivert — ikincil seri
+  brandInkDeep: '#040D26',      // lacivert — ikincil seri
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -37,10 +37,10 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  client: C.terracotta,
-  professional: C.plum,
+  client: C.brandInk,
+  professional: C.brandAccent,
   business: C.moss,
-  agency: C.ember,
+  agency: C.brandInkDeep,
 }
 
 const QUOTE_LABELS: Record<string, string> = {
@@ -54,12 +54,12 @@ const QUOTE_LABELS: Record<string, string> = {
 const QUOTE_COLORS: Record<string, string> = {
   pending: '#D98C3F',
   accepted: C.moss,
-  declined: C.ember,
+  declined: C.brandInkDeep,
   expired: '#8C6B4F',
-  withdrawn: C.plum,
+  withdrawn: C.brandAccent,
 }
 
-const PIE_PALETTE = [C.terracotta, C.plum, C.moss, C.ember, '#D98C3F', '#8C6B4F', '#4F6B8C', '#A86B2E']
+const PIE_PALETTE = [C.brandInk, C.brandAccent, C.moss, C.brandInkDeep, '#D98C3F', '#8C6B4F', '#4F6B8C', '#A86B2E']
 
 const ROLE_ORDER = ['client', 'professional', 'business', 'agency'] as const
 
@@ -137,7 +137,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{ fontFamily: MONO, letterSpacing: '0.08em' }}
-      className="text-[11px] uppercase text-terracotta"
+      className="text-[11px] uppercase text-brand-ink"
     >
       {children}
     </span>
@@ -420,7 +420,7 @@ export default function IstatistiklerPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-terracotta/30 bg-terracotta-08 p-6 text-terracotta">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-brand-ink/30 bg-brand-ink-08 p-6 text-brand-ink">
         <strong style={{ fontFamily: SERIF }}>Hata:</strong> {error}
       </div>
     )
@@ -453,7 +453,7 @@ export default function IstatistiklerPage() {
                 style={{ fontFamily: MONO }}
                 className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg transition-colors ${
                   pDays === o.key
-                    ? 'bg-terracotta text-paper'
+                    ? 'bg-brand-ink text-paper'
                     : 'text-ink-50 hover:text-ink'
                 }`}
               >
@@ -465,10 +465,10 @@ export default function IstatistiklerPage() {
 
         {/* Özet kutucuklar */}
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile label="Toplam Kullanıcı" value={totalUsers.toLocaleString('tr-TR')} accent={C.terracotta} />
-          <StatTile label="Son 7g Aktif" value={totalActive7d.toLocaleString('tr-TR')} accent={C.plum} />
+          <StatTile label="Toplam Kullanıcı" value={totalUsers.toLocaleString('tr-TR')} accent={C.brandInk} />
+          <StatTile label="Son 7g Aktif" value={totalActive7d.toLocaleString('tr-TR')} accent={C.brandAccent} />
           <StatTile label={`Mesaj (${rangeLabel === 'Tümü' ? 'tüm' : rangeLabel})`} value={totalMessages.toLocaleString('tr-TR')} accent={C.moss} />
-          <StatTile label="Teklif Dönüşümü" value={`%${conversion}`} accent={C.ember} />
+          <StatTile label="Teklif Dönüşümü" value={`%${conversion}`} accent={C.brandInkDeep} />
         </div>
 
         {/* Sekme çubuğu — alt çizgi tarzı */}
@@ -491,7 +491,7 @@ export default function IstatistiklerPage() {
               style={{ fontFamily: MONO }}
               className={`relative px-1 py-3 text-[12px] uppercase tracking-[0.12em] border-b-2 -mb-px transition-colors ${
                 tab === t.key
-                  ? 'border-terracotta text-ink font-semibold'
+                  ? 'border-brand-ink text-ink font-semibold'
                   : 'border-transparent text-ink-50 hover:text-ink-72'
               }`}
             >
@@ -537,8 +537,8 @@ export default function IstatistiklerPage() {
                 <YAxis allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
-                <Bar dataKey="7 gün" fill={C.terracotta} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="30 gün" fill={C.plum} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="7 gün" fill={C.brandInk} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="30 gün" fill={C.brandAccent} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -613,7 +613,7 @@ export default function IstatistiklerPage() {
                   stroke={`${C.ink}80`}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="cnt" name="Adet" fill={C.terracotta} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="cnt" name="Adet" fill={C.brandInk} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -635,7 +635,7 @@ export default function IstatistiklerPage() {
                   stroke={`${C.ink}80`}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="cnt" name="Adet" fill={C.plum} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="cnt" name="Adet" fill={C.brandAccent} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -648,7 +648,7 @@ export default function IstatistiklerPage() {
             {/* Karar kartları: arz açığı + talep açığı */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Arz açığı — profesyonel çek */}
-              <div className="rounded-2xl border border-terracotta/25 bg-terracotta-08 p-5">
+              <div className="rounded-2xl border border-brand-ink/25 bg-brand-ink-08 p-5">
                 <Eyebrow>Arz açığı · Profesyonel çek</Eyebrow>
                 <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-1 text-xl font-semibold text-ink">
                   Talebin arzı aştığı kategoriler
@@ -669,7 +669,7 @@ export default function IstatistiklerPage() {
                         <span className="font-medium text-ink">{r.label}</span>
                         <span className="text-ink-72">
                           {r.demand} talep · {r.supply} arz{' '}
-                          <strong className="text-terracotta">(+{r.gap} açık)</strong>
+                          <strong className="text-brand-ink">(+{r.gap} açık)</strong>
                         </span>
                       </li>
                     ))}
@@ -718,7 +718,7 @@ export default function IstatistiklerPage() {
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
                   <Bar dataKey="Arz" fill={C.moss} radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="Talep" fill={C.terracotta} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="Talep" fill={C.brandInk} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -737,7 +737,7 @@ export default function IstatistiklerPage() {
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
                   <Bar dataKey="Arz" fill={C.moss} radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="Talep" fill={C.terracotta} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="Talep" fill={C.brandInk} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -756,7 +756,7 @@ export default function IstatistiklerPage() {
                   {topFav.map((r, i) => (
                     <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span style={{ fontFamily: SERIF }} className="text-brand-ink font-semibold w-5 shrink-0">{i + 1}.</span>
                         <span className="font-medium text-ink truncate">{r.name}</span>
                         {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
@@ -776,7 +776,7 @@ export default function IstatistiklerPage() {
                   {topRated.map((r, i) => (
                     <li key={r.professional_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span style={{ fontFamily: SERIF }} className="text-brand-ink font-semibold w-5 shrink-0">{i + 1}.</span>
                         <span className="font-medium text-ink truncate">{r.name}</span>
                         {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
@@ -798,7 +798,7 @@ export default function IstatistiklerPage() {
                   {topViewed.map((r, i) => (
                     <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span style={{ fontFamily: SERIF }} className="text-brand-ink font-semibold w-5 shrink-0">{i + 1}.</span>
                         <span className="font-medium text-ink truncate">{r.name}</span>
                         {r.category && <span className="text-ink-50 text-xs shrink-0">· {r.category}</span>}
                       </span>
@@ -818,7 +818,7 @@ export default function IstatistiklerPage() {
                   {activeCats.filter((r) => r.activity > 0).map((r, i) => (
                     <li key={r.category_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span style={{ fontFamily: SERIF }} className="text-terracotta font-semibold w-5 shrink-0">{i + 1}.</span>
+                        <span style={{ fontFamily: SERIF }} className="text-brand-ink font-semibold w-5 shrink-0">{i + 1}.</span>
                         <span className="font-medium text-ink truncate">{r.label}</span>
                       </span>
                       <span className="text-ink-72 shrink-0 text-xs">
@@ -855,7 +855,7 @@ export default function IstatistiklerPage() {
                         {c.pct !== null && (
                           <span
                             className="text-sm font-semibold"
-                            style={{ color: up ? C.moss : down ? C.ember : '#1A120E80' }}
+                            style={{ color: up ? C.moss : down ? C.brandInkDeep : '#1A120E80' }}
                           >
                             {up ? '↑' : down ? '↓' : '–'} {Math.abs(c.pct)}%
                           </span>
@@ -876,8 +876,8 @@ export default function IstatistiklerPage() {
                 <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="trendKayit" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={C.terracotta} stopOpacity={0.4} />
-                      <stop offset="95%" stopColor={C.terracotta} stopOpacity={0.04} />
+                      <stop offset="5%" stopColor={C.brandInk} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={C.brandInk} stopOpacity={0.04} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
@@ -885,10 +885,10 @@ export default function IstatistiklerPage() {
                   <YAxis allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
-                  <Area type="monotone" dataKey="Kayıt" stroke={C.terracotta} fill="url(#trendKayit)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="İlan" stroke={C.plum} fill="transparent" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Kayıt" stroke={C.brandInk} fill="url(#trendKayit)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="İlan" stroke={C.brandAccent} fill="transparent" strokeWidth={2} />
                   <Area type="monotone" dataKey="Başvuru" stroke={C.moss} fill="transparent" strokeWidth={2} />
-                  <Area type="monotone" dataKey="Rezervasyon" stroke={C.ember} fill="transparent" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Rezervasyon" stroke={C.brandInkDeep} fill="transparent" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
               <p className="mt-2 text-xs text-ink-50">
@@ -906,13 +906,13 @@ export default function IstatistiklerPage() {
               title="Profesyonel yolculuğu"
               eyebrow="Arz tarafı · Kümülatif"
               rows={funnelPro}
-              accent={C.plum}
+              accent={C.brandAccent}
             />
             <FunnelCard
               title="Müşteri yolculuğu"
               eyebrow="Talep tarafı · Kümülatif"
               rows={funnelClient}
-              accent={C.terracotta}
+              accent={C.brandInk}
             />
           </div>
         )}
@@ -933,14 +933,14 @@ export default function IstatistiklerPage() {
                 <ul className="space-y-2">
                   {incompletePros.map((r) => (
                     <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
-                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-brand-ink truncate">
                         {r.name}
                       </a>
                       <span className="flex items-center gap-2 shrink-0 text-xs">
                         {r.category && <span className="text-ink-50">{r.category}</span>}
                         <span className={`px-2 py-0.5 rounded-full ${
                           r.approval_status === 'rejected'
-                            ? 'bg-terracotta-12 text-terracotta'
+                            ? 'bg-brand-ink-12 text-brand-ink'
                             : !r.is_published
                             ? 'bg-[#D98C3F]/15 text-[#8C5A1F]'
                             : 'bg-ink-12 text-ink-72'
@@ -962,7 +962,7 @@ export default function IstatistiklerPage() {
                 <ul className="space-y-2">
                   {listingsNoApps.map((r) => (
                     <li key={r.listing_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
-                      <a href={`/ilanlar/${r.listing_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
+                      <a href={`/ilanlar/${r.listing_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-brand-ink truncate">
                         {r.title}
                       </a>
                       <span className="shrink-0 text-xs text-ink-50">{r.creator_name}</span>
@@ -980,7 +980,7 @@ export default function IstatistiklerPage() {
                 <ul className="space-y-2">
                   {prosNoApps.map((r) => (
                     <li key={r.profile_id} className="flex items-center justify-between gap-3 rounded-lg bg-paper-2 px-3 py-2 text-sm">
-                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-terracotta truncate">
+                      <a href={`/p/${r.profile_id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ink hover:text-brand-ink truncate">
                         {r.name}
                       </a>
                       {r.category && <span className="shrink-0 text-xs text-ink-50">{r.category}</span>}
@@ -1000,7 +1000,7 @@ export default function IstatistiklerPage() {
               <StatTile
                 label="Rezervasyon"
                 value={num(bookingSummary?.total_count).toLocaleString('tr-TR')}
-                accent={C.terracotta}
+                accent={C.brandInk}
               />
               <StatTile
                 label="GMV (geçerli)"
@@ -1010,7 +1010,7 @@ export default function IstatistiklerPage() {
               <StatTile
                 label="Ort. değer"
                 value={`${Math.round(num(bookingSummary?.avg_value)).toLocaleString('tr-TR')} ₺`}
-                accent={C.plum}
+                accent={C.brandAccent}
               />
               <StatTile
                 label="İptal oranı"
@@ -1023,7 +1023,7 @@ export default function IstatistiklerPage() {
                       )
                     : 0
                 }`}
-                accent={C.ember}
+                accent={C.brandInkDeep}
               />
             </div>
 
@@ -1063,8 +1063,8 @@ export default function IstatistiklerPage() {
                   <BarChart
                     data={[
                       { name: 'Onaylı', value: num(bookingSummary?.confirmed_count), fill: C.moss },
-                      { name: 'Tamamlandı', value: num(bookingSummary?.completed_count), fill: C.plum },
-                      { name: 'İptal', value: num(bookingSummary?.cancelled_count), fill: C.ember },
+                      { name: 'Tamamlandı', value: num(bookingSummary?.completed_count), fill: C.brandAccent },
+                      { name: 'İptal', value: num(bookingSummary?.cancelled_count), fill: C.brandInkDeep },
                     ]}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={`${C.ink}10`} />
@@ -1072,7 +1072,7 @@ export default function IstatistiklerPage() {
                     <YAxis allowDecimals={false} fontSize={11} stroke={`${C.ink}80`} />
                     <Tooltip contentStyle={tooltipStyle} />
                     <Bar dataKey="value" name="Adet" radius={[4, 4, 0, 0]}>
-                      {[C.moss, C.plum, C.ember].map((c, i) => (
+                      {[C.moss, C.brandAccent, C.brandInkDeep].map((c, i) => (
                         <Cell key={i} fill={c} />
                       ))}
                     </Bar>
@@ -1080,7 +1080,7 @@ export default function IstatistiklerPage() {
                 </ResponsiveContainer>
                 <p className="mt-2 text-xs text-ink-50">
                   İptal edilen rezervasyonların toplam değeri:{' '}
-                  <strong style={{ color: C.ember }}>
+                  <strong style={{ color: C.brandInkDeep }}>
                     {num(bookingSummary?.cancelled_value).toLocaleString('tr-TR')} ₺
                   </strong>
                 </p>
@@ -1103,7 +1103,7 @@ export default function IstatistiklerPage() {
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between">
                     <span className="text-sm text-ink-72">Ortalama</span>
-                    <span style={{ fontFamily: SERIF, color: C.plum }} className="text-2xl font-semibold">
+                    <span style={{ fontFamily: SERIF, color: C.brandAccent }} className="text-2xl font-semibold">
                       {fmtDuration(num(opsFirstApp?.avg_hours))}
                     </span>
                   </div>
@@ -1124,7 +1124,7 @@ export default function IstatistiklerPage() {
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between">
                     <span className="text-sm text-ink-72">Ortalama</span>
-                    <span style={{ fontFamily: SERIF, color: C.terracotta }} className="text-2xl font-semibold">
+                    <span style={{ fontFamily: SERIF, color: C.brandInk }} className="text-2xl font-semibold">
                       {fmtDuration(num(opsAppResp?.avg_hours))}
                     </span>
                   </div>
@@ -1137,7 +1137,7 @@ export default function IstatistiklerPage() {
                   <p className="pt-2 text-xs text-ink-50 border-t border-line">
                     {num(opsAppResp?.responded_count)} / {num(opsAppResp?.total_count)} yanıtlandı
                     {num(opsAppResp?.pending_count) > 0 && (
-                      <span className="text-terracotta">
+                      <span className="text-brand-ink">
                         {' '}· {num(opsAppResp?.pending_count)} bekliyor
                       </span>
                     )}
@@ -1197,13 +1197,13 @@ export default function IstatistiklerPage() {
                   label="Bekleyen profiller"
                   count={num(queue?.pending_profiles)}
                   href="/admin/profiller"
-                  accent={C.plum}
+                  accent={C.brandAccent}
                 />
                 <QueueCard
                   label="Bekleyen ilanlar"
                   count={num(queue?.pending_listings)}
                   href="/admin/ilanlar"
-                  accent={C.terracotta}
+                  accent={C.brandInk}
                 />
                 <QueueCard
                   label="Kategori talepleri"
@@ -1244,7 +1244,7 @@ export default function IstatistiklerPage() {
                               href={targetHref}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-terracotta hover:underline"
+                              className="text-[11px] text-brand-ink hover:underline"
                             >
                               Görüntüle
                             </a>
@@ -1271,16 +1271,16 @@ function QueueCard({ label, count, href, accent }: { label: string; count: numbe
   return (
     <a
       href={href}
-      className="block rounded-2xl border border-line bg-card p-5 shadow-sm transition-all hover:border-terracotta hover:-translate-y-0.5"
+      className="block rounded-2xl border border-line bg-card p-5 shadow-sm transition-all hover:border-brand-ink hover:-translate-y-0.5"
     >
-      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-brand-ink">
         {label}
       </span>
       <div className="mt-1 flex items-baseline justify-between">
         <span style={{ fontFamily: SERIF, color: accent }} className="text-3xl font-semibold">
           {count}
         </span>
-        <span className="text-[11px] text-terracotta">Yönet →</span>
+        <span className="text-[11px] text-brand-ink">Yönet →</span>
       </div>
     </a>
   )
@@ -1290,19 +1290,19 @@ function QueueCard({ label, count, href, accent }: { label: string; count: numbe
 function actionMeta(action: string): { label: string; color: string } {
   const map: Record<string, { label: string; color: string }> = {
     approve_listing: { label: 'ilanı onayladı', color: C.moss },
-    reject_listing: { label: 'ilanı reddetti', color: C.ember },
+    reject_listing: { label: 'ilanı reddetti', color: C.brandInkDeep },
     revision_listing: { label: 'ilana revizyon istedi', color: '#D98C3F' },
-    cancel_listing: { label: 'ilanı yayından kaldırdı', color: C.ember },
+    cancel_listing: { label: 'ilanı yayından kaldırdı', color: C.brandInkDeep },
     approve_profile: { label: 'profili onayladı', color: C.moss },
-    reject_profile: { label: 'profili reddetti', color: C.ember },
+    reject_profile: { label: 'profili reddetti', color: C.brandInkDeep },
     revision_profile: { label: 'profile revizyon istedi', color: '#D98C3F' },
-    ban_user: { label: 'kullanıcıyı askıya aldı', color: C.ember },
+    ban_user: { label: 'kullanıcıyı askıya aldı', color: C.brandInkDeep },
     unban_user: { label: 'kullanıcının askısını kaldırdı', color: C.moss },
     approve_category: { label: 'kategori talebini onayladı', color: C.moss },
-    decline_category: { label: 'kategori talebini reddetti', color: C.ember },
-    add_category: { label: 'kategori ekledi', color: C.plum },
+    decline_category: { label: 'kategori talebini reddetti', color: C.brandInkDeep },
+    add_category: { label: 'kategori ekledi', color: C.brandAccent },
   }
-  return map[action] ?? { label: action.replace(/_/g, ' '), color: C.plum }
+  return map[action] ?? { label: action.replace(/_/g, ' '), color: C.brandAccent }
 }
 
 // hedef tipine göre link üret (varsa)
@@ -1350,7 +1350,7 @@ function FunnelCard({
   const base = rows.length > 0 ? Number(rows[0].cnt) : 0
   return (
     <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
-      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-terracotta">
+      <span style={{ fontFamily: MONO, letterSpacing: '0.08em' }} className="text-[11px] uppercase text-brand-ink">
         {eyebrow}
       </span>
       <h3 style={{ fontFamily: SERIF }} className="mt-1 mb-4 text-xl font-semibold text-ink">

@@ -672,7 +672,7 @@ export default async function PublicProfilePage({
         <div className="max-w-3xl mx-auto">
           <Link
             href="/kesfet"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-6"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-6"
           >
             ← Keşfet&apos;e dön
           </Link>
@@ -702,7 +702,7 @@ export default async function PublicProfilePage({
               ) : (
                 <div
                   className={`w-28 h-28 rounded-full flex items-center justify-center text-paper font-display font-semibold text-4xl shrink-0 ${
-                    isAgencyProfile ? 'bg-[#1E3A5F]' : 'bg-terracotta'
+                    isAgencyProfile ? 'bg-[#1E3A5F]' : 'bg-brand-ink'
                   }`}
                 >
                   {initials}
@@ -787,14 +787,14 @@ export default async function PublicProfilePage({
                     className="inline-flex items-center gap-2 mt-3 group"
                   >
                     <span className="flex items-center gap-1">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-plum)" stroke="var(--color-plum)" strokeWidth="1.5" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-brand-accent)" stroke="var(--color-brand-accent)" strokeWidth="1.5" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                       </svg>
                       <span className="font-display font-semibold text-ink">
                         {averageRating}
                       </span>
                     </span>
-                    <span className="text-sm text-ink-72 group-hover:text-terracotta transition-colors">
+                    <span className="text-sm text-ink-72 group-hover:text-brand-ink transition-colors">
                       ({reviewCount} yorum)
                     </span>
                   </Link>
@@ -867,7 +867,7 @@ export default async function PublicProfilePage({
                       <Link
                         key={member.id}
                         href={`/p/${pro.id}`}
-                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-terracotta hover:shadow-[3px_3px_0_var(--color-terracotta)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-brand-ink hover:shadow-[3px_3px_0_var(--color-brand-ink)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
                       >
                         {pro.avatar_url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
@@ -877,12 +877,12 @@ export default async function PublicProfilePage({
                             className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
                             {proInitials}
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors truncate">
+                          <p className="font-display font-semibold text-ink group-hover:text-brand-ink transition-colors truncate">
                             {proName}
                           </p>
                           {proCategoryLabel && (
@@ -933,14 +933,14 @@ export default async function PublicProfilePage({
                   return (
                     <div
                       key={pkg.id}
-                      className="border border-line rounded-xl p-5 hover:border-terracotta/40 transition-colors"
+                      className="border border-line rounded-xl p-5 hover:border-brand-ink/40 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
                         <h3 className="font-display text-xl text-ink">
                           {pkg.title}
                         </h3>
                         {pkgPrice && (
-                          <span className="font-display font-semibold text-terracotta text-lg shrink-0">
+                          <span className="font-display font-semibold text-brand-ink text-lg shrink-0">
                             {pkgPrice}
                           </span>
                         )}
@@ -1034,7 +1034,7 @@ export default async function PublicProfilePage({
                 {reviewCount > 3 && (
                   <Link
                     href={`/p/${profile.id}/yorumlar`}
-                    className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors"
+                    className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors"
                   >
                     Tümünü gör ({reviewCount}) →
                   </Link>
@@ -1066,7 +1066,7 @@ export default async function PublicProfilePage({
                 alıcı koltuğuna oturur → Teklif Al / Rezervasyon. "Davet" aşağıda ayrı gate'te
                 MEVCUT davranışında kalır. */}
             {!isOwnProfile ? (
-              <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
+              <div className="bg-brand-ink/8 border border-brand-ink/20 rounded-lg p-6 md:p-8">
                 <h2 className="font-display text-xl text-ink mb-2">
                   Bu profesyonelle çalış
                 </h2>
@@ -1146,12 +1146,12 @@ export default async function PublicProfilePage({
         {/* BENZER PROFİLLER — aynı kategorideki diğer profesyoneller (additive; boşsa gizli) */}
         {similarProfiles.length > 0 && (
           <section className="max-w-3xl mx-auto mt-14">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-2">
               Benzer profiller
             </p>
             <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-1.5">
               Aynı kategoride{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 diğer profesyoneller
               </em>
             </h2>

@@ -123,12 +123,12 @@ export default async function AdminUsersPage({
           name="q"
           defaultValue={searchQuery}
           placeholder="İsim, e-posta veya firma ile ara..."
-          className="flex-1 px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+          className="flex-1 px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
         />
         <select
           name="role"
           defaultValue={roleFilter}
-          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
         >
           <option value="">Tüm roller</option>
           <option value="client">Müşteri</option>
@@ -139,7 +139,7 @@ export default async function AdminUsersPage({
         <select
           name="filter"
           defaultValue={statusFilter}
-          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+          className="px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
         >
           <option value="">Tüm durumlar</option>
           <option value="suspended">Askıdaki</option>
@@ -263,7 +263,7 @@ function UserRow({
               className="w-9 h-9 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-terracotta/15 text-terracotta flex items-center justify-center font-display font-semibold text-xs shrink-0">
+            <div className="w-9 h-9 rounded-full bg-brand-ink/15 text-brand-ink flex items-center justify-center font-display font-semibold text-xs shrink-0">
               {initials}
             </div>
           )}
@@ -271,7 +271,7 @@ function UserRow({
             <p className="font-medium text-sm text-ink truncate">
               {displayName}
               {user.is_admin && (
-                <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/10 px-1.5 py-0.5 rounded border border-terracotta/30">
+                <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/10 px-1.5 py-0.5 rounded border border-brand-ink/30">
                   Admin
                 </span>
               )}
@@ -332,7 +332,7 @@ function UserCard({
             className="w-10 h-10 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-terracotta/15 text-terracotta flex items-center justify-center font-display font-semibold text-xs shrink-0">
+          <div className="w-10 h-10 rounded-full bg-brand-ink/15 text-brand-ink flex items-center justify-center font-display font-semibold text-xs shrink-0">
             {initials}
           </div>
         )}
@@ -340,7 +340,7 @@ function UserCard({
           <p className="font-medium text-sm text-ink truncate">
             {displayName}
             {user.is_admin && (
-              <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/10 px-1.5 py-0.5 rounded border border-terracotta/30">
+              <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/10 px-1.5 py-0.5 rounded border border-brand-ink/30">
                 Admin
               </span>
             )}
@@ -368,9 +368,9 @@ function UserCard({
 function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
     client: 'bg-paper-2 text-ink-72',
-    business: 'bg-plum/10 text-plum',
+    business: 'bg-brand-accent/10 text-brand-accent',
     professional: 'bg-moss/10 text-moss',
-    agency: 'bg-ember/10 text-ember',
+    agency: 'bg-brand-ink-deep/10 text-brand-ink-deep',
   };
   const labels: Record<string, string> = {
     client: 'Müşteri',
@@ -393,7 +393,7 @@ function StatusPill({ user }: { user: UserRow }) {
   if (user.suspended_at) {
     return (
       <span
-        className="inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-terracotta/10 text-terracotta border border-terracotta/30"
+        className="inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.14em] bg-brand-ink/10 text-brand-ink border border-brand-ink/30"
         title={user.suspension_reason || undefined}
       >
         Askıda

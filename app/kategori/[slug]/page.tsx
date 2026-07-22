@@ -283,7 +283,7 @@ export default async function KategoriPage({ params }: Props) {
           <div className="max-w-5xl mx-auto px-6 md:px-12 py-14 md:py-20">
             <Link
               href="/kesfet"
-              className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-8"
+              className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-8"
             >
               ← Tüm kategoriler
             </Link>
@@ -304,7 +304,7 @@ export default async function KategoriPage({ params }: Props) {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
                   Kategori
                 </p>
                 <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
@@ -327,12 +327,12 @@ export default async function KategoriPage({ params }: Props) {
         {content?.subServices && content.subServices.length > 0 && (
           <section className="border-b border-line">
             <div className="max-w-7xl mx-auto px-6 md:px-12 py-14 md:py-16">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
                 Alt hizmetler
               </p>
               <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
                 {category.name_tr}{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   alanları
                 </em>
               </h2>
@@ -340,7 +340,7 @@ export default async function KategoriPage({ params }: Props) {
                 {content.subServices.map((sub) => (
                   <div
                     key={sub.name}
-                    className="bg-card border border-line rounded-2xl p-5 hover:border-terracotta transition-colors"
+                    className="bg-card border border-line rounded-2xl p-5 hover:border-brand-ink transition-colors"
                   >
                     <p className="font-display font-semibold text-ink leading-snug mb-1.5">
                       {sub.name}
@@ -373,7 +373,7 @@ export default async function KategoriPage({ params }: Props) {
                 </h2>
                 <Link
                   href={`/kesfet?kategori=${category.id}`}
-                  className="font-mono text-xs uppercase tracking-[0.14em] text-terracotta hover:underline"
+                  className="font-mono text-xs uppercase tracking-[0.14em] text-brand-ink hover:underline"
                 >
                   Filtrele ve ara →
                 </Link>
@@ -401,12 +401,12 @@ export default async function KategoriPage({ params }: Props) {
         {content && (
           <section className="border-t border-line bg-card">
             <div className="max-w-7xl mx-auto px-6 md:px-12 py-14 md:py-16">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
                 {CATEGORY_TAGLINE}
               </p>
               <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
                 Kimler{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   kullanır
                 </em>
                 ?
@@ -435,10 +435,10 @@ export default async function KategoriPage({ params }: Props) {
             <div className="max-w-7xl mx-auto">
               <Link
                 href="/pro-bul"
-                className="kashe-tap group flex items-center gap-4 bg-card border border-line rounded-2xl p-5 md:p-6 hover:border-terracotta transition"
+                className="kashe-tap group flex items-center gap-4 bg-card border border-line rounded-2xl p-5 md:p-6 hover:border-brand-ink transition"
               >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-terracotta/10 flex items-center justify-center">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-terracotta">
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink">
                     <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
                   </svg>
                 </div>
@@ -454,7 +454,7 @@ export default async function KategoriPage({ params }: Props) {
                     Nasıl biri aradığını anlat, yapay zekâ gerekçesiyle önersin.
                   </p>
                 </div>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-72 group-hover:text-terracotta transition">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-72 group-hover:text-brand-ink transition">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </Link>
@@ -464,12 +464,12 @@ export default async function KategoriPage({ params }: Props) {
           {/* SSS */}
           <section className="border-t border-line">
           <div className="max-w-3xl mx-auto px-6 md:px-12 py-14 md:py-16">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               Sık sorulan sorular
             </p>
             <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight mb-8">
               {category.name_tr} hakkında{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 merak edilenler
               </em>
             </h2>
@@ -484,7 +484,7 @@ export default async function KategoriPage({ params }: Props) {
                       {item.q}
                     </span>
                     <span
-                      className="shrink-0 text-terracotta transition-transform duration-200 group-open:rotate-45"
+                      className="shrink-0 text-brand-ink transition-transform duration-200 group-open:rotate-45"
                       aria-hidden="true"
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -506,7 +506,7 @@ export default async function KategoriPage({ params }: Props) {
           <div className="max-w-5xl mx-auto px-6 md:px-12 py-14 text-center">
             <h2 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
               Aradığını{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 bulamadın mı
               </em>
               ?
@@ -518,7 +518,7 @@ export default async function KategoriPage({ params }: Props) {
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-7">
               <Link
                 href="/teklif-topla"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
                 Teklif topla
               </Link>

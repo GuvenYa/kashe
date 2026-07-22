@@ -157,7 +157,7 @@ export default async function TakvimimPage() {
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="font-display text-3xl text-terracotta leading-none">
+                      <p className="font-display text-3xl text-brand-ink leading-none">
                         {blockedThisMonth}
                       </p>
                       <p className="text-xs text-ink-72 mt-1.5">
@@ -212,7 +212,7 @@ export default async function TakvimimPage() {
                                   .join(' · ') || 'Detay yok'}
                               </p>
                             </div>
-                            <span className="font-mono text-xs text-terracotta shrink-0">
+                            <span className="font-mono text-xs text-brand-ink shrink-0">
                               {dateLabel}
                             </span>
                           </li>
@@ -241,8 +241,8 @@ export default async function TakvimimPage() {
             <div className="space-y-12">
               {upcoming.length > 0 && (
                 <section>
-                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-terracotta mb-5 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-terracotta inline-block kashe-pulse" />
+                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand-ink mb-5 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block kashe-pulse" />
                     Yaklaşan ({upcoming.length})
                   </h2>
                   <div className="space-y-3">

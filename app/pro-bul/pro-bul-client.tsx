@@ -40,7 +40,7 @@ export function ProBulClient({ categories, cities }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   return (
     <div>
@@ -104,7 +104,7 @@ export function ProBulClient({ categories, cities }: Props) {
               type="button"
               onClick={handleRecommend}
               disabled={loading || !categorySlug || requirement.trim().length < 10}
-              className="kashe-tap inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-terracotta text-paper font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-50"
+              className="kashe-tap inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-ink text-paper font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-50"
             >
               <Sparkles size={16} />
               {loading ? 'Aranıyor…' : 'Profesyonel öner'}
@@ -126,7 +126,7 @@ export function ProBulClient({ categories, cities }: Props) {
               <Link
                 key={m.id}
                 href={`/p/${m.id}`}
-                className="kashe-tap group block bg-card border border-line rounded-xl p-4 hover:border-terracotta transition"
+                className="kashe-tap group block bg-card border border-line rounded-xl p-4 hover:border-brand-ink transition"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -141,7 +141,7 @@ export function ProBulClient({ categories, cities }: Props) {
                   </div>
                   <ArrowRight
                     size={18}
-                    className="shrink-0 mt-1 text-ink-72 group-hover:text-terracotta transition"
+                    className="shrink-0 mt-1 text-ink-72 group-hover:text-brand-ink transition"
                   />
                 </div>
               </Link>

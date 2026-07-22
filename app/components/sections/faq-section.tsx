@@ -54,16 +54,16 @@ function FaqItem({ item, index }: { item: FaqItem; index: number }) {
         className="kashe-tap w-full flex items-center justify-between gap-4 py-5 md:py-6 text-left group"
       >
         <span className="flex items-center gap-4 flex-1 min-w-0">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-terracotta shrink-0">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-ink shrink-0">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span className="font-display text-lg md:text-xl text-ink group-hover:text-terracotta transition-colors">
+          <span className="font-display text-lg md:text-xl text-ink group-hover:text-brand-ink transition-colors">
             {item.question}
           </span>
         </span>
         <span
           className={`shrink-0 w-7 h-7 rounded-full border border-line flex items-center justify-center transition-all ${
-            open ? "bg-terracotta border-terracotta rotate-45" : "group-hover:border-terracotta"
+            open ? "bg-brand-ink border-brand-ink rotate-45" : "group-hover:border-brand-ink"
           }`}
           aria-hidden="true"
         >

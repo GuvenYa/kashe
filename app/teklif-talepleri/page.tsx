@@ -67,7 +67,7 @@ export default async function TeklifTalepleriPage() {
           </p>
           <h1 className="font-display text-4xl text-ink leading-tight">
             Sana gelen{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               teklif talepleri
             </em>
           </h1>
@@ -113,7 +113,7 @@ export default async function TeklifTalepleriPage() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         {categoryName && (
-                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
                             {categoryName}
                           </span>
                         )}
@@ -123,7 +123,7 @@ export default async function TeklifTalepleriPage() {
                           </span>
                         )}
                         {r.status === 'sent' && (
-                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink">
                             • Yeni
                           </span>
                         )}

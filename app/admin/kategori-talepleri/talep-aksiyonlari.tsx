@@ -78,8 +78,8 @@ export function TalepAksiyonlari({ requestId, status, categoryName }: Props) {
             disabled={isPending}
             className={`kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition disabled:opacity-50 ${
               confirming === 'reviewing'
-                ? 'bg-plum text-paper border-plum'
-                : 'border-line text-ink-72 hover:border-plum hover:text-plum'
+                ? 'bg-brand-accent text-paper border-brand-accent'
+                : 'border-line text-ink-72 hover:border-brand-accent hover:text-brand-accent'
             }`}
           >
             {confirming === 'reviewing' ? 'Onayla' : 'İncelemeye al'}
@@ -110,8 +110,8 @@ export function TalepAksiyonlari({ requestId, status, categoryName }: Props) {
             disabled={isPending}
             className={`kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition disabled:opacity-50 ${
               confirming === 'decline'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             }`}
           >
             {confirming === 'decline' ? 'Eminim — Reddet' : 'Reddet'}
@@ -126,8 +126,8 @@ export function TalepAksiyonlari({ requestId, status, categoryName }: Props) {
             disabled={isPending}
             className={`kashe-tap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition disabled:opacity-50 ${
               confirming === 'reviewing'
-                ? 'bg-plum text-paper border-plum'
-                : 'border-line text-ink-72 hover:border-plum hover:text-plum'
+                ? 'bg-brand-accent text-paper border-brand-accent'
+                : 'border-line text-ink-72 hover:border-brand-accent hover:text-brand-accent'
             }`}
           >
             {confirming === 'reviewing'

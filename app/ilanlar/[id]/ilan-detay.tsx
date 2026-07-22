@@ -220,7 +220,7 @@ export function IlanDetay({
   const badgeStyles: Record<typeof statusTone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -246,7 +246,7 @@ export function IlanDetay({
         {/* Geri linki */}
         <Link
           href="/ilanlar"
-          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink transition-colors"
         >
           <span>←</span> Tüm ilanlar
         </Link>
@@ -257,7 +257,7 @@ export function IlanDetay({
             {/* Hero */}
             <header>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-terracotta/8 text-terracotta rounded-full text-xs font-mono uppercase tracking-[0.1em]">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-ink/8 text-brand-ink rounded-full text-xs font-mono uppercase tracking-[0.1em]">
                   {categoryEmoji && <span>{categoryEmoji}</span>}
                   {categoryLabel}
                 </span>
@@ -292,7 +292,7 @@ export function IlanDetay({
               listing.location ||
               listing.guest_count !== null) && (
               <div className="bg-card border border-line rounded-lg p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-3">
                   Etkinlik özeti
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -339,7 +339,7 @@ export function IlanDetay({
 
             {/* Genel açıklama */}
             <div className="bg-card border border-line rounded-lg p-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
                 Genel açıklama
               </p>
               <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
@@ -473,7 +473,7 @@ export function IlanDetay({
               <div className="bg-card border border-line rounded-lg p-5">
                 {/* Bütçe */}
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-1">
                     Bütçe
                   </p>
                   <p className="font-display text-2xl md:text-[28px] leading-tight text-ink font-medium">
@@ -584,8 +584,8 @@ export function IlanDetay({
                                   disabled={isPending}
                                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
                                     confirming === 'cancel'
-                                      ? 'bg-terracotta text-paper border-terracotta'
-                                      : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                                      ? 'bg-brand-ink text-paper border-brand-ink'
+                                      : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
                                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                   <Trash2 size={13} strokeWidth={1.75} />
@@ -676,8 +676,8 @@ export function IlanDetay({
                     </div>
                   ) : !applicationOpen ? (
                     /* ── KAPALI/DOLU İLAN BANDI (Design rötuşu: belirgin) ── */
-                    <div className="bg-terracotta/8 border border-terracotta/25 rounded-lg px-4 py-3.5 text-center">
-                      <p className="font-display font-semibold text-terracotta text-sm">
+                    <div className="bg-brand-ink/8 border border-brand-ink/25 rounded-lg px-4 py-3.5 text-center">
+                      <p className="font-display font-semibold text-brand-ink text-sm">
                         {deadlineInfo?.passed
                           ? 'Başvurular kapandı'
                           : 'Bu ilan başvuru kabul etmiyor'}
@@ -756,7 +756,7 @@ export function IlanDetay({
               {getApplicationStatusLabel(myApplication.status)}
             </span>
           ) : !applicationOpen ? (
-            <span className="px-4 py-2.5 rounded-lg text-xs font-display font-semibold bg-terracotta/10 text-terracotta border border-terracotta/30 shrink-0">
+            <span className="px-4 py-2.5 rounded-lg text-xs font-display font-semibold bg-brand-ink/10 text-brand-ink border border-brand-ink/30 shrink-0">
               {deadlineInfo?.passed ? 'Kapandı' : 'Kapalı'}
             </span>
           ) : !currentUserId ? (
@@ -812,7 +812,7 @@ function StructuredSection({
 
   return (
     <div className="bg-card border border-line rounded-lg p-6">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-3">
         {label}
       </p>
       <ul className="space-y-2">
@@ -848,9 +848,9 @@ function SimilarListingsBlock({ listings }: { listings: SimilarListing[] }) {
           <Link
             key={l.id}
             href={`/ilanlar/${l.id}`}
-            className="snap-start shrink-0 w-64 md:w-auto bg-card border border-line rounded-lg p-4 hover:border-terracotta hover:-translate-y-0.5 transition-all flex flex-col"
+            className="snap-start shrink-0 w-64 md:w-auto bg-card border border-line rounded-lg p-4 hover:border-brand-ink hover:-translate-y-0.5 transition-all flex flex-col"
           >
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.1em] text-terracotta mb-2">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.1em] text-brand-ink mb-2">
               {l.service_categories?.emoji && (
                 <span>{l.service_categories.emoji}</span>
               )}
@@ -902,7 +902,7 @@ function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={handleShare}
-      className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-line rounded-lg font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta hover:border-terracotta transition-colors"
+      className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-line rounded-lg font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink hover:border-brand-ink transition-colors"
     >
       <Share2 size={13} strokeWidth={1.75} />
       {copied ? 'Kopyalandı ✓' : 'İlanı paylaş'}
@@ -942,7 +942,7 @@ function OwnerInfoCard({
 
   return (
     <div className="bg-card border border-line rounded-lg p-5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-3">
         İlan sahibi
       </p>
       <div className="flex items-center gap-3">
@@ -954,7 +954,7 @@ function OwnerInfoCard({
             className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+          <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
             {creatorName.charAt(0).toUpperCase()}
           </div>
         )}
@@ -984,7 +984,7 @@ function OwnerInfoCard({
       {showProfileLink && (
         <Link
           href={`/p/${creator.id}`}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-terracotta hover:text-ember transition-colors"
+          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-ink hover:text-brand-ink-deep transition-colors"
         >
           Profili görüntüle →
         </Link>
@@ -1031,7 +1031,7 @@ function ApplicationCard({
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -1085,12 +1085,12 @@ function ApplicationCard({
               className="w-10 h-10 rounded-full object-cover border border-line shrink-0"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-sm shrink-0">
               {name.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors truncate">
+            <p className="font-display font-semibold text-ink group-hover:text-brand-ink transition-colors truncate">
               {name}
             </p>
             <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
@@ -1180,8 +1180,8 @@ function ApplicationCard({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming === 'reject'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <XCircle size={12} strokeWidth={1.75} />
@@ -1232,7 +1232,7 @@ function ApplicationCompareColumn({
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -1285,11 +1285,11 @@ function ApplicationCompareColumn({
             className="w-14 h-14 rounded-full object-cover border border-line"
           />
         ) : (
-          <div className="w-14 h-14 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-lg">
+          <div className="w-14 h-14 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-lg">
             {name.charAt(0).toUpperCase()}
           </div>
         )}
-        <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors leading-tight">
+        <p className="font-display font-semibold text-ink group-hover:text-brand-ink transition-colors leading-tight">
           {name}
         </p>
       </Link>
@@ -1301,7 +1301,7 @@ function ApplicationCompareColumn({
         </p>
         {rating && rating.count > 0 ? (
           <p className="text-sm text-ink flex items-center justify-center gap-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-plum)" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-brand-accent)" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
             <span className="font-display font-semibold">{rating.average}</span>
@@ -1419,8 +1419,8 @@ function ApplicationCompareColumn({
             disabled={isPending}
             className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming === 'reject'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <XCircle size={12} strokeWidth={1.75} />
@@ -1447,7 +1447,7 @@ const INVITATION_STATUS_LABEL: Record<string, string> = {
 const INVITATION_STATUS_CLASS: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
   accepted: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-  declined: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+  declined: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
   expired: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   cancelled: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
 };
@@ -1516,12 +1516,12 @@ function DavetSatiri({ invitation }: { invitation: SentInvitation }) {
               className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
+            <div className="w-9 h-9 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
               {proName.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-display font-semibold text-ink group-hover:text-terracotta transition-colors truncate">
+            <p className="font-display font-semibold text-ink group-hover:text-brand-ink transition-colors truncate">
               {proName}
             </p>
             <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
@@ -1546,8 +1546,8 @@ function DavetSatiri({ invitation }: { invitation: SentInvitation }) {
               disabled={isPending}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
                 confirming
-                  ? 'bg-terracotta text-paper border-terracotta'
-                  : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                  ? 'bg-brand-ink text-paper border-brand-ink'
+                  : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
               } disabled:opacity-50`}
             >
               {confirming ? 'Onayla' : 'İptal et'}

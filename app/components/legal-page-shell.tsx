@@ -32,7 +32,7 @@ export function LegalPageShell({
           {/* Geri linki */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-terracotta transition-colors mb-6"
+            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-brand-ink transition-colors mb-6"
           >
             <span>←</span>
             Ana sayfa
@@ -56,8 +56,8 @@ export function LegalPageShell({
 
           {/* Kuruluş aşaması uyarısı (lansman öncesi) */}
           {LEGAL_OPERATOR.isPreLaunch && (
-            <div className="bg-terracotta-08 border border-terracotta/25 rounded-2xl p-5 mb-10">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <div className="bg-brand-ink-08 border border-brand-ink/25 rounded-2xl p-5 mb-10">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
                 Önemli uyarı
               </p>
               <p className="text-sm text-ink leading-relaxed">
@@ -78,7 +78,7 @@ export function LegalPageShell({
           {/* Footer linki */}
           <div className="mt-16 pt-8 border-t border-line text-center">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
-              Sorun mu var? <a href="mailto:kasheofficial@gmail.com" className="text-terracotta hover:underline">kasheofficial@gmail.com</a>
+              Sorun mu var? <a href="mailto:kasheofficial@gmail.com" className="text-brand-ink hover:underline">kasheofficial@gmail.com</a>
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function LegalSection({
     <section>
       <h2 className="font-display font-medium text-2xl text-ink mb-4 leading-tight">
         {number && (
-          <span className="font-mono text-sm text-terracotta mr-3 align-middle">
+          <span className="font-mono text-sm text-brand-ink mr-3 align-middle">
             {number}
           </span>
         )}
@@ -147,7 +147,7 @@ export function LegalList({
         if (typeof item === 'object' && item !== null && 'label' in item) {
           return (
             <li key={i} className="flex gap-3 text-[15px] text-ink-72">
-              <span className="text-terracotta shrink-0 mt-1">•</span>
+              <span className="text-brand-ink shrink-0 mt-1">•</span>
               <div>
                 <span className="font-semibold text-ink">{item.label}:</span>{' '}
                 {item.description}
@@ -157,7 +157,7 @@ export function LegalList({
         }
         return (
           <li key={i} className="flex gap-3 text-[15px] text-ink-72">
-            <span className="text-terracotta shrink-0 mt-1">•</span>
+            <span className="text-brand-ink shrink-0 mt-1">•</span>
             <div>{item}</div>
           </li>
         );

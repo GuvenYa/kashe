@@ -86,7 +86,7 @@ function DavetKarti({
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
-    danger: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
 
@@ -157,7 +157,7 @@ function DavetKarti({
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
               Kurumsal ekip
             </p>
-            <p className="font-display text-lg text-ink group-hover:text-terracotta transition-colors truncate">
+            <p className="font-display text-lg text-ink group-hover:text-brand-ink transition-colors truncate">
               {businessName}
             </p>
           </div>
@@ -210,8 +210,8 @@ function DavetKarti({
             disabled={isPending}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-display font-semibold border transition ${
               confirming === 'decline'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <XCircle size={14} strokeWidth={1.75} />

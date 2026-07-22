@@ -46,7 +46,7 @@ export default async function BlogPage() {
             }}
           />
           <div className="max-w-5xl mx-auto px-6 md:px-12 py-14 md:py-20 relative">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               Blog
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
@@ -72,7 +72,7 @@ export default async function BlogPage() {
                 <Link
                   key={post.id}
                   href={`/blog/${post.slug}`}
-                  className="group flex flex-col bg-card border border-line rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-terracotta hover:shadow-[0_12px_28px_-14px_rgba(26,18,14,0.20)]"
+                  className="group flex flex-col bg-card border border-line rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand-ink hover:shadow-[0_12px_28px_-14px_rgba(26,18,14,0.20)]"
                 >
                   <div className="aspect-[16/10] bg-paper-2 overflow-hidden">
                     {post.cover_image_url ? (
@@ -95,7 +95,7 @@ export default async function BlogPage() {
                         {formatDate(post.published_at)}
                       </p>
                     )}
-                    <h2 className="font-display text-xl text-ink leading-tight group-hover:text-terracotta transition-colors">
+                    <h2 className="font-display text-xl text-ink leading-tight group-hover:text-brand-ink transition-colors">
                       {post.title}
                     </h2>
                     {post.excerpt && (
@@ -103,7 +103,7 @@ export default async function BlogPage() {
                         {post.excerpt}
                       </p>
                     )}
-                    <span className="mt-auto pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta inline-flex items-center gap-1 group-hover:gap-1.5 transition-all">
+                    <span className="mt-auto pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink inline-flex items-center gap-1 group-hover:gap-1.5 transition-all">
                       Oku
                       <span aria-hidden="true">→</span>
                     </span>

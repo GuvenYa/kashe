@@ -64,12 +64,12 @@ export default async function HizmetlerimPage() {
           <div className="mb-10">
             <Link
               href="/profil"
-              className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-3"
+              className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-3"
             >
               ← Profilime dön
             </Link>
             <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 Hizmetlerim
               </em>
             </h1>

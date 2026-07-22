@@ -47,7 +47,7 @@ export function GorusRowActions({ id, isPublished }: Props) {
       </button>
       <Link
         href={`/admin/gorusler/${id}`}
-        className="text-sm text-ink hover:text-terracotta px-2 py-1 transition-colors"
+        className="text-sm text-ink hover:text-brand-ink px-2 py-1 transition-colors"
       >
         Düzenle
       </Link>

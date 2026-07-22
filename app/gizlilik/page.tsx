@@ -131,7 +131,7 @@ export default function GizlilikPage() {
                   href={p.privacyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:underline"
+                  className="inline-block mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
                 >
                   Gizlilik politikası →
                 </a>
@@ -166,7 +166,7 @@ export default function GizlilikPage() {
           silmek istersen{' '}
           <a
             href={`mailto:${LEGAL_CONTACT.privacy}`}
-            className="text-terracotta hover:underline"
+            className="text-brand-ink hover:underline"
           >
             {LEGAL_CONTACT.privacy}
           </a>{' '}
@@ -208,7 +208,7 @@ export default function GizlilikPage() {
           Bu haklarını kullanmak için{' '}
           <a
             href={`mailto:${LEGAL_CONTACT.privacy}`}
-            className="text-terracotta hover:underline"
+            className="text-brand-ink hover:underline"
           >
             {LEGAL_CONTACT.privacy}
           </a>{' '}
@@ -261,7 +261,7 @@ export default function GizlilikPage() {
           </span>
           <a
             href={`mailto:${LEGAL_CONTACT.privacy}`}
-            className="text-ink font-medium hover:text-terracotta transition-colors"
+            className="text-ink font-medium hover:text-brand-ink transition-colors"
           >
             {LEGAL_CONTACT.privacy}
           </a>

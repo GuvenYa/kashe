@@ -25,10 +25,10 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
   return (
     <div className="bg-card border border-line rounded-lg p-12 text-center">
       <div
-        className="w-16 h-16 mx-auto mb-5 rounded-full bg-terracotta/8 flex items-center justify-center"
+        className="w-16 h-16 mx-auto mb-5 rounded-full bg-brand-ink/8 flex items-center justify-center"
         aria-hidden="true"
       >
-        <Icon className="w-7 h-7 text-terracotta/60" strokeWidth={1.5} />
+        <Icon className="w-7 h-7 text-brand-ink/60" strokeWidth={1.5} />
       </div>
 
       <p className="font-display text-xl text-ink mb-3">{title}</p>
@@ -40,7 +40,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       {action && (
         <a
           href={action.href}
-          className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+          className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
         >
           {action.label}
         </a>

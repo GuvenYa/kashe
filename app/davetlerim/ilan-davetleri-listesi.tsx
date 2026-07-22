@@ -87,7 +87,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_TONE: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
   accepted: 'bg-moss text-paper border-moss',
-  declined: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+  declined: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
   expired: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   cancelled: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
 };
@@ -151,7 +151,7 @@ function IlanDavetKarti({
   return (
     <div
       className={`border-2 rounded-lg p-5 ${
-        isPast ? 'bg-paper/40 border-line/60' : 'bg-terracotta/5 border-terracotta/15'
+        isPast ? 'bg-paper/40 border-line/60' : 'bg-brand-ink/5 border-brand-ink/15'
       }`}
     >
       {/* Header — davet eden + ilan */}
@@ -168,7 +168,7 @@ function IlanDavetKarti({
               className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+            <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
               {inviterName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -176,7 +176,7 @@ function IlanDavetKarti({
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-0.5">
               Davet eden
             </p>
-            <p className="font-display text-lg text-ink group-hover:text-terracotta transition-colors truncate">
+            <p className="font-display text-lg text-ink group-hover:text-brand-ink transition-colors truncate">
               {inviterName}
             </p>
           </div>
@@ -196,7 +196,7 @@ function IlanDavetKarti({
         </p>
         <Link
           href={`/ilanlar/${invitation.listing?.id ?? ''}`}
-          className="text-sm font-display font-semibold text-ink hover:text-terracotta transition-colors"
+          className="text-sm font-display font-semibold text-ink hover:text-brand-ink transition-colors"
         >
           {listingTitle}
         </Link>
@@ -222,14 +222,14 @@ function IlanDavetKarti({
 
       {/* Aksiyonlar — sadece pending */}
       {!isPast && invitation.status === 'pending' && (
-        <div className="flex gap-2 pt-3 border-t border-terracotta/15">
+        <div className="flex gap-2 pt-3 border-t border-brand-ink/15">
           <button
             onClick={() => withConfirm('decline', handleDecline)}
             disabled={isPending}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-display font-semibold border transition ${
               confirming === 'decline'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <XCircle size={14} strokeWidth={1.75} />
@@ -239,7 +239,7 @@ function IlanDavetKarti({
             onClick={() => withConfirm('accept', handleAccept)}
             disabled={isPending}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-display font-semibold text-paper transition ${
-              confirming === 'accept' ? 'bg-ember' : 'bg-terracotta hover:bg-ember'
+              confirming === 'accept' ? 'bg-brand-ink-deep' : 'bg-brand-ink hover:bg-brand-ink-deep'
             } disabled:opacity-50`}
           >
             <CheckCircle2 size={14} strokeWidth={1.75} />
@@ -252,7 +252,7 @@ function IlanDavetKarti({
         <div className="pt-3 border-t border-line/40">
           <Link
             href="/basvurularim"
-            className="text-xs text-terracotta hover:text-ink font-medium transition-colors"
+            className="text-xs text-brand-ink hover:text-ink font-medium transition-colors"
           >
             Başvurularımda gör →
           </Link>

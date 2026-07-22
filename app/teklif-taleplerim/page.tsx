@@ -116,13 +116,13 @@ export default async function TeklifTaleplerimPage() {
       <Link
         key={req.id}
         href={`/teklif-taleplerim/${req.id}`}
-        className="block bg-card border border-line rounded-lg p-6 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+        className="block bg-card border border-line rounded-lg p-6 hover:border-brand-ink hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
       >
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-2">
               {categoryName && (
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
                   {categoryName}
                 </span>
               )}
@@ -168,7 +168,7 @@ export default async function TeklifTaleplerimPage() {
               Teklif Taleplerim
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 Topladığın
               </em>{' '}
               teklifler
@@ -179,7 +179,7 @@ export default async function TeklifTaleplerimPage() {
           </div>
           <Link
             href="/teklif-topla"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
           >
             <span className="text-base leading-none">+</span>
             Yeni talep
@@ -196,7 +196,7 @@ export default async function TeklifTaleplerimPage() {
             </p>
             <Link
               href="/teklif-topla"
-              className="inline-block px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+              className="inline-block px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
             >
               İlk talebini oluştur
             </Link>

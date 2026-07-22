@@ -79,13 +79,13 @@ export default async function BlogPostPage({
         <article className="max-w-3xl mx-auto px-6 md:px-12 py-12 md:py-16">
           <Link
             href="/blog"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-8"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-8"
           >
             ← Tüm yazılar
           </Link>
 
           {post.published_at && (
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               {formatDate(post.published_at)}
             </p>
           )}
@@ -125,7 +125,7 @@ export default async function BlogPostPage({
             </p>
             <Link
               href="/kesfet"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
             >
               Keşfet&apos;e git
             </Link>

@@ -348,7 +348,7 @@ export function KesfetFilters({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="İsim ile ara..."
-          className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition text-sm"
+          className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm"
         />
       </div>
 
@@ -369,11 +369,11 @@ export function KesfetFilters({
             >
               <span
                 className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  type === opt.key ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                  type === opt.key ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                 }`}
               >
                 {type === opt.key && (
-                  <span className="w-2 h-2 rounded-full bg-terracotta" />
+                  <span className="w-2 h-2 rounded-full bg-brand-ink" />
                 )}
               </span>
               <span
@@ -403,7 +403,7 @@ export function KesfetFilters({
               >
                 <span
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                    on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                   }`}
                 >
                   {on && (
@@ -441,7 +441,7 @@ export function KesfetFilters({
               >
                 <span
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                    on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                   }`}
                 >
                   {on && (
@@ -488,7 +488,7 @@ export function KesfetFilters({
                   onChange={(e) => setCityQuery(e.target.value)}
                   placeholder="Şehir ara..."
                   autoFocus
-                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta-08"
+                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-brand-ink-08"
                 />
               </div>
               <ul className="max-h-56 overflow-y-auto py-1">
@@ -500,7 +500,7 @@ export function KesfetFilters({
                       setCityOpen(false);
                       setCityQuery('');
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-ink-72 hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm text-ink-72 hover:bg-brand-ink-08 hover:text-brand-ink transition-colors"
                   >
                     Tüm şehirler
                   </button>
@@ -516,8 +516,8 @@ export function KesfetFilters({
                       }}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                         String(c.id) === city
-                          ? 'bg-terracotta-08 text-terracotta'
-                          : 'text-ink hover:bg-terracotta-08 hover:text-terracotta'
+                          ? 'bg-brand-ink-08 text-brand-ink'
+                          : 'text-ink hover:bg-brand-ink-08 hover:text-brand-ink'
                       }`}
                     >
                       {c.name}
@@ -548,11 +548,11 @@ export function KesfetFilters({
             >
               <span
                 className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  maxPrice === opt.value ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                  maxPrice === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                 }`}
               >
                 {maxPrice === opt.value && (
-                  <span className="w-2 h-2 rounded-full bg-terracotta" />
+                  <span className="w-2 h-2 rounded-full bg-brand-ink" />
                 )}
               </span>
               <span
@@ -580,11 +580,11 @@ export function KesfetFilters({
             >
               <span
                 className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  minRating === opt.value ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                  minRating === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                 }`}
               >
                 {minRating === opt.value && (
-                  <span className="w-2 h-2 rounded-full bg-terracotta" />
+                  <span className="w-2 h-2 rounded-full bg-brand-ink" />
                 )}
               </span>
               <span
@@ -593,7 +593,7 @@ export function KesfetFilters({
                 }`}
               >
                 {opt.value && (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-plum)" stroke="var(--color-plum)" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-brand-accent)" stroke="var(--color-brand-accent)" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                   </svg>
                 )}
@@ -653,7 +653,7 @@ export function KesfetFilters({
                     >
                       <span
                         className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                          on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                          on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                         }`}
                       >
                         {on && (
@@ -683,7 +683,7 @@ export function KesfetFilters({
               >
                 <span
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    onlyAvailable ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                    onlyAvailable ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                   }`}
                 >
                   {onlyAvailable && (
@@ -723,7 +723,7 @@ export function KesfetFilters({
                     >
                       <span
                         className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                          on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                          on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                         }`}
                       >
                         {on && (
@@ -747,7 +747,7 @@ export function KesfetFilters({
       {/* Kategoriye özel detaylı filtreler — sadece tek kategori seçiliyken */}
       {filterFields.length > 0 && (
         <div className="pt-5 border-t border-line space-y-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
             {categories.find((c) => c.slug === selectedSlug)?.name_tr} detayları
           </p>
           {filterFields.map((field) => {
@@ -768,7 +768,7 @@ export function KesfetFilters({
                         >
                           <span
                             className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              on ? 'bg-terracotta border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+                              on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                             }`}
                           >
                             {on && (
@@ -794,7 +794,7 @@ export function KesfetFilters({
                 <select
                   value={cur}
                   onChange={(e) => setAttrSingle(field.key, e.target.value)}
-                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 >
                   <option value="">Hepsi</option>
                   {field.options.map((opt) => (
@@ -812,7 +812,7 @@ export function KesfetFilters({
         <button
           type="button"
           onClick={clearAll}
-          className="kashe-tap text-xs text-terracotta hover:underline"
+          className="kashe-tap text-xs text-brand-ink hover:underline"
         >
           Tüm filtreleri temizle ({activeCount})
         </button>
@@ -848,7 +848,7 @@ export function KesfetFilters({
           </svg>
           Filtreler
           {activeCount > 0 && (
-            <span className="min-w-[20px] h-5 px-1.5 bg-terracotta text-paper text-xs font-mono rounded-full flex items-center justify-center">
+            <span className="min-w-[20px] h-5 px-1.5 bg-brand-ink text-paper text-xs font-mono rounded-full flex items-center justify-center">
               {activeCount}
             </span>
           )}
@@ -888,7 +888,7 @@ export function KesfetFilters({
                   applyNow(); // bekleyen debounce'ı flush et → anında uygula
                   setMobileOpen(false);
                 }}
-                className="kashe-tap w-full px-4 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:bg-ember transition-colors"
+                className="kashe-tap w-full px-4 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
               >
                 {isPending ? 'Yükleniyor...' : `${resultCount} sonucu göster`}
               </button>

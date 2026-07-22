@@ -16,8 +16,8 @@ export function LoadingMessage({ messages }: { messages: string[] }) {
 
   return (
     <div className="flex items-center gap-2.5 mb-6" role="status" aria-live="polite">
-      <span className="w-1.5 h-1.5 rounded-full bg-terracotta kashe-pulse inline-block" />
-      <p key={i} className="kashe-page-fade font-display italic text-terracotta">
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-ink kashe-pulse inline-block" />
+      <p key={i} className="kashe-page-fade font-display italic text-brand-ink">
         {messages[i]}
       </p>
     </div>

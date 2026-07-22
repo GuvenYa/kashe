@@ -173,7 +173,7 @@ export default function YardimPage() {
           {/* Geri linki */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-terracotta transition-colors mb-6"
+            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-72 hover:text-brand-ink transition-colors mb-6"
           >
             <span>←</span>
             Ana sayfa
@@ -191,7 +191,7 @@ export default function YardimPage() {
               Kashe hakkında merak ettiklerin. Aradığını bulamazsan{' '}
               <a
                 href="mailto:kasheofficial@gmail.com"
-                className="text-terracotta hover:underline"
+                className="text-brand-ink hover:underline"
               >
                 kasheofficial@gmail.com
               </a>{' '}
@@ -208,7 +208,7 @@ export default function YardimPage() {
               <a
                 key={g.id}
                 href={`#${g.id}`}
-                className="kashe-tap inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-card border border-line rounded-full text-[12px] text-ink-72 hover:text-ink hover:border-terracotta transition-colors"
+                className="kashe-tap inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-card border border-line rounded-full text-[12px] text-ink-72 hover:text-ink hover:border-brand-ink transition-colors"
               >
                 {g.title}
               </a>
@@ -229,14 +229,14 @@ export default function YardimPage() {
             </Eyebrow>
             <h2 className="font-display font-light text-2xl md:text-3xl text-ink tracking-tight leading-tight mb-3">
               Cevabını burada bulamadıysan,{' '}
-              <em className="text-terracotta">bize yaz</em>.
+              <em className="text-brand-ink">bize yaz</em>.
             </h2>
             <p className="text-ink-72 mb-6 max-w-md mx-auto leading-relaxed">
               Mümkün olduğunca hızlı dönüş yapıyoruz.
             </p>
             <a
               href="mailto:kasheofficial@gmail.com"
-              className="kashe-tap inline-flex items-center gap-2 px-6 py-3 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition shadow-[3px_3px_0_var(--color-terracotta-12)]"
+              className="kashe-tap inline-flex items-center gap-2 px-6 py-3 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition shadow-[3px_3px_0_var(--color-brand-ink-12)]"
             >
               kasheofficial@gmail.com
               <span>→</span>
@@ -265,11 +265,11 @@ function YardimGrup({ group }: { group: FaqGroup }) {
         {group.questions.map((qa, i) => (
           <details
             key={i}
-            className="group bg-card border border-line rounded-2xl overflow-hidden transition-colors hover:border-terracotta/40"
+            className="group bg-card border border-line rounded-2xl overflow-hidden transition-colors hover:border-brand-ink/40"
           >
             <summary className="kashe-tap flex items-center justify-between gap-4 cursor-pointer px-5 py-4 list-none">
               <div className="flex items-start gap-3 min-w-0">
-                <span className="font-mono text-[10px] tabular-nums text-terracotta tracking-[0.14em] mt-1 shrink-0">
+                <span className="font-mono text-[10px] tabular-nums text-brand-ink tracking-[0.14em] mt-1 shrink-0">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <p className="font-display font-medium text-base text-ink leading-snug">
@@ -277,7 +277,7 @@ function YardimGrup({ group }: { group: FaqGroup }) {
                 </p>
               </div>
               <span
-                className="shrink-0 w-7 h-7 rounded-full border border-line group-open:border-terracotta group-open:bg-terracotta group-open:text-paper transition-all flex items-center justify-center"
+                className="shrink-0 w-7 h-7 rounded-full border border-line group-open:border-brand-ink group-open:bg-brand-ink group-open:text-paper transition-all flex items-center justify-center"
                 aria-hidden="true"
               >
                 <svg

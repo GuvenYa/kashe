@@ -148,7 +148,7 @@ export default async function IlanlarPage({
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink leading-tight max-w-3xl">
               Profesyonel arayan{' '}
-              <em className="text-terracotta not-italic font-medium">
+              <em className="text-brand-ink not-italic font-medium">
                 etkinlik sahipleri
               </em>
             </h1>

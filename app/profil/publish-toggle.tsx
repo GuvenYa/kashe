@@ -32,14 +32,14 @@ export function PublishToggle({ isPublished, canPublish, missingFields }: Props)
       className={`rounded-lg border p-6 ${
         isPublished
           ? 'bg-green-50 border-green-300'
-          : 'bg-terracotta/8 border-terracotta/20'
+          : 'bg-brand-ink/8 border-brand-ink/20'
       }`}
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <p
             className={`font-mono text-xs uppercase tracking-[0.16em] mb-2 ${
-              isPublished ? 'text-green-700' : 'text-terracotta'
+              isPublished ? 'text-green-700' : 'text-brand-ink'
             }`}
           >
             {isPublished ? 'Profilin yayında' : 'Profilin yayında değil'}
@@ -77,7 +77,7 @@ export function PublishToggle({ isPublished, canPublish, missingFields }: Props)
           className={`shrink-0 px-5 py-2.5 rounded-lg font-display font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
             isPublished
               ? 'border border-ink text-ink hover:bg-ink hover:text-paper'
-              : 'bg-terracotta text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+              : 'bg-brand-ink text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
           }`}
         >
           {isPending

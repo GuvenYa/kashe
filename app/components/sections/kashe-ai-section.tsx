@@ -8,15 +8,15 @@ export function KasheAiSection() {
         <div className="bg-card border border-line rounded-3xl p-8 md:p-12 relative overflow-hidden">
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 mb-6">
-              <Sparkles size={16} className="text-terracotta" />
-              <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-terracotta">
+              <Sparkles size={16} className="text-brand-ink" />
+              <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-brand-ink">
                 Kashe AI
               </span>
             </div>
 
             <h2 className="font-display font-semibold text-3xl md:text-4xl lg:text-5xl text-ink leading-[1.1] tracking-[-0.03em] max-w-2xl mb-4">
               Ne aradığını bilmiyor musun?{' '}
-              <em className="text-terracotta not-italic italic">
+              <em className="text-brand-ink not-italic italic">
                 Yapay zekâ
               </em>{' '}
               sana yol göstersin.
@@ -29,10 +29,10 @@ export function KasheAiSection() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Link
                 href="/etkinlik-planla"
-                className="kashe-tap group flex items-start gap-3 bg-paper border border-line rounded-2xl p-5 hover:border-terracotta transition"
+                className="kashe-tap group flex items-start gap-3 bg-paper border border-line rounded-2xl p-5 hover:border-brand-ink transition"
               >
-                <div className="w-10 h-10 shrink-0 rounded-xl bg-terracotta/10 flex items-center justify-center">
-                  <Calendar size={18} className="text-terracotta" />
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">
+                  <Calendar size={18} className="text-brand-ink" />
                 </div>
                 <div>
                   <p className="font-display font-semibold text-ink mb-1">
@@ -46,10 +46,10 @@ export function KasheAiSection() {
 
               <Link
                 href="/pro-bul"
-                className="kashe-tap group flex items-start gap-3 bg-paper border border-line rounded-2xl p-5 hover:border-terracotta transition"
+                className="kashe-tap group flex items-start gap-3 bg-paper border border-line rounded-2xl p-5 hover:border-brand-ink transition"
               >
-                <div className="w-10 h-10 shrink-0 rounded-xl bg-terracotta/10 flex items-center justify-center">
-                  <Users size={18} className="text-terracotta" />
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">
+                  <Users size={18} className="text-brand-ink" />
                 </div>
                 <div>
                   <p className="font-display font-semibold text-ink mb-1">

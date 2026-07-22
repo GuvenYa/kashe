@@ -203,13 +203,13 @@ export default async function AdminProfillerPage({
                           className="w-14 h-14 rounded-full object-cover border border-line shrink-0"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-full bg-terracotta/10 flex items-center justify-center text-terracotta font-display font-semibold shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-brand-ink/10 flex items-center justify-center text-brand-ink font-display font-semibold shrink-0">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta bg-terracotta/8 px-2 py-0.5 rounded">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
                             {ROLE_LABELS[p.role] ?? p.role}
                           </span>
                           {categoryName && (
@@ -257,7 +257,7 @@ export default async function AdminProfillerPage({
                         <div className="flex items-center gap-4 mt-2.5">
                           <a
                             href={`/p/${p.id}`}
-                            className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:text-ink transition-colors"
+                            className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:text-ink transition-colors"
                           >
                             Önizle →
                           </a>

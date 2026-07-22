@@ -31,14 +31,14 @@ export default function KasheAiPage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 mb-3">
-              <Sparkles size={18} className="text-terracotta" />
+              <Sparkles size={18} className="text-brand-ink" />
               <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
                 Kashe AI
               </p>
             </div>
             <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
               Yapay zekâ,{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 senin yanında
               </em>
               .
@@ -56,15 +56,15 @@ export default function KasheAiPage() {
                 <Link
                   key={tool.href}
                   href={tool.href}
-                  className="kashe-tap group flex flex-col h-full bg-card border border-line rounded-2xl p-6 hover:border-terracotta transition"
+                  className="kashe-tap group flex flex-col h-full bg-card border border-line rounded-2xl p-6 hover:border-brand-ink transition"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-11 h-11 rounded-xl bg-terracotta/10 flex items-center justify-center">
-                      <Icon size={20} className="text-terracotta" />
+                    <div className="w-11 h-11 rounded-xl bg-brand-ink/10 flex items-center justify-center">
+                      <Icon size={20} className="text-brand-ink" />
                     </div>
                     <ArrowRight
                       size={18}
-                      className="text-ink-72 group-hover:text-terracotta transition"
+                      className="text-ink-72 group-hover:text-brand-ink transition"
                     />
                   </div>
                   <p className="font-display font-semibold text-lg text-ink mb-1.5">

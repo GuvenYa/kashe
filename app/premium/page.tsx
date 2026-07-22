@@ -39,7 +39,7 @@ export default async function PremiumPage() {
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-5xl mx-auto">
           <div className="mb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
               Premium
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

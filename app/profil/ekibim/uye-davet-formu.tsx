@@ -95,7 +95,7 @@ export function UyeDavetFormu({ onClose }: Props) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="profesyonel@email.com"
             required
-            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
           />
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
             Kashe&apos;ye kayıtlı değilse, davetiye email ile gönderilir.
@@ -115,8 +115,8 @@ export function UyeDavetFormu({ onClose }: Props) {
                   onClick={() => setMemberRole(option.key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                     memberRole === option.key
-                      ? 'bg-terracotta text-paper border-terracotta'
-                      : 'bg-paper text-ink-72 border-line hover:border-terracotta/50'
+                      ? 'bg-brand-ink text-paper border-brand-ink'
+                      : 'bg-paper text-ink-72 border-line hover:border-brand-ink/50'
                   }`}
                 >
                   {option.label}
@@ -139,7 +139,7 @@ export function UyeDavetFormu({ onClose }: Props) {
             placeholder="Davet edilen kişiye kişisel bir not bırak..."
             rows={3}
             maxLength={1000}
-            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
           />
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
             {message.length} / 1000 karakter
@@ -163,7 +163,7 @@ export function UyeDavetFormu({ onClose }: Props) {
           <button
             type="submit"
             disabled={isPending}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <Send size={14} strokeWidth={1.75} />
             {isPending ? 'Gönderiliyor...' : 'Daveti gönder'}

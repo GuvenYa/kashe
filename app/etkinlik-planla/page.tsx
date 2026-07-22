@@ -28,7 +28,7 @@ export default async function EtkinlikPlanlaPage() {
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Etkinliğini anlat,{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 gerisini bize bırak
               </em>
               .

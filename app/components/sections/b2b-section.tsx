@@ -34,15 +34,15 @@ export function B2BSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
             <div className="mb-6">
-              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta">
-                <span className="w-6 h-px bg-terracotta inline-block"></span>
+              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink">
+                <span className="w-6 h-px bg-brand-ink inline-block"></span>
                 Kurumsal müşteriler için
               </span>
             </div>
 
             <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-paper mb-6">
               Kurumsal etkinlikler için{" "}
-              <span className="text-plum">tek panel.</span>
+              <span className="text-brand-accent">tek panel.</span>
             </h2>
 
             <p className="text-lg text-paper-72 leading-[1.55] mb-10 max-w-xl">
@@ -54,7 +54,7 @@ export function B2BSection() {
             <div className="space-y-5 mb-10">
               {features.map((feat) => (
                 <div key={feat.number} className="flex gap-4 items-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-plum text-plum flex items-center justify-center font-mono text-xs">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-brand-accent text-brand-accent flex items-center justify-center font-mono text-xs">
                     {feat.number}
                   </div>
                   <div className="pt-1">
@@ -80,7 +80,7 @@ export function B2BSection() {
                 <span className="font-display text-base text-paper">
                   İlan #4231 · Hilton İstanbul
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-terracotta px-2 py-1 bg-terracotta-12">
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-brand-ink px-2 py-1 bg-brand-ink-12">
                   Aktif
                 </span>
               </div>
@@ -123,7 +123,7 @@ function MockupRow({
       <span
         className={`text-right ${
           highlight
-            ? "font-display italic text-2xl text-plum"
+            ? "font-display italic text-2xl text-brand-accent"
             : "text-paper font-medium text-base"
         }`}
       >

@@ -20,7 +20,7 @@ export function ReplyButton({ reviewId, existingReply }: Props) {
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="text-xs font-mono uppercase tracking-[0.12em] text-terracotta hover:text-ink transition-colors"
+        className="text-xs font-mono uppercase tracking-[0.12em] text-brand-ink hover:text-ink transition-colors"
       >
         {existingReply ? 'Yanıtı düzenle' : 'Yanıtla'}
       </button>
@@ -136,7 +136,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
           </p>
           <h2 className="font-display text-2xl text-ink tracking-tight">
             Müşteriye{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               yanıt ver
             </em>
             .
@@ -150,7 +150,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
             maxLength={1000}
             rows={5}
             placeholder="Müşterine bir teşekkür et veya yorumuna açıklama getir..."
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none text-sm leading-relaxed"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none text-sm leading-relaxed"
           />
           <p className="text-xs text-ink-72 mt-1.5 text-right mb-4">
             {body.length} / 1000
@@ -168,7 +168,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="px-3 py-2 text-xs font-mono uppercase tracking-[0.12em] text-terracotta border border-terracotta rounded hover:bg-terracotta hover:text-paper transition-colors disabled:opacity-50"
+                    className="px-3 py-2 text-xs font-mono uppercase tracking-[0.12em] text-brand-ink border border-brand-ink rounded hover:bg-brand-ink hover:text-paper transition-colors disabled:opacity-50"
                   >
                     {isDeleting ? 'Siliniyor...' : 'Evet, sil'}
                   </button>
@@ -185,7 +185,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-terracotta transition-colors self-start md:self-auto"
+                  className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-brand-ink transition-colors self-start md:self-auto"
                 >
                   Yanıtı Sil
                 </button>
@@ -206,7 +206,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
               <button
                 type="submit"
                 disabled={isPending || isDeleting || body.trim().length === 0}
-                className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isPending ? '...' : isEditing ? 'Güncelle' : 'Yanıtı Gönder'}
               </button>

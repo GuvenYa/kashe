@@ -155,7 +155,7 @@ export function PlanSecici({
                 key={plan.tier}
                 className={`relative rounded-2xl border p-6 flex flex-col ${
                   plan.highlighted
-                    ? 'border-terracotta shadow-[0_8px_30px_-12px_rgba(4,13,38,0.3)]'
+                    ? 'border-brand-ink shadow-[0_8px_30px_-12px_rgba(4,13,38,0.3)]'
                     : 'border-line'
                 }`}
               >
@@ -214,7 +214,7 @@ export function PlanSecici({
                     disabled={isPending}
                     className={`w-full py-3 rounded-lg font-display font-semibold text-sm transition-all disabled:opacity-50 ${
                       plan.highlighted
-                        ? 'bg-terracotta text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
+                        ? 'bg-brand-ink text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
                         : 'border border-ink text-ink hover:bg-ink hover:text-paper'
                     }`}
                   >
@@ -237,11 +237,11 @@ export function PlanSecici({
             className="bg-card border border-line rounded-2xl max-w-md w-full p-6 md:p-7 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
               Premium aktivasyonu (simülasyon)
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-terracotta">{confirmPlan.label}</em> planını
+              <em className="text-brand-ink">{confirmPlan.label}</em> planını
               aktifleştir
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
@@ -257,7 +257,7 @@ export function PlanSecici({
                 value={months}
                 onChange={(e) => setMonths(Number(e.target.value))}
                 disabled={isPending}
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition disabled:opacity-60"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition disabled:opacity-60"
               >
                 {PREMIUM_DURATIONS.map((d) => (
                   <option key={d.months} value={d.months}>
@@ -286,7 +286,7 @@ export function PlanSecici({
                 type="button"
                 onClick={handleActivate}
                 disabled={isPending}
-                className="flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-60"
+                className="flex-1 px-4 py-2.5 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-60"
               >
                 {isPending ? '...' : 'Aktifleştir'}
               </button>

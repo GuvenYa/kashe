@@ -69,7 +69,7 @@ export function ReviewCard({
             className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold shrink-0">
+          <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
             {initials || 'K'}
           </div>
         )}
@@ -79,7 +79,7 @@ export function ReviewCard({
             {customer ? (
               <Link
                 href={`/p/${customer.id}`}
-                className="font-display font-semibold text-ink hover:text-terracotta transition-colors truncate"
+                className="font-display font-semibold text-ink hover:text-brand-ink transition-colors truncate"
               >
                 {customerName}
               </Link>
@@ -114,8 +114,8 @@ export function ReviewCard({
 
       {/* PROFESYONEL YANITI */}
       {reply && (
-        <div className="mt-5 pl-5 border-l-2 border-terracotta/40">
-          <p className="font-mono text-xs uppercase tracking-[0.12em] text-terracotta mb-2">
+        <div className="mt-5 pl-5 border-l-2 border-brand-ink/40">
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-brand-ink mb-2">
             Profesyonelin yanıtı · {formatReviewDate(reply.created_at)}
           </p>
           <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap break-words">
@@ -160,8 +160,8 @@ function Star({ filled }: { filled: boolean }) {
       width="16"
       height="16"
       viewBox="0 0 24 24"
-      fill={filled ? 'var(--color-plum)' : 'none'}
-      stroke={filled ? 'var(--color-plum)' : 'var(--color-ink-72)'}
+      fill={filled ? 'var(--color-brand-accent)' : 'none'}
+      stroke={filled ? 'var(--color-brand-accent)' : 'var(--color-ink-72)'}
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

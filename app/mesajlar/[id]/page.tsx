@@ -274,7 +274,7 @@ export default async function KonusmaPage({
         <div className="max-w-6xl mx-auto">
           <Link
             href="/mesajlar"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-3 md:mb-4"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-3 md:mb-4"
           >
             ← Tüm mesajlar
           </Link>

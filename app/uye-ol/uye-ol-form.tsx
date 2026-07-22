@@ -314,7 +314,7 @@ export function UyeOlForm({
         Ajans mı yönetiyorsunuz?{" "}
         <a
           href="/uye-ol/ajans"
-          className="text-terracotta hover:text-ink font-medium"
+          className="text-brand-ink hover:text-ink font-medium"
         >
           Ajans hesabı oluşturun →
         </a>
@@ -322,7 +322,7 @@ export function UyeOlForm({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Ad Soyad
           </label>
           <Input
@@ -336,7 +336,7 @@ export function UyeOlForm({
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             E-posta
           </label>
           <Input
@@ -350,7 +350,7 @@ export function UyeOlForm({
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Telefon <span className="text-danger">*</span>
           </label>
           <div className="flex items-stretch gap-2">
@@ -364,7 +364,7 @@ export function UyeOlForm({
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="5XX XXX XX XX"
               disabled={loading}
-              className="flex-1 w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="flex-1 w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             />
           </div>
           {phone && phoneDigits(phone).length > 0 && phoneDigits(phone).length < 10 && (
@@ -375,7 +375,7 @@ export function UyeOlForm({
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Şifre
           </label>
           <div className="relative">
@@ -416,14 +416,14 @@ export function UyeOlForm({
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta mb-2">
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink mb-2">
             Şehir <span className="text-danger">*</span>
           </label>
           <select
             value={cityId}
             onChange={(e) => setCityId(e.target.value)}
             disabled={loading}
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition appearance-none cursor-pointer"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition appearance-none cursor-pointer"
           >
             <option value="">Şehrini seç</option>
             {cities.map((city) => (
@@ -441,12 +441,12 @@ export function UyeOlForm({
             checked={kvkk}
             onChange={(e) => setKvkk(e.target.checked)}
             disabled={loading}
-            className="mt-0.5 w-4 h-4 shrink-0 accent-terracotta cursor-pointer"
+            className="mt-0.5 w-4 h-4 shrink-0 accent-brand-ink cursor-pointer"
           />
           <label htmlFor="kvkk" className="text-sm text-ink-72 leading-snug cursor-pointer">
-            <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">KVKK Aydınlatma Metni</a>
+            <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-brand-ink hover:text-ink underline">KVKK Aydınlatma Metni</a>
             {"'ni ve "}
-            <a href="/kullanim-kosullari" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-ink underline">Kullanım Koşulları</a>
+            <a href="/kullanim-kosullari" target="_blank" rel="noopener noreferrer" className="text-brand-ink hover:text-ink underline">Kullanım Koşulları</a>
             {"'nı okudum, onaylıyorum."}
           </label>
         </div>
@@ -476,7 +476,7 @@ export function UyeOlForm({
               ? `/giris?redirect=${encodeURIComponent(rawRedirect)}`
               : "/giris"
           }
-          className="text-terracotta hover:text-ink font-medium"
+          className="text-brand-ink hover:text-ink font-medium"
         >
           Giriş yap
         </a>

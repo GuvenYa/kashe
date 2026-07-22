@@ -100,7 +100,7 @@ export function QuoteCard({
   // Status rozeti — Kashe paletinde
   const badgeStyles: Record<typeof tone, string> = {
     pending:
-      'bg-terracotta-08 text-terracotta border-terracotta/30',
+      'bg-brand-ink-08 text-brand-ink border-brand-ink/30',
     success: 'bg-moss/10 text-moss border-moss/30',
     danger: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
@@ -118,9 +118,9 @@ export function QuoteCard({
   return (
     <div className="my-4 mx-auto max-w-[480px]">
       <div className="bg-card border border-line rounded-2xl overflow-hidden shadow-[0_4px_18px_-8px_rgba(26,18,14,0.15)]">
-        {/* Header — Kashe terracotta accent */}
-        <div className="bg-terracotta-08 border-b border-terracotta/15 px-5 py-3 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-terracotta font-semibold">
+        {/* Header — Kashe brand-ink accent */}
+        <div className="bg-brand-ink-08 border-b border-brand-ink/15 px-5 py-3 flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink font-semibold">
             Teklif
           </p>
           <span
@@ -140,7 +140,7 @@ export function QuoteCard({
               {formatQuoteAmount(quote.total_amount, quote.currency)}
             </p>
             {quote.over_budget && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border text-plum bg-plum/10 border-plum/30">
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border text-brand-accent bg-brand-accent/10 border-brand-accent/30">
                 Bütçe üstü
               </span>
             )}
@@ -160,7 +160,7 @@ export function QuoteCard({
         {/* İptal politikası (varsa) */}
         {quote.cancellation_policy && (
           <details className="px-5 pb-4 group">
-            <summary className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 cursor-pointer hover:text-terracotta transition list-none flex items-center gap-1.5">
+            <summary className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 cursor-pointer hover:text-brand-ink transition list-none flex items-center gap-1.5">
               <span className="group-open:rotate-90 transition-transform inline-block">
                 ▸
               </span>
@@ -207,8 +207,8 @@ export function QuoteCard({
                   disabled={isPending}
                   className={`kashe-tap flex-1 px-4 py-2.5 border rounded-xl font-display font-semibold text-sm transition ${
                     confirmingAction === 'decline'
-                      ? 'bg-terracotta text-paper border-terracotta'
-                      : 'bg-card border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                      ? 'bg-brand-ink text-paper border-brand-ink'
+                      : 'bg-card border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {confirmingAction === 'decline'
@@ -220,7 +220,7 @@ export function QuoteCard({
                   disabled={isPending}
                   className={`kashe-tap flex-1 px-4 py-2.5 rounded-xl font-display font-semibold text-sm text-paper transition ${
                     confirmingAction === 'accept'
-                      ? 'bg-ink hover:bg-ink/90 shadow-[3px_3px_0_var(--color-terracotta-12)]'
+                      ? 'bg-ink hover:bg-ink/90 shadow-[3px_3px_0_var(--color-brand-ink-12)]'
                       : 'bg-ink hover:bg-ink/90'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -239,8 +239,8 @@ export function QuoteCard({
                 disabled={isPending}
                 className={`kashe-tap w-full px-4 py-2.5 border rounded-xl font-display font-semibold text-sm transition ${
                   confirmingAction === 'withdraw'
-                    ? 'bg-terracotta text-paper border-terracotta'
-                    : 'bg-card border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                    ? 'bg-brand-ink text-paper border-brand-ink'
+                    : 'bg-card border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isPending && confirmingAction === 'withdraw'

@@ -18,7 +18,7 @@ import {
 } from './actions';
 
 const INPUT =
-  'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition text-sm';
+  'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm';
 const LABEL =
   'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 
@@ -118,7 +118,7 @@ export function DeneyimClient({
                 <button
                   type="button"
                   onClick={() => setForm({ kind: section.kind, row: null })}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
                 >
                   <span className="text-base leading-none">+</span> Ekle
                 </button>
@@ -128,8 +128,8 @@ export function DeneyimClient({
             {rows.length === 0 ? (
               // B6 — boş durum: ikon + tek cümle + mercan aksiyon linki
               <div className="bg-card border border-line rounded-xl p-8 text-center">
-                <div className="w-11 h-11 rounded-full bg-terracotta/8 flex items-center justify-center mx-auto mb-3">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <div className="w-11 h-11 rounded-full bg-brand-ink/8 flex items-center justify-center mx-auto mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 5v14M5 12h14" />
                   </svg>
                 </div>
@@ -137,7 +137,7 @@ export function DeneyimClient({
                 <button
                   type="button"
                   onClick={() => setForm({ kind: section.kind, row: null })}
-                  className="font-display font-semibold text-sm text-terracotta hover:text-ember transition-colors"
+                  className="font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
                 >
                   İlk kaydını ekle →
                 </button>
@@ -166,7 +166,7 @@ export function DeneyimClient({
                           type="button"
                           disabled={i === 0 || isMoving}
                           onClick={() => handleMove(row.id, 'up')}
-                          className="text-ink-72 hover:text-terracotta disabled:opacity-25 disabled:hover:text-ink-72 transition-colors"
+                          className="text-ink-72 hover:text-brand-ink disabled:opacity-25 disabled:hover:text-ink-72 transition-colors"
                           aria-label="Yukarı taşı"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6" /></svg>
@@ -175,7 +175,7 @@ export function DeneyimClient({
                           type="button"
                           disabled={i === rows.length - 1 || isMoving}
                           onClick={() => handleMove(row.id, 'down')}
-                          className="text-ink-72 hover:text-terracotta disabled:opacity-25 disabled:hover:text-ink-72 transition-colors"
+                          className="text-ink-72 hover:text-brand-ink disabled:opacity-25 disabled:hover:text-ink-72 transition-colors"
                           aria-label="Aşağı taşı"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
@@ -186,7 +186,7 @@ export function DeneyimClient({
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-display font-semibold text-ink">{row.title}</span>
                           {groupLabel && (
-                            <span className="font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border border-terracotta/30 text-terracotta bg-terracotta/5">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border border-brand-ink/30 text-brand-ink bg-brand-ink/5">
                               {groupLabel}
                             </span>
                           )}
@@ -209,7 +209,7 @@ export function DeneyimClient({
                               type="button"
                               onClick={() => handleDelete(row.id)}
                               disabled={isDeleting}
-                              className="text-xs font-mono uppercase tracking-[0.12em] text-terracotta border border-terracotta rounded px-2.5 py-1.5 hover:bg-terracotta hover:text-paper transition-colors disabled:opacity-50"
+                              className="text-xs font-mono uppercase tracking-[0.12em] text-brand-ink border border-brand-ink rounded px-2.5 py-1.5 hover:bg-brand-ink hover:text-paper transition-colors disabled:opacity-50"
                             >
                               {isDeleting ? '...' : 'Evet, sil'}
                             </button>
@@ -227,7 +227,7 @@ export function DeneyimClient({
                             <button
                               type="button"
                               onClick={() => setForm({ kind: section.kind, row })}
-                              className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-terracotta transition-colors"
+                              className="text-xs font-mono uppercase tracking-[0.12em] text-ink-72 hover:text-brand-ink transition-colors"
                             >
                               Düzenle
                             </button>
@@ -369,7 +369,7 @@ function ExperienceModal({
         <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-xl text-ink">
             {row ? 'Düzenle' : 'Ekle'} ·{' '}
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               {KIND_TITLES[kind]}
             </em>
           </h2>
@@ -509,7 +509,7 @@ function ExperienceModal({
                           setEndYear('');
                         }
                       }}
-                      className="accent-terracotta w-4 h-4"
+                      className="accent-brand-ink w-4 h-4"
                     />
                     Devam ediyor
                   </label>
@@ -575,7 +575,7 @@ function ExperienceModal({
             <button
               type="submit"
               disabled={isPending || title.trim().length === 0}
-              className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isPending ? 'Kaydediliyor…' : row ? 'Güncelle' : 'Ekle'}
             </button>

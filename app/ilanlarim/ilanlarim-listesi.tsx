@@ -103,7 +103,7 @@ export function IlanlarimListesi({ listings, activeStatus }: Props) {
                     disabled={isPending}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-[0.1em] transition whitespace-nowrap ${
                       isActive
-                        ? 'bg-terracotta text-paper'
+                        ? 'bg-brand-ink text-paper'
                         : 'text-ink-72 hover:text-ink hover:bg-paper'
                     } disabled:opacity-50`}
                   >

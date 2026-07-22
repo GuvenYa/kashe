@@ -65,7 +65,7 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
             className="w-20 h-20 rounded-full object-cover border-2 border-line mb-3"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl mb-3">
+          <div className="w-20 h-20 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-2xl mb-3">
             {initials}
           </div>
         )}
@@ -122,7 +122,7 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
                   </p>
                   <a
                     href={`tel:${other.phone}`}
-                    className="text-sm text-ink hover:text-terracotta transition-colors"
+                    className="text-sm text-ink hover:text-brand-ink transition-colors"
                   >
                     {other.phone}
                   </a>
@@ -135,7 +135,7 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
                   </p>
                   <a
                     href={`mailto:${other.email}`}
-                    className="text-sm text-ink hover:text-terracotta transition-colors break-all"
+                    className="text-sm text-ink hover:text-brand-ink transition-colors break-all"
                   >
                     {other.email}
                   </a>

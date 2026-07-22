@@ -122,7 +122,7 @@ export function BlogForm({ post }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 
@@ -205,14 +205,14 @@ export function BlogForm({ post }: Props) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="text-sm text-ink hover:text-terracotta transition-colors disabled:opacity-50"
+                className="text-sm text-ink hover:text-brand-ink transition-colors disabled:opacity-50"
               >
                 {uploading ? 'Yükleniyor...' : 'Değiştir'}
               </button>
               <button
                 type="button"
                 onClick={() => setCoverUrl(null)}
-                className="text-sm text-ink-72 hover:text-terracotta transition-colors"
+                className="text-sm text-ink-72 hover:text-brand-ink transition-colors"
               >
                 Kaldır
               </button>
@@ -223,7 +223,7 @@ export function BlogForm({ post }: Props) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-sm text-ink-72 hover:text-brand-ink hover:border-brand-ink transition-colors disabled:opacity-50"
           >
             {uploading ? 'Yükleniyor...' : '+ Kapak yükle'}
           </button>
@@ -307,7 +307,7 @@ export function BlogForm({ post }: Props) {
               onClick={() => setStatus(opt.key as 'draft' | 'published')}
               className={`px-4 py-2 rounded-lg text-sm font-display font-medium border transition-colors ${
                 status === opt.key
-                  ? 'bg-terracotta text-paper border-terracotta'
+                  ? 'bg-brand-ink text-paper border-brand-ink'
                   : 'bg-card text-ink-72 border-line hover:border-ink-72'
               }`}
             >
@@ -330,7 +330,7 @@ export function BlogForm({ post }: Props) {
         <button
           type="submit"
           disabled={isPending || uploading}
-          className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isPending
             ? 'Kaydediliyor...'

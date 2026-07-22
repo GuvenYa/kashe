@@ -131,7 +131,7 @@ export default async function AdminDashboardPage() {
         {/* Excel raporu — admin-only route handler (server üretim) */}
         <a
           href="/admin/rapor"
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:bg-ember transition-colors"
+          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
@@ -145,7 +145,7 @@ export default async function AdminDashboardPage() {
         <StatCard
           label="Bugün yeni kayıt"
           value={todayUsers}
-          accent="terracotta"
+          accent="brandInk"
         />
         <StatCard
           label="Bu hafta rezervasyon"
@@ -155,13 +155,13 @@ export default async function AdminDashboardPage() {
         <StatCard
           label="Bekleyen kategori talebi"
           value={pendingCategoryRequests}
-          accent="plum"
+          accent="brandAccent"
           href="/admin/kategori-talepleri"
         />
         <StatCard
           label="Askıdaki kullanıcı"
           value={suspendedUsers}
-          accent="ember"
+          accent="brandInkDeep"
           href={
             suspendedUsers > 0
               ? '/admin/kullanicilar?filter=suspended'
@@ -171,7 +171,7 @@ export default async function AdminDashboardPage() {
         <StatCard
           label="Bekleyen şikayet"
           value={pendingReports}
-          accent="terracotta"
+          accent="brandInk"
           href={
             pendingReports > 0 ? '/admin/sikayetler' : '/admin/sikayetler'
           }
@@ -188,7 +188,7 @@ export default async function AdminDashboardPage() {
             </h2>
             <Link
               href="/admin/kategori-talepleri"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:underline"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
             >
               Tümü →
             </Link>
@@ -225,7 +225,7 @@ export default async function AdminDashboardPage() {
             </h2>
             <Link
               href="/admin/kullanicilar"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:underline"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
             >
               Tümü →
             </Link>
@@ -271,7 +271,7 @@ export default async function AdminDashboardPage() {
             </h2>
             <Link
               href="/admin/kullanicilar?filter=suspended"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-terracotta hover:underline"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
             >
               Tümü →
             </Link>
@@ -326,20 +326,20 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  accent: 'terracotta' | 'moss' | 'plum' | 'ember';
+  accent: 'brandInk' | 'moss' | 'brandAccent' | 'brandInkDeep';
   href?: string;
 }) {
   const accentColors = {
-    terracotta: 'border-terracotta/30 bg-terracotta/[0.04]',
+    brandInk: 'border-brand-ink/30 bg-brand-ink/[0.04]',
     moss: 'border-moss/30 bg-moss/[0.04]',
-    plum: 'border-plum/30 bg-plum/[0.04]',
-    ember: 'border-ember/30 bg-ember/[0.04]',
+    brandAccent: 'border-brand-accent/30 bg-brand-accent/[0.04]',
+    brandInkDeep: 'border-brand-ink-deep/30 bg-brand-ink-deep/[0.04]',
   };
   const accentText = {
-    terracotta: 'text-terracotta',
+    brandInk: 'text-brand-ink',
     moss: 'text-moss',
-    plum: 'text-plum',
-    ember: 'text-ember',
+    brandAccent: 'text-brand-accent',
+    brandInkDeep: 'text-brand-ink-deep',
   };
 
   const content = (
@@ -381,8 +381,8 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 
 function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    pending: 'bg-terracotta/10 text-terracotta border-terracotta/30',
-    reviewing: 'bg-plum/10 text-plum border-plum/30',
+    pending: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
+    reviewing: 'bg-brand-accent/10 text-brand-accent border-brand-accent/30',
     approved: 'bg-moss/10 text-moss border-moss/30',
     declined: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };

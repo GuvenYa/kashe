@@ -19,7 +19,7 @@ export function CategoryIcon({
 
   if (failed) {
     return (
-      <span className="font-display font-medium text-terracotta text-2xl">
+      <span className="font-display font-medium text-brand-ink text-2xl">
         {initials}
       </span>
     );

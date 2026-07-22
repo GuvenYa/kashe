@@ -157,7 +157,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
             className={`px-5 py-2.5 rounded-lg font-display font-semibold text-sm transition-all ${
               uploading || !canUpload
                 ? 'bg-line text-ink-72 cursor-not-allowed'
-                : 'bg-terracotta text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] cursor-pointer'
+                : 'bg-brand-ink text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] cursor-pointer'
             }`}
           >
             {uploading

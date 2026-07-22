@@ -87,7 +87,7 @@ export function PushToggle() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="shrink-0 mt-0.5 text-terracotta"
+            className="shrink-0 mt-0.5 text-brand-ink"
           >
             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
             <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
@@ -128,7 +128,7 @@ export function PushToggle() {
               type="button"
               onClick={handleEnable}
               disabled={busy || state === 'denied'}
-              className="kashe-tap px-4 py-2 rounded-lg bg-terracotta text-paper font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-50"
+              className="kashe-tap px-4 py-2 rounded-lg bg-brand-ink text-paper font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-50"
             >
               {busy ? '...' : 'Bildirimleri aç'}
             </button>

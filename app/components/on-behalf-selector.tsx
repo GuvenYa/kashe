@@ -26,8 +26,8 @@ export function OnBehalfSelector({
   const optionClass = (active: boolean) =>
     `text-left px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
       active
-        ? 'bg-terracotta text-paper border-terracotta'
-        : 'bg-paper text-ink-72 border-line hover:border-terracotta/50'
+        ? 'bg-brand-ink text-paper border-brand-ink'
+        : 'bg-paper text-ink-72 border-line hover:border-brand-ink/50'
     }`;
 
   return (

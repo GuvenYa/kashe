@@ -84,7 +84,7 @@ const STATUS_STYLES: Record<
   },
   cancelled: {
     label: 'İptal edildi',
-    classes: 'bg-terracotta/10 text-terracotta border-terracotta/30',
+    classes: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
   },
 };
 
@@ -123,7 +123,7 @@ export function RezervasyonKarti({
   return (
     <Link
       href={`/rezervasyon/${b.id}`}
-      className="kashe-tap group block bg-card border border-line rounded-2xl p-5 md:p-6 transition-all hover:border-terracotta hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.18)]"
+      className="kashe-tap group block bg-card border border-line rounded-2xl p-5 md:p-6 transition-all hover:border-brand-ink hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.18)]"
     >
       <div className="flex items-start gap-4">
         {/* Avatar */}
@@ -149,7 +149,7 @@ export function RezervasyonKarti({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <p className="font-display font-semibold text-lg text-ink leading-tight truncate group-hover:text-terracotta transition-colors">
+              <p className="font-display font-semibold text-lg text-ink leading-tight truncate group-hover:text-brand-ink transition-colors">
                 {displayName}
               </p>
               {categoryLabel && (
@@ -199,7 +199,7 @@ export function RezervasyonKarti({
             <span className="font-display font-semibold text-base text-ink">
               {formatPrice(b.total_amount, b.currency)}
             </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta inline-flex items-center gap-1 transition-transform group-hover:translate-x-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink inline-flex items-center gap-1 transition-transform group-hover:translate-x-1">
               Detay
               <span className="transition-transform group-hover:translate-x-0.5">→</span>
             </span>

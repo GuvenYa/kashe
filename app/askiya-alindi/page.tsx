@@ -47,7 +47,7 @@ export default async function AskiyaAlindiPage() {
           href="/"
           className="flex items-center justify-center gap-2.5 mb-10"
         >
-          <span className="w-8 h-8 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded">
+          <span className="w-8 h-8 bg-brand-ink flex items-center justify-center text-paper font-display font-semibold italic text-xl leading-none rounded">
             k
           </span>
           <span className="font-display font-semibold text-2xl text-ink tracking-tight">
@@ -69,7 +69,7 @@ export default async function AskiyaAlindiPage() {
               >
                 <path
                   d="M12 8v5M12 16h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  stroke="var(--color-terracotta)"
+                  stroke="var(--color-brand-ink)"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"

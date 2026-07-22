@@ -150,7 +150,7 @@ export function ServiceModal({
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
@@ -238,7 +238,7 @@ export function ServiceModal({
               </label>
               <div className="mb-3 bg-card border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={14} className="text-terracotta" />
+                  <Sparkles size={14} className="text-brand-ink" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
                     AI ile açıklama yaz
                   </span>
@@ -259,7 +259,7 @@ export function ServiceModal({
                   type="button"
                   onClick={handleGenerateServiceDesc}
                   disabled={aiSvcLoading}
-                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-brand-ink text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-brand-ink-deep transition disabled:opacity-50"
                 >
                   <Sparkles size={13} />
                   {aiSvcLoading ? 'Yazıyor…' : 'AI ile yaz'}
@@ -286,7 +286,7 @@ export function ServiceModal({
                 type="checkbox"
                 checked={priceOnRequest}
                 onChange={(e) => setPriceOnRequest(e.target.checked)}
-                className="w-4 h-4 accent-terracotta"
+                className="w-4 h-4 accent-brand-ink"
               />
               <span className="text-sm text-ink">
                 Fiyat görüşülür olarak işaretle
@@ -327,7 +327,7 @@ export function ServiceModal({
                   checked={priceStarting}
                   onChange={(e) => setPriceStarting(e.target.checked)}
                   disabled={priceOnRequest}
-                  className="w-4 h-4 accent-terracotta"
+                  className="w-4 h-4 accent-brand-ink"
                 />
                 <span className="text-sm text-ink">Bu fiyattan başlar</span>
               </label>
@@ -429,7 +429,7 @@ export function ServiceModal({
             <button
               type="submit"
               disabled={isPending}
-              className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isPending
                 ? 'Kaydediliyor...'

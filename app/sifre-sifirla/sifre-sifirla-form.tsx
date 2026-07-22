@@ -87,7 +87,7 @@ export function SifreSifirlaForm() {
         </div>
         <h1 className="font-display text-3xl md:text-4xl text-ink mb-3 tracking-tight">
           Yeni{' '}
-          <em className="text-terracotta not-italic italic font-medium">
+          <em className="text-brand-ink not-italic italic font-medium">
             şifreni
           </em>{' '}
           belirle.
@@ -112,7 +112,7 @@ export function SifreSifirlaForm() {
             minLength={8}
             value={sifre}
             onChange={(e) => setSifre(e.target.value)}
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             placeholder="••••••••"
             autoComplete="new-password"
           />
@@ -135,7 +135,7 @@ export function SifreSifirlaForm() {
             minLength={8}
             value={sifreTekrar}
             onChange={(e) => setSifreTekrar(e.target.value)}
-            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+            className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             placeholder="••••••••"
             autoComplete="new-password"
           />

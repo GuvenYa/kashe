@@ -102,7 +102,7 @@ export async function CategoryMarquee() {
                         className="w-6 h-6 object-contain opacity-80"
                       />
                     ) : (
-                      <span className="font-display text-sm font-semibold text-terracotta">
+                      <span className="font-display text-sm font-semibold text-brand-ink">
                         {initials}
                       </span>
                     )}

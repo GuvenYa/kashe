@@ -43,7 +43,7 @@ export function BriefEkButonu({ requestId, attachmentName, attachmentType }: Pro
         type="button"
         onClick={handleOpen}
         disabled={loading}
-        className="inline-flex items-center gap-2 px-3 py-2 bg-paper border border-line rounded-lg text-xs text-ink-72 hover:text-terracotta hover:border-terracotta transition disabled:opacity-50"
+        className="inline-flex items-center gap-2 px-3 py-2 bg-paper border border-line rounded-lg text-xs text-ink-72 hover:text-brand-ink hover:border-brand-ink transition disabled:opacity-50"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

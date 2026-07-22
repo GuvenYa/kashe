@@ -85,7 +85,7 @@ export default async function IlanDuzenlePage({
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
         <Link
           href={`/ilanlar/${id}`}
-          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-terracotta mb-8 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink mb-8 transition-colors"
         >
           <span>←</span> İlan detayı
         </Link>
@@ -95,7 +95,7 @@ export default async function IlanDuzenlePage({
             Düzenle
           </p>
           <h1 className="font-display text-4xl text-ink leading-tight">
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               İlanını
             </em>{' '}
             güncelle

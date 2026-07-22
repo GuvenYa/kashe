@@ -64,7 +64,7 @@ export default async function BasvurularimPage({
             Takip
           </p>
           <h1 className="font-display text-4xl text-ink leading-tight">
-            <em className="text-terracotta not-italic italic font-medium">
+            <em className="text-brand-ink not-italic italic font-medium">
               Başvurularım
             </em>
           </h1>

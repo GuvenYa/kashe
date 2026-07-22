@@ -39,7 +39,7 @@ export function HowItWorks() {
         {/* Koyu zümrüt yuvarlak bölüm — DESIGN.md §4 "Nasıl çalışır" */}
         <div
           className="rounded-3xl px-8 md:px-14 lg:px-20 pt-14 md:pt-18 pb-14 md:pb-18"
-          style={{ background: "var(--color-ember)" }}
+          style={{ background: "var(--color-brand-ink-deep)" }}
         >
           {/* Section header */}
           <div className="mb-12 md:mb-16 max-w-2xl">
@@ -53,7 +53,7 @@ export function HowItWorks() {
 
             <h2 className="font-display font-semibold text-4xl md:text-5xl lg:text-[56px] leading-[1.0] tracking-[-0.03em] text-white mb-5">
               3 adımda{" "}
-              <span className="text-plum">doğru kişiye</span>{" "}
+              <span className="text-brand-accent">doğru kişiye</span>{" "}
               ulaş.
             </h2>
             <p className="font-body text-lg text-white/60 leading-[1.6]">
@@ -77,8 +77,8 @@ export function HowItWorks() {
               >
                 {/* Mercan sayı + çizgi + eyebrow */}
                 <div className="flex items-baseline gap-3 mb-6 font-body text-[11px] uppercase tracking-[0.18em]">
-                  <span className="text-plum font-semibold text-base">{step.number}</span>
-                  <span className="w-3 h-px bg-plum inline-block" />
+                  <span className="text-brand-accent font-semibold text-base">{step.number}</span>
+                  <span className="w-3 h-px bg-brand-accent inline-block" />
                   <span className="text-white/50">{step.eyebrow}</span>
                 </div>
 

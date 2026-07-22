@@ -73,7 +73,7 @@ export function RezervasyonAksiyonlari({
           <button
             type="button"
             onClick={() => setCancelOpen(true)}
-            className="kashe-tap inline-flex items-center justify-center px-5 py-3 border border-terracotta/40 text-terracotta hover:bg-terracotta/8 rounded-xl font-display font-semibold text-sm transition"
+            className="kashe-tap inline-flex items-center justify-center px-5 py-3 border border-brand-ink/40 text-brand-ink hover:bg-brand-ink/8 rounded-xl font-display font-semibold text-sm transition"
           >
             Rezervasyonu iptal et
           </button>
@@ -84,7 +84,7 @@ export function RezervasyonAksiyonlari({
       {cancelOpen && (
         <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-line rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-6 md:p-7 shadow-xl">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
               İptal onayı
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-3 leading-tight">
@@ -116,7 +116,7 @@ export function RezervasyonAksiyonlari({
                 rows={3}
                 maxLength={500}
                 placeholder="Kısa bir açıklama yazabilirsin..."
-                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+                className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-sm text-ink placeholder:text-ink-50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
               />
             </label>
 
@@ -141,7 +141,7 @@ export function RezervasyonAksiyonlari({
                 type="button"
                 onClick={handleCancel}
                 disabled={isPending}
-                className="kashe-tap flex-1 px-4 py-2.5 bg-terracotta text-paper rounded-xl font-display font-semibold text-sm hover:bg-ember transition disabled:opacity-60 shadow-[3px_3px_0_var(--color-terracotta-12)]"
+                className="kashe-tap flex-1 px-4 py-2.5 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition disabled:opacity-60 shadow-[3px_3px_0_var(--color-brand-ink-12)]"
               >
                 {isPending ? '...' : 'İptal et'}
               </button>

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -0 sed -i -e 's/\\\\bterracotta:/brandInk:/g' -e 's/\\\\.terracotta\\\\b/.brandInk/g' -e 's/'\\\\''terracotta'\\\\''/'\\\\''brandInk'\\\\''/g' -e 's/\"terracotta\"/\"brandInk\"/g' -e 's/\\\\bplum:/brandAccent:/g' -e 's/\\\\.plum\\\\b/.brandAccent/g' -e 's/'\\\\''plum'\\\\''/'\\\\''brandAccent'\\\\''/g' -e 's/\"plum\"/\"brandAccent\"/g' -e 's/\\\\bember:/brandInkDeep:/g' -e 's/\\\\.ember\\\\b/.brandInkDeep/g' -e 's/'\\\\''ember'\\\\''/'\\\\''brandInkDeep'\\\\''/g' -e 's/\"ember\"/\"brandInkDeep\"/g')",
+      "Bash(echo \"=== \\\\\\\\bember\\\\\\\\b word-boundary \\(gerçek token\\) ===\")"
+    ]
+  }
+}

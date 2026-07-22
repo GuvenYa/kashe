@@ -14,7 +14,7 @@ export type Badge = {
   key: BadgeKey;
   label: string;
   /** Görsel ton — Kashe paletinden */
-  tone: 'moss' | 'terracotta' | 'plum' | 'ink' | 'premium';
+  tone: 'moss' | 'brandInk' | 'brandAccent' | 'ink' | 'premium';
 };
 
 // Öncelik: küçük index = yüksek öncelik
@@ -66,12 +66,12 @@ export function getBadges(input: BadgeInput): Badge[] {
 
   // Yüksek puanlı — ortalama >= 4.5 ve en az 3 yorum
   if (input.rating && input.rating.count >= 3 && input.rating.average >= 4.5) {
-    earned.push({ key: 'topRated', label: 'Yüksek Puanlı', tone: 'terracotta' });
+    earned.push({ key: 'topRated', label: 'Yüksek Puanlı', tone: 'brandInk' });
   }
 
   // Çok tercih edilen — 10+ yorum
   if (input.rating && input.rating.count >= 10) {
-    earned.push({ key: 'popular', label: 'Çok Tercih Edilen', tone: 'plum' });
+    earned.push({ key: 'popular', label: 'Çok Tercih Edilen', tone: 'brandAccent' });
   }
 
   // Yeni — son NEW_BADGE_DAYS günde kaydolmuş
@@ -193,8 +193,8 @@ export function getBadgeCards(signals: ComputedBadgeSignals): BadgeCard[] {
 /** Tailwind sınıfları — ton bazlı (rozet pill stili) */
 export const BADGE_TONE_CLASS: Record<Badge['tone'], string> = {
   moss: 'text-moss bg-moss/10 border-moss/30',
-  terracotta: 'text-terracotta bg-terracotta/10 border-terracotta/30',
-  plum: 'text-plum bg-plum/10 border-plum/30',
+  brandInk: 'text-brand-ink bg-brand-ink/10 border-brand-ink/30',
+  brandAccent: 'text-brand-accent bg-brand-accent/10 border-brand-accent/30',
   ink: 'text-ink-72 bg-ink-72/10 border-ink-72/20',
   premium: 'text-[#8A6D1F] bg-[#F4E9C8] border-[#D9C179]',
 };

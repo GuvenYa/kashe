@@ -222,7 +222,7 @@ export default async function MesajlarPage() {
             </p>
             <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
               Tüm{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 konuşmaların
               </em>
               .

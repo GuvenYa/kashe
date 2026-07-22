@@ -59,8 +59,8 @@ export function ProCtaSection() {
           {/* SOL — metin */}
           <div>
             <div className="mb-6">
-              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-terracotta">
-                <span className="w-6 h-px bg-terracotta inline-block"></span>
+              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink">
+                <span className="w-6 h-px bg-brand-ink inline-block"></span>
                 Profesyoneller için
               </span>
             </div>
@@ -78,7 +78,7 @@ export function ProCtaSection() {
             <div className="space-y-5 mb-10">
               {PROMISES.map((p) => (
                 <div key={p.number} className="flex gap-4 items-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-terracotta text-terracotta flex items-center justify-center font-mono text-xs">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full border border-brand-ink text-brand-ink flex items-center justify-center font-mono text-xs">
                     {p.number}
                   </div>
                   <div className="pt-1">
@@ -122,7 +122,7 @@ export function ProCtaSection() {
                     aria-hidden="true"
                   />
                 ) : (
-                  <span className="font-display text-4xl text-terracotta">A</span>
+                  <span className="font-display text-4xl text-brand-ink">A</span>
                 )}
               </div>
 
@@ -155,7 +155,7 @@ export function ProCtaSection() {
                   <div className="flex items-center gap-1.5">
                     <svg
                       width="13" height="13" viewBox="0 0 24 24"
-                      fill="var(--color-plum)" stroke="var(--color-plum)"
+                      fill="var(--color-brand-accent)" stroke="var(--color-brand-accent)"
                       strokeWidth="1.5" strokeLinejoin="round"
                       xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"

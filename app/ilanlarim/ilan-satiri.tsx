@@ -131,7 +131,7 @@ export function IlanSatiri({
     <div className="bg-card border border-line rounded-lg p-5">
       {/* Header: kategori + status */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-ink/8 text-brand-ink rounded-full text-[10px] font-mono uppercase tracking-[0.1em]">
           {categoryName}
         </span>
         <span
@@ -146,7 +146,7 @@ export function IlanSatiri({
         href={`/ilanlar/${listing.id}`}
         className="block mb-3 group"
       >
-        <h3 className="font-display text-lg text-ink leading-snug group-hover:text-terracotta transition-colors line-clamp-2">
+        <h3 className="font-display text-lg text-ink leading-snug group-hover:text-brand-ink transition-colors line-clamp-2">
           {listing.title}
         </h3>
       </Link>
@@ -204,7 +204,7 @@ export function IlanSatiri({
       <div className="flex flex-wrap gap-2 pt-3 border-t border-line">
         <Link
           href={`/ilanlar/${listing.id}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink transition"
         >
           <Eye size={12} strokeWidth={1.75} />
           Detay
@@ -217,8 +217,8 @@ export function IlanSatiri({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               anyPromoActive
-                ? 'bg-terracotta/10 border-terracotta/40 text-terracotta hover:border-terracotta'
-                : 'border-terracotta/40 text-terracotta hover:border-terracotta hover:bg-terracotta/5'
+                ? 'bg-brand-ink/10 border-brand-ink/40 text-brand-ink hover:border-brand-ink'
+                : 'border-brand-ink/40 text-brand-ink hover:border-brand-ink hover:bg-brand-ink/5'
             } disabled:opacity-50`}
           >
             <Sparkles size={12} strokeWidth={1.75} />
@@ -248,7 +248,7 @@ export function IlanSatiri({
             listing.status === 'rejected') && (
           <Link
             href={`/ilanlar/${listing.id}/duzenle`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-terracotta hover:text-terracotta transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink transition"
           >
             <Pencil size={12} strokeWidth={1.75} />
             Düzenle
@@ -276,8 +276,8 @@ export function IlanSatiri({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming === 'cancel'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <Trash2 size={12} strokeWidth={1.75} />
@@ -291,8 +291,8 @@ export function IlanSatiri({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming === 'delete'
-                ? 'bg-terracotta text-paper border-terracotta'
-                : 'border-line text-ink-72 hover:border-terracotta hover:text-terracotta'
+                ? 'bg-brand-ink text-paper border-brand-ink'
+                : 'border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink'
             } disabled:opacity-50`}
           >
             <Trash2 size={12} strokeWidth={1.75} />

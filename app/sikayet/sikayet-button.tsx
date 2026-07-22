@@ -171,7 +171,7 @@ export function SikayetButton({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+                  className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
                 >
                   Kapat
                 </button>
@@ -183,7 +183,7 @@ export function SikayetButton({
                 </p>
                 <a
                   href="/giris"
-                  className="inline-block px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+                  className="inline-block px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
                 >
                   Giriş yap
                 </a>
@@ -205,12 +205,12 @@ export function SikayetButton({
                         <span
                           className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                             reason === r.value
-                              ? 'border-terracotta'
+                              ? 'border-brand-ink'
                               : 'border-line group-hover:border-ink-72'
                           }`}
                         >
                           {reason === r.value && (
-                            <span className="w-2 h-2 rounded-full bg-terracotta" />
+                            <span className="w-2 h-2 rounded-full bg-brand-ink" />
                           )}
                         </span>
                         <span
@@ -235,7 +235,7 @@ export function SikayetButton({
                     maxLength={1000}
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
-                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
                     placeholder="Durumu kısaca açıkla..."
                   />
                 </div>

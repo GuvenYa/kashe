@@ -141,7 +141,7 @@ export async function FeaturedProfiles() {
           </div>
           <Link
             href="/kesfet"
-            className="kashe-tap shrink-0 font-mono text-xs uppercase tracking-[0.16em] text-terracotta hover:underline inline-flex items-center gap-1.5 self-start md:self-auto"
+            className="kashe-tap shrink-0 font-mono text-xs uppercase tracking-[0.16em] text-brand-ink hover:underline inline-flex items-center gap-1.5 self-start md:self-auto"
           >
             Tümünü keşfet →
           </Link>

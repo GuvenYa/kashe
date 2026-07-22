@@ -77,7 +77,7 @@ export function CitySelect({
         onClick={() => setOpen((v) => !v)}
         className="w-full text-left px-4 py-2.5 rounded-xl hover:bg-paper-2/40 transition-colors h-full flex flex-col justify-center"
       >
-        <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta mb-1">
+        <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink mb-1">
           Nerede?
         </span>
         <span className="flex items-center justify-between">
@@ -107,7 +107,7 @@ export function CitySelect({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="Şehir ara..."
-              className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta-08"
+              className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-brand-ink-08"
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
@@ -117,8 +117,8 @@ export function CitySelect({
                 onClick={() => select("")}
                 className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                   highlight === 0
-                    ? "bg-terracotta-08 text-terracotta"
-                    : "text-ink-72 hover:bg-terracotta-08 hover:text-terracotta"
+                    ? "bg-brand-ink-08 text-brand-ink"
+                    : "text-ink-72 hover:bg-brand-ink-08 hover:text-brand-ink"
                 }`}
               >
                 Tüm şehirler
@@ -131,8 +131,8 @@ export function CitySelect({
                   onClick={() => select(String(c.id))}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                     highlight === i + 1
-                      ? "bg-terracotta-08 text-terracotta"
-                      : "text-ink hover:bg-terracotta-08 hover:text-terracotta"
+                      ? "bg-brand-ink-08 text-brand-ink"
+                      : "text-ink hover:bg-brand-ink-08 hover:text-brand-ink"
                   }`}
                 >
                   {c.name}

@@ -145,7 +145,7 @@ export default async function IlanlarimPage({
               Yönetim
             </p>
             <h1 className="font-display font-semibold text-4xl text-ink leading-tight">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 İlanlarım
               </em>
             </h1>
@@ -155,7 +155,7 @@ export default async function IlanlarimPage({
           </div>
           <Link
             href="/ilanlar/yeni"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
           >
             <span className="text-base leading-none">+</span>
             Yeni ilan aç

@@ -8,8 +8,8 @@ const COLORS = {
   ink: '#040D26',
   ink72: 'rgba(4, 13, 38, 0.72)',
   ink50: 'rgba(4, 13, 38, 0.5)',
-  terracotta: '#040D26',
-  ember: '#0D1F4E',
+  brandInk: '#040D26',
+  brandInkDeep: '#0D1F4E',
   moss: '#3F6B47',
   line: 'rgba(4, 13, 38, 0.12)',
 };
@@ -48,8 +48,8 @@ function baseLayout(opts: {
   ctaUrl: string;
   ctaColor?: string;
 }): string {
-  const eyebrowColor = opts.eyebrowColor || COLORS.terracotta;
-  const ctaColor = opts.ctaColor || COLORS.terracotta;
+  const eyebrowColor = opts.eyebrowColor || COLORS.brandInk;
+  const ctaColor = opts.ctaColor || COLORS.brandInk;
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -114,7 +114,7 @@ function baseLayout(opts: {
           <td style="padding:32px 32px 28px 32px;">
             <hr style="border:none;border-top:1px solid ${COLORS.line};margin:0 0 18px 0;" />
             <p style="margin:0;font-size:12px;line-height:1.5;color:${COLORS.ink50};">
-              Bu e-postayı Kashe'deki etkinliklerin için aldın. Bildirim ayarlarını <a href="${SITE_URL}/profil" style="color:${COLORS.terracotta};text-decoration:none;">profil sayfandan</a> yönetebilirsin.
+              Bu e-postayı Kashe'deki etkinliklerin için aldın. Bildirim ayarlarını <a href="${SITE_URL}/profil" style="color:${COLORS.brandInk};text-decoration:none;">profil sayfandan</a> yönetebilirsin.
             </p>
             <p style="margin:10px 0 0 0;font-size:12px;color:${COLORS.ink50};">
               <a href="${SITE_URL}" style="color:${COLORS.ink50};text-decoration:none;">Kashe</a> · Türkiye'nin etkinlik ve yetenek pazaryeri

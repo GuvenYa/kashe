@@ -320,7 +320,7 @@ export default function KullanimKosullariPage() {
           </span>
           <a
             href={`mailto:${LEGAL_CONTACT.general}`}
-            className="text-ink font-medium hover:text-terracotta transition-colors"
+            className="text-ink font-medium hover:text-brand-ink transition-colors"
           >
             {LEGAL_CONTACT.general}
           </a>

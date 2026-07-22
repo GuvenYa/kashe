@@ -76,7 +76,7 @@ export function HizmetSecici({
       : null;
 
   return (
-    <div className="border-l-2 border-terracotta pl-5 py-1">
+    <div className="border-l-2 border-brand-ink pl-5 py-1">
       <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-1">
         {catLabel}
       </p>
@@ -103,14 +103,14 @@ export function HizmetSecici({
                 <label
                   key={addon.id}
                   className={`flex items-start gap-3 cursor-pointer p-2 rounded-lg transition ${
-                    isSel ? 'bg-terracotta/8' : 'hover:bg-card'
+                    isSel ? 'bg-brand-ink/8' : 'hover:bg-card'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={isSel}
                     onChange={() => toggle(addon.id)}
-                    className="mt-0.5 w-4 h-4 shrink-0 accent-terracotta cursor-pointer"
+                    className="mt-0.5 w-4 h-4 shrink-0 accent-brand-ink cursor-pointer"
                   />
                   <span className="flex-1 min-w-0">
                     <span className="text-sm text-ink">{addon.title}</span>
@@ -140,14 +140,14 @@ export function HizmetSecici({
                 {estimatedTotal !== null ? (
                   <>
                     Tahmini toplam:{' '}
-                    <span className="font-display font-semibold text-terracotta">
+                    <span className="font-display font-semibold text-brand-ink">
                       ~{formatPrice(estimatedTotal)}
                     </span>
                   </>
                 ) : (
                   <>
                     Ekstralar:{' '}
-                    <span className="font-display font-semibold text-terracotta">
+                    <span className="font-display font-semibold text-brand-ink">
                       +{formatPrice(addonsTotal)}
                     </span>
                   </>

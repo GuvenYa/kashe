@@ -151,7 +151,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
   }
 
   const inputClass =
-    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+    'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   const labelClass =
     'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
@@ -240,7 +240,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                   <button
                     type="button"
                     onClick={() => removeInclude(i)}
-                    className="shrink-0 w-9 h-9 flex items-center justify-center text-ink-72 hover:text-terracotta transition-colors"
+                    className="shrink-0 w-9 h-9 flex items-center justify-center text-ink-72 hover:text-brand-ink transition-colors"
                     aria-label="Maddeyi kaldır"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -254,7 +254,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
               <button
                 type="button"
                 onClick={addInclude}
-                className="mt-2 text-sm text-terracotta hover:underline inline-flex items-center gap-1"
+                className="mt-2 text-sm text-brand-ink hover:underline inline-flex items-center gap-1"
               >
                 + Madde ekle
               </button>
@@ -283,12 +283,12 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                   <span
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                       priceMode === opt.key
-                        ? 'border-terracotta'
+                        ? 'border-brand-ink'
                         : 'border-line group-hover:border-ink-72'
                     }`}
                   >
                     {priceMode === opt.key && (
-                      <span className="w-2 h-2 rounded-full bg-terracotta" />
+                      <span className="w-2 h-2 rounded-full bg-brand-ink" />
                     )}
                   </span>
                   <span
@@ -322,7 +322,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
                 checked={priceStarting}
                 onChange={(e) => setPriceStarting(e.target.checked)}
                 disabled={priceMode === 'request'}
-                className="w-4 h-4 accent-terracotta"
+                className="w-4 h-4 accent-brand-ink"
               />
               <span className="text-sm text-ink">Bu fiyattan başlar</span>
             </label>
@@ -405,7 +405,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
             <button
               type="submit"
               disabled={isPending}
-              className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isPending ? 'Kaydediliyor...' : isEdit ? 'Kaydet' : 'Paket oluştur'}
             </button>

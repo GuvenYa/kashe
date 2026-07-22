@@ -72,7 +72,7 @@ export type ProfessionalProfileProps = {
 };
 
 const EYEBROW =
-  'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta';
+  'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink';
 const CARD = 'bg-card border border-line rounded-2xl';
 
 function formatReviewDate(iso: string): string {
@@ -85,7 +85,7 @@ function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
   return (
     <span className="inline-flex gap-px" aria-label={`${rating} yıldız`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i <= Math.round(rating) ? 'var(--color-plum)' : '#D9D2C2'} aria-hidden="true">
+        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i <= Math.round(rating) ? 'var(--color-brand-accent)' : '#D9D2C2'} aria-hidden="true">
           <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" />
         </svg>
       ))}
@@ -281,7 +281,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     // D4 — sahibi kendi public sayfasına bakarken CTA yerine tek düzenle linki
     <Link
       href="/profil"
-      className="block w-full text-center px-5 py-3 bg-transparent border-[1.5px] border-terracotta text-terracotta rounded-xl font-display font-semibold text-[15px] hover:bg-terracotta/5 transition-colors"
+      className="block w-full text-center px-5 py-3 bg-transparent border-[1.5px] border-brand-ink text-brand-ink rounded-xl font-display font-semibold text-[15px] hover:bg-brand-ink/5 transition-colors"
     >
       Profilini düzenle →
     </Link>
@@ -312,7 +312,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-8 md:py-10">
         <Link
           href="/kesfet"
-          className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-6"
+          className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-6"
         >
           ← Keşfet&apos;e dön
         </Link>
@@ -326,7 +326,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={profile.avatar_url} alt={displayName} className="w-20 h-20 rounded-2xl object-cover border border-line shrink-0" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-terracotta flex items-center justify-center text-paper font-display font-bold text-2xl shrink-0">
+                <div className="w-20 h-20 rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-2xl shrink-0">
                   {initials}
                 </div>
               )}
@@ -349,7 +349,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={profile.avatar_url} alt={displayName} className="w-full aspect-[4/5] object-cover rounded-2xl border border-line" />
               ) : (
-                <div className="w-full aspect-[4/5] rounded-2xl bg-terracotta flex items-center justify-center text-paper font-display font-bold text-6xl">
+                <div className="w-full aspect-[4/5] rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-6xl">
                   {initials}
                 </div>
               )}
@@ -378,11 +378,11 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 {badgeCards.map((b) => (
                   <div
                     key={b.key}
-                    className={`flex gap-3 px-3.5 py-3 bg-terracotta/5 border border-terracotta/15 rounded-xl snap-start ${
+                    className={`flex gap-3 px-3.5 py-3 bg-brand-ink/5 border border-brand-ink/15 rounded-xl snap-start ${
                       badgeCards.length > 1 ? 'shrink-0 w-[80%] lg:w-auto' : 'w-full'
                     }`}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden="true">
                       <path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" />
                       <polyline points="9 12 11 14 15 10" />
                     </svg>
@@ -418,7 +418,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               <div className="flex flex-col gap-1.5 px-0.5">
                 {logisticsRows.map((c) => (
                   <div key={c.key} className="flex items-center gap-2 text-[13px] text-ink-72">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
                       <polyline points="4 12.5 9.5 18 20 6.5" />
                     </svg>
                     {c.label} — {c.description}
@@ -442,7 +442,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                       {s.level > 0 && (
                         <span className="inline-flex gap-[3px]" aria-label={`Seviye ${Math.min(3, s.level)}/3`}>
                           {Array.from({ length: Math.min(3, s.level) }).map((_, j) => (
-                            <span key={j} className="w-[5px] h-[5px] rounded-full bg-plum" />
+                            <span key={j} className="w-[5px] h-[5px] rounded-full bg-brand-accent" />
                           ))}
                         </span>
                       )}
@@ -472,8 +472,8 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
 
             {/* Ajans mini */}
             {representingAgency && (
-              <Link href={`/p/${representingAgency.id}`} className="flex items-center gap-3 bg-card border border-line rounded-2xl px-4 py-3 hover:border-terracotta transition-colors">
-                <span className="w-9 h-9 rounded-full bg-terracotta text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
+              <Link href={`/p/${representingAgency.id}`} className="flex items-center gap-3 bg-card border border-line rounded-2xl px-4 py-3 hover:border-brand-ink transition-colors">
+                <span className="w-9 h-9 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
                   {representingAgency.initials}
                 </span>
                 <div>
@@ -493,7 +493,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
             {mediaHeroEl && <div className="hidden lg:block">{mediaHeroEl}</div>}
             {/* uzmanlik özet bandı */}
             {archetype === 'uzmanlik' && !preset?.portfolioGrid && summary?.body && (
-              <div className="bg-terracotta text-paper rounded-2xl p-7">
+              <div className="bg-brand-ink text-paper rounded-2xl p-7">
                 {summary.title && <h2 className="font-display text-2xl font-bold mb-2">{summary.title}</h2>}
                 <p className="text-paper/85 leading-relaxed">{summary.body}</p>
                 {summary.stats && summary.stats.length > 0 && (
@@ -626,7 +626,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img src={c.avatar_url} alt={cName} className="w-10 h-10 rounded-full object-cover shrink-0" />
                           ) : (
-                            <span className="w-10 h-10 rounded-full bg-terracotta text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">{cInitials}</span>
+                            <span className="w-10 h-10 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">{cInitials}</span>
                           )}
                           <div className="min-w-0">
                             <div className="text-[14px] font-semibold text-ink">{cName}</div>
@@ -646,8 +646,8 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                         )}
                         {r.body && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-2.5 whitespace-pre-wrap">{r.body}</p>}
                         {reply && (
-                          <div className="mt-3 pl-3.5 border-l-2 border-terracotta/30">
-                            <div className="text-[11.5px] font-semibold text-terracotta mb-0.5">{displayName} yanıtladı</div>
+                          <div className="mt-3 pl-3.5 border-l-2 border-brand-ink/30">
+                            <div className="text-[11.5px] font-semibold text-brand-ink mb-0.5">{displayName} yanıtladı</div>
                             <p className="text-[13px] text-ink-72 leading-relaxed whitespace-pre-wrap">{reply.body}</p>
                           </div>
                         )}
@@ -656,7 +656,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                   })}
                 </div>
                 {reviewCount > 3 && (
-                  <Link href={reviewsHref} className="inline-block mt-4 text-sm font-display font-semibold text-terracotta hover:text-ember transition-colors">
+                  <Link href={reviewsHref} className="inline-block mt-4 text-sm font-display font-semibold text-brand-ink hover:text-brand-ink-deep transition-colors">
                     Tüm yorumları gör ({reviewCount}) →
                   </Link>
                 )}
@@ -746,12 +746,12 @@ function MetaRow({ label, value, dot, last }: { label: string; value: string | n
 
 function OfferRow({ title, description, price }: { title: string; description: string | null; price: string }) {
   return (
-    <div className="flex justify-between items-center gap-5 bg-card border border-line border-l-[3px] border-l-terracotta rounded-xl px-5 py-4">
+    <div className="flex justify-between items-center gap-5 bg-card border border-line border-l-[3px] border-l-brand-ink rounded-xl px-5 py-4">
       <div className="min-w-0">
         <div className="font-display text-[15.5px] font-semibold text-ink">{title}</div>
         {description && <div className="text-[13px] text-ink-72 mt-1 leading-snug line-clamp-2">{description}</div>}
       </div>
-      {price && <div className="font-display text-[15px] font-bold text-terracotta whitespace-nowrap shrink-0">{price}</div>}
+      {price && <div className="font-display text-[15px] font-bold text-brand-ink whitespace-nowrap shrink-0">{price}</div>}
     </div>
   );
 }
@@ -831,7 +831,7 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
     Array.isArray(arr) && arr.length > 0 ? (
       <div className="flex flex-wrap gap-2">
         {(arr as string[]).map((c, i) => (
-          <span key={i} className="px-3.5 py-1.5 bg-terracotta/5 border border-terracotta/15 rounded-full text-[12.5px] font-medium text-ink">{c}</span>
+          <span key={i} className="px-3.5 py-1.5 bg-brand-ink/5 border border-brand-ink/15 rounded-full text-[12.5px] font-medium text-ink">{c}</span>
         ))}
       </div>
     ) : null;
@@ -865,7 +865,7 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
           {hasItems && (
             <div className="flex flex-col gap-2 text-sm text-ink-72">
               {(data.items as string[]).map((it, i) => (
-                <div key={i} className="flex gap-2.5"><span className="text-terracotta font-bold shrink-0">—</span>{it}</div>
+                <div key={i} className="flex gap-2.5"><span className="text-brand-ink font-bold shrink-0">—</span>{it}</div>
               ))}
             </div>
           )}
@@ -886,7 +886,7 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
           {detailsEl}
           {hasExpect && <p className="text-[13.5px] text-ink-72 leading-relaxed mt-4">{data.what_to_expect as string}</p>}
           {hasSetup && (
-            <div className="mt-3.5 border border-dashed border-terracotta/25 rounded-lg px-4 py-3 text-[13px] text-ink-72 leading-relaxed">
+            <div className="mt-3.5 border border-dashed border-brand-ink/25 rounded-lg px-4 py-3 text-[13px] text-ink-72 leading-relaxed">
               <span className="font-semibold text-ink">Kurulum &amp; lojistik notları: </span>{data.setup_logistics as string}
             </div>
           )}

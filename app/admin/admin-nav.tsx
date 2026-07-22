@@ -59,14 +59,14 @@ export function AdminNav({
           className="flex items-center gap-2.5"
           onClick={() => setMobileOpen(false)}
         >
-          <span className="w-7 h-7 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
+          <span className="w-7 h-7 bg-brand-ink flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
             k
           </span>
           <span className="font-display font-semibold text-xl text-paper tracking-tight">
             Kashe
           </span>
         </Link>
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-terracotta bg-terracotta/10 px-2 py-0.5 rounded-full border border-terracotta/30">
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-brand-ink bg-brand-ink/10 px-2 py-0.5 rounded-full border border-brand-ink/30">
           Admin
         </span>
       </div>
@@ -80,7 +80,7 @@ export function AdminNav({
             onClick={() => setMobileOpen(false)}
             className={`block font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors ${
               isActive(item.href)
-                ? 'bg-terracotta text-paper'
+                ? 'bg-brand-ink text-paper'
                 : 'text-paper/65 hover:text-paper hover:bg-paper/5'
             }`}
           >
@@ -100,7 +100,7 @@ export function AdminNav({
               className="w-8 h-8 rounded-full object-cover border border-paper/20 shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
+            <div className="w-8 h-8 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-xs shrink-0">
               {initials}
             </div>
           )}
@@ -136,13 +136,13 @@ export function AdminNav({
       {/* MOBİL — üst bar + hamburger */}
       <div className="md:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
         <Link href="/admin" className="flex items-center gap-2.5">
-          <span className="w-7 h-7 bg-terracotta flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
+          <span className="w-7 h-7 bg-brand-ink flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
             k
           </span>
           <span className="font-display font-semibold text-xl text-paper tracking-tight">
             Kashe
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-terracotta bg-terracotta/10 px-2 py-0.5 rounded-full border border-terracotta/30">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-brand-ink bg-brand-ink/10 px-2 py-0.5 rounded-full border border-brand-ink/30">
             Admin
           </span>
         </Link>

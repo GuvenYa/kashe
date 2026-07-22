@@ -385,7 +385,7 @@ export function IletisimButton({
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="w-full py-3.5 bg-plum text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#C7522F] transition-colors text-center"
+          className="w-full py-3.5 bg-brand-accent text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#C7522F] transition-colors text-center"
         >
           Teklif Al
         </button>
@@ -393,12 +393,12 @@ export function IletisimButton({
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="flex-1 px-5 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all text-center"
+          className="flex-1 px-5 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all text-center"
         >
           Teklif Al
         </button>
       ) : (
-        <div className="bg-terracotta/8 border border-terracotta/20 rounded-lg p-6 md:p-8">
+        <div className="bg-brand-ink/8 border border-brand-ink/20 rounded-lg p-6 md:p-8">
           <h2 className="font-display text-xl text-ink mb-2">Talep gönder</h2>
           <p className="text-ink-72 text-sm mb-4">
             Etkinlik detaylarını paylaş, profesyonel sana daha hızlı ve doğru yanıt versin.
@@ -406,7 +406,7 @@ export function IletisimButton({
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+            className="px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
           >
             Talep gönder
           </button>
@@ -427,7 +427,7 @@ export function IletisimButton({
           >
             <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
               <h2 className="font-display text-xl text-ink">
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   {professionalName}
                 </em>
                 &apos;a talep gönder
@@ -479,7 +479,7 @@ export function IletisimButton({
                       </label>
                     );
                     const inputClass =
-                      'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition';
+                      'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
                     // textarea tam satır kaplasın
                     const wrapperClass =
@@ -565,7 +565,7 @@ export function IletisimButton({
                   maxLength={2000}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
                   placeholder="Merhaba, etkinliğim için sizden bilgi almak istiyorum. Düşündüğüm konseptten kısaca bahsetmem gerekirse..."
                 />
                 <p className="text-xs text-ink-72 mt-1.5">
@@ -591,8 +591,8 @@ export function IletisimButton({
                   />
                   {selectedFile ? (
                     <div className="flex items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-2.5">
-                      <span className="shrink-0 w-9 h-9 rounded-lg bg-terracotta/10 flex items-center justify-center">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+                      <span className="shrink-0 w-9 h-9 rounded-lg bg-brand-ink/10 flex items-center justify-center">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                           <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </span>
@@ -602,7 +602,7 @@ export function IletisimButton({
                       <button
                         type="button"
                         onClick={removeFile}
-                        className="shrink-0 text-ink-72 hover:text-terracotta transition-colors p-1"
+                        className="shrink-0 text-ink-72 hover:text-brand-ink transition-colors p-1"
                         aria-label="Dosyayı kaldır"
                       >
                         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -614,7 +614,7 @@ export function IletisimButton({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-sm text-ink-72 hover:text-terracotta hover:border-terracotta transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-sm text-ink-72 hover:text-brand-ink hover:border-brand-ink transition-colors"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" strokeLinecap="round" strokeLinejoin="round" />
@@ -646,7 +646,7 @@ export function IletisimButton({
                 <button
                   type="submit"
                   disabled={isPending || !message.trim()}
-                  className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {isPending ? 'Gönderiliyor...' : 'Talebi gönder'}
                 </button>

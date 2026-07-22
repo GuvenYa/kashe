@@ -108,7 +108,7 @@ function CheckItem({
       <span
         className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
           on
-            ? 'bg-terracotta border-terracotta'
+            ? 'bg-brand-ink border-brand-ink'
             : 'border-line-strong group-hover:border-ink-50'
         }`}
       >
@@ -146,10 +146,10 @@ function RadioItem({
     >
       <span
         className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-          on ? 'border-terracotta' : 'border-line-strong group-hover:border-ink-50'
+          on ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
         }`}
       >
-        {on && <span className="w-2 h-2 rounded-full bg-terracotta" />}
+        {on && <span className="w-2 h-2 rounded-full bg-brand-ink" />}
       </span>
       <span
         className={`text-sm transition-colors ${
@@ -326,7 +326,7 @@ export function IlanlarListesi({
                   onChange={(e) => setCityQuery(e.target.value)}
                   placeholder="Şehir ara..."
                   autoFocus
-                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-terracotta-08"
+                  className="w-full px-3 py-2 bg-paper-2/40 rounded-lg text-sm text-ink placeholder:text-ink-32 focus:outline-none focus:ring-2 focus:ring-brand-ink-08"
                 />
               </div>
               <ul className="max-h-56 overflow-y-auto py-1">
@@ -338,7 +338,7 @@ export function IlanlarListesi({
                       setCityOpen(false);
                       setCityQuery('');
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-ink-72 hover:bg-terracotta-08 hover:text-terracotta transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm text-ink-72 hover:bg-brand-ink-08 hover:text-brand-ink transition-colors"
                   >
                     Tüm şehirler
                   </button>
@@ -354,8 +354,8 @@ export function IlanlarListesi({
                       }}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                         String(c.id) === city
-                          ? 'bg-terracotta-08 text-terracotta'
-                          : 'text-ink hover:bg-terracotta-08 hover:text-terracotta'
+                          ? 'bg-brand-ink-08 text-brand-ink'
+                          : 'text-ink hover:bg-brand-ink-08 hover:text-brand-ink'
                       }`}
                     >
                       {c.name}
@@ -430,7 +430,7 @@ export function IlanlarListesi({
         <button
           type="button"
           onClick={clearAll}
-          className="kashe-tap text-xs text-terracotta hover:underline"
+          className="kashe-tap text-xs text-brand-ink hover:underline"
         >
           Tümünü temizle ({activeCount})
         </button>
@@ -453,7 +453,7 @@ export function IlanlarListesi({
         <div className="flex justify-end mb-6">
           <Link
             href="/ilanlar/yeni"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
           >
             <span className="text-base leading-none">+</span>
             Yeni ilan aç
@@ -479,7 +479,7 @@ export function IlanlarListesi({
               </svg>
               Filtreler
               {activeCount > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 bg-terracotta text-paper text-xs font-mono rounded-full flex items-center justify-center">
+                <span className="min-w-[20px] h-5 px-1.5 bg-brand-ink text-paper text-xs font-mono rounded-full flex items-center justify-center">
                   {activeCount}
                 </span>
               )}
@@ -523,7 +523,7 @@ export function IlanlarListesi({
                     value={sirala}
                     onChange={(e) => setSirala(e.target.value)}
                     disabled={isPending}
-                    className="px-3 py-2 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                    className="px-3 py-2 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                   >
                     {SORT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -538,7 +538,7 @@ export function IlanlarListesi({
               {myListings.length > 0 && (
                 <div className="mb-10">
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-terracotta">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
                       Senin ilanların
                     </span>
                     <span className="font-mono text-[10px] text-ink-72">
@@ -610,7 +610,7 @@ export function IlanlarListesi({
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="kashe-tap w-full px-4 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:bg-ember transition-colors"
+                className="kashe-tap w-full px-4 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
               >
                 {isPending ? 'Yükleniyor...' : `${listings.length} ilanı göster`}
               </button>
@@ -688,17 +688,17 @@ function IlanCard({
       href={`/ilanlar/${listing.id}`}
       className={`block rounded-lg p-5 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${
         isOwn
-          ? 'bg-terracotta/[0.04] border-2 border-terracotta/30 hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+          ? 'bg-brand-ink/[0.04] border-2 border-brand-ink/30 hover:border-brand-ink hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
           : featured
             ? 'bg-[#FFFDF6] border border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[4px_4px_0_#D9C179]'
-            : 'bg-card border border-line hover:border-terracotta hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+            : 'bg-card border border-line hover:border-brand-ink hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
       }`}
     >
       {/* Rozet satırı: kendi / öne çıkan / acil / deadline */}
       {(isOwn || featured || urgent || deadlineBadge) && (
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           {isOwn && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-terracotta bg-terracotta/10 border border-terracotta/30">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-brand-ink bg-brand-ink/10 border border-brand-ink/30">
               Senin ilanın
             </span>
           )}
@@ -728,7 +728,7 @@ function IlanCard({
 
       {/* Kategori + yayın zamanı */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-terracotta/8 text-terracotta rounded-full text-[10px] font-mono uppercase tracking-[0.1em] min-w-0">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-ink/8 text-brand-ink rounded-full text-[10px] font-mono uppercase tracking-[0.1em] min-w-0">
           {categoryIcon && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
@@ -762,7 +762,7 @@ function IlanCard({
               aria-hidden="true"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-terracotta/80 flex items-center justify-center text-paper font-display font-semibold text-[10px] shrink-0">
+            <div className="w-6 h-6 rounded-full bg-brand-ink/80 flex items-center justify-center text-paper font-display font-semibold text-[10px] shrink-0">
               {creatorName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -811,7 +811,7 @@ function IlanCard({
       <div className="mb-3">
         {count > 0 ? (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink">
-            <Users size={12} strokeWidth={1.75} className="text-terracotta" />
+            <Users size={12} strokeWidth={1.75} className="text-brand-ink" />
             {count} başvuru
           </span>
         ) : (

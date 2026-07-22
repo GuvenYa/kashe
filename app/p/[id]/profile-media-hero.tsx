@@ -101,7 +101,7 @@ export function ProfileMediaHero({
                     onClick={() => setActiveVideo(i)}
                     className={`relative h-[76px] rounded-lg overflow-hidden bg-[#E4DECF] flex items-center justify-center ${
                       i === activeVideo
-                        ? 'outline outline-2 -outline-offset-2 outline-terracotta'
+                        ? 'outline outline-2 -outline-offset-2 outline-brand-ink'
                         : ''
                     }`}
                   >
@@ -161,7 +161,7 @@ export function ProfileMediaHero({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="mt-3 text-sm font-display font-semibold text-terracotta hover:text-ember transition-colors"
+            className="mt-3 text-sm font-display font-semibold text-brand-ink hover:text-brand-ink-deep transition-colors"
           >
             {expanded ? 'Daha az göster' : `Tüm medyayı gör (${items.length}) →`}
           </button>
@@ -308,8 +308,8 @@ function Pill({
       onClick={onClick}
       className={`px-4 py-1.5 rounded-full text-xs font-display font-semibold transition-colors ${
         active
-          ? 'bg-terracotta text-white'
-          : 'bg-card text-ink-72 border border-line hover:border-terracotta'
+          ? 'bg-brand-ink text-white'
+          : 'bg-card text-ink-72 border border-line hover:border-brand-ink'
       }`}
     >
       {children}
@@ -328,7 +328,7 @@ function PlayGlyph({ small = false }: { small?: boolean }) {
         width={small ? 12 : 22}
         height={small ? 12 : 22}
         viewBox="0 0 24 24"
-        fill="var(--color-plum)"
+        fill="var(--color-brand-accent)"
         aria-hidden="true"
       >
         <path d="M8 5.5v13l11-6.5z" />

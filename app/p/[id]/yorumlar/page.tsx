@@ -158,7 +158,7 @@ export default async function YorumlarPage({
         <div className="max-w-3xl mx-auto">
           <Link
             href={`/p/${profile.id}`}
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-6"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-6"
           >
             ← {displayName}&apos;in profiline dön
           </Link>
@@ -174,7 +174,7 @@ export default async function YorumlarPage({
                   className="w-20 h-20 rounded-full object-cover border border-line shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
+                <div className="w-20 h-20 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
                   {initials}
                 </div>
               )}
@@ -220,7 +220,7 @@ export default async function YorumlarPage({
                       </span>
                       <div className="flex-1 h-2 bg-paper rounded-full overflow-hidden border border-line">
                         <div
-                          className="h-full bg-terracotta transition-all"
+                          className="h-full bg-brand-ink transition-all"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -274,8 +274,8 @@ function BigStar() {
       width="28"
       height="28"
       viewBox="0 0 24 24"
-      fill="var(--color-plum)"
-      stroke="var(--color-plum)"
+      fill="var(--color-brand-accent)"
+      stroke="var(--color-brand-accent)"
       strokeWidth="1.5"
       strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"

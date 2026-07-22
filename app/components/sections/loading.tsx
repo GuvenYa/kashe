@@ -34,10 +34,10 @@ export function Loading({
       role="status"
       aria-live="polite"
     >
-      {/* Dönen terracotta halka */}
+      {/* Dönen brand-ink halka */}
       <div className="relative w-12 h-12 mb-5">
-        <div className="absolute inset-0 rounded-full border-2 border-terracotta-12" />
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-terracotta kashe-spin" />
+        <div className="absolute inset-0 rounded-full border-2 border-brand-ink-12" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-brand-ink kashe-spin" />
       </div>
       {/* Dönen mesaj */}
       <p

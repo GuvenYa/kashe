@@ -32,7 +32,7 @@ export default async function ProBulPage() {
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Sana en uygun{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 profesyoneli
               </em>{' '}
               bulalım.

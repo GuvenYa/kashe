@@ -144,7 +144,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName }: Props) {
             className="w-24 h-24 rounded-full object-cover border-2 border-line"
           />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-terracotta flex items-center justify-center text-paper font-display font-semibold text-3xl">
+          <div className="w-24 h-24 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-3xl">
             {initials || '?'}
           </div>
         )}
@@ -174,7 +174,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName }: Props) {
             <button
               type="button"
               onClick={handleRemove}
-              className="text-sm text-ink-72 hover:text-terracotta transition-colors"
+              className="text-sm text-ink-72 hover:text-brand-ink transition-colors"
             >
               Sil
             </button>

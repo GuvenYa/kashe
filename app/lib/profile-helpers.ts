@@ -237,7 +237,7 @@ export function formatLastSeen(
 
 /**
  * Son aktiflik rozetinin görsel tonu.
- * - 'active' → çok yakın zamanda (5 dk içinde) — terracotta vurgu
+ * - 'active' → çok yakın zamanda (5 dk içinde) — brand-ink vurgu
  * - 'recent' → 1 saat içinde — orta ton
  * - 'idle' → 1 saatten uzun — sade
  */

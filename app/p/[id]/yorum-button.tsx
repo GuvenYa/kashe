@@ -50,7 +50,7 @@ export function YorumButton({
         }
         className={`px-5 py-3 rounded-lg font-display font-semibold text-sm border-2 transition-all ${
           canWrite
-            ? 'border-terracotta text-terracotta hover:bg-terracotta hover:text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)]'
+            ? 'border-brand-ink text-brand-ink hover:bg-brand-ink hover:text-paper hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
             : 'border-line text-ink-72/50 cursor-not-allowed'
         }`}
       >

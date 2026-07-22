@@ -45,7 +45,7 @@ export default async function KategoriBilgileriPage() {
   const backLink = (
     <Link
       href="/profil"
-      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-terracotta transition-colors inline-flex items-center gap-1.5 mb-3"
+      className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-3"
     >
       ← Profilime dön
     </Link>
@@ -69,7 +69,7 @@ export default async function KategoriBilgileriPage() {
               </p>
               <Link
                 href="/profil/duzenle"
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
                 Profili düzenle →
               </Link>
@@ -88,7 +88,7 @@ export default async function KategoriBilgileriPage() {
           <div className="mb-10">
             {backLink}
             <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 Kategori Bilgileri
               </em>
             </h1>

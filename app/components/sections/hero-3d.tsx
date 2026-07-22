@@ -500,7 +500,7 @@ function CategoryLabel({ label, x, y }: { label: string; x: number; y: number })
         left: x,
         top: y,
         transform: 'translate(-50%, calc(-100% - 14px))', // imlecin hemen üstünde
-        background: 'var(--color-terracotta)', // zümrüt #040D26
+        background: 'var(--color-brand-ink)', // zümrüt #040D26
         color: '#fff',
         fontFamily: 'var(--font-body)', // Inter
         fontSize: '13px',

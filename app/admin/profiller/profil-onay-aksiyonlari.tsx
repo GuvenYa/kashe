@@ -72,7 +72,7 @@ export function ProfilOnayAksiyonlari({
               ? 'Red gerekçesi (kullanıcıya gösterilecek)...'
               : 'Revizyon notu (kullanıcıya gösterilecek)...'
           }
-          className="w-full px-3 py-2 bg-card border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+          className="w-full px-3 py-2 bg-card border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
         />
         {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex gap-2">

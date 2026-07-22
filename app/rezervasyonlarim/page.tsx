@@ -94,8 +94,8 @@ function SeatGroup({
       <div className="space-y-10">
         {upcoming.length > 0 && (
           <div>
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-terracotta mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-terracotta inline-block kashe-pulse" />
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand-ink mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block kashe-pulse" />
               Yaklaşan ({upcoming.length})
             </h3>
             <div className="space-y-3">

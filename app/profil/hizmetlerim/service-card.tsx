@@ -60,7 +60,7 @@ export function ServiceCard({ service, onEdit }: Props) {
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
             {categoryLabel}
             {!service.is_active && (
-              <span className="ml-2 text-terracotta">· Pasif</span>
+              <span className="ml-2 text-brand-ink">· Pasif</span>
             )}
           </p>
           <h3 className="font-display text-xl text-ink mb-2">{service.title}</h3>
@@ -103,7 +103,7 @@ export function ServiceCard({ service, onEdit }: Props) {
             type="button"
             onClick={onEdit}
             disabled={isPending}
-            className="text-sm text-ink hover:text-terracotta px-2 py-1 transition-colors disabled:opacity-50"
+            className="text-sm text-ink hover:text-brand-ink px-2 py-1 transition-colors disabled:opacity-50"
           >
             Düzenle
           </button>
@@ -111,7 +111,7 @@ export function ServiceCard({ service, onEdit }: Props) {
             type="button"
             onClick={handleDelete}
             disabled={isPending}
-            className="text-sm text-ink-72 hover:text-terracotta px-2 py-1 transition-colors disabled:opacity-50"
+            className="text-sm text-ink-72 hover:text-brand-ink px-2 py-1 transition-colors disabled:opacity-50"
           >
             Sil
           </button>

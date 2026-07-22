@@ -69,7 +69,7 @@ export function TrustSection() {
             return (
               <div
                 key={item.title}
-                className="group relative bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-terracotta hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
+                className="group relative bg-card border border-line rounded-2xl p-6 md:p-7 transition-all duration-300 hover:border-brand-ink hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
               >
                 {/* Hover renk yıkaması */}
                 <div

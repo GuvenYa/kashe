@@ -446,7 +446,7 @@ export function YeniIlanFormu({
                 }
               }}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             >
               <option value="">Kategori seç...</option>
               {categories.map((cat) => (
@@ -472,7 +472,7 @@ export function YeniIlanFormu({
               placeholder={placeholders.title}
               maxLength={200}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {title.length} / 200 karakter (en az 3)
@@ -486,7 +486,7 @@ export function YeniIlanFormu({
             </label>
             <div className="mb-3 bg-paper border border-line rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={14} className="text-terracotta" />
+                  <Sparkles size={14} className="text-brand-ink" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
                     AI ile açıklama yaz
                   </span>
@@ -501,13 +501,13 @@ export function YeniIlanFormu({
                   onChange={(e) => setAiKeywords(e.target.value)}
                   placeholder="Örn: 100 kişi, açık hava, akşam, 4 saat"
                   maxLength={500}
-                  className="w-full px-3 py-2 bg-card border border-line rounded text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition mb-2"
+                  className="w-full px-3 py-2 bg-card border border-line rounded text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition mb-2"
                 />
                 <button
                   type="button"
                   onClick={handleGenerateDescription}
                   disabled={aiLoading}
-                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-terracotta text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-ember transition disabled:opacity-50"
+                  className="kashe-tap inline-flex items-center gap-1.5 px-3 py-2 rounded bg-brand-ink text-paper font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-brand-ink-deep transition disabled:opacity-50"
                 >
                   <Sparkles size={13} />
                   {aiLoading ? 'Yazıyor…' : 'AI ile yaz'}
@@ -523,7 +523,7 @@ export function YeniIlanFormu({
                 rows={6}
                 maxLength={5000}
               required
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               {description.length} / 5000 karakter (en az 10)
@@ -544,7 +544,7 @@ export function YeniIlanFormu({
               placeholder="Örn: Sahne kurulumu ve ışık gerekli&#10;Çekim sonrası kısa kurgu video"
               rows={3}
               maxLength={3000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-y"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
@@ -565,7 +565,7 @@ export function YeniIlanFormu({
               placeholder="Örn: En az 3 yıl deneyim&#10;Kendi ekipmanıyla gelmeli"
               rows={3}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-y"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
@@ -586,7 +586,7 @@ export function YeniIlanFormu({
               placeholder="Örn: 4 saatlik etkinlik&#10;Ulaşım ve yemek karşılanır"
               rows={3}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-y"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-y"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               Maddeler halinde yazabilirsin — her satır bir madde olarak gösterilir.
@@ -612,7 +612,7 @@ export function YeniIlanFormu({
                 <select
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value)}
-                  className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                  className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 >
                   <option value="">Seç...</option>
                   {EVENT_TYPE_OPTIONS.map((opt) => (
@@ -633,7 +633,7 @@ export function YeniIlanFormu({
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 min={today}
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
               />
             </div>
           </div>
@@ -649,7 +649,7 @@ export function YeniIlanFormu({
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Örn: Maltepe Sahil Düğün Salonu"
                 maxLength={200}
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
               />
             </div>
 
@@ -662,7 +662,7 @@ export function YeniIlanFormu({
                 onChange={(e) =>
                   setCityId(e.target.value ? parseInt(e.target.value, 10) : '')
                 }
-                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
               >
                 <option value="">Seç...</option>
                 {cities.map((city) => (
@@ -685,7 +685,7 @@ export function YeniIlanFormu({
               placeholder="Örn: 100"
               min={0}
               max={100000}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             />
           </div>
 
@@ -698,7 +698,7 @@ export function YeniIlanFormu({
               value={applicationDeadline}
               onChange={(e) => setApplicationDeadline(e.target.value)}
               min={today}
-              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+              className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
               Boş bırakırsan başvurular süresiz açık kalır. Bu tarih geçince yeni başvuru alınmaz.
@@ -719,8 +719,8 @@ export function YeniIlanFormu({
               key={preset.key}
               className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
                 budgetPreset === preset.key
-                  ? 'border-terracotta'
-                  : 'border-line hover:border-terracotta/50'
+                  ? 'border-brand-ink'
+                  : 'border-line hover:border-brand-ink/50'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -729,7 +729,7 @@ export function YeniIlanFormu({
                   name="budget"
                   checked={budgetPreset === preset.key}
                   onChange={() => setBudgetPreset(preset.key)}
-                  className="accent-terracotta"
+                  className="accent-brand-ink"
                 />
                 <span className="text-sm text-ink">{preset.label}</span>
               </div>
@@ -748,7 +748,7 @@ export function YeniIlanFormu({
                   value={budgetMin}
                   onChange={(e) => setBudgetMin(e.target.value)}
                   placeholder="5.000"
-                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 />
               </div>
               <div>
@@ -761,7 +761,7 @@ export function YeniIlanFormu({
                   value={budgetMax}
                   onChange={(e) => setBudgetMax(e.target.value)}
                   placeholder="15.000"
-                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 />
               </div>
             </div>
@@ -794,8 +794,8 @@ export function YeniIlanFormu({
               key={opt.key}
               className={`block bg-paper border rounded-lg p-4 cursor-pointer transition ${
                 applicantRoles === opt.key
-                  ? 'border-terracotta'
-                  : 'border-line hover:border-terracotta/50'
+                  ? 'border-brand-ink'
+                  : 'border-line hover:border-brand-ink/50'
               }`}
             >
               <div className="flex items-start gap-2">
@@ -804,7 +804,7 @@ export function YeniIlanFormu({
                   name="applicant-roles"
                   checked={applicantRoles === opt.key}
                   onChange={() => setApplicantRoles(opt.key)}
-                  className="mt-1 accent-terracotta"
+                  className="mt-1 accent-brand-ink"
                 />
                 <div>
                   <p className="font-medium text-ink text-sm">{opt.label}</p>
@@ -826,8 +826,8 @@ export function YeniIlanFormu({
           <label
             className={`block bg-paper border rounded-lg p-4 cursor-pointer transition ${
               publishImmediately
-                ? 'border-terracotta'
-                : 'border-line hover:border-terracotta/50'
+                ? 'border-brand-ink'
+                : 'border-line hover:border-brand-ink/50'
             }`}
           >
             <div className="flex items-start gap-2">
@@ -835,7 +835,7 @@ export function YeniIlanFormu({
                 type="radio"
                 checked={publishImmediately}
                 onChange={() => setPublishImmediately(true)}
-                className="mt-1 accent-terracotta"
+                className="mt-1 accent-brand-ink"
               />
               <div>
                 <p className="font-medium text-ink text-sm">Yayınla</p>
@@ -849,8 +849,8 @@ export function YeniIlanFormu({
           <label
             className={`block bg-paper border rounded-lg p-4 cursor-pointer transition ${
               !publishImmediately
-                ? 'border-terracotta'
-                : 'border-line hover:border-terracotta/50'
+                ? 'border-brand-ink'
+                : 'border-line hover:border-brand-ink/50'
             }`}
           >
             <div className="flex items-start gap-2">
@@ -858,7 +858,7 @@ export function YeniIlanFormu({
                 type="radio"
                 checked={!publishImmediately}
                 onChange={() => setPublishImmediately(false)}
-                className="mt-1 accent-terracotta"
+                className="mt-1 accent-brand-ink"
               />
               <div>
                 <p className="font-medium text-ink text-sm">
@@ -885,7 +885,7 @@ export function YeniIlanFormu({
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <Send size={14} strokeWidth={1.75} />
           {isPending

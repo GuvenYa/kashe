@@ -67,9 +67,9 @@ export function HeroMobile({
           <div className="kashe-rise inline-flex items-center gap-2.5 mb-5">
             <span
               className="inline-block h-px w-6 shrink-0"
-              style={{ background: "var(--color-plum)" }}
+              style={{ background: "var(--color-brand-accent)" }}
             />
-            <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-terracotta">
+            <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-brand-ink">
               Etkinlik &amp; Yetenek Pazaryeri
             </span>
           </div>
@@ -123,7 +123,7 @@ export function HeroMobile({
               <a
                 key={link.slug}
                 href={`/kesfet?kategori=${cat.id}`}
-                className="font-body text-[13px] text-ink-50 hover:text-terracotta transition-colors underline-offset-4 hover:underline"
+                className="font-body text-[13px] text-ink-50 hover:text-brand-ink transition-colors underline-offset-4 hover:underline"
               >
                 {link.label}
               </a>

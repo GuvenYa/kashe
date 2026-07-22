@@ -22,9 +22,9 @@ import { EVENT_TYPES } from '@/app/mesajlar/data';
 import { saveCategoryAttributes } from './actions';
 
 const INPUT =
-  'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition text-sm';
+  'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm';
 const LABEL = 'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
-const EYEBROW = 'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta';
+const EYEBROW = 'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink';
 const CARD = 'bg-card border border-line rounded-xl p-6';
 
 type ModulesState = Record<string, Record<string, unknown>>;
@@ -206,7 +206,7 @@ export function KategoriForm({
     <div className="flex flex-col gap-6 pb-24">
       {/* Cast fiziksel bilgilendirme (form başında, KVKK) */}
       {hasFiziksel && (
-        <div className="bg-terracotta/5 border border-terracotta/15 rounded-xl px-5 py-4 text-[13px] text-ink-72 leading-relaxed">
+        <div className="bg-brand-ink/5 border border-brand-ink/15 rounded-xl px-5 py-4 text-[13px] text-ink-72 leading-relaxed">
           Bu alanlar isteğe bağlıdır ve beyanınıza dayanır; profilinizde
           &quot;Kullanıcı beyanı&quot; etiketiyle gösterilir.
         </div>
@@ -365,8 +365,8 @@ export function KategoriForm({
                     }
                     className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
                       on
-                        ? 'bg-terracotta text-white border-terracotta'
-                        : 'bg-card text-ink-72 border-line hover:border-terracotta'
+                        ? 'bg-brand-ink text-white border-brand-ink'
+                        : 'bg-card text-ink-72 border-line hover:border-brand-ink'
                     }`}
                   >
                     {et.label}
@@ -394,7 +394,7 @@ export function KategoriForm({
                       onChange={(e) =>
                         setLogistics((l) => ({ ...l, [c.key]: e.target.checked }))
                       }
-                      className="mt-0.5 accent-terracotta w-4 h-4"
+                      className="mt-0.5 accent-brand-ink w-4 h-4"
                     />
                     <span>
                       <span className="font-medium">{c.label}</span>
@@ -463,7 +463,7 @@ export function KategoriForm({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="px-6 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
+            className="px-6 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
           >
             {isPending ? 'Kaydediliyor…' : 'Kaydet'}
           </button>
@@ -561,8 +561,8 @@ function MultiChipField({
       onClick={() => toggle(opt)}
       className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors ${
         on
-          ? 'bg-terracotta text-white border-terracotta'
-          : 'bg-card text-ink-72 border-line hover:border-terracotta'
+          ? 'bg-brand-ink text-white border-brand-ink'
+          : 'bg-card text-ink-72 border-line hover:border-brand-ink'
       }`}
     >
       {opt}
@@ -815,7 +815,7 @@ function ModuleField({
                 key={s}
                 type="button"
                 onClick={() => onChange([...rows, { key: s, value: '' }])}
-                className="px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-terracotta/5 border border-terracotta/20 text-terracotta hover:bg-terracotta/10 transition-colors"
+                className="px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-brand-ink/5 border border-brand-ink/20 text-brand-ink hover:bg-brand-ink/10 transition-colors"
               >
                 + {s}
               </button>
@@ -984,7 +984,7 @@ function AddBtn({ label, onClick }: { label: string; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="self-start inline-flex items-center gap-1.5 text-sm font-display font-semibold text-terracotta hover:text-ember transition-colors"
+      className="self-start inline-flex items-center gap-1.5 text-sm font-display font-semibold text-brand-ink hover:text-brand-ink-deep transition-colors"
     >
       <span className="text-base leading-none">+</span> {label}
     </button>

@@ -83,12 +83,12 @@ export default function HakkimizdaPage() {
         {/* HERO */}
         <section className="border-b border-line">
           <div className="max-w-3xl mx-auto px-6 md:px-12 py-16 md:py-24">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-terracotta mb-4">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-4">
               Hakkımızda
             </p>
             <h1 className="font-display font-semibold text-4xl md:text-6xl text-ink tracking-tight leading-[1.05]">
               Etkinlik ve yeteneği{' '}
-              <em className="text-terracotta not-italic font-medium">
+              <em className="text-brand-ink not-italic font-medium">
                 buluşturuyoruz
               </em>
               .
@@ -117,7 +117,7 @@ export default function HakkimizdaPage() {
                       {i === paras.length - 1 && s.email && (
                         <a
                           href={`mailto:${s.email}`}
-                          className="text-terracotta font-medium hover:underline underline-offset-4"
+                          className="text-brand-ink font-medium hover:underline underline-offset-4"
                         >
                           {s.email}
                         </a>
@@ -131,7 +131,7 @@ export default function HakkimizdaPage() {
                         <a
                           key={c.label}
                           href={c.href}
-                          className="font-display font-semibold text-terracotta hover:text-ember transition-colors"
+                          className="font-display font-semibold text-brand-ink hover:text-brand-ink-deep transition-colors"
                         >
                           {c.label} →
                         </a>

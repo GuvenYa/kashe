@@ -11,7 +11,7 @@ function Stars({ rating }: { rating: number }) {
       aria-label={`${rating} yıldız`}
     >
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= rating ? 'text-plum' : 'text-ink-50/30'}>
+        <span key={i} className={i <= rating ? 'text-brand-accent' : 'text-ink-50/30'}>
           ★
         </span>
       ))}
@@ -39,7 +39,7 @@ export default async function AdminGoruslerPage() {
         </div>
         <Link
           href="/admin/gorusler/yeni"
-          className="px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] transition-all"
+          className="px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
         >
           + Yeni görüş
         </Link>
@@ -58,7 +58,7 @@ export default async function AdminGoruslerPage() {
           </p>
           <Link
             href="/admin/gorusler/yeni"
-            className="inline-block px-5 py-2.5 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="inline-block px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             + Yeni görüş
           </Link>

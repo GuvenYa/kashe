@@ -518,7 +518,7 @@ export default async function KesfetPage({
             </p>
             <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
               Profesyonelleri{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 keşfet
               </em>
               .

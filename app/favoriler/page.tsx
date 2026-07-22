@@ -50,7 +50,7 @@ const user = await getCachedUser();
               </p>
               <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Önce{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   giriş yap
                 </em>
                 .
@@ -66,13 +66,13 @@ const user = await getCachedUser();
               <div className="flex gap-3 justify-center flex-wrap">
                 <Link
                   href="/giris"
-                  className="inline-block px-6 py-3 bg-terracotta text-paper font-mono text-xs uppercase tracking-[0.16em] rounded hover:bg-terracotta/90 transition-colors"
+                  className="inline-block px-6 py-3 bg-brand-ink text-paper font-mono text-xs uppercase tracking-[0.16em] rounded hover:bg-brand-ink/90 transition-colors"
                 >
                   Giriş yap
                 </Link>
                 <Link
                   href="/uye-ol"
-                  className="inline-block px-6 py-3 border border-line text-ink font-mono text-xs uppercase tracking-[0.16em] rounded hover:border-terracotta hover:text-terracotta transition-colors"
+                  className="inline-block px-6 py-3 border border-line text-ink font-mono text-xs uppercase tracking-[0.16em] rounded hover:border-brand-ink hover:text-brand-ink transition-colors"
                 >
                   Kayıt ol
                 </Link>
@@ -110,7 +110,7 @@ const user = await getCachedUser();
               </p>
               <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Bu sayfa{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   müşterilere özel
                 </em>
                 .
@@ -165,7 +165,7 @@ const user = await getCachedUser();
               </p>
               <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Henüz favorin{' '}
-                <em className="text-terracotta not-italic italic font-medium">
+                <em className="text-brand-ink not-italic italic font-medium">
                   yok
                 </em>
                 .
@@ -280,7 +280,7 @@ const user = await getCachedUser();
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Kaydettiğin{' '}
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 profiller
               </em>
               .

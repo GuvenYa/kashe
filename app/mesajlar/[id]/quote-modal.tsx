@@ -101,7 +101,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
               Yeni teklif
             </p>
             <h2 className="font-display text-2xl text-ink">
-              <em className="text-terracotta not-italic italic font-medium">
+              <em className="text-brand-ink not-italic italic font-medium">
                 Teklif
               </em>{' '}
               gönder
@@ -129,7 +129,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="5.000"
-                className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition"
+                className="w-full px-4 py-3 pr-12 bg-card border border-line rounded-lg text-ink text-lg font-medium focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 required
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-72 text-sm font-mono">
@@ -144,8 +144,8 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
               Hizmet kapsamı
             </label>
             {quoteTemplates.length > 0 && (
-              <div className="mb-2.5 rounded-lg border border-terracotta/20 bg-terracotta/[0.05] p-2.5">
-                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-terracotta mb-1.5 flex items-center gap-1">
+              <div className="mb-2.5 rounded-lg border border-brand-ink/20 bg-brand-ink/[0.05] p-2.5">
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-brand-ink mb-1.5 flex items-center gap-1">
                   <span aria-hidden="true">✎</span>
                   Hazır taslak — tıkla, sonra düzenle
                 </p>
@@ -155,7 +155,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                       key={i}
                       type="button"
                       onClick={() => setDescription(tpl)}
-                      className="text-left text-[12px] leading-snug text-ink bg-card border border-line rounded-lg px-3 py-2 hover:border-terracotta hover:shadow-[2px_2px_0_var(--color-terracotta-12)] hover:-translate-y-0.5 transition-all overflow-hidden"
+                      className="text-left text-[12px] leading-snug text-ink bg-card border border-line rounded-lg px-3 py-2 hover:border-brand-ink hover:shadow-[2px_2px_0_var(--color-brand-ink-12)] hover:-translate-y-0.5 transition-all overflow-hidden"
                     >
                       {/* Clamp iç span'de: <button> üzerinde line-clamp mobil tarayıcılarda güvenilmez */}
                       <span className="line-clamp-2 overflow-hidden break-words">
@@ -172,7 +172,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
               placeholder="Ne yapacağını net şekilde yaz. Örn: 4 saatlik canlı performans, akustik gitar ve vokal. 2 set, ara verilerek..."
               rows={5}
               maxLength={2000}
-              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+              className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
               required
             />
             <p className="text-[10px] text-ink-72 mt-1 font-mono">
@@ -193,8 +193,8 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                   onClick={() => setExpiryKey(opt.key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                     expiryKey === opt.key
-                      ? 'bg-terracotta text-paper border-terracotta'
-                      : 'bg-card text-ink-72 border-line hover:border-terracotta/50'
+                      ? 'bg-brand-ink text-paper border-brand-ink'
+                      : 'bg-card text-ink-72 border-line hover:border-brand-ink/50'
                   }`}
                 >
                   {opt.label}
@@ -217,8 +217,8 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                       key={tmpl.key}
                       className={`block bg-card border rounded-lg p-3 cursor-pointer transition ${
                         policyKey === tmpl.key
-                          ? 'border-terracotta'
-                          : 'border-line hover:border-terracotta/50'
+                          ? 'border-brand-ink'
+                          : 'border-line hover:border-brand-ink/50'
                       }`}
                     >
                       <div className="flex items-start gap-2">
@@ -227,7 +227,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                           name="policy"
                           checked={policyKey === tmpl.key}
                           onChange={() => setPolicyKey(tmpl.key)}
-                          className="mt-1 accent-terracotta"
+                          className="mt-1 accent-brand-ink"
                         />
                         <div className="flex-1">
                           <p className="font-medium text-ink text-sm">
@@ -244,7 +244,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                 <button
                   type="button"
                   onClick={() => setUseCustomPolicy(true)}
-                  className="text-xs text-terracotta hover:underline mt-2"
+                  className="text-xs text-brand-ink hover:underline mt-2"
                 >
                   Kendi politikamı yazayım →
                 </button>
@@ -257,12 +257,12 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                   placeholder="İptal politikanı buraya yaz..."
                   rows={4}
                   maxLength={1000}
-                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta-08 transition resize-none"
+                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
                 />
                 <button
                   type="button"
                   onClick={() => setUseCustomPolicy(false)}
-                  className="text-xs text-terracotta hover:underline mt-2"
+                  className="text-xs text-brand-ink hover:underline mt-2"
                 >
                   ← Şablonları kullan
                 </button>
@@ -288,7 +288,7 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 px-5 py-3 bg-terracotta text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-terracotta)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex-1 px-5 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isPending ? 'Gönderiliyor...' : 'Teklifi gönder'}
             </button>
