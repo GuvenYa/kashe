@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { HeroPlaceholder } from './hero-placeholder';
+import { HeroCollage } from './hero-collage';
 
 /* Hover etiketi için kart meta: kategori adı + keşfet arama terimi.
    NOT: /kesfet 'kategori' param'ı NUMERIC ID ister (slug değil). Bu yüzden
@@ -624,7 +624,7 @@ export default function Hero3D() {
             style={{ opacity: ready ? 1 : 0 }}
           >
             <Hero3DErrorBoundary
-              fallback={<HeroPlaceholder />}
+              fallback={<HeroCollage />}
               onError={() => setWebglOk(false)}
             >
               <Hero3DCanvas
@@ -641,8 +641,8 @@ export default function Hero3D() {
           </div>
         </>
       ) : (
-        /* WebGL yok/kayıp → nötr enriched placeholder (siyah panel YERİNE) */
-        <HeroPlaceholder />
+        /* WebGL yok/kayıp → fotoğraflı kolaj yedeği (siyah panel YERİNE) */
+        <HeroCollage />
       )}
 
       {!isMobile && hover && (

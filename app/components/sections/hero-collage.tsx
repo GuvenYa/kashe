@@ -53,7 +53,7 @@ export function HeroCollage() {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute left-3 bottom-3 bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold text-ink flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-accent inline-block" />
           Sahne &amp; DJ
         </div>
       </div>
@@ -70,7 +70,7 @@ export function HeroCollage() {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute left-3 bottom-3 bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold text-ink flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-accent inline-block" />
           Müzik
         </div>
       </div>
@@ -87,7 +87,7 @@ export function HeroCollage() {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute left-3 bottom-3 bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold text-ink flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-accent inline-block" />
           Fotoğraf
         </div>
       </div>
