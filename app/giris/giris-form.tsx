@@ -282,7 +282,7 @@ export default function GirisForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3.5 bg-brand-ink text-white rounded-lg font-display font-semibold hover:bg-brand-ink-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full px-6 py-3.5 bg-brand-accent text-white rounded-lg font-display font-semibold hover:bg-[#D50880] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
         </button>

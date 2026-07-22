@@ -459,7 +459,7 @@ export function UyeOlForm({
 
         <Button
           type="submit"
-          variant="primary"
+          variant="accent"
           size="lg"
           disabled={loading}
           className="w-full"

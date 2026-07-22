@@ -34,8 +34,8 @@ export function B2BSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
             <div className="mb-6">
-              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink">
-                <span className="w-6 h-px bg-brand-ink inline-block"></span>
+              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-accent">
+                <span className="w-6 h-px bg-brand-accent inline-block"></span>
                 Kurumsal müşteriler için
               </span>
             </div>
@@ -80,7 +80,7 @@ export function B2BSection() {
                 <span className="font-display text-base text-paper">
                   İlan #4231 · Hilton İstanbul
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-brand-ink px-2 py-1 bg-brand-ink-12">
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-sky px-2 py-1 bg-sky/12">
                   Aktif
                 </span>
               </div>

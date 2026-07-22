@@ -205,7 +205,7 @@ export function AjansUyeOlForm() {
 
         <Button
           type="submit"
-          variant="primary"
+          variant="accent"
           size="lg"
           disabled={loading}
           className="w-full"

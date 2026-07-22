@@ -1,7 +1,7 @@
 import { cn } from "@/app/lib/cn";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
+type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,6 +12,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-brand-ink text-white hover:bg-brand-ink-deep active:bg-brand-ink-deep",
+  accent:
+    "bg-brand-accent text-white hover:bg-[#D50880] active:bg-[#D50880]",
   secondary:
     "bg-card border border-line text-ink hover:border-brand-ink hover:text-brand-ink",
   ghost: "bg-transparent text-brand-ink hover:bg-brand-ink-08",
