@@ -253,7 +253,7 @@ export function IlanDetay({
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* ═══════════ SOL KOLON (2/3) ═══════════ */}
-          <div className="lg:col-span-2 min-w-0 space-y-6">
+          <div className="lg:col-span-2 min-w-0 space-y-6 order-1">
             {/* Hero */}
             <header>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -457,17 +457,10 @@ export function IlanDetay({
               <GonderilenDavetler invitations={sentInvitations} />
             )}
 
-            {/* Benzer ilanlar — 0 ise gizli */}
-            {similarListings.length > 0 && (
-              <SimilarListingsBlock listings={similarListings} />
-            )}
-
-            {/* Sahip kartı — MOBİLDE içerik sonunda */}
-            {ownerCard && <div className="lg:hidden">{ownerCard}</div>}
           </div>
 
           {/* ═══════════ SAĞ KOLON (1/3, sticky) ═══════════ */}
-          <aside className="lg:col-span-1">
+          <aside className="lg:col-span-1 order-2">
             <div className="lg:sticky lg:top-24 space-y-4">
               {/* Bütçe + tarihler + CTA/yönetim */}
               <div className="bg-card border border-line rounded-lg p-5">
@@ -723,6 +716,20 @@ export function IlanDetay({
               <ShareButton title={listing.title} />
             </div>
           </aside>
+
+          {/* Sahip kartı — MOBİLDE CTA'dan sonra (order-3). Masaüstünde gizli;
+              sağ kolondaki kopya (hidden lg:block) render eder → tek görünür kart. */}
+          {ownerCard && (
+            <div className="lg:hidden order-3 mt-6">{ownerCard}</div>
+          )}
+
+          {/* Benzer ilanlar — mobil & masaüstü EN ALTTA, tam genişlik (order-last).
+              Masaüstünde sol kolonda değil, grid'in tam-genişlik son satırında. */}
+          {similarListings.length > 0 && (
+            <div className="lg:col-span-3 order-last mt-6">
+              <SimilarListingsBlock listings={similarListings} />
+            </div>
+          )}
         </div>
       </div>
 
