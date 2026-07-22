@@ -11,7 +11,6 @@ import {
   type ReactNode,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import Masonry from 'react-masonry-css';
 import { EmptyState } from '@/app/components/EmptyState';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
 import { SearchX, Briefcase } from 'lucide-react';
@@ -24,7 +23,6 @@ import {
 } from './listings-data';
 import {
   getPanoProps,
-  getPanoSize,
   PANO_COLORS,
   PANO_TINTS,
   type PinCorner,
@@ -554,11 +552,7 @@ export function IlanlarListesi({
                         ({myListings.length})
                       </span>
                     </div>
-                    <Masonry
-                      breakpointCols={{ default: 3, 1024: 2, 640: 1 }}
-                      className="pano-masonry-grid"
-                      columnClassName="pano-masonry-col"
-                    >
+                    <div className="pano-masonry">
                       {myListings.map((listing) => (
                         <PanoCard
                           key={listing.id}
@@ -567,7 +561,7 @@ export function IlanlarListesi({
                           isOwn
                         />
                       ))}
-                    </Masonry>
+                    </div>
                   </div>
                 )}
 
@@ -579,11 +573,7 @@ export function IlanlarListesi({
                         Diğer ilanlar
                       </p>
                     )}
-                    <Masonry
-                      breakpointCols={{ default: 3, 1024: 2, 640: 1 }}
-                      className="pano-masonry-grid"
-                      columnClassName="pano-masonry-col"
-                    >
+                    <div className="pano-masonry">
                       {otherListings.map((listing) => (
                         <PanoCard
                           key={listing.id}
@@ -591,7 +581,7 @@ export function IlanlarListesi({
                           count={applicationCounts[listing.id] ?? 0}
                         />
                       ))}
-                    </Masonry>
+                    </div>
                   </>
                 )}
               </div>
@@ -645,25 +635,25 @@ export function IlanlarListesi({
 // =============================================================================
 
 // =============================================================================
-// Pano kart görsel yardımcıları (Commit B) — kabuk parçaları
+// Pano kart görsel yardımcıları — kabuk parçaları (tasarım sözleşmesi)
 // =============================================================================
 
-// Köşe-iğne konumu (styleIndex 3).
+// Köşe-iğne konumu (styleIndex 3) — sözleşme: 14px.
 function cornerPinPos(corner: PinCorner): CSSProperties {
   switch (corner) {
     case 'tl':
-      return { top: -8, left: 12 };
+      return { top: -8, left: 14 };
     case 'tr':
-      return { top: -8, right: 12 };
+      return { top: -8, right: 14 };
     case 'bl':
-      return { bottom: -8, left: 12 };
+      return { bottom: -8, left: 14 };
     case 'br':
-      return { bottom: -8, right: 12 };
+      return { bottom: -8, right: 14 };
   }
 }
 
-// İğne — hover'da yukarı uçup solar (.pano-pin). Konumda transform YOK (hover
-// transform'u temiz ezsin diye left/right ile hizalanır).
+// İğne — .pano-pin (boyut/şekil/geçiş CSS'te). Inline: konum + renk + gölge.
+// Konumda transform YOK (hover translateY'yi temiz ezsin).
 function PanoPin({
   color,
   glow,
@@ -676,12 +666,9 @@ function PanoPin({
   return (
     <span
       aria-hidden="true"
-      className="pano-pin absolute rounded-full"
+      className="pano-pin"
       style={{
-        width: 13,
-        height: 13,
         background: color,
-        zIndex: 2,
         boxShadow: glow ? `0 0 10px ${color}99` : '0 1px 2px rgba(0,0,0,0.25)',
         ...style,
       }}
@@ -705,14 +692,15 @@ function PanoTape({
     '--tape-rot': `${rot}deg`,
   };
   Object.assign(s, style);
-  return <span aria-hidden="true" className="pano-tape absolute" style={s} />;
+  return <span aria-hidden="true" className="pano-tape" style={s} />;
 }
 
 // =============================================================================
-// PanoCard — Commit B: 8 kabuk stili + karakter-bazlı boyut + featured/urgent
-// vurgusu. Tüm görsel kararlar getPanoProps (tek deterministik hash) + boyut
-// getPanoSize (karakter sayısı). İçerik HER stilde AYNI; sadece KABUK değişir.
-// count/isOwn imzası KORUNUR (çağrı yerleri aynı; A'daki gibi kullanılmıyor).
+// PanoCard — tasarım sözleşmesi (renderCard) React portu. 8 kabuk stili (hepsi
+// ÜST dekor) + featured (üst şerit + "★ ÖNE ÇIKAN" + glow iğne, ÇEVRE ÇERÇEVE
+// YOK) + urgent rozet + polaroid + hover + tıklamada sağa 3D çevirme. Tüm görsel
+// kararlar getPanoProps (tek deterministik hash, sözleşmeyle hizalı).
+// count/isOwn imzası KORUNUR (çağrı yerleri aynı; kullanılmıyor).
 function PanoCard({
   listing,
 }: {
@@ -722,15 +710,18 @@ function PanoCard({
 }) {
   const router = useRouter();
 
-  const props = getPanoProps(listing.id);
+  const p = getPanoProps(listing.id);
   const featured = isFeaturedHome(listing) || isFeaturedCategory(listing);
-  const size = getPanoSize(listing.title, listing.description, featured);
   const urgent = isUrgent(listing);
-  const color = PANO_COLORS[props.colorIndex];
-  const tint = PANO_TINTS[props.colorIndex];
+  const styleColor = PANO_COLORS[p.colorIndex]; // pembe / cyan
+  // Sözleşme: açıklama göster? featured || desc uzunluğu > 30.
+  const roomy =
+    featured || (!!listing.description && listing.description.length > 30);
 
   const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
   const cityName = listing.turkish_cities?.name;
+  const hasBudget =
+    listing.budget_min !== null || listing.budget_max !== null;
   const budgetText = formatBudgetRange(
     listing.budget_min,
     listing.budget_max,
@@ -751,6 +742,7 @@ function PanoCard({
     : null;
 
   // Urgent rozet metni: son başvuru tarihinden gün → "SON X GÜN"; yoksa "ACİL".
+  // (Sözleşmede sabit "SON 6 GÜN" idi; React'te gerçek deadline hesabı kullanılır.)
   let urgentLabel = 'ACİL';
   if (urgent && listing.application_deadline) {
     const diffMs =
@@ -761,18 +753,18 @@ function PanoCard({
     }
   }
 
-  // ── Kabuk (styleIndex 0-7): dekor + polaroid/tint bayrakları ──
-  const centerPin: CSSProperties = { top: -8, left: 'calc(50% - 6.5px)' };
+  // ── Kabuk (styleIndex 0-7): dekor + polaroid/tint bayrakları (sözleşme birebir) ──
+  const centerPin: CSSProperties = { top: -8, left: '50%', marginLeft: -7 };
   let deco: ReactNode = null;
   let polaroid = false;
-  let tintBg = false;
-  switch (props.styleIndex) {
+  let tintBg: string | null = null;
+  switch (p.styleIndex) {
     case 0: // washi-bant-pembe (üst-sol)
       deco = (
         <PanoTape
           color="#FA0B96"
           rot={-8}
-          style={{ top: -6, left: 16, width: 56, height: 16 }}
+          style={{ top: -8, left: 14, width: 54, height: 17 }}
         />
       );
       break;
@@ -781,59 +773,55 @@ function PanoCard({
         <PanoTape
           color="#00ACE2"
           rot={7}
-          style={{ top: -6, right: 16, width: 56, height: 16 }}
+          style={{ top: -8, right: 14, width: 54, height: 17 }}
         />
       );
       break;
-    case 2: // iğne üst-orta
-      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+    case 2: // iğne üst-orta (featured ise glow)
+      deco = <PanoPin color={styleColor} glow={featured} style={centerPin} />;
       break;
-    case 3: // iğne köşe (parlak)
-      deco = <PanoPin color={color} glow style={cornerPinPos(props.pinCorner)} />;
+    case 3: // iğne köşe (daima glow)
+      deco = (
+        <PanoPin color={styleColor} glow style={cornerPinPos(p.pinCorner)} />
+      );
       break;
     case 4: // polaroid (üst iğne + alt şerit bütçe)
-      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+      deco = <PanoPin color={styleColor} glow={false} style={centerPin} />;
       polaroid = true;
       break;
     case 5: // sol kenar şerit (iğne yok)
       deco = (
         <span
           aria-hidden="true"
-          className="absolute"
-          style={{
-            left: 0,
-            top: 8,
-            bottom: 8,
-            width: 4,
-            background: color,
-            borderRadius: 4,
-          }}
+          className="pano-edge-strip"
+          style={{ background: styleColor }}
         />
       );
       break;
     case 6: // kağıt-tint zemin + üst iğne
-      tintBg = true;
-      deco = <PanoPin color={color} glow={featured} style={centerPin} />;
+      tintBg = PANO_TINTS[p.colorIndex];
+      deco = <PanoPin color={styleColor} glow={false} style={centerPin} />;
       break;
-    case 7: // washi-alt (alt-sağ köşe küçük bant)
+    case 7: // washi ÜST-ORTA (ortalı bant)
       deco = (
         <PanoTape
-          color={color}
-          rot={6}
-          style={{ bottom: -6, right: 14, width: 44, height: 14 }}
+          color={styleColor}
+          rot={-5}
+          style={{ top: -8, left: '50%', marginLeft: -25, width: 50, height: 16 }}
         />
       );
       break;
   }
 
-  // Kart style: --tilt custom prop (hover rotate(0)'ın temiz ezmesi için) + tint/featured.
+  // Kart style: --tilt + (tint zemin) + (--fc featured üst-şerit rengi).
   const cardStyle: CSSProperties & Record<string, string | number> = {
-    '--tilt': `${props.tilt}deg`,
+    '--tilt': `${p.tilt}deg`,
   };
-  if (tintBg) cardStyle.background = tint;
-  if (featured) cardStyle.border = `2px solid ${color}`;
+  if (tintBg) cardStyle.background = tintBg;
+  if (featured) cardStyle['--fc'] = styleColor;
 
-  // Tıklama: masaüstünde (fine pointer) sağa çevir + gecikmeli git; mobilde normal Link.
+  // Tıklama (sözleşme): masaüstünde (fine pointer) sağa çevir + 400ms sonra git
+  // (320ms dönüş bitince); mobilde (coarse) normal Link — animasyon yok.
   const handleClick = (e: ReactMouseEvent<HTMLAnchorElement>) => {
     if (
       typeof window !== 'undefined' &&
@@ -842,85 +830,66 @@ function PanoCard({
       e.preventDefault();
       const el = e.currentTarget;
       el.classList.add('pano-leaving');
-      window.setTimeout(() => router.push(`/ilanlar/${listing.id}`), 380);
+      window.setTimeout(() => router.push(`/ilanlar/${listing.id}`), 400);
     }
   };
+
+  const budgetInner = (
+    <>
+      <span className="pano-budget-lbl">Bütçe</span>
+      {hasBudget ? (
+        <span className="pano-budget-val">{budgetText}</span>
+      ) : (
+        <span className="pano-budget-empty">Belirtilmemiş</span>
+      )}
+    </>
+  );
 
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
       onClick={handleClick}
-      className={`pano-card pano-${size} block relative`}
+      className={`pano-card${featured ? ' pano-featured' : ''}`}
       style={cardStyle}
     >
       {deco}
 
-      {/* Featured / urgent rozetleri — üst satır (dekorla çakışmasın diye inline) */}
-      {(featured || urgent) && (
-        <div className="flex items-center gap-1.5 mb-2">
-          {featured && (
-            <span
-              className="font-mono text-[8px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
-              style={{ background: tint, color }}
-            >
-              Öne çıkan
-            </span>
-          )}
-          {urgent && (
-            <span className="font-mono text-[8px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-danger text-white">
-              {urgentLabel}
-            </span>
-          )}
-        </div>
+      {featured && (
+        <span
+          className="pano-feat-label"
+          style={{ background: `${styleColor}22`, color: styleColor }}
+        >
+          ★ ÖNE ÇIKAN
+        </span>
       )}
 
-      {/* Kategori etiketi — küçük, renk aksanı */}
-      <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-brand-accent mb-2">
+      <div className="pano-cat" style={{ color: styleColor }}>
         {categoryLabel}
-      </span>
+      </div>
 
-      {/* Başlık — HER boyutta 15px / 600 (Güven kararı) */}
-      <h3 className="font-display text-[15px] font-semibold text-ink leading-snug mb-2 line-clamp-3">
-        {listing.title}
-      </h3>
+      {urgent && <span className="pano-urgent-badge">{urgentLabel}</span>}
 
-      {/* Açıklama — yalnız lg kartta önizleme */}
-      {size === 'lg' && listing.description && (
-        <p className="text-xs text-ink-72 leading-relaxed mb-2.5 line-clamp-2">
-          {listing.description}
-        </p>
+      <div className="pano-title">{listing.title}</div>
+
+      {roomy && listing.description && (
+        <div className="pano-desc">{listing.description}</div>
       )}
 
-      {/* İlan veren (+ şehir md/lg, + tarih lg) — tek satır, küçük gri */}
-      <p className="text-xs text-ink-72 truncate mb-3">
+      <div className="pano-meta">
         {creatorName}
-        {size !== 'sm' && cityName ? ` · ${cityName}` : ''}
-        {size === 'lg' && eventDateLabel ? ` · ${eventDateLabel}` : ''}
-      </p>
+        {cityName ? ` · ${cityName}` : ''}
+        {roomy && eventDateLabel ? ` · ${eventDateLabel}` : ''}
+      </div>
 
-      {/* Bütçe — polaroid ise alt şerit (kesikli ayraç), değilse normal */}
       {polaroid ? (
-        <div className="pano-polaroid-foot flex items-center justify-between">
-          <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
-            Bütçe
-          </span>
-          <span className="font-display text-sm text-ink font-semibold">
-            {budgetText}
-          </span>
-        </div>
+        <div className="pano-polaroid-foot">{budgetInner}</div>
       ) : (
-        <div className="border-t border-line pt-2.5 flex items-center justify-between">
-          <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
-            Bütçe
-          </span>
-          <span className="font-display text-sm text-ink font-semibold">
-            {budgetText}
-          </span>
-        </div>
+        <div className="pano-budget-row">{budgetInner}</div>
       )}
 
-      {/* Gizli satır — masaüstü hover'da açılır (mobilde CSS ile gizli) */}
-      <span className="pano-reveal-row">→ İlanı görüntüle</span>
+      <div className="pano-reveal">
+        <div className="pano-reveal-inner">→ İlanı görüntüle</div>
+      </div>
     </Link>
   );
 }
