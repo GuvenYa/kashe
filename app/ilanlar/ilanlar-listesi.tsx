@@ -3,25 +3,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useTransition } from 'react';
+import Masonry from 'react-masonry-css';
 import { EmptyState } from '@/app/components/EmptyState';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
-import {
-  SearchX,
-  Briefcase,
-  MapPin,
-  Calendar,
-  Users,
-  BadgeCheck,
-} from 'lucide-react';
+import { SearchX, Briefcase } from 'lucide-react';
 import {
   formatBudgetRange,
-  formatListingAge,
   isUrgent,
-  isFeaturedHome,
-  isFeaturedCategory,
   type ListingWithRelations,
 } from './listings-data';
-import { getCategoryIcon } from '@/app/lib/category-icon';
+import { getPanoTilt } from '@/app/lib/pano-hash';
 
 type Category = {
   id: number;
@@ -534,49 +525,60 @@ export function IlanlarListesi({
                 </label>
               </div>
 
-              {/* Kendi ilanların */}
-              {myListings.length > 0 && (
-                <div className="mb-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
-                      Senin ilanların
-                    </span>
-                    <span className="font-mono text-[10px] text-ink-72">
-                      ({myListings.length})
-                    </span>
+              {/* Pano zemini — iki grid'i saran sıcak kork alan (iğneler için üst boşluk) */}
+              <div className="pano-board">
+                {/* Kendi ilanların */}
+                {myListings.length > 0 && (
+                  <div className="mb-10">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
+                        Senin ilanların
+                      </span>
+                      <span className="font-mono text-[10px] text-ink-72">
+                        ({myListings.length})
+                      </span>
+                    </div>
+                    <Masonry
+                      breakpointCols={{ default: 3, 1024: 2, 640: 1 }}
+                      className="pano-masonry-grid"
+                      columnClassName="pano-masonry-col"
+                    >
+                      {myListings.map((listing) => (
+                        <PanoCard
+                          key={listing.id}
+                          listing={listing}
+                          count={applicationCounts[listing.id] ?? 0}
+                          isOwn
+                        />
+                      ))}
+                    </Masonry>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {myListings.map((listing) => (
-                      <IlanCard
-                        key={listing.id}
-                        listing={listing}
-                        count={applicationCounts[listing.id] ?? 0}
-                        isOwn
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Diğer ilanlar */}
-              {otherListings.length > 0 && (
-                <>
-                  {myListings.length > 0 && (
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
-                      Diğer ilanlar
-                    </p>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {otherListings.map((listing) => (
-                      <IlanCard
-                        key={listing.id}
-                        listing={listing}
-                        count={applicationCounts[listing.id] ?? 0}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                {/* Diğer ilanlar */}
+                {otherListings.length > 0 && (
+                  <>
+                    {myListings.length > 0 && (
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-4">
+                        Diğer ilanlar
+                      </p>
+                    )}
+                    <Masonry
+                      breakpointCols={{ default: 3, 1024: 2, 640: 1 }}
+                      className="pano-masonry-grid"
+                      columnClassName="pano-masonry-col"
+                    >
+                      {otherListings.map((listing) => (
+                        <PanoCard
+                          key={listing.id}
+                          listing={listing}
+                          count={applicationCounts[listing.id] ?? 0}
+                        />
+                      ))}
+                    </Masonry>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -626,205 +628,82 @@ export function IlanlarListesi({
 // İlan kartı — zenginleştirilmiş (başvuru sayısı + deadline rozeti + doğrulanmış)
 // =============================================================================
 
-function IlanCard({
+// PanoCard — Commit A: TEK sade pano kartı (beyaz kart + tek iğne + deterministik
+// eğim). Çoklu stil / rastgele renk-boyut / hover / featured-vurgu / tam rozet
+// sistemi Commit B'de (aynı hash altyapısından türetilecek).
+// Not: count/isOwn prop imzası KORUNUR (çağrı yerleri aynı) — Commit B'de kullanılacak.
+function PanoCard({
   listing,
-  count,
-  isOwn = false,
 }: {
   listing: ListingWithRelations;
   count: number;
   isOwn?: boolean;
 }) {
   const categoryLabel = listing.service_categories?.name_tr ?? 'Kategori';
-  const categoryIcon = getCategoryIcon(listing.service_categories?.slug);
   const cityName = listing.turkish_cities?.name;
-  const eventDateLabel = listing.event_date
-    ? new Date(listing.event_date).toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    : null;
   const budgetText = formatBudgetRange(
     listing.budget_min,
     listing.budget_max,
     listing.currency
   );
-
   const urgent = isUrgent(listing);
-  const featured = isFeaturedHome(listing) || isFeaturedCategory(listing);
 
-  // Son başvuru rozeti: geçmiş → gri "Kapandı"; ≤7 gün → mercan "Son X gün"
-  let deadlineBadge: { text: string; passed: boolean } | null = null;
-  if (listing.application_deadline) {
-    const diff = new Date(listing.application_deadline).getTime() - Date.now();
-    if (diff < 0) {
-      deadlineBadge = { text: 'Kapandı', passed: true };
-    } else {
-      const days = Math.ceil(diff / 86400000);
-      if (days <= 7) {
-        deadlineBadge = {
-          text: days <= 1 ? 'Son gün' : `Son ${days} gün`,
-          passed: false,
-        };
-      }
-    }
-  }
-
-  // İlan veren — kamuya görünen ad/avatar DAİMA creator_id profili (attribution).
+  // İlan veren — kamuya görünen ad DAİMA creator profili (attribution).
   const creator = listing.creator;
   const creatorName =
     creator?.company_name || creator?.full_name || 'İlan sahibi';
-  const creatorRoleLabel =
-    creator?.role === 'business'
-      ? 'Kurumsal'
-      : creator?.role === 'agency'
-        ? 'Ajans'
-        : null;
-  const creatorVerified = creator?.approval_status === 'approved';
+
+  // Deterministik eğim: aynı id → aynı açı (Commit B'de renk/boyut/stil de aynı hash'ten).
+  const tilt = getPanoTilt(listing.id);
 
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
-      className={`block rounded-lg p-5 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${
-        isOwn
-          ? 'bg-brand-ink/[0.04] border-2 border-brand-ink/30 hover:border-brand-ink hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
-          : featured
-            ? 'bg-[#FFFDF6] border border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[4px_4px_0_#D9C179]'
-            : 'bg-card border border-line hover:border-brand-ink hover:shadow-[4px_4px_0_var(--color-brand-ink)]'
-      }`}
+      className="pano-card block relative"
+      style={{ transform: `rotate(${tilt}deg)` }}
     >
-      {/* Rozet satırı: kendi / öne çıkan / acil / deadline */}
-      {(isOwn || featured || urgent || deadlineBadge) && (
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          {isOwn && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-brand-ink bg-brand-ink/10 border border-brand-ink/30">
-              Senin ilanın
-            </span>
-          )}
-          {featured && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-[#8A6D1F] bg-[#F4E9C8] border border-[#D9C179]">
-              ★ Öne çıkan
-            </span>
-          )}
-          {urgent && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] text-danger bg-danger-08 border border-danger/30">
-              ● Acil
-            </span>
-          )}
-          {deadlineBadge && (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.1em] border ${
-                deadlineBadge.passed
-                  ? 'text-ink-72 bg-ink-72/10 border-ink-72/25'
-                  : 'text-[#FA0B96] bg-[#FA0B96]/10 border-[#FA0B96]/30'
-              }`}
-            >
-              {deadlineBadge.text}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Tek iğne — üst-orta (renk çeşitliliği Commit B; şimdilik sabit pembe) */}
+      <span
+        aria-hidden="true"
+        className="absolute left-1/2 -translate-x-1/2 rounded-full"
+        style={{
+          top: '-8px',
+          width: '13px',
+          height: '13px',
+          background: '#FA0B96',
+          zIndex: 1,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+        }}
+      />
 
-      {/* Kategori + yayın zamanı */}
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-ink/8 text-brand-ink rounded-full text-[10px] font-mono uppercase tracking-[0.1em] min-w-0">
-          {categoryIcon && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={categoryIcon}
-              alt=""
-              className="w-5 h-5 object-contain shrink-0"
-              aria-hidden="true"
-            />
-          )}
-          <span className="truncate">{categoryLabel}</span>
-        </span>
-        <span className="text-[10px] font-mono text-ink-72 shrink-0">
-          {formatListingAge(listing.published_at)}
-        </span>
-      </div>
+      {/* Kategori etiketi — küçük, pembe */}
+      <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-brand-accent mb-2">
+        {categoryLabel}
+      </span>
 
-      {/* Başlık */}
-      <h3 className="font-display text-lg font-semibold text-ink leading-snug mb-3 line-clamp-2">
+      {/* Başlık — TÜM kartlarda AYNI boyut (15px / 600) */}
+      <h3 className="font-display text-[15px] font-semibold text-ink leading-snug mb-2 line-clamp-3">
+        {urgent && (
+          <span
+            aria-label="Acil"
+            className="inline-block w-2 h-2 rounded-full bg-danger align-middle mr-1.5"
+          />
+        )}
         {listing.title}
       </h3>
 
-      {/* İlan veren */}
-      {creator && (
-        <div className="flex items-center gap-2 mb-3">
-          {creator.avatar_url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={creator.avatar_url}
-              alt=""
-              className="w-6 h-6 rounded-full object-cover border border-line shrink-0"
-              aria-hidden="true"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-brand-ink/80 flex items-center justify-center text-paper font-display font-semibold text-[10px] shrink-0">
-              {creatorName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="text-xs text-ink-72 truncate">{creatorName}</span>
-          {creatorVerified && (
-            <BadgeCheck
-              size={13}
-              strokeWidth={2}
-              className="text-[#040D26] shrink-0"
-              aria-label="Doğrulanmış"
-            />
-          )}
-          {creatorRoleLabel && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-72 border border-line rounded-full px-1.5 py-0.5 shrink-0">
-              {creatorRoleLabel}
-            </span>
-          )}
-        </div>
-      )}
+      {/* İlan veren + şehir — tek satır, küçük gri */}
+      <p className="text-xs text-ink-72 truncate mb-3">
+        {creatorName}
+        {cityName ? ` · ${cityName}` : ''}
+      </p>
 
-      {/* Meta: şehir · etkinlik tarihi · kişi */}
-      {(cityName || eventDateLabel || listing.guest_count !== null) && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-72 mb-3">
-          {cityName && (
-            <span className="flex items-center gap-1">
-              <MapPin size={12} strokeWidth={1.75} />
-              {cityName}
-            </span>
-          )}
-          {eventDateLabel && (
-            <span className="flex items-center gap-1">
-              <Calendar size={12} strokeWidth={1.75} />
-              {eventDateLabel}
-            </span>
-          )}
-          {listing.guest_count !== null && (
-            <span className="flex items-center gap-1">
-              <Users size={12} strokeWidth={1.75} />
-              {listing.guest_count} kişi
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Başvuru sayısı */}
-      <div className="mb-3">
-        {count > 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink">
-            <Users size={12} strokeWidth={1.75} className="text-brand-ink" />
-            {count} başvuru
-          </span>
-        ) : (
-          <span className="text-xs text-ink-72 italic">İlk başvuran sen ol</span>
-        )}
-      </div>
-
-      {/* Bütçe */}
-      <div className="border-t border-line pt-3 mt-3 flex items-center justify-between">
-        <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
+      {/* Bütçe — alt, border-top ile ayrık, kalın */}
+      <div className="border-t border-line pt-2.5 flex items-center justify-between">
+        <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-ink-72">
           Bütçe
         </span>
-        <span className="font-display text-base text-ink font-medium">
+        <span className="font-display text-sm text-ink font-semibold">
           {budgetText}
         </span>
       </div>
