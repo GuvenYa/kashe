@@ -49,7 +49,6 @@ export function YeniKategoriFormu({
   const [slugEdited, setSlugEdited] = useState(false);
   const [slug, setSlug] = useState(initialName ? slugifyTr(initialName) : '');
   const [emoji, setEmoji] = useState('');
-  const [description, setDescription] = useState('');
 
   // Başlık değişince slug otomatik türesin (admin elle düzenlemediyse)
   function handleNameChange(value: string) {
@@ -64,7 +63,6 @@ export function YeniKategoriFormu({
     setSlug('');
     setSlugEdited(false);
     setEmoji('');
-    setDescription('');
     setError(null);
   }
 
@@ -83,7 +81,6 @@ export function YeniKategoriFormu({
         name_tr: nameTr,
         slug: slug,
         emoji: emoji || null,
-        description: description || null,
         from_request_id: fromRequestId ?? null,
       });
       if (result.success) {
@@ -197,18 +194,14 @@ export function YeniKategoriFormu({
           </p>
         </div>
 
-        <div>
-          <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 block mb-2">
-            Açıklama <span className="text-ink-72 normal-case tracking-normal">(opsiyonel)</span>
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Kategori sayfasında görünecek kısa açıklama."
-            rows={2}
-            maxLength={500}
-            className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition resize-none"
-          />
+        {/* Kategori satırı tek başına yayına yetmez — sonraki adımlar kod tarafında. */}
+        <div className="bg-paper border border-line rounded-lg px-4 py-3 text-[12.5px] text-ink-72 leading-relaxed">
+          Bu form yalnız <strong className="text-ink">kategori satırını</strong>{' '}
+          oluşturur. Yayına hazır olması için <code className="text-ink">category-content</code>,
+          preset, filtre ve brief girdileri gerekir —{' '}
+          <code className="text-ink">docs/yeni-kategori-checklist.md</code>. Bunlar
+          eklenene kadar kategori sayfası jenerik görünür ve profesyoneller kategori
+          bilgileri formunu dolduramaz.
         </div>
 
         {error && (

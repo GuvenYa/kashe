@@ -22,6 +22,9 @@ const TONES = [
   { iconBg: "#E6F6EE", cardHover: "rgba(31,138,95,0.07)"   }, // Müzisyen    — yeşil  #1F8A5F
 ];
 
+/** Ana sayfada gösterilen kategori sayısı — gerisi /kategoriler hub'ında. */
+const HOME_LIMIT = 12;
+
 export async function Categories() {
   const supabase = await createClient();
 
@@ -37,11 +40,11 @@ export async function Categories() {
     .eq("is_active", true)
     .order("sort_order");
 
-  const categories = (categoriesData || []) as CategoryRow[];
+  const allCategories = (categoriesData || []) as CategoryRow[];
 
   // Her kategoride kaç yayında profesyonel var (id -> count)
   const profileCountByCat: Record<number, number> = {};
-  if (categories.length > 0) {
+  if (allCategories.length > 0) {
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("primary_category_id")
@@ -54,6 +57,18 @@ export async function Categories() {
       }
     });
   }
+
+  // "Popüler kategoriler" başlığının doğru olması için: DOLU kategoriler önce,
+  // aralarında sort_order korunur (stable sort). Ardından ilk HOME_LIMIT gösterilir —
+  // 24 kategoride 6 satırlık grid ve "Yakında" etiketi seli böylece oluşmaz.
+  // Tamamı /kategoriler hub'ında; kesilen kategorilerin keşif yüzeyi orası + sitemap.
+  const categories = [...allCategories]
+    .sort(
+      (a, b) =>
+        (profileCountByCat[b.id] ? 1 : 0) - (profileCountByCat[a.id] ? 1 : 0)
+    )
+    .slice(0, HOME_LIMIT);
+  const hasMore = allCategories.length > categories.length;
 
   return (
     <section id="hizmetler" className="bg-paper border-t border-line">
@@ -136,12 +151,23 @@ export async function Categories() {
           })}
         </div>
 
-        {/* Kategori öneri CTA — grid altında, sade inline */}
-        <div className="mt-10 flex justify-center">
+        {/* Tüm kategoriler + kategori öneri CTA — grid altında */}
+        <div className="mt-10 flex flex-col items-center gap-4">
+          {hasMore && (
+            <Link
+              href="/kategoriler"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 bg-card border border-line rounded-lg font-display font-semibold text-sm text-ink hover:border-brand-ink hover:-translate-y-0.5 transition-all"
+            >
+              Tüm kategoriler
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                →
+              </span>
+            </Link>
+          )}
           <KategoriTalepCta
             isLoggedIn={isLoggedIn}
             variant="inline"
-            existingSlugs={categories.map((c) => c.slug)}
+            existingSlugs={allCategories.map((c) => c.slug)}
           />
         </div>
       </div>

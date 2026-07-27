@@ -17,5 +17,6 @@ export function getResend(): Resend | null {
 export const EMAIL_FROM =
   process.env.EMAIL_FROM || 'Kashe <onboarding@resend.dev>';
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://kashe.net';
+// Taban adres TEK KAYNAK: app/lib/site.ts. (Buradaki eski fallback 'kashe.net'
+// idi, sitemap'inkiyle çelişiyordu — cutover öncesi iki farklı adres üretiyordu.)
+export { SITE_URL } from '../site';

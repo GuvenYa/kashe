@@ -675,7 +675,6 @@ type AddCategoryInput = {
   name_tr: string;
   slug: string;
   emoji: string | null;
-  description: string | null;
   // Bu talepten oluşturuluyorsa, onaylama için id (opsiyonel)
   from_request_id?: string | null;
 };
@@ -741,11 +740,13 @@ export async function addCategory(
 
   const { data: newCat, error } = await supabase
     .from('service_categories')
+    // NOT: service_categories.description / seo_title kolonları ÖLÜ —
+    // /kategori/[slug] onları yalnız category-content girdisi YOKKEN fallback
+    // olarak okur, o da 16/16 dolu olduğu için hiç gerçekleşmez. Yazılmıyor.
     .insert({
       name_tr: name,
       slug,
       emoji: input.emoji?.trim() || null,
-      description: input.description?.trim() || null,
       sort_order: nextSortOrder,
       is_active: true,
     })
@@ -771,6 +772,8 @@ export async function addCategory(
   revalidatePath('/admin');
   revalidatePath('/kesfet');
   revalidatePath('/'); // anasayfa kategori listesi
+  revalidatePath('/kategoriler'); // hub sayfası
+  revalidatePath(`/kategori/${slug}`); // SEO açılış sayfası
   return { success: true, categoryId: newCat.id };
 }
 // ============================================================
