@@ -11,7 +11,8 @@
       "Bash(git fetch *)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(rm -f scripts/tmp-option-safety-check.ts)",
-      "Bash(rm -f scripts/tmp-live-filter-probe.ts)"
+      "Bash(rm -f scripts/tmp-live-filter-probe.ts)",
+      "Bash(rm -f scripts/tmp-align-check.ts)"
     ]
   }
 }

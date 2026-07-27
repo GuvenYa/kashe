@@ -909,6 +909,8 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
   'stand-up-komedyen': {
     what_to_expect: 'Etkileşimli, güncel, doğaçlamaya açık gösteri',
     language_pairs: 'Türkçe, İngilizce',
+    // Kapsam genişledi: mizah + sahne anlatıcılığı (kaynak doküman §17).
+    areas: 'Kurumsal etkinlik, Gala, Üniversite, Hikâye anlatımı',
   },
   illuzyonist: {
     what_to_expect: 'Sahne illüzyonu + close-up + mentalizm',
@@ -948,13 +950,17 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
     areas: 'Hukuki, Tıbbi, Teknik, Ticari',
     // Düz dil listesi (çift DEĞİL) — LANGUAGE_OPTIONS sözlüğünden seçilir.
     language_pairs: 'Türkçe, İngilizce, Almanca',
+    // summary_stats: tanıtım bandındaki çip örnekleri (virgülle 3 tane).
+    summary_stats: '300+ konferans, 12 yıl deneyim, 8 dil',
   },
   organizasyon: {
     areas: 'Düğün, Kurumsal etkinlik, Konser, Fuar',
+    summary_stats: '250+ etkinlik, 15 yıl deneyim, 40 kişilik ekip',
   },
   karikaturist: {
     areas: 'Portre karikatür, Canlı çizim, Dijital illüstrasyon',
     what_to_expect: 'Etkinlikte canlı çizim; misafirlere hediyelik',
+    summary_stats: '500+ portre, 9 yıl deneyim, 120+ etkinlik',
   },
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import {
   getCategoryFields,
   getModuleTitle,
@@ -14,6 +14,7 @@ import {
   PLATFORM_OPTIONS,
   SKILL_LEVELS,
   CATEGORY_PARAM_SUGGESTIONS,
+  CATEGORY_EXAMPLES,
   ARCHETYPE_TAGLINE_EXAMPLES,
   LANGUAGE_OPTIONS,
   toQuickList,
@@ -30,6 +31,16 @@ const EYEBROW = 'font-display text-[11px] font-semibold uppercase tracking-[0.14
 const CARD = 'bg-card border border-line rounded-xl p-6';
 
 type ModulesState = Record<string, Record<string, unknown>>;
+
+/** Modül başlığının altına düşen tek satırlık "bu bölüm ne işe yarar" açıklaması. */
+const MODULE_HINTS: Partial<Record<ModuleKey, string>> = {
+  diller_belgeler:
+    'Belge yükleme ve doğrulama süreci ayrıca yapılacak — burada yalnız dilleri seçersin.',
+  calisma_parametreleri:
+    'Müşterinin merak ettiği çalışma detayları — etiket ve değer olarak yaz. Örn: Minimum süre — Yarım gün',
+  teknik_teslimat:
+    'İşi nasıl teslim ettiğin — etiket ve değer olarak yaz. Örn: Teslim süresi — 1 hafta',
+};
 type Rec = Record<string, unknown>;
 
 function initModules(
@@ -183,20 +194,28 @@ export function KategoriForm({
   const setModuleField = (mkey: string, fkey: string, val: unknown) =>
     setModules((m) => ({ ...m, [mkey]: { ...(m[mkey] ?? {}), [fkey]: val } }));
 
+  // Kaydedilecek payload — hem handleSave hem "kaydedilmemiş değişiklik" tespiti
+  // aynı kaynaktan okur (iki ayrı gerçek olmasın).
+  const payload: Record<string, unknown> = {
+    service_region: serviceRegion,
+    experience_label: experienceLabel,
+    calisma_sekli: calismaSekli,
+    etkinlik_turleri: etkinlikTurleri,
+    logistics,
+    skills,
+    section_taglines: taglines,
+    quick,
+    modules: buildModulesPayload(moduleKeys, modules),
+  };
+  if (preset.archetype === 'uzmanlik') payload.summary = summary;
+
+  // İlk yüklemedeki hâlin imzası; sonrası onunla karşılaştırılır.
+  // (Kayıt başarılıysa action /profil'e yönlendirdiği için sıfırlamaya gerek yok.)
+  const savedSnapshot = useRef(JSON.stringify(payload));
+  const isDirty = JSON.stringify(payload) !== savedSnapshot.current;
+
   function handleSave() {
     setError(null);
-    const payload: Record<string, unknown> = {
-      service_region: serviceRegion,
-      experience_label: experienceLabel,
-      calisma_sekli: calismaSekli,
-      etkinlik_turleri: etkinlikTurleri,
-      logistics,
-      skills,
-      section_taglines: taglines,
-      quick,
-      modules: buildModulesPayload(moduleKeys, modules),
-    };
-    if (preset.archetype === 'uzmanlik') payload.summary = summary;
 
     startTransition(async () => {
       // Başarıda action /profil'e redirect eder (buraya normal result gelmez);
@@ -221,13 +240,17 @@ export function KategoriForm({
       {/* uzmanlik özet bandı */}
       {preset.archetype === 'uzmanlik' && (
         <section className={CARD}>
-          <div className={EYEBROW}>Özet</div>
+          <div className={EYEBROW}>Tanıtım bandı</div>
           <p className="text-[13px] text-ink-72 mt-1 mb-4">
-            Public profilinde medya yerine gösterilecek kısa tanıtım.
+            Profilinin en üstünde, fotoğraf galerisinin yerinde görünür. Seni ilk
+            gören kişinin okuduğu bölüm burasıdır.
           </p>
           <div className="space-y-4">
             <div>
               <label className={LABEL}>Başlık</label>
+              <p className="text-[11.5px] text-ink-72/80 -mt-1 mb-2">
+                Bandın en üstündeki kalın satır — seni tek cümlede tanımlar.
+              </p>
               <input
                 value={summary.title}
                 onChange={(e) => setSummary((s) => ({ ...s, title: e.target.value }))}
@@ -237,7 +260,11 @@ export function KategoriForm({
               />
             </div>
             <div>
-              <label className={LABEL}>Metin (2-3 cümle)</label>
+              <label className={LABEL}>Metin</label>
+              <p className="text-[11.5px] text-ink-72/80 -mt-1 mb-2">
+                Başlığın altındaki kısa paragraf — ne yaptığını ve nasıl çalıştığını
+                2-3 cümlede anlat.
+              </p>
               <textarea
                 value={summary.body}
                 onChange={(e) => setSummary((s) => ({ ...s, body: e.target.value }))}
@@ -248,6 +275,7 @@ export function KategoriForm({
             </div>
             <StatsEditor
               stats={summary.stats}
+              examples={CATEGORY_EXAMPLES[slug]?.summary_stats}
               onChange={(stats) => setSummary((s) => ({ ...s, stats }))}
             />
           </div>
@@ -428,10 +456,9 @@ export function KategoriForm({
         return (
           <section key={ref.key} className={CARD}>
             <div className={EYEBROW}>{getModuleTitle(ref)}</div>
-            {ref.key === 'diller_belgeler' && (
+            {MODULE_HINTS[ref.key] && (
               <p className="text-[12px] text-ink-72/80 mt-1">
-                Belge yükleme ve doğrulama süreci ayrıca yapılacak — burada yalnız
-                dilleri eklersin.
+                {MODULE_HINTS[ref.key]}
               </p>
             )}
             <div className="space-y-4 mt-3">
@@ -459,17 +486,34 @@ export function KategoriForm({
       })}
 
 
-      {/* Sabit kaydet çubuğu */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-line px-6 py-3">
+      {/* Sabit kaydet çubuğu — masaüstünde de her zaman görünür.
+          Kaydedilmemiş değişiklik varsa üst kenarı vurgulanır + uyarı satırı çıkar. */}
+      <div
+        className={`fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur px-6 py-3 transition-colors ${
+          isDirty
+            ? 'border-t-2 border-brand-ink shadow-[0_-8px_24px_-12px_rgba(26,18,14,0.25)]'
+            : 'border-t border-line'
+        }`}
+      >
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div className="text-sm">
-            {error && <span className="text-danger">{error}</span>}
+          <div className="text-sm min-w-0">
+            {error ? (
+              <span className="text-danger">{error}</span>
+            ) : isDirty ? (
+              <span className="inline-flex items-center gap-2 text-ink-72">
+                <span
+                  className="w-2 h-2 rounded-full bg-brand-ink shrink-0"
+                  aria-hidden="true"
+                />
+                Kaydedilmemiş değişikliklerin var
+              </span>
+            ) : null}
           </div>
           <button
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="px-6 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
+            className="shrink-0 px-6 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
           >
             {isPending ? 'Kaydediliyor…' : 'Kaydet'}
           </button>
@@ -804,17 +848,22 @@ function ModuleField({
       <div>
         {labelEl}
         {openSuggestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {openSuggestions.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onChange([...rows, { key: s, value: '' }])}
-                className="px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-brand-ink/5 border border-brand-ink/20 text-brand-ink hover:bg-brand-ink/10 transition-colors"
-              >
-                + {s}
-              </button>
-            ))}
+          <div className="mb-2.5">
+            <p className="text-[11.5px] text-ink-72/80 mb-1.5">
+              Hazır etiketler — tıkla, satır olarak eklensin:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {openSuggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => onChange([...rows, { key: s, value: '' }])}
+                  className="kashe-tap px-3 py-1.5 rounded-full text-[11.5px] font-medium bg-brand-ink/5 border border-dashed border-brand-ink/40 text-brand-ink hover:bg-brand-ink/10 hover:border-solid hover:border-brand-ink cursor-pointer transition-colors"
+                >
+                  + {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         <div className="flex flex-col gap-2">
@@ -940,26 +989,39 @@ function SkillsEditor({
   );
 }
 
-// ─── Stat çipleri (uzmanlik, max 3) — C1: TEK metin input ───
+// ─── Öne çıkan rakamlar (uzmanlik, max 3) — C1: TEK metin input ───
+// examples: CATEGORY_EXAMPLES[slug].summary_stats — virgülle ayrılmış 3 örnek;
+// her satıra kendi örneği placeholder olur (kategoriye uygun).
 function StatsEditor({
   stats,
+  examples,
   onChange,
 }: {
   stats: string[];
+  examples?: string;
   onChange: (s: string[]) => void;
 }) {
   const update = (i: number, v: string) =>
     onChange(stats.map((s, idx) => (idx === i ? v : s)));
+  const hints = (examples ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const hintFor = (i: number) => hints[i] ?? hints[hints.length - 1] ?? '300+ etkinlik';
   return (
     <div>
-      <label className={LABEL}>İstatistik çipleri (en fazla 3)</label>
+      <label className={LABEL}>Öne çıkan rakamların</label>
+      <p className="text-[11.5px] text-ink-72/80 -mt-1 mb-2">
+        Bandın altında küçük çipler hâlinde görünür — en fazla 3 tane.
+        {hints.length > 0 && ` Örn: ${hints.join(' · ')}`}
+      </p>
       <div className="flex flex-col gap-2">
         {stats.map((s, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
               value={s}
               onChange={(e) => update(i, e.target.value)}
-              placeholder="örn. 300+ konferans"
+              placeholder={`örn. ${hintFor(i)}`}
               maxLength={60}
               className={`${INPUT} flex-1`}
             />
@@ -967,7 +1029,7 @@ function StatsEditor({
           </div>
         ))}
         {stats.length < 3 && (
-          <AddBtn label="Çip ekle" onClick={() => onChange([...stats, ''])} />
+          <AddBtn label="Rakam ekle" onClick={() => onChange([...stats, ''])} />
         )}
       </div>
     </div>

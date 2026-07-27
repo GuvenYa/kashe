@@ -1190,6 +1190,369 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
       },
     ],
   },
+
+  // ===========================================================================
+  // DALGA 0 — daha önce DEFAULT_BRIEF_FIELDS'e düşen 4 kategori.
+  // Kategoriye özel select'lerin DEĞER KÜMELERİ, profesyonelin doldurduğu
+  // quick sözlükleriyle (QUICK_OPTIONS_BY_SLUG / QUICK_MULTI_OPTIONS) HİZALIDIR:
+  // müşterinin "Ardıl" demesi ile profesyonelin "Ardıl" beyanı aynı değerdir.
+  // 'no_pref' ("Fark etmez") talep tarafına özgüdür — profil sözlüğünde karşılığı
+  // olmaması normaldir (müşteri tercihi, profesyonel beyanı değil).
+  // ===========================================================================
+
+  // --- DANSÇILAR VE KOREOGRAFLAR ---
+  {
+    slug: 'dansci',
+    intro:
+      'Etkinliğini ve beklediğin performansı anlat, dansçı veya koreograf sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'dance_style',
+        label: 'Dans türü / konsept',
+        type: 'select',
+        required: false,
+        // DANS_TURLERI_OPTIONS ile hizalı (+ no_pref)
+        options: [
+          { value: 'Modern/Show', label: 'Modern / Show' },
+          { value: 'Latin', label: 'Latin' },
+          { value: 'Hip-hop/Sokak', label: 'Hip-hop / Sokak' },
+          { value: 'Halk oyunları', label: 'Halk oyunları' },
+          { value: 'Oryantal', label: 'Oryantal' },
+          { value: 'Zeybek', label: 'Zeybek' },
+          { value: 'Kına', label: 'Kına' },
+          { value: 'Flash mob', label: 'Flash mob' },
+          { value: 'Koreografi', label: 'Koreografi hazırlığı' },
+          { value: 'no_pref', label: 'Fark etmez / Önerin' },
+        ],
+      },
+      {
+        key: 'team_size',
+        label: 'Ekip büyüklüğü tercihi',
+        type: 'select',
+        required: false,
+        // EKIP_BOYUTU_OPTIONS ile hizalı
+        options: [
+          { value: 'Solo', label: 'Solo' },
+          { value: 'Duo', label: 'Duo' },
+          { value: 'Trio', label: 'Trio' },
+          { value: 'Grup 4+', label: 'Grup (4 ve üzeri)' },
+          { value: 'no_pref', label: 'Fark etmez' },
+        ],
+      },
+      {
+        key: 'duration',
+        label: 'Performans süresi',
+        type: 'select',
+        required: false,
+        // GOSTERI_SURESI_OPTIONS ile hizalı
+        options: [
+          { value: '30 dk altı', label: '30 dk altı' },
+          { value: '30–60 dk', label: '30–60 dk' },
+          { value: '60–90 dk', label: '60–90 dk' },
+          { value: '90+ dk', label: '90+ dk' },
+          { value: 'no_pref', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 150',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- ÇEVİRMENLER VE ETKİNLİK REHBERLERİ ---
+  {
+    slug: 'tercuman',
+    intro:
+      'Etkinliğini, dil ihtiyacını ve çalışma süresini paylaş; çevirmen sana net bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'service_type',
+        label: 'Hizmet türü',
+        type: 'select',
+        required: false,
+        // CEVIRI_OPTIONS ile hizalı (+ no_pref)
+        options: [
+          { value: 'Simultane', label: 'Simultane' },
+          { value: 'Ardıl', label: 'Ardıl' },
+          { value: 'Yazılı', label: 'Yazılı' },
+          { value: 'Fısıltı', label: 'Fısıltı' },
+          { value: 'Fuar çevirmenliği', label: 'Fuar çevirmenliği' },
+          { value: 'Etkinlik rehberliği', label: 'Etkinlik rehberliği' },
+          { value: 'VIP refakat', label: 'VIP refakat' },
+          { value: 'no_pref', label: 'Emin değilim / Önerin' },
+        ],
+      },
+      {
+        key: 'language',
+        label: 'İhtiyaç duyulan dil',
+        type: 'select',
+        required: false,
+        // LANGUAGE_OPTIONS ile hizalı (en sık talep edilenler + diğer)
+        options: [
+          { value: 'İngilizce', label: 'İngilizce' },
+          { value: 'Almanca', label: 'Almanca' },
+          { value: 'Fransızca', label: 'Fransızca' },
+          { value: 'Arapça', label: 'Arapça' },
+          { value: 'Rusça', label: 'Rusça' },
+          { value: 'İspanyolca', label: 'İspanyolca' },
+          { value: 'other', label: 'Diğer — mesajda belirteceğim' },
+        ],
+      },
+      {
+        key: 'work_duration',
+        label: 'Çalışma süresi',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'hourly', label: 'Saatlik' },
+          { value: 'half_day', label: 'Yarım gün' },
+          { value: 'full_day', label: 'Tam gün' },
+          { value: 'multi_day', label: 'Çok günlü' },
+        ],
+      },
+      {
+        // Simultane çeviride kabin/kulaklık ihtiyacını, rehberlikte grup
+        // büyüklüğünü belirler — teklif için belirleyici.
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 80',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- STAND-UP KOMEDYENLERİ VE SAHNE ANLATICILARI ---
+  {
+    slug: 'stand-up-komedyen',
+    intro:
+      'Etkinliğini ve beklediğin tonu anlat, komedyen sana uygun bir gösteri teklifi versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'show_type',
+        label: 'Gösteri türü',
+        type: 'select',
+        required: false,
+        // QUICK_OPTIONS_BY_SLUG['stand-up-komedyen'].gosteri_turu ile hizalı
+        options: [
+          { value: 'Kısa set', label: 'Kısa set' },
+          { value: 'Tam gösteri', label: 'Tam gösteri' },
+          { value: 'Doğaçlama', label: 'Doğaçlama' },
+          { value: 'Hikâye anlatımı', label: 'Hikâye anlatımı' },
+          { value: 'Roast/özel konsept', label: 'Roast / özel konsept' },
+          { value: 'no_pref', label: 'Fark etmez / Önerin' },
+        ],
+      },
+      {
+        key: 'duration',
+        label: 'Gösteri süresi',
+        type: 'select',
+        required: false,
+        // GOSTERI_SURESI_OPTIONS ile hizalı
+        options: [
+          { value: '30 dk altı', label: '30 dk altı' },
+          { value: '30–60 dk', label: '30–60 dk' },
+          { value: '60–90 dk', label: '60–90 dk' },
+          { value: '90+ dk', label: '90+ dk' },
+          { value: 'no_pref', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'tone',
+        label: 'İçerik tonu',
+        type: 'select',
+        required: false,
+        // logistics.kurumsal_dil ile hizalı ('corporate' → kurumsal dile uygun)
+        options: [
+          { value: 'corporate', label: 'Kurumsal — temiz içerik' },
+          { value: 'free', label: 'Serbest' },
+          { value: 'no_pref', label: 'Fark etmez' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 120',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- KARİKATÜRİST ---
+  {
+    slug: 'karikaturist',
+    intro:
+      'Etkinliğini ve çizim ihtiyacını paylaş, karikatürist sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik / proje türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'drawing_type',
+        label: 'Çizim türü',
+        type: 'select',
+        required: false,
+        // QUICK_OPTIONS_BY_SLUG.karikaturist.cizim_turu ile hizalı
+        options: [
+          { value: 'Portre karikatür', label: 'Portre karikatür' },
+          { value: 'Canlı çizim', label: 'Canlı çizim' },
+          { value: 'Dijital illüstrasyon', label: 'Dijital illüstrasyon' },
+          { value: 'Karma', label: 'Karma' },
+          { value: 'no_pref', label: 'Fark etmez / Önerin' },
+        ],
+      },
+      {
+        key: 'delivery',
+        label: 'Teslim beklentisi',
+        type: 'select',
+        required: false,
+        // QUICK_OPTIONS_BY_SLUG.karikaturist.teslim_suresi ile hizalı
+        options: [
+          { value: 'Anında', label: 'Etkinlikte anında' },
+          { value: '1–3 gün', label: '1–3 gün' },
+          { value: '1 hafta', label: '1 hafta' },
+          { value: 'no_pref', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Çizilecek kişi sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 40',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
 ];
 
 // -----------------------------------------------------------------------------

@@ -140,7 +140,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   sunucu: {
     heroHeadline: "Etkinliğini Profesyonel Sunucularla Akıcı ve Etkili Hale Getir",
     description:
-      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar.",
+      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar. Sahnedeki içeriğin kendisi profesyonele aitse (mizah gösterisi, hikâye anlatımı) Stand-up Komedyenleri ve Sahne Anlatıcıları kategorisine bak.",
     subServices: [
       { name: "Kurumsal Etkinlik Sunucusu", description: "Lansman, şirket toplantısı, bayi buluşması, gala ve marka etkinlikleri" },
       { name: "Konferans / Panel Moderatörü", description: "Panel, seminer, zirve, çalıştay ve resmi toplantılarda oturum yönetimi" },
@@ -163,7 +163,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   hostes: {
     heroHeadline: "Etkinliğinde Profesyonel Karşılama ve Operasyon Desteği Sağla",
     description:
-      "Host / Hostesler kategorisi; fuar, lansman, kongre, gala, mağaza açılışı, kurumsal etkinlik, bayi toplantısı, düğün, özel davet, marka aktivasyonu ve tanıtım etkinliklerinde karşılama, kayıt, stand, ürün tanıtımı, servis, rehberlik ve çeviri görevleri için personel teminini kapsar.",
+      "Host / Hostesler kategorisi; fuar, lansman, kongre, gala, mağaza açılışı, kurumsal etkinlik, bayi toplantısı, düğün, özel davet, marka aktivasyonu ve tanıtım etkinliklerinde karşılama, kayıt, stand, ürün tanıtımı, servis, rehberlik ve çeviri görevleri için personel teminini kapsar. İşin ağırlığı karşılama değil de dil aktarımıysa (simultane, ardıl, fuar çevirmenliği) Çevirmenler ve Etkinlik Rehberleri kategorisine bak.",
     subServices: [
       { name: "Karşılama Host / Hostesi", description: "Etkinlik girişinde misafir karşılama ve yönlendirme" },
       { name: "Kayıt Masası Personeli", description: "Kongre, seminer, konferans ve kurumsal etkinliklerde kayıt alma" },
@@ -258,7 +258,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   palyaco: {
     heroHeadline: "Çocuk Partileri ve Özel Etkinlikler İçin Eğlenceli Gösteriler Bul",
     description:
-      "Palyaço ve çocuk animasyonu kategorisi; çocuk etkinlikleri, doğum günleri, okul organizasyonları, aile günleri, AVM etkinlikleri ve özel kutlamalar için eğlence odaklı profesyonellere ulaşmayı sağlar. Palyaço gösterisi, yüz boyama, balon şekillendirme, jonglörlük, çocuk animasyonu, maskot ve interaktif sahne gösterileri bu kategoriye dahildir.",
+      "Palyaço ve çocuk animasyonu kategorisi; çocuk etkinlikleri, doğum günleri, okul organizasyonları, aile günleri, AVM etkinlikleri ve özel kutlamalar için eğlence odaklı profesyonellere ulaşmayı sağlar. Palyaço gösterisi, yüz boyama, balon şekillendirme, jonglörlük, çocuk animasyonu, maskot ve interaktif sahne gösterileri bu kategoriye dahildir. Çocuk etkileşimi değil de koreografili dans performansı arıyorsan Dansçılar ve Koreograflar kategorisine bak.",
     subServices: [
       { name: "Palyaço Gösterisi", description: "Çocuk doğum günü, okul etkinliği ve özel kutlamalar" },
       { name: "Yüz Boyama Sanatçısı", description: "Çocuk partileri, AVM etkinlikleri ve okul organizasyonları" },
@@ -279,7 +279,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   illuzyonist: {
     heroHeadline: "Etkinliğine Şaşırtan Sihirbazlık ve İllüzyon Gösterileri Kat",
     description:
-      "Sihirbazlar ve illüzyonistler kategorisi; doğum günleri, kurumsal etkinlikler, galalar, özel davetler ve sahne organizasyonları için profesyonel sihirbazlık ve illüzyon gösterileri sunan performansçılara ulaşmayı sağlar. Sahne sihirbazlığı, masa başı (close-up) illüzyon, mentalizm, çocuk sihirbaz gösterisi ve büyük ölçekli illüzyon şovları bu kategoriye dahildir.",
+      "Sihirbazlar ve illüzyonistler kategorisi; doğum günleri, kurumsal etkinlikler, galalar, özel davetler ve sahne organizasyonları için profesyonel sihirbazlık ve illüzyon gösterileri sunan performansçılara ulaşmayı sağlar. Sahne sihirbazlığı, masa başı (close-up) illüzyon, mentalizm, çocuk sihirbaz gösterisi ve büyük ölçekli illüzyon şovları bu kategoriye dahildir. Aradığın gösteri hile/yanılsama değil de koreografili dans performansıysa Dansçılar ve Koreograflar kategorisine bak.",
     subServices: [
       { name: "Sahne Sihirbazlığı", description: "Doğum günü, kurumsal etkinlik ve özel davetler için sahne gösterisi" },
       { name: "Masa Başı (Close-up) Sihirbazlık", description: "Davet, kokteyl ve masa arası yakın plan illüzyon" },
@@ -336,64 +336,77 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   },
 
   dansci: {
-    heroHeadline: "Sahneni Profesyonel Dansçı ve Gösteri Ekipleriyle Hareketlendir",
+    heroHeadline: "Etkinliğine Hareket, Sahne Enerjisi ve Profesyonel Koreografi Kat",
     description:
-      "Dansçılar kategorisi; düğün, kına, açılış, lansman, kurumsal etkinlik, festival, konser, sahne gösterisi, gala ve özel davetlerde performans sunacak solo dansçı, dans ekibi ve koreograf profesyonellerini kapsar. Kullanıcılar dans türü, ekip boyutu, gösteri süresi, şehir, fiyat aralığı, puan, yorum ve müsaitliğe göre profilleri karşılaştırabilir.",
+      "Dansçılar ve Koreograflar kategorisi; düğün, kına, nişan, açılış, lansman, kurumsal show, festival, konser, gala, reklam, klip ve sosyal medya çekimlerinde performans sunan solo dansçı, dans ekibi ve koreografları kapsar. Kullanıcılar dans türü, ekip boyutu, gösteri süresi, kostüm, koreografi desteği, şehir, fiyat ve portföy videolarına göre profilleri karşılaştırabilir. Sahnede dans değil görsel beceri gösterisi arıyorsan (akrobasi, jonglörlük, sihirbazlık) İllüzyonistler ve Palyaço & Çocuk Animasyonu kategorilerine bak.",
     subServices: [
       { name: "Modern / Show Dans Ekibi", description: "Sahne gösterisi, açılış ve kurumsal etkinlik koreografileri" },
+      { name: "Kına Dans Ekibi", description: "Kına gecesi giriş, ritüel ve sahne show performansları" },
       { name: "Latin Dans Performansı", description: "Salsa, bachata, tango ve sosyal dans gösterileri" },
       { name: "Hip-hop / Sokak Dansı", description: "Konser, festival ve marka etkinliği performansları" },
       { name: "Halk Oyunları Ekibi", description: "Düğün, kına ve kültürel etkinlikler için yöresel gösteriler" },
+      { name: "Zeybek Ekibi", description: "Düğün, kına ve özel törenlerde zeybek performansı" },
       { name: "Oryantal / Sahne Dansı", description: "Özel davet, gece kulübü ve sahne programları" },
+      { name: "Flash Mob Ekibi", description: "Sürpriz etkinlik, açılış ve marka aktivasyonları için toplu dans" },
+      { name: "Sahne Dans Ekibi", description: "Lansman, gala, festival ve kurumsal etkinliklerde profesyonel show" },
+      { name: "Klip / Reklam Dansçısı", description: "Video, reklam, katalog ve sosyal medya prodüksiyonlarında performans" },
       { name: "Düğün Açılış Dansı Koreografisi", description: "Çiftlere özel ilk dans hazırlığı ve prova" },
       { name: "Karşılama / Animasyon Ekibi", description: "Açılış, kortej, fuar ve marka aktivasyonu" },
-      { name: "Koreograf", description: "Etkinlik, klip ve sahne projeleri için koreografi tasarımı" },
+      { name: "Koreograf", description: "Çift dansı, sahne showu, klip/reklam ve ekip koreografisi hazırlığı" },
     ],
-    seoTitle: "Dansçılar Bul | Kashe",
+    seoTitle: "Dansçı ve Koreograf Bul | Kına, Düğün ve Kurumsal Show | Kashe",
     seoDescription:
-      "Dansçılar kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+      "Kına, düğün, lansman, gala, reklam, klip ve sahne etkinlikleri için dansçı, dans ekibi ve koreografları Kashe'de keşfet. Portföyleri incele, fiyatları karşılaştır, teklif al.",
     landingText:
-      "Dansçılar kategorisi; düğün, festival, konser, kurumsal etkinlik ve özel davetler için solo dansçı, dans ekibi ve koreograflara ulaşmayı sağlar.",
+      "Etkinliğine profesyonel dans performansı ve sahne enerjisi kat. Kına, düğün, kurumsal show, flash mob, reklam ve klip çekimleri için dansçıları ve koreografları incele, portföyleri karşılaştır ve sana en uygun ekipten teklif al.",
   },
 
   "stand-up-komedyen": {
-    heroHeadline: "Etkinliğine Kahkahayı Profesyonel Stand-up Komedyenlerle Getir",
+    heroHeadline: "Etkinliğine Mizah, Hikâye ve Sahne Etkisi Kat",
     description:
-      "Stand-up komedyenler kategorisi; kurumsal etkinlik, gala, açılış, lansman, özel davet, sahne programı, üniversite etkinliği ve eğlence geceleri için sahne alacak stand-up sanatçısı ve doğaçlama komedyenlerini kapsar. Kullanıcılar gösteri türü, süre, dil, şehir, fiyat aralığı, puan, yorum ve müsaitliğe göre profilleri karşılaştırabilir.",
+      "Stand-up Komedyenleri ve Sahne Anlatıcıları kategorisi; kurumsal etkinlik, gala, açılış/kapanış programı, mezuniyet, özel parti, sahne programı ve üniversite etkinliklerinde mizah veya anlatı performansı sunan profesyonelleri kapsar. Kullanıcılar gösteri türü, mizah tarzı, süre, dil, kurumsal dile uygunluk, şehir ve fiyat aralığına göre profilleri karşılaştırabilir. Sahnedeki içerik profesyonelin kendisine ait değil de programı akıtacak biri arıyorsan Sunucular / Moderatörler kategorisine bak.",
     subServices: [
+      { name: "Stand-up Komedyeni", description: "Biletli gösteri, komedi kulübü ve turne performansı" },
       { name: "Kurumsal Etkinlik Komedyeni", description: "Gala, bayi buluşması, şirket partisi ve marka etkinlikleri" },
       { name: "Özel Davet Stand-up'ı", description: "Doğum günü, yıl dönümü ve özel kutlamalar" },
-      { name: "Sahne / Kulüp Programı", description: "Biletli gösteri, komedi kulübü ve turne performansı" },
-      { name: "Doğaçlama (Improv) Gösterisi", description: "Etkileşimli, seyirciyle kurgulanan doğaçlama sahne" },
+      { name: "Doğaçlama Gösteri Sanatçısı", description: "Etkileşimli, seyirciyle kurgulanan doğaçlama sahne" },
+      { name: "Hikâye Anlatıcısı", description: "Tematik sahne anlatımı ve anlatı odaklı performans" },
+      { name: "Mizah Sunucusu", description: "Program akışını mizahla yöneten sahne performansı" },
+      { name: "Roast / Özel Konsept Performans", description: "Kuruma veya kişiye özel yazılmış konsept gösteri" },
+      { name: "Açılış / Kapanış Performansçısı", description: "Gala ve ödül töreni ara performansları" },
       { name: "Üniversite / Topluluk Etkinliği", description: "Kampüs etkinlikleri, festival ve öğrenci organizasyonları" },
       { name: "Çok Dilli Stand-up", description: "Türkçe veya İngilizce sahne gösterisi" },
-      { name: "MC / Sahne Aracısı Komedyen", description: "Program aralarında akışı canlı tutan sahne performansı" },
     ],
-    seoTitle: "Stand-up Komedyenler Bul | Kashe",
+    seoTitle: "Stand-up Komedyeni Bul | Kurumsal Etkinlik ve Sahne Performansı | Kashe",
     seoDescription:
-      "Stand-up komedyenler kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+      "Kurumsal etkinlik, gala, özel davet ve sahne programları için stand-up komedyenleri ve sahne anlatıcılarını Kashe'de keşfet. Portföyleri incele, fiyatları karşılaştır, teklif al.",
     landingText:
-      "Stand-up komedyenler kategorisi; kurumsal etkinlik, gala, özel davet ve sahne programları için stand-up sanatçısı ve doğaçlama komedyenlerine ulaşmayı sağlar.",
+      "Etkinliğine mizah, hikâye ve sahne etkisi kat. Kurumsal etkinlik, gala, mezuniyet ve özel davetler için stand-up komedyenlerini ve sahne anlatıcılarını incele, sana en uygun profesyonelden teklif al.",
   },
 
   tercuman: {
-    heroHeadline: "Toplantı ve Etkinliklerini Profesyonel Tercümanlarla Dile Getir",
+    heroHeadline: "Uluslararası Etkinliklerinde Dil, Rehberlik ve Protokol Desteği Al",
     description:
-      "Tercümanlar / çevirmenler kategorisi; konferans, panel, zirve, kurumsal toplantı, fuar, resmi görüşme, canlı yayın ve hibrit etkinliklerde simultane, ardıl, fısıltı ve yazılı çeviri sağlayacak profesyonelleri kapsar. Kullanıcılar dil çifti, çeviri türü, yeminli belgesi, uzmanlık alanı, şehir, fiyat aralığı ve müsaitliğe göre profilleri karşılaştırabilir.",
+      "Çevirmenler ve Etkinlik Rehberleri kategorisi; konferans, panel, zirve, fuar, kurumsal toplantı, resmi görüşme, uluslararası heyet ziyareti, teknik gezi ve çok dilli etkinliklerde sözlü/yazılı çeviri ile rehberlik sağlayan profesyonelleri kapsar. Kullanıcılar hizmet türü, dil, yeminli belgesi, sektörel uzmanlık, çevrimiçi çalışma ve fiyat aralığına göre profilleri karşılaştırabilir. İşin ağırlığı dil aktarımı değil de karşılama, kayıt ve yönlendirmeyse Host / Hostesler kategorisine bak.",
     subServices: [
       { name: "Simultane Tercüman", description: "Konferans, zirve ve büyük ölçekli etkinliklerde eşzamanlı çeviri" },
       { name: "Ardıl Tercüman", description: "Toplantı, görüşme, basın ve resmi programlarda ardışık çeviri" },
       { name: "Fısıltı (Chuchotage) Tercümanı", description: "Küçük gruplar ve ikili görüşmeler için sessiz çeviri" },
+      { name: "Fuar Çevirmeni", description: "Stand görüşmeleri ve yabancı ziyaretçi iletişimi" },
       { name: "Yeminli Tercüman", description: "Noter onaylı, resmi ve hukuki belge çevirileri" },
       { name: "Yazılı Çeviri / Editör", description: "Sözleşme, katalog, teknik doküman ve kurumsal metinler" },
       { name: "Hukuki / Tıbbi Uzman Tercüman", description: "Terminoloji gerektiren uzmanlık alanı çevirileri" },
+      { name: "Etkinlik Rehberi", description: "Etkinlik alanında yönlendirme, program ve misafir desteği" },
+      { name: "VIP Misafir Rehberi", description: "Protokol, üst düzey konuk ve heyet refakati" },
+      { name: "Tur / Şehir Rehberi", description: "Teknik gezi, şehir turu ve misafir programı desteği" },
+      { name: "Çok Dilli Karşılama Personeli", description: "Dil bilen karşılama ve yönlendirme desteği" },
       { name: "Çevrim İçi / Hibrit Etkinlik Tercümanı", description: "Uzaktan simultane ve canlı yayın çevirisi" },
     ],
-    seoTitle: "Tercümanlar / Çevirmenler Bul | Kashe",
+    seoTitle: "Çevirmen ve Etkinlik Rehberi Bul | Fuar, Konferans ve VIP Rehberlik | Kashe",
     seoDescription:
-      "Tercümanlar / çevirmenler kategorisindeki profesyonelleri Kashe'de keşfet. Profilleri incele, fiyatları karşılaştır, teklif al ve etkinliğin ya da projen için doğru profesyonelle çalış.",
+      "Fuar, konferans, panel, uluslararası toplantı, teknik gezi ve VIP misafir ağırlama için çevirmen ve etkinlik rehberlerini Kashe'de keşfet. Dilleri karşılaştır, teklif al.",
     landingText:
-      "Tercümanlar / çevirmenler kategorisi; konferans, kurumsal toplantı, fuar ve resmi görüşmeler için simultane, ardıl ve yeminli çeviri sağlayan profesyonellere ulaşmayı sağlar.",
+      "Uluslararası etkinliklerinde doğru dil desteğini al. Fuar, konferans, heyet ziyareti, teknik gezi ve VIP misafir ağırlama için çevirmenleri ve etkinlik rehberlerini incele, deneyimleri karşılaştır ve teklif al.",
   },
 
   karikaturist: {
