@@ -9,7 +9,7 @@ import { generateProfileBio } from '@/app/lib/ai-actions';
 import { AvatarUpload } from './avatar-upload';
 import { AttributesEditor } from './attributes-editor';
 import { isProfessional, isBusiness } from '@/app/lib/profile-helpers';
-import { getFilterFields } from '@/app/lib/filter-config';
+import { getFilterFields, getFilterSource } from '@/app/lib/filter-config';
 import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
 
 // Telefon yardımcıları (kayıt formuyla tutarlı)
@@ -113,6 +113,11 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
     ? categories.find((c) => String(c.id) === primaryCategoryId)?.slug ?? null
     : null;
   const filterFields = getFilterFields(selectedCategorySlug);
+  // KÖPRÜ: yeni sistem ('category_attributes') kategorilerinde bu alanlar
+  // /profil/kategori-bilgileri formunda doldurulur. AttributesEditor'ü burada
+  // da göstermek AYNI BİLGİYİ İKİ FORMDA sormak olurdu — render edilmez.
+  const showAttributesEditor =
+    getFilterSource(selectedCategorySlug) === 'attributes';
 
   function handleAttrChange(key: string, value: string | string[]) {
     setAttributes((prev) => ({ ...prev, [key]: value }));
@@ -238,7 +243,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
           </div>
         )}
 
-        {showProfessionalFields && filterFields.length > 0 && (
+        {showProfessionalFields && showAttributesEditor && filterFields.length > 0 && (
           <AttributesEditor
             fields={filterFields}
             values={attributes}

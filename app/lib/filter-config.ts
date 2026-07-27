@@ -18,6 +18,8 @@
 // Not: Her kategorinin İLK 'multi' alanı, keşfet kartında özet etiket olarak
 // gösterilir. Bu yüzden en ayırt edici alanı ilk sıraya koy.
 
+import { toQuickList } from './category-fields';
+
 export type FilterFieldType = 'multi' | 'single';
 
 export type FilterFieldOption = {
@@ -25,16 +27,62 @@ export type FilterFieldOption = {
   label: string;
 };
 
+// -----------------------------------------------------------------------------
+// KÖPRÜ (Dalga 0) — filtre verisi HANGİ kolondan okunur?
+//
+//  'attributes'          → ESKİ sistem. profiles.attributes (jsonb), /profil/duzenle
+//                          AttributesEditor'ünde doldurulur, JS tarafında filtrelenir.
+//                          Mevcut 12 kategori burada KALIR; davranış birebir aynı.
+//  'category_attributes' → YENİ sistem. profiles.category_attributes (jsonb),
+//                          /profil/kategori-bilgileri formunda doldurulur, DB
+//                          tarafında jsonb containment (@>) ile filtrelenir.
+//                          Bu kategorilerde AttributesEditor HİÇ render edilmez —
+//                          aynı bilgi iki formda sorulmaz.
+// -----------------------------------------------------------------------------
+export type FilterSource = 'attributes' | 'category_attributes';
+
+/**
+ * category_attributes içindeki JSONB yolu. Containment ifadesi buradan TÜRETİLİR;
+ * elle JSON string'i yazılmaz (enjeksiyon yüzeyi yok).
+ *
+ * Şekil eşleşmesi zorunlu: jsonb containment skaları skalarla, diziyi diziyle eşler.
+ * `{"a":"x"} @> {"a":["x"]}` YANLIŞTIR — bu yüzden skalar/dizi ayrı `kind`.
+ */
+export type FilterFieldPath =
+  /** category_attributes.quick.<key> — tekli select (skalar string) */
+  | { kind: 'quick'; key: string }
+  /** category_attributes.quick.<key> — çoklu-çip (string[]; bkz. QUICK_MULTI_OPTIONS) */
+  | { kind: 'quick_array'; key: string }
+  /** category_attributes.logistics.<key> — boolean (yalnız true saklanır) */
+  | { kind: 'logistics'; key: string }
+  /** category_attributes.<key> — kök skalar (ör. service_region) */
+  | { kind: 'root'; key: string }
+  /** category_attributes.<key> — kök dizi (ör. etkinlik_turleri) */
+  | { kind: 'root_array'; key: string }
+  /**
+   * category_attributes.modules.<moduleKey>.<arrayField>[]
+   *  - key YOK  → string dizisi (ör. diller_belgeler.language_pairs)
+   *  - key VAR  → nesne dizisi, nesnenin `key` alanı (ör. sosyal_erisim.platforms[].platform)
+   */
+  | { kind: 'module'; moduleKey: string; arrayField: string; key?: string };
+
 export type FilterField = {
   key: string; // attributes içindeki anahtar (örn. 'music_style')
   label: string; // kullanıcıya görünen etiket
   type: FilterFieldType;
   options: FilterFieldOption[];
   hint?: string; // profil düzenlemede kısa yardım metni (opsiyonel)
+  /**
+   * category_attributes yolu — source === 'category_attributes' olan kategorilerde
+   * ZORUNLU. 'attributes' kategorilerinde yok sayılır (eski JS filtresi `key` kullanır).
+   */
+  path?: FilterFieldPath;
 };
 
 export type CategoryFilters = {
   slug: string; // service_categories.slug ile birebir
+  /** Varsayılan 'attributes' (mevcut 12 kategori). Yeni kategoriler 'category_attributes'. */
+  source?: FilterSource;
   fields: FilterField[];
 };
 
@@ -901,6 +949,222 @@ export function getAttributeLabel(
   const field = getFilterFields(categorySlug).find((f) => f.key === fieldKey);
   if (!field) return value;
   return field.options.find((o) => o.value === value)?.label ?? value;
+}
+
+/** Kategorinin filtre verisi hangi kolondan okunur? Tanımsız kategori → 'attributes'. */
+export function getFilterSource(categorySlug: string | null): FilterSource {
+  if (!categorySlug) return 'attributes';
+  return (
+    CATEGORY_FILTERS.find((c) => c.slug === categorySlug)?.source ?? 'attributes'
+  );
+}
+
+// =============================================================================
+// KÖPRÜ — category_attributes containment sorgu kurucusu
+// =============================================================================
+
+/**
+ * Hiçbir satırla eşleşmeyen containment. Bir alanın seçili değerlerinin HİÇBİRİ
+ * ifade edilemediğinde kullanılır.
+ *
+ * NEDEN gerekli: semantik AND'dir. İfade edilemeyen alanı sessizce ATLAMAK filtreyi
+ * GEVŞETİR (kullanıcı daraltmak için seçim yapar, sonuç artar — hata görünmez).
+ * Doğru davranış: o alan hiçbir şeyle eşleşmesin.
+ */
+const NEVER_MATCH = '{"__kashe_no_match__":true}';
+
+/**
+ * PostgREST `or=(...)` dilbilgisinde koşullar `,` ile ayrılır, gruplar `()` ile
+ * kurulur. Değerin içindeki bu karakterler ayracı taklit eder ve sorguyu bozar.
+ * Config'teki option value'ları ASCII-güvenli tutulmalı (Türkçe harf/boşluk sorun değil).
+ */
+function isPostgrestSafeValue(v: string): boolean {
+  return !/[,()"\\]/.test(v);
+}
+
+/**
+ * Tek bir (yol, değer) çifti için containment nesnesi. Şekil, saklama şekliyle
+ * BİREBİR aynı olmalı (skalar↔skalar, dizi↔dizi) — yoksa @> hiçbir zaman eşleşmez.
+ */
+export function buildContainment(
+  path: FilterFieldPath,
+  value: string
+): Record<string, unknown> {
+  switch (path.kind) {
+    case 'quick':
+      return { quick: { [path.key]: value } };
+    case 'quick_array':
+      return { quick: { [path.key]: [value] } };
+    case 'logistics':
+      // logistics yalnız `true` saklar; 'true' dışı bir değer (bozuk URL) `false`
+      // üretir ve hiçbir satırla eşleşmez — sessizce gevşemek yerine boş sonuç.
+      return { logistics: { [path.key]: value === 'true' } };
+    case 'root':
+      return { [path.key]: value };
+    case 'root_array':
+      return { [path.key]: [value] };
+    case 'module':
+      return {
+        modules: {
+          [path.moduleKey]: {
+            [path.arrayField]: [path.key ? { [path.key]: value } : value],
+          },
+        },
+      };
+  }
+}
+
+/**
+ * Bir ALANIN seçili değerleri için PostgREST `or=(...)` gövdesi (alan içi OR).
+ * Alanlar arası AND, her alanın AYRI `.or()` çağrısıyla sağlanır (bkz. applyCategoryFilters).
+ */
+export function buildFieldOrExpression(
+  field: FilterField,
+  values: string[]
+): string {
+  if (!field.path) return NEVER_MATCH_OR;
+  const conds: string[] = [];
+  for (const v of values) {
+    if (!isPostgrestSafeValue(v)) continue; // ayracı bozacak değer — atla
+    const json = JSON.stringify(buildContainment(field.path, v));
+    if (!isPostgrestSafeValue(json.replace(/[",\\]/g, ''))) continue;
+    conds.push(`category_attributes.cs.${json}`);
+  }
+  // Hiçbiri ifade edilemedi → alanı atlama, hiçbir şeyle eşleşme (AND korunur).
+  if (conds.length === 0) return NEVER_MATCH_OR;
+  return conds.join(',');
+}
+
+const NEVER_MATCH_OR = `category_attributes.cs.${NEVER_MATCH}`;
+
+/**
+ * ESKİ sistem (attributes) için JS tarafı eşleştirici — mevcut davranışın birebir
+ * taşınmış hâli: alanlar arası AND (`every`), alan içi OR (`some`), boş değer elenir.
+ */
+function buildAttributesJsFilter(
+  activeFilters: Record<string, string[]>
+): (attributes: Record<string, unknown> | null | undefined) => boolean {
+  const entries = Object.entries(activeFilters);
+  return (attributes) => {
+    const attrs = attributes ?? {};
+    return entries.every(([key, wantedVals]) => {
+      const profileVal = (attrs as Record<string, unknown>)[key];
+      if (profileVal === undefined || profileVal === null) return false;
+      const profileArr = Array.isArray(profileVal) ? profileVal : [profileVal];
+      return wantedVals.some((w) => profileArr.includes(w));
+    });
+  };
+}
+
+export type CategoryFilterPlan<Q> = {
+  /** Containment koşulları uygulanmış sorgu (yeni sistem) veya değişmemiş sorgu (eski). */
+  query: Q;
+  /**
+   * Eski sistemde çekim SONRASI uygulanacak JS filtresi; yeni sistemde `null`
+   * (filtreleme DB'de bitti).
+   */
+  jsFilter:
+    | ((attributes: Record<string, unknown> | null | undefined) => boolean)
+    | null;
+};
+
+/**
+ * TEK GİRİŞ NOKTASI — kategori hangi sistemdeyse ondan filtreler; çağıran bilmez.
+ *
+ * SEMANTİK PARİTE (zorunlu): alanlar arası AND, alan içi OR.
+ *   - Yeni sistem: her ALAN için AYRI `.or()` çağrısı. supabase-js `.or()` URL'e
+ *     `searchParams.append('or', ...)` yapar; PostgREST tekrarlanan üst-seviye
+ *     parametreleri AND'ler → and(or(v1,v2), or(v3,v4)). TEK bir `.or()` içinde
+ *     tüm alanları birleştirmek alanlar arasını da OR yapar ve filtreyi SESSİZCE
+ *     GEVŞETİR — bu yüzden asla tek çağrıda birleştirilmez.
+ *   - Eski sistem: sorguya dokunulmaz, jsFilter döner (mevcut davranış).
+ */
+export function applyCategoryFilters<Q extends { or(filters: string): Q }>(
+  query: Q,
+  categorySlug: string | null,
+  activeFilters: Record<string, string[]>
+): CategoryFilterPlan<Q> {
+  const keys = Object.keys(activeFilters);
+  if (!categorySlug || keys.length === 0) {
+    return { query, jsFilter: null };
+  }
+
+  if (getFilterSource(categorySlug) === 'attributes') {
+    return { query, jsFilter: buildAttributesJsFilter(activeFilters) };
+  }
+
+  const fields = getFilterFields(categorySlug);
+  let next = query;
+  for (const [key, values] of Object.entries(activeFilters)) {
+    if (values.length === 0) continue;
+    const field = fields.find((f) => f.key === key);
+    // Tanımsız alan (bozuk URL) → gevşetme, eşleşme yok.
+    next = next.or(field ? buildFieldOrExpression(field, values) : NEVER_MATCH_OR);
+  }
+  return { query: next, jsFilter: null };
+}
+
+/**
+ * Bir alanın DEĞERLERİNİ profil kaydından okur — kaynak-farkında.
+ * Kart özet etiketi ve profil özellik rozetleri bunu kullanır; hangi kolonda
+ * yaşadığını çağıranın bilmesi gerekmez.
+ */
+export function readFilterFieldValues(
+  field: FilterField,
+  source: FilterSource,
+  attributes: Record<string, unknown> | null | undefined,
+  categoryAttributes: Record<string, unknown> | null | undefined
+): string[] {
+  if (source === 'attributes') {
+    const raw = (attributes ?? {})[field.key];
+    if (Array.isArray(raw)) return raw.filter((v): v is string => typeof v === 'string');
+    return typeof raw === 'string' && raw ? [raw] : [];
+  }
+
+  const ca = (categoryAttributes ?? {}) as Record<string, unknown>;
+  const path = field.path;
+  if (!path) return [];
+
+  const asList = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
+  switch (path.kind) {
+    case 'quick': {
+      const q = (ca.quick ?? {}) as Record<string, unknown>;
+      const v = q[path.key];
+      return typeof v === 'string' && v.trim() ? [v] : [];
+    }
+    case 'quick_array': {
+      const q = (ca.quick ?? {}) as Record<string, unknown>;
+      // Eski " · " birleşik kayıt da diziye normalize edilir (Tur 1 fallback'i).
+      return toQuickList(q[path.key]);
+    }
+    case 'logistics': {
+      const l = (ca.logistics ?? {}) as Record<string, unknown>;
+      return l[path.key] === true ? ['true'] : [];
+    }
+    case 'root': {
+      const v = ca[path.key];
+      return typeof v === 'string' && v.trim() ? [v] : [];
+    }
+    case 'root_array':
+      return asList(ca[path.key]);
+    case 'module': {
+      const mods = (ca.modules ?? {}) as Record<string, unknown>;
+      const mod = (mods[path.moduleKey] ?? {}) as Record<string, unknown>;
+      const arr = mod[path.arrayField];
+      if (!Array.isArray(arr)) return [];
+      if (!path.key) return asList(arr);
+      const objKey = path.key;
+      return arr
+        .map((it) =>
+          it && typeof it === 'object'
+            ? (it as Record<string, unknown>)[objKey]
+            : undefined
+        )
+        .filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+    }
+  }
 }
 
 export { CATEGORY_FILTERS };

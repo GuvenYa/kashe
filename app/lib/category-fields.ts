@@ -288,6 +288,9 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
 };
 
 // Çoklu-çip quick anahtarları (slug bağımsız). allowCustom → serbest çip ekleme.
+// SAKLAMA: string[] (etkinlik_turleri ile AYNI şekil) — jsonb containment (@>) ile
+// filtrelenebilmesi için zorunlu. Eski " · " birleşik string kayıtları OKUMA sırasında
+// toQuickList() ile diziye çevrilir (tek yön; çift yazma YOK).
 export const QUICK_MULTI_OPTIONS: Record<
   string,
   { options: readonly string[]; allowCustom?: boolean }
@@ -295,6 +298,41 @@ export const QUICK_MULTI_OPTIONS: Record<
   ceviri_turleri: { options: CEVIRI_OPTIONS },
   enstruman: { options: ENSTRUMAN_OPTIONS, allowCustom: true },
 };
+
+/** Bir quick anahtarı çoklu-çip mi? (saklama dizi, gösterim " · " ile birleşik) */
+export function isMultiQuickKey(key: string): boolean {
+  return key in QUICK_MULTI_OPTIONS;
+}
+
+/**
+ * Çoklu-çip quick değerini DİZİYE normalize eder — TEK okuma yardımcısı.
+ * Yeni kayıtlar zaten string[]; eski kayıtlar " · " (veya "·") ile birleşik tek string.
+ * Backfill migration'ı eski kayıtları çevirir; bu fallback göç öncesi/kaçak satırlar için.
+ */
+export function toQuickList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split('·')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Quick değerinin GÖSTERİM metni. Çoklu-çip → " · " ile birleşir (görsel sözleşme
+ * değişmedi); tekli select/serbest metin → kendisi. Boş → ''.
+ */
+export function formatQuickValue(value: unknown): string {
+  if (Array.isArray(value)) return toQuickList(value).join(' · ');
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export type QuickInput =
   | { kind: 'multi'; options: readonly string[]; allowCustom: boolean }

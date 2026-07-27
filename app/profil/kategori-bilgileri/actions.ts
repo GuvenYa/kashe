@@ -10,6 +10,8 @@ import {
   CALISMA_SEKLI_OPTIONS,
   FOLLOWERS_RANGES,
   PLATFORM_OPTIONS,
+  QUICK_MULTI_OPTIONS,
+  toQuickList,
   type ModuleKey,
 } from '@/app/lib/category-fields';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
@@ -179,15 +181,36 @@ export async function saveCategoryAttributes(
       next.section_taglines = out;
     }
     // quick (yalnız preset.quickInfo anahtarları) — kısmi merge
+    // Çoklu-çip anahtarları (QUICK_MULTI_OPTIONS) DİZİ olarak saklanır — jsonb
+    // containment (@>) ile filtrelenebilmesi için zorunlu. Değerler kapalı kümeye
+    // karşı doğrulanır; allowCustom açıksa küme dışı çip cleanStr'den geçerek kabul edilir.
     if ('quick' in payload && payload.quick && typeof payload.quick === 'object') {
       const allowed = new Set(preset.quickInfo);
-      const out: Record<string, string> = {
-        ...((current.quick as Record<string, string>) ?? {}),
+      const out: Record<string, string | string[]> = {
+        ...((current.quick as Record<string, string | string[]>) ?? {}),
       };
       for (const [k, val] of Object.entries(
         payload.quick as Record<string, unknown>
       )) {
         if (!allowed.has(k)) continue;
+
+        const multi = QUICK_MULTI_OPTIONS[k];
+        if (multi) {
+          const optionSet = new Set(multi.options as readonly string[]);
+          const list: string[] = [];
+          // Eski " · " birleşik string de kabul edilir (form dışı/kaçak gönderim).
+          for (const raw of toQuickList(val)) {
+            const v = cleanStr(raw, 60);
+            if (!v) continue;
+            if (!optionSet.has(v) && !multi.allowCustom) continue; // whitelist
+            if (!list.includes(v)) list.push(v);
+            if (list.length >= 20) break;
+          }
+          if (list.length > 0) out[k] = list;
+          else delete out[k];
+          continue;
+        }
+
         const v = cleanStr(val, 120);
         if (v) out[k] = v;
         else delete out[k];

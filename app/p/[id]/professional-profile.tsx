@@ -14,6 +14,7 @@ import {
   getCategoryFields,
   getModuleTitle,
   getQuickLabel,
+  formatQuickValue,
   formatExperiencePeriod,
   MODULE_REGISTRY,
   type LeveledSkill,
@@ -107,7 +108,9 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   const slug = profile.service_categories?.slug ?? null;
   const preset = getCategoryFields(slug);
   const attrs = (profile.category_attributes ?? {}) as AttrRecord;
-  const quick = (attrs.quick as Record<string, string>) ?? {};
+  // Quick değerleri: çoklu-çip → string[], select/metin → string.
+  // Gösterim formatQuickValue ile tekilleşir (" · " birleştirme burada yapılır).
+  const quick = (attrs.quick as Record<string, unknown>) ?? {};
   const skills = (attrs.skills as LeveledSkill[]) ?? [];
   const logistics = (attrs.logistics as Record<string, boolean>) ?? {};
   const serviceRegion = attrs.service_region as string | undefined;
@@ -149,10 +152,14 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   // ---- quickInfo hücreleri — TEK-YER: yalnız quick{} kendi değerleri (modül-fallback YOK).
   //      Eşik: 2'den az dolu hücre → quick satırı hiç çizilmez.
   const quickCells = (preset?.quickInfo ?? [])
-    .map((k) => ({ key: k, label: getQuickLabel(preset, k), value: quick[k] as unknown }))
+    .map((k) => ({
+      key: k,
+      label: getQuickLabel(preset, k),
+      value: formatQuickValue(quick[k]),
+    }))
     .filter((c) => {
       if (c.key === 'yeminli') return c.value === 'Evet'; // yalnız "Evet" gösterilir
-      return c.value && String(c.value).trim();
+      return c.value.length > 0;
     });
   const showQuick = quickCells.length >= 2;
 
@@ -529,7 +536,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                             Yeminli
                           </div>
                         ) : (
-                          <div className="font-display text-[15px] font-semibold text-ink mt-1">{String(c.value)}</div>
+                          <div className="font-display text-[15px] font-semibold text-ink mt-1">{c.value}</div>
                         )}
                       </div>
                     ))}

@@ -21,7 +21,11 @@ import {
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
 import type { ServiceWithCategory, PortfolioItem, ServicePackage } from '@/app/lib/types';
-import { getFilterFields } from '@/app/lib/filter-config';
+import {
+  getFilterFields,
+  getFilterSource,
+  readFilterFieldValues,
+} from '@/app/lib/filter-config';
 import { getBadges, isVerified, BADGE_TONE_CLASS, getBadgeCards, isPremiumActive, isBusy } from '@/app/lib/badges';
 import type { PremiumTier } from '@/app/lib/badges';
 import { ProfessionalProfile } from './professional-profile';
@@ -421,14 +425,20 @@ export default async function PublicProfilePage({
 
   const cityName = profile.turkish_cities?.name;
 
-  // Kategoriye özel özellikleri grupla (gösterim için)
+  // Kategoriye özel özellikleri grupla (gösterim için).
+  // KAYNAK-FARKINDA: kategori 'category_attributes' sistemindeyse değerler oradan
+  // okunur (attributes o kategorilerde BOŞ olur — ayna yazma yok).
   const categorySlug = profile.service_categories?.slug ?? null;
   const attrGroups: { label: string; values: string[] }[] = [];
-  if (categorySlug && profile.attributes) {
-    const fields = getFilterFields(categorySlug);
-    for (const field of fields) {
-      const raw = profile.attributes[field.key];
-      const vals = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  if (categorySlug) {
+    const source = getFilterSource(categorySlug);
+    for (const field of getFilterFields(categorySlug)) {
+      const vals = readFilterFieldValues(
+        field,
+        source,
+        profile.attributes,
+        profile.category_attributes
+      );
       if (vals.length === 0) continue;
       const labels = vals.map(
         (v) => field.options.find((o) => o.value === v)?.label ?? v

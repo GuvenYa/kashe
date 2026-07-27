@@ -41,6 +41,7 @@ type PublishedProfile = {
   premium_tier: string | null;
   premium_until: string | null;
   attributes: Record<string, string | string[]> | null;
+  category_attributes: Record<string, unknown> | null;
   turkish_cities: { name: string } | null;
   service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
 };
@@ -125,7 +126,7 @@ export default async function KategoriPage({ params }: Props) {
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at, approval_status, premium_tier, premium_until,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, category_attributes, created_at, approval_status, premium_tier, premium_until,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `

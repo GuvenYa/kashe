@@ -197,7 +197,7 @@ const user = await getCachedUser();
     .select(
       `
       id, city_id, primary_category_id,
-      approval_status, premium_tier, premium_until, created_at, attributes,
+      approval_status, premium_tier, premium_until, created_at, attributes, category_attributes,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -214,6 +214,7 @@ const user = await getCachedUser();
       premium_until: string | null;
       created_at: string | null;
       attributes: Record<string, string | string[]> | null;
+      category_attributes: Record<string, unknown> | null;
     }
   >();
 
@@ -227,6 +228,7 @@ const user = await getCachedUser();
       premium_until: p.premium_until ?? null,
       created_at: p.created_at ?? null,
       attributes: p.attributes ?? null,
+      category_attributes: p.category_attributes ?? null,
     });
   });
 
@@ -315,6 +317,7 @@ const user = await getCachedUser();
                     premium_until: cityCat?.premium_until ?? null,
                     created_at: cityCat?.created_at ?? null,
                     attributes: cityCat?.attributes ?? null,
+                    category_attributes: cityCat?.category_attributes ?? null,
                     turkish_cities: cityCat?.turkish_cities ?? null,
                     service_categories: cityCat?.service_categories ?? null,
                   }}

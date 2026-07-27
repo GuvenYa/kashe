@@ -15,6 +15,7 @@ import {
   SKILL_LEVELS,
   CATEGORY_PARAM_SUGGESTIONS,
   ARCHETYPE_TAGLINE_EXAMPLES,
+  toQuickList,
   type ModuleKey,
   type ModuleFieldDef,
 } from '@/app/lib/category-fields';
@@ -135,7 +136,9 @@ export function KategoriForm({
   // Çalışma şekli — ORTAK alan; yoksa eski quick.calisma_sekli'den OKU (tek yön, çift yazma yok).
   const [calismaSekli, setCalismaSekli] = useState(
     (init.calisma_sekli as string) ??
-      ((init.quick as Record<string, string> | undefined)?.calisma_sekli ?? '')
+      (((init.quick as Record<string, unknown> | undefined)?.calisma_sekli as
+        | string
+        | undefined) ?? '')
   );
   // Etkinlik türleri — ORTAK alan (tüm kategoriler); ilanlar taksonomisi (EVENT_TYPES key'leri).
   const [etkinlikTurleri, setEtkinlikTurleri] = useState<string[]>(
@@ -150,8 +153,10 @@ export function KategoriForm({
   const [taglines, setTaglines] = useState<Record<string, string>>(
     (init.section_taglines as Record<string, string>) ?? {}
   );
-  const [quick, setQuick] = useState<Record<string, string>>(
-    (init.quick as Record<string, string>) ?? {}
+  // Quick değerleri: çoklu-çip → string[], select/metin → string.
+  // Eski " · " birleşik kayıtlar MultiChipField içinde toQuickList ile normalize edilir.
+  const [quick, setQuick] = useState<Record<string, string | string[]>>(
+    (init.quick as Record<string, string | string[]>) ?? {}
   );
   const [modules, setModules] = useState<ModulesState>(() =>
     initModules(moduleKeys, (init.modules as Record<string, Rec>) ?? {})
@@ -262,7 +267,7 @@ export function KategoriForm({
                 slug={slug}
                 fieldKey={k}
                 label={getQuickLabel(preset, k)}
-                value={quick[k] ?? ''}
+                value={quick[k]}
                 onChange={(v) => setQuick((q) => ({ ...q, [k]: v }))}
               />
             ))}
@@ -474,6 +479,7 @@ export function KategoriForm({
 }
 
 // ─── Quick alanı — getQuickInput ile select / çoklu-çip / serbest metin ───
+// Değer tipi: çoklu-çip → string[], select/metin → string (bkz. QUICK_MULTI_OPTIONS notu).
 function QuickField({
   slug,
   fieldKey,
@@ -484,8 +490,8 @@ function QuickField({
   slug: string;
   fieldKey: string;
   label: string;
-  value: string;
-  onChange: (v: string) => void;
+  value: unknown;
+  onChange: (v: string | string[]) => void;
 }) {
   const input = getQuickInput(slug, fieldKey);
 
@@ -501,11 +507,13 @@ function QuickField({
     );
   }
 
+  const strValue = typeof value === 'string' ? value : '';
+
   if (input.kind === 'select') {
     return (
       <div>
         <label className={LABEL}>{label}</label>
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={INPUT}>
+        <select value={strValue} onChange={(e) => onChange(e.target.value)} className={INPUT}>
           <option value="">Belirtilmemiş</option>
           {input.options.map((o) => (
             <option key={o} value={o}>{o}</option>
@@ -519,7 +527,7 @@ function QuickField({
     <div>
       <label className={LABEL}>{label}</label>
       <input
-        value={value}
+        value={strValue}
         onChange={(e) => onChange(e.target.value)}
         maxLength={120}
         className={INPUT}
@@ -528,7 +536,9 @@ function QuickField({
   );
 }
 
-// ─── Çoklu-çip alanı (ceviri/enstruman/etkinlik) — değerler " · " ile birleşir ───
+// ─── Çoklu-çip alanı (ceviri/enstruman) — DİZİ olarak saklanır ───
+// Gösterim " · " ile birleşik kalır (public render), saklama string[]'tir:
+// jsonb containment (@>) yalnız dizi elemanını eşleyebilir.
 function MultiChipField({
   label,
   value,
@@ -537,14 +547,14 @@ function MultiChipField({
   onChange,
 }: {
   label: string;
-  value: string;
+  value: unknown;
   options: readonly string[];
   allowCustom: boolean;
-  onChange: (v: string) => void;
+  onChange: (v: string[]) => void;
 }) {
   const [custom, setCustom] = useState('');
-  const selected = value ? value.split('·').map((s) => s.trim()).filter(Boolean) : [];
-  const commit = (arr: string[]) => onChange(arr.join(' · '));
+  const selected = toQuickList(value);
+  const commit = (arr: string[]) => onChange(arr);
   const toggle = (opt: string) =>
     commit(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
   const addCustom = () => {

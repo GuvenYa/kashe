@@ -7,7 +7,7 @@ import { SortDropdown } from './sort-dropdown';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
-import { getFilterFields } from '@/app/lib/filter-config';
+import { getFilterFields, applyCategoryFilters } from '@/app/lib/filter-config';
 import {
   matchesAnyBadge,
   isBusy as computeBusy,
@@ -145,7 +145,7 @@ export default async function KesfetPage({
     .from('profiles')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, created_at, approval_status, premium_tier, premium_until,
+      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, category_attributes, created_at, approval_status, premium_tier, premium_until,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -195,9 +195,6 @@ export default async function KesfetPage({
     query = query.or(orConds);
   }
 
-  const { data: profilesData, error } = await query;
-  let profiles = (profilesData || []) as unknown as PublishedProfile[];
-
   // Detaylı filtreler SADECE tam 1 kategori seçiliyken (A kararı)
   let selectedCategorySlug: string | null = null;
   if (categoryIds.length === 1) {
@@ -219,16 +216,20 @@ export default async function KesfetPage({
 
   const hasAttrFilters = Object.keys(activeAttrFilters).length > 0;
 
-  if (hasAttrFilters) {
-    profiles = profiles.filter((p) => {
-      const attrs = p.attributes || {};
-      return Object.entries(activeAttrFilters).every(([key, wantedVals]) => {
-        const profileVal = attrs[key];
-        if (profileVal === undefined || profileVal === null) return false;
-        const profileArr = Array.isArray(profileVal) ? profileVal : [profileVal];
-        return wantedVals.some((w) => profileArr.includes(w));
-      });
-    });
+  // KÖPRÜ — kategori hangi sistemdeyse ondan filtrelenir (tek giriş noktası).
+  //  • 'category_attributes' → sorguya containment koşulları eklenir (DB tarafı)
+  //  • 'attributes'          → sorgu değişmez, çekim sonrası jsFilter uygulanır (eski davranış)
+  const { query: filteredQuery, jsFilter } = applyCategoryFilters(
+    query,
+    selectedCategorySlug,
+    activeAttrFilters
+  );
+
+  const { data: profilesData, error } = await filteredQuery;
+  let profiles = (profilesData || []) as unknown as PublishedProfile[];
+
+  if (jsFilter) {
+    profiles = profiles.filter((p) => jsFilter(p.attributes));
   }
 
   const profileIds = profiles.map((p) => p.id);

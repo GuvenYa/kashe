@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import FavoriteButton from '@/app/components/FavoriteButton';
-import { getFilterFields } from '@/app/lib/filter-config';
+import {
+  getFilterFields,
+  getFilterSource,
+  readFilterFieldValues,
+} from '@/app/lib/filter-config';
 import { isVerified, isPremiumActive } from '@/app/lib/badges';
 import { CoverMedia } from './cover-media';
 
@@ -17,6 +21,8 @@ type Props = {
     premium_tier?: string | null;
     premium_until?: string | null;
     attributes?: Record<string, string | string[]> | null;
+    /** Yeni sistem (source: 'category_attributes') kategorilerinde etiket kaynağı. */
+    category_attributes?: Record<string, unknown> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
   };
@@ -218,18 +224,21 @@ export function ProfileCard({
   const categoryName = profile.service_categories?.name_tr ?? null;
   const cityName = profile.turkish_cities?.name ?? null;
 
-  // Hizmet etiketi chip'leri: kategoriye özel ilk multi alanın ilk 3 değeri
+  // Hizmet etiketi chip'leri: kategoriye özel ilk multi alanın ilk 3 değeri.
+  // KAYNAK-FARKINDA: kategori 'category_attributes' sistemindeyse değerler oradan
+  // okunur (attributes o kategorilerde BOŞ olur — ayna yazma yok).
   const categorySlug = profile.service_categories?.slug ?? null;
   let attrTags: string[] = [];
-  if (categorySlug && profile.attributes) {
-    const fields = getFilterFields(categorySlug);
-    const firstMulti = fields.find((f) => f.type === 'multi');
+  if (categorySlug) {
+    const source = getFilterSource(categorySlug);
+    const firstMulti = getFilterFields(categorySlug).find((f) => f.type === 'multi');
     if (firstMulti) {
-      const raw = profile.attributes[firstMulti.key];
-      const vals = Array.isArray(raw) ? raw : [];
-      attrTags = vals.map(
-        (v) => firstMulti.options.find((o) => o.value === v)?.label ?? v
-      );
+      attrTags = readFilterFieldValues(
+        firstMulti,
+        source,
+        profile.attributes,
+        profile.category_attributes
+      ).map((v) => firstMulti.options.find((o) => o.value === v)?.label ?? v);
     }
   }
   const tags = attrTags.slice(0, 3);
