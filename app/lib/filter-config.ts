@@ -27,6 +27,17 @@ import {
   DANS_TURLERI_OPTIONS,
   EKIP_BOYUTU_OPTIONS,
   GOSTERI_SURESI_OPTIONS,
+  YAS_GRUBU_OPTIONS,
+  // Dalga 1
+  GOSTERI_TURLERI_OPTIONS,
+  SAC_MAKYAJ_HIZMET_OPTIONS,
+  KOORDINATOR_GOREV_OPTIONS,
+  KONUSMA_TURLERI_OPTIONS,
+  PROVA_OPTIONS,
+  KISI_KAPASITESI_OPTIONS,
+  CALISMA_SURESI_OPTIONS,
+  KONUSMA_SURESI_OPTIONS,
+  HEDEF_KITLE_OPTIONS,
 } from './category-fields';
 // Etkinlik türleri TEK KAYNAK: ilanlar taksonomisi (conversations/listings
 // event_type CHECK constraint'i ile birebir). Yerel kopya YASAK.
@@ -1141,6 +1152,179 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         type: 'single',
         path: { kind: 'logistics', key: 'kostum' },
         options: [{ value: 'true', label: 'Kendi kostümüyle gelir' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // ===========================================================================
+  // DALGA 1 — 4 yeni kategori. DB satırları koddan SONRA açılır (preset
+  // olmadan kategori seçilebilir olmasın).
+  // (C) kovası — doğrulanamaz öz-beyanlar (kurumsal deneyim, protokol
+  // deneyimi, kriz yönetimi, ürün seviyesi, portföy türü, güvenlik
+  // gerekliliği) FİLTREYE ALINMADI; uzmanlik_alanlari çipi olarak yaşarlar.
+  // ===========================================================================
+
+  // --- AKROBATLAR, JONGLÖRLER VE PERFORMANS SANATÇILARI ---
+  {
+    slug: 'akrobat',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'gosteri_turleri',
+        label: 'Gösteri türleri',
+        type: 'multi',
+        hint: 'Sahne aldığın gösteri disiplinleri',
+        path: { kind: 'quick_array', key: 'gosteri_turleri' },
+        options: GOSTERI_TURLERI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'gosteri_suresi',
+        label: 'Gösteri süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'gosteri_suresi' },
+        options: GOSTERI_SURESI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'yas_grubu',
+        label: 'Yaş grubu',
+        type: 'single',
+        path: { kind: 'quick', key: 'yas_grubu' },
+        options: YAS_GRUBU_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'dis_mekan',
+        label: 'Açık hava',
+        type: 'single',
+        path: { kind: 'logistics', key: 'dis_mekan' },
+        options: [{ value: 'true', label: 'Açık havada performans verir' }],
+      },
+      {
+        key: 'kostum',
+        label: 'Kostüm',
+        type: 'single',
+        path: { kind: 'logistics', key: 'kostum' },
+        options: [{ value: 'true', label: 'Kendi kostümüyle gelir' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- SAÇ, MAKYAJ VE STYLING PROFESYONELLERİ ---
+  {
+    slug: 'sac-makyaj-styling',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'hizmet_turleri',
+        label: 'Hizmet türleri',
+        type: 'multi',
+        hint: 'Sunduğun tüm hazırlık hizmetleri',
+        path: { kind: 'quick_array', key: 'hizmet_turleri' },
+        options: SAC_MAKYAJ_HIZMET_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'prova',
+        label: 'Prova',
+        type: 'single',
+        path: { kind: 'quick', key: 'prova' },
+        options: PROVA_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'kisi_kapasitesi',
+        label: 'Kişi kapasitesi',
+        type: 'single',
+        path: { kind: 'quick', key: 'kisi_kapasitesi' },
+        options: KISI_KAPASITESI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'mekanda_hizmet',
+        label: 'Mekânda hizmet',
+        type: 'single',
+        path: { kind: 'logistics', key: 'mekanda_hizmet' },
+        options: [{ value: 'true', label: 'Gelin evi / otel / sette hizmet verir' }],
+      },
+      {
+        key: 'ekiple_gelir',
+        label: 'Ekiple gelir',
+        type: 'single',
+        path: { kind: 'logistics', key: 'ekiple_gelir' },
+        options: [{ value: 'true', label: 'Kalabalık hazırlıkta ekiple çalışır' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- ETKİNLİK KOORDİNATÖRLERİ VE SAHA SORUMLULARI ---
+  {
+    slug: 'etkinlik-koordinatoru',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'gorev_turleri',
+        label: 'Görev türleri',
+        type: 'multi',
+        hint: 'Sahada üstlendiğin roller',
+        path: { kind: 'quick_array', key: 'gorev_turleri' },
+        options: KOORDINATOR_GOREV_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'calisma_suresi',
+        label: 'Çalışma süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'calisma_suresi' },
+        options: CALISMA_SURESI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      LANGUAGE_FILTER,
+      {
+        key: 'ekip_yonetimi',
+        label: 'Ekip yönetimi',
+        type: 'single',
+        path: { kind: 'logistics', key: 'ekip_yonetimi' },
+        options: [{ value: 'true', label: 'Saha ekibi ve gönüllü yönetir' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- KONUŞMACILAR VE EĞİTMENLER ---
+  {
+    slug: 'konusmaci',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'konusma_turleri',
+        label: 'Konuşma türleri',
+        type: 'multi',
+        hint: 'Sunduğun konuşma ve eğitim formatları',
+        path: { kind: 'quick_array', key: 'konusma_turleri' },
+        options: KONUSMA_TURLERI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'konusma_suresi',
+        label: 'Konuşma süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'konusma_suresi' },
+        options: KONUSMA_SURESI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'hedef_kitle',
+        label: 'Hedef kitle',
+        type: 'single',
+        path: { kind: 'quick', key: 'hedef_kitle' },
+        options: HEDEF_KITLE_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      LANGUAGE_FILTER,
+      {
+        key: 'cevrimici',
+        label: 'Çevrimiçi',
+        type: 'single',
+        path: { kind: 'logistics', key: 'cevrimici' },
+        options: [{ value: 'true', label: 'Uzaktan/çevrimiçi katılır' }],
       },
       EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,

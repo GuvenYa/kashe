@@ -246,6 +246,81 @@ export const CEVIRI_OPTIONS = [
   'VIP refakat',
 ] as const;
 
+// ---- DALGA 1 — 4 yeni kategorinin kontrollü sözlükleri ----
+// Hepsi filtreye bağlı → allowCustom KAPALI, değerler PostgREST-güvenli
+// (virgül/parantez/tırnak/ters bölü YOK; boşluk, +, –, /, & güvenli).
+
+/** akrobat — gösteri disiplinleri (kaynak doküman §18 alt hizmetleri). */
+export const GOSTERI_TURLERI_OPTIONS = [
+  'Akrobasi',
+  'Jonglörlük',
+  'Ateş gösterisi',
+  'LED/Işık show',
+  'Bubble show',
+  'Pandomim',
+  'Stilt walker',
+  'Canlı heykel',
+  'Sirk performansı',
+] as const;
+
+/** sac-makyaj-styling — hizmet türleri (kaynak doküman §15 alt hizmetleri). */
+export const SAC_MAKYAJ_HIZMET_OPTIONS = [
+  'Gelin saçı',
+  'Gelin makyajı',
+  'Kına/nişan makyajı',
+  'Sahne makyajı',
+  'Çekim makyajı',
+  'Model/oyuncu makyajı',
+  'Moda styling',
+  'Özel efekt makyajı',
+] as const;
+
+/** etkinlik-koordinatoru — saha rolleri (kaynak doküman §22 alt hizmetleri). */
+export const KOORDINATOR_GOREV_OPTIONS = [
+  'Saha koordinasyonu',
+  'Backstage',
+  'Konuk akışı',
+  'Protokol',
+  'Zaman akışı',
+  'Ekip/gönüllü koordinasyonu',
+  'Prodüksiyon asistanlığı',
+] as const;
+
+/** konusmaci — konuşma formatları (kaynak doküman §16 alt hizmetleri). */
+export const KONUSMA_TURLERI_OPTIONS = [
+  'Keynote',
+  'Motivasyon',
+  'Sektörel',
+  'Girişimcilik',
+  'Teknoloji',
+  'Panelist',
+  'Kurumsal eğitim',
+  'Workshop',
+  'Yaratıcı atölye',
+] as const;
+
+/** Tekli select setleri — Dalga 1. */
+export const PROVA_OPTIONS = ['Dahil', 'Ücretli', 'Yok'] as const;
+export const KISI_KAPASITESI_OPTIONS = [
+  '1 kişi',
+  '2–4 kişi',
+  '5–10 kişi',
+  '10+ kişi',
+] as const;
+export const CALISMA_SURESI_OPTIONS = [
+  'Yarım gün',
+  'Tam gün',
+  'Çok günlü',
+  'Esnek',
+] as const;
+export const KONUSMA_SURESI_OPTIONS = [
+  '30 dk altı',
+  '30–60 dk',
+  'Yarım gün',
+  'Tam gün',
+] as const;
+export const HEDEF_KITLE_OPTIONS = ['Kurumsal', 'Öğrenci & genç', 'Karma'] as const;
+
 // Dans türleri — dansci quick_array (kaynak doküman §12 alt hizmetleri).
 export const DANS_TURLERI_OPTIONS = [
   'Modern/Show',
@@ -346,6 +421,17 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
     hizmet_turu: ['Düğün', 'Kurumsal', 'Festival', 'Full kapsam'],
     ekip_boyutu: ['1–5 kişi', '5–15 kişi', '15+ kişi'],
   },
+  // ---- Dalga 1 ----
+  akrobat: { gosteri_suresi: GOSTERI_SURESI_OPTIONS, yas_grubu: YAS_GRUBU_OPTIONS },
+  'sac-makyaj-styling': {
+    prova: PROVA_OPTIONS,
+    kisi_kapasitesi: KISI_KAPASITESI_OPTIONS,
+  },
+  'etkinlik-koordinatoru': { calisma_suresi: CALISMA_SURESI_OPTIONS },
+  konusmaci: {
+    konusma_suresi: KONUSMA_SURESI_OPTIONS,
+    hedef_kitle: HEDEF_KITLE_OPTIONS,
+  },
   karikaturist: {
     cizim_turu: ['Portre karikatür', 'Canlı çizim', 'Dijital illüstrasyon', 'Karma'],
     // 'Anında (canlı)' → 'Anında': parantez PostgREST or=(...) dilbilgisinde grup
@@ -365,9 +451,13 @@ export const QUICK_MULTI_OPTIONS: Record<
 > = {
   ceviri_turleri: { options: CEVIRI_OPTIONS },
   enstruman: { options: ENSTRUMAN_OPTIONS, allowCustom: true },
-  // allowCustom KAPALI — ikisi de keşfet filtresine bağlı (serbest giriş
+  // allowCustom KAPALI — hepsi keşfet filtresine bağlı (serbest giriş
   // filtre seçenekleriyle veriyi ayrıştırır).
   dans_turleri: { options: DANS_TURLERI_OPTIONS },
+  gosteri_turleri: { options: GOSTERI_TURLERI_OPTIONS },
+  hizmet_turleri: { options: SAC_MAKYAJ_HIZMET_OPTIONS },
+  gorev_turleri: { options: KOORDINATOR_GOREV_OPTIONS },
+  konusma_turleri: { options: KONUSMA_TURLERI_OPTIONS },
 };
 
 /** Bir quick anahtarı çoklu-çip mi? (saklama dizi, gösterim " · " ile birleşik) */
@@ -437,6 +527,12 @@ export const QUICK_LABELS: Record<string, string> = {
   ekipman_kapasitesi: 'Ekipman kapasitesi', kurulum_suresi: 'Kurulum süresi',
   dil_cifti: 'Dil çifti', ceviri_turleri: 'Çeviri türleri', yeminli: 'Yeminli',
   cizim_turu: 'Çizim türü',
+  // ---- Dalga 1 ----
+  gosteri_turleri: 'Gösteri türleri', hizmet_turleri: 'Hizmet türleri',
+  gorev_turleri: 'Görev türleri', konusma_turleri: 'Konuşma türleri',
+  prova: 'Prova', kisi_kapasitesi: 'Kişi kapasitesi',
+  calisma_suresi: 'Çalışma süresi', konusma_suresi: 'Konuşma süresi',
+  hedef_kitle: 'Hedef kitle',
 };
 
 // =============================================================================
@@ -676,6 +772,30 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     skillsWithLevels: false,
   },
 
+  // Dalga 1 — Akrobatlar, Jonglörler ve Performans Sanatçıları (§18).
+  // Kalıp: illuzyonist + palyaco kardeşi. gosteri_turleri KONTROLLÜ çoklu çip
+  // (filtrelenir); uzmanlik_alanlari ise deneyim/bağlam beyanı (filtrelenmez).
+  akrobat: {
+    archetype: 'sahne',
+    quickInfo: ['gosteri_turleri', 'gosteri_suresi', 'yas_grubu'],
+    modules: [
+      { key: 'performans', title: 'Gösteri Bilgileri' },
+      { key: 'ekipman' },
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
+    ],
+    experienceGroups: [
+      { key: 'festival_etkinlik', label: 'Festival & Etkinlik' },
+      { key: 'kurumsal_lansman', label: 'Kurumsal & Lansman' },
+      { key: 'cocuk_aile', label: 'Çocuk & Aile Etkinliği' },
+    ],
+    logisticsChecks: [
+      { key: 'dis_mekan', label: 'Açık hava', description: 'Açık havada performans verebilir' },
+      { key: 'kostum', label: 'Kostüm', description: 'Kendi kostümüyle gelir' },
+      { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Sahne malzemesini kendi getirir' },
+    ],
+    skillsWithLevels: false,
+  },
+
   // ---------------------------- CAST ----------------------------
   model: {
     archetype: 'cast',
@@ -793,6 +913,29 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     skillsWithLevels: false,
   },
 
+  // Dalga 1 — Saç, Makyaj ve Styling Profesyonelleri (§15).
+  // Kalıp: fotografci kardeşi (portföy ağırlıklı produksiyon).
+  'sac-makyaj-styling': {
+    archetype: 'produksiyon',
+    quickInfo: ['hizmet_turleri', 'prova', 'kisi_kapasitesi'],
+    modules: [
+      { key: 'ekipman', title: 'Ürün & Kit' },
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'dugun_nisan', label: 'Düğün & Nişan' },
+      { key: 'cekim_set', label: 'Çekim & Set' },
+      { key: 'sahne_gosteri', label: 'Sahne & Gösteri' },
+    ],
+    logisticsChecks: [
+      { key: 'mekanda_hizmet', label: 'Mekânda hizmet', description: 'Gelin evi, otel veya sette hizmet verir' },
+      { key: 'kendi_urunleri', label: 'Kendi ürünleri', description: 'Kendi ürün ve kitiyle gelir' },
+      { key: 'ekiple_gelir', label: 'Ekiple gelir', description: 'Kalabalık hazırlıkta ekiple çalışır' },
+    ],
+    skillsWithLevels: false,
+  },
+
   // --------------------------- UZMANLIK ---------------------------
   tercuman: {
     archetype: 'uzmanlik',
@@ -831,6 +974,54 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     ],
     skillsWithLevels: false,
   },
+  // Dalga 1 — Etkinlik Koordinatörleri ve Saha Sorumluları (§22).
+  // Kalıp: organizasyon kardeşi. gorev_turleri = ROL (filtrelenir);
+  // uzmanlik_alanlari = deneyim beyanı — (C) kovasındaki doğrulanamaz
+  // iddialar (kurumsal deneyim, protokol, kriz yönetimi) FİLTREYE DEĞİL buraya.
+  'etkinlik-koordinatoru': {
+    archetype: 'uzmanlik',
+    quickInfo: ['gorev_turleri', 'calisma_suresi'],
+    modules: [
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
+      { key: 'diller_belgeler', title: 'Diller' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'kurumsal_etkinlik', label: 'Kurumsal Etkinlik' },
+      { key: 'festival_fuar', label: 'Festival & Fuar' },
+      { key: 'dugun_ozel', label: 'Düğün & Özel Davet' },
+    ],
+    logisticsChecks: [
+      { key: 'ekip_yonetimi', label: 'Ekip yönetimi', description: 'Saha ekibi ve gönüllü yönetir' },
+      { key: 'sehir_disi_cok_gunlu', label: 'Çok günlü saha', description: 'Şehir dışı ve çok günlü işlere gider' },
+    ],
+    skillsWithLevels: false,
+  },
+
+  // Dalga 1 — Konuşmacılar ve Eğitmenler (§16).
+  // Kalıp: tercuman + sunucu melezi. uzmanlik_alanlari burada KONU ALANI
+  // ekseninde (Liderlik, Dijital dönüşüm…) — diğer üç Dalga 1 kategorisinde
+  // "deneyim beyanı" ekseni kullanıldı; konuşmacıda konu alanı daha değerli.
+  konusmaci: {
+    archetype: 'uzmanlik',
+    quickInfo: ['konusma_turleri', 'konusma_suresi', 'hedef_kitle'],
+    modules: [
+      { key: 'uzmanlik_alanlari', title: 'Uzmanlık Alanları' },
+      { key: 'diller_belgeler', title: 'Diller' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'konferans_zirve', label: 'Konferans & Zirve' },
+      { key: 'kurumsal_egitim', label: 'Kurumsal Eğitim' },
+      { key: 'panel_oturum', label: 'Panel & Oturum' },
+    ],
+    logisticsChecks: [
+      { key: 'cevrimici', label: 'Çevrimiçi', description: 'Uzaktan/çevrimiçi katılır' },
+      { key: 'materyal', label: 'Materyal', description: 'Eğitim materyali ve katılım sertifikası sağlar' },
+    ],
+    skillsWithLevels: false,
+  },
+
   // Karikatürist HİBRİT: uzmanlik arketipi + portföy grid (cast) + performans (sahne)
   karikaturist: {
     archetype: 'uzmanlik',
@@ -962,6 +1153,34 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
     what_to_expect: 'Etkinlikte canlı çizim; misafirlere hediyelik',
     summary_stats: '500+ portre, 9 yıl deneyim, 120+ etkinlik',
   },
+  // ---- Dalga 1 ----
+  akrobat: {
+    // Gösteri TÜRÜ artık quick_array (kontrollü). Burası deneyim/bağlam beyanı.
+    areas: 'Festival sahnesi, Kurumsal lansman, AVM aktivasyonu, Çocuk etkinliği',
+    what_to_expect: 'Kısa odak performans + alanda dolaşan gösteri',
+    items: 'Ateş ekipmanı, LED kostüm, stilt, jonglörlük seti',
+    setup_logistics: 'Zemin düz olmalı; ateş gösterisinde 3 m güvenlik mesafesi',
+  },
+  'sac-makyaj-styling': {
+    areas: 'Gelin, Set/çekim, Sahne, Editoryal, Hijyen standartlı',
+    items: 'Airbrush seti, profesyonel fırça seti, saç şekillendirici, aydınlatmalı ayna',
+    venue_requirements: 'Priz, iyi aydınlatma ve 1 masa yeterli',
+    notes: 'Gelin hazırlığında prova ayrıca planlanır',
+  },
+  'etkinlik-koordinatoru': {
+    // (C) kovası — filtreye ALINMAYAN doğrulanamaz beyanlar buraya çip olarak girer.
+    areas: 'Kurumsal etkinlik, Protokol, Kriz yönetimi, Çok paydaşlı festival',
+    language_pairs: 'Türkçe, İngilizce',
+    notes: 'Etkinlik öncesi ön keşif ve akış provası önerilir',
+    summary_stats: '180+ etkinlik, 10 yıl saha, 30 kişilik ekip',
+  },
+  konusmaci: {
+    // Burada KONU ALANI ekseni (rol/format quick_array'de).
+    areas: 'Liderlik, Dijital dönüşüm, Girişimcilik, Satış, Yapay zekâ',
+    language_pairs: 'Türkçe, İngilizce',
+    notes: 'Kuruma özel içerik için ön görüşme yapılır',
+    summary_stats: '200+ konuşma, 14 yıl deneyim, 40 kurum',
+  },
 };
 
 /** Bir alanın kategoriye özel örneğini döndürür (yoksa modül-default example). */
@@ -1012,6 +1231,19 @@ export const CATEGORY_PARAM_SUGGESTIONS: Record<
   tercuman: { params: ['Kabin deneyimi', 'Minimum süre', 'Ekipman', 'Fısıltı çeviri'] },
   organizasyon: { params: ['Tedarikçi ağı', 'Minimum bütçe', 'Planlama süresi'] },
   karikaturist: { params: ['Çizim süresi', 'Kişi/saat', 'Format'] },
+  // ---- Dalga 1 ----
+  akrobat: {
+    details: ['Alan ihtiyacı', 'Tavan yüksekliği', 'Güvenlik mesafesi', 'Set sayısı'],
+  },
+  'sac-makyaj-styling': {
+    params: ['Hazırlık süresi', 'Kişi başı süre', 'Touch-up', 'Ekip'],
+  },
+  'etkinlik-koordinatoru': {
+    params: ['Saha başlangıç saati', 'Ekip büyüklüğü', 'Telsiz/iletişim', 'Ön keşif'],
+  },
+  konusmaci: {
+    params: ['Hazırlık görüşmesi', 'Materyal', 'Katılım sertifikası', 'Seyahat & konaklama'],
+  },
 };
 
 /** section_taglines placeholder'ları — arketip × tagline anahtarı (4×4). */

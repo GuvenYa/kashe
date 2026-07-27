@@ -1553,6 +1553,379 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
       },
     ],
   },
+
+  // ===========================================================================
+  // DALGA 1 — 4 yeni kategori. Select değer kümeleri profesyonelin doldurduğu
+  // quick sözlükleriyle HİZALI; 'no_pref' ve benzeri talep-tarafı değerlerin
+  // profil sözlüğünde karşılığı olmaması normaldir.
+  // ===========================================================================
+
+  // --- AKROBATLAR, JONGLÖRLER VE PERFORMANS SANATÇILARI ---
+  {
+    slug: 'akrobat',
+    intro:
+      'Etkinliğini ve alanını anlat, performans sanatçısı sana uygun bir gösteri teklifi versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'show_type',
+        label: 'Gösteri türü',
+        type: 'select',
+        required: false,
+        // GOSTERI_TURLERI_OPTIONS ile hizalı
+        options: [
+          { value: 'Akrobasi', label: 'Akrobasi' },
+          { value: 'Jonglörlük', label: 'Jonglörlük' },
+          { value: 'Ateş gösterisi', label: 'Ateş gösterisi' },
+          { value: 'LED/Işık show', label: 'LED / Işık show' },
+          { value: 'Bubble show', label: 'Bubble show' },
+          { value: 'Pandomim', label: 'Pandomim' },
+          { value: 'Stilt walker', label: 'Stilt walker' },
+          { value: 'Canlı heykel', label: 'Canlı heykel' },
+          { value: 'Sirk performansı', label: 'Sirk performansı' },
+          { value: 'no_pref', label: 'Fark etmez / Önerin' },
+        ],
+      },
+      {
+        key: 'duration',
+        label: 'Performans süresi',
+        type: 'select',
+        required: false,
+        // GOSTERI_SURESI_OPTIONS ile hizalı
+        options: [
+          { value: '30 dk altı', label: '30 dk altı' },
+          { value: '30–60 dk', label: '30–60 dk' },
+          { value: '60–90 dk', label: '60–90 dk' },
+          { value: '90+ dk', label: '90+ dk' },
+          { value: 'no_pref', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'venue_type',
+        label: 'Alan türü',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'indoor', label: 'Kapalı mekan' },
+          { value: 'outdoor', label: 'Açık hava' },
+          { value: 'stage', label: 'Sahne' },
+          { value: 'no_pref', label: 'Emin değilim' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 200',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- SAÇ, MAKYAJ VE STYLING PROFESYONELLERİ ---
+  {
+    slug: 'sac-makyaj-styling',
+    intro:
+      'Hazırlık ihtiyacını paylaş, profesyonel sana net bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik / proje türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'service_scope',
+        label: 'Hizmet kapsamı',
+        type: 'select',
+        required: false,
+        // SAC_MAKYAJ_HIZMET_OPTIONS ile hizalı
+        options: [
+          { value: 'Gelin saçı', label: 'Gelin saçı' },
+          { value: 'Gelin makyajı', label: 'Gelin makyajı' },
+          { value: 'Kına/nişan makyajı', label: 'Kına / nişan makyajı' },
+          { value: 'Sahne makyajı', label: 'Sahne makyajı' },
+          { value: 'Çekim makyajı', label: 'Çekim makyajı' },
+          { value: 'Model/oyuncu makyajı', label: 'Model / oyuncu makyajı' },
+          { value: 'Moda styling', label: 'Moda styling' },
+          { value: 'Özel efekt makyajı', label: 'Özel efekt makyajı' },
+          { value: 'no_pref', label: 'Emin değilim / Önerin' },
+        ],
+      },
+      {
+        key: 'prova',
+        label: 'Prova beklentisi',
+        type: 'select',
+        required: false,
+        // PROVA_OPTIONS ile hizalı
+        options: [
+          { value: 'Dahil', label: 'Prova dahil olsun' },
+          { value: 'Ücretli', label: 'Ücretli olabilir' },
+          { value: 'Yok', label: 'Prova istemiyorum' },
+          { value: 'no_pref', label: 'Fark etmez' },
+        ],
+      },
+      {
+        key: 'venue_type',
+        label: 'Hizmet yeri',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'home', label: 'Gelin evi / ev' },
+          { value: 'hotel', label: 'Otel' },
+          { value: 'studio', label: 'Set / stüdyo' },
+          { value: 'salon', label: 'Salon (profesyonelin yeri)' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Hazırlanacak kişi sayısı',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 4',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- ETKİNLİK KOORDİNATÖRLERİ VE SAHA SORUMLULARI ---
+  {
+    slug: 'etkinlik-koordinatoru',
+    intro:
+      'Etkinlik gününü ve saha ihtiyacını anlat, koordinatör sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'role_needed',
+        label: 'İhtiyaç duyulan rol',
+        type: 'select',
+        required: false,
+        // KOORDINATOR_GOREV_OPTIONS ile hizalı
+        options: [
+          { value: 'Saha koordinasyonu', label: 'Saha koordinasyonu' },
+          { value: 'Backstage', label: 'Backstage' },
+          { value: 'Konuk akışı', label: 'Konuk akışı' },
+          { value: 'Protokol', label: 'Protokol' },
+          { value: 'Zaman akışı', label: 'Zaman akışı' },
+          { value: 'Ekip/gönüllü koordinasyonu', label: 'Ekip / gönüllü koordinasyonu' },
+          { value: 'Prodüksiyon asistanlığı', label: 'Prodüksiyon asistanlığı' },
+          { value: 'no_pref', label: 'Emin değilim / Önerin' },
+        ],
+      },
+      {
+        key: 'work_duration',
+        label: 'Çalışma süresi',
+        type: 'select',
+        required: false,
+        // CALISMA_SURESI_OPTIONS ile hizalı
+        options: [
+          { value: 'Yarım gün', label: 'Yarım gün' },
+          { value: 'Tam gün', label: 'Tam gün' },
+          { value: 'Çok günlü', label: 'Çok günlü' },
+          { value: 'Esnek', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'team_size',
+        label: 'Ekip ihtiyacı',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'solo', label: 'Yalnız koordinatör' },
+          { value: 'small', label: '2–5 kişilik ekip' },
+          { value: 'large', label: '5+ kişilik ekip' },
+          { value: 'no_pref', label: 'Emin değilim' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 500',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- KONUŞMACILAR VE EĞİTMENLER ---
+  {
+    slug: 'konusmaci',
+    intro:
+      'Etkinliğini, konuyu ve hedef kitleni anlat; konuşmacı sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul veya "çevrimiçi"',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'talk_format',
+        label: 'Konuşma türü',
+        type: 'select',
+        required: false,
+        // KONUSMA_TURLERI_OPTIONS ile hizalı
+        options: [
+          { value: 'Keynote', label: 'Keynote' },
+          { value: 'Motivasyon', label: 'Motivasyon' },
+          { value: 'Sektörel', label: 'Sektörel' },
+          { value: 'Girişimcilik', label: 'Girişimcilik' },
+          { value: 'Teknoloji', label: 'Teknoloji' },
+          { value: 'Panelist', label: 'Panelist' },
+          { value: 'Kurumsal eğitim', label: 'Kurumsal eğitim' },
+          { value: 'Workshop', label: 'Workshop' },
+          { value: 'Yaratıcı atölye', label: 'Yaratıcı atölye' },
+          { value: 'no_pref', label: 'Emin değilim / Önerin' },
+        ],
+      },
+      {
+        key: 'duration',
+        label: 'Süre',
+        type: 'select',
+        required: false,
+        // KONUSMA_SURESI_OPTIONS ile hizalı
+        options: [
+          { value: '30 dk altı', label: '30 dk altı' },
+          { value: '30–60 dk', label: '30–60 dk' },
+          { value: 'Yarım gün', label: 'Yarım gün' },
+          { value: 'Tam gün', label: 'Tam gün' },
+          { value: 'no_pref', label: 'Esnek / Görüşelim' },
+        ],
+      },
+      {
+        key: 'audience',
+        label: 'Hedef kitle',
+        type: 'select',
+        required: false,
+        // HEDEF_KITLE_OPTIONS ile hizalı
+        options: [
+          { value: 'Kurumsal', label: 'Kurumsal' },
+          { value: 'Öğrenci & genç', label: 'Öğrenci & genç' },
+          { value: 'Karma', label: 'Karma' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 150',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
 ];
 
 // -----------------------------------------------------------------------------
