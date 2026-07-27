@@ -224,14 +224,72 @@ export const SKILL_LEVELS = [
 // =============================================================================
 export const SET_SURESI_OPTIONS = ['1–2 saat', '2–4 saat', '4–6 saat', '6+ saat'] as const;
 export const GOSTERI_SURESI_OPTIONS = ['30 dk altı', '30–60 dk', '60–90 dk', '90+ dk'] as const;
-export const EKIP_BOYUTU_OPTIONS = ['Solo', 'Duo', 'Trio', 'Grup (4+)'] as const;
+// 'Grup (4+)' → 'Grup 4+': parantez PostgREST or=(...) dilbilgisinde grup
+// karakteri; containment filtresine bağlı değerlerde kullanılamaz (dansci).
+// Eski kayıtlar 20260727150000 migration'ı ile taşınır.
+export const EKIP_BOYUTU_OPTIONS = ['Solo', 'Duo', 'Trio', 'Grup 4+'] as const;
 export const EKIPMAN_DURUMU_OPTIONS = ['Kendi ekipmanı', 'Kısmi', 'Mekandan bekler'] as const;
 export const YAS_GRUBU_OPTIONS = ['Çocuk', 'Yetişkin', 'Her yaş'] as const;
 export const EKIPMAN_KAPASITESI_OPTIONS = ['200 kişi altı', '200–500', '500–1000', '1000+'] as const;
 export const KURULUM_SURESI_OPTIONS = ['1 saat altı', '1–2 saat', '2–4 saat', '4+ saat'] as const;
 
 // Çoklu-çip setleri (ceviri_turleri kalıbı — değerler " · " ile birleşir).
-export const CEVIRI_OPTIONS = ['Simultane', 'Ardıl', 'Yazılı', 'Fısıltı'] as const;
+// Kategori artık "Çevirmenler VE Etkinlik Rehberleri" (kaynak doküman §14):
+// son üç değer rehberlik hizmetleri. Etiket labelOverrides ile "Hizmet türleri".
+export const CEVIRI_OPTIONS = [
+  'Simultane',
+  'Ardıl',
+  'Yazılı',
+  'Fısıltı',
+  'Fuar çevirmenliği',
+  'Etkinlik rehberliği',
+  'VIP refakat',
+] as const;
+
+// Dans türleri — dansci quick_array (kaynak doküman §12 alt hizmetleri).
+export const DANS_TURLERI_OPTIONS = [
+  'Modern/Show',
+  'Latin',
+  'Hip-hop/Sokak',
+  'Halk oyunları',
+  'Oryantal',
+  'Zeybek',
+  'Kına',
+  'Flash mob',
+  'Koreografi',
+] as const;
+
+/**
+ * DİLLER — kapalı sözlük (diller_belgeler.language_pairs).
+ *
+ * VERİ ŞEKLİ: düz dil listesi (string[]), dil ÇİFTİ DEĞİL. Çift modellemesi
+ * kombinatoryal patlama üretir (18 dil → 306 yön) ve filtrenin sorduğu soru
+ * "hangi dilleri biliyor"dur, "hangi yönde çeviriyor" değil.
+ *
+ * allowCustom KAPALI: bu alan keşfet filtresine bağlı; serbest giriş filtre
+ * seçenekleriyle veriyi ayrıştırır ("türkçe" yazan profil "Türkçe" filtresinde
+ * görünmez). Eksik dil talebi gelirse sözlüğe eklenir.
+ */
+export const LANGUAGE_OPTIONS = [
+  'Türkçe',
+  'İngilizce',
+  'Almanca',
+  'Fransızca',
+  'Arapça',
+  'Rusça',
+  'İspanyolca',
+  'İtalyanca',
+  'Rumca',
+  'Farsça',
+  'Çince',
+  'Japonca',
+  'Korece',
+  'Ukraynaca',
+  'Bulgarca',
+  'Gürcüce',
+  'Kürtçe',
+  'Azerbaycan Türkçesi',
+] as const;
 export const ENSTRUMAN_OPTIONS = ['Gitar', 'Piyano', 'Keman', 'Vokal', 'Bateri', 'Bas', 'Saksafon', 'Perküsyon'] as const;
 // NOT: etkinlik türleri artık ORTAK bir alan (category_attributes.etkinlik_turleri) ve
 // değer kümesi ilanlar taksonomisinden (app/mesajlar/data → EVENT_TYPES) TEK KAYNAK gelir.
@@ -249,8 +307,15 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
   dj: { set_suresi: SET_SURESI_OPTIONS, ekipman_durumu: EKIPMAN_DURUMU_OPTIONS },
   muzisyen: { ekip_boyutu: EKIP_BOYUTU_OPTIONS },
   dansci: { ekip_boyutu: EKIP_BOYUTU_OPTIONS, gosteri_suresi: GOSTERI_SURESI_OPTIONS },
+  // Kapsam genişledi: "Stand-up Komedyenleri VE Sahne Anlatıcıları" (kaynak doküman §17).
   'stand-up-komedyen': {
-    gosteri_turu: ['Kısa set', 'Tam gösteri', 'Doğaçlama'],
+    gosteri_turu: [
+      'Kısa set',
+      'Tam gösteri',
+      'Doğaçlama',
+      'Hikâye anlatımı',
+      'Roast/özel konsept',
+    ],
     gosteri_suresi: GOSTERI_SURESI_OPTIONS,
   },
   illuzyonist: {
@@ -283,7 +348,10 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
   },
   karikaturist: {
     cizim_turu: ['Portre karikatür', 'Canlı çizim', 'Dijital illüstrasyon', 'Karma'],
-    teslim_suresi: ['Anında (canlı)', '1–3 gün', '1 hafta'],
+    // 'Anında (canlı)' → 'Anında': parantez PostgREST or=(...) dilbilgisinde grup
+    // karakteri; containment filtresine bağlanan değerlerde kullanılamaz.
+    // Eski kayıtlar 20260727130000 migration'ı ile taşınır.
+    teslim_suresi: ['Anında', '1–3 gün', '1 hafta'],
   },
 };
 
@@ -297,6 +365,9 @@ export const QUICK_MULTI_OPTIONS: Record<
 > = {
   ceviri_turleri: { options: CEVIRI_OPTIONS },
   enstruman: { options: ENSTRUMAN_OPTIONS, allowCustom: true },
+  // allowCustom KAPALI — ikisi de keşfet filtresine bağlı (serbest giriş
+  // filtre seçenekleriyle veriyi ayrıştırır).
+  dans_turleri: { options: DANS_TURLERI_OPTIONS },
 };
 
 /** Bir quick anahtarı çoklu-çip mi? (saklama dizi, gösterim " · " ile birleşik) */
@@ -437,7 +508,9 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDefinition> = {
     key: 'diller_belgeler',
     defaultTitle: 'Diller & Belgeler',
     fields: [
-      { key: 'language_pairs', type: 'language_pairs', label: 'Dil çiftleri' },
+      // Düz dil listesi (string[]) — LANGUAGE_OPTIONS kapalı sözlüğünden çoklu çip.
+      // Eski serbest metin / "TR ↔ EN" çift kayıtları 20260727140000 ile taşındı.
+      { key: 'language_pairs', type: 'language_pairs', label: 'Diller' },
       { key: 'documents', type: 'documents', label: 'Belgeler' },
     ],
     disclaimer: 'Belge yüklendi', // "doğrulandı" DEĞİL (Fahri kararı)
@@ -515,10 +588,12 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   },
   dansci: {
     archetype: 'sahne',
-    quickInfo: ['ekip_boyutu', 'gosteri_suresi'],
+    // dans_turleri: kontrollü çoklu çip (filtrelenebilir). Serbest dans türü
+    // metni uzmanlik_alanlari'nda DEĞİL — orası artık deneyim/bağlam beyanı.
+    quickInfo: ['dans_turleri', 'ekip_boyutu', 'gosteri_suresi'],
     modules: [
       { key: 'performans', title: 'Gösteri Bilgileri' },
-      { key: 'uzmanlik_alanlari', title: 'Dans Türleri' },
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
       { key: 'sosyal_erisim' },
     ],
     experienceGroups: [
@@ -545,6 +620,11 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'ozel_davet', label: 'Özel Davet' },
     ],
     logisticsChecks: [
+      {
+        key: 'kurumsal_dil',
+        label: 'Kurumsal dile uygun',
+        description: 'Kurum içi etkinliğe uygun, temiz içerik sunar',
+      },
     ],
     skillsWithLevels: false,
   },
@@ -717,6 +797,9 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
   tercuman: {
     archetype: 'uzmanlik',
     quickInfo: ['ceviri_turleri', 'yeminli'],
+    // Kapsam genişledi: "Çevirmenler ve Etkinlik Rehberleri" (kaynak doküman §14)
+    // → ceviri_turleri etiketi "Hizmet türleri" (rehberlik değerlerini de kapsar).
+    labelOverrides: { ceviri_turleri: 'Hizmet türleri' },
     modules: [
       { key: 'diller_belgeler' },
       { key: 'uzmanlik_alanlari', title: 'Çeviri Alanları' },
@@ -819,7 +902,8 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
     what_to_expect: 'Canlı, esnek repertuar; isteklere açık',
   },
   dansci: {
-    areas: 'Modern, Hip-hop, Latin, Show dans',
+    // Dans TÜRÜ artık quick_array (kontrollü). Burası deneyim/bağlam beyanı.
+    areas: 'Kına gecesi, Kurumsal lansman, Klip/reklam, Festival sahnesi',
     what_to_expect: 'Koreografi + kostümlü sahne gösterisi',
   },
   'stand-up-komedyen': {
@@ -862,7 +946,8 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
   },
   tercuman: {
     areas: 'Hukuki, Tıbbi, Teknik, Ticari',
-    language_pairs: 'TR ↔ EN, TR ↔ DE',
+    // Düz dil listesi (çift DEĞİL) — LANGUAGE_OPTIONS sözlüğünden seçilir.
+    language_pairs: 'Türkçe, İngilizce, Almanca',
   },
   organizasyon: {
     areas: 'Düğün, Kurumsal etkinlik, Konser, Fuar',

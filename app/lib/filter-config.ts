@@ -18,7 +18,19 @@
 // Not: Her kategorinin İLK 'multi' alanı, keşfet kartında özet etiket olarak
 // gösterilir. Bu yüzden en ayırt edici alanı ilk sıraya koy.
 
-import { toQuickList } from './category-fields';
+import {
+  toQuickList,
+  // Yerel LANGUAGE_OPTIONS (eski sistem, tr/en/tr_en kodları) ile çakışmasın:
+  // yeni sistem düz dil ADLARINI kullanır ve form ile tek kaynaktır.
+  LANGUAGE_OPTIONS as LANGUAGE_DICT,
+  CEVIRI_OPTIONS,
+  DANS_TURLERI_OPTIONS,
+  EKIP_BOYUTU_OPTIONS,
+  GOSTERI_SURESI_OPTIONS,
+} from './category-fields';
+// Etkinlik türleri TEK KAYNAK: ilanlar taksonomisi (conversations/listings
+// event_type CHECK constraint'i ile birebir). Yerel kopya YASAK.
+import { EVENT_TYPES } from '../mesajlar/data';
 
 export type FilterFieldType = 'multi' | 'single';
 
@@ -114,7 +126,9 @@ const LANGUAGE_OPTIONS: FilterFieldOption[] = [
 // Kategori-özel filtre tanımları (12 aktif kategori)
 // -----------------------------------------------------------------------------
 
-const CATEGORY_FILTERS: CategoryFilters[] = [
+// ESKİ SİSTEM (source varsayılanı 'attributes') — profiles.attributes,
+// /profil/duzenle AttributesEditor'ü, JS tarafı filtre. Davranış değişmedi.
+const LEGACY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
   // --- DJ ---
   {
     slug: 'dj',
@@ -914,6 +928,232 @@ const CATEGORY_FILTERS: CategoryFilters[] = [
   },
 ];
 
+// =============================================================================
+// YENİ SİSTEM (source: 'category_attributes') — Dalga 0 pilotları
+//
+// Bu kategorilerde filtre verisi profiles.category_attributes'tan okunur ve
+// DB tarafında jsonb containment (@>) ile filtrelenir. profiles.attributes'a
+// AYNA YAZILMAZ — /profil/duzenle'deki AttributesEditor bu kategorilerde
+// render edilmez (aynı bilgi iki formda sorulmaz).
+//
+// KURAL: her alan bir KONTROLLÜ SÖZLÜK alanına dayanır (quick select /
+// logisticsChecks boolean / paylaşılan set). Serbest metin çipleri
+// (uzmanlik_alanlari.areas) buraya GİRMEZ — onlar gösterim alanıdır.
+//
+// KURAL: option value'ları PostgREST `or=(...)` dilbilgisini bozan karakter
+// içeremez: , ( ) " \  → bkz. isPostgrestSafeValue.
+// =============================================================================
+
+/** Paylaşılan: category_attributes.service_region (SERVICE_REGION_OPTIONS ile birebir). */
+const SERVICE_REGION_FILTER: FilterField = {
+  key: 'service_region',
+  label: 'Hizmet bölgesi',
+  type: 'single',
+  path: { kind: 'root', key: 'service_region' },
+  options: [
+    { value: 'Yalnızca kendi şehri', label: 'Yalnızca kendi şehri' },
+    { value: 'Şehir dışına çıkar', label: 'Şehir dışına çıkar' },
+    { value: 'Türkiye geneli', label: 'Türkiye geneli' },
+    { value: 'Türkiye geneli + çevrimiçi', label: 'Türkiye geneli + çevrimiçi' },
+  ],
+};
+
+/**
+ * Paylaşılan: modules.diller_belgeler.language_pairs[] — düz dil listesi.
+ * Sözlük LANGUAGE_OPTIONS ile TEK KAYNAK; form da aynı kümeden çip sunar,
+ * bu yüzden filtre değerleri veriyle birebir örtüşür (serbest metin YOK).
+ */
+const LANGUAGE_FILTER: FilterField = {
+  key: 'dil',
+  label: 'Diller',
+  type: 'multi',
+  hint: 'Hangi dilleri biliyor',
+  path: {
+    kind: 'module',
+    moduleKey: 'diller_belgeler',
+    arrayField: 'language_pairs',
+  },
+  options: LANGUAGE_DICT.map((v) => ({ value: v, label: v })),
+};
+
+/** Paylaşılan: category_attributes.etkinlik_turleri (ilanlar taksonomisi — EVENT_TYPES tek kaynak). */
+const EVENT_TYPES_FILTER: FilterField = {
+  key: 'etkinlik_turleri',
+  label: 'Etkinlik türleri',
+  type: 'multi',
+  hint: 'Hangi etkinliklerde çalışıyor',
+  path: { kind: 'root_array', key: 'etkinlik_turleri' },
+  options: EVENT_TYPES.map((e) => ({ value: e.key, label: e.label })),
+};
+
+const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
+  // --- KARİKATÜRİST (pilot 1: saf quick select + logistics boolean) ---
+  {
+    slug: 'karikaturist',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'cizim_turu',
+        label: 'Çizim türü',
+        type: 'single',
+        path: { kind: 'quick', key: 'cizim_turu' },
+        options: [
+          { value: 'Portre karikatür', label: 'Portre karikatür' },
+          { value: 'Canlı çizim', label: 'Canlı çizim' },
+          { value: 'Dijital illüstrasyon', label: 'Dijital illüstrasyon' },
+          { value: 'Karma', label: 'Karma' },
+        ],
+      },
+      {
+        key: 'teslim_suresi',
+        label: 'Teslim süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'teslim_suresi' },
+        options: [
+          { value: 'Anında', label: 'Anında' },
+          { value: '1–3 gün', label: '1–3 gün' },
+          { value: '1 hafta', label: '1 hafta' },
+        ],
+      },
+      {
+        key: 'canli_cizim',
+        label: 'Canlı çizim',
+        type: 'single',
+        // logistics yalnız `true` saklar → tek seçenek. "Hayır" containment ile
+        // ifade edilemez (yokluk sorgulanamaz) ve bilgi de taşımaz.
+        path: { kind: 'logistics', key: 'canli_cizim' },
+        options: [{ value: 'true', label: 'Etkinlikte canlı çizim yapar' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- STAND-UP KOMEDYENİ (pilot 2: + paylaşılan set + modül dizisi + yeni logistics) ---
+  {
+    slug: 'stand-up-komedyen',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'gosteri_turu',
+        label: 'Gösteri türü',
+        type: 'single',
+        path: { kind: 'quick', key: 'gosteri_turu' },
+        options: [
+          { value: 'Kısa set', label: 'Kısa set' },
+          { value: 'Tam gösteri', label: 'Tam gösteri' },
+          { value: 'Doğaçlama', label: 'Doğaçlama' },
+          { value: 'Hikâye anlatımı', label: 'Hikâye anlatımı' },
+          { value: 'Roast/özel konsept', label: 'Roast / özel konsept' },
+        ],
+      },
+      {
+        key: 'gosteri_suresi',
+        label: 'Gösteri süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'gosteri_suresi' },
+        options: [
+          { value: '30 dk altı', label: '30 dk altı' },
+          { value: '30–60 dk', label: '30–60 dk' },
+          { value: '60–90 dk', label: '60–90 dk' },
+          { value: '90+ dk', label: '90+ dk' },
+        ],
+      },
+      // Tur 4: language_pairs kontrollü sözlüğe geçti → paylaşılan filtre kullanılır.
+      LANGUAGE_FILTER,
+      {
+        key: 'kurumsal_dil',
+        label: 'Kurumsal dile uygun',
+        type: 'single',
+        path: { kind: 'logistics', key: 'kurumsal_dil' },
+        options: [{ value: 'true', label: 'Kurum içi etkinliğe uygun' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- TERCÜMAN (pilot 3: quick_array — Tur 1 dizi saklamasının ilk kullanıcısı) ---
+  {
+    slug: 'tercuman',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'ceviri_turleri',
+        label: 'Hizmet türleri', // preset labelOverrides ile birebir
+        type: 'multi',
+        hint: 'Çeviri ve etkinlik rehberliği hizmetleri',
+        // quick_array: " · " birleşik string DEĞİL, string[] (20260727120000).
+        path: { kind: 'quick_array', key: 'ceviri_turleri' },
+        options: CEVIRI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'yeminli',
+        label: 'Yeminli',
+        type: 'single',
+        path: { kind: 'quick', key: 'yeminli' },
+        // 'Hayır' bilgi taşımaz ve public render'da da çizilmez → tek seçenek.
+        options: [{ value: 'Evet', label: 'Yeminli belgesi var' }],
+      },
+      LANGUAGE_FILTER,
+      {
+        key: 'cevrimici',
+        label: 'Çevrimiçi',
+        type: 'single',
+        path: { kind: 'logistics', key: 'cevrimici' },
+        options: [{ value: 'true', label: 'Uzaktan/çevrimiçi çalışır' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- DANSÇI (pilot 4: kontrollü çoklu türün serbest çipten ayrılması) ---
+  {
+    slug: 'dansci',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'dans_turleri',
+        label: 'Dans türleri',
+        type: 'multi',
+        hint: 'Sahne aldığın dans türleri',
+        path: { kind: 'quick_array', key: 'dans_turleri' },
+        options: DANS_TURLERI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'ekip_boyutu',
+        label: 'Ekip boyutu',
+        type: 'single',
+        path: { kind: 'quick', key: 'ekip_boyutu' },
+        options: EKIP_BOYUTU_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'gosteri_suresi',
+        label: 'Gösteri süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'gosteri_suresi' },
+        options: GOSTERI_SURESI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'kostum',
+        label: 'Kostüm',
+        type: 'single',
+        path: { kind: 'logistics', key: 'kostum' },
+        options: [{ value: 'true', label: 'Kendi kostümüyle gelir' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+];
+
+/** Tüm kategoriler — eski + yeni sistem. Slug'lar iki listede birden OLAMAZ. */
+const CATEGORY_FILTERS: CategoryFilters[] = [
+  ...LEGACY_ATTRIBUTE_FILTERS,
+  ...CATEGORY_ATTRIBUTE_FILTERS,
+];
+
 // -----------------------------------------------------------------------------
 // Erişim yardımcıları
 // -----------------------------------------------------------------------------
@@ -1015,14 +1255,15 @@ export function buildContainment(
 }
 
 /**
- * Bir ALANIN seçili değerleri için PostgREST `or=(...)` gövdesi (alan içi OR).
- * Alanlar arası AND, her alanın AYRI `.or()` çağrısıyla sağlanır (bkz. applyCategoryFilters).
+ * Bir ALANIN seçili değerleri için PostgREST koşul listesi (alan içi OR adayları).
+ * Boş dönmez: hiçbir değer ifade edilemezse [NEVER_MATCH_OR] döner — alan
+ * ATLANMAZ, çünkü atlamak AND semantiğini gevşetir.
  */
-export function buildFieldOrExpression(
+export function buildFieldConditions(
   field: FilterField,
   values: string[]
-): string {
-  if (!field.path) return NEVER_MATCH_OR;
+): string[] {
+  if (!field.path) return [NEVER_MATCH_OR];
   const conds: string[] = [];
   for (const v of values) {
     if (!isPostgrestSafeValue(v)) continue; // ayracı bozacak değer — atla
@@ -1030,12 +1271,50 @@ export function buildFieldOrExpression(
     if (!isPostgrestSafeValue(json.replace(/[",\\]/g, ''))) continue;
     conds.push(`category_attributes.cs.${json}`);
   }
-  // Hiçbiri ifade edilemedi → alanı atlama, hiçbir şeyle eşleşme (AND korunur).
-  if (conds.length === 0) return NEVER_MATCH_OR;
-  return conds.join(',');
+  return conds.length > 0 ? conds : [NEVER_MATCH_OR];
 }
 
 const NEVER_MATCH_OR = `category_attributes.cs.${NEVER_MATCH}`;
+
+/**
+ * TÜM alanlar için TEK `.or()` argümanı — alanlar arası AND burada AÇIKÇA kurulur.
+ *
+ * NEDEN tek çağrı: "tekrarlanan or= parametresini PostgREST AND'ler" davranışı
+ * belgelenmiş bir sözleşme DEĞİL. Canlı testte bu sürümde doğru çalıştığı
+ * ölçüldü, ama filtrenin doğruluğu bu varsayıma bırakılamaz — sessizce
+ * gevşerse kullanıcı fazla sonuç görür ve hatayı fark etmez.
+ *
+ * Üretilen biçim:
+ *   tek alan   → "c1,c2"                       → or=(c1,c2)
+ *   çok alan   → "and(or(c1,c2),c3)"           → or=(and(or(c1,c2),c3))
+ *                (tek argümanlı or, ifadenin kendisine eşittir)
+ * Tek koşullu grup gereksiz yere or(...) ile sarılmaz.
+ *
+ * Alan sayısı kadar grup üretmek YAPISAL garantidir: her alan tam olarak bir
+ * kez `parts`e eklenir, hiçbir dal alanı atlamaz (ifade edilemeyen alan bile
+ * NEVER_MATCH ile temsil edilir).
+ */
+export function buildCategoryFilterExpression(
+  fields: FilterField[],
+  activeFilters: Record<string, string[]>
+): string | null {
+  // Alan başına koşul listesi — TEK geçiş, hiçbir alan atlanmaz.
+  const groups: string[][] = [];
+  for (const [key, values] of Object.entries(activeFilters)) {
+    if (values.length === 0) continue;
+    const field = fields.find((f) => f.key === key);
+    // Tanımsız alan (bozuk URL) → gevşetme, eşleşme yok.
+    groups.push(field ? buildFieldConditions(field, values) : [NEVER_MATCH_OR]);
+  }
+
+  if (groups.length === 0) return null;
+  // Tek alan: dış or=(...) zaten OR görevi görür, and(...) sarmalaması gereksiz.
+  if (groups.length === 1) return groups[0].join(',');
+
+  return `and(${groups
+    .map((conds) => (conds.length === 1 ? conds[0] : `or(${conds.join(',')})`))
+    .join(',')})`;
+}
 
 /**
  * ESKİ sistem (attributes) için JS tarafı eşleştirici — mevcut davranışın birebir
@@ -1072,11 +1351,10 @@ export type CategoryFilterPlan<Q> = {
  * TEK GİRİŞ NOKTASI — kategori hangi sistemdeyse ondan filtreler; çağıran bilmez.
  *
  * SEMANTİK PARİTE (zorunlu): alanlar arası AND, alan içi OR.
- *   - Yeni sistem: her ALAN için AYRI `.or()` çağrısı. supabase-js `.or()` URL'e
- *     `searchParams.append('or', ...)` yapar; PostgREST tekrarlanan üst-seviye
- *     parametreleri AND'ler → and(or(v1,v2), or(v3,v4)). TEK bir `.or()` içinde
- *     tüm alanları birleştirmek alanlar arasını da OR yapar ve filtreyi SESSİZCE
- *     GEVŞETİR — bu yüzden asla tek çağrıda birleştirilmez.
+ *   - Yeni sistem: TEK `.or()` çağrısı, ifadesi buildCategoryFilterExpression'dan.
+ *     AND açıkça `and(...)` ile kurulur; tekrarlanan `or=` parametresinin
+ *     PostgREST tarafından AND'lendiği varsayımına GÜVENİLMEZ (belgelenmiş
+ *     sözleşme değil — sessizce gevşerse kullanıcı fazla sonuç görür).
  *   - Eski sistem: sorguya dokunulmaz, jsFilter döner (mevcut davranış).
  */
 export function applyCategoryFilters<Q extends { or(filters: string): Q }>(
@@ -1093,15 +1371,11 @@ export function applyCategoryFilters<Q extends { or(filters: string): Q }>(
     return { query, jsFilter: buildAttributesJsFilter(activeFilters) };
   }
 
-  const fields = getFilterFields(categorySlug);
-  let next = query;
-  for (const [key, values] of Object.entries(activeFilters)) {
-    if (values.length === 0) continue;
-    const field = fields.find((f) => f.key === key);
-    // Tanımsız alan (bozuk URL) → gevşetme, eşleşme yok.
-    next = next.or(field ? buildFieldOrExpression(field, values) : NEVER_MATCH_OR);
-  }
-  return { query: next, jsFilter: null };
+  const expr = buildCategoryFilterExpression(
+    getFilterFields(categorySlug),
+    activeFilters
+  );
+  return { query: expr ? query.or(expr) : query, jsFilter: null };
 }
 
 /**

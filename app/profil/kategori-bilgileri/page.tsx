@@ -51,8 +51,14 @@ export default async function KategoriBilgileriPage() {
     </Link>
   );
 
-  // Kategorisiz / preset'siz profil → yönlendirme mesajı
+  // İKİ AYRI DURUM — tek mesaja indirilemez:
+  //  (a) kategori HİÇ seçilmemiş → kullanıcı gidip seçebilir (eylem var)
+  //  (b) kategori seçili ama preset YOK (yetim kategori / preset'i gecikmiş yeni
+  //      kategori) → "kategorini seç" demek ÇIKMAZ DÖNGÜ üretir: kullanıcı
+  //      /profil/duzenle'ye gider, kategorisinin yerinde durduğunu görür, döner,
+  //      aynı ekranı görür. Bu dalda yapabileceği bir şey yok; dürüst mesaj + çıkış.
   if (!slug || !preset) {
+    const categoryMissing = !slug;
     return (
       <>
         <TopNav />
@@ -61,17 +67,20 @@ export default async function KategoriBilgileriPage() {
             {backLink}
             <div className="bg-card border border-line rounded-xl p-8 text-center mt-4">
               <h1 className="font-display text-2xl text-ink mb-2">
-                Önce hizmet kategorini seç
+                {categoryMissing
+                  ? 'Önce hizmet kategorini seç'
+                  : 'Bu kategori için özel alanlar hazırlanıyor'}
               </h1>
               <p className="text-ink-72 text-sm mb-5 max-w-md mx-auto">
-                Kategori bilgileri formu, kategorine göre şekillenir. Ana hizmet
-                kategorini belirledikten sonra buraya dönebilirsin.
+                {categoryMissing
+                  ? 'Kategori bilgileri formu, kategorine göre şekillenir. Ana hizmet kategorini belirledikten sonra buraya dönebilirsin.'
+                  : 'Profilinin diğer bölümlerini doldurmaya devam edebilirsin. Bu kategoriye özel alanlar hazır olduğunda burada görünecek.'}
               </p>
               <Link
-                href="/profil/duzenle"
+                href={categoryMissing ? '/profil/duzenle' : '/profil'}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
-                Profili düzenle →
+                {categoryMissing ? 'Profili düzenle →' : 'Profilime dön →'}
               </Link>
             </div>
           </div>

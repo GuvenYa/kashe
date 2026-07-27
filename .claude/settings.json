@@ -6,7 +6,12 @@
       "Bash(npm uninstall *)",
       "Bash(npx tsx *)",
       "Bash(rm -f scripts/tmp-filter-bridge-check.ts)",
-      "Bash(rmdir scripts *)"
+      "Bash(rmdir scripts *)",
+      "Bash(git check-ignore *)",
+      "Bash(git fetch *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(rm -f scripts/tmp-option-safety-check.ts)",
+      "Bash(rm -f scripts/tmp-live-filter-probe.ts)"
     ]
   }
 }

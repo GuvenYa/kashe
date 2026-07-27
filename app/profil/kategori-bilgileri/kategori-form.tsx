@@ -15,6 +15,7 @@ import {
   SKILL_LEVELS,
   CATEGORY_PARAM_SUGGESTIONS,
   ARCHETYPE_TAGLINE_EXAMPLES,
+  LANGUAGE_OPTIONS,
   toQuickList,
   type ModuleKey,
   type ModuleFieldDef,
@@ -670,38 +671,22 @@ function ModuleField({
     );
   }
 
-  // C3 — Diller: tercüman'da çeviri yönü ("TR ↔ EN"), diğerlerinde tek dil ("Türkçe").
-  // Placeholder + etiket kategoriye göre example'dan türetilir.
+  // Diller — LANGUAGE_OPTIONS kapalı sözlüğünden çoklu çip (ceviri_turleri kalıbı).
+  // Düz dil listesi; çift ("TR ↔ EN") modellemesi kaldırıldı. Serbest giriş YOK:
+  // alan keşfet filtresine bağlı, serbest metin filtreyle veriyi ayrıştırır.
   if (type === 'language_pairs') {
-    const arr = (value as string[]) ?? [];
-    const isPair = (example ?? '').includes('↔');
-    const ph = example ? example.split(',')[0].trim() : 'Türkçe';
-    const update = (i: number, v: string) =>
-      onChange(arr.map((x, idx) => (idx === i ? v : x)));
     return (
-      <div>
-        {labelEl}
-        <p className="text-[11px] text-ink-72/70 mb-2">
-          {isPair ? 'Her satır bir çeviri yönü — örn. TR ↔ EN.' : 'Her satıra bir dil ekle.'}
+      <div className="md:col-span-2">
+        <MultiChipField
+          label={label}
+          value={value}
+          options={LANGUAGE_OPTIONS}
+          allowCustom={false}
+          onChange={(arr) => onChange(arr)}
+        />
+        <p className="text-[11px] text-ink-72/70 mt-2">
+          Bildiğin dilleri seç. Listede olmayan bir dile ihtiyacın varsa bize yaz.
         </p>
-        <div className="flex flex-col gap-2">
-          {arr.map((pair, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                value={pair}
-                onChange={(e) => update(i, e.target.value)}
-                placeholder={ph}
-                maxLength={80}
-                className={`${INPUT} flex-1`}
-              />
-              <RemoveBtn onClick={() => onChange(arr.filter((_, idx) => idx !== i))} />
-            </div>
-          ))}
-          <AddBtn
-            label={isPair ? 'Dil çifti ekle' : 'Dil ekle'}
-            onClick={() => onChange([...arr, ''])}
-          />
-        </div>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import {
   FOLLOWERS_RANGES,
   PLATFORM_OPTIONS,
   QUICK_MULTI_OPTIONS,
+  LANGUAGE_OPTIONS,
   toQuickList,
   type ModuleKey,
 } from '@/app/lib/category-fields';
@@ -272,7 +273,14 @@ export async function saveCategoryAttributes(
               sanitized[field.key] = cleanArr(raw);
               break;
             case 'language_pairs':
-              sanitized[field.key] = cleanArr(raw, 20, 80);
+              // Kapalı sözlük (LANGUAGE_OPTIONS) — serbest giriş YOK.
+              // Alan keşfet filtresine bağlı: sözlük dışı değer filtre
+              // seçenekleriyle eşleşmez, o yüzden kaydedilmez.
+              sanitized[field.key] = cleanArr(raw, 20, 80).filter((v, i, a) =>
+                (LANGUAGE_OPTIONS as readonly string[]).includes(v) &&
+                a.indexOf(v) === i
+              );
+              break;
               break;
             case 'text': {
               const v = cleanStr(raw, 600);
