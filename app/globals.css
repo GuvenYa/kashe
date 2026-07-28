@@ -25,6 +25,11 @@
   /* === Marka renkleri — Faz-1 rebrand: token ADLARI korundu, DEĞERLER lacivert/pembe === */
   --color-brand-ink: #040D26;               /* Faz-1: LACİVERT birincil */
   --color-brand-ink-soft: #EAF0F8;          /* Faz-1: açık lacivert zemin */
+  /* brand-ink-soft'un pembe karşılığı. Değer #FEECF7 yerine #FDEAF5: luminans
+     brand-ink-soft (#EAF0F8, L=0.8659) ile denk olsun diye 2 birim koyulaştırıldı
+     — #FEECF7 L=0.8778 ile yan yana duran iki çip görsel ağırlıkça eşit durmuyordu;
+     #FDEAF5 L=0.8632 ile fark 0.003'e iniyor. */
+  --color-brand-accent-soft: #FDEAF5;
   --color-brand-ink-08: rgba(4, 13, 38, 0.08);  /* Faz-1: lacivert %8 — hover/zemin tint */
   --color-brand-ink-12: rgba(4, 13, 38, 0.12);  /* Faz-1: lacivert %12 — seçili zemin */
 
@@ -38,6 +43,14 @@
   --color-brand-ink-deep: #0D1F4E;   /* Faz-1: hover artık hafif AÇILMA — lacivert dipte */
   --color-danger: #DC2626;       /* Kırmızı — yıkıcı aksiyon (semantik, değişmedi) */
   --color-danger-08: rgba(220, 38, 38, 0.08);
+
+  /* === İlan & davet alt-paleti ===
+     İlan/başvuru/davet akışının kendi lacivert-mavisi. Marka lacivertinden
+     (brand-ink #040D26) KASITLI olarak ayrı: bu yüzeyler "işlem" alanı,
+     marka vitrini değil. Önceden ~117 yerde hardcode'du → token'a alındı ki
+     bir sonraki rebrand'de ıskalanmasın. */
+  --color-ink-blue: #1E3A5F;
+  --color-ink-blue-deep: #142745;   /* hover dibi */
 
   /* === Faz-1 YENİ — cyan (bilgi / gradyan) === */
   --color-sky: #00ACE2;
@@ -63,9 +76,9 @@ body {
   font-family: var(--font-body);
 }
 
-/* === Marka gradyanı yardımcı sınıfları — zümrüt tonlarına güncellendi === */
+/* === Marka gradyanı yardımcı sınıfları === */
 .text-gradient-brand {
-  color: var(--color-brand-ink); /* Düz zümrüt — gradient yerine kararlı renk */
+  color: var(--color-brand-ink); /* Düz brand-ink — gradient yerine kararlı renk */
 }
 
 .bg-gradient-brand {
@@ -73,12 +86,12 @@ body {
 }
 
 /* === Vurgu sistemi
-   <em> = zümrüt renk, kalın (eski: mor-pembe gradyan — "Claude kokusu" nedeniyle terk edildi).
+   <em> = brand-ink renk, kalın (eski: mor-pembe gradyan — "Claude kokusu" nedeniyle terk edildi).
    Hukuki/teknik italik için <i> ayrı tutuldu. */
 em {
   font-style: normal;
   font-weight: 600;
-  color: var(--color-brand-ink); /* Zümrüt vurgu */
+  color: var(--color-brand-ink); /* brand-ink vurgu */
 }
 
 i {
@@ -243,7 +256,7 @@ i {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-brand-ink); /* Zümrüt odak çizgisi */
+  background: var(--color-brand-ink); /* brand-ink odak çizgisi */
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -390,7 +403,7 @@ i {
 .kashe-prose h3 { font-size: 1.25rem; }
 .kashe-prose p { margin: 0 0 1.15rem; }
 .kashe-prose a {
-  color: var(--color-brand-ink); /* Zümrüt link */
+  color: var(--color-brand-ink); /* brand-ink link */
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -400,7 +413,7 @@ i {
 .kashe-prose ol { list-style: decimal; }
 .kashe-prose li { margin: 0.3rem 0; }
 .kashe-prose blockquote {
-  border-left: 3px solid var(--color-brand-ink); /* Zümrüt sol kenarlık */
+  border-left: 3px solid var(--color-brand-ink); /* brand-ink sol kenarlık */
   padding-left: 1rem;
   margin: 0 0 1.15rem;
   color: var(--color-ink-72);

@@ -468,7 +468,7 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* INFO CARD — D1/D3: emerald eyebrow bölüm başı + normal-case alan etiketleri */}
+          {/* INFO CARD — D1/D3: brand-ink eyebrow bölüm başı + normal-case alan etiketleri */}
           <div className="bg-card border border-line rounded-xl p-6 space-y-4">
             <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
               Hesap Bilgileri
@@ -727,7 +727,7 @@ export default async function ProfilPage() {
                 </h2>
                 <Link
                   href="/davetlerim"
-                  className="text-sm font-display font-medium text-[#1E3A5F] hover:underline"
+                  className="text-sm font-display font-medium text-ink-blue hover:underline"
                 >
                   Davetlerim →
                 </Link>
@@ -762,7 +762,7 @@ export default async function ProfilPage() {
                       <Link
                         key={m.id}
                         href={`/p/${ag.id}`}
-                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-[#1E3A5F] hover:shadow-[3px_3px_0_#1E3A5F] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
+                        className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-ink-blue hover:shadow-[3px_3px_0_var(--color-ink-blue)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
                       >
                         {ag.avatar_url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
@@ -772,12 +772,12 @@ export default async function ProfilPage() {
                             className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-display font-semibold shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-ink-blue flex items-center justify-center text-white font-display font-semibold shrink-0">
                             {agInitials}
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="font-display font-semibold text-ink group-hover:text-[#1E3A5F] transition-colors truncate">
+                          <p className="font-display font-semibold text-ink group-hover:text-ink-blue transition-colors truncate">
                             {agName}
                           </p>
                           <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
@@ -829,14 +829,14 @@ export default async function ProfilPage() {
 
           {/* AJANS: Bekleyen davetler */}
           {isAgencyUser && pendingInvitationCount > 0 && (
-            <div className="mt-6 bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-6">
+            <div className="mt-6 bg-ink-blue/5 border-2 border-ink-blue/15 rounded-lg p-6">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-blue mb-1">
                     Bekleyen davet
                   </p>
                   <p className="font-display text-lg text-ink">
-                    <span className="text-[#1E3A5F] font-medium">
+                    <span className="text-ink-blue font-medium">
                       {pendingInvitationCount}
                     </span>{' '}
                     davet cevap bekliyor
@@ -844,7 +844,7 @@ export default async function ProfilPage() {
                 </div>
                 <Link
                   href="/profil/ekibim"
-                  className="text-sm font-display font-medium text-[#1E3A5F] hover:underline"
+                  className="text-sm font-display font-medium text-ink-blue hover:underline"
                 >
                   İncele →
                 </Link>

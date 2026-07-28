@@ -219,7 +219,7 @@ export function IlanDetay({
   // Status badge styles
   const badgeStyles: Record<typeof statusTone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -236,8 +236,8 @@ export function IlanDetay({
     />
   ) : null;
 
-  // Mercan (mockup) birincil CTA sınıfı
-  const mercanCta =
+  // brand-accent (mockup) birincil CTA sınıfı
+  const accentCta =
     'inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#FA0B96] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#D50880] transition-colors';
 
   return (
@@ -365,9 +365,9 @@ export function IlanDetay({
             {canDecide && (
               <div id="basvurular" className="scroll-mt-24 pt-2">
                 {acceptedConversationId && (
-                  <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="bg-ink-blue/5 border-2 border-ink-blue/15 rounded-lg p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-1">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-blue mb-1">
                         Başvuru kabul edildi
                       </p>
                       <p className="text-sm text-ink">
@@ -377,7 +377,7 @@ export function IlanDetay({
                     </div>
                     <Link
                       href={`/mesajlar/${acceptedConversationId}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] transition-all shrink-0"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink-blue text-white rounded-lg font-display font-semibold text-sm hover:bg-ink-blue-deep transition-all shrink-0"
                     >
                       <Send size={14} strokeWidth={1.75} />
                       Konuşmaya git
@@ -561,8 +561,8 @@ export function IlanDetay({
                                   disabled={isPending}
                                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
                                     confirming === 'reopen'
-                                      ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
-                                      : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                                      ? 'bg-ink-blue text-white border-ink-blue'
+                                      : 'border-line text-ink-72 hover:border-ink-blue hover:text-ink-blue'
                                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                   <Send size={13} strokeWidth={1.75} />
@@ -593,8 +593,8 @@ export function IlanDetay({
                                   disabled={isPending}
                                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs border transition ${
                                     confirming === 'restore'
-                                      ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
-                                      : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                                      ? 'bg-ink-blue text-white border-ink-blue'
+                                      : 'border-line text-ink-72 hover:border-ink-blue hover:text-ink-blue'
                                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                   <Pencil size={13} strokeWidth={1.75} />
@@ -627,7 +627,7 @@ export function IlanDetay({
                     /* ── PROFESYONEL — BAŞVURMUŞ ── */
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F]">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-blue">
                           Başvurun
                         </p>
                         <span
@@ -648,7 +648,7 @@ export function IlanDetay({
                           <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 block mb-0.5">
                             Fiyat teklifin
                           </span>
-                          <span className="font-display text-lg font-medium text-[#1E3A5F]">
+                          <span className="font-display text-lg font-medium text-ink-blue">
                             {formatProposedAmount(
                               myApplication.proposed_amount,
                               myApplication.currency
@@ -660,7 +660,7 @@ export function IlanDetay({
                         myConversationId && (
                           <Link
                             href={`/mesajlar/${myConversationId}`}
-                            className="mt-4 inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] transition-all"
+                            className="mt-4 inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-ink-blue text-white rounded-lg font-display font-semibold text-sm hover:bg-ink-blue-deep transition-all"
                           >
                             <Send size={14} strokeWidth={1.75} />
                             Konuşmaya git
@@ -687,7 +687,7 @@ export function IlanDetay({
                       <p className="text-sm text-ink mb-3">
                         Bu ilana başvurmak için giriş yapmalısın.
                       </p>
-                      <Link href="/giris" className={mercanCta}>
+                      <Link href="/giris" className={accentCta}>
                         Giriş yap
                       </Link>
                     </div>
@@ -696,7 +696,7 @@ export function IlanDetay({
                     <div>
                       <button
                         onClick={() => setApplyModalOpen(true)}
-                        className={mercanCta}
+                        className={accentCta}
                       >
                         <Send size={15} strokeWidth={1.75} />
                         Başvur
@@ -1037,7 +1037,7 @@ function ApplicationCard({
   const tone = getApplicationStatusTone(application.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -1126,7 +1126,7 @@ function ApplicationCard({
           <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
             Fiyat teklifi
           </span>
-          <span className="font-display font-medium text-[#1E3A5F]">
+          <span className="font-display font-medium text-ink-blue">
             {formatProposedAmount(
               application.proposed_amount,
               application.currency
@@ -1173,8 +1173,8 @@ function ApplicationCard({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border text-white transition ${
               confirming === 'accept'
-                ? 'bg-[#142745] border-[#142745]'
-                : 'bg-[#1E3A5F] border-[#1E3A5F] hover:bg-[#142745]'
+                ? 'bg-ink-blue-deep border-ink-blue-deep'
+                : 'bg-ink-blue border-ink-blue hover:bg-ink-blue-deep'
             } disabled:opacity-50`}
           >
             <CheckCircle2 size={12} strokeWidth={1.75} />
@@ -1201,8 +1201,8 @@ function ApplicationCard({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border transition ${
               confirming === 'unreject'
-                ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
-                : 'border-line text-ink-72 hover:border-[#1E3A5F] hover:text-[#1E3A5F]'
+                ? 'bg-ink-blue text-white border-ink-blue'
+                : 'border-line text-ink-72 hover:border-ink-blue hover:text-ink-blue'
             } disabled:opacity-50`}
           >
             <Send size={12} strokeWidth={1.75} />
@@ -1238,7 +1238,7 @@ function ApplicationCompareColumn({
   const tone = getApplicationStatusTone(application.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -1344,7 +1344,7 @@ function ApplicationCompareColumn({
           Fiyat teklifi
         </p>
         {application.proposed_amount !== null ? (
-          <p className="font-display text-lg font-medium text-[#1E3A5F]">
+          <p className="font-display text-lg font-medium text-ink-blue">
             {formatProposedAmount(
               application.proposed_amount,
               application.currency
@@ -1398,8 +1398,8 @@ function ApplicationCompareColumn({
             disabled={isPending}
             className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border text-white transition ${
               confirming === 'accept'
-                ? 'bg-[#142745] border-[#142745]'
-                : 'bg-[#1E3A5F] border-[#1E3A5F] hover:bg-[#142745]'
+                ? 'bg-ink-blue-deep border-ink-blue-deep'
+                : 'bg-ink-blue border-ink-blue hover:bg-ink-blue-deep'
             } disabled:opacity-50`}
           >
             <CheckCircle2 size={12} strokeWidth={1.75} />
@@ -1453,7 +1453,7 @@ const INVITATION_STATUS_LABEL: Record<string, string> = {
 
 const INVITATION_STATUS_CLASS: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  accepted: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+  accepted: 'bg-ink-blue text-white border-ink-blue',
   declined: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
   expired: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   cancelled: 'bg-ink-72/10 text-ink-72 border-ink-72/20',

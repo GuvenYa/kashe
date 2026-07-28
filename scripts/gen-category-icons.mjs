@@ -1,3 +1,22 @@
+// ============================================================================
+// ⚠️ UYARI — ÇALIŞTIRMADAN ÖNCE RENK KARARI GEREKİR
+// ============================================================================
+// C = '#BB3619' (terracotta) GÜNCEL PALETTE YOK — ne eski P6 zümrüt/mercan
+// setinde, ne de yeni lacivert/pembe/cyan setinde. Bu renk, mevcut
+// public/icons/*.png ailesinin kendi dilidir (16 ikon, hepsi bu tonda).
+//
+// Yani ikonlar "bozuk" değil — TUTARLI ama palet dışı bir alt-sistem.
+// Yeni ikon üretmek bu tutarlılığı sürdürür; palet uyumu getirmez.
+//
+// Dalga 2/3 ile 4 yeni kategori geliyor (akrobat · sac-makyaj-styling ·
+// etkinlik-koordinatoru · konusmaci) ve ikonları YOK. Bunlar üretilmeden ÖNCE
+// karar verilmelidir: terracotta ailesi korunsun mu, yoksa tüm 20 ikon yeni
+// palete mi taşınsın? Yalnız 4 yenisini yeni renkte üretmek 16+4 ikonu
+// birbirine yabancılaştırır.
+//
+// Bkz. DESIGN.md → Marka İşareti · Çok renkli kategori sistemi.
+// ============================================================================
+
 // Yeni kategori ikonları — mevcut /icons/*.png ailesinin diline (terracotta #BB3619,
 // kalın yuvarlak-uçlu strok, yüzsüz yuvarlak kafa, alt gölge, şeffaf zemin) uygun
 // el-yazımı line-art. sharp ile PNG'e basılır. Çalıştır: node scripts/gen-category-icons.mjs

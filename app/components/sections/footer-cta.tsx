@@ -1,6 +1,6 @@
 export function FooterCTA() {
   return (
-    /* Dış bölüm: bg-paper, içinde rounded-3xl zümrüt gradyan kart */
+    /* Dış bölüm: bg-paper, içinde rounded-3xl brand-ink gradyan kart */
     <section className="bg-paper py-14 md:py-20">
       <div className="max-w-7xl mx-auto px-6 md:px-9">
         <div
@@ -16,7 +16,7 @@ export function FooterCTA() {
             <span className="inline-block h-px w-6 shrink-0 bg-white/30" />
           </div>
 
-          {/* Başlık — <span className="text-brand-accent"> kullan, em (zümrüt) koyu zeminde görünmez */}
+          {/* Başlık — <span className="text-brand-accent"> kullan, em (brand-ink) koyu zeminde görünmez */}
           <h2 className="font-display font-semibold text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.04em] text-white mb-6 max-w-3xl mx-auto">
             Profilini{" "}
             <span className="text-brand-accent">aç</span>

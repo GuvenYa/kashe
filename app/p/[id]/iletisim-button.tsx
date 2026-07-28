@@ -38,7 +38,7 @@ type Props = {
     addons: { title: string; price: number }[];
     estimatedTotal: number | null;
   } | null;
-  variant?: 'default' | 'package' | 'inline' | 'primary-coral';
+  variant?: 'default' | 'package' | 'inline' | 'primary-accent';
 };
 
 export function IletisimButton({
@@ -373,7 +373,7 @@ export function IletisimButton({
         <button
           type="button"
           onClick={openForPackage}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#142745] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink-blue text-white rounded-lg font-display font-semibold text-sm hover:bg-ink-blue-deep hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
         >
           {serviceContext
             ? serviceContext.addons.length > 0
@@ -381,11 +381,11 @@ export function IletisimButton({
               : 'Bu hizmet için ilet'
             : 'Bu paket için ilet'}
         </button>
-      ) : variant === 'primary-coral' ? (
+      ) : variant === 'primary-accent' ? (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="w-full py-3.5 bg-brand-accent text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#C7522F] transition-colors text-center"
+          className="w-full py-3.5 bg-brand-accent text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#D50880] transition-colors text-center"
         >
           Teklif Al
         </button>

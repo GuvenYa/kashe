@@ -32,7 +32,7 @@ export async function CategoryMarquee() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-9 mt-8 mb-10">
-      {/* Zümrüt gradyan bant — öne çıkan profilleri vitrin marquee olarak gösterir */}
+      {/* brand-ink gradyan bant — öne çıkan profilleri vitrin marquee olarak gösterir */}
       <div
         className="overflow-hidden py-4 md:py-5 relative rounded-2xl"
         style={{ background: "var(--gradient-brand)" }}

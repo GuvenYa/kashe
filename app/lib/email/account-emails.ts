@@ -19,11 +19,11 @@ function esc(text: string): string {
 const C = {
   bg: '#F7F9FC',
   card: '#FFFFFF',
-  emerald: '#040D26', // Faz-1: lacivert — başlık + marka
-  coral: '#FA0B96', // Faz-1: pembe — buton
+  brandInk: '#040D26', // brand-ink — başlık + marka
+  brandAccent: '#FA0B96', // brand-accent — buton
   body: '#040D26',
-  muted: '#5C665F',
-  line: 'rgba(4,13,38,0.10)',
+  muted: '#4A5163',
+  line: '#E1E2E5', // ink %12 — templates.ts ile TEK deger (mailde rgba YOK, Outlook)
   box: '#EDF2FA',
 };
 
@@ -49,18 +49,18 @@ function accountLayout(opts: {
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.card};border-radius:14px;border:1px solid ${C.line};">
         <tr>
           <td style="padding:32px 32px 0 32px;">
-            <div style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;color:${C.emerald};">Kashe</div>
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;color:${C.brandInk};">Kashe</div>
           </td>
         </tr>
         <tr>
           <td style="padding:20px 32px 0 32px;">
-            <h2 style="font-family:Arial,Helvetica,sans-serif;color:${C.emerald};font-size:22px;margin:0 0 16px;">${esc(opts.heading)}</h2>
+            <h2 style="font-family:Arial,Helvetica,sans-serif;color:${C.brandInk};font-size:22px;margin:0 0 16px;">${esc(opts.heading)}</h2>
             ${opts.bodyHtml}
           </td>
         </tr>
         <tr>
           <td style="padding:8px 32px 0 32px;">
-            <p style="margin:0 0 24px;"><a href="${opts.ctaUrl}" style="background:${C.coral};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px;">${esc(opts.ctaText)}</a></p>
+            <p style="margin:0 0 24px;"><a href="${opts.ctaUrl}" style="background:${C.brandAccent};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px;">${esc(opts.ctaText)}</a></p>
           </td>
         </tr>
         <tr>

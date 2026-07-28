@@ -18,7 +18,7 @@ import {
   Legend,
 } from 'recharts'
 
-// ---- Kashe tema (P6 — zümrüt/mercan) ----
+// ---- Kashe tema (P6 — brand-ink/brand-accent) ----
 // Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
 const C = {
   paper: '#FFFFFF',
@@ -855,7 +855,7 @@ export default function IstatistiklerPage() {
                         {c.pct !== null && (
                           <span
                             className="text-sm font-semibold"
-                            style={{ color: up ? C.moss : down ? C.brandInkDeep : '#1A120E80' }}
+                            style={{ color: up ? C.moss : down ? C.brandInkDeep : '#040D2680' }}
                           >
                             {up ? '↑' : down ? '↓' : '–'} {Math.abs(c.pct)}%
                           </span>

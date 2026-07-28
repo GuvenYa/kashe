@@ -44,7 +44,7 @@ function DavetSatiri({
   const tone = getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -78,13 +78,13 @@ function DavetSatiri({
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-              isPast ? 'bg-ink-72/10' : 'bg-[#1E3A5F]/10'
+              isPast ? 'bg-ink-72/10' : 'bg-ink-blue/10'
             }`}
           >
             <Mail
               size={16}
               strokeWidth={1.75}
-              className={isPast ? 'text-ink-72' : 'text-[#1E3A5F]'}
+              className={isPast ? 'text-ink-72' : 'text-ink-blue'}
             />
           </div>
           <div className="min-w-0">

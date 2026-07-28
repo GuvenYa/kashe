@@ -58,8 +58,8 @@ export function UyeDavetFormu({ onClose }: Props) {
 
   if (success) {
     return (
-      <div className="bg-[#1E3A5F]/5 border-2 border-[#1E3A5F]/15 rounded-lg p-6 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#1E3A5F] mb-2">
+      <div className="bg-ink-blue/5 border-2 border-ink-blue/15 rounded-lg p-6 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-blue mb-2">
           ✓ Davet gönderildi
         </p>
         <p className="text-sm text-ink">

@@ -15,7 +15,7 @@
 //   "calisma_sekli": "Freelance + Ajansa bağlı",        // ORTAK alan (rail meta). Eski quick.calisma_sekli
 //                                                       // OKUMA sırasında buraya fallback edilir (tek yön; çift yazma YOK).
 //   "summary": { "title": "...", "body": "...", "stats": [{ "label": "...", "value": "..." }] },
-//                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine zümrüt özet bandı
+//                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine brand-ink özet bandı
 //                                                       // (başlık + kısa metin + stat çipleri)
 //   "logistics": { "ehliyet": true, "kendi_ekipmani": true }, // logisticsChecks key -> boolean
 //   "skills": [{ "name": "Vals", "level": 3 }],           // seviyeli yetenekler (1-3); cast kategorileri

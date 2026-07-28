@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 /**
  * Keşfet kart kapak görseli. src yoksa VEYA görsel yüklenemezse (onError) placeholder'a
- * düşer — böylece yanlış/eksik path'te kart beyaz kalmaz (koyu zümrüt + baş harfler).
+ * düşer — böylece yanlış/eksik path'te kart beyaz kalmaz (koyu brand-ink + baş harfler).
  * onError bir client olay olduğundan bu küçük bileşen 'use client'.
  */
 export function CoverMedia({

@@ -69,7 +69,7 @@ export async function Hero() {
           {/* ——— SOL SÜTUN: metin ——— */}
           <div className="max-w-[580px]">
 
-            {/* Eyebrow: mercan çizgi + zümrüt etiket */}
+            {/* Eyebrow: brand-accent çizgi + brand-ink etiket */}
             <div
               className="kashe-rise inline-flex items-center gap-2.5 mb-6"
               style={{ animationDelay: "0ms" }}
@@ -83,7 +83,7 @@ export async function Hero() {
               </span>
             </div>
 
-            {/* H1 — "yetenek" em ile zümrüt */}
+            {/* H1 — "yetenek" em ile brand-ink */}
             <h1
               className="kashe-rise font-display font-semibold leading-[1] tracking-[-0.035em] text-ink mb-6"
               style={{

@@ -75,7 +75,7 @@ export function MobileNav({
   const linkClassInlineBadge =
     'flex py-3 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-ink transition-colors items-center gap-2';
 
-  // Grup başlıkları: zümrüt eyebrow tonu (link renginden ayrışır; profil bölüm
+  // Grup başlıkları: brand-ink eyebrow tonu (link renginden ayrışır; profil bölüm
   // eyebrow'larıyla aynı) — link renkleri değişmez.
   const groupLabel =
     'font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand-ink pt-1 pb-1.5';

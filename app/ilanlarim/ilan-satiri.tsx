@@ -122,7 +122,7 @@ export function IlanSatiri({
 
   const badgeStyles: Record<typeof statusTone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-danger-08 text-danger border-danger/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -232,8 +232,8 @@ export function IlanSatiri({
             disabled={isPending}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold border text-white transition ${
               confirming === 'publish'
-                ? 'bg-[#142745] border-[#142745]'
-                : 'bg-[#1E3A5F] border-[#1E3A5F] hover:bg-[#142745]'
+                ? 'bg-ink-blue-deep border-ink-blue-deep'
+                : 'bg-ink-blue border-ink-blue hover:bg-ink-blue-deep'
             } disabled:opacity-50`}
           >
             <Globe size={12} strokeWidth={1.75} />

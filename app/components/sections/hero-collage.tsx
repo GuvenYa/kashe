@@ -3,7 +3,7 @@
  * Spec: HERO-REF.md §4-5
  * - ci-1: sol, 540px tam boy (grid-row: span 2)
  * - ci-2/ci-3: sağ üst/alt, her biri 263px (263+14gap+263=540)
- * - Mercan ★4.9 rozeti: sağ-üst köşede taşar, rotate(8deg)
+ * - brand-accent ★4.9 rozeti: sağ-üst köşede taşar, rotate(8deg)
  */
 export function HeroCollage() {
   return (
@@ -16,13 +16,13 @@ export function HeroCollage() {
         height: "540px",
       }}
     >
-      {/* ★4.9 mercan rozeti — kolajın sağ-üst köşesinden taşar */}
+      {/* ★4.9 brand-accent rozeti — kolajın sağ-üst köşesinden taşar */}
       <div
         className="font-display absolute z-10"
         style={{
           top: "-14px",
           right: "-14px",
-          background: "var(--color-brand-accent)", /* mercan #FA0B96 */
+          background: "var(--color-brand-accent)", /* brand-accent #FA0B96 */
           color: "#fff",
           width: "84px",
           height: "84px",

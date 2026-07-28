@@ -53,7 +53,7 @@ export function BasvuruSatiri({ application }: Props) {
 
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -123,11 +123,11 @@ export function BasvuruSatiri({ application }: Props) {
 
       {/* Fiyat teklifi */}
       {application.proposed_amount !== null && (
-        <div className="flex items-center justify-between text-sm bg-[#1E3A5F]/5 rounded-lg px-3 py-2 mb-3">
+        <div className="flex items-center justify-between text-sm bg-ink-blue/5 rounded-lg px-3 py-2 mb-3">
           <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
             Fiyat teklifim
           </span>
-          <span className="font-display font-medium text-[#1E3A5F]">
+          <span className="font-display font-medium text-ink-blue">
             {formatProposedAmount(
               application.proposed_amount,
               application.currency

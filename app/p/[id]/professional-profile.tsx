@@ -259,8 +259,8 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     </div>
   ) : null;
 
-  // Birincil CTA'lar variant prop'uyla (MOCKUP): Teklif Al = mercan dolgu (primary-coral),
-  // Rezervasyon = zümrüt outline (outline-emerald). Sarmalayıcı override YOK.
+  // Birincil CTA'lar variant prop'uyla (MOCKUP): Teklif Al = brand-accent dolgu (primary-accent),
+  // Rezervasyon = brand-ink outline (outline-ink). Sarmalayıcı override YOK.
   const ctaBlock = canTransact ? (
     <div className="flex flex-col gap-2.5">
       <IletisimButton
@@ -271,7 +271,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
         currentUserIsProfessional={currentUserIsProfessional}
         isOwnProfile={isOwnProfile}
         writableBusinesses={writableBusinesses}
-        variant="primary-coral"
+        variant="primary-accent"
       />
       <RezervasyonButton
         professionalId={profile.id}
@@ -280,7 +280,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
         currentUserIsProfessional={currentUserIsProfessional}
         isOwnProfile={isOwnProfile}
         writableBusinesses={writableBusinesses}
-        variant="outline-emerald"
+        variant="outline-ink"
       />
       {actionBar}
     </div>
@@ -714,7 +714,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 currentUserIsProfessional={currentUserIsProfessional}
                 isOwnProfile={isOwnProfile}
                 writableBusinesses={writableBusinesses}
-                variant="primary-coral"
+                variant="primary-accent"
               />
             </div>
             <div className="flex-1">
@@ -725,7 +725,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 currentUserIsProfessional={currentUserIsProfessional}
                 isOwnProfile={isOwnProfile}
                 writableBusinesses={writableBusinesses}
-                variant="outline-emerald"
+                variant="outline-ink"
               />
             </div>
           </div>

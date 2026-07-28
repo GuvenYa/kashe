@@ -1,6 +1,6 @@
 /**
  * Hero davulu yüklenirken gösterilen NÖTR placeholder (HeroCollage flash'ı yerine).
- * Işıması, Hero3D kök DOM'undaki zümrüt gradyanla BİREBİR aynı → davul belirince
+ * Işıması, Hero3D kök DOM'undaki brand-ink gradyanla BİREBİR aynı → davul belirince
  * placeholder→davul swap'ında zemin sürekli kalır, sadece canvas fade-in olur (flash yok).
  * Boyut davulla aynı: masaüstü relative 540px / mobil absolute inset-0 (CLS yok). Animasyon yok.
  */

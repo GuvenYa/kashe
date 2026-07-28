@@ -56,17 +56,17 @@ export function ApplicationAttachment({
         type="button"
         onClick={open}
         disabled={loading}
-        className="flex items-center gap-2.5 rounded-lg border border-line bg-paper/40 px-3 py-2 w-full text-left hover:border-[#1E3A5F] transition disabled:opacity-50"
+        className="flex items-center gap-2.5 rounded-lg border border-line bg-paper/40 px-3 py-2 w-full text-left hover:border-ink-blue transition disabled:opacity-50"
       >
-        <span className="shrink-0 w-9 h-9 rounded-lg bg-[#1E3A5F]/10 flex items-center justify-center">
+        <span className="shrink-0 w-9 h-9 rounded-lg bg-ink-blue/10 flex items-center justify-center">
           {isImage ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-blue)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
               <path d="M21 15l-5-5L5 21" />
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-blue)" strokeWidth="1.6" xmlns="http://www.w3.org/2000/svg">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <path d="M14 2v6h6" />
             </svg>

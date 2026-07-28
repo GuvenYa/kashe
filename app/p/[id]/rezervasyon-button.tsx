@@ -25,7 +25,7 @@ type Props = {
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   writableBusinesses?: OnBehalfBusiness[];
-  variant?: 'default' | 'outline-emerald';
+  variant?: 'default' | 'outline-ink';
 };
 
 export function RezervasyonButton({
@@ -276,7 +276,7 @@ export function RezervasyonButton({
         type="button"
         onClick={() => setModalOpen(true)}
         className={
-          variant === 'outline-emerald'
+          variant === 'outline-ink'
             ? 'w-full py-3 bg-transparent border-[1.5px] border-brand-ink text-brand-ink rounded-xl font-display font-semibold text-[15px] hover:bg-brand-ink/5 transition-colors text-center'
             : 'flex-1 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all text-center'
         }

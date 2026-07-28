@@ -126,7 +126,7 @@ export function DeneyimClient({
             </div>
 
             {rows.length === 0 ? (
-              // B6 — boş durum: ikon + tek cümle + mercan aksiyon linki
+              // B6 — boş durum: ikon + tek cümle + brand-accent aksiyon linki
               <div className="bg-card border border-line rounded-xl p-8 text-center">
                 <div className="w-11 h-11 rounded-full bg-brand-ink/8 flex items-center justify-center mx-auto mb-3">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

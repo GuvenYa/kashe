@@ -41,8 +41,8 @@ const trustItems: TrustItem[] = [
 
 // İkon zemin/ön plan renkleri — DESIGN.md §1 çok renkli sistem, categories ile tutarlı.
 const TONES = [
-  { iconBg: "#EAF0F8", iconFg: "#040D26", cardHover: "rgba(4,13,38,0.06)"    }, // zümrüt
-  { iconBg: "#FCEAE4", iconFg: "#FA0B96", cardHover: "rgba(250,11,150,0.06)"  }, // mercan
+  { iconBg: "#EAF0F8", iconFg: "#040D26", cardHover: "rgba(4,13,38,0.06)"    }, // brand-ink
+  { iconBg: "#FCEAE4", iconFg: "#FA0B96", cardHover: "rgba(250,11,150,0.06)"  }, // brand-accent
   { iconBg: "#E2EEFB", iconFg: "#2D6FB8", cardHover: "rgba(45,111,184,0.06)"  }, // mavi
   { iconBg: "#FFF1DC", iconFg: "#B5851F", cardHover: "rgba(181,133,31,0.06)"  }, // altın
 ];

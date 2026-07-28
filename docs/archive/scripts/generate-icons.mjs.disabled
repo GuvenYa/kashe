@@ -1,3 +1,23 @@
+// ============================================================================
+// ARSIV — CALISTIRMAYIN
+// ============================================================================
+// Bu betik ESKI 'k' isaretini uretir: zumrut daire + k oyugu + mercan nokta.
+// CANLI MARKA BU DEGILDIR — canli isaret ic ice gecmis PLAY UCGENIDIR
+// (cyan -> magenta gradyanli ic halka, negatif play boslugu, saydam zemin).
+//
+// Hangi renkte calistirilirsa calistirilsin YANLIS LOGOYU uretir. Bir ara turda
+// renk sabitleri yeni palete cevrildi; bu duzeltme anlamsiz kaldi (arsivde zararsiz).
+//
+// Calistirilsaydi su 5 dosyayi ezerdi:
+//   icon-192.png · icon-512.png · apple-touch-icon.png · icon-maskable-512.png
+//   favicon.ico   <- bu dosya bir kez ELLE duzeltilmisti, o duzeltme kaybolurdu
+// Ustelik backup() dali favicon.ico'yu KAPSAMIYOR ve "_legacy.png zaten varsa
+// atla" mantigi yuzunden mevcut ikonlari YEDEKLEMEZDI.
+//
+// Ikon uretim hatti icin bkz. DESIGN.md -> Marka Isareti -> Bosluklar
+// (mevcut ikonlarin KAYNAK dosyasi repoda YOK; bu betik o kaynak degildi).
+// ============================================================================
+
 // Kashe ikon üretimi — Design V2 APP-İKON varyantından (yuvarlak-kare zemin + solid
 // k şekilleri; koordinatlar Design dökümü item 3) tüm PWA/favicon setini üretir.
 // Not: ana işaret (kashe-mark.tsx) mask'lı GERÇEK oyuk kullanır; ikonlar ise
@@ -5,9 +25,9 @@
 // belirsiz — oyuk uygun değil). Çalıştır: node scripts/generate-icons.mjs
 //
 // Üretilenler (public/):
-//   icon-192.png, icon-512.png   → PWA "any" (yuvarlak-kare, mercan nokta VAR)
+//   icon-192.png, icon-512.png   → PWA "any" (yuvarlak-kare, pembe nokta VAR)
 //   apple-touch-icon.png (180)   → iOS (tam-kare opak zemin; iOS köşeyi kendi yuvarlar)
-//   icon-maskable-512.png        → PWA "maskable" (güvenli-alan padding + tam zümrüt)
+//   icon-maskable-512.png        → PWA "maskable" (güvenli-alan padding + tam lacivert)
 //   favicon.ico (16/32/48)       → tarayıcı sekmesi (NOKTASIZ + KALIN k varyantı —
 //                                   item 3 16px; küçük boyutta daha okunaklı)
 //
@@ -21,10 +41,10 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUB = join(__dirname, '..', 'public');
 
-const BG = '#1F5C4A'; // zümrüt zemin
-const K = '#F3EEE3'; // krem k
-const DOT = '#E2674A'; // mercan nokta
-const EMERALD = { r: 0x1f, g: 0x5c, b: 0x4a }; // maskable composite zemini
+const BG = '#040D26'; // lacivert zemin (brand-ink)
+const K = '#FFFFFF'; // beyaz k (card) — 192px'te kontrast icin paper degil saf beyaz
+const DOT = '#FA0B96'; // pembe nokta (brand-accent)
+const BRAND_INK = { r: 0x04, g: 0x0d, b: 0x26 }; // maskable composite zemini (BG ile aynı)
 
 // App-ikon varyantı (viewBox 96×96). radius = zemin köşe yarıçapı (0 = tam kare).
 // bold=true → item 3 16px varyantı (noktasız, kalın k). bold=false → item 3 32px (noktalı).
@@ -51,12 +71,12 @@ function appIconSvg({ bold = false, radius = 22 }) {
 const render = (svg, size) =>
   sharp(Buffer.from(svg)).resize(size, size).png().toBuffer();
 
-// Maskable: tam zümrüt zemin + app-ikonu güvenli alana (~%80) ortalayarak yerleştir.
+// Maskable: tam lacivert zemin + app-ikonu güvenli alana (~%80) ortalayarak yerleştir.
 async function renderMaskable(size) {
   const inner = Math.round(size * 0.8);
   const icon = await render(appIconSvg({ radius: 0 }), inner);
   return sharp({
-    create: { width: size, height: size, channels: 4, background: { ...EMERALD, alpha: 1 } },
+    create: { width: size, height: size, channels: 4, background: { ...BRAND_INK, alpha: 1 } },
   })
     .composite([{ input: icon, gravity: 'center' }])
     .png()
@@ -118,7 +138,7 @@ async function main() {
   await writeFile(join(PUB, 'icon-512.png'), await render(appIconSvg({ radius: 22 }), 512));
   // apple-touch: tam-kare opak (iOS köşeyi kendi yuvarlar) — şeffaflık yok
   await writeFile(join(PUB, 'apple-touch-icon.png'), await render(appIconSvg({ radius: 0 }), 180));
-  // maskable: güvenli-alan padding + tam zümrüt zemin
+  // maskable: güvenli-alan padding + tam lacivert zemin
   await writeFile(join(PUB, 'icon-maskable-512.png'), await renderMaskable(512));
   // favicon: noktasız + kalın varyant (item 3 16px), yuvarlak-kare
   const ico = buildIco([
@@ -129,9 +149,9 @@ async function main() {
   await writeFile(join(PUB, 'favicon.ico'), ico);
 
   console.log('Tamam:');
-  console.log('  public/icon-192.png, icon-512.png (yuvarlak-kare, mercan noktalı)');
+  console.log('  public/icon-192.png, icon-512.png (yuvarlak-kare, pembe noktalı)');
   console.log('  public/apple-touch-icon.png (180, tam-kare opak)');
-  console.log('  public/icon-maskable-512.png (güvenli alan + zümrüt zemin)');
+  console.log('  public/icon-maskable-512.png (güvenli alan + lacivert zemin)');
   console.log('  public/favicon.ico (16/32/48, noktasız kalın varyant)');
 }
 

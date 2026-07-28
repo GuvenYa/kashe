@@ -94,7 +94,7 @@ export default function FavoriteButton({
         left: '50%',
         transform: 'translateX(-50%)',
         backgroundColor: '#040D26',
-        color: '#FAF7F0',
+        color: '#F7F9FC',
         padding: '12px 20px',
         borderRadius: '8px',
         fontSize: '14px',

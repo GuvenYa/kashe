@@ -85,7 +85,7 @@ function DavetKarti({
   const tone = getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    success: 'bg-[#1E3A5F] text-white border-[#1E3A5F]',
+    success: 'bg-ink-blue text-white border-ink-blue',
     danger: 'bg-brand-ink/10 text-brand-ink border-brand-ink/30',
     neutral: 'bg-ink-72/10 text-ink-72 border-ink-72/20',
   };
@@ -132,7 +132,7 @@ function DavetKarti({
       className={`border-2 rounded-lg p-5 ${
         isPast
           ? 'bg-paper/40 border-line/60'
-          : 'bg-[#1E3A5F]/5 border-[#1E3A5F]/15'
+          : 'bg-ink-blue/5 border-ink-blue/15'
       }`}
     >
       {/* Header — kurum bilgisi */}
@@ -149,7 +149,7 @@ function DavetKarti({
               className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-display font-semibold shrink-0">
+            <div className="w-12 h-12 rounded-full bg-ink-blue flex items-center justify-center text-white font-display font-semibold shrink-0">
               {businessName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -204,7 +204,7 @@ function DavetKarti({
 
       {/* Aksiyonlar — business ekip davetinde her rol kabul edebilir (gate yok) */}
       {showActions && (
-        <div className="flex gap-2 pt-3 border-t border-[#1E3A5F]/15">
+        <div className="flex gap-2 pt-3 border-t border-ink-blue/15">
           <button
             onClick={() => withConfirm('decline', handleDecline)}
             disabled={isPending}
@@ -222,8 +222,8 @@ function DavetKarti({
             disabled={isPending}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-display font-semibold text-white transition ${
               confirming === 'accept'
-                ? 'bg-[#142745]'
-                : 'bg-[#1E3A5F] hover:bg-[#142745]'
+                ? 'bg-ink-blue-deep'
+                : 'bg-ink-blue hover:bg-ink-blue-deep'
             } disabled:opacity-50`}
           >
             <CheckCircle2 size={14} strokeWidth={1.75} />

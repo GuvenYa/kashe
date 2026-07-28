@@ -6,12 +6,12 @@ const COLORS = {
   paper2: '#EDF2FA',
   card: '#FFFFFF',
   ink: '#040D26',
-  ink72: 'rgba(4, 13, 38, 0.72)',
-  ink50: 'rgba(4, 13, 38, 0.5)',
+  ink72: '#4A5163', // mailde rgba YOK — Outlook masaüstü düşürüyor (beyaz üstü düzleştirilmiş)
+  ink50: '#828693',
   brandInk: '#040D26',
   brandInkDeep: '#0D1F4E',
-  moss: '#3F6B47',
-  line: 'rgba(4, 13, 38, 0.12)',
+  moss: '#1F8A5F',
+  line: '#E1E2E5',
 };
 
 function escapeHtml(text: string): string {

@@ -11,13 +11,17 @@ type Testimonial = {
 
 // Avatar arka plan renkleri — DESIGN.md §1 pastel palette.
 const TONES = {
-  brandInk: { bg: "#FCEAE4", fg: "#FA0B96" }, // mercan
-  brandAccent:       { bg: "#EAF0F8", fg: "#040D26" }, // zümrüt
-  moss:       { bg: "#FFF1DC", fg: "#B5851F" }, // altın
+  // Anahtar ↔ değer eşlemesi DÜZELTİLDİ: eskiden brandInk pembeyi, brandAccent
+  // laciverti taşıyordu (terracotta→brandInk toplu adlandırmasından kalan ters
+  // eşleme). Ayrıca #FCEAE4 eski paletin sıcak şeftali tint'iydi — soğuk palette
+  // yanlış duruyordu; yerini brand-accent-soft aldı.
+  brandInk:    { bg: "#EAF0F8", fg: "#040D26" }, // brand-ink-soft + ink
+  brandAccent: { bg: "#FDEAF5", fg: "#FA0B96" }, // brand-accent-soft + brand-accent
+  gold:        { bg: "#FFF1DC", fg: "#B5851F" }, // altın (kategori pasteli — Sunucu)
 };
 
 // Renk rotasyonu — DB görüşleri sırayla bu tonları alır.
-const TONE_ROTATION = [TONES.brandInk, TONES.brandAccent, TONES.moss];
+const TONE_ROTATION = [TONES.brandInk, TONES.brandAccent, TONES.gold];
 
 // NOT: Bu yorumlar şu an temsilidir — gerçek müşteri/profesyonel
 // yorumları toplandığında değiştirilecek.
@@ -44,7 +48,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Ayşe T.",
     role: "Etkinlik Yöneticisi",
     city: "İzmir",
-    tone: TONES.moss,
+    tone: TONES.gold,
   },
 ];
 

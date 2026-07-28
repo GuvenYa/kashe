@@ -371,7 +371,7 @@ export function ProfileCard({
               </div>
             )}
             <ServiceChips tags={tags} />
-            {/* Teklif Al — mobilde HER ZAMAN görünür, zümrüt, tam genişlik */}
+            {/* Teklif Al — mobilde HER ZAMAN görünür, brand-ink, tam genişlik */}
             <Link
               href={profileHref}
               className="relative z-20 mt-auto block w-full text-center bg-brand-ink text-paper rounded-lg py-2.5 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
@@ -439,7 +439,7 @@ export function ProfileCard({
                 </p>
               </div>
             )}
-            {/* Teklif Al — Zümrüt (mobil ile tutarlı), tam genişlik */}
+            {/* Teklif Al — brand-ink (mobil ile tutarlı), tam genişlik */}
             <Link
               href={profileHref}
               className="mt-2.5 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"

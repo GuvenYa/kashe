@@ -712,7 +712,7 @@ export default async function PublicProfilePage({
               ) : (
                 <div
                   className={`w-28 h-28 rounded-full flex items-center justify-center text-paper font-display font-semibold text-4xl shrink-0 ${
-                    isAgencyProfile ? 'bg-[#1E3A5F]' : 'bg-brand-ink'
+                    isAgencyProfile ? 'bg-ink-blue' : 'bg-brand-ink'
                   }`}
                 >
                   {initials}
