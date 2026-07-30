@@ -299,6 +299,64 @@ export const KONUSMA_TURLERI_OPTIONS = [
   'Yaratıcı atölye',
 ] as const;
 
+// ---- DALGA 2 / TUR 1 — canli-yayin · influencer · drone-pilotu ----
+// Hepsi filtreye bağlı → allowCustom KAPALI, değerler PostgREST-güvenli
+// (virgül/parantez/tırnak/ters bölü YOK).
+
+/** canli-yayin — yayın platformları (kaynak doküman §21). */
+export const YAYIN_PLATFORM_OPTIONS = [
+  'Zoom',
+  'YouTube Live',
+  'Instagram Live',
+  'Microsoft Teams',
+  'Webex',
+  'Twitch',
+  'Özel RTMP',
+] as const;
+
+/** influencer — içerik türleri (kaynak doküman §19 alt hizmetleri). */
+export const ICERIK_TURLERI_OPTIONS = [
+  'Instagram post/reels',
+  'YouTube video',
+  'TikTok video',
+  'Story serisi',
+  'Canlı yayın',
+  'Ürün tanıtımı',
+  'Etkinlik içeriği',
+  'Marka elçiliği',
+] as const;
+
+/** drone-pilotu — drone tipleri (kaynak doküman §20). */
+export const DRONE_TIPI_OPTIONS = [
+  'Standart drone',
+  'FPV drone',
+  'Sinema drone',
+  'Mini drone',
+] as const;
+
+/** drone-pilotu — çekim lokasyon tipleri. */
+export const LOKASYON_TIPI_OPTIONS = [
+  'Açık alan',
+  'Kentsel',
+  'Kıyı ve su',
+  'Dağ ve orman',
+] as const;
+
+/** Tekli select setleri — Dalga 2. */
+export const KAMERA_SAYISI_OPTIONS = ['1 kamera', '2–3 kamera', '4+ kamera'] as const;
+export const ETKINLIK_FORMATI_OPTIONS = ['Fiziksel', 'Çevrimiçi', 'Hibrit'] as const;
+export const ICERIK_TESLIM_FORMATI_OPTIONS = [
+  'Ham çekim',
+  'Kurgulu video',
+  'Foto seti',
+  'Karma',
+] as const;
+export const DRONE_TESLIM_BICIMI_OPTIONS = [
+  'Video',
+  'Fotoğraf',
+  'Video + Fotoğraf',
+] as const;
+
 /** Tekli select setleri — Dalga 1. */
 export const PROVA_OPTIONS = ['Dahil', 'Ücretli', 'Yok'] as const;
 export const KISI_KAPASITESI_OPTIONS = [
@@ -432,6 +490,19 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
     konusma_suresi: KONUSMA_SURESI_OPTIONS,
     hedef_kitle: HEDEF_KITLE_OPTIONS,
   },
+  // ---- Dalga 2 ----
+  'canli-yayin': {
+    kamera_sayisi: KAMERA_SAYISI_OPTIONS,
+    etkinlik_formati: ETKINLIK_FORMATI_OPTIONS,
+  },
+  influencer: {
+    hedef_kitle: HEDEF_KITLE_OPTIONS,
+    teslim_formati: ICERIK_TESLIM_FORMATI_OPTIONS,
+  },
+  'drone-pilotu': {
+    teslim_suresi: ['1–3 gün', '1 hafta', '2 hafta', '1 ay+'],
+    teslim_bicimi: DRONE_TESLIM_BICIMI_OPTIONS,
+  },
   karikaturist: {
     cizim_turu: ['Portre karikatür', 'Canlı çizim', 'Dijital illüstrasyon', 'Karma'],
     // 'Anında (canlı)' → 'Anında': parantez PostgREST or=(...) dilbilgisinde grup
@@ -458,6 +529,11 @@ export const QUICK_MULTI_OPTIONS: Record<
   hizmet_turleri: { options: SAC_MAKYAJ_HIZMET_OPTIONS },
   gorev_turleri: { options: KOORDINATOR_GOREV_OPTIONS },
   konusma_turleri: { options: KONUSMA_TURLERI_OPTIONS },
+  // ---- Dalga 2 ----
+  yayin_platformlari: { options: YAYIN_PLATFORM_OPTIONS },
+  icerik_turleri: { options: ICERIK_TURLERI_OPTIONS },
+  drone_tipi: { options: DRONE_TIPI_OPTIONS },
+  lokasyon_tipi: { options: LOKASYON_TIPI_OPTIONS },
 };
 
 /** Bir quick anahtarı çoklu-çip mi? (saklama dizi, gösterim " · " ile birleşik) */
@@ -533,6 +609,11 @@ export const QUICK_LABELS: Record<string, string> = {
   prova: 'Prova', kisi_kapasitesi: 'Kişi kapasitesi',
   calisma_suresi: 'Çalışma süresi', konusma_suresi: 'Konuşma süresi',
   hedef_kitle: 'Hedef kitle',
+  // ---- Dalga 2 ----
+  yayin_platformlari: 'Yayın platformları', kamera_sayisi: 'Kamera sayısı',
+  etkinlik_formati: 'Etkinlik formatı', icerik_turleri: 'İçerik türleri',
+  teslim_formati: 'Teslim formatı', drone_tipi: 'Drone tipi',
+  lokasyon_tipi: 'Lokasyon tipi', teslim_bicimi: 'Teslim biçimi',
 };
 
 // =============================================================================
@@ -936,6 +1017,57 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
     skillsWithLevels: false,
   },
 
+  // Dalga 2 — Canlı Yayın, Reji ve Yayın Operasyon Profesyonelleri (§21).
+  // Kalıp: ses-isik kardeşi. (C) kovası — "reji deneyimi", "teknik ekip ile
+  // çalışma deneyimi", "kurumsal referans" doğrulanamaz beyan → uzmanlik_alanlari
+  // çipi, FİLTREYE BAĞLANMAZ.
+  'canli-yayin': {
+    archetype: 'produksiyon',
+    quickInfo: ['yayin_platformlari', 'kamera_sayisi', 'etkinlik_formati'],
+    modules: [
+      { key: 'ekipman' },
+      { key: 'teknik_teslimat', title: 'Teknik Kapasite' },
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'webinar_online', label: 'Webinar & Online Yayın' },
+      { key: 'hibrit_konferans', label: 'Hibrit Konferans & Panel' },
+      { key: 'lansman_basin', label: 'Lansman & Basın Toplantısı' },
+    ],
+    logisticsChecks: [
+      { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Kamera, encoder ve yayın setiyle gelir' },
+      { key: 'teknik_ekip', label: 'Teknik ekip', description: 'Çok kameralı işlerde ekibiyle çalışır' },
+      { key: 'yedek_baglanti', label: 'Yedek bağlantı', description: 'Yedek internet bağlantısı getirir' },
+    ],
+    skillsWithLevels: false,
+  },
+
+  // Dalga 2 — Drone Pilotları ve Hava Çekim Operatörleri (§20).
+  // ⚠️ ucus_izni ÖZ-BEYANDIR: belge yükleme/doğrulama YOK, "Belge yüklendi"
+  // ibaresi hiçbir yerde geçmez (kilitli karar 1.1).
+  'drone-pilotu': {
+    archetype: 'produksiyon',
+    quickInfo: ['drone_tipi', 'lokasyon_tipi', 'teslim_bicimi', 'teslim_suresi'],
+    modules: [
+      { key: 'ekipman' },
+      { key: 'teknik_teslimat' },
+      { key: 'uzmanlik_alanlari', title: 'Deneyim Alanları' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'dugun_ozel', label: 'Düğün & Özel Davet' },
+      { key: 'kurumsal_tanitim', label: 'Kurumsal & Tanıtım' },
+      { key: 'festival_spor', label: 'Festival & Spor' },
+    ],
+    logisticsChecks: [
+      { key: 'ucus_izni', label: 'Uçuş izni', description: 'Geçerli uçuş izni beyanı' },
+      { key: 'kurgu_dahil', label: 'Kurgu dahil', description: 'Çekim sonrası kurgu ve renk yapar' },
+      { key: 'kendi_ekipmani', label: 'Kendi ekipmanı', description: 'Drone ve yedek bataryayla gelir' },
+    ],
+    skillsWithLevels: false,
+  },
+
   // --------------------------- UZMANLIK ---------------------------
   tercuman: {
     archetype: 'uzmanlik',
@@ -1020,6 +1152,32 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'materyal', label: 'Materyal', description: 'Eğitim materyali ve katılım sertifikası sağlar' },
     ],
     skillsWithLevels: false,
+  },
+
+  // Dalga 2 — Influencer, YouTuber ve İçerik Üreticileri (§19).
+  // HİBRİT: uzmanlik arketipi + portfolioGrid (karikaturist kalıbı) — içerik
+  // üreticisinin vitrini görsel.
+  // ⚠️ ETKİLEŞİM ORANI ALINMAZ (kilitli karar 1.2): doğrulanamaz. Takipçi ARALIĞI
+  // sosyal_erisim modülünde yaşar; link alanı YOK (SIRA1).
+  influencer: {
+    archetype: 'uzmanlik',
+    quickInfo: ['icerik_turleri', 'hedef_kitle', 'teslim_formati'],
+    modules: [
+      { key: 'sosyal_erisim' },
+      { key: 'uzmanlik_alanlari', title: 'İçerik Alanları' },
+      { key: 'calisma_parametreleri' },
+    ],
+    experienceGroups: [
+      { key: 'marka_isbirligi', label: 'Marka İşbirliği' },
+      { key: 'etkinlik_icerigi', label: 'Etkinlik İçeriği' },
+      { key: 'urun_tanitimi', label: 'Ürün Tanıtımı' },
+    ],
+    logisticsChecks: [
+      { key: 'fiziksel_katilim', label: 'Etkinliğe katılım', description: 'Etkinliğe fiziksel olarak katılır' },
+      { key: 'canli_yayin', label: 'Canlı yayın', description: 'Etkinlikten canlı yayın yapar' },
+    ],
+    skillsWithLevels: false,
+    portfolioGrid: true, // cast'ten portföy grid'i açık
   },
 
   // Karikatürist HİBRİT: uzmanlik arketipi + portföy grid (cast) + performans (sahne)
@@ -1181,6 +1339,28 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
     notes: 'Kuruma özel içerik için ön görüşme yapılır',
     summary_stats: '200+ konuşma, 14 yıl deneyim, 40 kurum',
   },
+  // ---- Dalga 2 ----
+  'canli-yayin': {
+    // (C) kovası — filtreye ALINMAYAN doğrulanamaz beyanlar buraya çip olarak girer.
+    areas: 'Reji deneyimi, Kurumsal referans, Teknik ekip yönetimi, Çok kameralı yayın',
+    items: 'Blackmagic ATEM switcher, 3× kamera, encoder, telsiz mikrofon seti',
+    venue_requirements: 'Kablolu internet (min 20 Mbps upload) ve 2 topraklı priz',
+    delivery: 'Yayın kaydı, çok kameralı ham dosya, kısa özet kurgu',
+    notes: 'Etkinlik öncesi teknik prova ve bağlantı testi önerilir',
+  },
+  influencer: {
+    // İçerik ALANI ekseni (format quick_array'de). ETKİLEŞİM ORANI GEÇMEZ.
+    areas: 'Yaşam tarzı, Gastronomi, Seyahat, Teknoloji, Moda',
+    notes: 'Kullanım hakkı süresi ve mecra teklif içinde netleşir',
+    summary_stats: '120+ marka işbirliği, 6 yıl içerik, 3 platform',
+  },
+  'drone-pilotu': {
+    areas: 'Düğün, Kurumsal tesis, Festival, Spor/aksiyon, FPV dinamik çekim',
+    items: 'DJI Mavic 3 Cine, FPV seti, ND filtre, 6 yedek batarya',
+    venue_requirements: 'Uçuşa kapalı bölge kontrolü ve kalkış için düz zemin',
+    delivery: 'Ham 4K dosya, renk düzenlemeli kurgu, dikey sosyal medya versiyonu',
+    notes: 'Hava koşulu nedeniyle yedek tarih planlanması önerilir',
+  },
 };
 
 /** Bir alanın kategoriye özel örneğini döndürür (yoksa modül-default example). */
@@ -1243,6 +1423,18 @@ export const CATEGORY_PARAM_SUGGESTIONS: Record<
   },
   konusmaci: {
     params: ['Hazırlık görüşmesi', 'Materyal', 'Katılım sertifikası', 'Seyahat & konaklama'],
+  },
+  // ---- Dalga 2 ----
+  'canli-yayin': {
+    params: ['Ekip', 'Teknik prova', 'Yayın süresi', 'Yedek bağlantı'],
+    delivery: ['Yayın kaydı', 'Ham dosya', 'Özet kurgu', 'Platform sayısı'],
+  },
+  influencer: {
+    params: ['İçerik sayısı', 'Yayın takvimi', 'Revizyon', 'Kullanım hakkı süresi'],
+  },
+  'drone-pilotu': {
+    params: ['Uçuş süresi', 'Yedek batarya', 'Ekip', 'Yedek tarih'],
+    delivery: ['Çözünürlük', 'Kurgu süresi', 'Format', 'Ham dosya'],
   },
 };
 

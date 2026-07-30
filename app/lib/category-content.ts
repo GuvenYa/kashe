@@ -70,7 +70,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
     heroHeadline:
       "Etkinliğin En Özel Anlarını Profesyonel Fotoğrafçılarla Ölümsüzleştir",
     description:
-      "Fotoğrafçılar kategorisi; bireysel ve kurumsal kullanıcıların düğün, nişan, kına, doğum günü, kurumsal etkinlik, açılış, lansman, fuar, ürün çekimi, katalog çekimi, sosyal medya içerik çekimi ve özel gün fotoğrafçılığı gibi ihtiyaçları için profesyonel fotoğrafçılara ulaşmasını sağlar. Kullanıcılar portföy, şehir, fiyat aralığı, puan, yorum, müsaitlik ve uzmanlık alanlarına göre fotoğrafçıları karşılaştırabilir.",
+      "Fotoğrafçılar kategorisi; bireysel ve kurumsal kullanıcıların düğün, nişan, kına, doğum günü, kurumsal etkinlik, açılış, lansman, fuar, ürün çekimi, katalog çekimi, sosyal medya içerik çekimi ve özel gün fotoğrafçılığı gibi ihtiyaçları için profesyonel fotoğrafçılara ulaşmasını sağlar. Kullanıcılar portföy, şehir, fiyat aralığı, puan, yorum, müsaitlik ve uzmanlık alanlarına göre fotoğrafçıları karşılaştırabilir. Kare havadan alınacaksa Drone Pilotları ve Havadan Çekim, ihtiyaç fotoğraf değil canlı yayınsa Canlı Yayın ve Streaming kategorisine bak.",
     subServices: [
       { name: "Düğün Fotoğrafçısı", description: "Düğün günü, dış çekim, hikaye çekimi ve çift çekimleri" },
       { name: "Nişan / Kına Fotoğrafçısı", description: "Nişan, söz, kına gecesi ve aile etkinlikleri" },
@@ -140,7 +140,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   sunucu: {
     heroHeadline: "Etkinliğini Profesyonel Sunucularla Akıcı ve Etkili Hale Getir",
     description:
-      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar. Sahnedeki içeriğin kendisi profesyonele aitse; mizah ve hikâye için Stand-up Komedyenleri ve Sahne Anlatıcıları, uzmanlık içeriği için Konuşmacılar ve Eğitmenler kategorisine bak.",
+      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar. Sahnedeki içeriğin kendisi profesyonele aitse; mizah ve hikâye için Stand-up Komedyenleri ve Sahne Anlatıcıları, uzmanlık içeriği için Konuşmacılar ve Eğitmenler kategorisine bak. Sahnede sunum değil de kendi kanalında içerik üretecek biri arıyorsan Influencer ve İçerik Üreticileri kategorisine bak.",
     subServices: [
       { name: "Kurumsal Etkinlik Sunucusu", description: "Lansman, şirket toplantısı, bayi buluşması, gala ve marka etkinlikleri" },
       { name: "Konferans / Panel Moderatörü", description: "Panel, seminer, zirve, çalıştay ve resmi toplantılarda oturum yönetimi" },
@@ -186,7 +186,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   videograf: {
     heroHeadline: "Etkinliğini Profesyonel Video Çekimleriyle Kalıcı Hale Getir",
     description:
-      "Videograflar kategorisi; düğün, nişan, kına, doğum günü, lansman, gala, fuar, kurumsal etkinlik, reklam, tanıtım filmi, sosyal medya içeriği, katalog ve ürün çekimleri için profesyonel video çekimi hizmeti sunar. Portföy, çekim tarzı, kurgu/montaj, ekipman, teslim süresi ve fiyat bu kategorinin temel karşılaştırma alanlarıdır.",
+      "Videograflar kategorisi; düğün, nişan, kına, doğum günü, lansman, gala, fuar, kurumsal etkinlik, reklam, tanıtım filmi, sosyal medya içeriği, katalog ve ürün çekimleri için profesyonel video çekimi hizmeti sunar. Portföy, çekim tarzı, kurgu/montaj, ekipman, teslim süresi ve fiyat bu kategorinin temel karşılaştırma alanlarıdır. Görüntü havadan alınacaksa Drone Pilotları ve Havadan Çekim, kayıt değil de canlı yayın gerekiyorsa Canlı Yayın ve Streaming kategorisine bak.",
     subServices: [
       { name: "Düğün Videografı", description: "Düğün günü, dış çekim, hikaye klibi ve düğün filmi" },
       { name: "Nişan / Kına Videografı", description: "Nişan, söz, kına gecesi ve aile etkinlikleri" },
@@ -234,7 +234,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   "ses-isik": {
     heroHeadline: "Etkinliğinin Teknik Altyapısını Profesyonel Ekiplere Teslim Et",
     description:
-      "Teknik Ekip / Ses-Işık kategorisi; etkinliklerin teknik kurulum, ses, ışık, görüntü, sahne, mikrofon, projeksiyon, LED ekran, canlı yayın ve operasyon ihtiyaçlarını karşılayan profesyonelleri ve ekipman sağlayıcılarını kapsar. Düğün, konser, kurumsal etkinlik, panel, konferans, fuar, gala, lansman ve açık hava etkinlikleri için kritik bir kategoridir.",
+      "Teknik Ekip / Ses-Işık kategorisi; etkinliklerin teknik kurulum, ses, ışık, görüntü, sahne, mikrofon, projeksiyon, LED ekran, canlı yayın ve operasyon ihtiyaçlarını karşılayan profesyonelleri ve ekipman sağlayıcılarını kapsar. Düğün, konser, kurumsal etkinlik, panel, konferans, fuar, gala, lansman ve açık hava etkinlikleri için kritik bir kategoridir. İhtiyacın salondaki kurulum değil de yayının internete çıkması (reji, encoder, platform yayını) ise Canlı Yayın ve Streaming kategorisine bak.",
     subServices: [
       { name: "Ses Sistemi Kurulumu", description: "Hoparlör, mikser, monitör ve ses ekipmanı kurulumu" },
       { name: "Işık Sistemi Kurulumu", description: "Sahne, ambiyans, dekoratif ışık ve özel efekt aydınlatmaları" },
@@ -299,7 +299,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   oyuncu: {
     heroHeadline: "Reklam, Dizi, Film ve Çekim Projelerin İçin Doğru Yüzleri Bul",
     description:
-      "Oyuncular ve figüranlar kategorisi; reklam, dizi, film, kısa film, tanıtım filmi, sahne performansı ve etkinlik projeleri için oyuncu, figüran, tiyatrocu ve performans profesyonellerine ulaşmayı sağlar. Bu kategori Kashe'nin medya ve prodüksiyon tarafındaki en stratejik dikeylerinden biridir. Sette rol alacak kişiyi değil de onu hazırlayacak saç, makyaj ve özel efekt profesyonelini arıyorsan Saç, Makyaj ve Styling Profesyonelleri kategorisine bak.",
+      "Oyuncular ve figüranlar kategorisi; reklam, dizi, film, kısa film, tanıtım filmi, sahne performansı ve etkinlik projeleri için oyuncu, figüran, tiyatrocu ve performans profesyonellerine ulaşmayı sağlar. Bu kategori Kashe'nin medya ve prodüksiyon tarafındaki en stratejik dikeylerinden biridir. Sette rol alacak kişiyi değil de onu hazırlayacak saç, makyaj ve özel efekt profesyonelini arıyorsan Saç, Makyaj ve Styling Profesyonelleri, senaryolu rol değil de kendi kanalında içerik üreten biri arıyorsan Influencer ve İçerik Üreticileri kategorisine bak.",
     subServices: [
       { name: "Reklam Oyuncusu", description: "Reklam filmi, dijital reklam, ürün tanıtımı ve marka kampanyaları" },
       { name: "Dizi / Film Oyuncusu", description: "Kısa film, dizi, uzun metraj ve bağımsız yapımlar" },
@@ -319,7 +319,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   model: {
     heroHeadline: "Çekim, Kampanya ve Defile Projelerin İçin Profesyonel Modeller Bul",
     description:
-      "Modeller ve mankenler kategorisi; katalog, moda çekimi, ürün tanıtımı, sosyal medya kampanyası, defile ve etkinlik projeleri için katalog modeli, fotoğraf modeli, defile mankeni ve tanıtım modeli profesyonellerine ulaşmayı sağlar. Kadraja girecek kişiyi değil de onu hazırlayacak saç, makyaj ve styling profesyonelini arıyorsan Saç, Makyaj ve Styling Profesyonelleri kategorisine bak.",
+      "Modeller ve mankenler kategorisi; katalog, moda çekimi, ürün tanıtımı, sosyal medya kampanyası, defile ve etkinlik projeleri için katalog modeli, fotoğraf modeli, defile mankeni ve tanıtım modeli profesyonellerine ulaşmayı sağlar. Kadraja girecek kişiyi değil de onu hazırlayacak saç, makyaj ve styling profesyonelini arıyorsan Saç, Makyaj ve Styling Profesyonelleri, senin kanalın için poz veren değil kendi kanalında yayınlayan biri arıyorsan Influencer ve İçerik Üreticileri kategorisine bak.",
     subServices: [
       { name: "Katalog Modeli", description: "Moda, giyim, aksesuar, ürün ve e-ticaret katalog çekimleri" },
       { name: "Fotoğraf Modeli", description: "Kampanya, portre, lifestyle ve sosyal medya çekimleri" },
@@ -496,6 +496,73 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
       "Konferans, zirve, panel, seminer, workshop ve kurumsal eğitimler için konuşmacı ve eğitmenleri Kashe'de keşfet. Uzmanlık alanlarını karşılaştır, teklif al.",
     landingText:
       "Etkinliğinin içeriğini uzman konuşmacı ve eğitmenlerle güçlendir. Keynote, panel, kurumsal eğitim ve workshop için profesyonelleri incele, uzmanlık alanlarını karşılaştır ve teklif al.",
+  },
+
+  // =========================== DALGA 2 ===========================
+
+  "canli-yayin": {
+    heroHeadline: "Online ve Hibrit Etkinliklerini Profesyonel Yayın Ekibiyle Yönet",
+    description:
+      "Canlı Yayın ve Streaming kategorisi; webinar, hibrit konferans, panel, lansman, basın toplantısı ve online eğitim yayınlarında yayın akışını yöneten teknik-operasyon profesyonellerini kapsar. Kullanıcılar yayın platformu, kamera sayısı, etkinlik formatı, ekipman ve yedek bağlantı durumuna göre profilleri karşılaştırabilir. İşin ağırlığı yayın değil de salondaki ses ve ışık kurulumuysa Teknik Ekip / Ses & Işık, kayıt sonrası kurgulanacak bir video ise Videograflar kategorisine bak.",
+    subServices: [
+      { name: "Canlı Yayın Operatörü", description: "Tek veya çok kameralı yayın kurulumu ve operasyonu" },
+      { name: "Reji Yönetmeni", description: "Kamera geçişleri, akış ve yayın rejisi" },
+      { name: "Kamera Operatörü", description: "Etkinlik ve stüdyo çekimlerinde kamera kullanımı" },
+      { name: "Yayın Teknik Sorumlusu", description: "Encoder, bant genişliği ve yayın altyapısı yönetimi" },
+      { name: "Webinar Teknik Moderatörü", description: "Online eğitim ve webinarlarda teknik moderasyon" },
+      { name: "Streaming Uzmanı", description: "Çoklu platform yayını ve platform ayarları" },
+      { name: "Ses Kayıt Operatörü", description: "Yayın için ses miksajı ve kayıt" },
+      { name: "Işık Operatörü", description: "Stüdyo ve sahne aydınlatması" },
+      { name: "Sahne Teknik Yönetmeni", description: "Hibrit etkinliklerde sahne ve yayın koordinasyonu" },
+    ],
+    seoTitle: "Canlı Yayın ve Reji Profesyoneli Bul | Webinar, Hibrit Etkinlik ve Streaming | Kashe",
+    seoDescription:
+      "Webinar, hibrit konferans, panel ve lansman yayınları için canlı yayın operatörü, reji yönetmeni ve streaming uzmanlarını Kashe'de keşfet. Teknik kapasiteyi karşılaştır, teklif al.",
+    landingText:
+      "Online ve hibrit etkinliklerini profesyonel yayın ekibiyle yönet. Webinar, çok kameralı reji, streaming ve teknik moderasyon için profesyonelleri incele, teknik kapasiteyi karşılaştır ve teklif al.",
+  },
+
+  influencer: {
+    heroHeadline: "Markanı ve Etkinliğini Doğru İçerik Üreticileriyle Görünür Kıl",
+    description:
+      "Influencer ve İçerik Üreticileri kategorisi; marka etkinliği, lansman, açılış, festival, sosyal medya kampanyası ve etkinlik görünürlüğü için içerik üreten dijital profesyonelleri kapsar. Kullanıcılar içerik türü, platform, takipçi aralığı, hedef kitle, teslim formatı ve etkinliğe fiziksel katılım durumuna göre profilleri karşılaştırabilir. İçeriği kendi kanalında yayınlayan değil de senin kanalın için çeken birini arıyorsan Videograflar, kadraja girecek bir yüz arıyorsan Modeller veya Oyuncular / Figüranlar kategorilerine bak.",
+    subServices: [
+      { name: "Instagram Influencer", description: "Post, reels ve story ile marka görünürlüğü" },
+      { name: "YouTuber", description: "Uzun format video, inceleme ve tanıtım içerikleri" },
+      { name: "TikTok İçerik Üreticisi", description: "Kısa format dikey video ve trend içerikler" },
+      { name: "Etkinlik İçerik Üreticisi", description: "Etkinlik günü canlı içerik ve arka plan hikâyesi" },
+      { name: "Marka Elçisi", description: "Uzun dönemli marka temsili ve düzenli içerik" },
+      { name: "Ürün Tanıtım İçerik Üreticisi", description: "Ürün kutu açılışı, deneyim ve kullanım videoları" },
+      { name: "Canlı Yayın Sunucusu", description: "Etkinlikten canlı yayın ve ortak yayın" },
+      { name: "Mikro Influencer", description: "Küçük ama yüksek bağlılıklı niş topluluklar" },
+      { name: "Niş Sektör Influencerı", description: "Gastronomi, teknoloji, seyahat gibi dikey alanlar" },
+    ],
+    seoTitle: "Influencer ve YouTuber Bul | Etkinlik ve Marka İçerik Üreticileri | Kashe",
+    seoDescription:
+      "Lansman, marka etkinliği, festival ve sosyal medya kampanyaları için influencer, YouTuber ve içerik üreticilerini Kashe'de keşfet. İçerik türü ve takipçi aralığına göre karşılaştır, teklif al.",
+    landingText:
+      "Markanı ve etkinliğini doğru içerik üreticileriyle görünür kıl. Instagram, YouTube ve TikTok içerikleri, etkinlik katılımı ve canlı yayın için üreticileri incele, portföyleri karşılaştır ve teklif al.",
+  },
+
+  "drone-pilotu": {
+    heroHeadline: "Etkinliğini ve Projeni Profesyonel Hava Çekimleriyle Güçlendir",
+    description:
+      "Drone Pilotları ve Havadan Çekim kategorisi; düğün, açık hava etkinliği, festival, tanıtım filmi, kurumsal tesis tanıtımı, spor ve prodüksiyon projelerinde hava çekimi sağlayan profesyonelleri kapsar. Kullanıcılar drone tipi, lokasyon tipi, teslim biçimi ve süresi, uçuş izni beyanı ve kurgu dahil olup olmadığına göre profilleri karşılaştırabilir. Çekim yerden yapılacaksa Videograflar veya Fotoğrafçılar, işin özü canlı yayınsa Canlı Yayın ve Streaming kategorisine bak.",
+    subServices: [
+      { name: "Etkinlik Drone Pilotu", description: "Açık hava etkinlikleri ve kalabalık çekimleri" },
+      { name: "Düğün Drone Çekimi", description: "Düğün, kına ve dış çekimde havadan görüntü" },
+      { name: "Tanıtım Filmi Hava Çekimi", description: "Kurumsal tanıtım ve reklam filmi hava planları" },
+      { name: "Outdoor Etkinlik Çekimi", description: "Festival, konser ve açık alan organizasyonları" },
+      { name: "FPV Drone Pilotu", description: "Hızlı, dinamik ve dar alan içi geçiş çekimleri" },
+      { name: "Kurumsal Tesis Çekimi", description: "Fabrika, otel, arazi ve tesis tanıtımı" },
+      { name: "Spor / Aksiyon Çekimi", description: "Yarış, doğa sporu ve hareketli özne takibi" },
+      { name: "Drone Fotoğrafçısı", description: "Havadan yüksek çözünürlüklü fotoğraf" },
+    ],
+    seoTitle: "Drone Pilotu Bul | Düğün, Etkinlik ve Tanıtım Hava Çekimi | Kashe",
+    seoDescription:
+      "Düğün, festival, tanıtım filmi, kurumsal tesis ve spor çekimleri için drone pilotlarını Kashe'de keşfet. Drone tipi, teslim süresi ve kurgu kapsamını karşılaştır, teklif al.",
+    landingText:
+      "Etkinliğini ve projeni profesyonel hava çekimleriyle güçlendir. Düğün, festival, tanıtım filmi ve FPV dinamik çekim için drone pilotlarını incele, portföyleri karşılaştır ve teklif al.",
   },
 
   karikaturist: {

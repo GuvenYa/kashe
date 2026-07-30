@@ -1926,6 +1926,274 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
       },
     ],
   },
+
+  // ===========================================================================
+  // DALGA 2 / TUR 1 — canli-yayin · influencer · drone-pilotu
+  // Select değer kümeleri quick sözlükleriyle hizalı; 'no_pref'/'other' gibi
+  // talep-tarafı değerlerin profil sözlüğünde karşılığı olmaması NORMALDİR.
+  // ===========================================================================
+
+  // --- CANLI YAYIN VE STREAMING ---
+  {
+    slug: 'canli-yayin',
+    intro:
+      'Yayın ihtiyacını ve etkinlik formatını anlat, yayın ekibi sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul veya "tamamen çevrimiçi"',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'event_format',
+        label: 'Etkinlik formatı',
+        type: 'select',
+        required: false,
+        // ETKINLIK_FORMATI_OPTIONS ile hizalı
+        options: [
+          { value: 'Fiziksel', label: 'Fiziksel' },
+          { value: 'Çevrimiçi', label: 'Çevrimiçi' },
+          { value: 'Hibrit', label: 'Hibrit' },
+          { value: 'no_pref', label: 'Emin değilim' },
+        ],
+      },
+      {
+        key: 'camera_count',
+        label: 'Kamera ihtiyacı',
+        type: 'select',
+        required: false,
+        // KAMERA_SAYISI_OPTIONS ile hizalı
+        options: [
+          { value: '1 kamera', label: '1 kamera' },
+          { value: '2–3 kamera', label: '2–3 kamera' },
+          { value: '4+ kamera', label: '4+ kamera' },
+          { value: 'no_pref', label: 'Önerin' },
+        ],
+      },
+      {
+        key: 'platform',
+        label: 'Yayın platformu',
+        type: 'select',
+        required: false,
+        // YAYIN_PLATFORM_OPTIONS ile hizalı (en sık talep edilenler + diğer)
+        options: [
+          { value: 'Zoom', label: 'Zoom' },
+          { value: 'YouTube Live', label: 'YouTube Live' },
+          { value: 'Instagram Live', label: 'Instagram Live' },
+          { value: 'Microsoft Teams', label: 'Microsoft Teams' },
+          { value: 'other', label: 'Diğer — mesajda belirteceğim' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 300',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- INFLUENCER VE İÇERİK ÜRETİCİLERİ ---
+  {
+    slug: 'influencer',
+    intro:
+      'Kampanyanı ve beklediğin içeriği anlat, içerik üreticisi sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik / proje türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / mekan',
+        type: 'text',
+        required: false,
+        placeholder: 'İstanbul',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'content_type',
+        label: 'İçerik türü',
+        type: 'select',
+        required: false,
+        // ICERIK_TURLERI_OPTIONS ile hizalı
+        options: [
+          { value: 'Instagram post/reels', label: 'Instagram post / reels' },
+          { value: 'YouTube video', label: 'YouTube video' },
+          { value: 'TikTok video', label: 'TikTok video' },
+          { value: 'Story serisi', label: 'Story serisi' },
+          { value: 'Canlı yayın', label: 'Canlı yayın' },
+          { value: 'Ürün tanıtımı', label: 'Ürün tanıtımı' },
+          { value: 'Etkinlik içeriği', label: 'Etkinlik içeriği' },
+          { value: 'Marka elçiliği', label: 'Marka elçiliği' },
+          { value: 'no_pref', label: 'Emin değilim / Önerin' },
+        ],
+      },
+      {
+        key: 'audience',
+        label: 'Hedef kitle',
+        type: 'select',
+        required: false,
+        // HEDEF_KITLE_OPTIONS ile hizalı
+        options: [
+          { value: 'Kurumsal', label: 'Kurumsal' },
+          { value: 'Öğrenci & genç', label: 'Öğrenci & genç' },
+          { value: 'Karma', label: 'Karma' },
+        ],
+      },
+      {
+        key: 'physical_attendance',
+        label: 'Etkinliğe fiziksel katılım',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'yes', label: 'Evet, etkinlikte olsun' },
+          { value: 'no', label: 'Hayır, uzaktan içerik yeter' },
+          { value: 'no_pref', label: 'Fark etmez' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'İçerik sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 3',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
+
+  // --- DRONE PİLOTLARI VE HAVADAN ÇEKİM ---
+  {
+    slug: 'drone-pilotu',
+    intro:
+      'Çekim yerini ve teslim beklentini paylaş, drone pilotu sana uygun bir teklif versin.',
+    fields: [
+      {
+        key: 'event_type',
+        label: 'Etkinlik / proje türü',
+        type: 'select',
+        required: true,
+        legacyColumn: 'event_type',
+        options: EVENT_TYPE_OPTIONS,
+      },
+      {
+        key: 'event_date',
+        label: 'Tarih',
+        type: 'date',
+        required: false,
+        legacyColumn: 'event_date',
+      },
+      {
+        key: 'location',
+        label: 'Şehir / çekim lokasyonu',
+        type: 'text',
+        required: false,
+        placeholder: 'Çeşme, İzmir',
+        legacyColumn: 'location',
+      },
+      {
+        key: 'location_type',
+        label: 'Lokasyon tipi',
+        type: 'select',
+        required: false,
+        // LOKASYON_TIPI_OPTIONS ile hizalı
+        options: [
+          { value: 'Açık alan', label: 'Açık alan' },
+          { value: 'Kentsel', label: 'Kentsel' },
+          { value: 'Kıyı ve su', label: 'Kıyı ve su' },
+          { value: 'Dağ ve orman', label: 'Dağ ve orman' },
+          { value: 'no_pref', label: 'Emin değilim' },
+        ],
+      },
+      {
+        key: 'delivery_form',
+        label: 'Teslim biçimi',
+        type: 'select',
+        required: false,
+        // DRONE_TESLIM_BICIMI_OPTIONS ile hizalı
+        options: [
+          { value: 'Video', label: 'Video' },
+          { value: 'Fotoğraf', label: 'Fotoğraf' },
+          { value: 'Video + Fotoğraf', label: 'Video + Fotoğraf' },
+        ],
+      },
+      {
+        key: 'editing',
+        label: 'Kurgu beklentisi',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'included', label: 'Kurgu dahil olsun' },
+          { value: 'raw', label: 'Ham dosya yeter' },
+          { value: 'no_pref', label: 'Fark etmez' },
+        ],
+      },
+      {
+        key: 'guest_count',
+        label: 'Katılımcı sayısı (yaklaşık)',
+        type: 'number',
+        required: false,
+        placeholder: 'örn. 150',
+        legacyColumn: 'guest_count',
+      },
+      {
+        key: 'budget_range',
+        label: 'Bütçe aralığı',
+        type: 'select',
+        required: false,
+        options: BUDGET_OPTIONS,
+        legacyColumn: 'budget_range',
+      },
+    ],
+  },
 ];
 
 // -----------------------------------------------------------------------------

@@ -38,6 +38,17 @@ import {
   CALISMA_SURESI_OPTIONS,
   KONUSMA_SURESI_OPTIONS,
   HEDEF_KITLE_OPTIONS,
+  // Dalga 2
+  YAYIN_PLATFORM_OPTIONS,
+  KAMERA_SAYISI_OPTIONS,
+  ETKINLIK_FORMATI_OPTIONS,
+  ICERIK_TURLERI_OPTIONS,
+  ICERIK_TESLIM_FORMATI_OPTIONS,
+  DRONE_TIPI_OPTIONS,
+  LOKASYON_TIPI_OPTIONS,
+  DRONE_TESLIM_BICIMI_OPTIONS,
+  PLATFORM_OPTIONS,
+  FOLLOWERS_RANGES,
 } from './category-fields';
 // Etkinlik türleri TEK KAYNAK: ilanlar taksonomisi (conversations/listings
 // event_type CHECK constraint'i ile birebir). Yerel kopya YASAK.
@@ -1325,6 +1336,185 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         type: 'single',
         path: { kind: 'logistics', key: 'cevrimici' },
         options: [{ value: 'true', label: 'Uzaktan/çevrimiçi katılır' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // ===========================================================================
+  // DALGA 2 / TUR 1 — canli-yayin · influencer · drone-pilotu
+  // DB satırları Tur 2'de açılır (preset olmadan kategori seçilebilir olmasın).
+  // (C) kovası — doğrulanamaz öz-beyanlar (reji deneyimi, kurumsal referans,
+  // teknik ekip deneyimi) FİLTREYE ALINMADI; uzmanlik_alanlari çipi olarak yaşar.
+  // ETKİLEŞİM ORANI hiçbir yerde geçmez (kilitli karar 1.2).
+  // ===========================================================================
+
+  // --- CANLI YAYIN, REJİ VE YAYIN OPERASYONU ---
+  {
+    slug: 'canli-yayin',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'yayin_platformlari',
+        label: 'Yayın platformları',
+        type: 'multi',
+        hint: 'Yayın verebildiğin platformlar',
+        path: { kind: 'quick_array', key: 'yayin_platformlari' },
+        options: YAYIN_PLATFORM_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'kamera_sayisi',
+        label: 'Kamera sayısı',
+        type: 'single',
+        path: { kind: 'quick', key: 'kamera_sayisi' },
+        options: KAMERA_SAYISI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'etkinlik_formati',
+        label: 'Etkinlik formatı',
+        type: 'single',
+        path: { kind: 'quick', key: 'etkinlik_formati' },
+        options: ETKINLIK_FORMATI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'kendi_ekipmani',
+        label: 'Kendi ekipmanı',
+        type: 'single',
+        path: { kind: 'logistics', key: 'kendi_ekipmani' },
+        options: [{ value: 'true', label: 'Yayın setiyle gelir' }],
+      },
+      {
+        key: 'yedek_baglanti',
+        label: 'Yedek bağlantı',
+        type: 'single',
+        path: { kind: 'logistics', key: 'yedek_baglanti' },
+        options: [{ value: 'true', label: 'Yedek internet getirir' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- INFLUENCER, YOUTUBER VE İÇERİK ÜRETİCİLERİ ---
+  {
+    slug: 'influencer',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'icerik_turleri',
+        label: 'İçerik türleri',
+        type: 'multi',
+        hint: 'Ürettiğin içerik biçimleri',
+        path: { kind: 'quick_array', key: 'icerik_turleri' },
+        options: ICERIK_TURLERI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        // sosyal_erisim.platforms[] nesne dizisi — platform alanı.
+        key: 'platform',
+        label: 'Platform',
+        type: 'multi',
+        path: {
+          kind: 'module',
+          moduleKey: 'sosyal_erisim',
+          arrayField: 'platforms',
+          key: 'platform',
+        },
+        options: PLATFORM_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        // Takipçi ARALIĞI — kesin sayı ve link YOK (SIRA1).
+        key: 'takipci_araligi',
+        label: 'Takipçi aralığı',
+        type: 'multi',
+        path: {
+          kind: 'module',
+          moduleKey: 'sosyal_erisim',
+          arrayField: 'platforms',
+          key: 'followers_range',
+        },
+        options: FOLLOWERS_RANGES.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'hedef_kitle',
+        label: 'Hedef kitle',
+        type: 'single',
+        path: { kind: 'quick', key: 'hedef_kitle' },
+        options: HEDEF_KITLE_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'teslim_formati',
+        label: 'Teslim formatı',
+        type: 'single',
+        path: { kind: 'quick', key: 'teslim_formati' },
+        options: ICERIK_TESLIM_FORMATI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'fiziksel_katilim',
+        label: 'Etkinliğe katılım',
+        type: 'single',
+        path: { kind: 'logistics', key: 'fiziksel_katilim' },
+        options: [{ value: 'true', label: 'Etkinliğe fiziksel katılır' }],
+      },
+      EVENT_TYPES_FILTER,
+      SERVICE_REGION_FILTER,
+    ],
+  },
+
+  // --- DRONE PİLOTLARI VE HAVADAN ÇEKİM ---
+  {
+    slug: 'drone-pilotu',
+    source: 'category_attributes',
+    fields: [
+      {
+        key: 'drone_tipi',
+        label: 'Drone tipi',
+        type: 'multi',
+        hint: 'Kullandığın drone tipleri',
+        path: { kind: 'quick_array', key: 'drone_tipi' },
+        options: DRONE_TIPI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'lokasyon_tipi',
+        label: 'Lokasyon tipi',
+        type: 'multi',
+        hint: 'Çekim yaptığın lokasyon tipleri',
+        path: { kind: 'quick_array', key: 'lokasyon_tipi' },
+        options: LOKASYON_TIPI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'teslim_bicimi',
+        label: 'Teslim biçimi',
+        type: 'single',
+        path: { kind: 'quick', key: 'teslim_bicimi' },
+        options: DRONE_TESLIM_BICIMI_OPTIONS.map((v) => ({ value: v, label: v })),
+      },
+      {
+        key: 'teslim_suresi',
+        label: 'Teslim süresi',
+        type: 'single',
+        path: { kind: 'quick', key: 'teslim_suresi' },
+        options: [
+          { value: '1–3 gün', label: '1–3 gün' },
+          { value: '1 hafta', label: '1 hafta' },
+          { value: '2 hafta', label: '2 hafta' },
+          { value: '1 ay+', label: '1 ay+' },
+        ],
+      },
+      {
+        // ÖZ-BEYAN — belge yükleme/doğrulama YOK (kilitli karar 1.1).
+        key: 'ucus_izni',
+        label: 'Uçuş izni',
+        type: 'single',
+        path: { kind: 'logistics', key: 'ucus_izni' },
+        options: [{ value: 'true', label: 'Uçuş izni beyanı var' }],
+      },
+      {
+        key: 'kurgu_dahil',
+        label: 'Kurgu dahil',
+        type: 'single',
+        path: { kind: 'logistics', key: 'kurgu_dahil' },
+        options: [{ value: 'true', label: 'Kurgu ve renk dahil teslim' }],
       },
       EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
