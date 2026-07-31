@@ -4,17 +4,26 @@
   Konu satiri (Subject) ayni kalabilir: Kashe — Şifreni sıfırla
   ONEMLI: Yapistirdiktan sonra kaydetmeden once govdede "<a href" ifadesinin
   iki yerde de aynen durdugunu gozle dogrula (< dusmesi kontrolu).
-  Repo kopyasi: docs/email-templates/recovery.html
+
+  🔴 SIRA: DEPLOY ONCESI YAPISTIRMA — ve confirm-signup DOGRULANMADAN buna gecme.
+  /auth/confirm rotasi canliya cikmadan sablon degistirilirse aradaki her sifirlama
+  maili 404 alir. Once confirm-signup test edilir, sonra bu yapistirilir.
+
+  Link artik Supabase'in /auth/v1/verify ugragindan GECMEZ, dogrudan bu domaine gelir:
+  PKCE code_verifier cerezi gerekmez -> baska tarayicida da calisir.
+  {{ .SiteURL }} "https://kashe.net" olmali, SONDA "/" OLMADAN.
+
+  Repo kopyasi: docs/email-templates/supabase-auth/recovery.html
 -->
 <h2 style="font-family:Arial,Helvetica,sans-serif;color:#040D26;font-size:22px;margin:0 0 16px">Şifreni sıfırla</h2>
 
 <p style="font-family:Arial,Helvetica,sans-serif;color:#040D26;font-size:15px;line-height:1.6;margin:0 0 20px">Aşağıdaki butona tıklayarak yeni şifreni belirleyebilirsin:</p>
 
-<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="background:#FA0B96;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px">Şifremi sıfırla</a></p>
+<p style="margin:0 0 24px"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/sifre-sifirla" style="background:#FA0B96;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:15px">Şifremi sıfırla</a></p>
 
 <p style="font-family:Arial,Helvetica,sans-serif;color:#040D26;font-size:14px;line-height:1.6;margin:0 0 8px">Eğer butona tıklayamazsan, bu linki tarayıcına kopyala:</p>
 
-<p style="margin:0 0 24px"><a href="{{ .ConfirmationURL }}" style="font-family:Arial,Helvetica,sans-serif;color:#040D26;font-size:13px;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+<p style="margin:0 0 24px"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/sifre-sifirla" style="font-family:Arial,Helvetica,sans-serif;color:#040D26;font-size:13px;word-break:break-all">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/sifre-sifirla</a></p>
 
 <p style="font-family:Arial,Helvetica,sans-serif;color:#4A5163;font-size:13px;line-height:1.6;margin:0 0 4px">Bağlantı tek kullanımlık ve 1 saat geçerlidir. Bu isteği sen yapmadıysan bu e-postayı dikkate alma; şifren değişmez.</p>
 

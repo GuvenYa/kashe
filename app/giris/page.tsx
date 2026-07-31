@@ -12,7 +12,7 @@ export const metadata = {
 export default async function GirisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: string; error?: string; resend?: string }>;
 }) {
   const params = await searchParams;
   const redirectTo = sanitizeReturnPath(params.redirect);
@@ -31,7 +31,11 @@ export default async function GirisPage({
       <TopNav />
       <main className="min-h-screen bg-paper flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <GirisForm redirectTo={redirectTo} />
+          <GirisForm
+            redirectTo={redirectTo}
+            authError={params.error}
+            resend={params.resend === '1'}
+          />
         </div>
       </main>
     </>

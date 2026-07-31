@@ -51,19 +51,45 @@ function hashErrorToTr(code: string, description: string): string {
   return 'Bağlantı doğrulanamadı. Lütfen tekrar dene.';
 }
 
+/**
+ * Sunucudan `?error=...` ile gelen auth hata kodunu TR mesaja çevirir.
+ *
+ * YALNIZ /auth/callback (PKCE) yolundan gelenler için: o akışta doğrulama, kaydın
+ * yapıldığı tarayıcının `code_verifier` çerezine bağlı — "aynı tarayıcı" uyarısı
+ * doğru ve gerekli. /auth/confirm (token_hash) akışı tarayıcıdan bağımsız olduğu için
+ * ORAYA BU METİN VERİLMEZ; o yol `?resend=1` kullanır (metin yok).
+ * Fragman değil QUERY ile geldiği için hashErrorToTr bunu yakalamaz.
+ * Kesinlik iddia etmez: sunucuda "kullanılmış" ile "farklı tarayıcı" ayrılamıyor.
+ *
+ * /auth/callback kaldırıldığında bu fonksiyon ve authError prop'u da kaldırılmalı.
+ */
+function queryErrorToTr(code: string | undefined): string | null {
+  if (!code) return null;
+  if (code === 'invalid_or_expired')
+    return 'Doğrulama bağlantısı kullanılamadı. Bağlantının, kayıt olduğun tarayıcıda açılması gerekir. Giriş yapmayı dene; olmazsa e-posta adresini yazıp aşağıdan yeni bir doğrulama e-postası iste.';
+  return 'Bağlantı doğrulanamadı. Lütfen tekrar dene.';
+}
+
 export default function GirisForm({
   redirectTo = '/',
+  authError,
+  resend = false,
 }: {
   redirectTo?: string;
+  authError?: string;
+  /** /auth/hata → "Yeni doğrulama e-postası": yalnız yeniden gönder arayüzünü açar. */
+  resend?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sifre, setSifre] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hata, setHata] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(queryErrorToTr(authError));
   const [showSifre, setShowSifre] = useState(false);
-  // Doğrulanmamış hesap: "yeniden gönder" akışı
-  const [notConfirmed, setNotConfirmed] = useState(false);
+  // Doğrulanmamış hesap: "yeniden gönder" akışı.
+  // authError (PKCE hatası) VEYA resend=1 (/auth/hata ikincil CTA) ile buton HEMEN
+  // görünür — kullanıcının önce başarısız bir giriş denemesi yapması gerekmesin.
+  const [notConfirmed, setNotConfirmed] = useState(authError != null || resend);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
@@ -255,15 +281,22 @@ export default function GirisForm({
           </div>
         </div>
 
-        {hata && (
-          <div className="px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger">
+        {/* resend=1 ile hata metni OLMADAN da açılabilir → kutu o durumda nötr zeminde. */}
+        {(hata || notConfirmed) && (
+          <div
+            className={
+              hata
+                ? 'px-4 py-3 bg-danger-08 border border-danger/30 rounded-lg text-sm text-danger'
+                : 'px-4 py-3 bg-brand-ink-08 border border-brand-ink/25 rounded-lg text-sm text-ink'
+            }
+          >
             {hata}
             {notConfirmed && (
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
-                className="mt-2 block font-medium text-brand-ink hover:text-ink disabled:opacity-50 transition-colors"
+                className={`${hata ? 'mt-2 ' : ''}block font-medium text-brand-ink hover:text-ink disabled:opacity-50 transition-colors`}
               >
                 {resending
                   ? 'Gönderiliyor…'

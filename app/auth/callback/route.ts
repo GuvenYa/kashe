@@ -7,10 +7,9 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   // Open redirect sertleştirmesi: 'next' yalnız aynı origin'e göreli yol olabilir.
-  const next = sanitizeReturnPath(
-    requestUrl.searchParams.get('next'),
-    '/sifre-sifirla'
-  );
+  // Fallback '/giris': 'next' bozuk/eksikse KAYIT ONAYI kullanıcısı şifre sıfırlama
+  // sayfasına düşmesin. Recovery zaten next=/sifre-sifirla ile açıkça gelir.
+  const next = sanitizeReturnPath(requestUrl.searchParams.get('next'), '/giris');
   // Recovery (şifre sıfırlama) akışı next=/sifre-sifirla ile gelir → hoşgeldin TETİKLENMEZ.
   const isRecovery = next.startsWith('/sifre-sifirla');
 
@@ -20,8 +19,12 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Code exchange error:', error.message);
+      // isRecovery (satır 15) hata dalında da kullanılır: kayıt onayı başarısız olunca
+      // kullanıcıya ŞİFRE SIFIRLAMA metni gösterilmesin. Supabase 'type'ı redirect_to'ya
+      // iletmediği için akımı ayıran tek sinyal 'next' → isRecovery.
+      const errorPath = isRecovery ? '/sifre-sifirla' : '/giris';
       return NextResponse.redirect(
-        `${requestUrl.origin}/sifre-sifirla?error=invalid_or_expired`
+        `${requestUrl.origin}${errorPath}?error=invalid_or_expired`
       );
     }
 
