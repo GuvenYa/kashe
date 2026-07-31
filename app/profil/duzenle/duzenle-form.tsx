@@ -228,7 +228,9 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
                   setAttributes({});
                 }
               }}
-              className={inputClass}
+              // scroll-mt-28: /profil kartından #primary_category_id ile gelindiğinde
+              // alan yapışkan TopNav'ın altında kalmasın, etiketi de görünsün.
+              className={`${inputClass} scroll-mt-28`}
             >
               <option value="">Bir kategori seç</option>
               {categories.map((cat) => (

@@ -411,6 +411,32 @@ export default async function ProfilPage() {
             </div>
           )}
 
+          {/* ANA KATEGORİ ÇAĞRISI — kategori seçmemiş profesyonele.
+              Seçici /profil/duzenle formunun ortasında gömülü kaldığı için burada
+              doğrudan bir giriş noktası veriliyor. Kapatma düğmesi YOK: kart yalnız
+              kategori seçilince kaybolur (tamamlanma = tek çıkış yolu). */}
+          {isPro && profile.primary_category_id == null && (
+            <div className="mb-8 rounded-xl border border-brand-ink/25 bg-brand-ink-08 p-6">
+              <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
+                İlk adım
+              </p>
+              <h2 className="font-display font-semibold text-xl text-ink mt-1">
+                Ana hizmet kategorini seç
+              </h2>
+              <p className="text-ink-72 text-sm mt-2 leading-relaxed">
+                Kategorin, Keşfet&apos;te hangi filtrelerle bulunacağını ve
+                profilinde hangi alanları dolduracağını belirler. Seçmeden
+                profilini yayına alamazsın.
+              </p>
+              <Link
+                href="/profil/duzenle#primary_category_id"
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+              >
+                Kategori seç →
+              </Link>
+            </div>
+          )}
+
           {/* PROFİL TAMLIĞI — yalnız yayın gereksinimleri + yüzde */}
           {completeness < 100 && (
             <div className="mb-8 bg-card border border-line rounded-lg p-5">
