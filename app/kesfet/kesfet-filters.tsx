@@ -831,8 +831,11 @@ export function KesfetFilters({
 
   return (
     <>
-      {/* MASAÜSTÜ — kalıcı sidebar */}
-      <div className="hidden lg:block sticky top-24">
+      {/* MASAÜSTÜ — kalıcı sidebar.
+          Panel viewport'tan uzun olduğu için KENDİ scroll'u var: sayfa kaydırmak
+          yerine panel içi kayar, sonuç kartları görünürde kalır.
+          overscroll-contain: panel sonuna gelince scroll sayfaya ZİNCİRLENMEZ. */}
+      <div className="hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain pr-2 -mr-2">
         {filterBody}
       </div>
 

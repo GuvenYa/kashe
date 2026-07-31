@@ -579,7 +579,10 @@ export default async function KesfetPage({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                  {/* Sonuç sayacı + sıralama — masaüstünde TopNav'ın (z-50) hemen altına
+                      yapışır, filtre panelinde gezerken kaç sonuç olduğu görünürde kalır.
+                      TÜM yapışkanlık sınıfları lg: önekli — mobil görünüm birebir korunur. */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-4 lg:mb-1 lg:py-3 lg:bg-paper lg:sticky lg:top-16 lg:z-20">
                     <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
                       {profiles.length} sonuç
                     </p>
