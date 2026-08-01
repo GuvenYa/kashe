@@ -116,8 +116,13 @@ export function KesfetFilters({
   const [experience, setExperience] = useState<string[]>(currentExperience);
   // Etkinlik türleri — ORTAK filtre (tüm kategoriler), ÇOKLU seçim (OR); kategori tickbox kalıbı.
   const [eventTypes, setEventTypes] = useState<string[]>(currentEventTypes);
+  // Akordiyon, içindeki filtrelerden biri AKTİFSE açık başlar — kullanıcı uyguladığı
+  // bir filtreyi göremeden "sonuçlar neden az?" durumunda kalmasın.
+  // Fiyat/Puan da artık akordiyonun içinde → açılış koşuluna dahil.
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(
-    currentBadgeKeys.length > 0 ||
+    currentMaxPrice !== null ||
+      currentMinRating !== null ||
+      currentBadgeKeys.length > 0 ||
       currentOnlyAvailable ||
       currentExperience.length > 0
   );
@@ -338,6 +343,15 @@ export function KesfetFilters({
     experience.length +
     Object.keys(attrs).length;
 
+  // Akordiyon başlığındaki sayaç — YALNIZ akordiyonun içindeki 5 filtre.
+  // Kapalıyken bile kaç kısıt uygulandığı görünsün.
+  const advancedCount =
+    (maxPrice ? 1 : 0) +
+    (minRating ? 1 : 0) +
+    badgeKeys.length +
+    (onlyAvailable ? 1 : 0) +
+    experience.length;
+
   // ===== Sidebar içeriği (hem masaüstü hem mobil drawer kullanır) =====
   const filterBody = (
     <div className="space-y-7">
@@ -425,39 +439,68 @@ export function KesfetFilters({
         </div>
       </div>
 
-      {/* Etkinlik türü — ORTAK filtre (tüm kategoriler), ÇOKLU tickbox (OR). Kategori kalıbıyla
-          birebir aynı davranış. URL param: etkinlik (virgülle ayrık key'ler) */}
-      <div>
-        <p className="font-display text-base text-ink mb-3">Etkinlik türü</p>
-        <div className="space-y-1.5">
-          {EVENT_TYPES.map((et) => {
-            const on = eventTypes.includes(et.key);
+      {/* Kategoriye özel detaylı filtreler — sadece tek kategori seçiliyken */}
+      {filterFields.length > 0 && (
+        <div className="pt-5 border-t border-line space-y-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
+            {categories.find((c) => c.slug === selectedSlug)?.name_tr} detayları
+          </p>
+          {filterFields.map((field) => {
+            const selected = attrs[field.key] || [];
+            if (field.type === 'multi') {
+              return (
+                <div key={field.key}>
+                  <label className="block text-xs text-ink-72 mb-2">{field.label}</label>
+                  <div className="space-y-1.5">
+                    {field.options.map((opt) => {
+                      const on = selected.includes(opt.value);
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => toggleAttr(field.key, opt.value)}
+                          className="flex items-center gap-2.5 w-full text-left group"
+                        >
+                          <span
+                            className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
+                            }`}
+                          >
+                            {on && (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
+                          <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                            {opt.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            const cur = selected[0] || '';
             return (
-              <button
-                key={et.key}
-                type="button"
-                onClick={() => toggleEventType(et.key)}
-                className="flex items-center gap-2.5 w-full text-left group"
-              >
-                <span
-                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
-                  }`}
+              <div key={field.key}>
+                <label className="block text-xs text-ink-72 mb-2">{field.label}</label>
+                <select
+                  value={cur}
+                  onChange={(e) => setAttrSingle(field.key, e.target.value)}
+                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 >
-                  {on && (
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
-                  {et.label}
-                </span>
-              </button>
+                  <option value="">Hepsi</option>
+                  {field.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             );
           })}
         </div>
-      </div>
+      )}
 
       {/* Şehir — arama'lı dropdown */}
       <div>
@@ -535,72 +578,37 @@ export function KesfetFilters({
         </div>
       </div>
 
-      {/* Fiyat — başlangıç fiyatı tavanı */}
+      {/* Etkinlik türü — ORTAK filtre (tüm kategoriler), ÇOKLU tickbox (OR). Kategori kalıbıyla
+          birebir aynı davranış. URL param: etkinlik (virgülle ayrık key'ler) */}
       <div>
-        <p className="font-display text-base text-ink mb-3">Fiyat</p>
+        <p className="font-display text-base text-ink mb-3">Etkinlik türü</p>
         <div className="space-y-1.5">
-          {[{ value: '', label: 'Fark etmez' }, ...PRICE_OPTIONS].map((opt) => (
-            <button
-              key={opt.value || 'all'}
-              type="button"
-              onClick={() => setMaxPrice(opt.value)}
-              className="flex items-center gap-2.5 w-full text-left group"
-            >
-              <span
-                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  maxPrice === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
-                }`}
+          {EVENT_TYPES.map((et) => {
+            const on = eventTypes.includes(et.key);
+            return (
+              <button
+                key={et.key}
+                type="button"
+                onClick={() => toggleEventType(et.key)}
+                className="flex items-center gap-2.5 w-full text-left group"
               >
-                {maxPrice === opt.value && (
-                  <span className="w-2 h-2 rounded-full bg-brand-ink" />
-                )}
-              </span>
-              <span
-                className={`text-sm transition-colors ${
-                  maxPrice === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
-                }`}
-              >
-                {opt.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Puan — minimum */}
-      <div>
-        <p className="font-display text-base text-ink mb-3">Puan</p>
-        <div className="space-y-1.5">
-          {[{ value: '', label: 'Fark etmez' }, ...RATING_OPTIONS].map((opt) => (
-            <button
-              key={opt.value || 'all'}
-              type="button"
-              onClick={() => setMinRating(opt.value)}
-              className="flex items-center gap-2.5 w-full text-left group"
-            >
-              <span
-                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  minRating === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
-                }`}
-              >
-                {minRating === opt.value && (
-                  <span className="w-2 h-2 rounded-full bg-brand-ink" />
-                )}
-              </span>
-              <span
-                className={`text-sm flex items-center gap-1 transition-colors ${
-                  minRating === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
-                }`}
-              >
-                {opt.value && (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-brand-accent)" stroke="var(--color-brand-accent)" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                  </svg>
-                )}
-                {opt.label}
-              </span>
-            </button>
-          ))}
+                <span
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
+                  }`}
+                >
+                  {on && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
+                  {et.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -611,8 +619,13 @@ export function KesfetFilters({
           onClick={() => setAdvancedOpen((v) => !v)}
           className="flex items-center justify-between w-full group"
         >
-          <span className="font-display text-base text-ink">
+          <span className="font-display text-base text-ink flex items-center gap-2">
             Daha fazla filtre
+            {advancedCount > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 bg-brand-ink text-paper text-xs font-mono rounded-full flex items-center justify-center">
+                {advancedCount}
+              </span>
+            )}
           </span>
           <svg
             width="16"
@@ -628,6 +641,79 @@ export function KesfetFilters({
 
         {advancedOpen && (
           <div className="mt-4 space-y-6">
+            {/* Fiyat — başlangıç fiyatı tavanı */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                Fiyat
+              </p>
+              <div className="space-y-1.5">
+                {[{ value: '', label: 'Fark etmez' }, ...PRICE_OPTIONS].map((opt) => (
+                  <button
+                    key={opt.value || 'all'}
+                    type="button"
+                    onClick={() => setMaxPrice(opt.value)}
+                    className="flex items-center gap-2.5 w-full text-left group"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        maxPrice === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
+                      }`}
+                    >
+                      {maxPrice === opt.value && (
+                        <span className="w-2 h-2 rounded-full bg-brand-ink" />
+                      )}
+                    </span>
+                    <span
+                      className={`text-sm transition-colors ${
+                        maxPrice === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                      }`}
+                    >
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Puan — minimum */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
+                Puan
+              </p>
+              <div className="space-y-1.5">
+                {[{ value: '', label: 'Fark etmez' }, ...RATING_OPTIONS].map((opt) => (
+                  <button
+                    key={opt.value || 'all'}
+                    type="button"
+                    onClick={() => setMinRating(opt.value)}
+                    className="flex items-center gap-2.5 w-full text-left group"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        minRating === opt.value ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
+                      }`}
+                    >
+                      {minRating === opt.value && (
+                        <span className="w-2 h-2 rounded-full bg-brand-ink" />
+                      )}
+                    </span>
+                    <span
+                      className={`text-sm flex items-center gap-1 transition-colors ${
+                        minRating === opt.value ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                      }`}
+                    >
+                      {opt.value && (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-brand-accent)" stroke="var(--color-brand-accent)" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                        </svg>
+                      )}
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Rozetler — 4 bağımsız toggle, aralarında VEYA */}
             <div>
               <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
@@ -743,69 +829,6 @@ export function KesfetFilters({
           </div>
         )}
       </div>
-
-      {/* Kategoriye özel detaylı filtreler — sadece tek kategori seçiliyken */}
-      {filterFields.length > 0 && (
-        <div className="pt-5 border-t border-line space-y-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink">
-            {categories.find((c) => c.slug === selectedSlug)?.name_tr} detayları
-          </p>
-          {filterFields.map((field) => {
-            const selected = attrs[field.key] || [];
-            if (field.type === 'multi') {
-              return (
-                <div key={field.key}>
-                  <label className="block text-xs text-ink-72 mb-2">{field.label}</label>
-                  <div className="space-y-1.5">
-                    {field.options.map((opt) => {
-                      const on = selected.includes(opt.value);
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => toggleAttr(field.key, opt.value)}
-                          className="flex items-center gap-2.5 w-full text-left group"
-                        >
-                          <span
-                            className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              on ? 'bg-brand-ink border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
-                            }`}
-                          >
-                            {on && (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5 12l5 5L20 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            )}
-                          </span>
-                          <span className={`text-sm transition-colors ${on ? 'text-ink' : 'text-ink-72 group-hover:text-ink'}`}>
-                            {opt.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }
-            const cur = selected[0] || '';
-            return (
-              <div key={field.key}>
-                <label className="block text-xs text-ink-72 mb-2">{field.label}</label>
-                <select
-                  value={cur}
-                  onChange={(e) => setAttrSingle(field.key, e.target.value)}
-                  className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                >
-                  <option value="">Hepsi</option>
-                  {field.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Temizle */}
       {activeCount > 0 && (

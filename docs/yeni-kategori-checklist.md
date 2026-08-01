@@ -124,7 +124,25 @@ Alanlar arası AND **tek `.or()` çağrısında** açık `and(or(...),...)` ile 
 
 Ölçüm eşiği: **kodlanmış `or=` ifadesi 6 KB'ı (8 KB tamponun %75'i) geçerse**
 azaltım gerekir — UI'da alan başına değer sınırı veya sorguyu RPC'ye taşıma.
-En son ölçüm: tercuman, 6 alan tam seçili → 4 827 karakter (%59).
+
+Ölçüm yöntemi (tekrarlanabilir olsun diye): `or=(` + `encodeURIComponent(ifade)` +
+`)`, payda 8192, senaryo **tüm seçenekler işaretli** (en kötü hal).
+En son ölçüm: konusmaci 4 464 kr (%54,5) — tüm 23 kategorinin en yükseği; eşiği
+aşan kategori yok.
+
+### 5f. `EVENT_TYPES_FILTER` KULLANILMAZ
+`etkinlik_turleri` **23 kategori için ORTAK** bir alandır
+(`category_attributes.etkinlik_turleri`); Keşfet'in **üst düzey "Etkinlik türü"**
+bölümü (`?etkinlik=`) onu zaten kapsar ve tüm kategorilerde çalışır.
+
+Kategoriye özel `fields[]` dizisine **eklenmez**: aynı JSONB alanına aynı `cs.`
+operatörüyle **birebir aynı** koşulu üretir. İki ayrı `or=` parametresi AND'lendiği
+için kullanıcı "düğün *veya* nişan" sanır, sonuç **sessiz kesişim** olur.
+
+### 5g. `SERVICE_REGION_FILTER` MEŞRUDUR ve kullanılır
+Üst düzey "Şehir" (`?sehir=`) `profiles.city_id`'yi sorgular — profesyonel
+**nerede**. `service_region` kapsama alanını sorar — **nereye gidiyor**. Farklı
+kolonlar, farklı kavramlar; birlikte anlamlıdırlar. Duplikasyon değildir.
 
 ## 6. Kayıt / profil kategori seçimi — DİNAMİK (kod değişikliği YOK)
 - `primary_category_id` seçimi `service_categories`'ten canlı okunur

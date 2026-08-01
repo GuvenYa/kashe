@@ -50,9 +50,10 @@ import {
   PLATFORM_OPTIONS,
   FOLLOWERS_RANGES,
 } from './category-fields';
-// Etkinlik türleri TEK KAYNAK: ilanlar taksonomisi (conversations/listings
-// event_type CHECK constraint'i ile birebir). Yerel kopya YASAK.
-import { EVENT_TYPES } from '../mesajlar/data';
+// NOT: Etkinlik türleri artık bu dosyada FİLTRE OLARAK tanımlı değil (bkz. ~1001.
+// satırdaki KALDIRILDI notu). Keşfet'in üst düzey "Etkinlik türü" bölümü seçenekleri
+// doğrudan ilanlar taksonomisinden (app/mesajlar/data → EVENT_TYPES) okuyor; tek kaynak
+// kuralı orada korunuyor, burada yerel kopya yok.
 
 export type FilterFieldType = 'multi' | 'single';
 
@@ -998,15 +999,15 @@ const LANGUAGE_FILTER: FilterField = {
   options: LANGUAGE_DICT.map((v) => ({ value: v, label: v })),
 };
 
-/** Paylaşılan: category_attributes.etkinlik_turleri (ilanlar taksonomisi — EVENT_TYPES tek kaynak). */
-const EVENT_TYPES_FILTER: FilterField = {
-  key: 'etkinlik_turleri',
-  label: 'Etkinlik türleri',
-  type: 'multi',
-  hint: 'Hangi etkinliklerde çalışıyor',
-  path: { kind: 'root_array', key: 'etkinlik_turleri' },
-  options: EVENT_TYPES.map((e) => ({ value: e.key, label: e.label })),
-};
+// KALDIRILDI — EVENT_TYPES_FILTER (category_attributes.etkinlik_turleri).
+// 11 kategoride kategoriye-özel filtre olarak tanımlıydı, ama Keşfet'in ÜST DÜZEY
+// "Etkinlik türü" bölümü (app/kesfet/page.tsx, ?etkinlik=) AYNI kolona AYNI operatörle
+// AYNI ifadeyi üretiyordu: category_attributes.cs.{"etkinlik_turleri":["<key>"]}.
+// Kullanıcı o 11 kategoride iki özdeş kontrol görüyordu. Üst düzey bölüm 23 kategorinin
+// hepsinde çalışıyor (alan category_attributes'ta, kategori-bilgileri formunda ORTAK
+// bölüm olarak tüm kategorilere gösteriliyor) → kategoriye-özel kopya kaldırıldı.
+// VERİ DEĞİŞMEDİ: preset (category-fields) ve brief-config'e dokunulmadı; profesyonel
+// alanı doldurmaya devam ediyor, üst düzey filtre onu okuyor.
 
 const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
   // --- KARİKATÜRİST (pilot 1: saf quick select + logistics boolean) ---
@@ -1046,7 +1047,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'canli_cizim' },
         options: [{ value: 'true', label: 'Etkinlikte canlı çizim yapar' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1090,7 +1090,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'kurumsal_dil' },
         options: [{ value: 'true', label: 'Kurum içi etkinliğe uygun' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1125,7 +1124,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'cevrimici' },
         options: [{ value: 'true', label: 'Uzaktan/çevrimiçi çalışır' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1164,7 +1162,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'kostum' },
         options: [{ value: 'true', label: 'Kendi kostümüyle gelir' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1218,7 +1215,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'kostum' },
         options: [{ value: 'true', label: 'Kendi kostümüyle gelir' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1264,7 +1260,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'ekiple_gelir' },
         options: [{ value: 'true', label: 'Kalabalık hazırlıkta ekiple çalışır' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1297,7 +1292,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'ekip_yonetimi' },
         options: [{ value: 'true', label: 'Saha ekibi ve gönüllü yönetir' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1337,7 +1331,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'cevrimici' },
         options: [{ value: 'true', label: 'Uzaktan/çevrimiçi katılır' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1391,7 +1384,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'yedek_baglanti' },
         options: [{ value: 'true', label: 'Yedek internet getirir' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1456,7 +1448,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'fiziksel_katilim' },
         options: [{ value: 'true', label: 'Etkinliğe fiziksel katılır' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
@@ -1516,7 +1507,6 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
         path: { kind: 'logistics', key: 'kurgu_dahil' },
         options: [{ value: 'true', label: 'Kurgu ve renk dahil teslim' }],
       },
-      EVENT_TYPES_FILTER,
       SERVICE_REGION_FILTER,
     ],
   },
