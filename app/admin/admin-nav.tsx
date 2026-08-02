@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createClient } from '@/app/lib/supabase-browser';
+import { KasheMark } from '@/app/components/ui/kashe-mark';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard' },
@@ -59,9 +60,7 @@ export function AdminNav({
           className="flex items-center gap-2.5"
           onClick={() => setMobileOpen(false)}
         >
-          <span className="w-7 h-7 bg-brand-ink flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
-            k
-          </span>
+          <KasheMark variant="dark" className="w-7 h-7 shrink-0" title="" />
           <span className="font-display font-semibold text-xl text-paper tracking-tight">
             Kashe
           </span>
@@ -136,9 +135,7 @@ export function AdminNav({
       {/* MOBİL — üst bar + hamburger */}
       <div className="md:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
         <Link href="/admin" className="flex items-center gap-2.5">
-          <span className="w-7 h-7 bg-brand-ink flex items-center justify-center text-paper font-display font-semibold italic text-lg leading-none rounded">
-            k
-          </span>
+          <KasheMark variant="dark" className="w-7 h-7 shrink-0" title="" />
           <span className="font-display font-semibold text-xl text-paper tracking-tight">
             Kashe
           </span>
