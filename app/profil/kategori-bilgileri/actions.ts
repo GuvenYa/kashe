@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/app/lib/supabase-server';
+import { stripInvisible } from '@/app/lib/text';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import {
@@ -155,7 +156,10 @@ export async function saveCategoryAttributes(
     if ('skills' in payload && Array.isArray(payload.skills)) {
       const out: { name: string; level: number }[] = [];
       for (const s of payload.skills as { name?: unknown; level?: unknown }[]) {
-        const name = cleanStr(s?.name, 60);
+        // stripInvisible: İSTEMCİYLE AYNI yardımcı (app/lib/text.ts). Davranış aynı
+        // (isimsiz satır atılır); yalnız "isimsiz" tanımı sıfır genişlikli
+        // karakterleri (U+200B vb.) de kapsayacak şekilde genişledi.
+        const name = cleanStr(stripInvisible(s?.name), 60);
         if (!name) continue;
         let level = 0;
         if (preset.skillsWithLevels) {

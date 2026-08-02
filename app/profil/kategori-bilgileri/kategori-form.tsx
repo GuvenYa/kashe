@@ -22,6 +22,7 @@ import {
   type ModuleFieldDef,
 } from '@/app/lib/category-fields';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { isBlankText } from '@/app/lib/text';
 import { saveCategoryAttributes } from './actions';
 
 const INPUT =
@@ -216,7 +217,7 @@ export function KategoriForm({
 
   // Adı boş yetenek satırları: sunucu bunları sessizce atıyor (actions.ts).
   // Kaydet ENGELLENMEZ, yalnız kaydet çubuğunda uyarı gösterilir.
-  const adsizYetenekSayisi = skills.filter((s) => !s.name.trim()).length;
+  const adsizYetenekSayisi = skills.filter((s) => isBlankText(s.name)).length;
 
   function handleSave() {
     setError(null);
@@ -975,7 +976,10 @@ function SkillsEditor({
       </p>
       <div className="flex flex-col gap-2">
         {skills.map((s, i) => {
-          const adsiz = !s.name.trim();
+          // isBlankText: sunucunun kullandığı YARDIMCININ AYNISI (app/lib/text.ts).
+          // trim() tek başına yetmiyordu — U+200B gibi sıfır genişlikli karakterler
+          // kutuyu boş gösterip "dolu" saydırıyordu.
+          const adsiz = isBlankText(s.name);
           return (
           <div key={i} className="flex items-center gap-2">
             <input
