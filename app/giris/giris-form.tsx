@@ -74,11 +74,14 @@ export default function GirisForm({
   redirectTo = '/',
   authError,
   resend = false,
+  sifirlandi = false,
 }: {
   redirectTo?: string;
   authError?: string;
   /** /auth/hata → "Yeni doğrulama e-postası": yalnız yeniden gönder arayüzünü açar. */
   resend?: boolean;
+  /** /sifre-sifirla → şifre güncellendi + global signOut: OLUMLU bilgi mesajı. */
+  sifirlandi?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -280,6 +283,15 @@ export default function GirisForm({
             </button>
           </div>
         </div>
+
+        {/* sifirlandi=1 — OLUMLU bilgi. Hata kutusundan (danger) ayrı, formda zaten
+            var olan moss kalıbıyla. Üç parametre birbirini ezmiyor: bu kutu ayrı,
+            error/resend aşağıdaki kutuyu kullanıyor ve sifirlandi ikisini de kurmuyor. */}
+        {sifirlandi && (
+          <div className="px-4 py-3 bg-moss/10 border border-moss/30 rounded-lg text-sm text-moss">
+            Şifren güncellendi. Yeni şifrenle giriş yapabilirsin.
+          </div>
+        )}
 
         {/* resend=1 ile hata metni OLMADAN da açılabilir → kutu o durumda nötr zeminde. */}
         {(hata || notConfirmed) && (

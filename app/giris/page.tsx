@@ -12,7 +12,12 @@ export const metadata = {
 export default async function GirisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect?: string; error?: string; resend?: string }>;
+  searchParams: Promise<{
+    redirect?: string;
+    error?: string;
+    resend?: string;
+    sifirlandi?: string;
+  }>;
 }) {
   const params = await searchParams;
   const redirectTo = sanitizeReturnPath(params.redirect);
@@ -35,6 +40,7 @@ export default async function GirisPage({
             redirectTo={redirectTo}
             authError={params.error}
             resend={params.resend === '1'}
+            sifirlandi={params.sifirlandi === '1'}
           />
         </div>
       </main>
