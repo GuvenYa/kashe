@@ -270,6 +270,14 @@ export default async function ProfilPage() {
     return true;
   }).length;
 
+  // Etkinlik türleri — ORTAK alan (category_attributes.etkinlik_turleri), 23 kategoride
+  // aynı. TAVSİYE kartı için: alan hiç yoksa DA boş diziyse DE "boş" sayılır.
+  const hasEventTypes = (() => {
+    const raw = (profile.category_attributes as Record<string, unknown> | null)
+      ?.etkinlik_turleri;
+    return Array.isArray(raw) && raw.length > 0;
+  })();
+
   const initials = (profile.full_name || '')
     .split(' ')
     .map((s: string) => s[0])
@@ -436,6 +444,38 @@ export default async function ProfilPage() {
               </Link>
             </div>
           )}
+
+          {/* ETKİNLİK TÜRLERİ ÇAĞRISI — TAVSİYE, yayın şartı DEĞİL.
+              getMissingPublishFields tek kademe ve tamamı sert kapı; oraya madde
+              eklemek alanı otomatik yayın şartı yapardı ve yayındaki profilleri
+              vurarak "tamamlanması gereken" listesine düşürürdü. Bu kart bunun
+              yerine profile-helpers'a HİÇ dokunmadan uyarır.
+              Kategori kartıyla aynı anda ÇIKMAZ: /profil/kategori-bilgileri kategori
+              seçilmemişken kendisi /profil'e geri gönderiyor (kategori-bilgileri/
+              page.tsx:60) — kategori yokken bu CTA çıkmaz döngü olurdu. */}
+          {isPro &&
+            profile.primary_category_id != null &&
+            !hasEventTypes && (
+              <div className="mb-8 rounded-xl border border-brand-ink/25 bg-brand-ink-08 p-6">
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
+                  Görünürlük
+                </p>
+                <h2 className="font-display font-semibold text-xl text-ink mt-1">
+                  Etkinlik türlerini işaretle
+                </h2>
+                <p className="text-ink-72 text-sm mt-2 leading-relaxed">
+                  Keşfet&apos;te &quot;Etkinlik türü&quot; filtresi kullanıldığında
+                  yalnızca bu alanı doldurmuş profiller listeleniyor. Boş bırakırsan
+                  o aramalarda çıkmazsın. Yayına almanı engellemez.
+                </p>
+                <Link
+                  href="/profil/kategori-bilgileri#etkinlik-turleri"
+                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+                >
+                  Etkinlik türlerini seç →
+                </Link>
+              </div>
+            )}
 
           {/* PROFİL TAMLIĞI — yalnız yayın gereksinimleri + yüzde */}
           {completeness < 100 && (
