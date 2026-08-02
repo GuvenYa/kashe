@@ -214,6 +214,10 @@ export function KategoriForm({
   const savedSnapshot = useRef(JSON.stringify(payload));
   const isDirty = JSON.stringify(payload) !== savedSnapshot.current;
 
+  // Adı boş yetenek satırları: sunucu bunları sessizce atıyor (actions.ts).
+  // Kaydet ENGELLENMEZ, yalnız kaydet çubuğunda uyarı gösterilir.
+  const adsizYetenekSayisi = skills.filter((s) => !s.name.trim()).length;
+
   function handleSave() {
     setError(null);
 
@@ -380,8 +384,10 @@ export function KategoriForm({
             </div>
           </div>
 
-          {/* Etkinlik türleri — ORTAK çoklu çip (ilanlar taksonomisi; Keşfet filtresine bağlı) */}
-          <div>
+          {/* Etkinlik türleri — ORTAK çoklu çip (ilanlar taksonomisi; Keşfet filtresine bağlı).
+              scroll-mt-28: /profil tavsiye kartından #etkinlik-turleri ile gelindiğinde
+              bölüm yapışkan TopNav'ın altında kalmasın. */}
+          <div id="etkinlik-turleri" className="scroll-mt-28">
             <label className={LABEL}>Hizmet verdiğin etkinlik türleri</label>
             <div className="flex flex-wrap gap-2">
               {EVENT_TYPES.map((et) => {
@@ -496,11 +502,11 @@ export function KategoriForm({
         }`}
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div className="text-sm min-w-0">
+          <div className="text-sm min-w-0 space-y-1">
             {error ? (
               <span className="text-danger">{error}</span>
             ) : isDirty ? (
-              <span className="inline-flex items-center gap-2 text-ink-72">
+              <span className="flex items-center gap-2 text-ink-72">
                 <span
                   className="w-2 h-2 rounded-full bg-brand-ink shrink-0"
                   aria-hidden="true"
@@ -508,6 +514,15 @@ export function KategoriForm({
                 Kaydedilmemiş değişikliklerin var
               </span>
             ) : null}
+            {adsizYetenekSayisi > 0 && (
+              <span className="flex items-center gap-2 text-danger">
+                <span
+                  className="w-2 h-2 rounded-full bg-danger shrink-0"
+                  aria-hidden="true"
+                />
+                Adı boş olan yetenekler kaydedilmez
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -955,21 +970,30 @@ function SkillsEditor({
   return (
     <div>
       <label className={LABEL}>Yetenekler</label>
+      <p className="text-[11px] text-ink-72/70 -mt-1 mb-2">
+        Ad zorunlu — adı boş satırlar kaydedilmez.
+      </p>
       <div className="flex flex-col gap-2">
-        {skills.map((s, i) => (
+        {skills.map((s, i) => {
+          const adsiz = !s.name.trim();
+          return (
           <div key={i} className="flex items-center gap-2">
             <input
               value={s.name}
               onChange={(e) => update(i, { name: e.target.value })}
               placeholder="Yetenek adı"
               maxLength={60}
-              className={`${INPUT} flex-1 min-w-0`}
+              aria-invalid={adsiz}
+              className={`${INPUT} flex-1 min-w-0${adsiz ? ' border-danger/40' : ''}`}
             />
             {withLevels && (
+              // Sıralı doldurma: ad yazılmadan seviye seçilemez. Adsız satırı sunucu
+              // zaten atıyor (actions.ts) — kullanıcı seviye seçip kaydettiğini sanmasın.
               <select
                 value={s.level || ''}
                 onChange={(e) => update(i, { level: Number(e.target.value) })}
-                className={`${INPUT} w-36 shrink-0`}
+                disabled={adsiz}
+                className={`${INPUT} w-36 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <option value="">Seviye (opsiyonel)</option>
                 {SKILL_LEVELS.map((lv) => (
@@ -979,7 +1003,8 @@ function SkillsEditor({
             )}
             <RemoveBtn onClick={() => onChange(skills.filter((_, idx) => idx !== i))} />
           </div>
-        ))}
+          );
+        })}
         <AddBtn
           label="Yetenek ekle"
           onClick={() => onChange([...skills, { name: '', level: 0 }])}
