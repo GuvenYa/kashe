@@ -394,6 +394,39 @@ Her ekran için kontrol et — bunlar "AI ürünü gibi durma" işaretleridir:
   bu bir görsel yenilemedir, sıfırdan yazım değil.
 - Fontlar `next/font/google` ile yüklenmeli (Space Grotesk + Inter).
 
+### 🔴 Tailwind sınıfı ASLA `${` ile bitişik yazılmaz (kalıcı kural)
+
+```jsx
+// YANLIŞ — "md:grow" sınıfı sessizce YOK OLUR
+className={`... md:basis-0 md:grow${adsiz ? ' border-danger/40' : ''}`}
+
+// DOĞRU — koşullu ifade sınıfın TAMAMININ yerine geçer
+className={adsiz ? `${INPUT} border-danger/40` : INPUT}
+
+// DOĞRU — ya da sınıftan sonra boşluk
+className={`... md:grow ${adsiz ? 'border-danger/40' : ''}`}
+```
+
+Tailwind kaynak dosyalarını **metin olarak** tarayıp aday sınıf çıkarır; bitişik
+`${` adayı bozar ve o sınıf üretilen CSS'e **hiç girmez**. Belirti sinsidir:
+**derleme hatası YOK, TypeScript hatası YOK, lint hatası YOK** — yalnız kural
+eksik kalır ve düzen sessizce bozulur.
+
+Gerçek vaka: `md:grow` düşünce input `flex-basis: 0` alıp `flex-grow` alamadı;
+genişliği 0'a indi, geriye yalnız `px-4` dolgusu kaldı → 32px'lik kare kutu,
+içinde dolu `value` olmasına rağmen tek harf bile görünmüyordu.
+
+**Doğrulama zorunlu:** düzen sınıfı ekleyen her değişiklikten sonra üretilen CSS'te
+kuralın varlığı kanıtlanır — "derlendi" demek yetmez, satır gösterilir:
+```bash
+npm run build
+grep -o '.md\:grow{[^}]*}' $(find .next -name "*.css" -not -path "*/cache/*")
+```
+
+**Kapsam notu:** Bu kural yalnız **Tailwind utility'leri** için geçerlidir.
+`globals.css`'te elle yazılmış sınıflar (`pano-card`, `kashe-tap` vb.) tarayıcıdan
+bağımsız üretilir; bitişik yazım onlarda çalışır ama okunurluk için yine kaçınılır.
+
 ---
 
 ## Kasıtlı palet istisnaları
