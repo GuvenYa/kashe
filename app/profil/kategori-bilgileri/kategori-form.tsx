@@ -25,8 +25,13 @@ import { EVENT_TYPES } from '@/app/mesajlar/data';
 import { isBlankText } from '@/app/lib/text';
 import { saveCategoryAttributes } from './actions';
 
-const INPUT =
-  'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm';
+// INPUT_BASE genişlik sınıfı TAŞIMAZ. Flex çocuğu olan alanlar bunu kullanır:
+// 'w-full' + 'flex-1' birlikte verilince w-full flex-basis'i ebeveyn genişliğine
+// kilitliyor, 'min-w-0' da sıfıra ezilmesine izin veriyor → alan bir kareye sıkışıyordu.
+// Genişlik flex-basis/grow ile yönetilir, w-full ile değil.
+const INPUT_BASE =
+  'px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm';
+const INPUT = `w-full ${INPUT_BASE}`;
 const LABEL = 'block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2';
 const EYEBROW = 'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink';
 const CARD = 'bg-card border border-line rounded-xl p-6';
@@ -161,7 +166,7 @@ export function KategoriForm({
     (init.logistics as Record<string, boolean>) ?? {}
   );
   const [skills, setSkills] = useState<{ name: string; level: number }[]>(
-    (init.skills as { name: string; level: number }[]) ?? []
+    normalizeSkills(init.skills)
   );
   const [taglines, setTaglines] = useState<Record<string, string>>(
     (init.section_taglines as Record<string, string>) ?? {}
@@ -956,6 +961,38 @@ function ModuleField({
   return null;
 }
 
+/**
+ * category_attributes.skills → forma yüklenebilir dizi. OKUMA ADAPTÖRÜ.
+ *
+ * NEDEN: eskiden ham `as` cast'i vardı — jsonb'den gelen her şey doğru şekilde
+ * varsayılıyordu. Bir satırın `name`'i eksik/farklı tipteyse input BOŞ görünüyor,
+ * kullanıcı Kaydet'e basınca sunucu onu "isimsiz" sayıp ATIYOR → KAYITLI AD SİLİNİYOR.
+ * Sessiz veri kaybı. Cast bunu ne engelliyor ne de fark ettiriyordu.
+ *
+ * Adaptör okumayı TOTAL yapar: dizi değilse [], nesne olmayan öğe atlanır, `name`
+ * string'e (sayı da olsa) çevrilir, `level` sayıya çevrilip 0-3'e kıstırılır.
+ * Böylece bir alan hangi biçimde saklanmış olursa olsun forma GÖRÜNÜR gelir;
+ * kullanıcı bilmeden silmez.
+ */
+function normalizeSkills(raw: unknown): { name: string; level: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { name: string; level: number }[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    const name =
+      typeof r.name === 'string'
+        ? r.name
+        : typeof r.name === 'number'
+          ? String(r.name)
+          : '';
+    const n = Number(r.level);
+    const level = Number.isFinite(n) && n >= 1 && n <= 3 ? Math.round(n) : 0;
+    out.push({ name, level });
+  }
+  return out;
+}
+
 // ─── Yetenekler ───
 function SkillsEditor({
   skills,
@@ -981,14 +1018,16 @@ function SkillsEditor({
           // kutuyu boş gösterip "dolu" saydırıyordu.
           const adsiz = isBlankText(s.name);
           return (
-          <div key={i} className="flex items-center gap-2">
+          // flex-wrap: dar ekranda ad kutusu kendi satırını alır (basis-full),
+          // seviye + kaldır ikinci satıra iner. md+ tek satır.
+          <div key={i} className="flex flex-wrap items-center gap-2">
             <input
               value={s.name}
               onChange={(e) => update(i, { name: e.target.value })}
               placeholder="Yetenek adı"
               maxLength={60}
               aria-invalid={adsiz}
-              className={`${INPUT} flex-1 min-w-0${adsiz ? ' border-danger/40' : ''}`}
+              className={`${INPUT_BASE} min-w-0 basis-full md:basis-0 md:grow${adsiz ? ' border-danger/40' : ''}`}
             />
             {withLevels && (
               // Sıralı doldurma: ad yazılmadan seviye seçilemez. Adsız satırı sunucu
@@ -997,7 +1036,7 @@ function SkillsEditor({
                 value={s.level || ''}
                 onChange={(e) => update(i, { level: Number(e.target.value) })}
                 disabled={adsiz}
-                className={`${INPUT} w-36 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${INPUT_BASE} min-w-0 grow md:grow-0 md:w-36 md:shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <option value="">Seviye (opsiyonel)</option>
                 {SKILL_LEVELS.map((lv) => (
