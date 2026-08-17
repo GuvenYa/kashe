@@ -849,7 +849,7 @@ function PanoCard({
     <Link
       href={`/ilanlar/${listing.id}`}
       onClick={handleClick}
-      className={`pano-card${featured ? ' pano-featured' : ''}`}
+      className={`pano-card ${featured ? 'pano-featured' : ''}`}
       style={cardStyle}
     >
       {deco}
