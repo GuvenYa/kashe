@@ -27,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/kategoriler', priority: 0.9 },
     { path: '/ilanlar', priority: 0.8 },
     { path: '/pro-bul', priority: 0.7 },
+    { path: '/etkinlik-sihirbazi', priority: 0.7 },
     { path: '/blog', priority: 0.6 },
     { path: '/fiyatlandirma', priority: 0.6 },
     { path: '/premium', priority: 0.6 },

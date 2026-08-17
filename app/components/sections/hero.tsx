@@ -111,6 +111,20 @@ export async function Hero() {
               <QuickSearch categories={categories} cities={cities} />
             </div>
 
+            {/* Sihirbaz girişi — tek satır, mevcut düzeni bozmaz. */}
+            <div
+              className="kashe-rise mb-4 text-sm text-ink-72"
+              style={{ animationDelay: "260ms" }}
+            >
+              Ne arayacağına karar veremedin mi?{' '}
+              <a
+                href="/etkinlik-sihirbazi"
+                className="font-display font-semibold text-brand-ink hover:underline"
+              >
+                Etkinliğini adım adım kuralım →
+              </a>
+            </div>
+
             {/* Popüler hızlı linkler */}
             <div
               className="kashe-rise flex flex-wrap items-center gap-x-3 gap-y-2 mb-8"
