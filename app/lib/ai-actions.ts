@@ -18,7 +18,6 @@ export type EventAnalysisResult =
   | {
       success: true;
       categories: EventNeedSuggestion[];
-      budgetEstimate: string;
       tip: string;
     }
   | { success: false; error: string };
@@ -267,7 +266,7 @@ Kurallar:
 }
 /**
  * Müşterinin etkinlik tarifinden, hangi hizmet kategorilerine ihtiyacı
- * olduğunu + tahmini bütçe + ipucu önerir. Claude'a SADECE gerçek kategori
+ * olduğunu + ipucu önerir. Fiyat/bütçe ÜRETİLMEZ (kilitli karar). Claude'a SADECE gerçek kategori
  * listesi verilir; uydurma kategori önermez. Çıktı JSON olarak parse edilir.
  */
 export async function analyzeEventNeeds(input: {
@@ -314,7 +313,6 @@ Görevin: Bu etkinlik için en uygun hizmet kategorilerini öner. Yanıtını SA
   "categories": [
     { "slug": "kategori-slug", "name": "Kategori Adı", "reason": "Bu etkinlik için neden gerekli olduğunu açıklayan 1 kısa cümle" }
   ],
-  "budgetEstimate": "Türkiye için gerçekçi tahmini toplam bütçe aralığı, örn: '40.000 - 70.000 TL'",
   "tip": "Müşteriye etkinliğiyle ilgili 1-2 cümlelik faydalı bir ipucu"
 }
 
@@ -322,8 +320,8 @@ Kurallar:
 - Türkçe yaz (slug hariç — slug yukarıdaki listedeki gibi kalsın).
 - "categories" içinde 2-5 öneri olsun, en alakalı olanlar. Her slug yukarıdaki listeden BİREBİR olmalı.
 - "reason" kısa ve somut olsun.
-- "budgetEstimate" gerçekçi olsun, etkinliğin ölçeğine göre. Bilgi azsa makul bir aralık ver.
 - "tip" samimi ve işe yarar olsun.
+- FİYAT/BÜTÇE YAZMA: rakam, para birimi veya bütçe aralığı ÜRETME — fiyatı yalnız profesyonelin kendisi belirler.
 - SADECE JSON döndür, başına/sonuna hiçbir şey ekleme, markdown kod bloğu (üç backtick) kullanma.`;
 
   try {
@@ -350,7 +348,6 @@ Kurallar:
 
     let parsed: {
       categories?: { slug?: string; name?: string; reason?: string }[];
-      budgetEstimate?: string;
       tip?: string;
     };
     try {
@@ -388,7 +385,6 @@ Kurallar:
     return {
       success: true,
       categories,
-      budgetEstimate: (parsed.budgetEstimate || '').trim(),
       tip: (parsed.tip || '').trim(),
     };
   } catch (err) {
