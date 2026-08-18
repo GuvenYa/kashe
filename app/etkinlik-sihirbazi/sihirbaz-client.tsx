@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { sonucEtiketi } from '@/app/lib/discover-base';
 
 export type SihirbazProfil = {
   kategoriId: number | null;
@@ -142,6 +143,24 @@ export function SihirbazClient({
     return qs ? `/kesfet?${qs}` : '/kesfet';
   }, [secilenKategoriler, sehir, tur]);
 
+  /**
+   * Teklif çıkışı — sihirbazın topladığı dörtlüyü teklif formuna taşır.
+   * KATEGORİ: teklif formu TEKİL seçim aldığı için yalnız tam bir kategori
+   * seçiliyken taşınır; çoklu seçim zorla tekile indirgenmez.
+   * Oturum kapalıysa /teklif-topla kendisi /giris?redirect=... ile duvara yollar
+   * ve bu parametreleri korur — sihirbazda ayrı bir auth kontrolü yok.
+   */
+  const teklifLinki = useMemo(() => {
+    const p = new URLSearchParams();
+    if (tur) p.set('tur', tur);
+    if (sehir) p.set('sehir', sehir);
+    if (tarih) p.set('tarih', tarih);
+    if (secilenKategoriler.length === 1)
+      p.set('kategori', String(secilenKategoriler[0]));
+    const qs = p.toString();
+    return qs ? `/teklif-topla?${qs}` : '/teklif-topla';
+  }, [tur, sehir, tarih, secilenKategoriler]);
+
   const turEtiketi = EVENT_TYPES.find((e) => e.key === tur)?.label ?? '';
   const sehirAdi = sehirler.find((c) => String(c.id) === sehir)?.name ?? '';
 
@@ -166,7 +185,7 @@ export function SihirbazClient({
           sana uyanları görelim.
         </h1>
         <p className="text-ink-72 mt-3 leading-relaxed">
-          Dört kısa adım. Kayıt gerekmiyor; her adımda kaç profesyonelin uyduğunu
+          Dört kısa adım. Kayıt gerekmiyor; her adımda kaç sonucun uyduğunu
           anında görürsün.
         </p>
       </div>
@@ -352,16 +371,16 @@ export function SihirbazClient({
         <div className="mt-7 pt-5 border-t border-line">
           {sonucSayisi === 0 ? (
             <div className="px-4 py-3 bg-brand-ink-08 border border-brand-ink/25 rounded-lg text-sm text-ink leading-relaxed">
-              Bu kombinasyonda şu an profesyonel yok — şehri genişletmeyi dene
-              veya teklif toplayarak yeni katılanların sana ulaşmasını sağla.
+              Bu kombinasyonda şu an kimse yok — şehri genişletmeyi dene veya
+              teklif toplayarak yeni katılanların sana ulaşmasını sağla.
             </div>
           ) : (
             <p className="text-sm text-ink-72">
               Şu an{' '}
               <span className="font-display font-semibold text-ink">
-                {sonucSayisi}
+                {sonucEtiketi(sonucSayisi)}
               </span>{' '}
-              profesyonel uyuyor.
+              uyuyor — Keşfet&apos;te göreceğin sayı bu.
             </p>
           )}
         </div>
@@ -393,7 +412,7 @@ export function SihirbazClient({
               <Link href={kesfetLinki} className={BTN_BIRINCIL}>
                 Profesyonelleri gör →
               </Link>
-              <Link href="/teklif-topla" className={BTN_IKINCIL}>
+              <Link href={teklifLinki} className={BTN_IKINCIL}>
                 Teklif topla
               </Link>
             </div>

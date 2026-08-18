@@ -12,13 +12,37 @@ export const metadata = {
   title: 'Teklif Topla — Kashe',
 };
 
-export default async function TeklifToplaPage() {
+type OnDolduParams = {
+  /** EVENT_TYPES key'i — brief 'event_type' alanına düşer. */
+  tur?: string;
+  /** turkish_cities.id */
+  sehir?: string;
+  /** ISO tarih — brief 'event_date' alanına düşer. */
+  tarih?: string;
+  /** service_categories.id — YALNIZ tek değer ön-doldurulur (form tekil seçim). */
+  kategori?: string;
+};
+
+export default async function TeklifToplaPage({
+  searchParams,
+}: {
+  searchParams: Promise<OnDolduParams>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const user = await getCachedUser();
 
   if (!user) {
-    redirect('/giris?redirect=/teklif-topla');
+    // Kayıt duvarı: MEVCUT kalıp (?redirect=) korunur, yeni mekanizma icat edilmez.
+    // Sihirbazdan gelen ön-doldurma parametreleri redirect'e GÖMÜLÜR ki giriş
+    // sonrasında kullanıcının seçimleri kaybolmasın.
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (typeof v === 'string' && v) qs.set(k, v);
+    }
+    const hedef = qs.toString() ? `/teklif-topla?${qs.toString()}` : '/teklif-topla';
+    redirect(`/giris?redirect=${encodeURIComponent(hedef)}`);
   }
 
   // Rol + suspension kontrolü — sadece client/business teklif toplayabilir
@@ -104,6 +128,12 @@ export default async function TeklifToplaPage() {
           cities={orderCities(citiesResult.data || [])}
           writableBusinesses={writableBusinesses}
           canSelfCreate={canSelfCreate}
+          onDoldur={{
+            kategoriId: params.kategori ? Number(params.kategori) : null,
+            sehirId: params.sehir ? Number(params.sehir) : null,
+            etkinlikTuru: params.tur ?? null,
+            etkinlikTarihi: params.tarih ?? null,
+          }}
         />
       </div>
     </div>

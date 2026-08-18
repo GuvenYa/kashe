@@ -55,16 +55,32 @@ const TARGET_ROLE_OPTIONS: {
   { value: 'agency', label: 'Ajans', hint: 'Sadece ajanslar' },
 ];
 
+/**
+ * Sihirbazdan (/etkinlik-sihirbazi) gelen ön-doldurma. Hepsi OPSİYONEL ve
+ * yalnız BAŞLANGIÇ değeridir — kullanıcı her alanı serbestçe değiştirebilir,
+ * hiçbir alan kilitlenmez.
+ */
+export type TeklifOnDoldur = {
+  kategoriId: number | null;
+  sehirId: number | null;
+  /** EVENT_TYPES key'i → brief 'event_type' alanı */
+  etkinlikTuru: string | null;
+  /** ISO tarih → brief 'event_date' alanı */
+  etkinlikTarihi: string | null;
+};
+
 export function TeklifToplaFormu({
   categories,
   cities,
   writableBusinesses = [],
   canSelfCreate = true,
+  onDoldur,
 }: {
   categories: Category[];
   cities: City[];
   writableBusinesses?: OnBehalfBusiness[];
   canSelfCreate?: boolean;
+  onDoldur?: TeklifOnDoldur;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -75,9 +91,28 @@ export function TeklifToplaFormu({
     canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
   );
 
-  const [categoryId, setCategoryId] = useState<number | ''>('');
-  const [cityId, setCityId] = useState<number | ''>('');
-  const [briefValues, setBriefValues] = useState<Record<string, string>>({});
+  // Ön-doldurma yalnız BAŞLANGIÇ değeri: geçerli bir id ise kullanılır, aksi halde boş.
+  const gecerliKategori =
+    onDoldur?.kategoriId != null &&
+    categories.some((c) => c.id === onDoldur.kategoriId)
+      ? onDoldur.kategoriId
+      : '';
+  const gecerliSehir =
+    onDoldur?.sehirId != null && cities.some((c) => c.id === onDoldur.sehirId)
+      ? onDoldur.sehirId
+      : '';
+
+  const [categoryId, setCategoryId] = useState<number | ''>(gecerliKategori);
+  const [cityId, setCityId] = useState<number | ''>(gecerliSehir);
+  const [briefValues, setBriefValues] = useState<Record<string, string>>(() => {
+    // Brief alanları kategoriye göre değişir; anahtarlar sabit olduğu için
+    // (event_type / event_date, bkz. brief-config) doğrudan yazılabilir.
+    // Seçili kategoride bu alanlar yoksa değer sessizce kullanılmaz.
+    const bas: Record<string, string> = {};
+    if (onDoldur?.etkinlikTuru) bas.event_type = onDoldur.etkinlikTuru;
+    if (onDoldur?.etkinlikTarihi) bas.event_date = onDoldur.etkinlikTarihi;
+    return bas;
+  });
   const [recipientCount, setRecipientCount] = useState(10);
   const [deadlineDays, setDeadlineDays] = useState(3);
   const [shareBudget, setShareBudget] = useState(true);
