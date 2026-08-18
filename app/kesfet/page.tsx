@@ -8,6 +8,7 @@ import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
 import { getFilterFields, applyCategoryFilters } from '@/app/lib/filter-config';
+import { applyDiscoverBase } from '@/app/lib/discover-base';
 import {
   matchesAnyBadge,
   isBusy as computeBusy,
@@ -150,9 +151,10 @@ export default async function KesfetPage({
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
     )
-    .eq('is_published', true)
-    .in('role', ['professional', 'agency'])
     .order('updated_at', { ascending: false });
+  // Temel görünürlük koşulu TEK KAYNAKTAN (app/lib/discover-base) — sihirbazın
+  // canlı sayacı da aynı fonksiyonu kullanır, iki taraf ayrışamaz.
+  query = applyDiscoverBase(query);
 
   if (typeFilter === 'profesyonel') {
     query = query.eq('role', 'professional');

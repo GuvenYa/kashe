@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { orderCities } from '@/app/lib/city-order';
+import { applyDiscoverBase } from '@/app/lib/discover-base';
 import { SihirbazClient, type SihirbazProfil } from './sihirbaz-client';
 
 export const metadata = {
@@ -21,10 +22,9 @@ export const metadata = {
  * o noktada sayaç sunucu tarafı bir RPC'ye taşınmalı. Bugün yayındaki profil sayısı
  * iki haneli, satır başına ~4 küçük alan → yük ihmal edilebilir.
  *
- * FİLTRE PARİTESİ: buradaki `is_published` + `role IN (...)` koşulları Keşfet'in
- * temel sorgusuyla (app/kesfet/page.tsx) BİREBİR aynı olmalı; aksi halde sihirbazın
- * gösterdiği sayı Keşfet'in döndürdüğü sonuçla uyuşmaz ve kullanıcıya yanlış söylemiş
- * oluruz. Keşfet'in temel filtresi değişirse burası da değişir.
+ * FİLTRE PARİTESİ: temel görünürlük koşulu `applyDiscoverBase` ile TEK KAYNAKTAN
+ * geliyor (app/lib/discover-base). Keşfet de aynı fonksiyonu çağırıyor, dolayısıyla
+ * iki taraf yapısal olarak ayrışamaz — yorum bağına gerek kalmadı.
  */
 export default async function EtkinlikSihirbaziPage() {
   const supabase = await createClient();
@@ -36,11 +36,11 @@ export default async function EtkinlikSihirbaziPage() {
       .eq('is_active', true)
       .order('sort_order'),
     supabase.from('turkish_cities').select('id, name').order('name'),
-    supabase
-      .from('profiles')
-      .select('primary_category_id, city_id, role, category_attributes')
-      .eq('is_published', true)
-      .in('role', ['professional', 'agency']),
+    applyDiscoverBase(
+      supabase
+        .from('profiles')
+        .select('primary_category_id, city_id, role, category_attributes')
+    ),
   ]);
 
   // Sayaç için gereken minimum şekle indir — category_attributes'ın tamamı taşınmaz.
