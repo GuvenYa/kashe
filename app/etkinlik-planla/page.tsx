@@ -35,8 +35,7 @@ export default async function EtkinlikPlanlaPage() {
             </h1>
             <p className="text-ink-72 mt-4 leading-relaxed">
               Nasıl bir etkinlik planladığını birkaç cümleyle yaz. Yapay zekâ
-              sana hangi profesyonellere ihtiyacın olabileceğini, tahmini bir
-              bütçeyle birlikte önersin.
+              sana hangi profesyonellere ihtiyacın olabileceğini önersin.
             </p>
           </div>
 

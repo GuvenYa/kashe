@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, ArrowRight, Wallet, Lightbulb } from 'lucide-react';
+import { Sparkles, ArrowRight, Lightbulb } from 'lucide-react';
 import {
   analyzeEventNeeds,
   type EventNeedSuggestion,
@@ -18,7 +18,6 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     categories: EventNeedSuggestion[];
-    budgetEstimate: string;
     tip: string;
   } | null>(null);
 
@@ -33,7 +32,6 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
     if (res.success) {
       setResult({
         categories: res.categories,
-        budgetEstimate: res.budgetEstimate,
         tip: res.tip,
       });
     } else {
@@ -104,19 +102,6 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
               </Link>
             ))}
           </div>
-
-          {/* Bütçe */}
-          {result.budgetEstimate && (
-            <div className="mt-4 flex items-start gap-3 bg-card border border-line rounded-xl p-4">
-              <Wallet size={18} className="shrink-0 mt-0.5 text-brand-ink" />
-              <div>
-                <p className="font-display font-semibold text-ink text-sm mb-0.5">
-                  Tahmini bütçe
-                </p>
-                <p className="text-sm text-ink-72">{result.budgetEstimate}</p>
-              </div>
-            </div>
-          )}
 
           {/* İpucu */}
           {result.tip && (
