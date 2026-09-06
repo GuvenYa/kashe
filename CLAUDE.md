@@ -75,6 +75,9 @@ Bu kural bir uretim olayindan dogdu: push brief'indeki `git add` satirlari eksik
 | `docs/architecture/03-taksonomi.md` | Servis/rol/beceri katmanlari ve mevcut kategorilerin gocu |
 | `docs/architecture/04-goc-plani.md` | Faz faz goc sirasi ve uretim riskleri |
 | `docs/architecture/05-arayuz-modeli.md` | Baglam anahtari, calisma alanlari, yuzey ayrimi |
+| `docs/yeni-kategori-checklist.md` | Kategori/rol ekleme dokunma noktalari (operasyonel) |
+
+Taksonomi isinde **her iki belge birlikte** okunur: `03-taksonomi.md` hedef yapiyi, checklist mevcut altyapinin dokunma noktalarini anlatir. `03-taksonomi.md`'nin son bolumu ikisi arasindaki catisma noktalarini ve cozumlerini icerir.
 
 **Bu dosyalar celiskiye dusmez.** Bir karar degisirse ilgili dosya guncellenir; eski karar birakilmaz.
 
@@ -108,9 +111,21 @@ Bunlar mimari kararlar degil, **ihlal edilemez sinirlar**:
 
 `profiles` tablosu bugun uc isi birden yapiyor: kullanici kimligi, pazaryeri profili ve kurulus hesabi. Goc bunlari ayiriyor. Ayrinti: `04-goc-plani.md`
 
-**Yetkilendirme fonksiyonlari:** `is_admin(uuid)`, `has_business_role(uuid, business_member_role)`, `is_business_member(uuid)`, `is_professional_or_agency(uuid)`, `is_assignee(uuid, uuid)`, `owns_quote_request(uuid, uuid)`
+**Yetkilendirme fonksiyonlari.** RLS politikalari yetki fonksiyonlarini cagirir; ancak **bu fonksiyonlarin bir kismi repoda tanimli degildir, uretimden dogrulanmalidir.** Migration'lardaki durum:
 
-RLS politikalari bu fonksiyonlari cagiriyor. Gocte **politikalar degil, fonksiyon govdeleri** degistirilir.
+| Fonksiyon | Repoda tanim | Repoda cagri | Durum |
+|---|---|---|---|
+| `has_business_role(uuid, business_member_role)` | VAR | 26 politika | Guvenilir |
+| `is_business_member(uuid)` | VAR | 10 politika | Guvenilir |
+| `owns_quote_request(uuid, uuid)` | **YOK** | **VAR** | **Drift** — canli politika tanimi olmayan fonksiyona bagimli |
+| `is_admin(uuid)` | **YOK** | yalniz yorum | Admin kapisi 11 yerde satir ici `EXISTS (... p.is_admin = true)` ile tekrarlaniyor |
+| `is_professional_or_agency(uuid)` | **YOK** | **YOK** | Repoda hic gecmiyor |
+| `is_assignee(uuid, uuid)` | **YOK** | yalniz yorum | Repoda tanimi ve cagrisi yok |
+
+Bir yetki fonksiyonuna dayanmadan once **tanimi repoda ara**; yoksa uretim veritabanindan dogrula.
+Ayrinti ve kanit: `docs/envanter/01-rol-kontrolleri.md` bolum 5b.
+
+Gocte **politikalar degil, fonksiyon govdeleri** degistirilir: `has_business_role` ve `is_business_member` govdeleri `organization_memberships`'e cevrilince bu iki fonksiyonu cagiran 26 politika **otomatik** dogru calisir.
 
 ---
 
