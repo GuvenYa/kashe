@@ -1,0 +1,298 @@
+table_name,ordinal_position,column_name,data_type,udt_name,is_nullable,column_default,character_maximum_length,numeric_precision,numeric_scale
+admin_audit_log,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+admin_audit_log,2,admin_id,uuid,uuid,NO,null,null,null,null
+admin_audit_log,3,action,text,text,NO,null,null,null,null
+admin_audit_log,4,target_type,text,text,NO,null,null,null,null
+admin_audit_log,5,target_id,uuid,uuid,YES,null,null,null,null
+admin_audit_log,6,notes,text,text,YES,null,null,null,null
+admin_audit_log,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+agency_invitations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+agency_invitations,2,agency_id,uuid,uuid,NO,null,null,null,null
+agency_invitations,3,invited_email,text,text,NO,null,null,null,null
+agency_invitations,4,invited_user_id,uuid,uuid,YES,null,null,null,null
+agency_invitations,5,invited_by_id,uuid,uuid,NO,null,null,null,null
+agency_invitations,6,member_role,USER-DEFINED,agency_member_role,NO,'member'::agency_member_role,null,null,null
+agency_invitations,7,status,USER-DEFINED,agency_invitation_status,NO,'pending'::agency_invitation_status,null,null,null
+agency_invitations,8,invitation_message,text,text,YES,null,null,null,null
+agency_invitations,9,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+agency_invitations,10,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+agency_invitations,11,expires_at,timestamp with time zone,timestamptz,NO,(now() + '14 days'::interval),null,null,null
+agency_members,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+agency_members,2,agency_id,uuid,uuid,NO,null,null,null,null
+agency_members,3,professional_id,uuid,uuid,NO,null,null,null,null
+agency_members,4,member_role,USER-DEFINED,agency_member_role,NO,'member'::agency_member_role,null,null,null
+agency_members,5,joined_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+applications,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+applications,2,listing_id,uuid,uuid,NO,null,null,null,null
+applications,3,applicant_id,uuid,uuid,NO,null,null,null,null
+applications,4,cover_message,text,text,NO,null,null,null,null
+applications,5,proposed_amount,numeric,numeric,YES,null,null,10,2
+applications,6,currency,text,text,NO,'TRY'::text,null,null,null
+applications,7,status,USER-DEFINED,application_status,NO,'pending'::application_status,null,null,null
+applications,8,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+applications,9,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+applications,10,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+availability_blocks,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+availability_blocks,2,profile_id,uuid,uuid,NO,null,null,null,null
+availability_blocks,3,blocked_date,date,date,NO,null,null,null,null
+availability_blocks,4,note,text,text,YES,null,null,null,null
+availability_blocks,5,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+blog_posts,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+blog_posts,2,slug,text,text,NO,null,null,null,null
+blog_posts,3,title,text,text,NO,null,null,null,null
+blog_posts,4,excerpt,text,text,YES,null,null,null,null
+blog_posts,5,content,text,text,NO,''::text,null,null,null
+blog_posts,6,cover_image_url,text,text,YES,null,null,null,null
+blog_posts,7,author_id,uuid,uuid,YES,null,null,null,null
+blog_posts,8,status,text,text,NO,'draft'::text,null,null,null
+blog_posts,9,published_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+blog_posts,10,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+blog_posts,11,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+bookings,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+bookings,2,quote_id,uuid,uuid,NO,null,null,null,null
+bookings,3,conversation_id,uuid,uuid,NO,null,null,null,null
+bookings,4,customer_id,uuid,uuid,NO,null,null,null,null
+bookings,5,professional_id,uuid,uuid,NO,null,null,null,null
+bookings,6,event_date,date,date,YES,null,null,null,null
+bookings,7,event_type,text,text,YES,null,null,null,null
+bookings,8,location,text,text,YES,null,null,null,null
+bookings,9,guest_count,integer,int4,YES,null,null,32,0
+bookings,10,total_amount,numeric,numeric,NO,null,null,10,2
+bookings,11,platform_fee,numeric,numeric,NO,0,null,10,2
+bookings,12,currency,text,text,NO,'TRY'::text,null,null,null
+bookings,13,status,USER-DEFINED,booking_status,NO,'confirmed'::booking_status,null,null,null
+bookings,14,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+bookings,15,cancelled_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+bookings,16,completed_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+bookings,17,cancellation_reason,text,text,YES,null,null,null,null
+category_requests,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+category_requests,2,user_id,uuid,uuid,YES,null,null,null,null
+category_requests,3,category_name,text,text,NO,null,null,null,null
+category_requests,4,description,text,text,YES,null,null,null,null
+category_requests,5,event_context,text,text,YES,null,null,null,null
+category_requests,6,status,text,text,NO,'pending'::text,null,null,null
+category_requests,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+category_requests,8,reviewed_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+category_requests,9,reviewed_by,uuid,uuid,YES,null,null,null,null
+conversation_assignees,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+conversation_assignees,2,conversation_id,uuid,uuid,NO,null,null,null,null
+conversation_assignees,3,professional_id,uuid,uuid,NO,null,null,null,null
+conversation_assignees,4,assigned_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+conversation_assignees,5,assigned_by,uuid,uuid,YES,null,null,null,null
+conversations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+conversations,2,customer_id,uuid,uuid,NO,null,null,null,null
+conversations,3,professional_id,uuid,uuid,NO,null,null,null,null
+conversations,4,event_date,date,date,YES,null,null,null,null
+conversations,5,event_type,text,text,YES,null,null,null,null
+conversations,6,last_message_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+conversations,7,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+conversations,8,location,text,text,YES,null,null,null,null
+conversations,9,guest_count,integer,int4,YES,null,null,32,0
+conversations,10,budget_range,text,text,YES,null,null,null,null
+favorites,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+favorites,2,user_id,uuid,uuid,NO,null,null,null,null
+favorites,3,professional_id,uuid,uuid,NO,null,null,null,null
+favorites,4,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+listing_invitations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+listing_invitations,2,listing_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,3,inviter_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,4,professional_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,5,invitation_message,text,text,YES,null,null,null,null
+listing_invitations,6,status,USER-DEFINED,listing_invitation_status,NO,'pending'::listing_invitation_status,null,null,null
+listing_invitations,7,resulting_application_id,uuid,uuid,YES,null,null,null,null
+listing_invitations,8,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+listing_invitations,9,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+listing_invitations,10,expires_at,timestamp with time zone,timestamptz,NO,(now() + '14 days'::interval),null,null,null
+listings,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+listings,2,creator_id,uuid,uuid,NO,null,null,null,null
+listings,3,category_id,integer,int4,NO,null,null,32,0
+listings,4,title,text,text,NO,null,null,null,null
+listings,5,description,text,text,NO,null,null,null,null
+listings,6,requirements,text,text,YES,null,null,null,null
+listings,7,event_date,date,date,YES,null,null,null,null
+listings,8,event_type,text,text,YES,null,null,null,null
+listings,9,location,text,text,YES,null,null,null,null
+listings,10,city_id,integer,int4,YES,null,null,32,0
+listings,11,guest_count,integer,int4,YES,null,null,32,0
+listings,12,budget_min,numeric,numeric,YES,null,null,10,2
+listings,13,budget_max,numeric,numeric,YES,null,null,10,2
+listings,14,currency,text,text,NO,'TRY'::text,null,null,null
+listings,15,status,USER-DEFINED,listing_status,NO,'draft'::listing_status,null,null,null
+listings,16,expires_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+listings,17,views_count,integer,int4,NO,0,null,32,0
+listings,18,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+listings,19,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+listings,20,published_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+message_violations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+message_violations,2,user_id,uuid,uuid,NO,null,null,null,null
+message_violations,3,conversation_id,uuid,uuid,NO,null,null,null,null
+message_violations,4,violation_type,text,text,NO,null,null,null,null
+message_violations,5,attempted_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+messages,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+messages,2,conversation_id,uuid,uuid,NO,null,null,null,null
+messages,3,sender_id,uuid,uuid,NO,null,null,null,null
+messages,4,body,text,text,NO,null,null,null,null
+messages,5,read_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+messages,6,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+messages,7,email_notified_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+messages,8,message_type,USER-DEFINED,message_type,NO,'text'::message_type,null,null,null
+messages,9,quote_id,uuid,uuid,YES,null,null,null,null
+notifications,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+notifications,2,user_id,uuid,uuid,NO,null,null,null,null
+notifications,3,type,text,text,NO,null,null,null,null
+notifications,4,link,text,text,NO,null,null,null,null
+notifications,5,body,text,text,NO,null,null,null,null
+notifications,6,read_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+notifications,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+portfolio_items,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+portfolio_items,2,profile_id,uuid,uuid,NO,null,null,null,null
+portfolio_items,3,media_url,text,text,NO,null,null,null,null
+portfolio_items,4,media_type,text,text,NO,null,null,null,null
+portfolio_items,5,caption,text,text,YES,null,null,null,null
+portfolio_items,6,sort_order,integer,int4,NO,0,null,32,0
+portfolio_items,7,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+professional_rating_summary,1,professional_id,uuid,uuid,YES,null,null,null,null
+professional_rating_summary,2,review_count,bigint,int8,YES,null,null,64,0
+professional_rating_summary,3,average_rating,numeric,numeric,YES,null,null,null,null
+profile_completeness,1,id,uuid,uuid,YES,null,null,null,null
+profile_completeness,2,role,text,text,YES,null,null,null,null
+profile_completeness,3,has_name,integer,int4,YES,null,null,32,0
+profile_completeness,4,has_avatar,integer,int4,YES,null,null,32,0
+profile_completeness,5,has_bio,integer,int4,YES,null,null,32,0
+profile_completeness,6,has_phone,integer,int4,YES,null,null,32,0
+profile_completeness,7,has_city,integer,int4,YES,null,null,32,0
+profile_completeness,8,has_primary_category,integer,int4,YES,null,null,32,0
+profile_completeness,9,has_company,integer,int4,YES,null,null,32,0
+profiles,1,id,uuid,uuid,NO,null,null,null,null
+profiles,2,email,text,text,NO,null,null,null,null
+profiles,3,full_name,text,text,YES,null,null,null,null
+profiles,4,role,text,text,NO,null,null,null,null
+profiles,5,avatar_url,text,text,YES,null,null,null,null
+profiles,6,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+profiles,7,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+profiles,8,bio,text,text,YES,null,null,null,null
+profiles,9,phone,text,text,YES,null,null,null,null
+profiles,10,city_id,integer,int4,YES,null,null,32,0
+profiles,11,slug,text,text,YES,null,null,null,null
+profiles,12,is_published,boolean,bool,NO,false,null,null,null
+profiles,13,primary_category_id,integer,int4,YES,null,null,32,0
+profiles,14,company_name,text,text,YES,null,null,null,null
+profiles,15,last_seen_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+push_subscriptions,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+push_subscriptions,2,user_id,uuid,uuid,NO,null,null,null,null
+push_subscriptions,3,endpoint,text,text,NO,null,null,null,null
+push_subscriptions,4,p256dh,text,text,NO,null,null,null,null
+push_subscriptions,5,auth,text,text,NO,null,null,null,null
+push_subscriptions,6,user_agent,text,text,YES,null,null,null,null
+push_subscriptions,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_request_recipients,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+quote_request_recipients,2,request_id,uuid,uuid,NO,null,null,null,null
+quote_request_recipients,3,professional_id,uuid,uuid,NO,null,null,null,null
+quote_request_recipients,4,status,USER-DEFINED,quote_recipient_status,NO,'sent'::quote_recipient_status,null,null,null
+quote_request_recipients,5,conversation_id,uuid,uuid,YES,null,null,null,null
+quote_request_recipients,6,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_request_recipients,7,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+quote_requests,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+quote_requests,2,customer_id,uuid,uuid,NO,null,null,null,null
+quote_requests,3,category_id,integer,int4,NO,null,null,32,0
+quote_requests,4,city_id,integer,int4,YES,null,null,32,0
+quote_requests,5,brief_data,jsonb,jsonb,YES,null,null,null,null
+quote_requests,6,event_date,date,date,YES,null,null,null,null
+quote_requests,7,event_type,text,text,YES,null,null,null,null
+quote_requests,8,budget_min,numeric,numeric,YES,null,null,null,null
+quote_requests,9,budget_max,numeric,numeric,YES,null,null,null,null
+quote_requests,10,share_budget,boolean,bool,NO,true,null,null,null
+quote_requests,11,response_deadline,timestamp with time zone,timestamptz,YES,null,null,null,null
+quote_requests,12,recipient_count,integer,int4,NO,0,null,32,0
+quote_requests,13,status,USER-DEFINED,quote_request_status,NO,'active'::quote_request_status,null,null,null
+quote_requests,14,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_requests,15,attachment_path,text,text,YES,null,null,null,null
+quote_requests,16,attachment_name,text,text,YES,null,null,null,null
+quote_requests,17,attachment_type,text,text,YES,null,null,null,null
+quote_requests,18,created_by,uuid,uuid,YES,null,null,null,null
+quotes,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+quotes,2,conversation_id,uuid,uuid,NO,null,null,null,null
+quotes,3,sender_id,uuid,uuid,NO,null,null,null,null
+quotes,4,total_amount,numeric,numeric,NO,null,null,10,2
+quotes,5,currency,text,text,NO,'TRY'::text,null,null,null
+quotes,6,services_description,text,text,NO,null,null,null,null
+quotes,7,cancellation_policy,text,text,YES,null,null,null,null
+quotes,8,expires_at,timestamp with time zone,timestamptz,NO,null,null,null,null
+quotes,9,status,USER-DEFINED,quote_status,NO,'pending'::quote_status,null,null,null
+quotes,10,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quotes,11,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+reports,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+reports,2,reporter_id,uuid,uuid,NO,null,null,null,null
+reports,3,target_type,text,text,NO,null,null,null,null
+reports,4,target_id,uuid,uuid,NO,null,null,null,null
+reports,5,reason,text,text,NO,null,null,null,null
+reports,6,details,text,text,YES,null,null,null,null
+reports,7,status,text,text,NO,'pending'::text,null,null,null
+reports,8,resolved_by,uuid,uuid,YES,null,null,null,null
+reports,9,resolved_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+reports,10,admin_note,text,text,YES,null,null,null,null
+reports,11,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+review_replies,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+review_replies,2,review_id,uuid,uuid,NO,null,null,null,null
+review_replies,3,body,text,text,NO,null,null,null,null
+review_replies,4,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+review_replies,5,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+reviews,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+reviews,2,conversation_id,uuid,uuid,NO,null,null,null,null
+reviews,3,customer_id,uuid,uuid,NO,null,null,null,null
+reviews,4,professional_id,uuid,uuid,NO,null,null,null,null
+reviews,5,rating,integer,int4,NO,null,null,32,0
+reviews,6,body,text,text,YES,null,null,null,null
+reviews,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+reviews,8,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+service_addons,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+service_addons,2,service_id,uuid,uuid,NO,null,null,null,null
+service_addons,3,profile_id,uuid,uuid,NO,null,null,null,null
+service_addons,4,title,text,text,NO,null,null,null,null
+service_addons,5,description,text,text,YES,null,null,null,null
+service_addons,6,price,numeric,numeric,NO,0,null,null,null
+service_addons,7,is_active,boolean,bool,NO,true,null,null,null
+service_addons,8,sort_order,integer,int4,NO,0,null,32,0
+service_addons,9,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_categories,1,id,integer,int4,NO,nextval('service_categories_id_seq'::regclass),null,32,0
+service_categories,2,slug,text,text,NO,null,null,null,null
+service_categories,3,name_tr,text,text,NO,null,null,null,null
+service_categories,4,emoji,text,text,YES,null,null,null,null
+service_categories,5,sort_order,integer,int4,NO,0,null,32,0
+service_categories,6,is_active,boolean,bool,NO,true,null,null,null
+service_categories,7,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+service_packages,2,profile_id,uuid,uuid,NO,null,null,null,null
+service_packages,3,title,text,text,NO,null,null,null,null
+service_packages,4,description,text,text,YES,null,null,null,null
+service_packages,5,includes,jsonb,jsonb,NO,'[]'::jsonb,null,null,null
+service_packages,6,price_min,numeric,numeric,YES,null,null,null,null
+service_packages,7,price_max,numeric,numeric,YES,null,null,null,null
+service_packages,8,price_on_request,boolean,bool,NO,false,null,null,null
+service_packages,9,is_active,boolean,bool,NO,true,null,null,null
+service_packages,10,sort_order,integer,int4,NO,0,null,32,0
+service_packages,11,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,12,updated_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,13,price_starting,boolean,bool,NO,false,null,null,null
+services,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+services,2,profile_id,uuid,uuid,NO,null,null,null,null
+services,3,category_id,integer,int4,NO,null,null,32,0
+services,4,title,text,text,NO,null,null,null,null
+services,5,description,text,text,YES,null,null,null,null
+services,6,price_min,numeric,numeric,YES,null,null,10,2
+services,7,price_max,numeric,numeric,YES,null,null,10,2
+services,8,price_on_request,boolean,bool,NO,false,null,null,null
+services,9,duration_hours,numeric,numeric,YES,null,null,4,1
+services,10,is_active,boolean,bool,NO,true,null,null,null
+services,11,sort_order,integer,int4,NO,0,null,32,0
+services,12,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+services,13,updated_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+turkish_cities,1,id,integer,int4,NO,nextval('turkish_cities_id_seq'::regclass),null,32,0
+turkish_cities,2,plate_no,integer,int4,NO,null,null,32,0
+turkish_cities,3,name,text,text,NO,null,null,null,null
+waitlist,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+waitlist,2,email,text,text,NO,null,null,null,null
+waitlist,3,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+waitlist,4,source,text,text,YES,'landing'::text,null,null,null
+waitlist,5,ip_address,text,text,YES,null,null,null,null
+waitlist,6,user_agent,text,text,YES,null,null,null,null

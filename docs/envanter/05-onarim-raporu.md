@@ -15,9 +15,12 @@
 >
 > **Dosyalar olusturuldu, UYGULANMADI.** Supabase Dashboard > SQL Editor'den elle kosturulacak.
 >
-> **Enum engeli kalkti.** Uc enum tipinin degerleri uretimden alinip 01e islendi;
-> koruma blogu kaldirildi. Bkz. **bolum 3.1**. Acik kalan tek kalem yabanci anahtar
-> kisitlari — bkz. **bolum 3.2**.
+> **DURUM: zincir 02de duruyor.** `column "is_admin" does not exist`. Yeni bir bosluk
+> kategorisi cikti: **mevcut tablolarin sonradan eklenmis sutunlari repoda yok.**
+> Bunun icin bir **00** dosyasi gerekiyor ama **henuz yazilamadi** — sutun tipleri
+> hicbir dokumde yok. Ayrinti ve gereken dokum: **bolum 3.6**.
+>
+> Enum engeli kalkti (**3.1**). Yabanci anahtar kisitlari hala acik (**3.2**).
 
 Kaynak: `04-sema-uzlastirma.md` (Grup A/B/C/D ayrimi) ve `uretim-dokum/*.csv` (uretim dokumu).
 Bu rapor **ne yazildigini, neyin yazilmadigini ve nedenini** anlatir.
@@ -336,6 +339,135 @@ Zincirdeki nihai yer:
 Biri hata verirse **nerede durdugu belli olur** ve tek dosya geri alinabilir. Her dosya
 kendi `BEGIN; ... COMMIT;` blogundadir; bir dosya kismen uygulanmis halde kalmaz.
 
+### 3.6 YENI BOSLUK KATEGORISI — mevcut tablolarin eksik sutunlari
+
+Zincir `20260620090100_faz_minus1_02_is_admin.sql` dosyasinda durdu:
+
+```
+column "is_admin" does not exist
+```
+
+`is_admin()` govdesi `profiles.is_admin` okuyor, ama repo migration zinciri o sutunu
+**hic olusturmuyor**. Bu, 04-sema-uzlastirmada gorulmeyen bir kategori: eksik olan
+tablo, fonksiyon, politika ya da indeks degil — **var olan bir tablonun sutunu**.
+
+#### 3.6.1 `tum-sutunlar.csv` bu isi gormez — uretim degil, repo ciktisi
+
+Eklenen dokum uretimden alinmis gibi duruyor ama degil. Uc bagimsiz kanit:
+
+**Kanit A — bir tablo indekslidir ama sutunsuzdur.** `business_invitations` uretim
+dokumlerinde 7 indeks, 4 politika ve 2 tetikleyiciye sahip; `tum-sutunlar.csv`de
+**sifir satiri var**. Uretimde bir tablonun indeksi olup sutunu olamaz.
+
+**Kanit B — dokum, repo zincirinin ciktisiyla BIREBIR ayni.** Zincir
+`20260625120000` oncesine kadar simule edilip dokumle karsilastirildi:
+
+| Yon | Fark |
+|---|---|
+| Repo uretiyor, dokumde yok | **0** |
+| Dokumde var, repo uretmiyor | **0** (12 satir haric: `professional_rating_summary` ve `profile_completeness` — bunlar **VIEW**, `20260518000000`de tanimli; `information_schema.columns` view sutunlarini da listeler) |
+
+Sifir fark tesadufi degildir. Dokum, **repo migration zincirinin
+`20260625120000` oncesine kadar uygulanmis halinden** alinmis. Bu yuzden tanimi
+geregi hicbir eksik sutun gosteremez.
+
+**Kanit C — `is_admin` dokumun kesme tarihinden eski.** Uygulama kodunda ilk gecisi
+**2026-05-24** (`61e9307`, "Faz 12b: Admin onay sistemi"). Dokumun kesme noktasi
+`20260625120000`. Uretimden alinmis bir dokum `is_admin`i icermeliydi.
+
+> Sonuc: yeni bir dokum gerekiyor ve **uretim veritabaninda** kosturulmali.
+
+#### 3.6.2 Kanita dayali aday liste (alt sinir, tam liste degil)
+
+Dokum olmadigi icin eksik sutunlar iki dolayli kaynaktan cikarildi:
+
+1. **Uretim eserleri** — `indeksler.csv` indeks tanimlari, `politika-ifadeleri-*.csv`,
+   fonksiyon govdeleri, `protect_sensitive_profile_fields` kara listesi.
+2. **Uygulama kodu** — `.select()`, `.eq()`, `.update()` cagrilarindaki sutun adlari.
+
+32 aday bulundu. **Ikisi de tek basina yetmiyor:** `profiles.approved_at` yalniz
+uretim eserinde, 21 sutun yalniz kodda geciyor. Hicbir yerde referansi olmayan bir
+sutun ikisine de gorunmez — bu yuzden liste bir **alt sinirdir**.
+
+| Tablo | Sutun | Uretim eseri | Kod |
+|---|---|---|---|
+| `applications` | `attachment_name` | — | var |
+| `applications` | `attachment_path` | — | var |
+| `applications` | `attachment_type` | — | var |
+| `bookings` | `cancelled_by` | — | var |
+| `bookings` | `end_time` | — | var |
+| `bookings` | `start_time` | — | var |
+| `conversations` | `brief_data` | — | var |
+| `conversations` | `end_time` | — | var |
+| `conversations` | `request_type` | — | var |
+| `conversations` | `start_time` | — | var |
+| `listings` | `allowed_applicant_roles` | — | var |
+| `listings` | `application_deadline` | — | var |
+| `listings` | `approval_note` | — | var |
+| `listings` | `featured_category_until` | indeks `idx_listings_featured_category` | var |
+| `listings` | `featured_home_until` | indeks `idx_listings_featured_home` | var |
+| `listings` | `is_urgent` | — | var |
+| `listings` | `urgent_until` | — | var |
+| `messages` | `attachment_name` | — | var |
+| `messages` | `attachment_path` | — | var |
+| `messages` | `attachment_type` | — | var |
+| `notifications` | `email_sent_at` | indeks `idx_notifications_email_sent_at` | var |
+| `profiles` | `approval_note` | — | var |
+| `profiles` | `approval_status` | `protect_sensitive_profile_fields()` | var |
+| `profiles` | `approved_at` | `protect_sensitive_profile_fields()` | — |
+| `profiles` | `attributes` | — | var |
+| `profiles` | `default_allowed_applicant_roles` | — | var |
+| `profiles` | `is_admin` | indeks `idx_profiles_is_admin` | var |
+| `profiles` | `premium_tier` | indeks `idx_profiles_premium` | var |
+| `profiles` | `premium_until` | indeks `idx_profiles_premium` | var |
+| `profiles` | `suspended_at` | indeks `idx_profiles_suspended` | var |
+| `profiles` | `suspended_by` | `protect_sensitive_profile_fields()` | var |
+| `profiles` | `suspension_reason` | `protect_sensitive_profile_fields()` | var |
+
+#### 3.6.3 Neden 00 dosyasi HENUZ yazilmadi
+
+32 sutunun **tipi, varsayilani ve null durumu hicbir kaynakta yok.** Indeks tanimindan
+cikan tek kesin bilgi `profiles.is_admin`in **boolean** oldugu
+(`WHERE (is_admin = true)`); `suspended_at` icin yalniz "nullable" cikarilabiliyor
+(`WHERE (suspended_at IS NOT NULL)`). Kalan 30 sutun icin hicbir sey.
+
+Tip uydurmak, FAZ -1in ortadan kaldirmak icin var oldugu sapmanin ta kendisini
+uretirdi: `timestamptz` yerine `timestamp`, `NOT NULL DEFAULT false` yerine
+nullable bir `boolean` yazmak zincirin kosmasini saglar ama semayi uretimden
+**sessizce** ayirir.
+
+#### 3.6.4 Gereken dokum
+
+**Uretim veritabaninda** kosturulacak. Ciktinin `profiles.is_admin` satirini
+icermesi, dogru veritabanina baglanildiginin kontroludur:
+
+```sql
+select c.table_name, c.ordinal_position, c.column_name,
+       c.data_type, c.udt_name, c.is_nullable, c.column_default,
+       c.character_maximum_length, c.numeric_precision, c.numeric_scale
+  from information_schema.columns c
+  join information_schema.tables t
+    on t.table_schema = c.table_schema and t.table_name = c.table_name
+ where c.table_schema = 'public'
+   and t.table_type = 'BASE TABLE'
+ order by c.table_name, c.ordinal_position;
+```
+
+`table_type = 'BASE TABLE'` suzgeci view sutunlarini disarida birakir. Cikti
+**297 satirdan belirgin sekilde fazla** olmalidir; degilse yine yanlis veritabani.
+
+#### 3.6.5 00 dosyasinin zaman damgasi
+
+Slot hesaplandi: **`20260620085000`**.
+
+- `20260520151810`dan **sonra** — etkilenen tablolarin en genci `agency_members`
+  (`20260520071330`); hepsi bu damgadan once doguyor.
+- `20260620090000`dan **once** — hem 01 hem 02 bu sutunlara bagimli olabilir
+  (`is_admin()` govdesi `profiles.is_admin` okuyor).
+
+Dosya adi: `20260620085000_faz_minus1_00_eksik_sutunlar.sql`.
+Icerik `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, veri degistirme yok.
+
 ---
 
 ## 4. Uygulama sirasi
@@ -431,11 +563,17 @@ tutmamis demektir; hangi dosyanin sayiyi degistirdigi tespit edilmelidir.
 
 ## 6. Sonraki adim
 
-Bu dosyalar **FAZ -1'in son adimidir**. Bir acik kalem kaldi:
+Bu dosyalar **FAZ -1'in son adimidir**. Uc kalemden ikisi acik:
 
 1. ~~**Enum degerleri** (3.1)~~ — **kapandi**, degerler uretimden alinip 01e islendi.
-2. **Kisit dokumu** (3.2) — FK, `CHECK` ve `PRIMARY KEY`/`UNIQUE` dogrulamasi.
+2. **Eksik sutunlar** (3.6) — **zinciri su an durduran kalem.** Uretimden gercek bir
+   sutun dokumu gerekiyor; 00 dosyasi ancak ondan sonra yazilabilir.
+3. **Kisit dokumu** (3.2) — FK, `CHECK` ve `PRIMARY KEY`/`UNIQUE` dogrulamasi.
    FAZ 0 oncesinde kapatilmalidir.
+
+2 ve 3 **ayni dokum turunden** besleniyor. Ikisi tek seferde alinabilir: 3.6.4teki
+sutun sorgusu ve 3.2deki `pg_constraint` sorgusu birlikte kosturulursa FAZ -1in
+kalan iki acigi da kapanir.
 
 Ayrica `04-goc-plani.md`'de FAZ 2 on kosulu olarak kayitli olan bir kalem hatirlatilir:
 `approval_status` ve `approved_at` `providers` tablosuna tasinirken
