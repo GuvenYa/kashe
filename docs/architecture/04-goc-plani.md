@@ -273,11 +273,40 @@ Repo ile uretim arasindaki fark kapatilmadan goc baslatilmaz.
 0d. Eksikler icin **onarim migration'i** yazilir; yalniz tanim ekler, veri degistirmez.
 0e. `handle_updated_at` / `update_updated_at_column` ikiligi ve `messages` uzerindeki benzer ikilik netlestirilir; gereksiz olan kaldirilir.
 0f. `is_admin()` fonksiyonu tanimlanir; 11 satir ici kopya bu fonksiyona cevrilir.
-0g. Onarim sonrasi migration zinciri tekrar kosturulur ve uretimle **birebir** eslestigi dogrulanir.
+0g. **Mukerrer indeksler temizlenir.** Dokuz cift tespit edildi:
+
+   `bookings`: `customer_id`, `professional_id`, `status`, `event_date` (dort cift)
+   UNIQUE kisit indeksi + gereksiz kopya: `availability_blocks`, `blog_posts(slug)`, `profiles(email)`, `review_replies(review_id)`, `waitlist(email)`
+
+   ⚠️ Silmeden once uc kural: (1) UNIQUE olan **asla** silinmez, kisit indeksidir. (2) `bookings`'teki uc ciftte ikisi de non-unique; `pg_stat_user_indexes` ile `idx_scan` degeri yuksek olan tutulur. (3) `idx_scan = 0` istatistik sifirlanmasina duyarlidir; tek olcume dayanilmaz.
+
+   `bookings.event_date` cifti tam eslesme degil **kapsama**: `idx_bookings_event_date` (tam) kismi olani (`WHERE event_date IS NOT NULL`) kapsiyor.
+
+0h. Onarim sonrasi migration zinciri tekrar kosturulur ve uretimle **birebir** eslestigi dogrulanir.
 
 **Cikti:** Repodan kosturulan sema = uretim semasi.
 
-**Risk: dusuk ama is yuku yuksek.** Yalniz tanim ekleme; veri dokunulmaz. Ancak fark sayisi bilinmiyor; envanter bu adimin ilk isidir.
+### Onarim ilkesi: catisma halinde URETIM kazanir
+
+Repo ile uretim arasinda bir nesnenin **govdesi** farkliysa, **uretimdeki surum esas alinir.** Gerekce: uretimdeki surum calisiyor ve test edilmis durumda; repodaki surum ya eski ya hic uygulanmamis.
+
+Ornek: `handle_updated_at` uretimde `SECURITY DEFINER = false`, repoda `true`. Repo surumu uygulanirsa yetki baglami **genisletilmis** olur. Basit bir `updated_at` tetikleyicisinde definer yetkisi gereksizdir; uretim surumu daha guvenlidir.
+
+### Olculen fark (Rapor 04)
+
+| Tur | Uretim | Repo | Yalniz uretimde | Yalniz repoda | Davranis farki |
+|---|---|---|---|---|---|
+| Tablo | 35 | 22 | 13 | 0 | — |
+| Fonksiyon | 69 | 32 | 39 | 2 | 1 (definer bayragi) |
+| Tetikleyici | 33 | 28 | 6 | 1 | 0 |
+| Politika | 148 | 93 | 56 | 1 | olculemedi |
+| Indeks | 157 | 67 | 35 | 0 | **0** |
+
+**Kritik tespit:** Ortak nesnelerde davranis farki bulunamadi. Sorun **sapma degil eksikliktir.** Bu, onarimi kolaylastirir: mevcut calisan bir seyi bozma riski yoktur, yalniz eksik olan eklenir.
+
+Indeks tarafinda bu ampirik olarak dogrulandi: ham metin karsilastirmasinda 67/67 farkli cikti, anlamsal normalizasyon sonrasi 1/67, elle inceleme sonrasi **0 gercek fark.** Fark tamamen PostgreSQL'in normalize etme bicimindendi (`public.` oneki, `USING btree`, tip cast, parantez).
+
+**Risk: dusuk ama is yuku yuksek.** Yalniz tanim ekleme; veri dokunulmaz.
 
 ---
 
@@ -311,6 +340,7 @@ Repo ile uretim arasindaki fark kapatilmadan goc baslatilmaz.
    - `on_agency_member_insert_notify_agency`
    - `on_business_member_insert_notify_business`
    - `validate_agency_membership_roles` / `validate_business_membership_roles`
+   - `trg_remove_assignments_on_leave` — **uretimde var, repoda yok.** `agency_members` uzerinde DELETE tetikleyicisi; uye ayrildiginda `conversation_assignees` kayitlarini temizler. Tasinmazsa uye cikarildiginda atamalar kalir ve sessizce hatali veri olusur.
 
 9. **Sessiz fonksiyonlara sayac eklenir.** `on_*_invitation_accepted_add_member` govdelerine bir log satiri veya sayac yazilir. Calistigini gormek, calismadigini fark etmekten kolaydir.
 
@@ -329,6 +359,94 @@ Repo ile uretim arasindaki fark kapatilmadan goc baslatilmaz.
 
 ### FAZ 2 — Saglayici kayit defteri
 
+#### KRITIK — `protect_sensitive_profile_fields` govdesi cozuldu
+
+Uretimden alinan tanim:
+
+```sql
+create or replace function public.protect_sensitive_profile_fields()
+returns trigger language plpgsql security definer set search_path to 'public'
+as $$
+begin
+  if public.is_admin(auth.uid()) then return new; end if;
+
+  new.is_admin          := old.is_admin;
+  new.role              := old.role;
+  new.approval_status   := old.approval_status;
+  new.approved_at       := old.approved_at;
+  new.suspended_at      := old.suspended_at;
+  new.suspension_reason := old.suspension_reason;
+  new.suspended_by      := old.suspended_by;
+
+  return new;
+end;
+$$;
+```
+
+**Korudugu yedi alan:** `is_admin`, `role`, `approval_status`, `approved_at`, `suspended_at`, `suspension_reason`, `suspended_by`
+
+Yontem **beyaz liste degil kara listedir**: yedi alan eski degerine geri yazilir, kalan her alan serbestce guncellenir.
+
+#### Bulgu 1 — Iki korunan alan `providers`'a tasiniyor
+
+| Alan | Bugun | Goc sonrasi |
+|---|---|---|
+| `approval_status` | `profiles`, tetikleyici koruyor | `providers`, **koruma YOK** |
+| `approved_at` | `profiles`, tetikleyici koruyor | `providers`, **koruma YOK** |
+
+Bu alanlar `providers`'a tasindiginda `profiles` uzerindeki tetikleyici onlari korumaz. **Bir profesyonel kendi profilini onaylanmis duruma getirebilir.**
+
+**Zorunlu adim:** `providers` tablosuna esdeger bir tetikleyici yazilir:
+
+```sql
+create or replace function public.protect_sensitive_provider_fields()
+returns trigger language plpgsql security definer set search_path to 'public'
+as $$
+begin
+  if public.is_admin(auth.uid()) then return new; end if;
+
+  new.approval_status     := old.approval_status;
+  new.approved_at         := old.approved_at;
+  new.approval_note       := old.approval_note;
+  new.marketplace_status  := old.marketplace_status;
+  new.is_verified         := old.is_verified;
+  new.verification_level  := old.verification_level;
+  new.trust_score         := old.trust_score;
+  new.trust_computed_at   := old.trust_computed_at;
+
+  return new;
+end;
+$$;
+```
+
+Yeni alanlar da eklendi: `marketplace_status`, `is_verified`, `verification_level` ve `trust_score` kullanici tarafindan degistirilememelidir. `trust_score` ozellikle onemlidir — IP2'nin ciktisidir ve elle yazilabilir olsa tum siralama guvenilirligi coker.
+
+#### Bulgu 2 — `approval_note` bugun korunmuyor
+
+Tetikleyicinin kara listesinde `approval_note` yok. Yani kullanici bugun kendi onay notunu degistirebiliyor. Kucuk ama mevcut bir acik; `providers` tetikleyicisine eklenerek kapatilir.
+
+#### Bulgu 3 — `category_attributes` sorusu cozuldu
+
+`20260711120000_profil_redesign_adim1.sql:26` yorumunda, migration yazari bu tetikleyicinin govdesini bilmedigi icin `category_attributes`'u "beyaz listeye" eklemekten kacinmis.
+
+**Govde cozuldugune gore:** tetikleyicide beyaz liste yok, kara liste var. `category_attributes` kara listede degil, dolayisiyla guncellemeleri hicbir zaman engellenmiyordu. Ihtiyat gereksizmis ama anlasilirdi.
+
+#### Bulgu 4 — Onarim sirasi bagimliligi
+
+Tetikleyici `public.is_admin(auth.uid())` cagiriyor ve **`is_admin` repoda tanimli degil.**
+
+Onarim migration'inda sira zorunludur:
+
+```
+1. is_admin(uuid)
+2. protect_sensitive_profile_fields()
+3. tetikleyicinin kendisi
+```
+
+Ters sirada yazilirsa migration hata verir.
+
+---
+
 **ON KOSUL — tip tekillestirme.** Alan tasimaya baslamadan once:
 
 11a. `Profile` tipi tamamlanir; eksik yedi alan eklenir (`category_attributes`, `default_allowed_applicant_roles`, `suspended_at`, `suspension_reason`, `suspended_by`, `last_seen_at`, `welcome_email_sent_at`).
@@ -338,6 +456,30 @@ Repo ile uretim arasindaki fark kapatilmadan goc baslatilmaz.
 
 Bu adimlar yapilmadan alan tasinirsa TypeScript uyarmaz ve calisma zamaninda `undefined` gelir.
 
+**ON KOSUL — koruma tetikleyicisinin tasinmasi.**
+
+`protect_sensitive_profile_fields()` govdesi uretimden alindi. `profiles` uzerinde BEFORE UPDATE calisiyor ve **yedi alani** koruyor:
+
+```
+is_admin · role · approval_status · approved_at
+suspended_at · suspension_reason · suspended_by
+```
+
+Yontem: admin ise dokunmaz, degilse eski degeri geri yazar. **`RAISE` yok — sessiz geri alma.** Kullanici rolunu degistirmeye calisirsa yazma basarili gorunur, deger sessizce eski haline doner.
+
+⚠️ **Bu yedi alandan ikisi `providers`'a tasiniyor: `approval_status` ve `approved_at`.**
+
+Tasindiklarinda bu tetikleyici onlari **artik korumaz.** `providers` tablosunda esdeger bir tetikleyici olusturulmadan alan tasinmasi, profesyonelin kendi onay durumunu degistirebilmesi anlamina gelir.
+
+11e. `is_admin()` FAZ -1'de repoya alinmis olmalidir; bu tetikleyici ona bagimlidir. Bagimlilik sirasi: `is_admin` -> `protect_sensitive_profile_fields`.
+11f. `providers` icin `protect_sensitive_provider_fields()` yazilir; en az `approval_status`, `approved_at`, `marketplace_status`, `is_verified`, `verification_level`, `trust_score` korunur.
+11g. Alan tasima ile tetikleyici olusturma **ayni migration'da** yapilir; arada koruma bosluğu birakilmaz.
+11h. Test: profesyonel jetonuyla kendi `providers` satirinda `approval_status` degistirilmeye calisilir; degerin degismedigi dogrulanir.
+
+**Not — `category_attributes` korunmuyor.** Fonksiyonda beyaz liste degil kara liste var; `category_attributes` listede olmadigi icin normal kullanici yazabiliyor. Migration yazarinin bu alani whitelist'e eklemekten kacinmasi (`20260711120000:26`) gereksiz bir ihtiyattir.
+
+**Not — `is_published` korunmuyor.** `app/admin/actions.ts:323`'teki savunma yorumu ("protect_sensitive_profile_fields trigger'i engellemis olabilir") bu fonksiyonla ilgili degildir; alan korunan listede yok. Yorum ya eski bir surumden kalma ya da baska bir mekanizmaya isaret ediyor. Incelenmeli.
+
 12. `talents`, `providers`, `professional_profiles`, `organization_profiles`, `provider_services` olusturulur.
 13. Her `professional` rollu profil icin:
     - `talents` satiri (`user_id` dolu, `claim_status='claimed'`)
@@ -346,7 +488,11 @@ Bu adimlar yapilmadan alan tasinirsa TypeScript uyarmaz ve calisma zamaninda `un
 14. Her `agency` rollu profil icin `providers` satiri (`provider_type='organization'`).
 15. `services` -> `provider_services` kopyalanir; `services.provider_id` alani eklenir ve doldurulur.
 16. `portfolio_items`, `profile_experiences`, `reviews`, `favorites` tablolarina `provider_id` eklenir ve doldurulur.
-17. Okuma yollari tek tek `providers`'a gecirilir; `profile_id` alanlari bir surum boyunca korunur.
+17. **`protect_sensitive_provider_fields()` tetikleyicisi `providers` uzerinde kurulur.** Bu adim, `approval_status` ve `approved_at` tasinmadan ONCE tamamlanmalidir; aksi halde koruma bosluk doner.
+
+18. Okuma yollari tek tek `providers`'a gecirilir; `profile_id` alanlari bir surum boyunca korunur.
+
+19. `profiles` uzerindeki tetikleyiciden tasinan iki alan (`approval_status`, `approved_at`) cikarilir — ancak yalniz tum okuma yollari gectikten sonra.
 
 **Risk: orta.** Cift alan donemi dikkat ister; her iki alan da senkron tutulmali.
 
@@ -453,6 +599,10 @@ Dogrudan `p.role = 'agency'` yazan politikalar tek tek ele alinir; bunlar sayica
 | **`business-write.ts` 60 cagri, tek yerde** | A grubunun en buyuk yuzeyi; atlanirsa yetkilendirme yarim kalir | Ayri bir goc adimi olarak ele alinir |
 | **Tip tanimi eksik (7 alan)** | Alan tasinir, TypeScript uyarmaz, calisma zamaninda undefined | Faz 2 on kosulu: tip tekillestirme |
 | **`grantPremium` rol kontrolu yok** | `professional`'a `agency` tier verilmis kayitlar gocte kaybolur | Goc oncesi veri kontrolu + kod duzeltmesi |
+| **`protect_sensitive_profile_fields` iki alani `providers`'a tasiniyor** | `approval_status` ve `approved_at` korumasiz kalir; profesyonel kendi onayini degistirebilir | Faz 2 on kosulu 11f: `providers` icin esdeger tetikleyici, ayni migration'da |
+| **Migration zinciri temiz DB'de kosturulamiyor** | 6 tablo `CREATE TABLE` edilmemis; zincir `20260625120000`'de duruyor | FAZ -1: eksik DDL repoya alinir |
+| **`approval_status` korumasiz kalir** | Profesyonel kendi profilini onaylayabilir | `protect_sensitive_provider_fields()` alan tasimadan ONCE kurulur |
+| **`trust_score` elle yazilabilir** | Tum siralama guvenilirligi coker | Ayni tetikleyicinin kara listesine alinir |
 
 ---
 
