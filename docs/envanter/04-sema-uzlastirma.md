@@ -6,7 +6,7 @@ Kaynak: `supabase/migrations/` (36 dosya) + `docs/envanter/uretim-dokum/` (4 CSV
 ## 0. SONUC — tek cumle
 
 > Repo migration zinciri temiz bir veritabaninda kosturulsa, uretimden **13 tablo, 39 fonksiyon,
-> 6 tetikleyici, 56 politika ve 35 indeks eksik** bir sema cikardi — ve zincir zaten
+> 6 tetikleyici, 56 politika ve 37 indeks eksik** bir sema cikardi — ve zincir zaten
 > **ilk eksik tabloda hata verip dururdu.**
 
 Buna karsilik, **ortak olan nesnelerde davranis farki bulunamadi**: 67 ortak indeksin tamami

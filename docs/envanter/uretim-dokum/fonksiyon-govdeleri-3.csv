@@ -1,0 +1,492 @@
+fonksiyon,tanim
+deal_confirmed_customer_ids,"CREATE OR REPLACE FUNCTION public.deal_confirmed_customer_ids(p_professional uuid, p_customers uuid[])
+ RETURNS TABLE(customer_id uuid)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT DISTINCT b.customer_id
+  FROM public.bookings b
+  WHERE b.professional_id = p_professional
+    AND b.customer_id = ANY(p_customers[1:50])
+    AND b.status IN ('confirmed', 'completed');
+$function$
+"
+delete_push_subscription_by_endpoint,"CREATE OR REPLACE FUNCTION public.delete_push_subscription_by_endpoint(target_endpoint text)
+ RETURNS void
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  delete from public.push_subscriptions where endpoint = target_endpoint;
+$function$
+"
+fn_assignee_added_message,"CREATE OR REPLACE FUNCTION public.fn_assignee_added_message()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  pro_name text;
+  agency_id uuid;
+begin
+  select coalesce(full_name, 'ekibimizden bir profesyonel') into pro_name
+    from public.profiles where id = new.professional_id;
+  select professional_id into agency_id
+    from public.conversations where id = new.conversation_id;
+
+  insert into public.messages (conversation_id, sender_id, message_type, body)
+  values (new.conversation_id, agency_id, 'system',
+          pro_name || ' talebinizle ilgilenmek üzere eklendi.');
+  return new;
+end $function$
+"
+fn_assignee_removed_message,"CREATE OR REPLACE FUNCTION public.fn_assignee_removed_message()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  remaining int;
+  agency_id uuid;
+begin
+  select count(*) into remaining
+    from public.conversation_assignees
+    where conversation_id = old.conversation_id;
+
+  if remaining = 0 then
+    select professional_id into agency_id
+      from public.conversations where id = old.conversation_id;
+    insert into public.messages (conversation_id, sender_id, message_type, body)
+    values (old.conversation_id, agency_id, 'system',
+            'Talebiniz yeniden ajans tarafından yürütülecek.');
+  end if;
+  return old;
+end $function$
+"
+get_push_subscriptions_for_user,"CREATE OR REPLACE FUNCTION public.get_push_subscriptions_for_user(target_user_id uuid)
+ RETURNS TABLE(endpoint text, p256dh text, auth text)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select endpoint, p256dh, auth
+  from public.push_subscriptions
+  where user_id = target_user_id;
+$function$
+"
+handle_new_user,"CREATE OR REPLACE FUNCTION public.handle_new_user()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  user_role TEXT;
+  user_full_name TEXT;
+  user_company_name TEXT;
+  user_phone TEXT;
+  user_city_id INT;
+  user_kvkk TIMESTAMPTZ;
+  user_approval public.profile_approval_status;
+  user_approved_at TIMESTAMPTZ;
+BEGIN
+  user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'client');
+  user_full_name := COALESCE(NEW.raw_user_meta_data->>'full_name', '');
+  user_company_name := NEW.raw_user_meta_data->>'company_name';
+  user_phone := NEW.raw_user_meta_data->>'phone';
+  user_city_id := NULLIF(NEW.raw_user_meta_data->>'city_id', '')::INT;
+
+  IF (NEW.raw_user_meta_data->>'kvkk_approved') = 'true' THEN
+    user_kvkk := now();
+  ELSE
+    user_kvkk := NULL;
+  END IF;
+
+  -- Rol normalize
+  user_role := CASE
+    WHEN user_role IN ('customer', 'müşteri', 'musteri')        THEN 'client'
+    WHEN user_role IN ('corporate', 'kurumsal')                  THEN 'business'
+    WHEN user_role IN ('pro', 'profesyonel')                     THEN 'professional'
+    WHEN user_role IN ('ajans')                                  THEN 'agency'
+    WHEN user_role IN ('professional', 'client', 'business', 'agency')
+                                                                  THEN user_role
+    ELSE 'client'
+  END;
+
+  -- Onay durumu: client onaysız (approved), diğerleri pending
+  IF user_role = 'client' THEN
+    user_approval := 'approved';
+    user_approved_at := now();
+  ELSE
+    user_approval := 'pending';
+    user_approved_at := NULL;
+  END IF;
+
+  INSERT INTO public.profiles (
+    id, email, full_name, role, company_name, phone, city_id,
+    kvkk_approved_at, approval_status, approved_at
+  )
+  VALUES (
+    NEW.id, NEW.email, user_full_name, user_role, user_company_name,
+    user_phone, user_city_id, user_kvkk, user_approval, user_approved_at
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+handle_updated_at,"CREATE OR REPLACE FUNCTION public.handle_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$function$
+"
+increment_profile_views,"CREATE OR REPLACE FUNCTION public.increment_profile_views(profile_id_param uuid)
+ RETURNS void
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  update public.profiles
+  set views_count = views_count + 1
+  where id = profile_id_param;
+$function$
+"
+listing_application_counts,"CREATE OR REPLACE FUNCTION public.listing_application_counts(listing_ids uuid[])
+ RETURNS TABLE(listing_id uuid, cnt integer)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT a.listing_id, count(*)::int AS cnt
+  FROM public.applications a
+  WHERE a.listing_id = ANY(listing_ids)
+  GROUP BY a.listing_id;
+$function$
+"
+notify_new_message,"CREATE OR REPLACE FUNCTION public.notify_new_message()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  recipient_id UUID;
+BEGIN
+  -- Sadece text mesajlar bildirim üretir
+  IF NEW.message_type != 'text' THEN
+    RETURN NEW;
+  END IF;
+
+  -- Karşı tarafı bul (sender olmayan)
+  SELECT CASE
+    WHEN customer_id = NEW.sender_id THEN professional_id
+    ELSE customer_id
+  END
+  INTO recipient_id
+  FROM conversations
+  WHERE id = NEW.conversation_id;
+
+  -- Kendine bildirim atma
+  IF recipient_id IS NULL OR recipient_id = NEW.sender_id THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    recipient_id,
+    'message',
+    'Yeni mesaj aldın',
+    '/mesajlar/' || NEW.conversation_id
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+notify_new_review,"CREATE OR REPLACE FUNCTION public.notify_new_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO notifications (user_id, type, link, body)
+  VALUES (
+    NEW.professional_id,
+    'review',
+    '/p/' || NEW.professional_id || '/yorumlar',
+    'Yeni yorum aldın'
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+notify_quote_request_recipients,"CREATE OR REPLACE FUNCTION public.notify_quote_request_recipients(recipient_ids uuid[], notif_link text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  pid uuid;
+begin
+  foreach pid in array recipient_ids loop
+    insert into public.notifications (user_id, type, link, body)
+    values (pid, 'message', notif_link, 'Sana yeni bir teklif talebi geldi');
+  end loop;
+end;
+$function$
+"
+notify_review_reply,"CREATE OR REPLACE FUNCTION public.notify_review_reply()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  customer_user_id UUID;
+  professional_user_id UUID;
+BEGIN
+  -- Yanıt verilen yorumun müşterisini ve profesyonelini bul
+  SELECT r.customer_id, r.professional_id
+  INTO customer_user_id, professional_user_id
+  FROM reviews r
+  WHERE r.id = NEW.review_id;
+
+  -- Müşteriye bildirim (kendi yorumuna profesyonel yanıt verdi)
+  IF customer_user_id IS NOT NULL THEN
+    INSERT INTO notifications (user_id, type, link, body)
+    VALUES (
+      customer_user_id,
+      'review_reply',
+      '/p/' || professional_user_id || '/yorumlar',
+      'Yorumuna yanıt geldi'
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+on_application_insert_notify_owner,"CREATE OR REPLACE FUNCTION public.on_application_insert_notify_owner()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  owner_id UUID;
+  applicant_name TEXT;
+  listing_title TEXT;
+BEGIN
+  SELECT l.creator_id, l.title INTO owner_id, listing_title
+  FROM listings l WHERE l.id = NEW.listing_id;
+
+  SELECT p.full_name INTO applicant_name
+  FROM profiles p WHERE p.id = NEW.applicant_id;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    owner_id,
+    'message',
+    COALESCE(applicant_name, 'Bir profesyonel') || ' ilanına başvurdu: ' ||
+      COALESCE(LEFT(listing_title, 60), 'İlan'),
+    '/ilanlar/' || NEW.listing_id
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+on_application_status_change_notify_applicant,"CREATE OR REPLACE FUNCTION public.on_application_status_change_notify_applicant()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  notif_body TEXT;
+  listing_title TEXT;
+BEGIN
+  -- Status değişimi olmadıysa atla
+  IF OLD.status = NEW.status THEN
+    RETURN NEW;
+  END IF;
+
+  -- Sadece bu status'lerde bildirim at
+  IF NEW.status NOT IN ('shortlisted', 'accepted', 'rejected') THEN
+    RETURN NEW;
+  END IF;
+
+  -- Profesyonel kendi başvurusunu withdraw ediyorsa kendine bildirim atma
+  -- (zaten withdraw yukarıdaki listede yok ama defensive)
+
+  SELECT l.title INTO listing_title
+  FROM listings l WHERE l.id = NEW.listing_id;
+
+  notif_body := 'Başvurun ' ||
+    CASE NEW.status
+      WHEN 'shortlisted' THEN 'kısa listeye alındı: '
+      WHEN 'accepted' THEN 'kabul edildi 🎉: '
+      WHEN 'rejected' THEN 'reddedildi: '
+    END ||
+    COALESCE(LEFT(listing_title, 60), 'İlan');
+
+  NEW.responded_at := now();
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    NEW.applicant_id,
+    'message',
+    notif_body,
+    '/basvurularim'
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+on_quote_insert_notify_customer,"CREATE OR REPLACE FUNCTION public.on_quote_insert_notify_customer()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  customer UUID;
+  professional_name TEXT;
+BEGIN
+  SELECT c.customer_id, p.full_name
+  INTO customer, professional_name
+  FROM conversations c
+  JOIN profiles p ON p.id = NEW.sender_id
+  WHERE c.id = NEW.conversation_id;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    customer,
+    'message',
+    COALESCE(professional_name, 'Profesyonel') || ' sana bir teklif gönderdi',
+    '/mesajlar/' || NEW.conversation_id
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+on_quote_responded_notify_professional,"CREATE OR REPLACE FUNCTION public.on_quote_responded_notify_professional()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  customer_name TEXT;
+  notif_body TEXT;
+BEGIN
+  -- Sadece müşteri onaylar/reddederse profesyonele bildir
+  IF NEW.status NOT IN ('accepted', 'declined') THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.status != 'pending' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT p.full_name INTO customer_name
+  FROM conversations c
+  JOIN profiles p ON p.id = c.customer_id
+  WHERE c.id = NEW.conversation_id;
+
+  notif_body := COALESCE(customer_name, 'Müşteri') || ' teklifini ' ||
+    CASE NEW.status
+      WHEN 'accepted' THEN 'onayladı 🎉'
+      WHEN 'declined' THEN 'reddetti'
+    END;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    NEW.sender_id,
+    'message',
+    notif_body,
+    '/mesajlar/' || NEW.conversation_id
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+set_blog_posts_updated_at,"CREATE OR REPLACE FUNCTION public.set_blog_posts_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$function$
+"
+set_listing_published_at,"CREATE OR REPLACE FUNCTION public.set_listing_published_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  -- İlan ilk kez published'a geçiyorsa published_at'i şimdiye set et
+  IF NEW.status = 'published' AND (OLD.status IS NULL OR OLD.status != 'published') THEN
+    NEW.published_at := now();
+  END IF;
+
+  -- expires_at boşsa ve published olduysa, 30 gün otomatik süre koy
+  IF NEW.status = 'published' AND NEW.expires_at IS NULL THEN
+    NEW.expires_at := now() + interval '30 days';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+touch_review_updated_at,"CREATE OR REPLACE FUNCTION public.touch_review_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$function$
+"
+update_conversation_last_message_at,"CREATE OR REPLACE FUNCTION public.update_conversation_last_message_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  UPDATE conversations
+  SET last_message_at = NEW.created_at
+  WHERE id = NEW.conversation_id;
+
+  RETURN NEW;
+END;
+$function$
+"
+update_updated_at_column,"CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$function$
+"

@@ -1,0 +1,118 @@
+table_name,ordinal_position,column_name,data_type,udt_name,is_nullable,column_default,character_maximum_length,numeric_precision,numeric_scale
+admin_audit_log,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+admin_audit_log,2,admin_id,uuid,uuid,NO,null,null,null,null
+admin_audit_log,3,action,text,text,NO,null,null,null,null
+admin_audit_log,4,target_type,text,text,NO,null,null,null,null
+admin_audit_log,5,target_id,uuid,uuid,YES,null,null,null,null
+admin_audit_log,6,notes,text,text,YES,null,null,null,null
+admin_audit_log,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+availability_blocks,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+availability_blocks,2,profile_id,uuid,uuid,NO,null,null,null,null
+availability_blocks,3,blocked_date,date,date,NO,null,null,null,null
+availability_blocks,4,note,text,text,YES,null,null,null,null
+availability_blocks,5,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+blog_posts,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+blog_posts,2,slug,text,text,NO,null,null,null,null
+blog_posts,3,title,text,text,NO,null,null,null,null
+blog_posts,4,excerpt,text,text,YES,null,null,null,null
+blog_posts,5,content,text,text,NO,''::text,null,null,null
+blog_posts,6,cover_image_url,text,text,YES,null,null,null,null
+blog_posts,7,author_id,uuid,uuid,YES,null,null,null,null
+blog_posts,8,status,text,text,NO,'draft'::text,null,null,null
+blog_posts,9,published_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+blog_posts,10,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+blog_posts,11,updated_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+category_requests,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+category_requests,2,user_id,uuid,uuid,YES,null,null,null,null
+category_requests,3,category_name,text,text,NO,null,null,null,null
+category_requests,4,description,text,text,YES,null,null,null,null
+category_requests,5,event_context,text,text,YES,null,null,null,null
+category_requests,6,status,text,text,NO,'pending'::text,null,null,null
+category_requests,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+category_requests,8,reviewed_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+category_requests,9,reviewed_by,uuid,uuid,YES,null,null,null,null
+conversation_assignees,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+conversation_assignees,2,conversation_id,uuid,uuid,NO,null,null,null,null
+conversation_assignees,3,professional_id,uuid,uuid,NO,null,null,null,null
+conversation_assignees,4,assigned_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+conversation_assignees,5,assigned_by,uuid,uuid,YES,null,null,null,null
+listing_invitations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+listing_invitations,2,listing_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,3,inviter_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,4,professional_id,uuid,uuid,NO,null,null,null,null
+listing_invitations,5,invitation_message,text,text,YES,null,null,null,null
+listing_invitations,6,status,USER-DEFINED,listing_invitation_status,NO,'pending'::listing_invitation_status,null,null,null
+listing_invitations,7,resulting_application_id,uuid,uuid,YES,null,null,null,null
+listing_invitations,8,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+listing_invitations,9,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+listing_invitations,10,expires_at,timestamp with time zone,timestamptz,NO,(now() + '14 days'::interval),null,null,null
+message_violations,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+message_violations,2,user_id,uuid,uuid,NO,null,null,null,null
+message_violations,3,conversation_id,uuid,uuid,NO,null,null,null,null
+message_violations,4,violation_type,text,text,NO,null,null,null,null
+message_violations,5,attempted_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+push_subscriptions,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+push_subscriptions,2,user_id,uuid,uuid,NO,null,null,null,null
+push_subscriptions,3,endpoint,text,text,NO,null,null,null,null
+push_subscriptions,4,p256dh,text,text,NO,null,null,null,null
+push_subscriptions,5,auth,text,text,NO,null,null,null,null
+push_subscriptions,6,user_agent,text,text,YES,null,null,null,null
+push_subscriptions,7,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_request_recipients,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+quote_request_recipients,2,request_id,uuid,uuid,NO,null,null,null,null
+quote_request_recipients,3,professional_id,uuid,uuid,NO,null,null,null,null
+quote_request_recipients,4,status,USER-DEFINED,quote_recipient_status,NO,'sent'::quote_recipient_status,null,null,null
+quote_request_recipients,5,conversation_id,uuid,uuid,YES,null,null,null,null
+quote_request_recipients,6,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_request_recipients,7,responded_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+quote_requests,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+quote_requests,2,customer_id,uuid,uuid,NO,null,null,null,null
+quote_requests,3,category_id,integer,int4,NO,null,null,32,0
+quote_requests,4,city_id,integer,int4,YES,null,null,32,0
+quote_requests,5,brief_data,jsonb,jsonb,YES,null,null,null,null
+quote_requests,6,event_date,date,date,YES,null,null,null,null
+quote_requests,7,event_type,text,text,YES,null,null,null,null
+quote_requests,8,budget_min,numeric,numeric,YES,null,null,null,null
+quote_requests,9,budget_max,numeric,numeric,YES,null,null,null,null
+quote_requests,10,share_budget,boolean,bool,NO,true,null,null,null
+quote_requests,11,response_deadline,timestamp with time zone,timestamptz,YES,null,null,null,null
+quote_requests,12,recipient_count,integer,int4,NO,0,null,32,0
+quote_requests,13,status,USER-DEFINED,quote_request_status,NO,'active'::quote_request_status,null,null,null
+quote_requests,14,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+quote_requests,15,attachment_path,text,text,YES,null,null,null,null
+quote_requests,16,attachment_name,text,text,YES,null,null,null,null
+quote_requests,17,attachment_type,text,text,YES,null,null,null,null
+quote_requests,18,created_by,uuid,uuid,YES,null,null,null,null
+reports,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+reports,2,reporter_id,uuid,uuid,NO,null,null,null,null
+reports,3,target_type,text,text,NO,null,null,null,null
+reports,4,target_id,uuid,uuid,NO,null,null,null,null
+reports,5,reason,text,text,NO,null,null,null,null
+reports,6,details,text,text,YES,null,null,null,null
+reports,7,status,text,text,NO,'pending'::text,null,null,null
+reports,8,resolved_by,uuid,uuid,YES,null,null,null,null
+reports,9,resolved_at,timestamp with time zone,timestamptz,YES,null,null,null,null
+reports,10,admin_note,text,text,YES,null,null,null,null
+reports,11,created_at,timestamp with time zone,timestamptz,NO,now(),null,null,null
+service_addons,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+service_addons,2,service_id,uuid,uuid,NO,null,null,null,null
+service_addons,3,profile_id,uuid,uuid,NO,null,null,null,null
+service_addons,4,title,text,text,NO,null,null,null,null
+service_addons,5,description,text,text,YES,null,null,null,null
+service_addons,6,price,numeric,numeric,NO,0,null,null,null
+service_addons,7,is_active,boolean,bool,NO,true,null,null,null
+service_addons,8,sort_order,integer,int4,NO,0,null,32,0
+service_addons,9,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,1,id,uuid,uuid,NO,gen_random_uuid(),null,null,null
+service_packages,2,profile_id,uuid,uuid,NO,null,null,null,null
+service_packages,3,title,text,text,NO,null,null,null,null
+service_packages,4,description,text,text,YES,null,null,null,null
+service_packages,5,includes,jsonb,jsonb,NO,'[]'::jsonb,null,null,null
+service_packages,6,price_min,numeric,numeric,YES,null,null,null,null
+service_packages,7,price_max,numeric,numeric,YES,null,null,null,null
+service_packages,8,price_on_request,boolean,bool,NO,false,null,null,null
+service_packages,9,is_active,boolean,bool,NO,true,null,null,null
+service_packages,10,sort_order,integer,int4,NO,0,null,32,0
+service_packages,11,created_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,12,updated_at,timestamp with time zone,timestamptz,YES,now(),null,null,null
+service_packages,13,price_starting,boolean,bool,NO,false,null,null,null

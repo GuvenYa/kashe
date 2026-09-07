@@ -1,0 +1,114 @@
+fonksiyon,tanim
+has_business_role,"CREATE OR REPLACE FUNCTION public.has_business_role(p_business_id uuid, p_min_role business_member_role)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM business_members bm
+    WHERE bm.business_id = p_business_id
+      AND bm.member_user_id = auth.uid()
+      AND (CASE bm.member_role
+             WHEN 'owner' THEN 3
+             WHEN 'manager' THEN 2
+             WHEN 'member' THEN 1
+           END)
+          >=
+          (CASE p_min_role
+             WHEN 'owner' THEN 3
+             WHEN 'manager' THEN 2
+             WHEN 'member' THEN 1
+           END)
+  );
+$function$
+"
+has_business_role_on_request,"CREATE OR REPLACE FUNCTION public.has_business_role_on_request(p_request_id uuid, p_min_role business_member_role)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM quote_requests q
+    WHERE q.id = p_request_id
+      AND has_business_role(q.customer_id, p_min_role)
+  );
+$function$
+"
+is_admin,"CREATE OR REPLACE FUNCTION public.is_admin(uid uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select coalesce(
+    (select is_admin from public.profiles where id = uid),
+    false
+  );
+$function$
+"
+is_assignee,"CREATE OR REPLACE FUNCTION public.is_assignee(conv_id uuid, uid uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select exists (
+    select 1 from public.conversation_assignees ca
+    where ca.conversation_id = conv_id and ca.professional_id = uid
+  );
+$function$
+"
+is_business_member,"CREATE OR REPLACE FUNCTION public.is_business_member(p_business_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM business_members
+    WHERE business_id = p_business_id
+      AND member_user_id = auth.uid()
+  );
+$function$
+"
+is_business_member_of_request,"CREATE OR REPLACE FUNCTION public.is_business_member_of_request(p_request_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM quote_requests q
+    JOIN business_members bm ON bm.business_id = q.customer_id
+    WHERE q.id = p_request_id
+      AND bm.member_user_id = auth.uid()
+  );
+$function$
+"
+is_professional_or_agency,"CREATE OR REPLACE FUNCTION public.is_professional_or_agency(uid uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select exists (
+    select 1 from public.profiles
+    where id = uid and role in ('professional', 'agency')
+  );
+$function$
+"
+owns_quote_request,"CREATE OR REPLACE FUNCTION public.owns_quote_request(req_id uuid, uid uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select exists (
+    select 1 from public.quote_requests
+    where id = req_id and customer_id = uid
+  );
+$function$
+"

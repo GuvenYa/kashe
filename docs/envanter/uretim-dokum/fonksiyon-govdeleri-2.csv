@@ -1,0 +1,351 @@
+fonksiyon,tanim
+fn_remove_assignments_on_leave,"CREATE OR REPLACE FUNCTION public.fn_remove_assignments_on_leave()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  delete from public.conversation_assignees ca
+  using public.conversations c
+  where ca.conversation_id = c.id
+    and ca.professional_id = old.professional_id
+    and c.professional_id = old.agency_id;
+  return old;
+end $function$
+"
+on_agency_invitation_accepted_add_member,"CREATE OR REPLACE FUNCTION public.on_agency_invitation_accepted_add_member()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  accepter_id UUID;
+  accepter_role TEXT;
+BEGIN
+  -- Sadece pending → accepted geçişinde çalış
+  IF OLD.status = 'pending' AND NEW.status = 'accepted' THEN
+    NEW.responded_at := now();
+
+    -- invited_user_id boşsa, email ile kayıtlı kullanıcıyı bul
+    accepter_id := NEW.invited_user_id;
+    IF accepter_id IS NULL THEN
+      SELECT id INTO accepter_id FROM profiles WHERE email = NEW.invited_email LIMIT 1;
+    END IF;
+
+    -- Kullanıcı bulunamadıysa hata
+    IF accepter_id IS NULL THEN
+      RAISE EXCEPTION 'Cannot find user for invitation %', NEW.id;
+    END IF;
+
+    -- Profesyonel mi kontrol et
+    SELECT role INTO accepter_role FROM profiles WHERE id = accepter_id;
+    IF accepter_role != 'professional' THEN
+      RAISE EXCEPTION 'Only professionals can join agencies (found role: %)', accepter_role;
+    END IF;
+
+    -- Üye olarak ekle
+    INSERT INTO agency_members (agency_id, professional_id, member_role)
+    VALUES (NEW.agency_id, accepter_id, NEW.member_role)
+    ON CONFLICT (agency_id, professional_id) DO NOTHING;
+
+    -- invited_user_id'yi de set et (kayıttan sonra accept eden için)
+    NEW.invited_user_id := accepter_id;
+  END IF;
+
+  -- declined/cancelled için responded_at set et
+  IF OLD.status = 'pending' AND NEW.status IN ('declined', 'cancelled', 'expired') THEN
+    NEW.responded_at := now();
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+on_agency_invitation_insert_notify,"CREATE OR REPLACE FUNCTION public.on_agency_invitation_insert_notify()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  agency_name TEXT;
+  recipient_id UUID;
+BEGIN
+  -- Davet edilen kullanıcı kayıtlı mı? (email ile bul, invited_user_id zaten varsa onu kullan)
+  recipient_id := NEW.invited_user_id;
+  IF recipient_id IS NULL THEN
+    SELECT id INTO recipient_id FROM profiles WHERE email = NEW.invited_email LIMIT 1;
+    IF recipient_id IS NOT NULL THEN
+      -- Daveti güncelle (sessiz, recursion önle için trigger içinde UPDATE değil PREP yapıyoruz)
+      NEW.invited_user_id := recipient_id;
+    END IF;
+  END IF;
+
+  -- Sadece kayıtlı kullanıcılara in-app bildirim
+  IF recipient_id IS NOT NULL THEN
+    SELECT COALESCE(company_name, full_name, 'Bir ajans') INTO agency_name
+    FROM profiles WHERE id = NEW.agency_id;
+
+    INSERT INTO notifications (user_id, type, body, link)
+    VALUES (
+      recipient_id,
+      'message',
+      agency_name || ' seni ajansına davet etti',
+      '/davetlerim'
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+on_agency_member_insert_notify_agency,"CREATE OR REPLACE FUNCTION public.on_agency_member_insert_notify_agency()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  member_name TEXT;
+BEGIN
+  SELECT full_name INTO member_name FROM profiles WHERE id = NEW.professional_id;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    NEW.agency_id,
+    'message',
+    COALESCE(member_name, 'Bir profesyonel') || ' ajansına katıldı',
+    '/profil/ekibim'
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+on_business_invitation_accepted_add_member,"CREATE OR REPLACE FUNCTION public.on_business_invitation_accepted_add_member()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  accepter_id UUID;
+BEGIN
+  -- Sadece pending → accepted geçişinde çalış
+  IF OLD.status = 'pending' AND NEW.status = 'accepted' THEN
+    NEW.responded_at := now();
+
+    -- invited_user_id boşsa, email ile kayıtlı kullanıcıyı bul
+    accepter_id := NEW.invited_user_id;
+    IF accepter_id IS NULL THEN
+      SELECT id INTO accepter_id FROM profiles WHERE email = NEW.invited_email LIMIT 1;
+    END IF;
+
+    -- Kullanıcı bulunamadıysa hata
+    IF accepter_id IS NULL THEN
+      RAISE EXCEPTION 'Cannot find user for invitation %', NEW.id;
+    END IF;
+
+    -- Üye olarak ekle (rol kontrolü YOK — herhangi bir kullanıcı kurum üyesi olabilir)
+    INSERT INTO business_members (business_id, member_user_id, member_role)
+    VALUES (NEW.business_id, accepter_id, NEW.member_role)
+    ON CONFLICT (business_id, member_user_id) DO NOTHING;
+
+    -- invited_user_id'yi de set et (kayıttan sonra accept eden için)
+    NEW.invited_user_id := accepter_id;
+  END IF;
+
+  -- declined/cancelled/expired için responded_at set et
+  IF OLD.status = 'pending' AND NEW.status IN ('declined', 'cancelled', 'expired') THEN
+    NEW.responded_at := now();
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+on_business_invitation_insert_notify,"CREATE OR REPLACE FUNCTION public.on_business_invitation_insert_notify()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  business_name TEXT;
+  recipient_id UUID;
+BEGIN
+  -- Davet edilen kullanıcı kayıtlı mı? (email ile bul, invited_user_id zaten varsa onu kullan)
+  recipient_id := NEW.invited_user_id;
+  IF recipient_id IS NULL THEN
+    SELECT id INTO recipient_id FROM profiles WHERE email = NEW.invited_email LIMIT 1;
+    IF recipient_id IS NOT NULL THEN
+      NEW.invited_user_id := recipient_id;
+    END IF;
+  END IF;
+
+  -- Sadece kayıtlı kullanıcılara in-app bildirim
+  IF recipient_id IS NOT NULL THEN
+    SELECT COALESCE(company_name, full_name, 'Bir kurum') INTO business_name
+    FROM profiles WHERE id = NEW.business_id;
+
+    INSERT INTO notifications (user_id, type, body, link)
+    VALUES (
+      recipient_id,
+      'message',
+      business_name || ' seni kurumsal ekibine davet etti',
+      '/davetlerim'
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+on_business_member_insert_notify_business,"CREATE OR REPLACE FUNCTION public.on_business_member_insert_notify_business()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  member_name TEXT;
+BEGIN
+  SELECT full_name INTO member_name FROM profiles WHERE id = NEW.member_user_id;
+
+  INSERT INTO notifications (user_id, type, body, link)
+  VALUES (
+    NEW.business_id,
+    'message',
+    COALESCE(member_name, 'Bir kullanıcı') || ' kurumsal ekibine katıldı',
+    '/profil/ekibim'
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+on_quote_accepted_create_booking,"CREATE OR REPLACE FUNCTION public.on_quote_accepted_create_booking()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  conv record;
+begin
+  if old.status = 'pending' and new.status = 'accepted' then
+    new.responded_at := now();
+
+    select customer_id, professional_id, event_date, event_type,
+           location, guest_count, start_time, end_time
+    into conv
+    from conversations
+    where id = new.conversation_id;
+
+    insert into bookings (
+      quote_id, conversation_id,
+      customer_id, professional_id,
+      event_date, event_type, location, guest_count,
+      start_time, end_time,
+      total_amount, platform_fee, currency,
+      status
+    ) values (
+      new.id, new.conversation_id,
+      conv.customer_id, conv.professional_id,
+      conv.event_date, conv.event_type, conv.location, conv.guest_count,
+      conv.start_time, conv.end_time,
+      new.total_amount, 0, new.currency,
+      'confirmed'
+    );
+  end if;
+
+  if old.status = 'pending' and new.status in ('declined', 'withdrawn', 'expired') then
+    new.responded_at := now();
+  end if;
+
+  return new;
+end;
+$function$
+"
+on_quote_status_change_post_system_message,"CREATE OR REPLACE FUNCTION public.on_quote_status_change_post_system_message()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  system_body TEXT;
+  system_sender UUID;
+BEGIN
+  -- Sadece status değişiminde çalış
+  IF OLD.status = NEW.status THEN
+    RETURN NEW;
+  END IF;
+
+  -- Sistem mesajı için sender = profesyonel (kim olursa olsun, mesaj sahibi gerek)
+  system_sender := NEW.sender_id;
+
+  -- Mesaj içeriği status'e göre
+  CASE NEW.status
+    WHEN 'accepted'  THEN system_body := '✓ Teklif onaylandı';
+    WHEN 'declined'  THEN system_body := '✗ Teklif reddedildi';
+    WHEN 'expired'   THEN system_body := '⏱ Teklif süresi doldu';
+    WHEN 'withdrawn' THEN system_body := '↩ Teklif geri çekildi';
+    ELSE RETURN NEW;
+  END CASE;
+
+  INSERT INTO messages (
+    conversation_id, sender_id, body,
+    message_type, quote_id
+  ) VALUES (
+    NEW.conversation_id, system_sender, system_body,
+    'system', NEW.id
+  );
+
+  RETURN NEW;
+END;
+$function$
+"
+validate_agency_membership_roles,"CREATE OR REPLACE FUNCTION public.validate_agency_membership_roles()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  agency_role TEXT;
+  professional_role TEXT;
+BEGIN
+  SELECT role INTO agency_role FROM profiles WHERE id = NEW.agency_id;
+  SELECT role INTO professional_role FROM profiles WHERE id = NEW.professional_id;
+
+  IF agency_role != 'agency' THEN
+    RAISE EXCEPTION 'agency_id must reference a profile with role=agency';
+  END IF;
+
+  IF professional_role != 'professional' THEN
+    RAISE EXCEPTION 'professional_id must reference a profile with role=professional';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+"
+validate_business_membership_roles,"CREATE OR REPLACE FUNCTION public.validate_business_membership_roles()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  owner_role TEXT;
+BEGIN
+  SELECT role INTO owner_role FROM profiles WHERE id = NEW.business_id;
+
+  IF owner_role != 'business' THEN
+    RAISE EXCEPTION 'business_id must reference a profile with role=business';
+  END IF;
+
+  -- member_user_id rolü serbest: erişim üyelikten gelir, üye herhangi bir kullanıcı olabilir.
+  RETURN NEW;
+END;
+$function$
+"

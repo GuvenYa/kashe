@@ -1,0 +1,116 @@
+tablename,policyname,cmd,roller,qual,with_check
+portfolio_items,portfolio_admin_read,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))",null
+portfolio_items,portfolio_delete_own,DELETE,{public},(auth.uid() = profile_id),null
+portfolio_items,portfolio_insert_own,INSERT,{public},null,(auth.uid() = profile_id)
+portfolio_items,portfolio_read_own,SELECT,{public},(auth.uid() = profile_id),null
+portfolio_items,portfolio_read_published,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = portfolio_items.profile_id) AND (profiles.is_published = true))))",null
+portfolio_items,portfolio_update_own,UPDATE,{public},(auth.uid() = profile_id),null
+profile_experiences,profile_experiences_admin_read,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))",null
+profile_experiences,profile_experiences_delete_own,DELETE,{public},(auth.uid() = profile_id),null
+profile_experiences,profile_experiences_insert_own,INSERT,{public},null,(auth.uid() = profile_id)
+profile_experiences,profile_experiences_read_own,SELECT,{public},(auth.uid() = profile_id),null
+profile_experiences,profile_experiences_read_published,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = profile_experiences.profile_id) AND (profiles.is_published = true))))",null
+profile_experiences,profile_experiences_update_own,UPDATE,{public},(auth.uid() = profile_id),null
+profiles,Admins can update any profile,UPDATE,{authenticated},is_admin(auth.uid()),is_admin(auth.uid())
+profiles,Profiles are viewable by everyone,SELECT,{public},true,null
+profiles,Users can delete own profile,DELETE,{public},(auth.uid() = id),null
+profiles,Users can update own profile,UPDATE,{public},(auth.uid() = id),null
+profiles,profiles_read_published,SELECT,{public},(is_published = true),null
+push_subscriptions,Users can delete own push subscriptions,DELETE,{public},(auth.uid() = user_id),null
+push_subscriptions,Users can insert own push subscriptions,INSERT,{public},null,(auth.uid() = user_id)
+push_subscriptions,Users can view own push subscriptions,SELECT,{public},(auth.uid() = user_id),null
+quote_request_recipients,Admins see all recipients,SELECT,{authenticated},is_admin(auth.uid()),null
+quote_request_recipients,Business members read team request recipients,SELECT,{authenticated},is_business_member_of_request(request_id),null
+quote_request_recipients,Customers add recipients to own requests,INSERT,{public},null,"(owns_quote_request(request_id, auth.uid()) OR has_business_role_on_request(request_id, 'manager'::business_member_role))"
+quote_request_recipients,Customers see recipients of own requests,SELECT,{authenticated},"owns_quote_request(request_id, auth.uid())",null
+quote_request_recipients,Recipients see own recipient rows,SELECT,{authenticated},(professional_id = auth.uid()),null
+quote_request_recipients,Recipients update own status,UPDATE,{authenticated},(professional_id = auth.uid()),(professional_id = auth.uid())
+quote_requests,Admins see all quote requests,SELECT,{authenticated},is_admin(auth.uid()),null
+quote_requests,Business members read team quote requests,SELECT,{authenticated},is_business_member(customer_id),null
+quote_requests,Customers create own quote requests,INSERT,{public},null,"((customer_id = auth.uid()) OR has_business_role(customer_id, 'manager'::business_member_role))"
+quote_requests,Customers see own quote requests,SELECT,{authenticated},(customer_id = auth.uid()),null
+quote_requests,Customers update own quote requests,UPDATE,{public},"((customer_id = auth.uid()) OR has_business_role(customer_id, 'manager'::business_member_role))","((customer_id = auth.uid()) OR has_business_role(customer_id, 'manager'::business_member_role))"
+quote_requests,Recipients see quote requests sent to them,SELECT,{authenticated},"(EXISTS ( SELECT 1
+   FROM quote_request_recipients r
+  WHERE ((r.request_id = quote_requests.id) AND (r.professional_id = auth.uid()))))",null
+quotes,Business members read team quotes,SELECT,{authenticated},"(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = quotes.conversation_id) AND is_business_member(c.customer_id))))",null
+quotes,Professional creates quotes in their conversations,INSERT,{public},null,"(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = quotes.conversation_id) AND (((c.professional_id = auth.uid()) AND (quotes.sender_id = auth.uid())) OR ((quotes.sender_id = c.professional_id) AND is_assignee(c.id, auth.uid()))))))"
+quotes,Quote status updates by authorized parties,UPDATE,{public},"(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = quotes.conversation_id) AND ((c.customer_id = auth.uid()) OR (c.professional_id = auth.uid()) OR has_business_role(c.customer_id, 'manager'::business_member_role)))))",null
+quotes,Quotes visible to conversation participants,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = quotes.conversation_id) AND ((c.customer_id = auth.uid()) OR (c.professional_id = auth.uid()) OR is_assignee(c.id, auth.uid())))))",null
+reports,reports_delete_admin,DELETE,{public},is_admin(auth.uid()),null
+reports,reports_insert_own,INSERT,{public},null,(auth.uid() = reporter_id)
+reports,reports_select_admin,SELECT,{public},is_admin(auth.uid()),null
+reports,reports_select_own,SELECT,{public},(auth.uid() = reporter_id),null
+reports,reports_update_admin,UPDATE,{public},is_admin(auth.uid()),is_admin(auth.uid())
+review_replies,Professionals can delete their own replies,DELETE,{public},"(EXISTS ( SELECT 1
+   FROM reviews r
+  WHERE ((r.id = review_replies.review_id) AND (r.professional_id = auth.uid()))))",null
+review_replies,Professionals can reply to their own reviews,INSERT,{public},null,"(EXISTS ( SELECT 1
+   FROM reviews r
+  WHERE ((r.id = review_replies.review_id) AND (r.professional_id = auth.uid()))))"
+review_replies,Professionals can update their own replies,UPDATE,{public},"(EXISTS ( SELECT 1
+   FROM reviews r
+  WHERE ((r.id = review_replies.review_id) AND (r.professional_id = auth.uid()))))","(EXISTS ( SELECT 1
+   FROM reviews r
+  WHERE ((r.id = review_replies.review_id) AND (r.professional_id = auth.uid()))))"
+review_replies,Replies are publicly readable,SELECT,{public},true,null
+reviews,Customers can create reviews for their conversations,INSERT,{public},null,"(((auth.uid() = customer_id) OR has_business_role(customer_id, 'owner'::business_member_role)) AND (EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = reviews.conversation_id) AND (c.customer_id = reviews.customer_id) AND (c.professional_id = reviews.professional_id)))))"
+reviews,Customers can delete their own reviews,DELETE,{public},"((auth.uid() = customer_id) OR has_business_role(customer_id, 'owner'::business_member_role))",null
+reviews,Customers can update their own reviews,UPDATE,{public},"((auth.uid() = customer_id) OR has_business_role(customer_id, 'owner'::business_member_role))","((auth.uid() = customer_id) OR has_business_role(customer_id, 'owner'::business_member_role))"
+reviews,Reviews are publicly readable,SELECT,{public},true,null
+service_addons,service_addons_admin_read,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))",null
+service_addons,service_addons_delete_own,DELETE,{authenticated},(profile_id = auth.uid()),null
+service_addons,service_addons_insert_own,INSERT,{authenticated},null,(profile_id = auth.uid())
+service_addons,service_addons_read_all,SELECT,{public},true,null
+service_addons,service_addons_update_own,UPDATE,{authenticated},(profile_id = auth.uid()),(profile_id = auth.uid())
+service_categories,service_categories_insert_admin,INSERT,{public},null,is_admin(auth.uid())
+service_categories,service_categories_read_all,SELECT,{public},true,null
+service_categories,service_categories_update_admin,UPDATE,{public},is_admin(auth.uid()),is_admin(auth.uid())
+service_packages,packages_delete_own,DELETE,{public},(auth.uid() = profile_id),null
+service_packages,packages_insert_own,INSERT,{public},null,(auth.uid() = profile_id)
+service_packages,packages_read_own,SELECT,{public},(auth.uid() = profile_id),null
+service_packages,packages_read_published,SELECT,{public},"((is_active = true) AND (EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = service_packages.profile_id) AND (profiles.is_published = true)))))",null
+service_packages,packages_update_own,UPDATE,{public},(auth.uid() = profile_id),null
+service_packages,service_packages_admin_read,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))",null
+services,services_admin_read,SELECT,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))",null
+services,services_delete_own,DELETE,{public},(auth.uid() = profile_id),null
+services,services_insert_own,INSERT,{public},null,(auth.uid() = profile_id)
+services,services_read_own,SELECT,{public},(auth.uid() = profile_id),null
+services,services_read_published,SELECT,{public},"((is_active = true) AND (EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = services.profile_id) AND (profiles.is_published = true)))))",null
+services,services_update_own,UPDATE,{public},(auth.uid() = profile_id),null
+testimonials,testimonials_admin_all,ALL,{public},"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))","(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.is_admin = true))))"
+testimonials,testimonials_public_read,SELECT,{public},(is_published = true),null
+turkish_cities,turkish_cities_read_all,SELECT,{public},true,null
+waitlist,anon_can_insert,INSERT,{anon},null,true
