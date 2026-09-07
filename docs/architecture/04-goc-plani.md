@@ -179,15 +179,107 @@ INTERNAL SEMA (PostgREST'e acilmaz)
 
 **`role` alani text, enum degil.** `profiles.role` kisitsiz metin. Gocte enum'a cevrilmesi onerilir ama bu tek basina bir migration adimidir ve mevcut degerlerin temizlenmesini gerektirir.
 
-**`premium_tier` kullanici seviyesinde.** Degerleri: `none, premium, plus, agency`. Is planindaki paketlerle ortusuyor (499/999/1.999 TL). Ancak Event OS aboneligi **kurulus seviyesinde** olmali. Gocte: `agency`/`business` rollu profillerin `premium_tier` degeri `organizations.subscription_tier`'a tasinir; bireysel profesyonelinki profilde kalir.
+**`premium_tier` kullanici seviyesinde.** Degerleri: `none, premium, plus, agency`. Is planindaki paketlerle ortusuyor (499/999/1.999 TL).
+
+**Karar: goc rol bazlidir, tier degeri bazli degil.**
+
+- `professional` rollu profillerin `premium_tier` degeri **profilde kalir** (bireysel abonelik)
+- `agency` ve `business` rollu profillerinki `organizations.subscription_tier`'a **tasinir**
+
+⚠️ **`grantPremium` rol kontrolu yapmiyor** (Rapor 02, 5d). Bir `professional` kullaniciya `agency` tier verilebiliyor; o kullanicinin `organizations` kaydi olmayacagi icin goc sirasinda kaybolur.
+
+Iki is gerekir: (1) mevcut veride bu durumun var olup olmadigi kontrol edilir, (2) `grantPremium`'a rol kontrolu eklenir.
 
 **Tetikleyici zinciri yogun.** `on_quote_accepted_create_booking`, `on_agency_invitation_accepted_add_member`, `on_business_invitation_accepted_add_member`, `validate_*_membership_roles` ve bir dizi bildirim tetikleyicisi var. Uyelik tablolari birlestirilirken bu tetikleyicilerin de tasinmasi gerekir; aksi halde davet kabul akisi sessizce bozulur.
+
+---
+
+## 3b. ENVANTER BULGULARI
+
+Uc envanter calismasi yapildi (`docs/envanter/`). Ciktilar goc planini uc noktada degistirdi.
+
+### En kritik bulgu: migration zinciri uretimi temsil etmiyor
+
+Uc raporun ucunden de ayni sonuc cikti:
+
+| Bulgu | Kanit |
+|---|---|
+| `owns_quote_request` canli politikada kullaniliyor, repoda `CREATE FUNCTION` tanimi **yok** | Rapor 01, 5b |
+| `is_admin()` fonksiyonu repoda **yok**; kontrol 11 yerde satir ici kopyalanmis | Rapor 03 |
+| CLAUDE.md'ye yazilan alti yetki fonksiyonundan yalniz **ikisi** repoda tanimli | Rapor 03 |
+
+Sebep bilinen calisma kisitidir: SQL'ler Dashboard'dan elle uygulaniyor ve bir kismi migration dosyasina geri yazilmamis.
+
+**Sonuc:** Repodaki migration zinciri sifirdan kosturulursa **uretimden farkli bir veritabani** cikar. Bu, gocun temel varsayimini sarsar — "mevcut semanin uzerine ekleriz" demek icin mevcut semanin ne oldugunun yazili olmasi gerekir.
+
+**Bu yuzden FAZ -1 (Sema Uzlastirma) eklendi ve goc oncesi zorunlu hale getirildi.**
+
+### Rol kontrolu envanteri (Rapor 01)
+
+337 bulgu, 87 dosya.
+
+| Taraf | Durum |
+|---|---|
+| TypeScript | **Tek kaynak yok.** 36 dosya rol kontrolunu yalniz elle yapiyor, 6 dosya yalniz yardimci kullaniyor, 13 dosya ikisini birden |
+| SQL | **Fonksiyon araciligi kurulu.** 65 yetki fonksiyonu cagrisina karsi yalniz 10 dogrudan `role = '...'` karsilastirmasi |
+
+`has_business_role` 16 politikada, `is_business_member` 10 politikada cagriliyor. **Bu iki fonksiyonun govdesi `organization_memberships`'e cevrildiginde 26 politika otomatik dogru calisir**, politika metinlerine hic dokunulmaz.
+
+**`app/lib/business-write.ts` ilk taramada kacirildi.** 60 cagri, 17 dosya — A grubunun en buyuk yuzeyi. `role` degil `member_role` kullandigi icin desen yakalamadi. Bu dosya goc planinda **tek basina bir adimdir.**
+
+### profiles kullanim haritasi (Rapor 02)
+
+146 erisim / 75 dosya. `select` 127, `update` 19.
+
+**`select('*')`: 8 yer**, hepsi `app/profil/` altinda. Beklenenden az; Faz 2 bu acidan yonetilebilir.
+
+**Ancak tip guvenligi yok.** `app/lib/types.ts` icindeki `Profile` tipi 23 alan tanimliyor ama kodda kullanilan **yedi alan tipte hic yok**: `category_attributes`, `default_allowed_applicant_roles`, `suspended_at`, `suspension_reason`, `suspended_by`, `last_seen_at`, `welcome_email_sent_at`.
+
+Ilk ikisi `providers`'a tasinacak. **Tasindiginda TypeScript uyarmayacak, calisma zamaninda `undefined` gelecek.** `select('*')` ile birleşince sessiz kirilma riski iki katina cikar.
+
+**Yedi ayri profil sekli var** ve her biri bagimsiz guncellenecek: `Profile`, `ProfileWithCity`, `FeaturedProfile`, `MarqueeProfile`, `PublishedProfile` (iki farkli tanim, ayni ad), `PublicProfile` (iki kez).
+
+⚠️ **`slug`, `approved_at`, `views_count` icin "0 okuma" cikti. Bu, kaldirilabilir demek DEGILDIR.** `slug` profil URL'lerinde kullaniliyor olmali; muhtemelen iliskisel select icinde veya farkli desenle erisiliyor. Sifir okuma bulgusu "dogrula" isaretidir, "kaldir" isareti degil.
+
+### Tetikleyici agaci (Rapor 03)
+
+28 tetikleyici, 35 fonksiyon tanimi (32 benzersiz), 108 politika.
+
+**35 fonksiyondan yalniz 3'unde `RAISE EXCEPTION` var. Kalan 32'si basarisizlikta sessiz.**
+
+Sessiz bozulma siralamasi:
+
+| Sira | Fonksiyon | Bozulursa |
+|---|---|---|
+| 1 | `on_quote_accepted_create_booking` | Teklif kabul edilir, rezervasyon olusmaz. Sifir `RAISE`, `bookings`'e yaziyor |
+| 2 | `on_agency_invitation_accepted_add_member`, `on_business_invitation_accepted_add_member` | Davet `accepted` olur, uyelik satiri olusmaz. `RAISE` var ama yalniz "kullanici yok" dalinda; tetikleyici tasinmazsa o dal hic calismaz |
+| 3 | 12 bildirim fonksiyonu | Hicbirinde `RAISE` yok; kayip yalniz kullanici sikayetiyle anlasilir |
+
+**Ortusen tetikleyiciler:** `profiles` uzerinde iki ayri BEFORE UPDATE tetikleyicisi ayni isi yapiyor (`handle_updated_at` ve `update_updated_at_column`). `messages`'ta da benzer ikilik var. Hangisinin gecerli oldugu koddan net degil; FAZ -1'de netlesmelidir.
 
 ---
 
 ## 4. GOC SIRASI
 
 Her faz bagimsiz olarak yayina alinabilir ve geri alinabilir. Hicbir faz uretimdeki bir akisi kesmez.
+
+### FAZ -1 — Sema uzlastirma (ZORUNLU on kosul)
+
+Repo ile uretim arasindaki fark kapatilmadan goc baslatilmaz.
+
+0a. Uretimdeki **tum** fonksiyon, tetikleyici ve politika tanimlari dokulur.
+0b. Repo migration zinciri temiz bir veritabaninda kosturulur; cikan sema ile uretim karsilastirilir.
+0c. Fark listesi cikarilir: repoda olmayan tanimlar, repoda olup uretimde olmayanlar, govdesi farkli olanlar.
+0d. Eksikler icin **onarim migration'i** yazilir; yalniz tanim ekler, veri degistirmez.
+0e. `handle_updated_at` / `update_updated_at_column` ikiligi ve `messages` uzerindeki benzer ikilik netlestirilir; gereksiz olan kaldirilir.
+0f. `is_admin()` fonksiyonu tanimlanir; 11 satir ici kopya bu fonksiyona cevrilir.
+0g. Onarim sonrasi migration zinciri tekrar kosturulur ve uretimle **birebir** eslestigi dogrulanir.
+
+**Cikti:** Repodan kosturulan sema = uretim semasi.
+
+**Risk: dusuk ama is yuku yuksek.** Yalniz tanim ekleme; veri dokunulmaz. Ancak fark sayisi bilinmiyor; envanter bu adimin ilk isidir.
+
+---
 
 ### FAZ 0 — Kiraci temeli (goc yok, yalniz ekleme)
 
@@ -211,7 +303,20 @@ Her faz bagimsiz olarak yayina alinabilir ve geri alinabilir. Hicbir faz uretimd
 6. `has_org_permission(p_org_id uuid, p_permission text)` fonksiyonu yazilir.
 7. **Cift yazma** devreye alinir: yeni uyelik hem eski hem yeni tabloya yazilir.
 
-**Risk: dusuk.** Hicbir okuma yolu degismez.
+8. **Tetikleyiciler once kopyalanir, sonra eskisi kaldirilir.** Tasinacak yedi tetikleyici (Rapor 03 Grup A):
+   - `on_agency_invitation_accepted_add_member`
+   - `on_business_invitation_accepted_add_member`
+   - `on_agency_invitation_insert_notify`
+   - `on_business_invitation_insert_notify`
+   - `on_agency_member_insert_notify_agency`
+   - `on_business_member_insert_notify_business`
+   - `validate_agency_membership_roles` / `validate_business_membership_roles`
+
+9. **Sessiz fonksiyonlara sayac eklenir.** `on_*_invitation_accepted_add_member` govdelerine bir log satiri veya sayac yazilir. Calistigini gormek, calismadigini fark etmekten kolaydir.
+
+10. `has_business_role` ve `is_business_member` govdeleri `organization_memberships`'e cevrilir. **Politika metinlerine dokunulmaz** — 26 politika otomatik dogru calisir.
+
+**Risk: dusuk.** Hicbir okuma yolu degismez. Tek risk tetikleyici kopyalamanin atlanmasi; adim 8 ve 9 bunu karsilar.
 
 ### FAZ 1 — Internal sema iskeleti
 
@@ -223,6 +328,15 @@ Her faz bagimsiz olarak yayina alinabilir ve geri alinabilir. Hicbir faz uretimd
 **Risk: yok.** Yalniz ekleme.
 
 ### FAZ 2 — Saglayici kayit defteri
+
+**ON KOSUL — tip tekillestirme.** Alan tasimaya baslamadan once:
+
+11a. `Profile` tipi tamamlanir; eksik yedi alan eklenir (`category_attributes`, `default_allowed_applicant_roles`, `suspended_at`, `suspension_reason`, `suspended_by`, `last_seen_at`, `welcome_email_sent_at`).
+11b. Yedi profil sekli tekillestirilir. Ozellikle ayni adi tasiyan iki farkli `PublishedProfile` tanimi ve iki farkli `PublicProfile` birlestirilir.
+11c. `app/profil/` altindaki sekiz `select('*')` acik alan listesine cevrilir.
+11d. `slug`, `approved_at`, `views_count` icin "sifir okuma" bulgusu **dogrulanir**; iliskisel select ve farkli desenler taranir. Kullanilmadigi kanitlanmadan hicbir alan kaldirilmaz.
+
+Bu adimlar yapilmadan alan tasinirsa TypeScript uyarmaz ve calisma zamaninda `undefined` gelir.
 
 12. `talents`, `providers`, `professional_profiles`, `organization_profiles`, `provider_services` olusturulur.
 13. Her `professional` rollu profil icin:
@@ -334,20 +448,29 @@ Dogrudan `p.role = 'agency'` yazan politikalar tek tek ele alinir; bunlar sayica
 | `premium_tier` gocu | Abonelik kaybi | Gocte iki yerde tutulur; kesinlestikten sonra profil alani salt okunur |
 | Kategori kimligi (integer) ile yeni tablolar (UUID) | Join hatalari | Taksonomi tablolari integer kalir; karisim yapilmaz |
 | Sema dokumundeki 100 satir siniri | Gozden kacan tablo | Goc oncesi tam dokum tekrar alinir ve bu belge dogrulanir |
+| **Repo migration zinciri uretimi temsil etmiyor** | Sifirdan kurulan ortam calismaz; goc yanlis zemine kurulur | **FAZ -1 zorunlu on kosul** |
+| **32 fonksiyon basarisizlikta sessiz** | Akis bozulur, hata gorunmez | Tetikleyiciler once kopyalanir; kritik olanlara sayac eklenir |
+| **`business-write.ts` 60 cagri, tek yerde** | A grubunun en buyuk yuzeyi; atlanirsa yetkilendirme yarim kalir | Ayri bir goc adimi olarak ele alinir |
+| **Tip tanimi eksik (7 alan)** | Alan tasinir, TypeScript uyarmaz, calisma zamaninda undefined | Faz 2 on kosulu: tip tekillestirme |
+| **`grantPremium` rol kontrolu yok** | `professional`'a `agency` tier verilmis kayitlar gocte kaybolur | Goc oncesi veri kontrolu + kod duzeltmesi |
 
 ---
 
-## 7. ILK ADIM ONERISI
+## 7. ILK ADIM
 
-Faz 0'in tamami tek bir migration dosyasinda toplanabilir ve **uretimi hic etkilemez**: yalnizca yeni tablolar, veri kopyalama ve gorunumler.
+Uc envanter tamamlandi (`docs/envanter/`). Ciktilar bu belgeye islendi.
 
-Kod yazmaya baslamadan once Claude Code ile yapilabilecek uc envanter isi:
+**Siradaki is: FAZ -1 sema uzlastirma.**
 
-1. **Rol kontrolu envanteri** — kod tabaninda `role === 'agency'`, `role === 'business'` gecen her yer; dosya, satir, baglam.
-2. **`profiles` kullanim haritasi** — hangi sorgu profilin hangi alanini okuyor; `providers`'a tasinacak alanlarin etkilenen yerleri.
-3. **Tetikleyici ve fonksiyon bagimlilik agaci** — hangi fonksiyon hangi tabloya bakiyor; goc sirasinda hangileri guncellenmeli.
+Bu, goc planinin geri kalaninin on kosuludur. Repodaki migration zinciri uretimi temsil etmiyorsa, "mevcut semanin uzerine ekleriz" varsayimi gecersizdir.
 
-Ucu de salt okuma isi, hicbir seyi degistirmez ve goc planinin hammaddesidir.
+Ilk adim, dorduncu bir envanter isidir: **uretim semasi ile repo migration'larinin karsilastirilmasi.** Bu karsilastirma FAZ -1'in fark listesini uretir.
+
+Ardindan:
+
+1. Onarim migration'i yazilir (yalniz tanim ekler, veri degistirmez)
+2. Temiz ortamda kosturulur ve uretimle esitlik dogrulanir
+3. FAZ 0 baslar
 
 
 ---
