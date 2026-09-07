@@ -82,10 +82,19 @@ providers
   district              text
   service_radius_km     integer
   base_currency         char(3) default 'TRY'
-  marketplace_status    enum('draft','pending_review','active','paused','banned')
-  is_verified           boolean
-  verification_level    enum('none','email','document','full')
-  trust_score           numeric null       -- IP2 ciktisi, periyodik hesaplanir
+
+  -- GORUNURLUK: yonetici ve kullanici yetkileri AYRI alanlarda
+  approval_status       enum('draft','pending','approved','rejected','revision')  -- YONETICI
+  approval_note         text                                                      -- YONETICI
+  approved_at           timestamptz                                               -- YONETICI
+  suspended_at          timestamptz                                               -- YONETICI
+  suspension_reason     text                                                      -- YONETICI
+  suspended_by          uuid                                                      -- YONETICI
+  is_published          boolean default false                                     -- KULLANICI
+
+  is_verified           boolean                                                   -- YONETICI
+  verification_level    enum('none','email','document','full')                    -- YONETICI
+  trust_score           numeric null       -- IP2 ciktisi, sistem hesaplar
   trust_computed_at     timestamptz
   created_at, updated_at
 
@@ -98,6 +107,31 @@ providers
 ```
 
 **Neden supertype/subtype:** `event_crew`, `bookings`, `reviews`, `availability` gibi tablolar **tek bir saglayiciya** isaret etmeli. Ayri tablolar olsaydi polimorfik yabanci anahtar gerekirdi ve her join iki durumu ayri ele almak zorunda kalirdi. Tek tabloda `provider_type` ayirici olsaydi, firmanin kategori kapasitesi ile profesyonelin portfoyu ayni tabloda onlarca nullable sutuna donerdi ve kisitlar veritabaninda zorlanamazdi.
+
+**Neden tek bir `marketplace_status` alani YOK:**
+
+Ilk taslakta `marketplace_status enum('draft','pending_review','active','paused','banned')` onerilmisti. Bu **yanlisti**: tek alan, yonetici karari (`pending_review`, `banned`) ile kullanici kararini (`draft`, `paused`) ayni yere sikistirir.
+
+Tek alan olursa ya kullanici yazabilir — o zaman onayi atlayip `active` yapabilir — ya yonetici yazabilir; o zaman kullanici kendi profilini duraklatamaz. Ikisi de yanlistir.
+
+Mevcut `profiles` tasarimi bu ayrimi **dogru** yapmis ve aynen korunmalidir:
+
+| Alan | Kim yazar | Koruma |
+|---|---|---|
+| `approval_status`, `approval_note`, `approved_at` | Yonetici | Tetikleyici kara listesinde |
+| `suspended_at`, `suspension_reason`, `suspended_by` | Yonetici | Tetikleyici kara listesinde |
+| `is_verified`, `verification_level` | Yonetici | Tetikleyici kara listesinde |
+| `is_published` | **Kullanici** | Korunmaz — bilincli |
+
+**Gorunurluk turetilmis bir degerdir, saklanmaz:**
+
+```sql
+is_visible = is_published
+         and approval_status = 'approved'
+         and suspended_at is null
+```
+
+Kullanici onaysiz profilini yayinlayabilir; kesfette gorunmez. Bu, bugunku davranistir ve korunur.
 
 **Neden yabanci anahtar defterde:** `providers.organization_id` yerine `organizations.provider_id` da olabilirdi. Defterde tutmak, "tam olarak biri dolu" kisitinin veritabaninda zorlanmasini saglar. Ayrica profesyonel saglayici `user_id`'ye degil `talent_id`'ye baglanir; boylece henuz hesabi olmayan bir kisi ileride sorunsuz saglayiciya donusur.
 

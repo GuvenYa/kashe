@@ -472,7 +472,15 @@ Yontem: admin ise dokunmaz, degilse eski degeri geri yazar. **`RAISE` yok — se
 Tasindiklarinda bu tetikleyici onlari **artik korumaz.** `providers` tablosunda esdeger bir tetikleyici olusturulmadan alan tasinmasi, profesyonelin kendi onay durumunu degistirebilmesi anlamina gelir.
 
 11e. `is_admin()` FAZ -1'de repoya alinmis olmalidir; bu tetikleyici ona bagimlidir. Bagimlilik sirasi: `is_admin` -> `protect_sensitive_profile_fields`.
-11f. `providers` icin `protect_sensitive_provider_fields()` yazilir; en az `approval_status`, `approved_at`, `marketplace_status`, `is_verified`, `verification_level`, `trust_score` korunur.
+11f. `providers` icin `protect_sensitive_provider_fields()` yazilir. Korunacak alanlar (yonetici yetkisi):
+
+   ```
+   approval_status · approval_note · approved_at
+   suspended_at · suspension_reason · suspended_by
+   is_verified · verification_level · trust_score
+   ```
+
+   **`is_published` korunmaz** — kullanici kendi profilini yayinlar/geri ceker. Bu, bugunku `profiles` davranisidir ve bilinclidir. Gorunurluk turetilmis degerdir: `is_published and approval_status='approved' and suspended_at is null`.
 11g. Alan tasima ile tetikleyici olusturma **ayni migration'da** yapilir; arada koruma bosluğu birakilmaz.
 11h. Test: profesyonel jetonuyla kendi `providers` satirinda `approval_status` degistirilmeye calisilir; degerin degismedigi dogrulanir.
 
