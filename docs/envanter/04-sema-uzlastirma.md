@@ -212,6 +212,36 @@ repo uretimin **alt kumesi** olmaya yakin.
 | `messages_update_conversation` | Tetikleyici | `20260518000000_initial_schema.sql` | Ayni cift: `on_message_insert_update_conversation` yerine gecmis |
 | `applications :: Professionals apply to published listings` | Politika | `20260519133753_add_listings_and_applications.sql:191` | Uretimde bu adla yok — yeniden adlandirilmis ya da kaldirilmis olabilir. **Incelenmeli** |
 
+### 3a. Cozulen soru — `is_published` neden "flip etmeyebilir" sanildi
+
+`app/admin/actions.ts:325` bir uyari logu tasiyor: *"is_published tutmadiysa
+(protect_sensitive_profile_fields trigger'i engellemis olabilir)"*. Bu bir **hipotezdi**,
+gozlem degil. Uretim dokumu hipotezi curutuyor.
+
+**`profiles` uzerindeki uretim tetikleyicilerinin TAMAMI (3):**
+
+| Tetikleyici | Fonksiyon | `is_published`'i engelleyebilir mi |
+|---|---|---|
+| `on_profiles_updated` | `handle_updated_at()` | Hayir — yalniz `updated_at` damgalar |
+| `update_profiles_updated_at` | `update_updated_at_column()` | Hayir — yalniz `updated_at` damgalar |
+| `protect_profile_fields` | `protect_sensitive_profile_fields()` | **Hayir** — kara listede 7 alan var, `is_published` **aralarinda degil** |
+
+**Sonuc: uc tetikleyicinin hicbiri `is_published`'i engelleyemez.** Ustelik `approveProfile`
+admin olarak kosuyor ve koruma fonksiyonunun ilk satiri admin icin `return new` diyor —
+yani tetikleyici o yolda zaten hicbir sey yapmiyor.
+
+`profiles` uzerinde iki UPDATE politikasi var (`Admins can update any profile`,
+`Users can update own profile`); ikisinin de **ifadesi elimizde yok** (dokum md5 tasiyor).
+Teorik olarak bir `WITH CHECK` `is_published`'i kisitlayabilir, ama admin politikasi
+zaten adminlere aciktir.
+
+> **Karar:** `app/admin/actions.ts:323-327`'deki uyari **olu savunma kodudur** — yanlis bir
+> hipoteze dayaniyor. Silinmesi ya da yorumun duzeltilmesi onerilir; ama once iki UPDATE
+> politikasinin `with_check` ifadesi cekilip teyit edilmeli (bolum 8b sorgusu bunu kapsar).
+> **Bu envanterin isi degildir; ayri bir karar.**
+
+
+
 > `03-tetikleyici-agaci.md` bolum 1a'da "`messages` tablosunda iki ortusen tetikleyici, hangisi
 > gecerli belirsiz" diye isaretlenmisti. **Cevap:** uretimde yalniz `on_message_insert_update_conversation`
 > var. Repodaki `messages_update_conversation` olu koddur.
@@ -371,9 +401,11 @@ order by s.relname, s.idx_scan desc;
 | ~~2~~ | ~~`protect_sensitive_profile_fields()` govdesini incele~~ | — | ✅ **TAMAMLANDI.** Sonuc `04-goc-plani.md` FAZ -1'de. En onemli cikti: korunan iki alan (`approval_status`, `approved_at`) `providers`'a tasiniyor ve orada **koruma kalmiyor** → `providers` icin esdeger tetikleyici zorunlu |
 | 3 | 13 tablonun DDL'i | Tablolar + PK/UNIQUE kisitlari | Zincirin kosabilmesi icin ilk esik. `service_packages` olmadan `20260625120000` patlar |
 | 4 | 37 gercek eksik indeks | `CREATE INDEX` | Tablolardan sonra. `*_pkey`/`*_key` kendiliginden olusur |
-| 5 | 39 fonksiyon | Once yetki (4), sonra atama (3), sonra admin RPC (26), sonra diger (6) | Politikalar yetki fonksiyonlarina bagli |
+| 5a | **`is_admin()` — EN ONCE** | 1 fonksiyon | 🔴 `protect_sensitive_profile_fields()` govdesinin **ilk satiri** `if public.is_admin(auth.uid()) then return new; end if;`. `is_admin` olmadan koruma tetikleyicisi olusturulamaz. Ayrica 11 politikadaki satir ici admin kapisinin fonksiyon karsiligi |
+| 5b | Kalan 3 yetki fonksiyonu | `is_assignee`, `is_professional_or_agency`, `owns_quote_request` | 56 politikanin bir kismi bunlara bagli |
+| 5c | Atama (3) → admin RPC (26) → diger (5) | 34 fonksiyon | `protect_sensitive_profile_fields` bu son grupta; 5a'dan **sonra** gelmek zorunda |
 | 6 | 56 politika | Tablo + fonksiyon hazir olduktan sonra | Bagimliliklari 3 ve 5'te karsilanir |
-| 7 | 6 tetikleyici | `protect_profile_fields` **en sona** | `profiles` yazma kapisi; digerlerinin dogrulugundan sonra |
+| 7 | 6 tetikleyici | `protect_profile_fields` **en sona** | `profiles` yazma kapisi; digerlerinin dogrulugundan sonra. Bagimlilik zinciri: `is_admin` (5a) → `protect_sensitive_profile_fields` (5c) → `protect_profile_fields` tetikleyicisi (7) |
 | 8 | GRUP B temizligi | 3 olu nesne | `update_conversation_last_message` + tetikleyicisi + adi degismis politika |
 | 9 | Zincir dogrulamasi | Temiz DB | Uygula, ayni dokumu orada al, uretim dokumuyla karsilastir — bu kez **elmayla elma** |
 
