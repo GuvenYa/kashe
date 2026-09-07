@@ -1,0 +1,185 @@
+tablo,conname,contype,tanim
+admin_audit_log,admin_audit_log_admin_id_fkey,f,FOREIGN KEY (admin_id) REFERENCES profiles(id) ON DELETE SET NULL
+admin_audit_log,admin_audit_log_pkey,p,PRIMARY KEY (id)
+agency_invitations,agency_invitations_agency_id_fkey,f,FOREIGN KEY (agency_id) REFERENCES profiles(id) ON DELETE CASCADE
+agency_invitations,agency_invitations_invitation_message_check,c,CHECK (((invitation_message IS NULL) OR (char_length(invitation_message) <= 1000)))
+agency_invitations,agency_invitations_invited_by_id_fkey,f,FOREIGN KEY (invited_by_id) REFERENCES profiles(id) ON DELETE CASCADE
+agency_invitations,agency_invitations_invited_email_check,c,"CHECK ((invited_email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'::text))"
+agency_invitations,agency_invitations_invited_user_id_fkey,f,FOREIGN KEY (invited_user_id) REFERENCES profiles(id) ON DELETE SET NULL
+agency_invitations,agency_invitations_pkey,p,PRIMARY KEY (id)
+agency_invitations,no_duplicate_pending_invitation,x,"EXCLUDE USING btree (agency_id WITH =, invited_email WITH =) WHERE ((status = 'pending'::agency_invitation_status))"
+agency_members,agency_members_agency_id_fkey,f,FOREIGN KEY (agency_id) REFERENCES profiles(id) ON DELETE CASCADE
+agency_members,agency_members_agency_id_professional_id_key,u,"UNIQUE (agency_id, professional_id)"
+agency_members,agency_members_pkey,p,PRIMARY KEY (id)
+agency_members,agency_members_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+agency_members,no_self_membership,c,CHECK ((agency_id <> professional_id))
+applications,applications_applicant_id_fkey,f,FOREIGN KEY (applicant_id) REFERENCES profiles(id) ON DELETE CASCADE
+applications,applications_cover_message_check,c,CHECK (((char_length(cover_message) >= 20) AND (char_length(cover_message) <= 2000)))
+applications,applications_listing_id_applicant_id_key,u,"UNIQUE (listing_id, applicant_id)"
+applications,applications_listing_id_fkey,f,FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+applications,applications_pkey,p,PRIMARY KEY (id)
+applications,applications_proposed_amount_check,c,CHECK (((proposed_amount IS NULL) OR (proposed_amount >= (0)::numeric)))
+availability_blocks,availability_blocks_pkey,p,PRIMARY KEY (id)
+availability_blocks,availability_blocks_profile_id_blocked_date_key,u,"UNIQUE (profile_id, blocked_date)"
+availability_blocks,availability_blocks_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+blog_posts,blog_posts_author_id_fkey,f,FOREIGN KEY (author_id) REFERENCES profiles(id) ON DELETE SET NULL
+blog_posts,blog_posts_pkey,p,PRIMARY KEY (id)
+blog_posts,blog_posts_slug_key,u,UNIQUE (slug)
+blog_posts,blog_posts_status_check,c,"CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))"
+bookings,bookings_cancelled_by_fkey,f,FOREIGN KEY (cancelled_by) REFERENCES profiles(id)
+bookings,bookings_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+bookings,bookings_customer_id_fkey,f,FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE
+bookings,bookings_event_type_check,c,"CHECK (((event_type IS NULL) OR (event_type = ANY (ARRAY['wedding'::text, 'engagement'::text, 'henna'::text, 'birthday'::text, 'baby_shower'::text, 'graduation'::text, 'circumcision'::text, 'corporate'::text, 'launch'::text, 'fair'::text, 'conference'::text, 'congress'::text, 'gala'::text, 'concert'::text, 'other'::text]))))"
+bookings,bookings_pkey,p,PRIMARY KEY (id)
+bookings,bookings_platform_fee_check,c,CHECK ((platform_fee >= (0)::numeric))
+bookings,bookings_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+bookings,bookings_quote_id_fkey,f,FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE RESTRICT
+bookings,bookings_quote_id_key,u,UNIQUE (quote_id)
+bookings,bookings_total_amount_check,c,CHECK ((total_amount >= (0)::numeric))
+business_invitations,business_invitations_business_id_fkey,f,FOREIGN KEY (business_id) REFERENCES profiles(id) ON DELETE CASCADE
+business_invitations,business_invitations_invitation_message_check,c,CHECK (((invitation_message IS NULL) OR (char_length(invitation_message) <= 1000)))
+business_invitations,business_invitations_invited_by_id_fkey,f,FOREIGN KEY (invited_by_id) REFERENCES profiles(id) ON DELETE CASCADE
+business_invitations,business_invitations_invited_email_check,c,"CHECK ((invited_email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'::text))"
+business_invitations,business_invitations_invited_user_id_fkey,f,FOREIGN KEY (invited_user_id) REFERENCES profiles(id) ON DELETE SET NULL
+business_invitations,business_invitations_pkey,p,PRIMARY KEY (id)
+business_invitations,no_duplicate_pending_business_invitation,x,"EXCLUDE USING btree (business_id WITH =, invited_email WITH =) WHERE ((status = 'pending'::business_invitation_status))"
+business_members,business_members_business_id_fkey,f,FOREIGN KEY (business_id) REFERENCES profiles(id) ON DELETE CASCADE
+business_members,business_members_business_id_member_user_id_key,u,"UNIQUE (business_id, member_user_id)"
+business_members,business_members_member_user_id_fkey,f,FOREIGN KEY (member_user_id) REFERENCES profiles(id) ON DELETE CASCADE
+business_members,business_members_pkey,p,PRIMARY KEY (id)
+business_members,no_self_business_membership,c,CHECK ((business_id <> member_user_id))
+category_requests,category_requests_pkey,p,PRIMARY KEY (id)
+category_requests,category_requests_reviewed_by_fkey,f,FOREIGN KEY (reviewed_by) REFERENCES profiles(id) ON DELETE SET NULL
+category_requests,category_requests_status_check,c,"CHECK ((status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'approved'::text, 'declined'::text])))"
+category_requests,category_requests_user_id_fkey,f,FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+conversation_assignees,conversation_assignees_assigned_by_fkey,f,FOREIGN KEY (assigned_by) REFERENCES profiles(id) ON DELETE SET NULL
+conversation_assignees,conversation_assignees_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+conversation_assignees,conversation_assignees_conversation_id_professional_id_key,u,"UNIQUE (conversation_id, professional_id)"
+conversation_assignees,conversation_assignees_pkey,p,PRIMARY KEY (id)
+conversation_assignees,conversation_assignees_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+conversations,conversations_budget_range_check,c,"CHECK (((budget_range IS NULL) OR (budget_range = ANY (ARRAY['under_5k'::text, '5k_15k'::text, '15k_30k'::text, '30k_50k'::text, 'over_50k'::text, 'open'::text]))))"
+conversations,conversations_customer_id_fkey,f,FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE
+conversations,conversations_different_users,c,CHECK ((customer_id <> professional_id))
+conversations,conversations_event_type_check,c,"CHECK (((event_type IS NULL) OR (event_type = ANY (ARRAY['wedding'::text, 'engagement'::text, 'henna'::text, 'birthday'::text, 'baby_shower'::text, 'graduation'::text, 'circumcision'::text, 'corporate'::text, 'launch'::text, 'fair'::text, 'conference'::text, 'congress'::text, 'gala'::text, 'concert'::text, 'other'::text]))))"
+conversations,conversations_guest_count_check,c,CHECK (((guest_count IS NULL) OR ((guest_count >= 0) AND (guest_count <= 100000))))
+conversations,conversations_pkey,p,PRIMARY KEY (id)
+conversations,conversations_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+conversations,conversations_request_type_check,c,"CHECK ((request_type = ANY (ARRAY['quote'::text, 'booking_request'::text])))"
+conversations,conversations_unique_pair,u,"UNIQUE (customer_id, professional_id)"
+favorites,favorites_pkey,p,PRIMARY KEY (id)
+favorites,favorites_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+favorites,favorites_user_id_fkey,f,FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+favorites,favorites_user_id_professional_id_key,u,"UNIQUE (user_id, professional_id)"
+listing_invitations,listing_invitations_invitation_message_check,c,CHECK (((invitation_message IS NULL) OR (char_length(invitation_message) <= 1000)))
+listing_invitations,listing_invitations_inviter_id_fkey,f,FOREIGN KEY (inviter_id) REFERENCES profiles(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_listing_id_fkey,f,FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_pkey,p,PRIMARY KEY (id)
+listing_invitations,listing_invitations_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_resulting_application_id_fkey,f,FOREIGN KEY (resulting_application_id) REFERENCES applications(id) ON DELETE SET NULL
+listing_invitations,no_duplicate_pending_listing_invite,x,"EXCLUDE USING btree (listing_id WITH =, professional_id WITH =) WHERE ((status = 'pending'::listing_invitation_status))"
+listings,allowed_roles_valid,c,"CHECK (((allowed_applicant_roles IS NULL) OR ((allowed_applicant_roles <@ ARRAY['professional'::text, 'agency'::text]) AND (array_length(allowed_applicant_roles, 1) >= 1))))"
+listings,listings_budget_max_check,c,CHECK (((budget_max IS NULL) OR (budget_max >= (0)::numeric)))
+listings,listings_budget_min_check,c,CHECK (((budget_min IS NULL) OR (budget_min >= (0)::numeric)))
+listings,listings_category_id_fkey,f,FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE RESTRICT
+listings,listings_city_id_fkey,f,FOREIGN KEY (city_id) REFERENCES turkish_cities(id) ON DELETE SET NULL
+listings,listings_created_by_fkey,f,FOREIGN KEY (created_by) REFERENCES profiles(id)
+listings,listings_creator_id_fkey,f,FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE CASCADE
+listings,listings_currency_check,c,CHECK ((currency = 'TRY'::text))
+listings,listings_description_check,c,CHECK (((char_length(description) >= 10) AND (char_length(description) <= 5000)))
+listings,listings_event_type_check,c,"CHECK (((event_type IS NULL) OR (event_type = ANY (ARRAY['wedding'::text, 'engagement'::text, 'henna'::text, 'birthday'::text, 'baby_shower'::text, 'graduation'::text, 'circumcision'::text, 'corporate'::text, 'launch'::text, 'fair'::text, 'conference'::text, 'congress'::text, 'gala'::text, 'concert'::text, 'other'::text]))))"
+listings,listings_guest_count_check,c,CHECK (((guest_count IS NULL) OR ((guest_count >= 0) AND (guest_count <= 100000))))
+listings,listings_location_check,c,CHECK (((location IS NULL) OR (char_length(location) <= 200)))
+listings,listings_pkey,p,PRIMARY KEY (id)
+listings,listings_project_details_len,c,CHECK (((project_details IS NULL) OR (char_length(project_details) <= 3000)))
+listings,listings_requirements_check,c,CHECK (((requirements IS NULL) OR (char_length(requirements) <= 2000)))
+listings,listings_title_check,c,CHECK (((char_length(title) >= 3) AND (char_length(title) <= 200)))
+listings,listings_work_conditions_len,c,CHECK (((work_conditions IS NULL) OR (char_length(work_conditions) <= 2000)))
+listings,valid_budget_range,c,CHECK (((budget_min IS NULL) OR (budget_max IS NULL) OR (budget_min <= budget_max)))
+listings,valid_expires_at,c,CHECK (((expires_at IS NULL) OR (expires_at > created_at)))
+message_violations,message_violations_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+message_violations,message_violations_pkey,p,PRIMARY KEY (id)
+message_violations,message_violations_user_id_fkey,f,FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+message_violations,message_violations_violation_type_check,c,"CHECK ((violation_type = ANY (ARRAY['phone'::text, 'iban'::text, 'email'::text])))"
+messages,messages_body_check,c,CHECK (((length(body) > 0) AND (length(body) <= 2000)))
+messages,messages_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+messages,messages_pkey,p,PRIMARY KEY (id)
+messages,messages_quote_consistency,c,CHECK ((((message_type = 'quote'::message_type) AND (quote_id IS NOT NULL)) OR (message_type <> 'quote'::message_type)))
+messages,messages_quote_id_fkey,f,FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
+messages,messages_sender_id_fkey,f,FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
+notifications,notifications_pkey,p,PRIMARY KEY (id)
+notifications,notifications_type_check,c,"CHECK ((type = ANY (ARRAY['message'::text, 'review'::text, 'review_reply'::text, 'listing_invitation'::text, 'booking_request'::text])))"
+notifications,notifications_user_id_fkey,f,FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+portfolio_items,portfolio_items_media_type_check,c,"CHECK ((media_type = ANY (ARRAY['image'::text, 'video'::text])))"
+portfolio_items,portfolio_items_pkey,p,PRIMARY KEY (id)
+portfolio_items,portfolio_items_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+profile_experiences,profile_experiences_end_month_check,c,CHECK (((end_month >= 1) AND (end_month <= 12)))
+profile_experiences,profile_experiences_kind_check,c,"CHECK ((kind = ANY (ARRAY['work'::text, 'education'::text, 'award'::text])))"
+profile_experiences,profile_experiences_pkey,p,PRIMARY KEY (id)
+profile_experiences,profile_experiences_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+profile_experiences,profile_experiences_start_month_check,c,CHECK (((start_month >= 1) AND (start_month <= 12)))
+profiles,default_allowed_roles_valid,c,"CHECK (((default_allowed_applicant_roles <@ ARRAY['professional'::text, 'agency'::text]) AND (array_length(default_allowed_applicant_roles, 1) >= 1)))"
+profiles,profiles_city_id_fkey,f,FOREIGN KEY (city_id) REFERENCES turkish_cities(id) ON DELETE SET NULL
+profiles,profiles_email_key,u,UNIQUE (email)
+profiles,profiles_id_fkey,f,FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+profiles,profiles_pkey,p,PRIMARY KEY (id)
+profiles,profiles_primary_category_id_fkey,f,FOREIGN KEY (primary_category_id) REFERENCES service_categories(id) ON DELETE SET NULL
+profiles,profiles_role_check,c,"CHECK ((role = ANY (ARRAY['professional'::text, 'client'::text, 'business'::text, 'agency'::text])))"
+profiles,profiles_slug_key,u,UNIQUE (slug)
+profiles,profiles_suspended_by_fkey,f,FOREIGN KEY (suspended_by) REFERENCES profiles(id) ON DELETE SET NULL
+push_subscriptions,push_subscriptions_endpoint_key,u,UNIQUE (endpoint)
+push_subscriptions,push_subscriptions_pkey,p,PRIMARY KEY (id)
+push_subscriptions,push_subscriptions_user_id_fkey,f,FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
+quote_request_recipients,quote_request_recipients_pkey,p,PRIMARY KEY (id)
+quote_request_recipients,quote_request_recipients_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_request_id_fkey,f,FOREIGN KEY (request_id) REFERENCES quote_requests(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_request_id_professional_id_key,u,"UNIQUE (request_id, professional_id)"
+quote_requests,quote_requests_category_id_fkey,f,FOREIGN KEY (category_id) REFERENCES service_categories(id)
+quote_requests,quote_requests_city_id_fkey,f,FOREIGN KEY (city_id) REFERENCES turkish_cities(id)
+quote_requests,quote_requests_created_by_fkey,f,FOREIGN KEY (created_by) REFERENCES profiles(id)
+quote_requests,quote_requests_customer_id_fkey,f,FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_requests,quote_requests_pkey,p,PRIMARY KEY (id)
+quotes,quotes_cancellation_policy_check,c,CHECK (((cancellation_policy IS NULL) OR (char_length(cancellation_policy) <= 1000)))
+quotes,quotes_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+quotes,quotes_currency_check,c,CHECK ((currency = 'TRY'::text))
+quotes,quotes_pkey,p,PRIMARY KEY (id)
+quotes,quotes_sender_id_fkey,f,FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
+quotes,quotes_services_description_check,c,CHECK (((char_length(services_description) >= 10) AND (char_length(services_description) <= 2000)))
+quotes,quotes_total_amount_check,c,CHECK ((total_amount >= (0)::numeric))
+quotes,valid_expires_at,c,CHECK (((expires_at > (created_at + '01:00:00'::interval)) AND (expires_at < (created_at + '30 days'::interval))))
+reports,reports_pkey,p,PRIMARY KEY (id)
+reports,reports_reason_check,c,"CHECK ((reason = ANY (ARRAY['spam'::text, 'inappropriate'::text, 'fake'::text, 'harassment'::text, 'other'::text])))"
+reports,reports_reporter_id_fkey,f,FOREIGN KEY (reporter_id) REFERENCES profiles(id) ON DELETE CASCADE
+reports,reports_resolved_by_fkey,f,FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
+reports,reports_status_check,c,"CHECK ((status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'resolved'::text, 'dismissed'::text])))"
+reports,reports_target_type_check,c,"CHECK ((target_type = ANY (ARRAY['listing'::text, 'profile'::text, 'review'::text])))"
+review_replies,review_replies_body_check,c,CHECK ((length(TRIM(BOTH FROM body)) > 0))
+review_replies,review_replies_pkey,p,PRIMARY KEY (id)
+review_replies,review_replies_review_id_fkey,f,FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+review_replies,review_replies_review_id_key,u,UNIQUE (review_id)
+reviews,reviews_conversation_id_customer_id_key,u,"UNIQUE (conversation_id, customer_id)"
+reviews,reviews_conversation_id_fkey,f,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+reviews,reviews_created_by_fkey,f,FOREIGN KEY (created_by) REFERENCES profiles(id)
+reviews,reviews_customer_id_fkey,f,FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE
+reviews,reviews_pkey,p,PRIMARY KEY (id)
+reviews,reviews_professional_id_fkey,f,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+reviews,reviews_rating_check,c,CHECK (((rating >= 1) AND (rating <= 5)))
+service_addons,service_addons_pkey,p,PRIMARY KEY (id)
+service_addons,service_addons_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+service_addons,service_addons_service_id_fkey,f,FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+service_categories,service_categories_pkey,p,PRIMARY KEY (id)
+service_categories,service_categories_slug_key,u,UNIQUE (slug)
+service_packages,service_packages_pkey,p,PRIMARY KEY (id)
+service_packages,service_packages_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+services,price_range_valid,c,CHECK (((price_on_request = true) OR ((price_min IS NOT NULL) AND (price_max IS NOT NULL) AND (price_min <= price_max))))
+services,services_category_id_fkey,f,FOREIGN KEY (category_id) REFERENCES service_categories(id)
+services,services_pkey,p,PRIMARY KEY (id)
+services,services_price_unit_valid,c,"CHECK ((price_unit = ANY (ARRAY['total'::text, 'hourly'::text, 'half_day'::text, 'full_day'::text])))"
+services,services_profile_id_fkey,f,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+testimonials,testimonials_pkey,p,PRIMARY KEY (id)
+testimonials,testimonials_rating_check,c,CHECK (((rating >= 1) AND (rating <= 5)))
+turkish_cities,turkish_cities_name_key,u,UNIQUE (name)
+turkish_cities,turkish_cities_pkey,p,PRIMARY KEY (id)
+turkish_cities,turkish_cities_plate_no_key,u,UNIQUE (plate_no)
+waitlist,waitlist_email_key,u,UNIQUE (email)
+waitlist,waitlist_pkey,p,PRIMARY KEY (id)

@@ -1,5 +1,5 @@
 -- =============================================================================
--- FAZ -1 / 07 — Indeksler (36)
+-- FAZ -1 / 07 — Indeksler (33)
 --
 -- KAYNAK: docs/envanter/04-sema-uzlastirma.md (GRUP A = yalniz uretimde olan nesneler)
 -- VERI  : docs/envanter/uretim-dokum/*.csv (uretim semasindan alinan dokum)
@@ -12,8 +12,13 @@
 --     Dosya 01'deki CONSTRAINT ... PRIMARY KEY ifadeleriyle kendiliginden olusur.
 --   * 18 adet *_key   — UNIQUE kisitinin otomatik urettigi indeksler.
 --     Ayni sekilde dosya 01'de olusur.
---   * 1 adet indeks dosya 08'e alindi: dayandigi tablo zincirde bu
---     dosyadan SONRA olusuyor. Ayrinti icin 08'in basligina bak.
+--   * 4 adet "indeks" aslinda KISIT destek indeksiydi (pg_indexes onlari da
+--     listeler). Plain CREATE INDEX olarak yazmak kisiti kurmaz, yalniz indeksi
+--     kurar — tekillik/dislama sessizce KAYBOLURDU:
+--       no_duplicate_pending_invitation           EXCLUDE, repoda ZATEN VAR
+--       no_duplicate_pending_business_invitation  EXCLUDE, repoda ZATEN VAR
+--       conversations_unique_pair                 UNIQUE,  repoda ZATEN VAR
+--       no_duplicate_pending_listing_invite       EXCLUDE, dosya 01'e alindi
 --
 -- MUKERRER INDEKSLER SILINMEDI. 04-sema-uzlastirma.md bolum 5'te 9 gereksiz cift
 -- tespit edildi, ama silme karari pg_stat_user_indexes olcumune baglidir ve AYRI
@@ -36,7 +41,6 @@ BEGIN;
 CREATE INDEX IF NOT EXISTS idx_admin_audit_admin ON public.admin_audit_log USING btree (admin_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON public.admin_audit_log USING btree (created_at DESC);
 -- agency_invitations
-CREATE INDEX IF NOT EXISTS no_duplicate_pending_invitation ON public.agency_invitations USING btree (agency_id, invited_email) WHERE (status = 'pending'::agency_invitation_status);
 -- availability_blocks
 CREATE INDEX IF NOT EXISTS idx_availability_blocks_profile ON public.availability_blocks USING btree (profile_id, blocked_date);
 -- blog_posts
@@ -56,13 +60,11 @@ CREATE INDEX IF NOT EXISTS idx_category_requests_user ON public.category_request
 CREATE INDEX IF NOT EXISTS idx_conv_assignees_conversation ON public.conversation_assignees USING btree (conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conv_assignees_professional ON public.conversation_assignees USING btree (professional_id);
 -- conversations
-CREATE UNIQUE INDEX IF NOT EXISTS conversations_unique_pair ON public.conversations USING btree (customer_id, professional_id);
 -- listing_invitations
 CREATE INDEX IF NOT EXISTS listing_invitations_inviter_idx ON public.listing_invitations USING btree (inviter_id);
 CREATE INDEX IF NOT EXISTS listing_invitations_listing_idx ON public.listing_invitations USING btree (listing_id);
 CREATE INDEX IF NOT EXISTS listing_invitations_professional_idx ON public.listing_invitations USING btree (professional_id);
 CREATE INDEX IF NOT EXISTS listing_invitations_status_idx ON public.listing_invitations USING btree (status) WHERE (status = 'pending'::listing_invitation_status);
-CREATE INDEX IF NOT EXISTS no_duplicate_pending_listing_invite ON public.listing_invitations USING btree (listing_id, professional_id) WHERE (status = 'pending'::listing_invitation_status);
 -- listings
 CREATE INDEX IF NOT EXISTS idx_listings_featured_category ON public.listings USING btree (featured_category_until);
 CREATE INDEX IF NOT EXISTS idx_listings_featured_home ON public.listings USING btree (featured_home_until);
