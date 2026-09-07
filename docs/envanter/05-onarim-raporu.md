@@ -15,8 +15,9 @@
 >
 > **Dosyalar olusturuldu, UYGULANMADI.** Supabase Dashboard > SQL Editor'den elle kosturulacak.
 >
-> **01 su anda kasitli olarak DURUR.** Uc enum tipinin degerleri hicbir dokumde yok;
-> dosyanin basindaki koruma bloku net bir hata mesajiyla durdurur. Bkz. **bolum 3.1**.
+> **Enum engeli kalkti.** Uc enum tipinin degerleri uretimden alinip 01e islendi;
+> koruma blogu kaldirildi. Bkz. **bolum 3.1**. Acik kalan tek kalem yabanci anahtar
+> kisitlari — bkz. **bolum 3.2**.
 
 Kaynak: `04-sema-uzlastirma.md` (Grup A/B/C/D ayrimi) ve `uretim-dokum/*.csv` (uretim dokumu).
 Bu rapor **ne yazildigini, neyin yazilmadigini ve nedenini** anlatir.
@@ -68,6 +69,10 @@ kisit indekslerini adlandirma kuralina dayanir; **tahmin degil, ad kuralindan ci
 Yine de kisit dokumunun yerini tutmaz — bkz. bolum 3.2.
 
 **Yabanci anahtarlar YOK.** Bkz. bolum 3.2.
+
+**Uc enum tipi** (`listing_invitation_status`, `quote_recipient_status`,
+`quote_request_status`) dosyanin basinda olusturulur; degerleri uretimden alindi
+(bolum 3.1).
 
 `CREATE TABLE IF NOT EXISTS` ile idempotan.
 
@@ -186,41 +191,40 @@ Dosya basliklarinda acikca atlandigi belirtilen ornekler:
 
 ## 3. Karar noktalari
 
-### 3.1 ENGEL — uc enum tipinin degerleri bilinmiyor
+### 3.1 Uc enum tipi — degerler uretimden alindi, KAPANDI
 
-`listing_invitation_status`, `quote_recipient_status`, `quote_request_status` repoda
-tanimli degil ve **degerleri hicbir dokumde yok**. `eksik-tablo-sutunlari.csv` yalniz
-`information_schema.columns` ciktisidir; enum etiketlerini icermez.
+`listing_invitation_status`, `quote_recipient_status`, `quote_request_status` repo
+migration zincirinde tanimli degildi ve **degerleri hicbir CSV dokumunde yoktu**;
+`eksik-tablo-sutunlari.csv` yalniz `information_schema.columns` ciktisidir, enum
+etiketlerini icermez. Bu yuzden 01 basta bir koruma blogu ile duruyordu.
 
-Gozlemlenebilen tek sey, `column_default`'tan cikan **birer deger**:
+Degerler `pg_enum`den cekilip 01e islendi; koruma blogu kaldirildi:
 
-| Tablo.sutun | Tip | Gozlemlenen tek deger |
-|---|---|---|
-| `listing_invitations.status` | `listing_invitation_status` | `'pending'` |
-| `quote_request_recipients.status` | `quote_recipient_status` | `'sent'` |
-| `quote_requests.status` | `quote_request_status` | `'active'` |
+| Tip | Degerler (`enumsortorder` sirasiyla) |
+|---|---|
+| `listing_invitation_status` | `pending`, `accepted`, `declined`, `expired`, `cancelled` |
+| `quote_recipient_status` | `sent`, `viewed`, `quoted`, `declined` |
+| `quote_request_status` | `active`, `closed`, `expired`, `fulfilled` |
 
-**Kalan degerler uydurulmadi.** Eksik bir etiket, o enumu kullanan her `INSERT`/`UPDATE`
-calisma aninda patlatirdi ve tablo dolduktan sonra duzeltmesi zordur.
+Idempotanlik icin repo idyomu kullanildi (`20260630120000` dosyasindaki kalip):
+`DO $$ BEGIN CREATE TYPE ...; EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
+— `CREATE TYPE IF NOT EXISTS` PostgreSQLde yoktur.
 
-Dosya 01'in basinda bir koruma bloku var; uc tip de yoksa net bir hata mesajiyla durur:
+**Dogrulama.** Uc sey kontrol edildi:
 
-```
-FAZ -1/01 DURDU: su enum tipleri yok: ...
-```
+1. Uc sutunun `column_default` degeri (`pending` / `sent` / `active`) kendi tipinin
+   listesinde **var**.
+2. Tum migration dosyalari ve dokum CSVleri tarandi; bu uc tipe cast edilen literal
+   **yalniz** o uc varsayilan. Listelerin disinda kalan bir deger yok.
+3. Uygulama kodunda bu uc tabloya deginen 8 dosyadaki `status` degerleri tarandi:
+   `pending`, `accepted`, `declined`, `cancelled`, `sent`, `viewed`, `quoted`,
+   `active` — hepsi listelerde. Ayni dosyalarda gecen `published` ve `approved`
+   baska sutunlara ait (`listings.status` ve `profiles.approval_status`).
 
-**Cozmek icin gereken dokum** (Dashboard > SQL Editor'de kosturulup ciktisi paylasilacak):
+Listelerde olup uygulama kodunda hic gecmeyen degerler: `expired` (iki tipte de),
+`closed` ve `fulfilled`. Bunlar sistemin atadigi ya da henuz kullanilmayan
+durumlardir; enum uyeligi uretimden geldigi icin **yine de yazildi**.
 
-```sql
-select t.typname as tip,
-       string_agg(quote_literal(e.enumlabel), ', ' order by e.enumsortorder) as degerler
-  from pg_type t
-  join pg_enum e on e.enumtypid = t.oid
- where t.typname in ('listing_invitation_status','quote_recipient_status','quote_request_status')
- group by t.typname;
-```
-
-Cikti geldiginde 01'in basina uc `CREATE TYPE` ifadesi eklenip koruma bloku kaldirilir.
 
 ### 3.2 Yabanci anahtar kisitlari hicbir dosyada YOK
 
@@ -341,7 +345,7 @@ dusuruyor). Her dosya **kendi calistirmasinda**, sirayla:
 
 | Sira | Dosya | On kosul |
 |---|---|---|
-| 1 | 01 eksik tablolar | **Uc enum tipi olmali** (3.1) |
+| 1 | 01 eksik tablolar | — (uc enum tipini kendisi olusturur) |
 | 2 | 02 is_admin | 01 |
 | 3 | 03 yetki fonksiyonlari | 01 (`quote_requests` tablosu) |
 | 4 | 04 tetikleyici fonksiyonlari | 01, 02 |
@@ -427,10 +431,11 @@ tutmamis demektir; hangi dosyanin sayiyi degistirdigi tespit edilmelidir.
 
 ## 6. Sonraki adim
 
-Bu dosyalar **FAZ -1'in son adimidir**. Iki acik kalem kapanmadan FAZ 0'a gecilmemelidir:
+Bu dosyalar **FAZ -1'in son adimidir**. Bir acik kalem kaldi:
 
-1. **Enum degerleri** (3.1) — 01 bunlar olmadan calismaz.
+1. ~~**Enum degerleri** (3.1)~~ — **kapandi**, degerler uretimden alinip 01e islendi.
 2. **Kisit dokumu** (3.2) — FK, `CHECK` ve `PRIMARY KEY`/`UNIQUE` dogrulamasi.
+   FAZ 0 oncesinde kapatilmalidir.
 
 Ayrica `04-goc-plani.md`'de FAZ 2 on kosulu olarak kayitli olan bir kalem hatirlatilir:
 `approval_status` ve `approved_at` `providers` tablosuna tasinirken

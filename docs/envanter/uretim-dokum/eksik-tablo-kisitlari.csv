@@ -1,0 +1,54 @@
+tablo,conname,tanim
+admin_audit_log,admin_audit_log_admin_id_fkey,FOREIGN KEY (admin_id) REFERENCES profiles(id) ON DELETE SET NULL
+admin_audit_log,admin_audit_log_pkey,PRIMARY KEY (id)
+availability_blocks,availability_blocks_pkey,PRIMARY KEY (id)
+availability_blocks,availability_blocks_profile_id_blocked_date_key,"UNIQUE (profile_id, blocked_date)"
+availability_blocks,availability_blocks_profile_id_fkey,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+blog_posts,blog_posts_author_id_fkey,FOREIGN KEY (author_id) REFERENCES profiles(id) ON DELETE SET NULL
+blog_posts,blog_posts_pkey,PRIMARY KEY (id)
+blog_posts,blog_posts_slug_key,UNIQUE (slug)
+blog_posts,blog_posts_status_check,"CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))"
+category_requests,category_requests_pkey,PRIMARY KEY (id)
+category_requests,category_requests_reviewed_by_fkey,FOREIGN KEY (reviewed_by) REFERENCES profiles(id) ON DELETE SET NULL
+category_requests,category_requests_status_check,"CHECK ((status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'approved'::text, 'declined'::text])))"
+category_requests,category_requests_user_id_fkey,FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+conversation_assignees,conversation_assignees_assigned_by_fkey,FOREIGN KEY (assigned_by) REFERENCES profiles(id) ON DELETE SET NULL
+conversation_assignees,conversation_assignees_conversation_id_fkey,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+conversation_assignees,conversation_assignees_conversation_id_professional_id_key,"UNIQUE (conversation_id, professional_id)"
+conversation_assignees,conversation_assignees_pkey,PRIMARY KEY (id)
+conversation_assignees,conversation_assignees_professional_id_fkey,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_invitation_message_check,CHECK (((invitation_message IS NULL) OR (char_length(invitation_message) <= 1000)))
+listing_invitations,listing_invitations_inviter_id_fkey,FOREIGN KEY (inviter_id) REFERENCES profiles(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_listing_id_fkey,FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_pkey,PRIMARY KEY (id)
+listing_invitations,listing_invitations_professional_id_fkey,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+listing_invitations,listing_invitations_resulting_application_id_fkey,FOREIGN KEY (resulting_application_id) REFERENCES applications(id) ON DELETE SET NULL
+listing_invitations,no_duplicate_pending_listing_invite,"EXCLUDE USING btree (listing_id WITH =, professional_id WITH =) WHERE ((status = 'pending'::listing_invitation_status))"
+message_violations,message_violations_conversation_id_fkey,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+message_violations,message_violations_pkey,PRIMARY KEY (id)
+message_violations,message_violations_user_id_fkey,FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+message_violations,message_violations_violation_type_check,"CHECK ((violation_type = ANY (ARRAY['phone'::text, 'iban'::text, 'email'::text])))"
+push_subscriptions,push_subscriptions_endpoint_key,UNIQUE (endpoint)
+push_subscriptions,push_subscriptions_pkey,PRIMARY KEY (id)
+push_subscriptions,push_subscriptions_user_id_fkey,FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_conversation_id_fkey,FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
+quote_request_recipients,quote_request_recipients_pkey,PRIMARY KEY (id)
+quote_request_recipients,quote_request_recipients_professional_id_fkey,FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_request_id_fkey,FOREIGN KEY (request_id) REFERENCES quote_requests(id) ON DELETE CASCADE
+quote_request_recipients,quote_request_recipients_request_id_professional_id_key,"UNIQUE (request_id, professional_id)"
+quote_requests,quote_requests_category_id_fkey,FOREIGN KEY (category_id) REFERENCES service_categories(id)
+quote_requests,quote_requests_city_id_fkey,FOREIGN KEY (city_id) REFERENCES turkish_cities(id)
+quote_requests,quote_requests_created_by_fkey,FOREIGN KEY (created_by) REFERENCES profiles(id)
+quote_requests,quote_requests_customer_id_fkey,FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE
+quote_requests,quote_requests_pkey,PRIMARY KEY (id)
+reports,reports_pkey,PRIMARY KEY (id)
+reports,reports_reason_check,"CHECK ((reason = ANY (ARRAY['spam'::text, 'inappropriate'::text, 'fake'::text, 'harassment'::text, 'other'::text])))"
+reports,reports_reporter_id_fkey,FOREIGN KEY (reporter_id) REFERENCES profiles(id) ON DELETE CASCADE
+reports,reports_resolved_by_fkey,FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
+reports,reports_status_check,"CHECK ((status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'resolved'::text, 'dismissed'::text])))"
+reports,reports_target_type_check,"CHECK ((target_type = ANY (ARRAY['listing'::text, 'profile'::text, 'review'::text])))"
+service_addons,service_addons_pkey,PRIMARY KEY (id)
+service_addons,service_addons_profile_id_fkey,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+service_addons,service_addons_service_id_fkey,FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+service_packages,service_packages_pkey,PRIMARY KEY (id)
+service_packages,service_packages_profile_id_fkey,FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE

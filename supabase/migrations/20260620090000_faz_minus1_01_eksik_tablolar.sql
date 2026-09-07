@@ -32,31 +32,33 @@ BEGIN;
 
 -- -----------------------------------------------------------------------------
 -- ON KOSUL: uc enum tipi
--- listing_invitation_status, quote_recipient_status, quote_request_status
--- Bu tipler uretimde VAR ama repo migration'larinda TANIMLI DEGIL ve DEGERLERI
--- hicbir dokumde yok. Uydurulamaz (deger kumesi ve SIRA onemli).
--- Asagidaki blok tip yoksa ANLASILIR bir hata ile durdurur; sessiz basarisizlik olmaz.
--- Cozum: 05-onarim-raporu.md bolum 3.1'deki pg_enum sorgusunu kostur, cikan
--- CREATE TYPE ifadelerini BU YORUMUN YERINE yapistir.
+-- Bu tipler uretimde VAR ama repo migration zincirinde TANIMLI DEGIL.
+-- Degerleri hicbir dokumde yoktu; uretimden pg_enum ile cekilip buraya islendi.
+-- Sira enumsortorder ile alinmistir.
+--
+-- Idempotanlik: CREATE TYPE IF NOT EXISTS yoktur; repo idyomu olan
+-- EXCEPTION WHEN duplicate_object kullanildi (bkz. 20260630120000).
 -- -----------------------------------------------------------------------------
-DO $enum_guard$
-DECLARE
-  eksik text[] := ARRAY[]::text[];
-  t text;
-BEGIN
-  FOREACH t IN ARRAY ARRAY['listing_invitation_status','quote_recipient_status','quote_request_status']
-  LOOP
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = t) THEN
-      eksik := eksik || t;
-    END IF;
-  END LOOP;
-  IF array_length(eksik, 1) > 0 THEN
-    RAISE EXCEPTION
-      'FAZ -1/01 DURDU: su enum tipleri yok: %. Once bunlarin CREATE TYPE ifadeleri eklenmeli (bkz. 05-onarim-raporu.md 3.1).',
-      array_to_string(eksik, ', ');
-  END IF;
-END
-$enum_guard$;
+DO $$ BEGIN
+  CREATE TYPE listing_invitation_status AS ENUM (
+    'pending', 'accepted', 'declined', 'expired', 'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE quote_recipient_status AS ENUM (
+    'sent', 'viewed', 'quoted', 'declined'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE quote_request_status AS ENUM (
+    'active', 'closed', 'expired', 'fulfilled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- -----------------------------------------------------------------------------
 -- service_packages (13 sutun)
