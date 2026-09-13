@@ -1,5 +1,6 @@
 -- =============================================================================
 -- FAZ -1 / 00 — Mevcut tablolarin eksik sutunlari (37) + bagli kisitlar (5)
+--             + mevcut enum tiplerine sonradan eklenen degerler (4)
 --
 -- KAYNAK: docs/envanter/05-onarim-raporu.md bolum 3.6
 -- VERI  : docs/envanter/uretim-dokum/tum-sutunlar.csv  (uretim sutun dokumu)
@@ -51,6 +52,30 @@ DO $$ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- -----------------------------------------------------------------------------
+-- 1b) Mevcut enum tiplerine sonradan eklenen degerler (4)
+-- Bos veritabanina zincir testinde bulundu (docs/envanter/06-bos-db-zincir-testi.md):
+-- zincirde hicbir ALTER TYPE ... ADD VALUE yok; bu degerler uretime Dashboard'dan
+-- eklenmis. Kaynak: uretim pg_enum dokumu (14 Eylul 2026, enumsortorder sirasiyla).
+-- Dorduncu bosluk turu degil, BESINCI: eksik tip degil, mevcut tipin eksik degeri.
+--
+--   listing_status : draft, published, closed, filled, cancelled,
+--                    + pending_approval, + rejected, + revision   (sona eklenmis)
+--   message_type   : text, quote, system, + file                   (sona eklenmis)
+--
+-- Diger 10 enum tipi uretimle birebir ayni (dokumle dogrulandi).
+--
+-- Neden bu dosyada ve neden burada: 04'teki admin_queue_counts() LANGUAGE sql'dir,
+-- govdesindeki 'pending_approval' olusturma aninda dogrulanir; deger 04'ten ONCE
+-- var olmali. ADD VALUE PostgreSQL 12+ ile islem blogu icinde calisir; tek sart yeni
+-- degerin ayni islemde KULLANILMAMASI — bu dosyada kullanilmiyor.
+-- IF NOT EXISTS ile idempotan; AFTER ile sira uretime sabitlenir.
+-- -----------------------------------------------------------------------------
+ALTER TYPE public.listing_status ADD VALUE IF NOT EXISTS 'pending_approval' AFTER 'cancelled';
+ALTER TYPE public.listing_status ADD VALUE IF NOT EXISTS 'rejected' AFTER 'pending_approval';
+ALTER TYPE public.listing_status ADD VALUE IF NOT EXISTS 'revision' AFTER 'rejected';
+ALTER TYPE public.message_type ADD VALUE IF NOT EXISTS 'file' AFTER 'system';
 
 -- -----------------------------------------------------------------------------
 -- 2) Eksik sutunlar (37)
