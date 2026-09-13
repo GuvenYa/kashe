@@ -18,7 +18,7 @@ export default function Yakinda() {
         <p className="mt-8 text-sm text-neutral-500">
           Görüş ve önerileriniz için
         </p>
-        
+        <a
           href="mailto:info@kashe.net"
           className="mt-1 inline-block text-base font-medium text-neutral-900 underline underline-offset-4"
         >
