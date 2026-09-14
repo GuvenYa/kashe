@@ -60,9 +60,14 @@ Hedef: hesap acan biri de herkesin email/phone'unu okuyamasin; iletisim bilgisi 
 konusmada yetkili ajans atanani / kurum ekip uyesine) acilsin — yani uygulamanin
 `contactUnlocked` kuralinin veritabani karsiligi.
 
-### 3.1 Migration (tek dosya, dalda test → uretim)
+### 3.1 Migration — IKI dosya (dalda test → uretim)
 
-1. **4 politika**: `(SELECT profiles.email FROM profiles WHERE profiles.id = auth.uid())`
+**2a** `<ts>_profiles_pii_adim2a_rpc.sql` — yalniz EKLEME yapar (politika duzeltme + RPC'ler);
+kod deploy'undan once uretime gidebilir, eski kodu bozmaz.
+**2b** `<ts+1>_profiles_pii_adim2b_authenticated_kisit.sql` — yalniz sutun kisiti; eski kodu
+bozar, bu yuzden ayri dosya (geri almasi tek satir: `GRANT SELECT ON public.profiles TO authenticated`).
+
+1. **4 politika** (2a): `(SELECT profiles.email FROM profiles WHERE profiles.id = auth.uid())`
    yerine `auth.email()` (JWT'deki email claim'i; profiles.email ile ayni deger,
    handle_new_user kopyalar). DROP + CREATE, tanimlarin geri kalani aynen.
 2. **RPC** `public.get_contact_info(p_profile_id uuid) RETURNS TABLE (email text, phone text)`
@@ -91,15 +96,25 @@ konusmada yetkili ajans atanani / kurum ekip uyesine) acilsin — yani uygulaman
    `REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon; GRANT EXECUTE ... TO authenticated, service_role`.
    Not: kural 9 (Neoform'dan): RPC'ye satir bazinda yetki kontrolu gomulu; cagirani degil,
    iliskiyi dogrular.
-3. **Admin RPC** `public.admin_profile_contacts(p_ids uuid[]) RETURNS TABLE (id uuid, email text, phone text)`
+3. **Admin RPC** (2a) `public.admin_profile_contacts(p_ids uuid[]) RETURNS TABLE (id uuid, email text, phone text)`
    SECURITY DEFINER, ilk satir `if not public.is_admin(auth.uid()) then raise exception ...`.
    Admin listeleri (kullanicilar, profiller, sikayetler) bununla e-posta gosterir.
-4. **Sutun kisiti**: `REVOKE SELECT ON public.profiles FROM authenticated` + adim 1'deki
+3b. **Bildirim RPC** (2a) `public.get_notification_email(p_user_id uuid) RETURNS text`
+   SECURITY DEFINER: `app/lib/email/send-email.ts` icindeki `getUserEmail(supabase, userId)`
+   bugun karsi tarafin e-postasini profiles'tan gonderenin oturumuyla okuyor (mesaj ve teklif
+   e-postalari icin; mesajlar/actions.ts ve quote-actions.ts'ten 4 cagri). 2b'den sonra bu
+   "permission denied" ile sessizce null doner ve bildirim e-postalari durur. RPC kosulu:
+   cagiran ile hedef ayni konusmayi paylasiyor —
+   `exists (select 1 from conversations c where (c.customer_id = auth.uid() or c.professional_id = auth.uid() or is_assignee(c.id, auth.uid()) or is_business_member(c.customer_id)) and (c.customer_id = p_user_id or c.professional_id = p_user_id or is_assignee(c.id, p_user_id)))`.
+   Uygulamada `getUserEmail` govdesi `supabase.rpc('get_notification_email', { p_user_id: userId })` olur; imza degismez.
+4. **Sutun kisiti** (2b): `REVOKE SELECT ON public.profiles FROM authenticated` + adim 1'deki
    23 sutunluk `GRANT SELECT (...) TO authenticated`. UPDATE/INSERT/DELETE tablo duzeyinde
    kalir (RLS + koruma tetikleyicisi zaten sinirliyor).
-5. Migration'in **sirasi**: 1-3 once, 4 en son — 4 uygulandiginda uygulama kodu artik
-   email/phone secmiyor olmali (deploy sirasi: once kod, sonra migration; ya da ayni
-   bakim penceresinde).
+5. **Uretim sirasi**: 2a (guvenli, ekleme) → kod deploy (git push → Vercel) → 2b.
+   `supabase db push` bekleyen her dosyayi uygular; bu yuzden 2b, kod deploy edilene kadar
+   `supabase/migrations/` disinda (`docs/envanter/bekleyen/`) tutulur, deploy sonrasi
+   klasore tasinip push edilir. Bakim modunda oldugumuz icin aradaki dakikalar tolere
+   edilebilir, ama sira yine de bu.
 
 ### 3.2 Uygulama degisiklikleri
 
@@ -108,6 +123,7 @@ konusmada yetkili ajans atanani / kurum ekip uyesine) acilsin — yani uygulaman
 | `app/mesajlar/[id]/page.tsx` | Iki embed'den `phone, email` kaldir. `contactUnlocked` ise `supabase.rpc('get_contact_info', { p_profile_id: other.id })` cagir, sonucu `other`'a ekle. Kilitliyken RPC cagrilmaz. |
 | `app/lib/admin.ts` | `select('id, full_name, is_admin')`; e-posta gerekiyorsa `user.email` (auth). `profile.email` kullanan yerler taranir. |
 | `app/lib/profile-helpers.ts`, `app/profil/page.tsx`, `app/profil/duzenle/*` | Kendi phone/email'i icin `get_contact_info(user.id)`; profil formu kaydetmede `.update(...)` degismez (UPDATE yetkisi duruyor), ama `.update().select('... phone ...')` varsa select listesinden cikar. |
+| `app/lib/email/send-email.ts` | `getUserEmail`: `.from('profiles').select('email')` yerine `rpc('get_notification_email')`. Cagiranlar (mesajlar/actions.ts, quote-actions.ts) degismez. |
 | `app/admin/**` (kullanicilar, profiller, sikayetler, rapor) | `email`/`phone` secen sorgular → `admin_profile_contacts(ids)` ile birlestir. `grep -rn "email\|phone" app/admin` ile bul. |
 | Tum repo | `grep -rn "phone\|email" app --include=*.ts --include=*.tsx` ile profiles baglaminda kalan secimleri tara; `tsc --noEmit` bos. |
 
@@ -116,7 +132,10 @@ konusmada yetkili ajans atanani / kurum ekip uyesine) acilsin — yani uygulaman
 - `asama4-davranis-testi.sql`'e T7: authenticated (pro1) → `select email from profiles`
   HATA; `get_contact_info(pro1)` kendi bilgisi doner; `get_contact_info(musteri)` T2'deki
   onayli rezervasyon sayesinde doner; `get_contact_info(ajans)` (iliski yok) bos doner;
-  anon → RPC "permission denied".
+  `get_notification_email(musteri)` pro1 icin doner (ayni konusma), pro2 icin null;
+  anon → RPC "permission denied"; pro1 → `admin_profile_contacts` HATA, ajans (admin) → doner.
+- `select * from public.agency_invitations` authenticated ile hata vermemeli (politika
+  artik auth.email() kullaniyor).
 - Parmak izi v2: D (4 politika) ve N (authenticated satirlari) degisir, beklenen.
 - Uretim sonrasi: giris yapmis test hesabiyla mesajlar sayfasi, profil duzenleme, admin
   kullanici listesi.
