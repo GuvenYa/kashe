@@ -1,5 +1,5 @@
 -- =============================================================================
--- FAZ -1 / Asama 2 — Sema parmak izi (salt okunur)
+-- FAZ -1 / Asama 2 — Sema parmak izi v2 (salt okunur) — O/P/Q satirlari 14 Eylul'de eklendi
 -- Ayni sorgu once URETIMDE (qydsooqmflrrwtgawhsv), sonra DALDA (pkyauwyszvfvbzcgzrdb)
 -- kosturulur; iki ciktida "parmak_izi" sutunu satir satir esit olmali.
 -- Her satir bir nesne sinifinin normalize edilmis tam tanim listesinin md5'idir;
@@ -92,6 +92,30 @@ yetki as (
          md5(coalesce(string_agg(table_name||':'||grantee||':'||privilege_type, '|' order by table_name, grantee, privilege_type), ''))
   from information_schema.role_table_grants
   where table_schema = 'public' and grantee in ('anon','authenticated','service_role')
+),
+replident as (
+  select 'O replica identity', count(*),
+         md5(coalesce(string_agg(c.relname||':'||c.relreplident::text, '|' order by c.relname), ''))
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'r'
+),
+fn_acl as (
+  select 'P fonksiyon ACL (kume)', count(*),
+         md5(coalesce(string_agg(
+           p.proname||'('||pg_get_function_identity_arguments(p.oid)||'):'||
+           coalesce((select string_agg(regexp_replace(a::text, '/.*$', ''), ',' order by regexp_replace(a::text, '/.*$', '')) from unnest(p.proacl) a), 'NULL'),
+           '|' order by p.proname, pg_get_function_identity_arguments(p.oid)), ''))
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  left join pg_depend d on d.objid = p.oid and d.deptype = 'e'
+  where n.nspname = 'public' and d.objid is null and p.prokind = 'f'
+),
+seq_acl as (
+  select 'Q sequence ACL (kume)', count(*),
+         md5(coalesce(string_agg(
+           c.relname||':'||coalesce((select string_agg(regexp_replace(a::text, '/.*$', ''), ',' order by regexp_replace(a::text, '/.*$', '')) from unnest(c.relacl) a), 'NULL'),
+           '|' order by c.relname), ''))
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'S'
 )
 select * from sutun
 union all select * from kisit
@@ -107,4 +131,7 @@ union all select * from auth_tetik
 union all select * from bucket
 union all select * from uzanti
 union all select * from yetki
+union all select * from replident
+union all select * from fn_acl
+union all select * from seq_acl
 order by 1;

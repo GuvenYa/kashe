@@ -167,5 +167,105 @@ select viewname from pg_views where schemaname = 'public' order by viewname;
 4. Dal silinir, Dashboard'dan yeniden olusturulur, yeni ref ile `supabase link`,
    `supabase migration list` ile hedefin dal oldugu (uretim `qydsooqmflrrwtgawhsv` DEGIL)
    dogrulanir, `supabase db push`.
-5. Beklenti: **45 dosya**, hata yok (yerelde ayni set 45/45 gecti). Sonra bolum 4 sorgu
-   paketi (B-E) dalda kosturulup uretim ciktisiyla karsilastirilir.
+5. ~~Beklenti: 45 dosya, hata yok~~ — 14 Eylul'de dalda 45/45 gecti. Devami bolum 6.
+
+---
+
+## 6. Asama 2 — dal ile uretim karsilastirmasi (14 Eylul, gercek dal `pkyauwyszvfvbzcgzrdb`)
+
+Dal Dashboard'dan yeniden olusturuldu, `supabase db push` 45 dosyayi hatasiz uyguladi.
+`asama2-parmak-izi.sql` (14 sinif, md5) uretimde ve dalda kosturuldu:
+
+| Sinif | Sonuc |
+|---|---|
+| A sutun, B kisit, C indeks, D politika, E tetikleyici, G enum, H RLS, J view | **birebir esit** (adet + md5) |
+| F fonksiyon | 69/69 var; 13 govde yalniz **satir sonu** (CRLF/LF) farkli, 1 gercek fark → bolum 6.1 |
+| I realtime yayin | uretim 11, dal 7 → 09 |
+| K auth.users tetikleyici | uretim 1, dal 0 → 09 |
+| L storage bucket | uretim 6, dal 0 → 09 |
+| M uzanti | uretim +pg_cron → 09 (yalniz uzanti; is tanimi haric, bolum 6.4) |
+| N tablo yetkileri | uretim 777, dal 333 → 09, bolum 6.2 |
+
+### 6.1 Fonksiyon govdeleri: satir sonu ve tek gercek fark
+
+`asama2b-ayrinti.sql` F1/F2/F3 satirlari: uretimdeki **69 govdenin hepsinde `\r` var**
+(Dashboard'a CRLF dosyalardan yapistirilmis). Dalda 56'sinda var, 13'unde yok — bu 13'u
+LF kaydedilmis dosyalardan geliyor (20260630, 20260711130000, 20260715130000, 20260718, 08).
+Boslugu normalize eden md5 (F2) 69 fonksiyonun **68'inde esit**. Postgres icin `\r` bosluktur;
+davranis farki yoktur. **Fonksiyonlar icin olcut F2'dir (normalize md5), F1 degil.**
+
+Tek gercek fark `protect_sensitive_profile_fields`: 04'teki govde ile uretim govdesi ayni
+mantikta ama uretimde iki Turkce yorum satiri ve farkli satir duzeni var. Uretim
+`pg_get_functiondef` ciktisi 04'e birebir islendi; 04 dosyasi CRLF'e normalize edildi
+(cogunlugu zaten CRLF idi). Yerelde ham ve normalize md5 uretimle esit (2026fda3 / 5c5d4916).
+
+### 6.2 Dalin varsayilan ayricaliklari uretimden farkli (platform farki)
+
+`pg_default_acl` (N3):
+
+| | postgres → tablolar | sequence | fonksiyon |
+|---|---|---|---|
+| Uretim (Mayis 2026 projesi) | anon/authenticated/service_role = `arwdDxtm` (ALL) | `rwU` | `X` |
+| Dal (Eylul 2026 projesi) | anon/authenticated/service_role = `Dxtm` (TRUNCATE/REFERENCES/TRIGGER/MAINTAIN — **SELECT/INSERT/UPDATE/DELETE yok**) | yok | yok |
+
+Yeni Supabase projeleri daha dar varsayilanla geliyor. Sonuc: zincir dalda hatasiz kosuyor
+ama uygulama RLS'e gelmeden GRANT katmaninda "permission denied" alir; RPC'ler (fonksiyonlar)
+`authenticated` tarafindan cagrilamaz. Bu zincirin degil platformun farkidir, ama her yeni dal
+ayni durumda dogacak; 09 uretim durumunu acik GRANT ve `ALTER DEFAULT PRIVILEGES` ile kurar.
+
+Uretim fonksiyon ACL dokumu (asama2c/C): 63 fonksiyon `PUBLIC + anon + authenticated +
+service_role`; 6 fonksiyon migration'larla daraltilmis (`admin_report_stats`: authenticated +
+service_role; `admin_stats_messages`: PUBLIC + authenticated + service_role;
+`deal_confirmed_customer_ids`, `delete_push_subscription_by_endpoint`,
+`get_push_subscriptions_for_user`, `listing_application_counts`: anon + authenticated +
+service_role, PUBLIC yok). 09 bunlari fonksiyon bazinda verir; toptan
+`GRANT EXECUTE ON ALL FUNCTIONS` kullanilmadi cunku daraltilmislari yeniden acardi.
+
+### 6.3 `09_platform_katmani.sql` — icerik ve konum
+
+`20260727160000_faz_minus1_09_platform_katmani.sql` — **zincirin sonunda**. 202606200908xx
+konumunda denendi, `type "business_member_role" does not exist` ile durdu: fonksiyon bazinda
+GRANT icin nesnelerin tamami gerekir, onlar ancak zincir sonunda vardir.
+
+| Bolum | Icerik | Kaynak |
+|---|---|---|
+| 1 | `on_auth_user_created AFTER INSERT ON auth.users → handle_new_user()` (pg_trigger kontrollu) | asama2b K |
+| 2 | Yayina 4 tablo: conversations, listing_invitations, messages, notifications (pg_publication_tables kontrollu) | asama2b I |
+| 3a | 6 bucket (public, boyut siniri, MIME) `ON CONFLICT (id) DO NOTHING` — VERI DEGISTIRILMEZ kuralinin bilincli tek istisnasi, yapilandirma satirlari | asama2b L |
+| 3b | storage.objects uzerinde 21 politika, DROP IF EXISTS + CREATE | asama2b S |
+| 4a | `GRANT ALL ON ALL TABLES / SEQUENCES IN SCHEMA public TO anon, authenticated, service_role` | asama2c G, D |
+| 4b | `ALTER DEFAULT PRIVILEGES FOR ROLE postgres` (tablo ALL, sequence ALL, fonksiyon EXECUTE) | asama2b N3 |
+| 4c | 69 fonksiyon icin GRANT/REVOKE EXECUTE, uretim proacl birebir | asama2c C |
+| 5 | `CREATE EXTENSION IF NOT EXISTS pg_cron` | asama2b M |
+| 6 | `listing_invitations REPLICA IDENTITY FULL` (uretimde 9 tablo FULL, zincir 8'ini kuruyor) | asama2c E |
+
+Yerelde: 46/46 dosya hatasiz; 09 iki kez kosturuldu, ikinci kosu no-op. Parmak izi v2'de
+I/K/L/N satirlari uretimle esit (11/40fa26ae, 1/ffa9bd9a, 6/8fffbe99, 777/215a55fd).
+
+### 6.4 Bilincli disarida birakilan: cron isi
+
+Uretimde tek pg_cron isi var: `send-message-notifications`, `*/5 * * * *`,
+`net.http_post(url := 'https://qydsooqmflrrwtgawhsv.supabase.co/functions/v1/send-message-notification',
+headers := {'Content-Type': 'application/json', 'Authorization': 'Bearer <URETIM_ANON_KEY>'}, body := '{}')`.
+
+Bu is **migration'a alinmadi**: URL ve anahtar uretim projesine aittir; dalda Edge Function
+yoktur; dal bu isi kosturursa uretim fonksiyonunu tetikler. Yeni bir projede kurulmasi
+gerekirse `cron.schedule(...)` Dashboard'dan, o projenin URL/anahtariyla yapilir. Anahtar
+buraya yazilmadi (anon key tarayiciya giden bir anahtardir ama repoya ait degildir).
+
+### 6.5 Parmak izi v2
+
+`asama2-parmak-izi.sql`'e uc satir eklendi: **O replica identity**, **P fonksiyon ACL**
+(kume olarak — ACL dizisinin sirasi GRANT sirasina bagli, o yuzden normalize), **Q sequence ACL**.
+Beklenti (dal yeniden kurulduktan sonra): A–E, G–L, N–Q birebir esit; F yalniz satir sonu
+(F2 ile dogrulanir); M pg_cron surumu farkli olabilir (1.6.4 vs dalin kurdugu surum).
+
+### 6.6 Kalan is sirasi
+
+1. Commit → dal sil → Dashboard'dan yeniden olustur → `supabase link` → ref dogrula →
+   `supabase migration list` (Remote bos) → `supabase db push` (**46 dosya**).
+2. `asama2-parmak-izi.sql` (v2) uretim + dal; fark yalniz F ve olasi M surumunde kalmali.
+   F icin `asama2b-ayrinti.sql` F2 satiri.
+3. Asama 3 (uretime uygulama, dosya dosya) ve asama 4 (4 davranis testi) test planina gore.
+4. Hijyen (asama 3'ten sonra): `.gitattributes` → `*.sql text eol=lf`, `git add --renormalize .`
+   Bundan sonra fonksiyon karsilastirmalarinda normalize md5 olcut olarak kalir.
