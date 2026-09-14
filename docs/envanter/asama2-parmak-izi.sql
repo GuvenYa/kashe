@@ -1,6 +1,6 @@
 -- =============================================================================
 -- FAZ -1 / Asama 2 — Sema parmak izi v2 (salt okunur) — O/P/Q satirlari 14 Eylul'de eklendi
--- Ayni sorgu once URETIMDE (qydsooqmflrrwtgawhsv), sonra DALDA (pkyauwyszvfvbzcgzrdb)
+-- Ayni sorgu once URETIMDE (qydsooqmflrrwtgawhsv), sonra DALDA (guncel dal ref'i)
 -- kosturulur; iki ciktida "parmak_izi" sutunu satir satir esit olmali.
 -- Her satir bir nesne sinifinin normalize edilmis tam tanim listesinin md5'idir;
 -- tek bir harf farki bile md5'i degistirir. Esit olmayan sinif icin ayrinti sorgusu ayrica verilir.

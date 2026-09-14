@@ -260,12 +260,83 @@ buraya yazilmadi (anon key tarayiciya giden bir anahtardir ama repoya ait degild
 Beklenti (dal yeniden kurulduktan sonra): A–E, G–L, N–Q birebir esit; F yalniz satir sonu
 (F2 ile dogrulanir); M pg_cron surumu farkli olabilir (1.6.4 vs dalin kurdugu surum).
 
-### 6.6 Kalan is sirasi
+### 6.6 Asama 2 KAPANDI — ikinci dal kurulumu (14 Eylul, 46 dosya)
 
-1. Commit → dal sil → Dashboard'dan yeniden olustur → `supabase link` → ref dogrula →
-   `supabase migration list` (Remote bos) → `supabase db push` (**46 dosya**).
-2. `asama2-parmak-izi.sql` (v2) uretim + dal; fark yalniz F ve olasi M surumunde kalmali.
-   F icin `asama2b-ayrinti.sql` F2 satiri.
-3. Asama 3 (uretime uygulama, dosya dosya) ve asama 4 (4 davranis testi) test planina gore.
-4. Hijyen (asama 3'ten sonra): `.gitattributes` → `*.sql text eol=lf`, `git add --renormalize .`
-   Bundan sonra fonksiyon karsilastirmalarinda normalize md5 olcut olarak kalir.
+Dal silinip yeniden olusturuldu, 46 dosya hatasiz uygulandi. Parmak izi v2 (17 sinif):
+
+| Sinif | Uretim | Dal | |
+|---|---|---|---|
+| A sutun · B kisit · C indeks · D politika · E tetikleyici · G enum · H RLS · J view | esit | esit | ✓ |
+| I realtime yayin | 11 / 40fa26ae | 11 / 40fa26ae | ✓ (09) |
+| K auth.users tetikleyici | 1 / ffa9bd9a | 1 / ffa9bd9a | ✓ (09) |
+| L storage bucket | 6 / 8fffbe99 | 6 / 8fffbe99 | ✓ (09) |
+| N tablo yetkileri | 777 / 215a55fd | 777 / 215a55fd | ✓ (09) |
+| O replica identity | 35 / 1be92613 | 35 / 1be92613 | ✓ (09) |
+| P fonksiyon ACL (kume) | 69 / c643f508 | 69 / c643f508 | ✓ (09) |
+| Q sequence ACL (kume) | 2 / 44f1e706 | 2 / 44f1e706 | ✓ (09) |
+| F fonksiyon (ham md5) | 6a3bf24f | cd4e8ceb | yalniz CRLF/LF; normalize (F2) 69/69 esit — bolum 6.1 |
+| M uzanti | 7 / 51f2d1fd | 7 / 3a20be1e | adet esit; surum farki (pg_cron 1.6.4, pg_net 0.20.0 vs dalin kurdugu) — platform |
+
+**Sonuc:** Repo migration zinciri, bos bir Supabase projesinde uretimle ayni semayi, ayni
+politikalari, ayni tetikleyicileri, ayni yetkileri ve ayni platform katmanini kuruyor.
+FAZ -1'in "zincir uretime esit" hedefi saglandi.
+
+### 6.7 Asama 4 — davranis testleri (`asama2-...` yerine `asama4-davranis-testi.sql`)
+
+Sema esitligi yapiyi kanitlar; davranis testi tetikleyicilerin, RLS'in ve GRANT katmaninin
+gercekten calistigini kanitlar. Betik yalniz dalda kosturulur (test verisi yazar), sabit
+UUID'lerle calisir, basta kendi izini siler, her test kendi DO blogunda hata yakalar ve
+sonunda GECTI/HATA tablosu verir.
+
+| Test | Ne dogrular |
+|---|---|
+| T1 kayit → profil | auth.users INSERT → `on_auth_user_created` → `handle_new_user` uretim surumu: client approved + kvkk + phone, pro pending, agency company_name |
+| T2 teklif kabul → rezervasyon | `on_quote_accepted_create_booking`: booking confirmed, `start_time/end_time` tasinir, sistem mesaji, bildirim |
+| T3 davet kabul → uyelik | `on_agency_invitation_accepted_add_member`: agency_members, invited_user_id, iki bildirim |
+| T4 uyelikten cikarma → atama temizligi | `trg_remove_assignments_on_leave` (uretimde var, repoda yoktu) |
+| T5 koruma tetikleyicisi | normal kullanici: is_admin/role/approval sessizce eski deger, hassas olmayan alan degisir; admin: serbest |
+| T6 GRANT + RLS | `SET LOCAL ROLE anon/authenticated` ile gercek sorgular: anon profil okur, musteri yalniz kendi 2 sohbeti/1 rezervasyonu, cikarilan pro 0 sohbet, RPC cagrisi gecer |
+
+Yerelde (zincir + 09 sonrasi) 7/7 GECTI, iki kez kosturuldu. **Dalda da 7/7 GECTI**
+(14 Eylul, ucuncu dal kurulumu, ref `ukqhgspaallzjscjodbb`). Asama 4 kapandi.
+T6, 09'un 4a/4c bolumu olmadan "permission denied" ile duser — platform farkinin (bolum 6.2)
+gercek etkisini gosteren test budur.
+
+### 6.9 Asama 3 KAPANDI — uretime uygulama ve kayit (14 Eylul, aksam)
+
+1. `supabase migration list` (uretim): 21 surum Remote'ta yoktu — 10 FAZ -1, 2 yeniden
+   adlandirilan, ve **9 eski dosya** (0701, 0703, 0707, 0708, 0709, 0710, 0712, 0717, 0718)
+   Dashboard'dan uygulanip `repair` yapilmamis.
+2. 00–09 (08 dahil) Dashboard SQL Editor'da tek tek: 10/10 "Success. No rows returned".
+   Once yerelde, verisi dolu kopyada ikinci kosu denenmisti: 8/8 hatasiz, parmak izi 17/17 ayni.
+3. Parmak izi v2 uretimde oncesi/sonrasi: **17/17 birebir ayni** (F dahil — 08 CRLF haliyle
+   yapistirildi, fonksiyon govdeleri bayt bayt yerinde). Uretimde tek nesne degismedi.
+4. `supabase migration repair --status applied` ile 21 surum kaydedildi.
+5. `supabase migration list`: 46/46 satirda Local = Remote. `supabase db push --dry-run`:
+   "Remote database is up to date."
+
+**FAZ -1 tamamlandi.** Repo zinciri = uretim; uretimin migration tablosu tam; bundan sonraki
+her migration `db push` ile gider.
+
+### 6.10 Bundan sonra gecerli calisma kurali
+
+- Semaya dokunan her degisiklik **once dosya** (`supabase/migrations/<ts>_<ad>.sql`), sonra
+  dalda `supabase db push`, sonra uretimde `supabase db push`. Dashboard'dan dogrudan sema
+  degisikligi yapilmaz; zorunlu kalinirsa ayni gun dosyaya islenir ve `repair` ile kaydedilir.
+- Zaman damgasi benzersiz olmali (bolum 2.2).
+- Yeni dallar dar varsayilan ayricalikla dogar (bolum 6.2); 09 zincirde oldugu icin sorun
+  cikmaz, ama 09'un `ALTER DEFAULT PRIVILEGES` bolumu bu yuzden vardir — kaldirilmamali.
+- Fonksiyon karsilastirmalarinda olcut normalize md5 (`asama2b` F2), ham degil.
+- pg_cron isi ve Edge Function URL/anahtari migration'a girmez (bolum 6.4).
+
+### 6.11 Kalan is sirasi
+
+1. ~~Dal yeniden kurulumu (46 dosya) + parmak izi v2~~ — yapildi, bolum 6.6.
+2. ~~Asama 4: davranis testi dalda~~ — 7/7 GECTI, bolum 6.7.
+3. ~~Asama 3: uretime uygulama~~ — yapildi, bolum 6.9.
+4. ~~Asama 5: kapanis~~ — 04 ve 05 raporlarina kapanis notu eklendi (14 Eylul). FAZ 0'a gecis.
+5. Hijyen (istege bagli, artik guvenli): `.gitattributes` → `*.sql text eol=lf`,
+   `git add --renormalize .`, commit. Uretimdeki govdeler CRLF kalir; olcut zaten normalize md5.
+6. Ayri ve acil (FAZ -1 disi, 04-sema-uzlastirma'da not edilmisti): `profiles` herkese acik
+   SELECT politikasi (`qual = true`, anon dahil) — e-posta/telefon okunabilir. Kendi
+   migration'i olarak ele alinmali.

@@ -485,3 +485,21 @@ Bolum 5c'deki `pg_stat_user_indexes` sorgusu.
 - Mukerrer indeks tespiti imza (tablo+yontem+sutun+kosul) esitligine dayanir; kapsama iliskisi
   (kismi ⊂ tam) elle bulundu. Daha karmasik kapsamalar (or. `(a,b)` indeksi `(a)` sorgusunu
   karsilar) **taranmadi** — o ayri bir analizdir.
+
+---
+
+## KAPANIS NOTU (14 Eylul 2026)
+
+FAZ -1 tamamlandi; sonuc ve kanitlar `06-bos-db-zincir-testi.md`'de. Bu raporun iki
+tespiti sonradan eksik cikti ve orada duzeltildi:
+
+- "Grup D'ye dokunulmadi / ortak nesnelerde davranis farki yok" — metin-bazli karsilastirma
+  13 gercek farki gizlemisti (2 fonksiyon govdesi, 5 politika, 4 kisit). DB-DB karsilastirma
+  (iki taraf da `pg_get_*` ile render) bunlari buldu; `08_grup_d_farklari.sql` ile kapatildi.
+- Enum degerleri: yeni 5 tipin degerleri alinmisti, mevcut tiplere sonradan eklenen degerler
+  (`listing_status` +3, `message_type` +1) gozden kacmisti; `00`'a islendi.
+
+Ayrica zincirde hic olmayan platform katmani (auth.users tetikleyicisi, realtime yayin
+uyeleri, bucket + storage politikalari, GRANT/varsayilan ayricaliklar, pg_cron, replica
+identity) `09_platform_katmani.sql` ile eklendi. Uretimin migration tablosu 46/46 tam;
+`db push` artik guvenli.
