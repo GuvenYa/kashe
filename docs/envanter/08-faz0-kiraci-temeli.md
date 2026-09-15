@@ -1,7 +1,7 @@
 # 08 — FAZ 0: Kiraci temeli (organizations)
 
 **Baslangic:** 15 Eylul 2026 (profiles PII kapanisindan sonra; goc planinin ilk fazi)
-**Durum:** Dosyalar hazir ve yerel zincirde test edildi (T0-T9 10/10, tutarlilik 14/14). Dala ve uretime UYGULANMADI.
+**Durum:** 01-03 URETIMDE (15 Eylul aksami, commit `5b441dc`); 04 `docs/envanter/bekleyen/`'de tutarlilik izleme suresini bekliyor. Kapanis kaydi bolum 8.
 **Kaynak belgeler:** `docs/architecture/01-veri-modeli.md` bolum 1, `02-guvenlik-modeli.md` bolum 4-5, `04-goc-plani.md` "FAZ 0".
 
 ---
@@ -128,3 +128,32 @@ Geri alma: 01-03 icin `DROP TRIGGER trg_faz0_*` (5 tetikleyici) yeterlidir; tabl
   gosterirse kod duzeltmesi ayri is.
 - Ajans uyelerinin (profesyoneller) uzun vadede yeri `organization_talent_records` (FAZ 5); FAZ 0'da
   `viewer` uyelik olarak aynalanir, FAZ 5'te yerel kayda tasinir.
+
+## 8. Kapanis kaydi — 01-03 (15 Eylul 2026)
+
+**Uretim on kontrolu (push oncesi):** 48 profil (1 agency, 2 business, 10 client, 35 professional);
+agency_members 2, business_members 1; agency_invitations 2 accepted, business_invitations 2 accepted;
+premium_tier <> none yalniz 1 professional/premium (grantPremium anormalligi YOK); 3 kurulus profilinin
+slug'i bos (dolum `org-<uuid>` verdi), adlari dolu. Not: kurum davetlerinden 2'si accepted ama kurum uyesi 1 —
+biri sonradan cikarilmis olmali; aynalama var olani kopyalar, FAZ 0'i etkilemez.
+
+**Dal (`ukqhgspaallzjscjodbb`):** `db push` -> asama4 T0-T8 GECTI, T9 ATLANDI (04 yok); asama5 14/14 ESIT
+(K1 2/2 = test ajansi + test kurumu, K5 1/1, K6 1/1).
+
+**Uretim (`qydsooqmflrrwtgawhsv`):** `db push` 3 dosya; 02 NOTICE'lari ("does not exist, skipping") beklenen
+DROP IF EXISTS ciktisi; 03 `NOTICE: faz0 dolum: 3 kurulus olusturuldu`. asama5: **14/14 ESIT** —
+K1 3/3, K2 0, K3 2/2, K4 1/1, K5 2/2, K6 2/2, K7 0, K8 0 (sync_log bos). Sayilar on kontrolle birebir.
+`git push` -> `5847212..5b441dc main`.
+
+**Olay ve ders:** asama4 bir kez yanlislikla URETIMDE kosuldu — Supabase Dashboard uretimi dal listesinde
+"main" diye etiketliyor. T0-T7 uretime 4 test kullanicisi, 1 rezervasyon, 2 sohbet, 1 davet yazdi ve T5
+test ajans hesabini admin yapti. T0 temizlik blogu (0005/0006 dahil) uretimde kosuldu; dogrulama: test
+kullanicisi 0, profil 48, admin 1, `protect_profile_fields` tetikleyicisi acik (O), agency_members 2,
+agency_invitations 2, business_members 1, bookings kalintisi 0. Kalici onlem: asama4'un basina
+**uretim korumasi** eklendi (pg_cron isi `send-message-notifications` varsa veya test disi profil > 10 ise
+ilk blokta durur, hicbir sey yazmaz; yerelde sahte cron kaydiyla dogrulandi). Kural: SQL Editor'da is
+yapmadan once adres cubugundaki proje ref'i okunur; "main"/"dal" degil ref adi kullanilir.
+
+**Kalan:** bolum 5 adim 7 — birkac gun sonra (en az bir gercek davet kabulu + bir uye cikarma yasandiginda)
+uretimde asama5 tekrar; hepsi ESIT ve K8 = 0 ise 04 dosyasi `git mv` ile `supabase/migrations/`'a, once
+dala (T9 GECTI beklenir), sonra uretime.

@@ -1,5 +1,6 @@
 -- =============================================================================
--- FAZ -1 / Asama 4 — Davranis testleri (YALNIZ DALDA kosturulur — guncel dal ref'i; uretimde ASLA)
+-- FAZ -1 / Asama 4 — Davranis testleri (YALNIZ DALDA kosturulur — guncel dal ref'i; uretimde ASLA;
+-- uretim korumasi asagida: uretimde kosulursa ilk blokta durur)
 --
 -- Zincirle kurulan dalin uretim gibi DAVRANDIGINI dogrular. Sema esitligi (asama 2)
 -- yapinin ayni oldugunu gosterdi; bu test tetikleyicilerin, RLS'in ve GRANT katmaninin
@@ -22,6 +23,29 @@
 --      RLS + sutun kisiti, uyumluluk gorunumu (ON KOSUL: faz0 01-03 dalda uygulanmis)
 --   T9 FAZ 0 / 04 yetki fonksiyon gecisi (04 uygulanmamissa ATLANDI yazar)
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- URETIM KORUMASI — bu betik uretimde KOSULMAZ. Uretim iki isaretten tanınir:
+--   (1) pg_cron isi "send-message-notifications" yalniz uretimde vardir
+--   (2) test disi (faz1test+ olmayan) profil sayisi > 10 — dal yalniz test verisi tasir
+-- Uretim tespit edilirse betik BURADA durur, hicbir sey yazilmaz.
+-- 15 Eylul 2026: Dashboard'un uretimi "main" diye etiketlemesi yuzunden bir kez uretimde
+-- kosuldu (T0 blogu ile temizlendi); bu koruma o gun eklendi. Proje ref'ini adres cubugundan
+-- dogrula: dal = ukqhgspaallzjscjodbb, uretim = qydsooqmflrrwtgawhsv.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  n_cron int := 0;
+  n_prof int;
+BEGIN
+  IF to_regclass('cron.job') IS NOT NULL THEN
+    EXECUTE 'SELECT count(*) FROM cron.job WHERE jobname = ''send-message-notifications''' INTO n_cron;
+  END IF;
+  SELECT count(*) INTO n_prof FROM public.profiles WHERE email NOT LIKE 'faz1test+%';
+  IF n_cron > 0 OR n_prof > 10 THEN
+    RAISE EXCEPTION 'URETIM KORUMASI: bu veritabani uretim gibi gorunuyor (cron isi=%, test disi profil=%). asama4 yalniz onizleme dalinda kosulur. Hicbir sey yazilmadi.', n_cron, n_prof;
+  END IF;
+END $$;
 
 create temp table if not exists t_sonuc (sira int, test text, sonuc text, detay text);
 delete from t_sonuc;
