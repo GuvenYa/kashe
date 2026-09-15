@@ -1,7 +1,7 @@
 # 07 — profiles kisisel verileri: anon/authenticated sutun kisiti
 
 **Baslangic:** 14 Eylul 2026 (FAZ -1 kapanisindan hemen sonra; yeni migration akisinin ilk uygulamasi)
-**Durum:** Adim 1 uretimde, kapandi. Adim 2 dosyalari hazir (15 Eylul), UYGULANMADI: 2a `supabase/migrations/`'ta, 2b `docs/envanter/bekleyen/`'de.
+**Durum:** KAPANDI (15 Eylul). Adim 1 (anon) ve adim 2 (authenticated) uretimde; kapanis kaydi bolum 4.
 
 ---
 
@@ -62,7 +62,7 @@ adim 2'de politikalar `auth.email()`'e cevrilince ortadan kalkar.
 **Kalici kural:** `profiles`'a anonim sayfalarin secebilecegi yeni bir sutun eklenirse ayni
 migration'da `GRANT SELECT (yeni_sutun) ON public.profiles TO anon` gerekir.
 
-## 3. Adim 2 — authenticated (SPEC; Claude Code isi)
+## 3. Adim 2 — authenticated (KAPANDI, 15 Eylul; spec + uygulama kaydi)
 
 Hedef: hesap acan biri de herkesin email/phone'unu okuyamasin; iletisim bilgisi yalniz
 (a) sahibine, (b) admine, (c) onayli/tamamlanmis rezervasyonun karsi tarafina (ve o
@@ -283,3 +283,60 @@ boyle bulundu).
 eklenirse ayni migration'da `GRANT SELECT (yeni_sutun) ON public.profiles TO anon, authenticated`
 yazilir ve sutun `app/lib/own-profile.ts` `PROFILE_OPEN_COLUMNS` listesine eklenir. Hassas bir
 sutunsa GRANT verilmez; 2a'daki RPC'lere eklenir.
+
+## 4. Adim 2 KAPANIS (15 Eylul)
+
+Sira, bolum 3.1 madde 5'teki gibi yurudu: dalda prova → uretimde 2a → kod deploy → uretimde 2b.
+
+**Dal** (`ukqhgspaallzjscjodbb`):
+- `supabase db push` → 2a (`20260915100000_profiles_pii_adim2a_rpc.sql`) uygulandi.
+- 2b o sirada `docs/envanter/bekleyen/`'de oldugu icin SQL Editor'da elle kosuldu
+  (`Success. No rows returned`).
+- `asama4-davranis-testi.sql` T0–T7: **8/8 GECTI** (T7 = adim 2 davranis testi, bolum 3.3).
+- Not: 2b dalda elle kosuldugu icin dalin `schema_migrations` tablosunda `20260915100100`
+  kaydi yok. Bir sonraki dal `db push`'unda 2b yeniden uygulanir; dosya idempotan
+  (REVOKE + GRANT tekrarinda durum degismez), zararsiz. Istenirse dala baglanip
+  `supabase migration repair --status applied 20260915100100` ile kayit duzeltilir.
+
+**Uretim** (`qydsooqmflrrwtgawhsv`):
+1. `supabase link` (uretim) → `supabase db push` → yalniz 2a (tek dosya). Eski kod calismaya
+   devam etti (2a yalniz ekleme yapar).
+2. `git add -A` / `git commit` / `git push` → Vercel deploy (29 dosya uygulama degisikligi,
+   +553/−130; `tsc --noEmit` bos).
+3. `git mv docs/envanter/bekleyen/20260915100100_profiles_pii_adim2b_authenticated_kisit.sql
+   supabase/migrations/` → `supabase db push` → yalniz 2b (tek dosya).
+
+**Uretim kaniti:** SQL Editor'da
+`set role authenticated; select email from public.profiles limit 1;` →
+`ERROR: 42501: permission denied for table profiles`
+(`HINT: GRANT SELECT ON public.profiles TO authenticated`). Beklenen sonuc; authenticated
+icin sutun kisitinin devrede oldugunun kanitidir. Ayni sorgu adim 1'de anon icin de 42501
+vermisti (bolum 2).
+
+**Sayfalar:** giris yapmis hesapla mesajlar, profil/duzenle, admin listeleri bakim modu
+onizlemesi uzerinden normal; hata yok.
+
+**Uretimdeki nihai yetki durumu (`profiles`):**
+
+| Rol | SELECT | Kapali 7 sutuna erisim |
+|---|---|---|
+| anon | 23 sutun (adim 1) | yok |
+| authenticated | 23 sutun (adim 2b) | yalniz RPC'lerle |
+| service_role | tablo duzeyinde tam (degismedi) | dogrudan |
+
+RPC'ler (hepsi SECURITY DEFINER, `SET search_path = public`, anon'a kapali):
+`get_own_private_profile()` kendi 7 sutunu; `get_contact_info(uuid)` sahip / admin /
+onayli-tamamlanmis rezervasyonun karsi tarafi (is_assignee, is_business_member dahil);
+`admin_profile_contacts(uuid[])` ve `admin_profile_ids_by_email(text)` yalniz admin
+(degilse 42501); `get_notification_email(uuid)` ayni konusmayi paylasanlar.
+
+**Geri alma** (gerekirse, tek satir): `GRANT SELECT ON public.profiles TO authenticated;`
+RPC'ler ve `auth.email()` politikalari (2a) yerinde kalir, zarar vermez. Anon icin ayni
+sekilde `... TO anon`.
+
+**Acik kalan kucuk isler:**
+- Parmak izi v2 (`asama2-parmak-izi.sql`) bu adimdan sonra uretim/dal icin yeniden alinmadi.
+  D (politikalar) ve N (yetkiler) siniflari beklenen sekilde degisti; iki taraf ayni
+  dosyalari kostugu icin esit cikmasi beklenir. Bir sonraki sema isinde birlikte alinir.
+- Bolum 3.4'teki kalici kural yururlukte: `profiles`'a yeni sutun = ayni migration'da
+  `GRANT SELECT (sutun) ... TO anon, authenticated` + `PROFILE_OPEN_COLUMNS` guncellemesi.
