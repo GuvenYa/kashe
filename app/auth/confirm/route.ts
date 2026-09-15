@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/app/lib/supabase-server';
 import { sanitizeReturnPath } from '@/app/lib/safe-redirect';
 import { hosgeldinEmail, sendAccountEmail } from '@/app/lib/email/account-emails';
+import { getOwnPrivateProfile } from '@/app/lib/own-profile';
 
 /**
  * token_hash doğrulama rotası — TARAYICI BAĞIMSIZ.
@@ -73,14 +74,16 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
     if (user) {
       try {
-        const { data: p } = await supabase
-          .from('profiles')
-          .select('role, email, full_name, welcome_email_sent_at')
-          .eq('id', user.id)
-          .single();
-        if (p && !p.welcome_email_sent_at && p.email) {
+        // email ve welcome_email_sent_at authenticated rolüne kapalı (PII adım 2b):
+        // damga get_own_private_profile() ile, adres oturumdan okunur (uygulama
+        // e-posta değiştirmiyor, auth ile profiles aynı adresi taşır).
+        const [{ data: p }, ozel] = await Promise.all([
+          supabase.from('profiles').select('role, full_name').eq('id', user.id).single(),
+          getOwnPrivateProfile(supabase),
+        ]);
+        if (p && ozel && !ozel.welcome_email_sent_at && user.email) {
           const mail = hosgeldinEmail({ role: p.role, name: p.full_name });
-          const res = await sendAccountEmail({ to: p.email, ...mail });
+          const res = await sendAccountEmail({ to: user.email, ...mail });
           if (res.sent) {
             await supabase
               .from('profiles')

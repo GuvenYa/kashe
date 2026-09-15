@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { HizmetlerimClient } from './hizmetlerim-client';
 import { isProfessional } from '@/app/lib/profile-helpers';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 import type {
   Profile,
   ServiceCategory,
@@ -25,11 +26,8 @@ export default async function HizmetlerimPage() {
     redirect('/giris?redirect=/profil/hizmetlerim');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  // select('*') değil — PII adım 2b
+  const { data: profileData } = await fetchOwnProfile(supabase, user.id);
 
   if (!profileData) {
     redirect('/giris');

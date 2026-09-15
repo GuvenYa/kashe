@@ -6,6 +6,7 @@ import { isProfessional } from '@/app/lib/profile-helpers';
 import { getCategoryFields, type ProfileExperience } from '@/app/lib/category-fields';
 import { DeneyimClient } from './deneyim-client';
 import type { Profile } from '@/app/lib/types';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 
 export const metadata = {
   title: 'Deneyim & Eğitim — Kashe',
@@ -21,11 +22,12 @@ export default async function DeneyimPage() {
     redirect('/giris?redirect=/profil/deneyim');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*, service_categories!profiles_primary_category_id_fkey(slug)')
-    .eq('id', user.id)
-    .single();
+  // select('*') değil — PII adım 2b
+  const { data: profileData } = await fetchOwnProfile(
+    supabase,
+    user.id,
+    'service_categories!profiles_primary_category_id_fkey(slug)'
+  );
   if (!profileData) {
     redirect('/giris');
   }

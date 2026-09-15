@@ -15,8 +15,6 @@ type ConversationParticipant = {
   company_name: string | null;
   role: string;
   bio: string | null;
-  phone: string | null;
-  email: string | null;
   last_seen_at: string | null;
   turkish_cities: { name: string } | null;
   service_categories: { slug: string } | null;
@@ -70,12 +68,12 @@ export default async function KonusmaPage({
       id, customer_id, professional_id,
       event_date, event_type, location, guest_count, budget_range,
       customer:customer_id (
-        id, full_name, avatar_url, company_name, role, bio, phone, email, last_seen_at,
+        id, full_name, avatar_url, company_name, role, bio, last_seen_at,
         turkish_cities(name),
         service_categories!profiles_primary_category_id_fkey(slug)
       ),
       professional:professional_id (
-        id, full_name, avatar_url, company_name, role, bio, phone, email, last_seen_at,
+        id, full_name, avatar_url, company_name, role, bio, last_seen_at,
         turkish_cities(name),
         service_categories!profiles_primary_category_id_fkey(slug)
       )
@@ -239,6 +237,16 @@ export default async function KonusmaPage({
   const contactUnlocked = (convBookings ?? []).some(
     (b) => b.status === 'confirmed' || b.status === 'completed'
   );
+  // Telefon/e-posta embed'den değil RPC'den gelir: profiles.email/phone authenticated
+  // rolüne kapalı (PII adım 2b). get_contact_info aynı kuralı (onaylı/tamamlanmış
+  // rezervasyon) veritabanında da uygular; kilitliyken hiç çağrılmaz.
+  let otherContact: { email: string | null; phone: string | null } | null = null;
+  if (contactUnlocked) {
+    const { data: contactData } = await supabase
+      .rpc('get_contact_info', { p_profile_id: other.id })
+      .maybeSingle();
+    otherContact = (contactData as { email: string | null; phone: string | null } | null) ?? null;
+  }
   const bookingIdByQuoteId: Record<string, string> = {};
   for (const b of convBookings ?? []) {
     if (b.quote_id) bookingIdByQuoteId[b.quote_id] = b.id;
@@ -321,8 +329,8 @@ export default async function KonusmaPage({
                 company_name: other.company_name,
                 role: other.role,
                 bio: other.bio,
-                phone: contactUnlocked ? other.phone : null,
-                email: contactUnlocked ? other.email : null,
+                phone: otherContact?.phone ?? null,
+                email: otherContact?.email ?? null,
                 city: other.turkish_cities?.name ?? null,
                 last_seen_at: other.last_seen_at,
               }}

@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { findProfileIdsByEmail, getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import Link from 'next/link';
 import { ProfilOnayAksiyonlari } from './profil-onay-aksiyonlari';
 import { ProfilArama } from './profil-arama';
@@ -86,8 +87,8 @@ export default async function AdminProfillerPage({
     .from('profiles')
     .select(
       `
-      id, full_name, company_name, email, role, avatar_url,
-      approval_status, approval_note, is_published, created_at,
+      id, full_name, company_name, role, avatar_url,
+      approval_status, is_published, created_at,
       service_categories!profiles_primary_category_id_fkey(name_tr)
     `,
       { count: 'exact' }
@@ -95,17 +96,30 @@ export default async function AdminProfillerPage({
     .in('role', APPROVABLE_ROLES);
 
   if (durum !== 'all') listQuery = listQuery.eq('approval_status', durum);
-  if (q)
-    listQuery = listQuery.or(
-      `full_name.ilike.%${q}%,email.ilike.%${q}%,company_name.ilike.%${q}%`
-    );
+  if (q) {
+    // email authenticated rolüne kapalı (PII adım 2b): e-posta eşleşmesi admin RPC'siyle
+    // id'ye çevrilir; sayfalama ve sayım aynı sorguda kalır.
+    const emailIds = await findProfileIdsByEmail(supabase, q);
+    const orParts = [`full_name.ilike.%${q}%`, `company_name.ilike.%${q}%`];
+    if (emailIds.length > 0) orParts.push(`id.in.(${emailIds.join(',')})`);
+    listQuery = listQuery.or(orParts.join(','));
+  }
 
   // Onay bekleyen = eski FIFO (en eski önce); diğer sekmeler = en yeni önce.
   const { data: profiles, count: totalCount } = await listQuery
     .order('created_at', { ascending: durum === 'pending' })
     .range(from, to);
 
-  const list = profiles || [];
+  // email ve approval_note authenticated rolüne kapalı (PII adım 2b) — admin RPC'siyle birleşir.
+  const profileContacts = await getAdminProfileContacts(
+    supabase,
+    (profiles || []).map((p) => p.id)
+  );
+  const list = (profiles || []).map((p) => ({
+    ...p,
+    email: profileContacts.get(p.id)?.email ?? null,
+    approval_note: profileContacts.get(p.id)?.approval_note ?? null,
+  }));
   const total = totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

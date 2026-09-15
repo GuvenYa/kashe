@@ -7,6 +7,7 @@ import {
   profilRevizyonEmail,
   sendAccountEmail,
 } from '@/app/lib/email/account-emails';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -307,7 +308,7 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
     .from('profiles')
     .update({ approval_status: 'approved', approval_note: null, is_published: true })
     .eq('id', profileId)
-    .select('id, approval_status, is_published, email, full_name');
+    .select('id, approval_status, is_published, full_name');
 
   if (updateError) {
     console.error('[admin] approve profile error:', updateError);
@@ -330,11 +331,13 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
 
   // Onay e-postası — inline await: Vercel serverless'te after()/fire-and-forget
   // response sonrası donup gönderim tamamlanmıyordu. Mail hatası aksiyonu bozmaz.
-  const approvedRow = updated[0] as { email: string | null; full_name: string | null };
+  const approvedRow = updated[0] as { full_name: string | null };
   try {
-    if (approvedRow.email) {
+    // profiles.email authenticated rolüne kapalı (PII adım 2b) — adres admin RPC'siyle alınır.
+    const approvedEmail = (await getAdminProfileContacts(supabase, [profileId])).get(profileId)?.email;
+    if (approvedEmail) {
       const mail = profilOnaylandiEmail({ name: approvedRow.full_name, profileId });
-      await sendAccountEmail({ to: approvedRow.email, ...mail });
+      await sendAccountEmail({ to: approvedEmail, ...mail });
     }
   } catch (e) {
     console.error('[mail:profile-approved]', e);
@@ -409,7 +412,7 @@ export async function requestProfileRevision(
     .from('profiles')
     .update({ approval_status: 'revision', approval_note: trimmedNote, is_published: false })
     .eq('id', profileId)
-    .select('id, approval_status, email, full_name');
+    .select('id, approval_status, full_name');
 
   if (updateError) {
     console.error('[admin] request profile revision error:', updateError);
@@ -426,11 +429,13 @@ export async function requestProfileRevision(
 
   // Revizyon e-postası — inline await (after() Vercel'de gönderimi tamamlamıyordu);
   // admin notu gövdede. Mail hatası aksiyonu bozmaz.
-  const revRow = updated[0] as { email: string | null; full_name: string | null };
+  const revRow = updated[0] as { full_name: string | null };
   try {
-    if (revRow.email) {
+    // profiles.email authenticated rolüne kapalı (PII adım 2b) — adres admin RPC'siyle alınır.
+    const revEmail = (await getAdminProfileContacts(supabase, [profileId])).get(profileId)?.email;
+    if (revEmail) {
       const mail = profilRevizyonEmail({ name: revRow.full_name, note: trimmedNote });
-      await sendAccountEmail({ to: revRow.email, ...mail });
+      await sendAccountEmail({ to: revEmail, ...mail });
     }
   } catch (e) {
     console.error('[mail:profile-revision]', e);

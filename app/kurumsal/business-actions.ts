@@ -49,7 +49,7 @@ export async function inviteUserToTeam(
   // Davet eden kurum mu?
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, email')
+    .select('role')
     .eq('id', user.id)
     .single();
 
@@ -61,8 +61,8 @@ export async function inviteUserToTeam(
     };
   }
 
-  // Kendi email'ine davet engeli
-  if (input.email.trim().toLowerCase() === profile.email.toLowerCase()) {
+  // Kendi email'ine davet engeli — adres oturumdan (profiles.email authenticated'a kapalı, PII adım 2b)
+  if (input.email.trim().toLowerCase() === (user.email ?? '').toLowerCase()) {
     return { success: false, error: 'Kendine davet gönderemezsin' };
   }
 
@@ -183,15 +183,16 @@ async function updateInvitationStatus(
     // invitee — email veya user_id ile eşleşmeli
     const { data: myProfile } = await supabase
       .from('profiles')
-      .select('email')
+      .select('id')
       .eq('id', user.id)
       .single();
 
     if (!myProfile) return { success: false, error: 'Profil bulunamadı' };
 
+    // Adres oturumdan: profiles.email authenticated'a kapalı (PII adım 2b)
     const emailMatch =
       invitation.invited_email.toLowerCase() ===
-      myProfile.email.toLowerCase();
+      (user.email ?? '').toLowerCase();
     const userMatch = invitation.invited_user_id === user.id;
 
     if (!emailMatch && !userMatch) {

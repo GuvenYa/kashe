@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 
 export const metadata = {
@@ -86,7 +87,7 @@ export default async function AdminDashboardPage() {
     // Son 5 askıya alınan
     supabase
       .from('profiles')
-      .select('id, full_name, email, suspended_at, suspension_reason')
+      .select('id, full_name, suspended_at')
       .not('suspended_at', 'is', null)
       .order('suspended_at', { ascending: false })
       .limit(5),
@@ -94,7 +95,7 @@ export default async function AdminDashboardPage() {
     // Son 5 yeni kullanıcı
     supabase
       .from('profiles')
-      .select('id, full_name, company_name, email, role, created_at')
+      .select('id, full_name, company_name, role, created_at')
       .order('created_at', { ascending: false })
       .limit(5),
   ]);
@@ -110,8 +111,20 @@ export default async function AdminDashboardPage() {
   const totalBookings = totalBookingsResult.count ?? 0;
 
   const recentCategoryRequests = recentCategoryRequestsResult.data ?? [];
-  const recentSuspensions = recentSuspensionsResult.data ?? [];
-  const recentNewUsers = recentNewUsersResult.data ?? [];
+  // email ve suspension_reason authenticated rolüne kapalı (PII adım 2b) — admin RPC'siyle birleşir.
+  const dashboardContacts = await getAdminProfileContacts(supabase, [
+    ...(recentSuspensionsResult.data ?? []).map((u) => u.id),
+    ...(recentNewUsersResult.data ?? []).map((u) => u.id),
+  ]);
+  const recentSuspensions = (recentSuspensionsResult.data ?? []).map((u) => ({
+    ...u,
+    email: dashboardContacts.get(u.id)?.email ?? null,
+    suspension_reason: dashboardContacts.get(u.id)?.suspension_reason ?? null,
+  }));
+  const recentNewUsers = (recentNewUsersResult.data ?? []).map((u) => ({
+    ...u,
+    email: dashboardContacts.get(u.id)?.email ?? null,
+  }));
 
   return (
     <>

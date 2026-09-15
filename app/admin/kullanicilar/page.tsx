@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { findProfileIdsByEmail, getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { KullaniciAksiyonlar } from './kullanici-aksiyonlar';
 import Link from 'next/link';
@@ -68,7 +69,7 @@ export default async function AdminUsersPage({
   let query = supabase
     .from('profiles')
     .select(
-      'id, full_name, company_name, email, role, avatar_url, created_at, updated_at, is_admin, suspended_at, suspension_reason, premium_tier, premium_until'
+      'id, full_name, company_name, role, avatar_url, created_at, updated_at, is_admin, suspended_at, premium_tier, premium_until'
     )
     .order('created_at', { ascending: false });
 
@@ -83,15 +84,31 @@ export default async function AdminUsersPage({
   }
 
   if (searchQuery) {
-    query = query.or(
-      `full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,company_name.ilike.%${searchQuery}%`
-    );
+    // email authenticated rolüne kapalı (PII adım 2b): e-posta eşleşmesi admin RPC'siyle
+    // id'ye çevrilir; sınır ve sıralama aynı sorguda kalır.
+    const emailIds = await findProfileIdsByEmail(supabase, searchQuery);
+    const orParts = [
+      `full_name.ilike.%${searchQuery}%`,
+      `company_name.ilike.%${searchQuery}%`,
+    ];
+    if (emailIds.length > 0) orParts.push(`id.in.(${emailIds.join(',')})`);
+    query = query.or(orParts.join(','));
   }
 
   query = query.limit(200); // İlk sürüm: ilk 200 kullanıcı. Sonra pagination.
 
   const { data: usersData, error } = await query;
-  const users = (usersData || []) as UserRow[];
+  const userRows = (usersData || []) as Omit<UserRow, 'email' | 'suspension_reason'>[];
+  // email ve suspension_reason authenticated rolüne kapalı (PII adım 2b) — admin RPC'siyle birleşir.
+  const userContacts = await getAdminProfileContacts(
+    supabase,
+    userRows.map((u) => u.id)
+  );
+  const users: UserRow[] = userRows.map((u) => ({
+    ...u,
+    email: userContacts.get(u.id)?.email ?? null,
+    suspension_reason: userContacts.get(u.id)?.suspension_reason ?? null,
+  }));
 
   // Mevcut adminin kim olduğu — kendi hesabını ban'lamayı kapatmak için
   const {

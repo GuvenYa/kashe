@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { PortfolioUpload } from './portfolio-upload';
 import { PortfolioItemCard } from './portfolio-item-card';
 import { isProfessional } from '@/app/lib/profile-helpers';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 import type { Profile, PortfolioItem } from '@/app/lib/types';
 
 export const metadata = {
@@ -24,11 +25,8 @@ export default async function PortfoyPage() {
     redirect('/giris?redirect=/profil/portfoy');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  // select('*') değil — PII adım 2b
+  const { data: profileData } = await fetchOwnProfile(supabase, user.id);
 
   if (!profileData) {
     redirect('/giris');

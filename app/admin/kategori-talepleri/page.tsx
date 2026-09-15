@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { TalepAksiyonlari } from './talep-aksiyonlari';
 import { YeniKategoriFormu } from './yeni-kategori-formu';
@@ -113,7 +114,7 @@ export default async function AdminCategoryRequestsPage({
       id, category_name, description, event_context, status,
       created_at, reviewed_at, user_id,
       user:profiles!category_requests_user_id_fkey (
-        id, full_name, email, role, company_name
+        id, full_name, role, company_name
       )
     `
     )
@@ -125,7 +126,16 @@ export default async function AdminCategoryRequestsPage({
   }
 
   const { data: requestsData } = await query;
-  const requests = (requestsData ?? []) as unknown as CategoryRequestRow[];
+  const requestRows = (requestsData ?? []) as unknown as CategoryRequestRow[];
+  // email authenticated rolüne kapalı (PII adım 2b) — talep sahibinin adresi admin RPC'siyle alınır.
+  const requestContacts = await getAdminProfileContacts(
+    supabase,
+    requestRows.map((r) => r.user_id)
+  );
+  const requests: CategoryRequestRow[] = requestRows.map((r) => ({
+    ...r,
+    user: r.user ? { ...r.user, email: requestContacts.get(r.user_id)?.email ?? null } : null,
+  }));
 
   // Aynı kategori adı kaç kez talep edilmiş (popülarite için)
   // Tüm talepler üzerinden hesaplanır, filtreden bağımsız

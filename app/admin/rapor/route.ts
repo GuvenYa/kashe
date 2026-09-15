@@ -6,6 +6,7 @@
 // 200 kayıt ölçeğinde basit üretim; streaming/ileri optimizasyon yok.
 
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import ExcelJS from 'exceljs';
 
 export const runtime = 'nodejs';
@@ -79,7 +80,7 @@ export async function GET() {
     supabase
       .from('profiles')
       .select(
-        `id, full_name, company_name, email, phone, role, created_at, last_seen_at,
+        `id, full_name, company_name, role, created_at, last_seen_at,
          approval_status, is_published, suspended_at, category_attributes,
          turkish_cities(name),
          service_categories!profiles_primary_category_id_fkey(name_tr)`
@@ -97,7 +98,17 @@ export async function GET() {
     supabase.rpc('admin_report_stats'),
   ]);
 
-  const profiles = (profilesRes.data ?? []) as unknown as ProfileRow[];
+  // email ve phone authenticated rolüne kapalı (PII adım 2b) — admin RPC'siyle birleşir.
+  const profileRows = (profilesRes.data ?? []) as unknown as Omit<ProfileRow, 'email' | 'phone'>[];
+  const raporContacts = await getAdminProfileContacts(
+    supabase,
+    profileRows.map((p) => p.id)
+  );
+  const profiles: ProfileRow[] = profileRows.map((p) => ({
+    ...p,
+    email: raporContacts.get(p.id)?.email ?? null,
+    phone: raporContacts.get(p.id)?.phone ?? null,
+  }));
   const services = (servicesRes.data ?? []) as {
     profile_id: string;
     price_min: number | null;

@@ -118,12 +118,16 @@ export async function getUserEmail(
   supabase: any,
   userId: string
 ): Promise<string | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('email')
-    .eq('id', userId)
-    .single();
-  return data?.email ?? null;
+  // profiles.email authenticated rolüne kapalı (PII adım 2b). RPC adresi yalnız çağıran
+  // ile hedef aynı konuşmayı paylaşıyorsa döner; aksi halde null.
+  const { data, error } = await supabase.rpc('get_notification_email', {
+    p_user_id: userId,
+  });
+  if (error) {
+    console.error('[email] get_notification_email:', error.message);
+    return null;
+  }
+  return (data as string | null) ?? null;
 }
 
 export { SITE_URL };

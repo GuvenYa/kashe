@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { SikayetAksiyonlari } from './sikayet-aksiyonlari';
 import Link from 'next/link';
@@ -96,14 +97,20 @@ export default async function AdminReportsPage({
       ? supabase.from('reviews').select('id, body, professional_id').in('id', reviewIds)
       : Promise.resolve({ data: [] as { id: string; body: string | null; professional_id: string }[] }),
     reporterIds.length
-      ? supabase.from('profiles').select('id, full_name, company_name, role, email').in('id', reporterIds)
-      : Promise.resolve({ data: [] as { id: string; full_name: string | null; company_name: string | null; role: string; email: string | null }[] }),
+      ? supabase.from('profiles').select('id, full_name, company_name, role').in('id', reporterIds)
+      : Promise.resolve({ data: [] as { id: string; full_name: string | null; company_name: string | null; role: string }[] }),
   ]);
 
   const listingMap = new Map((listingsRes.data ?? []).map((l) => [l.id, l]));
   const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
   const reviewMap = new Map((reviewsRes.data ?? []).map((r) => [r.id, r]));
-  const reporterMap = new Map((reportersRes.data ?? []).map((p) => [p.id, p]));
+  // email authenticated rolüne kapalı (PII adım 2b) — şikayet edenin adresi admin RPC'siyle alınır.
+  const reporterContacts = await getAdminProfileContacts(supabase, reporterIds);
+  const reporterMap = new Map(
+    (reportersRes.data ?? []).map(
+      (p) => [p.id, { ...p, email: reporterContacts.get(p.id)?.email ?? null }] as const
+    )
+  );
 
   function reporterName(id: string): string {
     const p = reporterMap.get(id);

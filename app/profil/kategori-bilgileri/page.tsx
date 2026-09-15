@@ -6,6 +6,7 @@ import { isProfessional } from '@/app/lib/profile-helpers';
 import { getCategoryFields } from '@/app/lib/category-fields';
 import { KategoriForm } from './kategori-form';
 import type { Profile } from '@/app/lib/types';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 
 export const metadata = {
   title: 'Kategori Bilgileri — Kashe',
@@ -21,13 +22,12 @@ export default async function KategoriBilgileriPage() {
     redirect('/giris?redirect=/profil/kategori-bilgileri');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select(
-      '*, service_categories!profiles_primary_category_id_fkey(slug, name_tr)'
-    )
-    .eq('id', user.id)
-    .single();
+  // select('*') değil — PII adım 2b
+  const { data: profileData } = await fetchOwnProfile(
+    supabase,
+    user.id,
+    'service_categories!profiles_primary_category_id_fkey(slug, name_tr)'
+  );
   if (!profileData) {
     redirect('/giris');
   }

@@ -23,10 +23,11 @@ export default async function DavetlerimPage() {
     redirect('/giris?redirect=/davetlerim');
   }
 
-  // Mevcut kullanıcının email'i + suspension kontrolü
+  // Rol + suspension kontrolü. E-posta oturumdan gelir: profiles.email authenticated
+  // rolüne kapalı (PII adım 2b); uygulama e-posta değiştirmediği için ikisi aynı.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, role, suspended_at')
+    .select('role, suspended_at')
     .eq('id', user.id)
     .single();
 
@@ -48,7 +49,7 @@ export default async function DavetlerimPage() {
       )
     `
     )
-    .or(`invited_user_id.eq.${user.id},invited_email.eq.${profile.email}`)
+    .or(`invited_user_id.eq.${user.id},invited_email.eq.${user.email}`)
     .order('created_at', { ascending: false });
 
   const invitations = (invitationsData ??
@@ -84,7 +85,7 @@ export default async function DavetlerimPage() {
       )
     `
     )
-    .or(`invited_user_id.eq.${user.id},invited_email.eq.${profile.email}`)
+    .or(`invited_user_id.eq.${user.id},invited_email.eq.${user.email}`)
     .order('created_at', { ascending: false });
 
   const businessInvitations = (businessInvitesData ??

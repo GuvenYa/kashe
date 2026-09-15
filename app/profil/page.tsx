@@ -21,6 +21,7 @@ import {
 } from '@/app/lib/profile-helpers';
 import type { Profile, ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -35,13 +36,13 @@ export default async function ProfilPage() {
     redirect('/giris?redirect=/profil');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select(
-      '*, turkish_cities(name), service_categories!profiles_primary_category_id_fkey(name_tr, emoji)'
-    )
-    .eq('id', user.id)
-    .single();
+  // select('*') değil: kapalı 7 sütun (phone, approval_note…) PII adım 2b'den sonra
+  // yalnız get_own_private_profile() ile okunur; fetchOwnProfile ikisini birleştirir.
+  const { data: profileData } = await fetchOwnProfile(
+    supabase,
+    user.id,
+    'turkish_cities(name), service_categories!profiles_primary_category_id_fkey(name_tr, emoji)'
+  );
 
   if (!profileData) {
     redirect('/giris');

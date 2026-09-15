@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { YorumAksiyonlari } from './yorum-aksiyonlari';
 import Link from 'next/link';
@@ -130,10 +131,10 @@ export default async function AdminReviewsPage({
       `
       id, rating, body, created_at, professional_id, customer_id,
       customer:profiles!reviews_customer_id_fkey (
-        id, full_name, email, role, company_name
+        id, full_name, role, company_name
       ),
       professional:profiles!reviews_professional_id_fkey (
-        id, full_name, email, role, company_name
+        id, full_name, role, company_name
       )
     `
     )
@@ -160,7 +161,21 @@ export default async function AdminReviewsPage({
   }
 
   const { data: reviewsRaw } = await query;
-  const reviewsBase = (reviewsRaw ?? []) as unknown as Omit<ReviewRow, 'reply'>[];
+  const reviewRows = (reviewsRaw ?? []) as unknown as Omit<ReviewRow, 'reply'>[];
+  // email authenticated rolüne kapalı (PII adım 2b) — tarafların adresi admin RPC'siyle alınır.
+  const reviewContacts = await getAdminProfileContacts(
+    supabase,
+    reviewRows.flatMap((r) => [r.customer_id, r.professional_id])
+  );
+  const reviewsBase = reviewRows.map((r) => ({
+    ...r,
+    customer: r.customer
+      ? { ...r.customer, email: reviewContacts.get(r.customer_id)?.email ?? null }
+      : null,
+    professional: r.professional
+      ? { ...r.professional, email: reviewContacts.get(r.professional_id)?.email ?? null }
+      : null,
+  }));
 
   // Yanıtları ayrı sorguyla çek
   const reviewIdsInPage = reviewsBase.map((r) => r.id);

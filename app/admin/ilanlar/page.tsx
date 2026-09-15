@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import Link from 'next/link';
 import { IlanOnayAksiyonlari } from './ilan-onay-aksiyonlari';
 import { AdminIlanKaldir } from './admin-ilan-kaldir';
@@ -85,13 +86,19 @@ export default async function AdminIlanlarPage({
       featured_category_until, featured_home_until,
       service_categories (name_tr),
       turkish_cities (name),
-      creator:profiles!listings_creator_id_fkey (full_name, company_name, role, email)
+      creator:profiles!listings_creator_id_fkey (full_name, company_name, role)
     `
     )
     .eq('status', durum)
     .order('created_at', { ascending: true });
 
   const list = listings || [];
+  // email authenticated rolüne kapalı (PII adım 2b) — ilan sahibinin adresi admin RPC'siyle alınır.
+  const creatorContacts = await getAdminProfileContacts(
+    supabase,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list.map((l: any) => l.creator_id)
+  );
 
   return (
     <div>
@@ -149,6 +156,7 @@ export default async function AdminIlanlarPage({
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {list.map((l: any) => {
             const creator = l.creator;
+            const creatorEmail = creatorContacts.get(l.creator_id)?.email ?? null;
             const creatorName =
               creator?.company_name || creator?.full_name || 'İsimsiz';
             const categoryName = l.service_categories?.name_tr;
@@ -184,7 +192,7 @@ export default async function AdminIlanlarPage({
                     <h3 className="font-display text-xl text-ink">{l.title}</h3>
                     <p className="text-sm text-ink-72 mt-1">
                       {creatorName}
-                      {creator?.email ? ` · ${creator.email}` : ''}
+                      {creatorEmail ? ` · ${creatorEmail}` : ''}
                     </p>
                     <p className="text-sm text-ink-72 mt-2 line-clamp-4 max-w-2xl whitespace-pre-wrap">
                       {l.description}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { PaketlerClient } from './paketler-client';
 import { isProfessional } from '@/app/lib/profile-helpers';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 import type { Profile, ServicePackage } from '@/app/lib/types';
 
 export const metadata = {
@@ -21,11 +22,8 @@ export default async function PaketlerPage() {
     redirect('/giris?redirect=/profil/paketler');
   }
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  // select('*') değil — PII adım 2b
+  const { data: profileData } = await fetchOwnProfile(supabase, user.id);
 
   if (!profileData) {
     redirect('/giris');

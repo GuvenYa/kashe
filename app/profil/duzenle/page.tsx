@@ -4,6 +4,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { DuzenleForm } from './duzenle-form';
 import { orderCities } from '@/app/lib/city-order';
 import type { Profile, TurkishCity, ServiceCategory } from '@/app/lib/types';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 
 export const metadata = {
   title: 'Profili düzenle — Kashe',
@@ -21,7 +22,7 @@ export default async function ProfilDuzenlePage() {
   }
 
   const [{ data: profile }, { data: cities }, { data: categories }] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    fetchOwnProfile(supabase, user.id), // select('*') değil — PII adım 2b
     supabase.from('turkish_cities').select('*').order('name'),
     supabase
       .from('service_categories')

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
+import { getOwnPrivateProfile } from '@/app/lib/own-profile';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 
 export const metadata = {
@@ -27,11 +28,13 @@ export default async function AskiyaAlindiPage() {
     redirect('/giris');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, suspended_at, suspension_reason')
-    .eq('id', user.id)
-    .single();
+  // suspension_reason authenticated rolüne kapalı (PII adım 2b) — kendi satırı
+  // get_own_private_profile() ile okunur.
+  const [{ data: profile }, ozel] = await Promise.all([
+    supabase.from('profiles').select('full_name, suspended_at').eq('id', user.id).single(),
+    getOwnPrivateProfile(supabase),
+  ]);
+  const suspensionReason = ozel?.suspension_reason ?? null;
 
   if (!profile?.suspended_at) {
     redirect('/');
@@ -94,13 +97,13 @@ export default async function AskiyaAlindiPage() {
           </p>
 
           {/* Sebep */}
-          {profile.suspension_reason && (
+          {suspensionReason && (
             <div className="bg-paper-2/60 border border-line rounded-xl p-4 mb-6">
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-2">
                 Sebep
               </p>
               <p className="text-[14px] text-ink leading-relaxed whitespace-pre-line">
-                {profile.suspension_reason}
+                {suspensionReason}
               </p>
             </div>
           )}

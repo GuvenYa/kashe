@@ -3,6 +3,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { getMissingPublishFields } from '@/app/lib/profile-helpers';
+import { fetchOwnProfile } from '@/app/lib/own-profile';
 import type { Profile } from '@/app/lib/types';
 
 export type UpdateProfileResult = {
@@ -143,11 +144,8 @@ export async function togglePublish(publish: boolean): Promise<UpdateProfileResu
 
   // Yayınlamadan önce alanları kontrol et
   if (publish) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // select('*') değil: telefon kontrolü kapalı sütun ister — PII adım 2b
+    const { data: profile } = await fetchOwnProfile(supabase, user.id);
 
     if (!profile) {
       return { success: false, error: 'Profil bulunamadı.' };

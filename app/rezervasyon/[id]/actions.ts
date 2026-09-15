@@ -265,6 +265,12 @@ async function notifyBookingCancelled(
           .select('full_name, company_name, role')
           .eq('id', cancellerId)
           .single(),
+        // get_notification_email koşulu (çağıran ile alıcı aynı konuşmada) burada sağlanır:
+        // bookings satırını yalnız on_quote_accepted_create_booking tetikleyicisi oluşturur
+        // (bookings'te INSERT politikası yok, uygulama insert etmez) ve customer_id /
+        // professional_id'yi konuşmanın taraflarından kopyalar. cancelBooking çağıranı bu iki
+        // taraftan biriyle sınırlar (isCustomer / isProfessional); alıcı öteki taraftır. İkisi de
+        // booking.conversation_id konuşmasının customer_id / professional_id'sidir.
         getUserEmail(supabase, recipientId),
       ]);
 
@@ -338,6 +344,11 @@ async function notifyBookingCompleted(
           .select('full_name, company_name, role')
           .eq('id', professionalId)
           .single(),
+        // get_notification_email koşulu (çağıran ile alıcı aynı konuşmada) burada sağlanır:
+        // rezervasyonun customer_id / professional_id'si on_quote_accepted_create_booking
+        // tetikleyicisinde konuşmanın taraflarından kopyalanır (tek oluşturma yolu).
+        // completeBooking yalnız booking.professional_id === user.id'ye izin verir; alıcı
+        // booking.customer_id'dir. İkisi de booking.conversation_id konuşmasının tarafıdır.
         getUserEmail(supabase, customerId),
       ]);
 
