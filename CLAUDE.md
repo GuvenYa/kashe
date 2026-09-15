@@ -32,7 +32,11 @@ Ayrintili urun modeli: `docs/architecture/00-genel-bakis.md`
 
 **Ortam:** Windows + PowerShell + VS Code.
 
-**PowerShell yapistirma sorunu.** Yapistirma sirasinda `<` karakteri dusuyor. Bu yuzden SQL migration'lari terminale yapistirilmaz; **Supabase Dashboard SQL Editor** uzerinden elle uygulanir. Migration dosyasi olusturulur, icerigi dosyada durur, kullanici panelden calistirir.
+**PowerShell yapistirma sorunu.** Yapistirma sirasinda `<` karakteri dusuyor. SQL veya kod terminale yapistirilmaz; her sey dosya olarak yazilir.
+
+**Migration akisi (14 Eylul 2026'dan itibaren, FAZ -1 sonrasi).** Sema degisikligi = `supabase/migrations/` altinda benzersiz zaman damgali dosya -> `supabase db push` ile once onizleme dalina -> sonra uretime. Dashboard SQL Editor yalniz salt okunur kontroller ve test betikleri (`docs/envanter/asama4-davranis-testi.sql` YALNIZ dalda) icin. Dashboard'dan sema degisikligi yapilmaz; zorunlu kalinirsa ayni gun dosya yazilir ve `supabase migration repair --status applied <ts>` ile kayit duzeltilir. Dosyalar idempotan olur (IF NOT EXISTS / CREATE OR REPLACE / DROP IF EXISTS), veri degistiren dosya ayri ve acikca isaretli olur (ornek: `faz0_03_dolum`). Deploy sirasi kod gerektiren degisikliklerde: ekleyen dosya -> `git push` (Vercel) -> kisitlayan dosya (bkz. `docs/envanter/07-profiles-pii.md`). Uretimin migration kaydi tamdir (`supabase migration list` 46/46, 14 Eylul); repo zinciri uretimi birebir uretir.
+
+**profiles ve organizations sutun yetkisi.** `anon` ve `authenticated`, `profiles` uzerinde 23 sutunluk SELECT listesine sahiptir (email, phone ve 5 yonetim sutunu kapali; erisim yalniz RPC'lerle: `get_own_private_profile`, `get_contact_info`, `admin_profile_contacts`, `admin_profile_ids_by_email`, `get_notification_email`). `profiles`'a yeni sutun eklenirse ayni migration'da `GRANT SELECT (sutun) ... TO anon, authenticated` ve `app/lib/own-profile.ts` `PROFILE_OPEN_COLUMNS` guncellenir. `organizations` icin ayni kural (`tax_number`, `billing_email` kapali; `anon` hic erisemez).
 
 **Find/Replace All kullanma.** Buyuk dosyalarda toplu degistirme yapiyi bozuyor. Tek tek BUL/DEGISTIR ya da dosyanin tamamini yeniden yazma (Ctrl+A, Delete, yapistir) yontemi kullanilir.
 
@@ -105,25 +109,14 @@ Bunlar mimari kararlar degil, **ihlal edilemez sinirlar**:
 
 ## Mevcut sema ozeti
 
-35 tablo, 148 RLS politikasi, 14 enum, ~60 fonksiyon.
+35 tablo, 148 RLS politikasi, 14 enum, 69 fonksiyon (FAZ -1 sonrasi sayim; uretim = repo zinciri). FAZ 0 ile +5 tablo (`organizations`, `organization_memberships`, `organization_invitations`, `organization_modules`, `organization_sync_log`), +5 enum — bkz. `docs/envanter/08-faz0-kiraci-temeli.md`.
 
 **Kullanici rolleri (dort, degismez):** `client`, `professional`, `business`, `agency`
 
 `profiles` tablosu bugun uc isi birden yapiyor: kullanici kimligi, pazaryeri profili ve kurulus hesabi. Goc bunlari ayiriyor. Ayrinti: `04-goc-plani.md`
 
-**Yetkilendirme fonksiyonlari.** RLS politikalari yetki fonksiyonlarini cagirir; ancak **bu fonksiyonlarin bir kismi repoda tanimli degildir, uretimden dogrulanmalidir.** Migration'lardaki durum:
-
-| Fonksiyon | Repoda tanim | Repoda cagri | Durum |
-|---|---|---|---|
-| `has_business_role(uuid, business_member_role)` | VAR | 26 politika | Guvenilir |
-| `is_business_member(uuid)` | VAR | 10 politika | Guvenilir |
-| `owns_quote_request(uuid, uuid)` | **YOK** | **VAR** | **Drift** — canli politika tanimi olmayan fonksiyona bagimli |
-| `is_admin(uuid)` | **YOK** | yalniz yorum | Admin kapisi 11 yerde satir ici `EXISTS (... p.is_admin = true)` ile tekrarlaniyor |
-| `is_professional_or_agency(uuid)` | **YOK** | **YOK** | Repoda hic gecmiyor |
-| `is_assignee(uuid, uuid)` | **YOK** | yalniz yorum | Repoda tanimi ve cagrisi yok |
-
-Bir yetki fonksiyonuna dayanmadan once **tanimi repoda ara**; yoksa uretim veritabanindan dogrula.
-Ayrinti ve kanit: `docs/envanter/01-rol-kontrolleri.md` bolum 5b.
+**Yetkilendirme fonksiyonlari.** RLS politikalari yetki fonksiyonlarini cagirir. FAZ -1 (14 Eylul 2026) ile uretimdeki tum fonksiyonlar repoya alindi: `is_admin(uuid)` (`faz_minus1_02`), `has_business_role`, `is_business_member`, `is_business_member_of_request`, `owns_quote_request`, `is_professional_or_agency`, `is_assignee` (`faz_minus1_03`). FAZ 0 ekledi: `is_org_member(uuid)`, `has_org_permission(uuid, text)`, `org_role_permissions(role)`, `organization_id_for_profile(uuid)`; 04 dosyasiyla `is_agency_member(uuid)`. Yeni bir RPC veya politika yazmadan once `docs/envanter/` altindaki ilgili raporu oku; RPC'lere satir bazinda iliski kontrolu gomulur (cagirani degil iliskiyi dogrula), `SECURITY DEFINER` + `SET search_path = public` + `REVOKE ... FROM PUBLIC, anon`.
+Tarihsel kanit: `docs/envanter/01-rol-kontrolleri.md` bolum 5b (FAZ -1 oncesi durum).
 
 Gocte **politikalar degil, fonksiyon govdeleri** degistirilir: `has_business_role` ve `is_business_member` govdeleri `organization_memberships`'e cevrilince bu iki fonksiyonu cagiran 26 politika **otomatik** dogru calisir.
 
@@ -132,7 +125,7 @@ Gocte **politikalar degil, fonksiyon govdeleri** degistirilir: `has_business_rol
 ## Calisma bicimi
 
 - Once mimari belgeyi oku, sonra kod yaz.
-- Migration dosyasi olustur; SQL'i terminale yapistirmaya calisma.
+- Migration dosyasi olustur; SQL'i terminale yapistirmaya calisma. Uygulama Guven'in isidir (`supabase db push`), Claude Code uygulamaz.
 - Buyuk degisiklikte once plan sun, onay al.
 - Her degisiklikten sonra hangi dosyalarin degistigini listele.
 - Emin olmadigin yerde tahmin etme, sor.

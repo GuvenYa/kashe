@@ -91,7 +91,9 @@ Izin kontrolu tek fonksiyondan gecer:
 has_org_permission(p_org_id uuid, p_permission text) returns boolean
 ```
 
-Izin anahtarlari: `events.view`, `events.manage`, `crew.view`, `crew.manage`, `talent.manage`, `commercial.view`, `commercial.manage`, `finance.view`, `finance.manage`, `settings.manage`, `members.manage`
+Izin anahtarlari: `events.view`, `events.manage`, `crew.view`, `crew.manage`, `talent.view`, `talent.manage`, `commercial.view`, `commercial.manage`, `proposals.view`, `proposals.manage`, `finance.view`, `finance.manage`, `settings.manage`, `members.manage`, `billing.manage`
+
+FAZ 0 (15 Eylul 2026) matrisi kodlarken dort anahtar eklendi: `talent.view` (matristeki "Talent Pool okur"), `proposals.view` / `proposals.manage` (teklif hazirlama; `commercial.view` = ic maliyeti gorme ile ayrilir, `sales` ve `project_manager` `proposals.*` alir ama `commercial.view` almaz), `billing.manage` (yalniz `owner`; "admin: ayarlar kismi"nin karsiligi). Rol -> anahtar eslemesi `public.org_role_permissions(role)` fonksiyonunda; `organization_memberships.permissions` jsonb satir bazinda ekler/cikarir (`{"crew.manage": true}` verir, `{"events.view": false}` alir). Yalniz `status = 'active'` uyelik sayilir.
 
 ---
 

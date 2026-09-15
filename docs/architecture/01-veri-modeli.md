@@ -21,13 +21,19 @@ organizations
   billing_email         text
   city_id               integer fk -> turkish_cities
   owner_user_id         uuid fk -> profiles(id)
-  subscription_tier     enum('trial','starter','pro','enterprise')
+  subscription_tier     premium_tier            -- FAZ 0 karari (15 Eylul): mevcut enum
+                                                -- (none/premium/plus/agency), deger kayipsiz
+                                                -- kopyalanir; paket adlari netlesince
+                                                -- trial/starter/pro/enterprise'a tek migration
   subscription_status   enum('active','past_due','canceled')
+  subscription_until    timestamptz             -- profiles.premium_until kopyasi
   seat_limit            integer
   active_event_limit    integer
   storage_limit_mb      integer
   ai_credit_limit       integer
   settings              jsonb
+  legacy_profile_id     uuid unique fk -> profiles(id)   -- FAZ 0: turetildigi agency/business profili;
+                                                         -- owner_user_id devredilebilir, bu alan degismez
   created_at, updated_at
 ```
 
@@ -44,7 +50,10 @@ organization_memberships
   status            enum('invited','active','suspended')
   invited_by        uuid
   joined_at         timestamptz
+  legacy_source     text             -- FAZ 0: 'agency_members' | 'business_members' | 'owner_seed'
   unique(organization_id, user_id)
+  -- FAZ 0: eski tablodan aynalanan satirin id'si ESKI id ile aynidir (aynalama anahtari);
+  -- kurucu uyeligi (owner_seed) eski tablolarda yoktur, yeni id alir
 
 organization_invitations
   id, organization_id, invited_email, invited_user_id,
@@ -62,7 +71,9 @@ organization_modules
   primary key(organization_id, module_key)
 ```
 
-**Mevcut yapiyla iliski:** `agency_member_role` ve `business_member_role` enum'lari bugun ayni degerlere sahip (`owner, manager, member`). Goc sirasinda `manager` -> `admin`, `member` -> `viewer` eslenir; yeni roller sonradan atanir.
+**Mevcut yapiyla iliski:** `agency_member_role` ve `business_member_role` enum'lari bugun ayni degerlere sahip (`owner, manager, member`). Goc sirasinda `manager` -> `admin`, `member` -> `viewer` eslenir; yeni roller sonradan atanir. Ters yon (uyumluluk gorunumleri): `owner -> owner`, `admin -> manager`, digerleri `-> member`. Sutun adlari ise farklidir: `agency_members.professional_id`, `business_members.member_user_id`.
+
+**FAZ 0 uygulamasi (15 Eylul 2026):** bu bolum `docs/envanter/08-faz0-kiraci-temeli.md` ile birlikte okunur; oradaki kararlar (dolum dosyasi, premium_tier tipi, tetikleyiciyle cift yazma, 04 gecis dosyasi) bu belgeye islenmistir. `organization_invitations.id` de eski davet id'siyle aynidir.
 
 ---
 

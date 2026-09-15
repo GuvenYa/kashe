@@ -1,0 +1,130 @@
+# 08 — FAZ 0: Kiraci temeli (organizations)
+
+**Baslangic:** 15 Eylul 2026 (profiles PII kapanisindan sonra; goc planinin ilk fazi)
+**Durum:** Dosyalar hazir ve yerel zincirde test edildi (T0-T9 10/10, tutarlilik 14/14). Dala ve uretime UYGULANMADI.
+**Kaynak belgeler:** `docs/architecture/01-veri-modeli.md` bolum 1, `02-guvenlik-modeli.md` bolum 4-5, `04-goc-plani.md` "FAZ 0".
+
+---
+
+## 1. Amac ve sinir
+
+Kurulus (ajans / kurum) bugun rolu `agency`/`business` olan bir **profil satiri**. FAZ 0, kurulusa kendi
+kimligini verir: `organizations`, `organization_memberships`, `organization_invitations`,
+`organization_modules`. **Goc yok, yalniz ekleme.** Hicbir okuma yolu, politika metni veya uygulama
+kodu degismez; eski tablolar (`agency_members`, `business_members`, `agency_invitations`,
+`business_invitations`) aynen calisir ve yeni tablolara **veritabani tetikleyicileriyle aynalanir**.
+
+Yeni tablolar FAZ 0'da uygulama tarafindan okunmaz veya yazilmaz. Amac: uretimde dolu, senkron ve
+dogrulanmis bir kiraci katmani olusturmak; FAZ 1 (internal sema) ve FAZ 8 (Event OS) bunun uzerine kurulur.
+
+## 2. Kararlar (15 Eylul, Guven onayi)
+
+| Konu | Karar | Gerekce |
+|---|---|---|
+| Dolum | Ayri, idempotan migration dosyasi (`03_dolum`) zincirde | Dal ve uretim ayni dosyayi kosar; bos dalda sifir satir yazar. FAZ -1'in "veri degistirmez" kurali onarim dosyalari icindi; FAZ 0 plani dolumu acikca icerir |
+| `subscription_tier` tipi | Mevcut `premium_tier` enum'u (none/premium/plus/agency) | 01-veri-modeli yeni enum (trial/starter/pro/enterprise) yaziyordu, 04-goc-plani "premium_tier kopyalanir" diyordu; celisti. Deger kayipsiz kopyalanir, esleme uydurulmaz; paket adlari netlesince ayri migration'la yeniden adlandirilir. `profiles.premium_tier` simdilik kaynak kalir |
+| Cift yazma | Veritabani tetikleyicisi (eski tablo -> yeni tablo, AFTER, SECURITY DEFINER) | Uygulama kodu hic degismez; davet-kabul tetikleyicisi otomatik kapsanir. Hata eski akisi KESMEZ, `organization_sync_log`'a duser |
+| Yetki fonksiyon gecisi | Ayri dosya (`04`), tutarlilik kontrolu birkac gun sifir gosterdikten sonra | 25 politika `has_business_role`/`is_business_member`'a bagli; geri alma tek dosya |
+
+Uygulama sirasinda alinan tasarim kararlari (belgelere islendi):
+
+- **`organizations.legacy_profile_id`** (unique): kurulusun turetildigi profil. Aynalama ve uyumluluk gorunumleri
+  bu alanla eslesir; `owner_user_id` ileride devredilebilir, bu alan degismez. FAZ 0'da ikisi ayni degerdir.
+- **Ayni id:** `organization_memberships.id = agency_members.id / business_members.id`,
+  `organization_invitations.id = eski davet id`. Aynalama anahtari; ek eslestirme tablosu gerekmez.
+  Kurucu uyeligi (`legacy_source = 'owner_seed'`) eski tablolarda karsiligi olmayan yeni satirdir.
+- **Rol eslemesi:** `owner -> owner`, `manager -> admin`, `member -> viewer` (01 bolum 1). Ters yon
+  (gorunumler icin): `owner -> owner`, `admin -> manager`, digerleri `-> member`.
+- **Izin anahtarlari:** 02 bolum 4'teki 11 anahtar + matrisi ifade etmek icin 4 ek: `talent.view`,
+  `proposals.view`, `proposals.manage`, `billing.manage`. "admin: ayarlar kismi" = `billing.manage` yalniz
+  owner'da. `commercial.view` = ic maliyeti gorme; `sales`/`project_manager` teklif hazirlar
+  (`proposals.*`) ama `commercial.view` almaz.
+- **Yetki:** `anon` yeni tablolara HIC erisemez. `authenticated` yalniz SELECT; `organizations`'ta sutun
+  listesiyle (`tax_number`, `billing_email` disarida — profiles PII dersi). Istemciden yazma yolu YOK
+  (FAZ 8'e kadar); yazma yalniz tetikleyiciler ve dolum. `organization_modules` bos (Event OS ile dolar).
+- **Tespit:** 04-goc-plani "iki uyelik tablosu birebir ayni yapida" diyordu; `agency_members` sutunu
+  `professional_id`, `business_members` sutunu `member_user_id`. Aynalama iki ayri fonksiyonla yapildi.
+  `agency_members`'i dogrudan okuyan tek politika var: `bookings."Assigned pros read team bookings"`.
+
+## 3. Dosyalar
+
+| Dosya | Icerik |
+|---|---|
+| `supabase/migrations/20260915150000_faz0_01_kiraci_tablolari.sql` | 5 enum; `organizations`, `organization_memberships`, `organization_invitations`, `organization_modules`, `organization_sync_log`; indeksler; REVOKE/GRANT; RLS acik |
+| `supabase/migrations/20260915150100_faz0_02_fonksiyonlar_aynalama.sql` | rol esleme, `organization_id_for_profile`, `ensure_organization_for_profile`, `is_org_member`, `org_role_permissions`, `has_org_permission`, 5 SELECT politikasi, `log_org_sync_error`, 5 aynalama tetikleyicisi (profiles, agency_members, business_members, agency_invitations, business_invitations), `v_agency_members` / `v_business_members` (security_invoker) |
+| `supabase/migrations/20260915150200_faz0_03_dolum.sql` | VERI YAZAR: profiller -> kuruluslar + kurucu; uyelikler ve davetler ayni id ile. Idempotan |
+| `docs/envanter/bekleyen/20260915150300_faz0_04_yetki_fonksiyon_gecisi.sql` | BEKLER. `has_business_role`, `is_business_member`, `is_business_member_of_request` govdeleri yeni tablodan okur (imza ayni); yeni `is_agency_member`; bookings politikasi yeniden yazilir |
+| `docs/envanter/asama5-faz0-tutarlilik.sql` | SALT OKUNUR, dal + uretim: 14 kontrol (K1-K8), hepsi ESIT olmali |
+| `docs/envanter/asama4-davranis-testi.sql` | T8 (FAZ 0) ve T9 (04; uygulanmamissa ATLANDI) eklendi; T0 temizligi kurum/uye sabitlerini de siler |
+
+Yerel zincir (46 dosya + PII 2a/2b) uzerinde: 01/02/03/04 ikiser kez kosuldu (idempotan), T0-T9 10/10 GECTI
+(04 uygulanmadan T9 ATLANDI, uygulandiktan sonra GECTI), tutarlilik 14/14 ESIT, `organization_sync_log` bos.
+T8 mutasyon testi: aynalama tetikleyicisi kapatildi / `tax_number` acildi / politika `true` yapildi —
+ucunde de T8 HATA verdi, geri alinca GECTI.
+
+## 4. Davranis ozeti
+
+- Kayit: `handle_new_user` profili yazar -> `trg_faz0_sync_profile_to_organization` agency/business icin
+  kurulus + `owner_seed` uyeligi olusturur. Client/professional icin hicbir sey olmaz.
+- Profil guncellemesi (`company_name`, `full_name`, `city_id`, `premium_tier`, `premium_until`, `role`) kurulusa
+  yansir (profil hala kaynak). Rol agency/business DISINA cikarsa kurulus silinmez (K1c raporlar).
+- `agency_members` / `business_members` INSERT/UPDATE/DELETE -> `organization_memberships` ayni id ile.
+  Davet kabulunde eski tetikleyici `agency_members`'a yazar, aynalama onu izler.
+- Davetler ayni id ve ayni durum degeriyle aynalanir.
+- Aynalama hatasi eski islemi bozmaz; `organization_sync_log`'a `source/operation/legacy_id/detail` yazilir.
+  K8 bu tabloyu sayar; sifir olmali.
+- `has_org_permission(org, 'anahtar')`: aktif uyelik + rolun varsayilan anahtarlari; `permissions` jsonb
+  ile satir bazinda ekleme/cikarma (`{"crew.manage": true}` verir, `{"events.view": false}` alir).
+
+## 5. Uretim sirasi (adim adim)
+
+On kosul: `git status` temiz; dal ref `ukqhgspaallzjscjodbb` (T7 icin 2a/2b dalda uygulanmis).
+
+1. **Uretimde on kontrol (salt okunur, SQL Editor):**
+   ```sql
+   select role, count(*) from public.profiles group by 1 order by 1;
+   select count(*) agency_members from public.agency_members;
+   select count(*) business_members from public.business_members;
+   select status, count(*) from public.agency_invitations group by 1;
+   select status, count(*) from public.business_invitations group by 1;
+   -- 04-goc-plani bolum 3: professional'a agency tier verilmis mi? (grantPremium rol kontrolu yok)
+   select role, premium_tier, count(*) from public.profiles where premium_tier <> 'none' group by 1,2 order by 1,2;
+   ```
+   Sayilar not edilir; dolum sonrasi K1/K3/K4/K5/K6 "eski" sutunlari bunlarla ayni olmali.
+2. **Dal:** `supabase link --project-ref ukqhgspaallzjscjodbb` -> `supabase db push`. Not: dalda 2b elle
+   kosuldugu icin push 4 dosya gosterebilir (2b + faz0 01/02/03); 2b idempotan, zararsiz.
+3. **Dalda test:** SQL Editor'da `asama4-davranis-testi.sql` -> 10 satir, T9 `ATLANDI`, digerleri `GECTI`.
+   Sonra `asama5-faz0-tutarlilik.sql` -> 14 satir ESIT/BILGI (test verisi kalir; K1 = 2, K5 = 1 gibi kucuk sayilar normal).
+4. **Uretim:** `supabase link --project-ref qydsooqmflrrwtgawhsv` -> `supabase db push` (3 dosya).
+5. **Uretimde dogrulama:** `asama5-faz0-tutarlilik.sql` -> hepsi ESIT, K1 "eski" = adim 1'deki agency+business
+   toplami. `select * from public.organization_sync_log` -> 0 satir. Onizleme ile sayfalar (mesajlar,
+   ekibim, davetlerim, kurumsal ekip) normal.
+6. `git add -A`, commit (`FAZ 0: kiraci temeli — 3 migration, 04 bekleyen, T8/T9, tutarlilik`), push.
+7. **Izleme:** birkac gun boyunca (en az bir davet kabulu ve bir uye cikarma yasandiktan sonra) uretimde
+   `asama5-faz0-tutarlilik.sql` tekrar: hepsi ESIT ve sync_log 0 ise -> 04 dosyasi `git mv` ile
+   `supabase/migrations/`'a tasinir, dala push + asama4 (T9 GECTI beklenir), uretime push.
+
+Geri alma: 01-03 icin `DROP TRIGGER trg_faz0_*` (5 tetikleyici) yeterlidir; tablolar dursa da zarar vermez.
+04 icin eski govdeler `20260620090200_faz_minus1_03_yetki_fonksiyonlari.sql` ve
+`20260701120000_business_member_shared_visibility.sql` icinde; bookings politikasi `06_politikalar`'da.
+
+## 6. Kalici kurallar (FAZ 0 sonrasi)
+
+- `organizations`'a yeni sutun = ayni migration'da `GRANT SELECT (sutun) ON public.organizations TO authenticated`
+  (hassas sutunsa verilmez, RPC ile acilir).
+- `agency_members` / `business_members` / davet tablolarina **yeni sutun eklenirse** aynalama fonksiyonu
+  (`fn_sync_*`) ve dolum dosyasi guncellenir; aksi halde yeni alan yeni tabloya tasinmaz.
+- Yeni `organization_member_role` degeri eklenirse `org_role_permissions` CASE'i ve (gerekirse)
+  `map_org_role_to_legacy` guncellenir.
+- Uretimde `organization_sync_log` bos degilse once sebep, sonra 04.
+
+## 7. Acik noktalar
+
+- `organization_modules` bos; hangi `account_type`'in varsayilan olarak hangi modulleri alacagi Event OS
+  tasariminda kararlastirilir (`commercial`, `crew_commercial`, `talent_pool` business'a asla — 01/02).
+- Paket adlari (`trial/starter/pro/enterprise` vs `none/premium/plus/agency`): is planiyla birlikte kararlastirilir;
+  o zaman `subscription_tier` yeni enum'a tek migration'la cevrilir.
+- `grantPremium` rol kontrolu (04-goc-plani bolum 3): adim 1'deki sorgu professional'a `agency` tier
+  gosterirse kod duzeltmesi ayri is.
+- Ajans uyelerinin (profesyoneller) uzun vadede yeri `organization_talent_records` (FAZ 5); FAZ 0'da
+  `viewer` uyelik olarak aynalanir, FAZ 5'te yerel kayda tasinir.

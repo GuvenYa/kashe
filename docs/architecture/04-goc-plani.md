@@ -348,6 +348,23 @@ Indeks tarafinda bu ampirik olarak dogrulandi: ham metin karsilastirmasinda 67/6
 
 **Risk: dusuk.** Hicbir okuma yolu degismez. Tek risk tetikleyici kopyalamanin atlanmasi; adim 8 ve 9 bunu karsilar.
 
+**Uygulama notu (15 Eylul 2026, `docs/envanter/08-faz0-kiraci-temeli.md`):**
+- Dosyalar: `faz0_01_kiraci_tablolari`, `faz0_02_fonksiyonlar_aynalama`, `faz0_03_dolum` (zincirde) ve
+  `faz0_04_yetki_fonksiyon_gecisi` (`docs/envanter/bekleyen/`, tutarlilik kontrolu sonrasi).
+- Madde 7 (cift yazma) **veritabani tetikleyicisiyle** yapildi: eski tabloya her yazma yeni tabloya aynalanir,
+  uygulama kodu degismez. Bu yuzden madde 8'deki yedi tetikleyicinin tasinmasi FAZ 0'da GEREKMEZ; eski
+  tetikleyiciler eski tabloda kalir, aynalama sonucu izler. Tasima, uygulama yazmalari yeni tabloya
+  gectiginde (FAZ 8/10) yapilir. Madde 9'un karsiligi `organization_sync_log`.
+- Madde 5 gorunumleri `o.legacy_profile_id` uzerinden kurulur (owner_user_id degil) ve `security_invoker`'dir.
+- Madde 10 = 04 dosyasi. `has_business_role` ve `is_business_member` cagiran politika sayisi 24
+  (+1 `is_business_member_of_request`); `agency_members`'i dogrudan okuyan tek politika
+  `bookings."Assigned pros read team bookings"` yeni `is_agency_member(uuid)` ile yazilir.
+- Duzeltme: iki uyelik tablosu "birebir ayni yapida" degildir; `agency_members.professional_id`,
+  `business_members.member_user_id`. Davet-kabul tetikleyicileri ve `validate_*` fonksiyonlari kurucuyu
+  (agency/business profilinin kendisi) uye tablosuna yazmaz; FAZ 0 kurucuyu `owner_seed` uyelik olarak
+  ekler, 04 dosyasi eski davranisi korumak icin bu satiri yetki fonksiyonlarinda SAYMAZ.
+- `subscription_tier` tipi mevcut `premium_tier` enum'udur (01-veri-modeli guncellendi).
+
 ### FAZ 1 — Internal sema iskeleti
 
 8. `internal` semasi olusturulur; PostgREST `exposed_schemas` listesine **eklenmez**.
@@ -617,6 +634,11 @@ Dogrudan `p.role = 'agency'` yazan politikalar tek tek ele alinir; bunlar sayica
 ## 7. ILK ADIM
 
 Uc envanter tamamlandi (`docs/envanter/`). Ciktilar bu belgeye islendi.
+
+**FAZ -1 sema uzlastirma 14 Eylul 2026'da kapandi** (`docs/envanter/06-bos-db-zincir-testi.md`); ardindan
+profiles PII sutun kisiti (`07-profiles-pii.md`, 15 Eylul) ve FAZ 0 dosyalari (`08-faz0-kiraci-temeli.md`).
+
+Asagidaki metin FAZ -1 oncesi yazildi ve tarihsel kayit olarak durur.
 
 **Siradaki is: FAZ -1 sema uzlastirma.**
 
