@@ -81,9 +81,16 @@ organization_modules
 
 Pazaryerinde listelenen her varlik burada. Hem bagimsiz profesyonel hem organizasyon firmasi.
 
+**FAZ 2a uygulamasi (17 Eylul 2026, `docs/envanter/11-faz2-saglayici-defteri.md`):** `providers.id = profiles.id`
+(profesyonel ve ajans) ve `talents.id = profiles.id` — mevcut FK'ler ve `/p/[id]` zaten saglayici kimligini tasir.
+`approval_status` mevcut `profile_approval_status` enum'udur. `business` rollu profil saglayici DEGILDIR (kurumsal
+alici). `talents.canonical_email/phone` hesapli yetenekte bos (kimlik `user_id`), FAZ 5'te hesapsizlar icin dolar.
+Koruma tetikleyicisi `protect_sensitive_provider_fields` 10 yonetici alanini korur; aynalama `kashe.sync_bypass`
+ile gecer. `providers.approval_note`, `suspension_reason`, `suspended_by` anon/authenticated'a kapali sutunlar.
+
 ```
 providers
-  id                    uuid pk
+  id                    uuid pk                 -- FAZ 2: = profiles.id
   provider_type         enum('professional','organization')
   talent_id             uuid null fk -> talents(id)
   organization_id       uuid null fk -> organizations(id)
@@ -95,7 +102,7 @@ providers
   base_currency         char(3) default 'TRY'
 
   -- GORUNURLUK: yonetici ve kullanici yetkileri AYRI alanlarda
-  approval_status       enum('draft','pending','approved','rejected','revision')  -- YONETICI
+  approval_status       profile_approval_status (draft/pending/approved/rejected/revision)  -- YONETICI
   approval_note         text                                                      -- YONETICI
   approved_at           timestamptz                                               -- YONETICI
   suspended_at          timestamptz                                               -- YONETICI

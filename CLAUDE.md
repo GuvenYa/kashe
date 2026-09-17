@@ -109,7 +109,7 @@ Bunlar mimari kararlar degil, **ihlal edilemez sinirlar**:
 
 ## Mevcut sema ozeti
 
-35 tablo, 148 RLS politikasi, 14 enum, 69 fonksiyon (FAZ -1 sonrasi sayim; uretim = repo zinciri). FAZ 0 ile +5 tablo (`organizations`, `organization_memberships`, `organization_invitations`, `organization_modules`, `organization_sync_log`), +5 enum — bkz. `docs/envanter/08-faz0-kiraci-temeli.md`. FAZ 1 ile `internal` semasi + `internal.access_audit` — bkz. `docs/envanter/09-faz1-internal-sema.md`.
+35 tablo, 148 RLS politikasi, 14 enum, 69 fonksiyon (FAZ -1 sonrasi sayim; uretim = repo zinciri). FAZ 0 ile +5 tablo (`organizations`, `organization_memberships`, `organization_invitations`, `organization_modules`, `organization_sync_log`), +5 enum — bkz. `docs/envanter/08-faz0-kiraci-temeli.md`. FAZ 1 ile `internal` semasi + `internal.access_audit` — bkz. `docs/envanter/09-faz1-internal-sema.md`. FAZ 2a ile `talents`, `providers`, `professional_profiles`, `organization_profiles` (+6 enum; `providers.id = profiles.id`; profiles hala kaynak, aynalanir) — bkz. `docs/envanter/11-faz2-saglayici-defteri.md`.
 
 **Kullanici rolleri (dort, degismez):** `client`, `professional`, `business`, `agency`
 

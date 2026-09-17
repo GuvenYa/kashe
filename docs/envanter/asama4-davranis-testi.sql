@@ -25,6 +25,9 @@
 --   T10 FAZ 1 internal sema gizliligi: anon/authenticated/service_role internal'a ulasamaz,
 --       internal_audit_recent yalniz settings.manage ile, okuma denetime duser, PostgREST'e acik degil
 --       (ON KOSUL: faz1_01 dalda uygulanmis)
+--   T11 FAZ 2a saglayici defteri: profil -> talents/providers/alt profil (ayni id), aynalama,
+--       koruma tetikleyicisi (kara liste + admin), sutun kisiti, talents gizliligi, tam-bir kisiti
+--       (ON KOSUL: faz2a 01-03 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -800,6 +803,150 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (10, 'T10 FAZ 1 internal gizlilik', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T11) FAZ 2a saglayici defteri. ON KOSUL: 20260917120000/120100/120200 dalda.
+-- T1 verisine dayanir: pro1 (0002), pro2 (0003), ajans (0004, T5'te admin + approved degil),
+-- musteri (0001), kurum (0005, business). T5: pro1 approved.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  pr record; t record; n int; st text; org_a uuid;
+BEGIN
+  IF to_regclass('public.providers') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (11, 'T11 FAZ 2a saglayici defteri', 'ATLANDI', 'providers tablosu yok; faz2a dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 11a) pro1: talents + providers + professional_profiles, hepsi ayni id; onay T5'ten aynalanmis
+  SELECT * INTO t FROM public.talents WHERE id = pro1;
+  IF t.id IS NULL OR t.user_id <> pro1 OR t.claim_status <> 'claimed' OR t.origin <> 'marketplace_signup' THEN
+    RAISE EXCEPTION 'pro1 talents: id=% user=% claim=% origin=%', t.id, t.user_id, t.claim_status, t.origin; END IF;
+  SELECT * INTO pr FROM public.providers WHERE id = pro1;
+  IF pr.id IS NULL OR pr.provider_type <> 'professional' OR pr.talent_id <> pro1 OR pr.organization_id IS NOT NULL THEN
+    RAISE EXCEPTION 'pro1 providers: type=% talent=% org=%', pr.provider_type, pr.talent_id, pr.organization_id; END IF;
+  IF pr.approval_status <> 'approved' OR pr.approved_at IS NULL THEN
+    RAISE EXCEPTION 'pro1 onayi aynalanmadi: %', pr.approval_status; END IF;
+  IF pr.display_name <> 'Degisti' THEN RAISE EXCEPTION 'pro1 display_name=% (T5 full_name Degisti beklenir)', pr.display_name; END IF;
+  IF pr.slug NOT LIKE 'p-%' THEN RAISE EXCEPTION 'pro1 slug=% (profil slug bos -> p- beklenir)', pr.slug; END IF;
+  SELECT count(*) INTO n FROM public.professional_profiles WHERE provider_id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 professional_profiles yok'; END IF;
+
+  -- 11b) ajans: organization tipi, FAZ 0 kurulusuna bagli, organization_profiles var
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT * INTO pr FROM public.providers WHERE id = ajans;
+  IF pr.id IS NULL OR pr.provider_type <> 'organization' OR pr.organization_id IS DISTINCT FROM org_a OR pr.talent_id IS NOT NULL THEN
+    RAISE EXCEPTION 'ajans providers: type=% org=% (beklenen %) talent=%', pr.provider_type, pr.organization_id, org_a, pr.talent_id; END IF;
+  IF pr.display_name <> 'Test Ajans' THEN RAISE EXCEPTION 'ajans display_name=%', pr.display_name; END IF;
+  SELECT count(*) INTO n FROM public.organization_profiles WHERE provider_id = ajans;
+  IF n <> 1 THEN RAISE EXCEPTION 'ajans organization_profiles yok'; END IF;
+  SELECT count(*) INTO n FROM public.talents WHERE id = ajans;
+  IF n <> 0 THEN RAISE EXCEPTION 'ajans icin talents satiri olusmus'; END IF;
+
+  -- 11c) client ve business: saglayici degil
+  SELECT count(*) INTO n FROM public.providers WHERE id IN (musteri, kurum);
+  IF n <> 0 THEN RAISE EXCEPTION 'client/business icin providers satiri var (%)', n; END IF;
+
+  -- 11d) aynalama: profil guncellemesi -> providers / professional_profiles / talents
+  UPDATE public.profiles SET is_published = true, bio = 'T11 bio', full_name = 'Test Pro Iki B' WHERE id = pro2;
+  SELECT * INTO pr FROM public.providers WHERE id = pro2;
+  IF NOT pr.is_published OR pr.display_name <> 'Test Pro Iki B' THEN
+    RAISE EXCEPTION 'pro2 aynalama: is_published=% ad=%', pr.is_published, pr.display_name; END IF;
+  SELECT bio INTO st FROM public.professional_profiles WHERE provider_id = pro2;
+  IF st IS DISTINCT FROM 'T11 bio' THEN RAISE EXCEPTION 'pro2 bio aynalanmadi: %', st; END IF;
+  SELECT full_name INTO st FROM public.talents WHERE id = pro2;
+  IF st IS DISTINCT FROM 'Test Pro Iki B' THEN RAISE EXCEPTION 'pro2 talents.full_name aynalanmadi: %', st; END IF;
+  -- admin (ajans) profilde onay verir -> providers'a yansir (koruma tetikleyicisi aynalamayi engellememeli)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  UPDATE public.profiles SET approval_status = 'approved', approved_at = now() WHERE id = pro2;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT approval_status::text INTO st FROM public.providers WHERE id = pro2;
+  IF st <> 'approved' THEN RAISE EXCEPTION 'pro2 admin onayi providers''a yansimadi: %', st; END IF;
+
+  -- 11e) koruma tetikleyicisi: normal kullanici (pro1) yonetici alanlarini degistiremez, is_published degistirir
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  UPDATE public.providers SET approval_status = 'rejected', trust_score = 99, is_verified = true, is_published = true WHERE id = pro1;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT * INTO pr FROM public.providers WHERE id = pro1;
+  IF pr.approval_status <> 'approved' OR pr.trust_score IS NOT NULL OR pr.is_verified THEN
+    RAISE EXCEPTION 'koruma DELINDI: approval=% trust=% verified=%', pr.approval_status, pr.trust_score, pr.is_verified; END IF;
+  IF NOT pr.is_published THEN RAISE EXCEPTION 'is_published (kullanici alani) guncellenmedi'; END IF;
+  -- admin (ajans) trust_score yazar
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  UPDATE public.providers SET trust_score = 42 WHERE id = pro1;
+  SELECT trust_score INTO pr FROM public.providers WHERE id = pro1;
+  IF pr.trust_score IS DISTINCT FROM 42 THEN RAISE EXCEPTION 'admin trust_score yazamadi: %', pr.trust_score; END IF;
+  UPDATE public.providers SET trust_score = NULL WHERE id = pro1;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 11f) yetki: anon providers okur ama approval_note okuyamaz; talents anon'a kapali;
+  --      authenticated yalniz kendi talents satirini gorur, iletisim sutunu kapali; istemci providers'i yazamaz
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.providers;
+  EXECUTE 'RESET ROLE';
+  IF n < 3 THEN RAISE EXCEPTION 'anon providers sayisi % (>= 3 beklenir: pro1, pro2, ajans)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT approval_note FROM public.providers LIMIT 1' INTO st;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon providers.approval_note OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM public.talents' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon talents OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.talents;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 % talents satiri goruyor (beklenen 1: kendisi)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'SELECT canonical_email FROM public.talents' INTO st;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated talents.canonical_email OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'UPDATE public.providers SET is_published = false WHERE id = $1' USING pro1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated providers UPDATE yapabildi (yazma yolu FAZ 2c''ye kadar kapali olmali)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT is_published INTO pr FROM public.providers WHERE id = pro1;
+  IF NOT pr.is_published THEN RAISE EXCEPTION 'istemci yazmasi providers''i degistirdi'; END IF;
+  -- 11e'deki dogrudan yazma test yapayligiydi (gercekte istemci providers'a yazamaz); profille esitle
+  -- ki asama7 K7 test sonrasi da ESIT kalsin
+  UPDATE public.providers pr2 SET is_published = p.is_published FROM public.profiles p WHERE p.id = pr2.id AND pr2.id = pro1;
+
+  -- 11g) tam-bir kisiti: professional + organization_id -> 23514
+  BEGIN
+    INSERT INTO public.providers (id, provider_type, talent_id, organization_id, slug)
+    VALUES (gen_random_uuid(), 'professional', pro1, org_a, 'p-kisit-testi');
+    RAISE EXCEPTION 'tam-bir kisiti CALISMADI';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+
+  -- 11h) sync_log bos
+  SELECT count(*) INTO n FROM public.organization_sync_log WHERE source ILIKE '%faz2%' OR source ILIKE '%provider%';
+  IF n <> 0 THEN
+    SELECT string_agg(source || ': ' || detail, ' | ') INTO st FROM public.organization_sync_log WHERE source ILIKE '%faz2%' OR source ILIKE '%provider%';
+    RAISE EXCEPTION 'sync_log FAZ 2 kaydi var (%): %', n, st; END IF;
+
+  INSERT INTO t_sonuc VALUES (11, 'T11 FAZ 2a saglayici defteri', 'GECTI',
+    'pro1: talents+providers+professional_profiles ayni id, onay aynalanmis, slug p-; ajans: organization tipi FAZ 0 kurulusuna bagli; client/business yok; profil guncellemesi (is_published, bio, ad, admin onayi) aynalandi; koruma: pro1 approval/trust/verified geri alindi, is_published degisti, admin trust yazdi; anon approval_note ve talents 42501, pro1 yalniz kendi talents, canonical_email 42501, providers UPDATE 42501; tam-bir kisiti 23514; sync_log bos');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (11, 'T11 FAZ 2a saglayici defteri', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

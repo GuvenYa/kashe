@@ -529,6 +529,15 @@ Tasindiklarinda bu tetikleyici onlari **artik korumaz.** `providers` tablosunda 
 
 **Risk: orta.** Cift alan donemi dikkat ister; her iki alan da senkron tutulmali.
 
+**Uygulama notu (17 Eylul 2026, `docs/envanter/11-faz2-saglayici-defteri.md`):** FAZ 2 dort alt adima bolundu:
+**2a** (talents, providers, alt profiller, koruma tetikleyicisi, profiles -> providers aynalamasi, dolum; okuma
+yolu degismez) -> **3a** (`roles` tablosu; `provider_services.role_id` buna bagli oldugu icin FAZ 3'un tablo
+kismi one cekildi) -> **2b** (`provider_services`, bes tabloya `provider_id`, `v_provider_roles`) -> **2c**
+(okuma yollari + istemci yazma yolu, Claude Code). Kararlar: ayni id (`providers.id = profiles.id`), onay tipi
+mevcut enum, business saglayici degil, talents PII bos. On kosul 11a-11d `10-faz2-onkosul-tipler.md` ile
+kapandi (17 Eylul). Madde 17'deki koruma tetikleyicisi 2a'da kuruldu (alan tasimadan once — bosluk yok);
+madde 19 (profiles'tan alan cikarma) FAZ 10'a kadar yapilmaz.
+
 ### FAZ 3 — Taksonomi
 
 18. `roles`, `skills`, `role_skill_map` olusturulur (integer anahtarli).
