@@ -13,6 +13,7 @@ import {
   USE_CASES,
   CATEGORY_TAGLINE,
 } from '@/app/lib/category-content';
+import type { ProfileListing } from '@/app/lib/types';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -27,24 +28,8 @@ type CategoryRow = {
   seo_title: string | null;
 };
 
-type PublishedProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  city_id: number | null;
-  primary_category_id: number | null;
-  company_name: string | null;
-  role: string;
-  created_at: string | null;
-  approval_status: string | null;
-  premium_tier: string | null;
-  premium_until: string | null;
-  attributes: Record<string, string | string[]> | null;
-  category_attributes: Record<string, unknown> | null;
-  turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
-};
+// Kesfet ile birebir ayni sorgu ve sekil.
+type PublishedProfile = ProfileListing;
 
 type ServicePriceInfo = {
   price_min: number | null;

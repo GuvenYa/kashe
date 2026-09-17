@@ -3,15 +3,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ReviewCard } from '@/app/yorumlar/review-card';
+import type { ProfileCard, ProfileOpen } from '@/app/lib/types';
 
-type PublicProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  company_name: string | null;
-  role: string;
-  is_published: boolean;
-};
+type PublicProfile = ProfileCard & Pick<ProfileOpen, 'is_published'>;
 
 export async function generateMetadata({
   params,

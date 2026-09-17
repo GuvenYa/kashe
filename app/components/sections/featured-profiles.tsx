@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { ProfileCard } from "@/app/kesfet/profile-card";
+import type { CityEmbed, ProfileOpen } from "@/app/lib/types";
 
 // Üst filtre çıtası için popüler kategoriler (slug'larla)
 const TOP_CATEGORIES = [
@@ -11,16 +12,18 @@ const TOP_CATEGORIES = [
   { slug: "sunucu", label: "Sunucu" },
 ];
 
-type FeaturedProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  company_name: string | null;
-  role: string;
-  approval_status: string | null;
-  premium_tier: string | null;
-  premium_until: string | null;
-  created_at: string | null;
+type FeaturedProfile = Pick<
+  ProfileOpen,
+  | 'id'
+  | 'full_name'
+  | 'avatar_url'
+  | 'company_name'
+  | 'role'
+  | 'approval_status'
+  | 'premium_tier'
+  | 'premium_until'
+  | 'created_at'
+> & {
   city: string | null;
   category: string | null;
   categorySlug: string | null;
@@ -56,19 +59,25 @@ export async function FeaturedProfiles() {
     .order("updated_at", { ascending: false })
     .limit(24);
 
-  const rawList = (profiles || []) as unknown as Array<{
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    company_name: string | null;
-    role: string;
-    created_at: string | null;
-    premium_tier: string | null;
-    premium_until: string | null;
-    approval_status: string | null;
-    turkish_cities: { name: string } | null;
-    service_categories: { name_tr: string; slug: string } | null;
-  }>;
+  // Sorgu embed'de emoji SECMIYOR; bu yuzden CategoryEmbed degil dar bir sekil
+  // kullanilir (tip sorguya uyar, sorgu tipe degil).
+  const rawList = (profiles || []) as unknown as Array<
+    Pick<
+      ProfileOpen,
+      | 'id'
+      | 'full_name'
+      | 'avatar_url'
+      | 'company_name'
+      | 'role'
+      | 'created_at'
+      | 'premium_tier'
+      | 'premium_until'
+      | 'approval_status'
+    > &
+      CityEmbed & {
+        service_categories: { name_tr: string; slug: string } | null;
+      }
+  >;
 
   // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 6'yı göster
   const tierWeight = (tier: string | null, until: string | null): number => {

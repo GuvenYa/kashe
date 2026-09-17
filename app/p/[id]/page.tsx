@@ -20,7 +20,12 @@ import {
   formatLastSeen,
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
-import type { ServiceWithCategory, PortfolioItem, ServicePackage } from '@/app/lib/types';
+import type {
+  ProfilePublic,
+  ServiceWithCategory,
+  PortfolioItem,
+  ServicePackage,
+} from '@/app/lib/types';
 import {
   getFilterFields,
   getFilterSource,
@@ -34,26 +39,8 @@ import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { incrementProfileViews } from './profile-views-actions';
 
-type PublicProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  city_id: number | null;
-  primary_category_id: number | null;
-  company_name: string | null;
-  role: string;
-  is_published: boolean;
-  last_seen_at: string | null;
-  approval_status: string | null;
-  created_at: string | null;
-  attributes: Record<string, string | string[]> | null;
-  category_attributes: Record<string, unknown> | null;
-  premium_tier: string | null;
-  premium_until: string | null;
-  turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
-};
+// ProfileListing + is_published + last_seen_at (sorgunun sectigi alanlarla birebir).
+type PublicProfile = ProfilePublic;
 
 export async function generateMetadata({
   params,

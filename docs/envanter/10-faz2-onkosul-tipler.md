@@ -1,7 +1,7 @@
 # 10 — FAZ 2 on kosulu: profil tiplerinin tekillestirilmesi
 
 **Baslangic:** 17 Eylul 2026 (FAZ 1 kapanisindan sonra; FAZ 0/04 tutarlilik izlemesi surerken)
-**Durum:** Tarama yapildi, spec ve Claude Code gorev metni hazir (`10-claude-code-gorevi.md`). Kod degisikligi UYGULANMADI.
+**Durum:** Claude Code uyguladi (17 Eylul; 10 dosya, +193/-147, `tsc` bos, build basarili). Kapanis kaydi bolum 7. Deploy ve sayfa turu ile kapanir.
 **Kaynak:** `docs/architecture/04-goc-plani.md` FAZ 2 "ON KOSUL — tip tekillestirme" (11a-11d), `docs/envanter/02-profiles-kullanimi.md`.
 
 ---
@@ -167,3 +167,30 @@ olur ve `Exclude<keyof ProfileOpen, (typeof LIST)[number]>` `never` degilse derl
 
 `providers` tablolari, alan tasima, `protect_sensitive_provider_fields`, `services.provider_id` — hepsi
 FAZ 2 migration'lari. Bu on kosul yalniz TypeScript'i alan tasimaya hazir hale getirir.
+
+## 7. Kapanis kaydi (17 Eylul 2026)
+
+Claude Code raporu (10 dosya, +193 / -147): `types.ts` hedef yapi; `own-profile.ts` sutun kilidi
+(`PROFILE_OPEN_COLUMN_LIST as const satisfies ...` + `EksikSutun extends never`), `PROFILE_OPEN_COLUMNS`
+listeden uretilir, 23 ad ve sira degismedi; 7 yerel sekil turetildi; hicbir `.select(...)`, JSX ve action
+mantigi degismedi. Cowork tarafinda dogrulandi: `ProfileOpen` 23 alan, nullability bolum 3 tablosuyla birebir;
+liste ayni 23 sutun ayni sirada.
+
+Spec'ten sapmalar (kabul edildi):
+1. `PremiumTier` yeniden tanimlanmadi; `app/lib/badges.ts` zaten tek kaynak (`'none'|'premium'|'plus'|'agency'`),
+   `types.ts` import edip yeniden disa aktarir.
+2. kesfet sorgusu `category_attributes`'i zaten seciyordu; iki liste sayfasi da duz `ProfileListing`.
+3. `profil/duzenle/duzenle-form.tsx`: `value={profile.email ?? ''}` — `Profile.email` artik `string | null`,
+   React `value` null kabul etmez; alan `disabled`, gorunen davranis ayni.
+
+Kanitlar: sutun kilidi — `ProfileOpen`'a gecici alan eklenince `own-profile.ts(51,7): error TS2322: Type 'true'
+is not assignable to type 'never'`, geri alindi; `npx tsc --noEmit` bos; `npm run build` basarili; yerel
+profil tiplerinde `= {` govde kalmadi (7 satir, hepsi turetim); `select('*')` 23 kullanim, hepsi baska
+tablolarda, profiles 0; `role: string` 5 satir kaldi — hepsi listedeki 7 dosyanin disinda (kesfet/profile-card
+prop'u, p/[id]/professional-profile prop'u, `getRoleLabel` bilincli genis, profil/page.tsx `member_role` ve
+favoriler embed'i) — FAZ 2'yi zayiflatmaz: alan tasininca `ProfileOpen` onu kaybeder, cagiran derlenmez.
+ESLint: degisen dosyalarda 5 hata + 1 uyari, hepsi 14 Mayis - 3 Haziran commit'lerinden (Date.now purity,
+1 unused, 2 prefer-const); yeni satirlarda bulgu yok.
+
+Acik: bu 4 sekil (profile-card, professional-profile prop'lari, favoriler embed'i) istenirse ayri kucuk bir
+gorevle daraltilir; FAZ 2 migration'lari icin on kosul degildir.

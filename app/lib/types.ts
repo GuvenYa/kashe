@@ -1,33 +1,110 @@
+import type { PremiumTier } from './badges';
+
+// PremiumTier'in tek kaynagi app/lib/badges.ts'tir (5 dosya oradan import ediyor);
+// profil tipleri tek dosyadan okunsun diye burada yalnizca yeniden disa aktarilir.
+// Ikinci bir tanim YAZILMAZ — iki tanim zamanla ayrisir.
+export type { PremiumTier };
+
 // Auth user role
 export type UserRole = 'professional' | 'client' | 'business' | 'agency';
 
 // Database tables
-export type Profile = {
+//
+// profiles iki erisim katmanina ayrilir (PII adim 2, 15 Eylul):
+//   ProfileOpen    — anon ve authenticated'a ACIK 23 sutun; app/lib/own-profile.ts
+//                    PROFILE_OPEN_COLUMN_LIST ile birebir (derleme zamani kilitli).
+//   ProfilePrivate — yalniz get_own_private_profile() / admin_profile_contacts()
+//                    RPC'leriyle gelen KAPALI 7 sutun.
+// Nullability veritabaniyla birebirdir (docs/envanter/10-faz2-onkosul-tipler.md bolum 3).
+// Amac: FAZ 2'de alan providers'a tasindiginda derleyici her kullanimi gostersin.
+
+export type ProfileApprovalStatus =
+  | 'draft'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'revision';
+
+/** default_allowed_applicant_roles degerleri (CHECK: <@ {professional,agency}, >= 1). */
+export type ApplicantRole = 'professional' | 'agency';
+
+/** profiles: anon ve authenticated rollerine ACIK 23 sutun. */
+export type ProfileOpen = {
   id: string;
-  email: string;
   full_name: string | null;
   role: UserRole;
-  bio: string | null;
   avatar_url: string | null;
-  phone: string | null;
+  created_at: string;
+  updated_at: string;
+  bio: string | null;
   city_id: number | null;
   slug: string | null;
   is_published: boolean;
-  approval_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'revision';
-  approval_note: string | null;
-  approved_at: string | null;
-  kvkk_approved_at: string | null;
-  is_admin: boolean;
   primary_category_id: number | null;
   company_name: string | null;
-  premium_tier: 'none' | 'premium' | 'plus' | 'agency' | null;
+  last_seen_at: string | null;
+  is_admin: boolean;
+  approval_status: ProfileApprovalStatus;
+  approved_at: string | null;
+  attributes: Record<string, string | string[]>;
+  suspended_at: string | null;
+  premium_tier: PremiumTier;
   premium_until: string | null;
   views_count: number;
-  created_at: string;
-  updated_at: string;
-  attributes?: Record<string, string | string[]> | null;
-  
+  default_allowed_applicant_roles: ApplicantRole[];
+  category_attributes: Record<string, unknown>;
 };
+
+/** profiles: KAPALI 7 sutun. Istemciye yalniz RPC ile gelir; hepsi null olabilir. */
+export type ProfilePrivate = {
+  email: string | null;
+  phone: string | null;
+  kvkk_approved_at: string | null;
+  approval_note: string | null;
+  suspension_reason: string | null;
+  suspended_by: string | null;
+  welcome_email_sent_at: string | null;
+};
+
+/** Oturum sahibinin tam profili — fetchOwnProfile ciktisi. */
+export type Profile = ProfileOpen & ProfilePrivate;
+
+// Ortak embed sekilleri
+export type CityEmbed = { turkish_cities: { name: string } | null };
+export type CategoryEmbed = {
+  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
+};
+
+/** Kart/liste basligi icin en kucuk profil sekli. */
+export type ProfileCard = Pick<
+  ProfileOpen,
+  'id' | 'full_name' | 'avatar_url' | 'company_name' | 'role'
+>;
+
+/** Kesfet ve kategori/[slug] listeleri — iki sayfanin sorgusu birebir ayni. */
+export type ProfileListing = Pick<
+  ProfileOpen,
+  | 'id'
+  | 'full_name'
+  | 'avatar_url'
+  | 'bio'
+  | 'city_id'
+  | 'primary_category_id'
+  | 'company_name'
+  | 'role'
+  | 'created_at'
+  | 'approval_status'
+  | 'premium_tier'
+  | 'premium_until'
+  | 'attributes'
+  | 'category_attributes'
+> &
+  CityEmbed &
+  CategoryEmbed;
+
+/** Herkese acik profil sayfasi (/p/[id]). */
+export type ProfilePublic = ProfileListing &
+  Pick<ProfileOpen, 'is_published' | 'last_seen_at'>;
 export type ServiceCategory = {
   id: number;
   slug: string;
@@ -76,9 +153,7 @@ export type PortfolioItem = {
 };
 
 // Composite types (joined)
-export type ProfileWithCity = Profile & {
-  turkish_cities: { name: string } | null;
-};
+export type ProfileWithCity = Profile & CityEmbed;
 
 export type ServiceWithCategory = Service & {
   service_categories: { name_tr: string; emoji: string | null } | null;

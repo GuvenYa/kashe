@@ -260,7 +260,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
           <input
             id="email"
             type="email"
-            value={profile.email}
+            value={profile.email ?? ''}
             disabled
             className={`${inputClass} bg-paper opacity-60 cursor-not-allowed`}
           />

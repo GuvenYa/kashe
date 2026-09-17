@@ -1,4 +1,5 @@
 import type { createClient } from '@/app/lib/supabase-server';
+import type { ProfileOpen, ProfilePrivate } from '@/app/lib/types';
 
 type SunucuIstemcisi = Awaited<ReturnType<typeof createClient>>;
 
@@ -9,7 +10,7 @@ type SunucuIstemcisi = Awaited<ReturnType<typeof createClient>>;
  * ve PII adım 2b (authenticated). select('*') adım 2b'den sonra 42501 verir, çünkü kapalı
  * 7 sütunu da ister. profiles'a sütun eklenirse bu liste ve iki GRANT birlikte güncellenir.
  */
-export const PROFILE_OPEN_COLUMNS = [
+export const PROFILE_OPEN_COLUMN_LIST = [
   'id',
   'full_name',
   'role',
@@ -33,18 +34,28 @@ export const PROFILE_OPEN_COLUMNS = [
   'views_count',
   'default_allowed_applicant_roles',
   'category_attributes',
-].join(', ');
+] as const satisfies readonly (keyof ProfileOpen)[];
+
+/**
+ * Derleme zamanı sütun kilidi.
+ *
+ * `satisfies` listeye ProfileOpen'da OLMAYAN bir ad yazılmasını engeller; aşağıdaki
+ * `EksikSutun` de ProfileOpen'a alan eklenip listeye eklenmemesini yakalar (tip `never`
+ * olmaz, atama derlenmez). 07'deki kalıcı kuralın derleyici tarafı: GRANT listesi ile
+ * tip tek elden değişir. Migration'daki GRANT yine elle yazılır.
+ */
+type EksikSutun = Exclude<
+  keyof ProfileOpen,
+  (typeof PROFILE_OPEN_COLUMN_LIST)[number]
+>;
+const _sutunKilidi: EksikSutun extends never ? true : never = true;
+void _sutunKilidi;
+
+/** Sorgularda kullanılan sütun dizesi — liste ile tek kaynaktan üretilir. */
+export const PROFILE_OPEN_COLUMNS = PROFILE_OPEN_COLUMN_LIST.join(', ');
 
 /** Oturum sahibinin kapalı 7 sütunu — yalnız get_own_private_profile() RPC'siyle okunur. */
-export type OwnPrivateProfile = {
-  email: string | null;
-  phone: string | null;
-  kvkk_approved_at: string | null;
-  approval_note: string | null;
-  suspension_reason: string | null;
-  suspended_by: string | null;
-  welcome_email_sent_at: string | null;
-};
+export type OwnPrivateProfile = ProfilePrivate;
 
 export async function getOwnPrivateProfile(
   supabase: SunucuIstemcisi

@@ -7,6 +7,7 @@
 
 import { createClient } from '@/app/lib/supabase-server';
 import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
+import type { CityEmbed, ProfileOpen, ProfilePrivate } from '@/app/lib/types';
 import ExcelJS from 'exceljs';
 
 export const runtime = 'nodejs';
@@ -43,22 +44,22 @@ function tl(n: number): string {
   return `${Math.round(n).toLocaleString('tr-TR')} ₺`;
 }
 
-type ProfileRow = {
-  id: string;
-  full_name: string | null;
-  company_name: string | null;
-  email: string | null;
-  phone: string | null;
-  role: string;
-  created_at: string | null;
-  last_seen_at: string | null;
-  approval_status: string | null;
-  is_published: boolean | null;
-  suspended_at: string | null;
-  category_attributes: Record<string, unknown> | null;
-  turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string } | null;
-};
+// email / phone admin_profile_contacts RPC'sinden birlesir (profiles'ta kapali).
+type ProfileRow = Pick<
+  ProfileOpen,
+  | 'id'
+  | 'full_name'
+  | 'company_name'
+  | 'role'
+  | 'created_at'
+  | 'last_seen_at'
+  | 'approval_status'
+  | 'is_published'
+  | 'suspended_at'
+  | 'category_attributes'
+> &
+  Pick<ProfilePrivate, 'email' | 'phone'> &
+  CityEmbed & { service_categories: { name_tr: string } | null };
 
 export async function GET() {
   const supabase = await createClient();

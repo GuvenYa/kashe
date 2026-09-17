@@ -5,16 +5,12 @@
 // render'dan ayrı tutuldu (createQuoteRequest'teki selectQuoteRecipients gibi temiz ayrım).
 
 import { createClient } from "@/app/lib/supabase-server";
+import type { ProfileCard, ProfileOpen } from "@/app/lib/types";
 
 /** Şeritte gösterilecek profil sayısı (over-fetch 24 → ilk N). */
 export const MARQUEE_COUNT = 10;
 
-export type MarqueeProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  company_name: string | null;
-  role: string;
+export type MarqueeProfile = ProfileCard & {
   category: string | null;
   categorySlug: string | null;
 };
@@ -52,16 +48,18 @@ export async function getMarqueeProfiles(): Promise<MarqueeProfile[]> {
     .order("updated_at", { ascending: false })
     .limit(24);
 
-  const raw = (data || []) as unknown as Array<{
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    company_name: string | null;
-    role: string;
-    premium_tier: string | null;
-    premium_until: string | null;
-    service_categories: { name_tr: string; slug: string } | null;
-  }>;
+  const raw = (data || []) as unknown as Array<
+    Pick<
+      ProfileOpen,
+      | 'id'
+      | 'full_name'
+      | 'avatar_url'
+      | 'company_name'
+      | 'role'
+      | 'premium_tier'
+      | 'premium_until'
+    > & { service_categories: { name_tr: string; slug: string } | null }
+  >;
 
   // Premium aktifler başa (stable sort updated_at sırasını korur)
   // ileride: featured öncelik / premium ağırlık artışı buraya

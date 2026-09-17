@@ -14,7 +14,7 @@ import {
   isBusy as computeBusy,
   busyWindowKeys,
 } from '@/app/lib/badges';
-import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
+import type { ProfileListing, ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
@@ -43,23 +43,9 @@ function formatReviewAuthor(
   return `${parts[0]} ${last.charAt(0).toLocaleUpperCase('tr')}.`;
 }
 
-type PublishedProfile = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  city_id: number | null;
-  primary_category_id: number | null;
-  company_name: string | null;
-  role: string;
-  created_at: string | null;
-  approval_status: string | null;
-  premium_tier: string | null;
-  premium_until: string | null;
-  attributes: Record<string, string | string[]> | null;
-  turkish_cities: { name: string } | null;
-  service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
-};
+// Sorgu ProfileListing'in tam alan kumesini seciyor (category_attributes dahil);
+// kategori/[slug] ile birebir ayni sekil.
+type PublishedProfile = ProfileListing;
 
 type ServicePriceInfo = {
   price_min: number | null;
