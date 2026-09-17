@@ -69,6 +69,8 @@ $$;
 
 **Her `internal` erisimi denetim kaydina dusar.**
 
+**FAZ 1 uygulamasi (15 Eylul 2026, `docs/envanter/09-faz1-internal-sema.md`):** uygulamanin cagiracagi RPC'ler ayri bir `internal_api` semasinda degil, **`public` semasinda `internal_` onekiyle** durur (ornek: `public.internal_audit_recent`); boylece PostgREST "exposed schemas" ayarina dokunulmaz. Guvenlik siniri sema adi degil, `SECURITY DEFINER` + `internal.assert_org_permission` + `internal.log_access` ucludur. `service_role` da `internal`'a dogrudan erisemez (uygulamada service-role istemcisi yok; gerekirse tek GRANT). Reddedilen denemeler denetime yazilamaz: `RAISE` ayni islemi geri alir (PostgREST hata -> rollback); reddetme 42501 hatasinin kendisiyle gorunur. `access_audit` append-only'dir ve FK tasimaz (kurulus/profil silinse de kayit kalir).
+
 ---
 
 ## 4. YETKI MATRISI

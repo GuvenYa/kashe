@@ -374,6 +374,14 @@ Indeks tarafinda bu ampirik olarak dogrulandi: ham metin karsilastirmasinda 67/6
 
 **Risk: yok.** Yalniz ekleme.
 
+**Uygulama notu (15 Eylul 2026, `docs/envanter/09-faz1-internal-sema.md`):** tek dosya
+`20260915170000_faz1_01_internal_sema.sql` — sema + USAGE kilidi (anon/authenticated/service_role hicbiri),
+`internal.access_audit` (append-only, FK'siz), kalip fonksiyonlari `internal.request_ip`, `internal.log_access`,
+`internal.assert_org_permission`, ilk RPC `public.internal_audit_recent` (settings.manage). Madde 11'in karsiligi
+asama4 T10 (dal) + `asama6-faz1-internal-kontrol.sql` (salt okunur, dal ve uretim). RPC'ler `public.internal_*`
+olarak adlandirilir (02'deki `internal_api.` yerine; karar 02'ye islendi). `internal.margin_rules` ve diger
+internal tablolar kendi fazlarinda (5, 6, 7) ayni kalipla eklenir.
+
 ### FAZ 2 — Saglayici kayit defteri
 
 #### KRITIK — `protect_sensitive_profile_fields` govdesi cozuldu

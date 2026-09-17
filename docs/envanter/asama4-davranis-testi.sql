@@ -22,6 +22,9 @@
 --   T8 FAZ 0 kiraci temeli: profil -> kurulus, uyelik/davet aynalama, has_org_permission,
 --      RLS + sutun kisiti, uyumluluk gorunumu (ON KOSUL: faz0 01-03 dalda uygulanmis)
 --   T9 FAZ 0 / 04 yetki fonksiyon gecisi (04 uygulanmamissa ATLANDI yazar)
+--   T10 FAZ 1 internal sema gizliligi: anon/authenticated/service_role internal'a ulasamaz,
+--       internal_audit_recent yalniz settings.manage ile, okuma denetime duser, PostgREST'e acik degil
+--       (ON KOSUL: faz1_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -59,6 +62,10 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
 BEGIN
+  -- T10 denetim kayitlari (FK yok; aktor uzerinden silinir)
+  IF to_regclass('internal.access_audit') IS NOT NULL THEN
+    DELETE FROM internal.access_audit WHERE actor_user_id = ANY(ids);
+  END IF;
   -- T8/T9 kurum verisi (tablolar FAZ 0'dan once yoksa sessizce atla)
   IF to_regclass('public.business_members') IS NOT NULL THEN
     DELETE FROM public.business_members WHERE business_id = ANY(ids) OR member_user_id = ANY(ids);
@@ -681,6 +688,116 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (9, 'T9 FAZ 0 yetki fonksiyon gecisi', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T10) FAZ 1 internal sema gizliligi (02-guvenlik-modeli bolum 9: "musteri jetonuyla internal
+-- semadaki her tablo -> tumu reddedilir"). ON KOSUL: 20260915170000_faz1_01_internal_sema.sql dalda.
+-- T8 verisine dayanir: kurum (0005) kurulus sahibi, uye (0006) T8/T9 sonunda uye DEGIL, pro1 (0002) iliskisiz.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  kurum uuid := 'a0000000-0000-4000-8000-000000000005';
+  uye   uuid := 'a0000000-0000-4000-8000-000000000006';
+  pro1  uuid := 'a0000000-0000-4000-8000-000000000002';
+  org_k uuid; bm_id uuid; n int; n2 int; cfg text; r record;
+BEGIN
+  IF to_regnamespace('internal') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (10, 'T10 FAZ 1 internal gizlilik', 'ATLANDI', 'internal semasi yok; faz1_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  IF org_k IS NULL THEN RAISE EXCEPTION 'kurum kurulusu yok (T8 kosmadi?)'; END IF;
+
+  -- 10a) PostgREST'e acik degil: authenticator rolunun pgrst.db_schemas ayarinda 'internal' gecmez
+  SELECT string_agg(c, ' ') INTO cfg
+    FROM pg_roles pr, unnest(pr.rolconfig) c WHERE pr.rolname = 'authenticator' AND c LIKE 'pgrst.db_schemas%';
+  IF cfg IS NOT NULL AND cfg ~* '\minternal\M' THEN
+    RAISE EXCEPTION 'internal semasi PostgREST''e ACIK: %', cfg; END IF;
+
+  -- 10b) Sema ve tablo yetkileri: uc rolde de USAGE yok, internal'da hic GRANT yok
+  IF has_schema_privilege('anon', 'internal', 'USAGE') OR has_schema_privilege('authenticated', 'internal', 'USAGE')
+     OR has_schema_privilege('service_role', 'internal', 'USAGE') THEN
+    RAISE EXCEPTION 'internal semasinda USAGE var (anon/authenticated/service_role)'; END IF;
+  SELECT count(*) INTO n FROM information_schema.role_table_grants
+   WHERE table_schema = 'internal' AND grantee IN ('anon', 'authenticated', 'service_role', 'PUBLIC');
+  IF n <> 0 THEN RAISE EXCEPTION 'internal tablolarinda % GRANT var', n; END IF;
+
+  -- 10c) Dogrudan erisim: anon, authenticated (sahip bile), service_role -> 42501
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM internal.access_audit' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon internal.access_audit okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'SELECT count(*) FROM internal.access_audit' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated (kurulus sahibi) internal.access_audit''i dogrudan okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'SELECT internal.log_access($1, ''read'', ''x'')' USING org_k;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated internal.log_access cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE service_role';
+    EXECUTE 'SELECT count(*) FROM internal.access_audit' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'service_role internal.access_audit okudu (BYPASSRLS yetmemeli, USAGE yok)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 10d) RPC: sahip (settings.manage) okur ve okuma denetime duser
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_k;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n2 FROM public.internal_audit_recent(org_k, 10);
+  EXECUTE 'RESET ROLE';
+  IF n2 < 1 THEN RAISE EXCEPTION 'sahip internal_audit_recent bos dondu (kendi okumasi bile yok)'; END IF;
+  SELECT * INTO r FROM internal.access_audit WHERE organization_id = org_k ORDER BY id DESC LIMIT 1;
+  IF r.actor_user_id IS DISTINCT FROM kurum OR r.action <> 'read' OR r.target_table <> 'access_audit' THEN
+    RAISE EXCEPTION 'denetim satiri hatali: actor=% action=% tablo=%', r.actor_user_id, r.action, r.target_table; END IF;
+  SELECT count(*) INTO n2 FROM internal.access_audit WHERE organization_id = org_k;
+  IF n2 <> n + 1 THEN RAISE EXCEPTION 'denetim satiri sayisi % -> % (beklenen +1)', n, n2; END IF;
+
+  -- 10e) RPC: viewer uye (settings.manage yok) -> 42501; iliskisiz pro1 -> 42501; anon -> 42501
+  INSERT INTO public.business_members (business_id, member_user_id, member_role) VALUES (kurum, uye, 'member') RETURNING id INTO bm_id;
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT count(*) INTO n FROM public.internal_audit_recent(org_k, 10);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'viewer uye internal_audit_recent okudu (% satir)', n;
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT count(*) INTO n FROM public.internal_audit_recent(org_k, 10);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'iliskisiz pro1 internal_audit_recent okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.internal_audit_recent(org_k, 10);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon internal_audit_recent cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  DELETE FROM public.business_members WHERE id = bm_id;
+
+  -- 10f) reddedilen denemeler denetime yazilmamis olmali (RAISE geri alir); sahip okumasi tek kayit
+  SELECT count(*) INTO n2 FROM internal.access_audit WHERE organization_id = org_k;
+  IF n2 <> n + 1 THEN RAISE EXCEPTION 'reddedilen denemeler sonrasi denetim sayisi degisti: %', n2; END IF;
+
+  INSERT INTO t_sonuc VALUES (10, 'T10 FAZ 1 internal gizlilik', 'GECTI',
+    'PostgREST''e acik degil; USAGE/GRANT yok; anon, sahip (dogrudan), service_role 42501; log_access dogrudan 42501; sahip RPC okudu + denetim satiri (actor/read/access_audit); viewer, iliskisiz, anon RPC 42501; reddedilenler denetime yazilmadi');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (10, 'T10 FAZ 1 internal gizlilik', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
