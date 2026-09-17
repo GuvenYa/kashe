@@ -1,7 +1,7 @@
 # 09 — FAZ 1: internal sema iskeleti
 
 **Baslangic:** 15 Eylul 2026 (FAZ 0 01-03 uretime cikar cikmaz)
-**Durum:** Dosya hazir, yerel zincirde test edildi (T0-T10 11/11, asama6 8/8 OK). Dala ve uretime UYGULANMADI.
+**Durum:** URETIMDE (17 Eylul 2026 kapanisi; commit `92e5be6`). Kapanis kaydi bolum 7.
 **Kaynak belgeler:** `docs/architecture/02-guvenlik-modeli.md` bolum 1-3 ve 9, `01-veri-modeli.md` bolum 8,
 `04-goc-plani.md` "FAZ 1", `CLAUDE.md` degismez kural 1.
 
@@ -92,3 +92,23 @@ Geri alma: `DROP SCHEMA internal CASCADE; DROP FUNCTION public.internal_audit_re
 - Dashboard > API ayarinda "Exposed schemas" listesi asla `internal` icermemeli; asama6 K2 bunu her kosuda dogrular.
 - Denetim tablosu buyumesi: FAZ 7'de (ticari katman) saklama suresi ve arsivleme kurali kararlastirilir; simdilik sinirsiz.
 - `internal.margin_rules` (01 bolum 8) FAZ 7'de; `role_id` icin `roles` tablosu FAZ 3'te gelir.
+
+## 7. Kapanis kaydi (17 Eylul 2026)
+
+**Dal (`ukqhgspaallzjscjodbb`):** `db push` -> asama4 T0-T10: T10 GECTI (T9 ATLANDI, 04 bekliyor);
+asama6 8/8 OK.
+
+**Uretim (`qydsooqmflrrwtgawhsv`):** faz1_01 uygulandi (`Success. No rows returned`); asama6 **8/8 OK**,
+K8 "denetim satiri: 0". Dashboard > Project Settings > API > Exposed schemas: `public`, `graphql_public`
+isaretli; `storage` listede ama isaretsiz; **`internal` yok** (goz kontrolu). `git push` -> `e8aa20e..92e5be6 main`.
+
+**Notlar:**
+- asama6 bir kez push'tan once kosuldu ve `schema "internal" does not exist` verdi; sira hatasi, bolum 5
+  adim 5'e not eklendi.
+- K2 ogrenimi: Supabase `pgrst.db_schemas`'i `authenticator` rol ayarinda tutmuyor; kontrol veritabaninin
+  icinden yapilamiyor, Dashboard'dan goz kontrolu gerekiyor (K2 metni buna gore duzeltildi).
+- Uretimde `supabase migration list` ile `20260915170000` satirinin Remote sutununda gorundugu dogrulanir;
+  dosya SQL Editor'dan uygulanmissa `supabase migration repair --status applied 20260915170000` gerekir
+  (CLAUDE.md migration akisi kurali).
+
+**Sonraki:** FAZ 0 / 04 (tutarlilik izlemesi sonrasi), ardindan FAZ 2 on kosullari (tip tekillestirme, Claude Code).
