@@ -710,7 +710,9 @@ BEGIN
   SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
   IF org_k IS NULL THEN RAISE EXCEPTION 'kurum kurulusu yok (T8 kosmadi?)'; END IF;
 
-  -- 10a) PostgREST'e acik degil: authenticator rolunun pgrst.db_schemas ayarinda 'internal' gecmez
+  -- 10a) PostgREST'e acik degil: authenticator rolunun pgrst.db_schemas ayarinda 'internal' gecmez.
+  --      Supabase bu ayari rol uzerinde tutmaz (platform ayari); o zaman kontrol bos gecer ve
+  --      Dashboard > Project Settings > API > Exposed schemas elle dogrulanir (asama6 K2 ayrintisi).
   SELECT string_agg(c, ' ') INTO cfg
     FROM pg_roles pr, unnest(pr.rolconfig) c WHERE pr.rolname = 'authenticator' AND c LIKE 'pgrst.db_schemas%';
   IF cfg IS NOT NULL AND cfg ~* '\minternal\M' THEN

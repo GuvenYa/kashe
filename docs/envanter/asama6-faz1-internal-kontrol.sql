@@ -15,7 +15,7 @@ k1 AS (
 k2 AS (
   SELECT 'K2 PostgREST exposed schemas icinde internal YOK' AS kontrol,
          NOT coalesce(cfg ~* '\minternal\M', false) AS ok,
-         coalesce(cfg, 'authenticator rolu / pgrst.db_schemas ayari bulunamadi (yerel ortam)') AS ayrinti
+         coalesce(cfg, 'pgrst.db_schemas rol ayarinda yok (Supabase bunu platformdan verir): Dashboard > Project Settings > API > Exposed schemas listesinde internal OLMAMALI - elle dogrula') AS ayrinti
     FROM (SELECT string_agg(c, ' ') AS cfg FROM pg_roles pr, unnest(pr.rolconfig) c
            WHERE pr.rolname = 'authenticator' AND c LIKE 'pgrst.db_schemas%') s
 ),

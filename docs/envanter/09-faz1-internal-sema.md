@@ -73,11 +73,15 @@ On kosul: FAZ 0 01-03 uretimde (15 Eylul), `git status` temiz, dal `ukqhgspaallz
 1. Commit: `git add -A` / `git commit -m "FAZ 1: internal sema iskeleti - access_audit, erisim kalibi, T10, asama6"`.
 2. **Dal:** `supabase link --project-ref ukqhgspaallzjscjodbb` -> `supabase db push` (1 dosya; 2b'yi de listelerse normal).
 3. **Dalda test** (SQL Editor, adres cubugunda dal ref'i): `asama4-davranis-testi.sql` -> 11 satir, T10 `GECTI`
-   (T9 `ATLANDI` normal). Sonra `asama6-faz1-internal-kontrol.sql` -> 8 satir `OK`; K2 ayrintisinda
-   `pgrst.db_schemas=...` degeri gorunur, icinde `internal` gecmez.
+   (T9 `ATLANDI` normal). Sonra `asama6-faz1-internal-kontrol.sql` -> 8 satir `OK`. K2: Supabase
+   `pgrst.db_schemas`'i rol ayari olarak tutmaz, veritabanindan okunamaz; K2 bu durumda "elle dogrula" der —
+   Dashboard > Project Settings > API > **Exposed schemas** listesine bakilir, `internal` orada OLMAMALI
+   (varsayilan: public, graphql_public; storage da olabilir). Bu kontrol dal ve uretimde bir kez goze yapilir.
 4. **Uretim:** `supabase link --project-ref qydsooqmflrrwtgawhsv` -> `supabase db push` (1 dosya).
-5. **Uretimde dogrulama:** yalniz `asama6-faz1-internal-kontrol.sql` -> 8 satir `OK`, K8 denetim satiri 0.
-   asama4 uretimde KOSULMAZ (uretim korumasi var, yine de).
+5. **Uretimde dogrulama:** yalniz `asama6-faz1-internal-kontrol.sql` -> 8 satir `OK`, K8 denetim satiri 0;
+   Dashboard > Project Settings > API > Exposed schemas: `internal` yok. asama4 uretimde KOSULMAZ
+   (uretim korumasi var, yine de). Not: asama6, push'tan ONCE kosulursa `schema "internal" does not exist`
+   verir — bu "hata" degil, sira hatasidir.
 6. `git push`.
 
 Geri alma: `DROP SCHEMA internal CASCADE; DROP FUNCTION public.internal_audit_recent(uuid, integer);`
