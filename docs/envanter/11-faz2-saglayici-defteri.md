@@ -34,6 +34,24 @@ Sira bagimliligi: `provider_services.role_id` `roles`'a baglidir; `roles` FAZ 3'
 | Onay tipi | `providers.approval_status` = mevcut `profile_approval_status` enum'u | Degerler ayni (draft/pending/approved/rejected/revision); ikinci enum ayrisir (premium_tier kararinin aynisi) |
 | talents PII | `canonical_email` / `canonical_phone` dolumda BOS | Hesapli yetenegin kimligi `user_id`; e-posta/telefon `profiles`'ta ve RPC'lerle korunuyor; kopya PII'yi ikinci yere yayar. FAZ 5'te yalniz hesapsiz yetenekler icin dolar |
 
+Gozden gecirme (18 Eylul, Guven ile birlikte; dort karar da korundu):
+
+- **Ayni id bir GECIS KURALIDIR, sema kisiti degil.** `providers.id -> profiles` FK'si bilerek yok. Bugun bir hesabin
+  tek rolu, dolayisiyla en fazla bir saglayicisi var; ileride bir kullanicinin ikinci saglayicisi gerekirse yeni
+  uuid alir, hicbir sey kirilmaz. FAZ 0'da kuruluslara yeni uuid verilmesiyle celismez: kurulus kiracidir ve sahibi
+  degisebilir; saglayici profilin pazaryeri yuzudur ve mevcut FK'ler zaten onu gosterir.
+- **Cift alan doneminin bitis kriteri:** 2c'de tum okuma yollari `providers`'a gectiginde kaynak `providers` olur,
+  `trg_faz2_sync_profile_to_provider` kaldirilir ve `profiles`'taki tasinan alanlar salt-okunur yapilir (FAZ 10).
+  Bu kriter yazilmadan aynalama kalici borca donusur; 2c plani bunu acikca icerir.
+- **`profile_approval_status` adi:** profillerde onay kalmayinca fosil gibi durur; FAZ 10'da
+  `ALTER TYPE ... RENAME TO approval_status` (tek satir, veri yazmaz).
+- **talents PII bos**un bedeli FAZ 5'te: tekillestirme hem `talents.canonical_email` (hesapsizlar) hem
+  `profiles.email` (hesaplilar) okuyan tek bir SECURITY DEFINER fonksiyonuyla yapilir.
+- **3a icin ad karari:** taksonomi tablosu `roles` degil **`service_roles`** olur. Kod tabaninda `role` zaten iki sey
+  (`profiles.role` kullanici rolu, `organization_memberships.role` uyelik rolu); ucuncu bir "rol" kavrami ayni
+  kelimeyle yasamamali. FK sutunlari `role_id` kalir (`provider_services.role_id`, `event_requirements.role_id`).
+  Belgelerdeki `roles` adi henuz veritabaninda yok; 3a yazilirken 01/03/04 belgeleri guncellenir.
+
 Uygulama sirasinda alinan kararlar:
 
 - **business saglayici degil.** 04-goc-plani madde 13-14: professional -> talents + providers, agency -> providers
@@ -123,7 +141,7 @@ talents).
 
 ## 7. Sonraki: 3a ve 2b
 
-- **3a** `roles`: `service_categories` 23 satiri `roles`'a kopyalanir (`id` yeni integer, `slug` birebir,
+- **3a** `service_roles` (ad karari 18 Eylul): `service_categories` 23 satiri `service_roles`'a kopyalanir (`id` yeni integer, `slug` birebir,
   `legacy_category_id` = eski id, `archetype` `category-fields.ts`'ten kopya), `service_categories`'e `layer`
   ve `parent_id` eklenir; ust kategori satirlari ve `roles.service_category_id` doldurulmasi ekip eslemesini
   bekler (03-taksonomi bolum "Ornek esleme": kesin liste 23 kategoriyle yapilir).
