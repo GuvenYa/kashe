@@ -28,6 +28,9 @@
 --   T11 FAZ 2a saglayici defteri: profil -> talents/providers/alt profil (ayni id), aynalama,
 --       koruma tetikleyicisi (kara liste + admin), sutun kisiti, talents gizliligi, tam-bir kisiti
 --       (ON KOSUL: faz2a 01-03 dalda uygulanmis)
+--   T12 FAZ 3a taksonomi: service_roles = legacy kategoriler (slug birebir, arketip), admin kategori
+--       ekler -> rol dogar, guncelleme aynalanir, ust katman satiri rol olmaz, anon okur/yazamaz,
+--       yasak karakter kisiti (ON KOSUL: faz3a_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -65,6 +68,11 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
 BEGIN
+  -- T12 test kategorileri (slug 'faz1test-%'): once rol, sonra kategori
+  IF to_regclass('public.service_roles') IS NOT NULL THEN
+    DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-%';
+    DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-%';
+  END IF;
   -- T10 denetim kayitlari (FK yok; aktor uzerinden silinir)
   IF to_regclass('internal.access_audit') IS NOT NULL THEN
     DELETE FROM internal.access_audit WHERE actor_user_id = ANY(ids);
@@ -947,6 +955,113 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (11, 'T11 FAZ 2a saglayici defteri', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T12) FAZ 3a taksonomi. ON KOSUL: 20260918130000_faz3a_01_service_roles.sql dalda.
+-- Uretim/dal kategorileriyle calisir (test kategorisi 'faz1test-%' slug'iyla eklenir, T0 siler).
+-- T5 sonrasi ajans (0004) admin.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ajans uuid := 'a0000000-0000-4000-8000-000000000004';
+  pro1  uuid := 'a0000000-0000-4000-8000-000000000002';
+  n int; n2 int; cat_id int; ust_id int; r record; st text;
+BEGIN
+  IF to_regclass('public.service_roles') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (12, 'T12 FAZ 3a taksonomi', 'ATLANDI', 'service_roles yok; faz3a_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 12a) legacy_role kategorileri = roller; slug birebir; legacy_category_id dolu
+  SELECT count(*) INTO n FROM public.service_categories WHERE layer = 'legacy_role';
+  SELECT count(*) INTO n2 FROM public.service_roles sr JOIN public.service_categories sc
+     ON sc.id = sr.legacy_category_id AND sc.slug = sr.slug AND sc.name_tr = sr.name_tr;
+  IF n <> n2 THEN RAISE EXCEPTION 'kategori % / eslesen rol % (slug+ad birebir olmali)', n, n2; END IF;
+  SELECT count(*) INTO n2 FROM public.service_roles WHERE legacy_category_id IS NULL;
+  IF n2 <> 0 THEN RAISE EXCEPTION '% rolde legacy_category_id bos', n2; END IF;
+
+  -- 12b) admin yeni kategori ekler -> rol otomatik dogar (aynalama); arketip eslesmez -> NULL
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active)
+  VALUES ('faz1test-rol', 'Faz1 Test Rolu', 'X', 999, true) RETURNING id INTO cat_id;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.service_roles WHERE legacy_category_id = cat_id;
+  IF r.id IS NULL OR r.slug <> 'faz1test-rol' OR r.name_tr <> 'Faz1 Test Rolu' OR r.sort_order <> 999 THEN
+    RAISE EXCEPTION 'yeni kategori rol olarak dogmadi: %', r; END IF;
+  IF r.archetype IS NOT NULL THEN RAISE EXCEPTION 'bilinmeyen slug icin arketip NULL olmali, gelen %', r.archetype; END IF;
+
+  -- 12c) kategori guncellemesi aynalanir (ad, aktiflik); admin rolde arketip verirse aynalama onu ezmez
+  UPDATE public.service_roles SET archetype = 'uzmanlik' WHERE id = r.id;
+  UPDATE public.service_categories SET name_tr = 'Faz1 Test Rolu B', is_active = false WHERE id = cat_id;
+  SELECT * INTO r FROM public.service_roles WHERE legacy_category_id = cat_id;
+  IF r.name_tr <> 'Faz1 Test Rolu B' OR r.is_active THEN RAISE EXCEPTION 'guncelleme aynalanmadi: % %', r.name_tr, r.is_active; END IF;
+  IF r.archetype <> 'uzmanlik' THEN RAISE EXCEPTION 'elle verilen arketip aynalamada ezildi: %', r.archetype; END IF;
+
+  -- 12d) ust katman satiri (layer = category) rol OLMAZ
+  INSERT INTO public.service_categories (slug, name_tr, sort_order, is_active, layer)
+  VALUES ('faz1test-ust', 'Faz1 Test Ust Katman', 998, false, 'category') RETURNING id INTO ust_id;
+  SELECT count(*) INTO n FROM public.service_roles WHERE legacy_category_id = ust_id OR slug = 'faz1test-ust';
+  IF n <> 0 THEN RAISE EXCEPTION 'ust katman satiri rol olarak dogdu'; END IF;
+  -- parent_id kendine isaret edemez
+  BEGIN
+    UPDATE public.service_categories SET parent_id = ust_id WHERE id = ust_id;
+    RAISE EXCEPTION 'parent_id = id kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  -- legacy rol ust katmana baglanabilir
+  UPDATE public.service_categories SET parent_id = ust_id WHERE id = cat_id;
+
+  -- 12e) yetki: anon service_roles okur, yazamaz; normal kullanici (pro1) yazamaz (RLS admin); admin yazar
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.service_roles;
+  EXECUTE 'RESET ROLE';
+  IF n < 1 THEN RAISE EXCEPTION 'anon service_roles okuyamadi'; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'UPDATE public.service_roles SET name_tr = ''x'' WHERE id = $1' USING r.id;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon service_roles UPDATE yapabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.service_roles SET name_tr = 'pro1 yazdi' WHERE id = r.id;     -- RLS: 0 satir etkilenir
+  EXECUTE 'RESET ROLE';
+  SELECT name_tr INTO st FROM public.service_roles WHERE id = r.id;
+  IF st = 'pro1 yazdi' THEN RAISE EXCEPTION 'normal kullanici service_roles guncelledi (RLS delik)'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.service_roles SET sort_order = 997 WHERE id = r.id;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT sort_order INTO n FROM public.service_roles WHERE id = r.id;
+  IF n <> 997 THEN RAISE EXCEPTION 'admin service_roles guncelleyemedi'; END IF;
+
+  -- 12f) yasak karakter kisiti (03 bolum 6): name_tr icinde virgul/parantez/tirnak -> 23514
+  BEGIN
+    UPDATE public.service_roles SET name_tr = 'Rol (yasak, karakter)' WHERE id = r.id;
+    RAISE EXCEPTION 'yasak karakterli name_tr kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.service_roles (slug, name_tr) VALUES ('Buyuk Harf', 'x');
+    RAISE EXCEPTION 'gecersiz slug kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+
+  -- 12g) sync_log bos
+  SELECT count(*) INTO n FROM public.organization_sync_log WHERE source ILIKE '%faz3%' OR source ILIKE '%service_role%';
+  IF n <> 0 THEN RAISE EXCEPTION 'sync_log FAZ 3 kaydi var (%)', n; END IF;
+
+  -- test kategorileri/rolleri temizlenir ki asama8 test sonrasi da ESIT kalsin (T0 da siler)
+  DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-%';
+  DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-%';
+
+  INSERT INTO t_sonuc VALUES (12, 'T12 FAZ 3a taksonomi', 'GECTI',
+    'legacy kategoriler = roller (slug+ad birebir, legacy_category_id dolu); admin kategori -> rol dogdu (arketip NULL); ad/aktiflik aynalandi, elle arketip korundu; ust katman satiri rol olmadi, parent_id=id 23514, legacy rol ust katmana baglandi; anon okur/UPDATE 42501, pro1 RLS 0 satir, admin yazdi; yasak karakter ve gecersiz slug 23514; sync_log bos');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (12, 'T12 FAZ 3a taksonomi', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

@@ -1,7 +1,7 @@
 # 11 — FAZ 2: Saglayici kayit defteri (talents, providers, alt profiller)
 
 **Baslangic:** 17 Eylul 2026 (on kosul `10-faz2-onkosul-tipler.md` kapandiktan sonra)
-**Durum:** FAZ 2a dosyalari hazir, yerel zincirde test edildi (T0-T11 12/12, asama7 10/10 ESIT + 1 BILGI). Dala ve uretime UYGULANMADI.
+**Durum:** 2a URETIMDE (18 Eylul 2026). Kapanis kaydi bolum 8. Siradaki: 3a (`service_roles`).
 **Kaynak:** `docs/architecture/01-veri-modeli.md` bolum 2-3, `04-goc-plani.md` FAZ 2 (11e-11h, 12-19), `03-taksonomi.md`.
 
 ---
@@ -17,7 +17,7 @@ Gocun en buyuk parcasi oldugu icin dort alt adima bolundu; her biri tek basina u
 
 | Adim | Icerik | Risk | Durum |
 |---|---|---|---|
-| **2a** | talents, providers, alt profiller; koruma tetikleyicisi; profiles -> providers aynalamasi; dolum. **Okuma yolu degismez.** | dusuk (yalniz ekleme) | dosyalar hazir |
+| **2a** | talents, providers, alt profiller; koruma tetikleyicisi; profiles -> providers aynalamasi; dolum. **Okuma yolu degismez.** | dusuk (yalniz ekleme) | URETIMDE (18 Eylul) |
 | **3a** | `roles` tablosu: 23 kategori birebir rol (slug korunur), `legacy_category_id`; ust servis kategorisi katmani bos (esleme ekiple) | dusuk | siradaki |
 | **2b** | `provider_services` (`role_id -> roles`); `services`, `portfolio_items`, `profile_experiences`, `reviews`, `favorites`'a `provider_id` (= profil id, dolum + aynalama); `v_provider_roles` | dusuk-orta | 3a sonrasi |
 | **2c** | okuma yollarinin `providers`'a gecisi (Claude Code; `ProfileOpen` -> `Provider` tipleri), istemci yazma yolunun acilmasi; en sonda profiles'taki tasinan alanlarin salt-okunur yapilmasi | orta | 2b sonrasi, ayri plan |
@@ -148,3 +148,21 @@ talents).
 - **2b** `provider_services` (provider_id, role_id, is_primary, capacity, price_min/max, price_unit,
   lead_time_days) `services` + `profiles.primary_category_id`'den dolar; `provider_id` sutunlari 5 tabloya
   eklenir (= mevcut profile_id / professional_id; NOT NULL yapilmaz, aynalanir); `v_provider_roles`.
+
+## 8. Kapanis kaydi — 2a (18 Eylul 2026)
+
+**Dal (`ukqhgspaallzjscjodbb`):** 3 dosya push; asama4 T0-T11: T11 GECTI (T9 ATLANDI, FAZ 0/04 bekliyor);
+asama7 10 ESIT + K9 BILGI (K1 2/2, K4 1/1).
+
+**Uretim (`qydsooqmflrrwtgawhsv`):** on kontrol 36 professional+agency profil, 36'sinin da slug'i bos (hepsi
+`p-<uuid>` aldi). `db push` 3 dosya; `NOTICE: faz2a dolum: 36 saglayici olusturuldu`. asama7: **10 ESIT + K9
+BILGI** — K1 35/35, K2 35/35, K3 35/35, K4 1/1, K5 1/1, K6-K8b 0, K10 0. Canli aynalama kaniti: onizlemeyle
+profil duzenlemede degisiklik yapildi, asama7 tekrar -> K7 ve K8 sifir kaldi (profil guncellemesi providers ve
+alt profile ayni islemde yansidi). `git push` yapildi.
+
+**Uretimdeki nihai durum:** 35 `talents` (claimed, user_id dolu), 36 `providers` (35 professional + 1 organization),
+35 `professional_profiles`, 1 `organization_profiles`; `profiles` kaynak, aynalama canli; istemci yazma yolu yok;
+`organization_sync_log` bos.
+
+**Not:** dalda testler bir kez push'tan once kosuldu (T11 ATLANDI, asama7 "providers does not exist") — sira
+hatasi, FAZ 1'deki ile ayni; push sonrasi ikisi de gecti.

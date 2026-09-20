@@ -2,7 +2,9 @@
 
 Bu belge hedef veri modelini ve her tasarim kararinin gerekcesini icerir. Mevcut semadan gecis icin `04-goc-plani.md`.
 
-**Anahtar tipi kurali:** Taksonomi ve referans tablolari (`service_categories`, `roles`, `skills`, `turkish_cities`) **integer** anahtarlidir; mevcut sema boyle. Diger her sey **UUID**. Karisim yapilmaz.
+**Anahtar tipi kurali:** Taksonomi ve referans tablolari (`service_categories`, `service_roles`, `skills`, `turkish_cities`) **integer** anahtarlidir; mevcut sema boyle. Diger her sey **UUID**. Karisim yapilmaz.
+
+**Ad notu (18 Eylul 2026):** bu belgede `roles(id)` yazan her FK hedefi **`service_roles(id)`** tablosudur (FAZ 3a; bkz. `03-taksonomi.md` ad karari). FK sutunlari `role_id` olarak kalir.
 
 ---
 

@@ -34,14 +34,20 @@ Bunlar cogunlukla **rol** duzeyindedir: fotografci, DJ, sunucu, dansci.
 
 **Mevcut 23 kategori ROL olur.** Uzerine 6-8 servis kategorisi gelir. Skill katmani bos baslar.
 
+**Ad karari (18 Eylul 2026, FAZ 3a):** rol tablosunun adi **`service_roles`**'tur (`roles` degil): kod tabaninda
+`role` zaten kullanici rolu (`profiles.role`) ve uyelik rolu (`organization_memberships.role`) demektir; ucuncu bir
+"rol" ayni kelimeyle yasamaz. FK sutunlari `role_id` kalir. Asagidaki `roles` yazimlari `service_roles` okunur.
+`service_categories.layer` iki degerlidir: `'legacy_role'` (mevcut 23 satir) ve `'category'` (ust katman, 3b).
+Uygulama kaydi: `docs/envanter/12-faz3a-service-roles.md`.
+
 ```sql
 service_categories        -- MEVCUT TABLO, genisletilir
   id integer pk
   slug, name_tr, emoji, sort_order, is_active, description, seo_title
-  + layer      enum('category')      -- yeni: bu satirin katmani
+  + layer      text ('legacy_role' | 'category')   -- FAZ 3a: mevcut satirlar legacy_role, ust katman category
   + parent_id  integer null          -- ileride alt kategori gerekirse
 
-roles                     -- YENI
+service_roles             -- YENI (FAZ 3a adi; asagida "roles" = service_roles)
   id                  integer pk
   service_category_id integer fk -> service_categories(id)
   slug                text unique

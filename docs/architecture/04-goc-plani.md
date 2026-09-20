@@ -548,6 +548,14 @@ madde 19 (profiles'tan alan cikarma) FAZ 10'a kadar yapilmaz.
 
 **Risk: dusuk.** Eski `category_id` alanlari korunur.
 
+**Uygulama notu (18 Eylul 2026, `docs/envanter/12-faz3a-service-roles.md`):** madde 18-19 **3a** olarak FAZ 2b'nin
+onune cekildi (`provider_services.role_id` icin). Tablo adi `service_roles`; `service_categories` + `layer`
+('legacy_role' | 'category') + `parent_id`; 23 kategori birebir rol, slug korunur, `legacy_category_id` dolu,
+`archetype` category-fields.ts'ten kopya (`service_role_archetype_for_slug`). Admin yeni kategori yazinca rol
+otomatik dogar (aynalama tetikleyicisi). Madde 20 (ust katman satirlari) **3b**: ekip eslemesi + once uygulama
+sorgularinin `layer = 'legacy_role'` ile daraltilmasi (ust satirlar aksi halde kategori listelerinde gorunur).
+Madde 21 (`v_provider_roles`) 2b'de, madde 22 (`skills`) FAZ 9 sonrasi.
+
 ### FAZ 4 — Etkinlik ve EventSpec
 
 23. `event_briefs`, `event_spec_versions`, `events`, `event_requirements` olusturulur.
