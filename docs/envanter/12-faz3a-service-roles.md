@@ -1,7 +1,7 @@
 # 12 — FAZ 3a: Taksonomi — service_roles tablosu
 
 **Baslangic:** 18 Eylul 2026 (FAZ 2a uretime ciktigi gun; 2b'nin `provider_services.role_id` on kosulu)
-**Durum:** Dosya duzeltildi (20 Eylul, bolum 7), yerel zincirde uretim benzeri veriyle yeniden test edildi. Dala ve uretime UYGULANMADI (ilk uretim denemesi geri alindi).
+**Durum:** KAPANDI (20 Eylul 2026; uretimde, asama8 tam, migration kaydi dogrulandi). Kapanis bolum 8-9. Siradaki: 2b.
 **Kaynak:** `docs/architecture/03-taksonomi.md`, `04-goc-plani.md` FAZ 3 (18-22), `docs/yeni-kategori-checklist.md`.
 
 ---
@@ -122,3 +122,39 @@ virgullu ad, 2 pasif) ve tum test yeniden kosuldu (bolum 3).
 2. **Yerel harness'ta uretim verisinin sekli olmayan tablolarda dolum test edilmis sayilmaz.** Dolum yazan her
    dosya icin on kontrol sorgusu, dolumun okuyacagi sutunlarin DEGERLERINI (yalniz sayilarini degil) gostermeli;
    `count(*)` yeterli degildi. Bu kural bolum 5'e eklendi.
+
+## 8. Kapanis kaydi (20 Eylul 2026)
+
+**Dal (`ukqhgspaallzjscjodbb`):** duzeltilmis dosya push; asama4 T0-T12: **13/13 GECTI** (T9 ATLANDI); asama8
+hepsi ESIT (dalda kategori satiri yok: K1 0/0).
+
+**Uretim (`qydsooqmflrrwtgawhsv`):** asama8 **K1 25/25, K2-K5 0, K5b 2 (sanatci, animasyon), K6 0, K7 8030606
+(8 sahne / 3 cast / 6 produksiyon / 6 uzmanlik), K8 0**. `supabase db push` -> "Remote database is up to date"
+(migration kaydi Remote'ta). `git push` -> `0b1aea4..9398ba2 main`.
+
+**Uygulama yolu (netlestirildi, bolum 9):** kayit basarili bir `db push` ile yazildi; "kayitli ama semasi eksik"
+penceresi olmadi. Dosya uretimde SQL Editor'dan da calistirildi ("Success. No rows returned") — idempotan, hicbir
+seyi degistirmedi; kurala aykiriydi (bolum 9).
+
+## 9. Netlestirme — migration kaydi ve SQL Editor kosusu (20 Eylul 2026, aksam)
+
+**Bulgu:** `supabase migration list` (uretim) 56 satir, hepsinde Local = Remote; son satir
+`20260918130000 | 20260918130000 | 2026-09-18 13:00:00`.
+
+**20 Eylul'deki basarisiz push kaydi YAZMADI.** Supabase CLI `db push` her dosyayi tek bir ortuk islem icinde
+gonderir (`pgconn.ExecBatch`, "implicitly transactional"); surum kaydi (`supabase_migrations.schema_migrations`'a
+INSERT) ayni paketin son ifadesidir. Bir ifade hata verince sunucu paketin kalanini (COMMIT ve kayit INSERT'i dahil)
+atlar; hicbir sey kalici olmaz. Bolum 7'deki "migration kaydi yazilmadi" tespiti bununla uyumludur. Dolayisiyla
+bolum 8'deki (b) senaryosu elenir: kayit, duzeltilmis dosyanin basarili `db push`u ile yazildi (sonraki
+`db push` bu yuzden "up to date" dedi). Sema ya o push ile geldi ya da daha once SQL Editor'da calistirilmisti
+(Guven hatirlamiyor); ikinci halde bile push idempotan dosyayi sorunsuz uygulayip kaydi yazdi — sonuc ayni.
+
+**SQL Editor kosusu:** dosya 20 Eylul aksami uretimde SQL Editor'dan bir kez (daha) calistirildi: "Success. No rows
+returned". Dosya idempotan (`IF NOT EXISTS`, `ON CONFLICT`, `CREATE OR REPLACE`) ve zaten uygulanmis oldugu icin
+hicbir satir/nesne degismedi; asama8 ciktisi ayni kaldi. **Ama kural nettir:** migration dosyalari SQL Editor'da
+CALISTIRILMAZ; SQL Editor yalniz salt okunur kontroller (asamaN, on kontrol) icindir. Bir migration dosyasi SQL
+Editor'dan uygulanirsa `schema_migrations` kaydi yazilmaz; sonraki `db push` dosyayi yeniden calistirir — idempotan
+degilse hata, idempotansa sessiz ikinci kosu. Bu kez zararsiz kaldi; tekrar edilmemeli.
+
+**Kapanis:** FAZ 3a nihai durumu tutarli — sema uygulandi (asama8 uretim), kayit var (`migration list`), git
+`9398ba2`. Acik soru kalmadi.
