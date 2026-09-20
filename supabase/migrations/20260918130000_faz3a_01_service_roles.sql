@@ -15,6 +15,9 @@
 --      dokunulmadan calisir. archetype: category-fields.ts'teki dort sabit arketipin KOLAYLIK KOPYASI
 --      (kaynak TypeScript'te kalir, 03 bolum 2); dolumda slug'a gore doldurulur, eslesmeyen NULL kalir
 --      (asama8 K5 sayar).
+--      Uretim (20 Eylul): 25 kategori = 23 aktif (hepsi category-fields.ts'te preset'li) + 2 pasif
+--      (sanatci, animasyon; preset yok -> arketip NULL, is_active false olarak rol olur; asama8 K5 yalniz
+--      aktif arketipsizleri sayar).
 --   3) Aynalama: service_categories (layer = legacy_role) INSERT/UPDATE -> service_roles (legacy_category_id
 --      anahtariyla upsert). Admin bugun yeni kategoriyi service_categories'e yazar (kategori talebi onayi);
 --      rol satiri otomatik dogar. Hata eski akisi kesmez: organization_sync_log.
@@ -71,9 +74,10 @@ CREATE TABLE IF NOT EXISTS public.service_roles (
   CONSTRAINT service_roles_slug_key UNIQUE (slug),
   CONSTRAINT service_roles_legacy_category_id_key UNIQUE (legacy_category_id),
   CONSTRAINT service_roles_slug_check CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  CONSTRAINT service_roles_archetype_check CHECK (archetype IS NULL OR archetype IN ('sahne', 'cast', 'produksiyon', 'uzmanlik')),
-  -- 03 bolum 6: PostgREST or= dilbilgisinde yasak karakterler filtreye baglanabilecek her taksonomi degerinde yasak
-  CONSTRAINT service_roles_name_tr_check CHECK (name_tr !~ '[,()"\\]')
+  CONSTRAINT service_roles_archetype_check CHECK (archetype IS NULL OR archetype IN ('sahne', 'cast', 'produksiyon', 'uzmanlik'))
+  -- 03 bolum 6 (PostgREST or= yasak karakterleri) SLUG uzerinde zorlanir: filtreler slug/id ile baglanir.
+  -- name_tr gosterim metnidir; uretimde "Sac, Makyaj ve Styling" gibi virgullu adlar VAR (20 Eylul dolum
+  -- denemesi bunu gosterdi), bu yuzden name_tr'ye karakter kisiti konmaz.
 );
 
 CREATE INDEX IF NOT EXISTS service_roles_service_category_id_idx ON public.service_roles (service_category_id);

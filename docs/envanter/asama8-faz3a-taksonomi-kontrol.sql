@@ -31,8 +31,12 @@ k4 AS (
          (SELECT count(*) FROM public.service_roles WHERE legacy_category_id IS NULL)::bigint, 0::bigint
 ),
 k5 AS (
-  SELECT 'K5 arketipsiz rol (category-fields.ts ile eslesmedi)' AS kontrol,
-         (SELECT count(*) FROM public.service_roles WHERE archetype IS NULL)::bigint, 0::bigint
+  SELECT 'K5 arketipsiz AKTIF rol (category-fields.ts preseti yok; pasif eski kategoriler sayilmaz)' AS kontrol,
+         (SELECT count(*) FROM public.service_roles WHERE archetype IS NULL AND is_active)::bigint, 0::bigint
+),
+k5b AS (
+  SELECT 'K5b arketipsiz PASIF rol (bilgi; uretimde 2: sanatci, animasyon)' AS kontrol,
+         (SELECT count(*) FROM public.service_roles WHERE archetype IS NULL AND NOT is_active)::bigint, 0::bigint
 ),
 k6 AS (
   SELECT 'K6 ust katman (category) satiri sayisi (3a''da 0; 3b ile dolar)' AS kontrol,
@@ -52,11 +56,12 @@ k8 AS (
 ),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4
-  UNION ALL SELECT * FROM k5 UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8
+  UNION ALL SELECT * FROM k5 UNION ALL SELECT * FROM k5b UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8
 )
 SELECT kontrol, eski, yeni,
        CASE WHEN kontrol LIKE 'K2%' THEN eski + yeni ELSE abs(eski - yeni) END AS fark,
        CASE WHEN kontrol LIKE 'K7%' THEN 'BILGI (sahne*1e6 + cast*1e4 + produksiyon*100 + uzmanlik; beklenen 8/3/6/6 = 8030606)'
+            WHEN kontrol LIKE 'K5b%' THEN 'BILGI'
             WHEN (CASE WHEN kontrol LIKE 'K2%' THEN eski + yeni ELSE abs(eski - yeni) END) = 0 THEN 'ESIT'
             ELSE 'FARK' END AS durum
   FROM hepsi;

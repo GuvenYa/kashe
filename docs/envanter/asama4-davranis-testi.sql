@@ -30,7 +30,7 @@
 --       (ON KOSUL: faz2a 01-03 dalda uygulanmis)
 --   T12 FAZ 3a taksonomi: service_roles = legacy kategoriler (slug birebir, arketip), admin kategori
 --       ekler -> rol dogar, guncelleme aynalanir, ust katman satiri rol olmaz, anon okur/yazamaz,
---       yasak karakter kisiti (ON KOSUL: faz3a_01 dalda uygulanmis)
+--       slug kisiti (ON KOSUL: faz3a_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -1038,11 +1038,8 @@ BEGIN
   SELECT sort_order INTO n FROM public.service_roles WHERE id = r.id;
   IF n <> 997 THEN RAISE EXCEPTION 'admin service_roles guncelleyemedi'; END IF;
 
-  -- 12f) yasak karakter kisiti (03 bolum 6): name_tr icinde virgul/parantez/tirnak -> 23514
-  BEGIN
-    UPDATE public.service_roles SET name_tr = 'Rol (yasak, karakter)' WHERE id = r.id;
-    RAISE EXCEPTION 'yasak karakterli name_tr kabul edildi';
-  EXCEPTION WHEN check_violation THEN NULL; END;
+  -- 12f) slug kisiti (03 bolum 6 yasak karakterleri slug uzerinde zorlanir; name_tr gosterim metni,
+  --      uretimde virgullu ad var: "Sac, Makyaj ve Styling")
   BEGIN
     INSERT INTO public.service_roles (slug, name_tr) VALUES ('Buyuk Harf', 'x');
     RAISE EXCEPTION 'gecersiz slug kabul edildi';
@@ -1057,7 +1054,7 @@ BEGIN
   DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-%';
 
   INSERT INTO t_sonuc VALUES (12, 'T12 FAZ 3a taksonomi', 'GECTI',
-    'legacy kategoriler = roller (slug+ad birebir, legacy_category_id dolu); admin kategori -> rol dogdu (arketip NULL); ad/aktiflik aynalandi, elle arketip korundu; ust katman satiri rol olmadi, parent_id=id 23514, legacy rol ust katmana baglandi; anon okur/UPDATE 42501, pro1 RLS 0 satir, admin yazdi; yasak karakter ve gecersiz slug 23514; sync_log bos');
+    'legacy kategoriler = roller (slug+ad birebir, legacy_category_id dolu); admin kategori -> rol dogdu (arketip NULL); ad/aktiflik aynalandi, elle arketip korundu; ust katman satiri rol olmadi, parent_id=id 23514, legacy rol ust katmana baglandi; anon okur/UPDATE 42501, pro1 RLS 0 satir, admin yazdi; gecersiz slug 23514; sync_log bos');
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
