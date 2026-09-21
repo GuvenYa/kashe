@@ -20,11 +20,15 @@ import {
   formatLastSeen,
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
-import type {
-  ProfilePublic,
-  ServiceWithCategory,
-  PortfolioItem,
-  ServicePackage,
+import {
+  PROVIDER_LISTING_COLUMNS,
+  type CategoryEmbed,
+  type CityEmbed,
+  type ProviderPage,
+  type ProviderPublic,
+  type ServiceWithCategory,
+  type PortfolioItem,
+  type ServicePackage,
 } from '@/app/lib/types';
 import {
   getFilterFields,
@@ -39,8 +43,9 @@ import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { incrementProfileViews } from './profile-views-actions';
 
-// ProfileListing + is_published + last_seen_at (sorgunun sectigi alanlarla birebir).
-type PublicProfile = ProfilePublic;
+// FAZ 2c: detay sayfasi v_providers_public gorunumunden okunur.
+// ProviderListing + is_published + last_seen_at (sorgunun sectigi alanlarla birebir).
+type PublicProfile = ProviderPage;
 
 export async function generateMetadata({
   params,
@@ -50,7 +55,7 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
   const { data } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select('full_name, company_name, role, is_published')
     .eq('id', id)
     .single();
@@ -84,10 +89,10 @@ export default async function PublicProfilePage({
   const supabase = await createClient();
 
   const { data: profileData } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes, category_attributes, premium_tier, premium_until, approval_status, created_at,
+      ${PROVIDER_LISTING_COLUMNS}, is_published, last_seen_at,
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
@@ -565,22 +570,24 @@ export default async function PublicProfilePage({
   // ---- BENZER PROFİLLER (additive) ----
   // Aynı kategorideki diğer YAYINDA + ONAYLI hizmet sağlayıcılar (professional/agency).
   // ProfileCard yeniden kullanılır; aynı şehir önce, sonra yüksek puan; ilk 6.
-  type SimilarCandidate = {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-    company_name: string | null;
-    role: string;
-    created_at: string | null;
-    approval_status: string | null;
-    premium_tier: string | null;
-    premium_until: string | null;
-    attributes: Record<string, string | string[]> | null;
-    city_id: number | null;
-    turkish_cities: { name: string } | null;
-    service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
-  };
+  // Sorgunun sectigi 12 sutun + iki embed (category_attributes YOK — sorguya eklenmez).
+  type SimilarCandidate = Pick<
+    ProviderPublic,
+    | 'id'
+    | 'full_name'
+    | 'avatar_url'
+    | 'bio'
+    | 'company_name'
+    | 'role'
+    | 'created_at'
+    | 'approval_status'
+    | 'premium_tier'
+    | 'premium_until'
+    | 'attributes'
+    | 'city_id'
+  > &
+    CityEmbed &
+    CategoryEmbed;
 
   let similarProfiles: SimilarCandidate[] = [];
   const similarServicesByProfile: Record<
@@ -592,7 +599,7 @@ export default async function PublicProfilePage({
 
   if (profile.primary_category_id != null) {
     const { data: candidatesData } = await supabase
-      .from('profiles')
+      .from('v_providers_public')
       .select(
         `
         id, full_name, avatar_url, bio, company_name, role, created_at, approval_status, premium_tier, premium_until, attributes, city_id,

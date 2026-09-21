@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ReviewCard } from '@/app/yorumlar/review-card';
-import type { ProfileCard, ProfileOpen } from '@/app/lib/types';
+import type { ProviderCard, ProviderPublic } from '@/app/lib/types';
 
-type PublicProfile = ProfileCard & Pick<ProfileOpen, 'is_published'>;
+// FAZ 2c: baslik karti saglayici gorunumunden; yorumcu kartlari profiles'ta kalir.
+type PublicProfile = ProviderCard & Pick<ProviderPublic, 'is_published'>;
 
 export async function generateMetadata({
   params,
@@ -15,7 +16,7 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
   const { data } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select('full_name, company_name, role, is_published')
     .eq('id', id)
     .single();
@@ -43,7 +44,7 @@ export default async function YorumlarPage({
   const supabase = await createClient();
 
   const { data: profileData } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select('id, full_name, avatar_url, company_name, role, is_published')
     .eq('id', id)
     .single();

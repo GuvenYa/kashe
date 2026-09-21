@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import type { CategoryEmbed, CityEmbed, ProviderPublic } from '@/app/lib/types';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
@@ -192,8 +193,10 @@ const user = await getCachedUser();
   const professionalIds = professionals.map((p) => p.id);
 
   // city + kategori detaylarını profillerden çek (favorites query'sinde join yok, ayrı çekiyoruz)
+  // FAZ 2c: kart detaylari saglayici gorunumunden; favori kaydi ve oturum sahibi
+  // okumalari profiles'ta kaldi.
   const { data: profilesDetailData } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select(
       `
       id, city_id, primary_category_id,
@@ -218,8 +221,22 @@ const user = await getCachedUser();
     }
   >();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (profilesDetailData || []).forEach((p: any) => {
+  type FavoriSaglayiciDetay = Pick<
+    ProviderPublic,
+    | 'id'
+    | 'city_id'
+    | 'primary_category_id'
+    | 'approval_status'
+    | 'premium_tier'
+    | 'premium_until'
+    | 'created_at'
+    | 'attributes'
+    | 'category_attributes'
+  > &
+    CityEmbed &
+    CategoryEmbed;
+
+  ((profilesDetailData ?? []) as unknown as FavoriSaglayiciDetay[]).forEach((p) => {
     cityCategoryMap.set(p.id, {
       turkish_cities: p.turkish_cities,
       service_categories: p.service_categories,

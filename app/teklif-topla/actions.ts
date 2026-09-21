@@ -86,8 +86,10 @@ export async function createQuoteRequest(
       ? input.target_roles
       : ['professional', 'agency'];
 
+  // FAZ 2c: dagitim havuzu saglayici gorunumunden. Kota algoritmasina giden alanlar
+  // (premium_tier, premium_until, created_at) ayni adlarla gelir; algoritma degismedi.
   let matchQuery = supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select('id, premium_tier, premium_until, created_at')
     .in('role', roles)
     .eq('approval_status', 'approved')

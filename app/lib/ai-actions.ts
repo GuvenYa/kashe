@@ -446,8 +446,9 @@ export async function recommendProfessionals(input: {
   }
 
   // Ön-filtre: kategori + (opsiyonel) şehir + yayında + pro/ajans
+  // FAZ 2c: aday havuzu saglayici gorunumunden; filtreler ve sutunlar ayni.
   let query = supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select('id, full_name, company_name, role, bio, premium_tier')
     .eq('is_published', true)
     .in('role', ['professional', 'agency'])

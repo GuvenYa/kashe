@@ -2,13 +2,13 @@
 
 **Kaynak plan:** `docs/architecture/04-goc-plani.md` FAZ 2 madde 18 ("okuma yollari tek tek providers'a gecirilir"),
 `11-faz2-saglayici-defteri.md` bolum 2 (cift alan doneminin bitis kriteri), `13-faz2b` bolum 7.
-**Durum:** P0 URETIMDE, P1 KOD HAZIR (21 Eylul 2026; commit bekliyor). P2 gorev metni `14-claude-code-gorevi-p2.md`. Kapanis bolum 8.
+**Durum:** P0 URETIMDE, P1 DEPLOY EDILDI, P2 KOD HAZIR (21 Eylul 2026; commit bekliyor). P3 gorev metni `14-claude-code-gorevi-p3.md`. Kapanis bolum 8.
 
 ## 1. Tarama (21 Eylul, repo `682b860`)
 
 | Olcum | Sonuc |
 |---|---|
-| `from('profiles')` | **133 cagri / 63 dosya** |
+| `from('profiles')` | **133 cagri / 63 dosya** (tek tirnak). **Duzeltme (P2 sonrasi):** cift tirnakli `from("profiles")` 5 dosya daha: `components/sections/featured-profiles.tsx`, `marquee-profiles.ts`, `categories.tsx`, `hero.tsx` (ana sayfa, PAZARYERI) + `top-nav.tsx` (kimlik). Toplam 68 dosya; pazaryeri okumasi 10 + 4 = 14 dosya. Ders: tarama iki tirnak stilini de arar |
 | Bunlarin pazaryeri yuzu (is_published/approval/bio/kategori/premium okuyan) | ~25 dosya isaretli; gercek pazaryeri LISTE/DETAY okumasi **10 dosya** |
 | Pazaryeri okuma yollari | `kesfet/page.tsx`, `kategori/[slug]/page.tsx`, `kategoriler/page.tsx` (sayac), `sitemap.ts`, `etkinlik-sihirbazi/page.tsx` (sayac), `lib/ai-actions.ts` (pro-bul havuzu), `teklif-topla/actions.ts` (havuz), `p/[id]/page.tsx` (detay + benzer profiller), `p/[id]/yorumlar/page.tsx`, `favoriler/page.tsx` |
 | Bu 10 dosyanin okudugu sutun kumesi | `id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, is_published, last_seen_at, attributes, category_attributes, premium_tier, premium_until, approval_status, created_at, updated_at` + embed `turkish_cities(name)`, `service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)` |
@@ -82,10 +82,10 @@ sayaclari, sihirbaz sayaci = kesfet sonucu, sitemap.xml satir sayisi); asama7/as
 `teklif-topla/actions.ts` (havuz). Kabul: /p/[id] ziyaretci + sahip + admin gorunumu, yorumlar, favoriler, pro-bul
 onerisi, teklif-topla dagitimi (kota algoritmasi ayni girdileri almali: premium_tier, premium_until, created_at).
 
-**P3 — kalan ve kural:** taramada kalan pazaryeri okumalari (`admin/profiller` ve `admin/rapor` HARIC — admin
-`profiles`'ta kalir), `app/components/sections/*` varsa; `CLAUDE.md`'ye kural: **yeni kod pazaryeri alanini
-`profiles`'tan okumaz, `v_providers_public` okur**; `grep "from('profiles')"` sonucu kimlik/operasyon listesi olarak
-14'e islenir (FAZ 10 kesim listesi).
+**P3 — ana sayfa + rol kapisi + siniflandirma (`14-claude-code-gorevi-p3.md`):** `components/sections/featured-profiles.tsx`,
+`marquee-profiles.ts`, `categories.tsx`, `hero.tsx` -> gorunum (cift tirnakli okumalar); `/p/[id]` rol kapisindan
+`business` cikar (bolum 8 karari); `ai-actions.ts:86` sapkali harf; kalan tum `profiles` okumalari siniflandirilip
+bolum 9'a yazilir (FAZ 10 kesim listesi; `pazaryeri-kaldi` 0 beklenir). `CLAUDE.md` kurali P0'da eklendi.
 
 ## 5. Dogrulama araclari
 
@@ -140,3 +140,28 @@ ve `service_categories!profiles_primary_category_id_fkey(...)` dolu dondu (hint'
 calisiyor) — bolum 3'teki yedek plan gerekmedi. Sapmalar (kabul): sutun kilidi yalniz `satisfies` ile (liste 33
 sutunun alt kumesi; Exclude/never burada anlamsiz), tipler semadan yazildi ve bolum 3 ile ortustu, 2 ESLint hatasi
 onceden var (`tierWeight` icinde `Date.now()`, 6c0ede70). Commit Guven tarafindan.
+
+**P1 deploy (21 Eylul):** Vercel deploy tamam; onizleme cookie'siyle kesfet/kategori/kategoriler normal (Guven).
+
+**P2 — detay ve havuzlar (21 Eylul 2026, Claude Code raporu):** 6 dosya (+81/-60): `p/[id]/page.tsx` (yayin on
+kontrolu, ana detay `ProviderPage`, benzer profiller), `p/[id]/yorumlar` (`ProviderCard & Pick<..., 'is_published'>`),
+`favoriler` (kart sorgusu; `any` kalkti), `lib/ai-actions.ts` (pro-bul havuzu), `teklif-topla/actions.ts` (dagitim
+havuzu) -> gorunum; kimlik okumalari (oturum sahibi rol/is_admin/suspended_at, yorumcu kartlari) profiles'ta.
+`ProfileListing` ve `ProfilePublic` silindi (kullanim 0), `ProviderPage`/`ProviderCard` eklendi. tsc bos, build
+basarili. Sayfa kiyasi (main vs dal, derleme kimligi normalize): /p/<professional> 50069 bayt birebir, /p/<yayinda
+olmayan> birebir, /yorumlar birebir, /p/<ajans> birebir. Oturum gerektiren maddeler (sahip/admin gorunumu, favoriler,
+pro-bul, teklif-topla) veri katmaninda kanitlandi: 34/34 detay satiri alan alan esit, favori kartlari 34/34, pro-bul
+havuzu 3/3, teklif-topla havuzu 3/3 (premium_tier/premium_until/created_at kumesi esit), benzer profiller 2/2.
+Sapma (kabul): detay select dizesinin sutun SIRASI degisti (kume ayni; PostgREST JSON'u siradan bagimsiz; sayfa
+birebir) — gorev metnindeki "ayni sira" ile "PROVIDER_LISTING_COLUMNS + 2" celisiyordu, tek kaynak tercih edildi.
+
+**P2 bulgulari:**
+1. **`/p/[id]` rol kapisi `business`'a izin veriyor, gorunumde business yok.** Bugun yayinda business profili 0 ->
+   davranis degismedi. **Karar (21 Eylul, Guven):** kapidan `business` cikarilir (11 bolum 2: business saglayici
+   degil; kurum sayfasi FAZ 8 organizations). P3'te uygulanir.
+2. **"Benzer profiller" sorgusu hic kosmuyor** (`page.tsx` ~440-563: professional dalinda erken return; sorgu
+   blogun disinda; tek ajansin primary_category_id'si null). Onceden var olan olu kod / urun hatasi; 2c kapsami
+   disi, ayri is (davranis degisikligi). Sorgu gorunume gecirildi, veri katmaninda 2/2 dogrulandi.
+3. **Tarama eksigi:** tek tirnakli grep cift tirnakli 5 dosyayi kacirmisti (bolum 1 duzeltmesi); 4'u ana sayfa
+   pazaryeri okumasi -> P3.
+4. `ai-actions.ts:86` "davetkar" sapkali harf (e4cc541e, 22 Haziran) -> P3'te duzeltilir.

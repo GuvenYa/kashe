@@ -81,30 +81,10 @@ export type ProfileCard = Pick<
   'id' | 'full_name' | 'avatar_url' | 'company_name' | 'role'
 >;
 
-/** Kesfet ve kategori/[slug] listeleri — iki sayfanin sorgusu birebir ayni. */
-export type ProfileListing = Pick<
-  ProfileOpen,
-  | 'id'
-  | 'full_name'
-  | 'avatar_url'
-  | 'bio'
-  | 'city_id'
-  | 'primary_category_id'
-  | 'company_name'
-  | 'role'
-  | 'created_at'
-  | 'approval_status'
-  | 'premium_tier'
-  | 'premium_until'
-  | 'attributes'
-  | 'category_attributes'
-> &
-  CityEmbed &
-  CategoryEmbed;
-
-/** Herkese acik profil sayfasi (/p/[id]). */
-export type ProfilePublic = ProfileListing &
-  Pick<ProfileOpen, 'is_published' | 'last_seen_at'>;
+// ProfileListing ve ProfilePublic FAZ 2c/P2'de SILINDI: pazaryeri listesi ve detay
+// sayfasi artik ProviderListing / ProviderPage okuyor (v_providers_public).
+// ProfileOpen / ProfilePrivate / ProfileCard duruyor — kimlik ve oturum sahibi okumalari
+// (own-profile.ts, marquee) hala profiles'tan gelir.
 
 // ===== FAZ 2c — pazaryeri okuma sozlesmesi: v_providers_public =====
 //
@@ -190,6 +170,19 @@ export type ProviderListing = Pick<
 > &
   CityEmbed &
   CategoryEmbed;
+
+/** Saglayici detay sayfasi (/p/[id]) — liste alanlari + yayin/son gorulme. */
+export type ProviderPage = ProviderListing &
+  Pick<ProviderPublic, 'is_published' | 'last_seen_at'>;
+
+/**
+ * Saglayici kart basligi (en kucuk sekil).
+ * Musteri/yorumcu kartlari icin ProfileCard kullanilir — onlar profiles'ta kalir.
+ */
+export type ProviderCard = Pick<
+  ProviderPublic,
+  'id' | 'full_name' | 'avatar_url' | 'company_name' | 'role'
+>;
 export type ServiceCategory = {
   id: number;
   slug: string;
