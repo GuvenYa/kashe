@@ -1,7 +1,7 @@
 # 08 — FAZ 0: Kiraci temeli (organizations)
 
 **Baslangic:** 15 Eylul 2026 (profiles PII kapanisindan sonra; goc planinin ilk fazi)
-**Durum:** 01-03 URETIMDE (15 Eylul aksami, commit `5b441dc`); 04 `docs/envanter/bekleyen/`'de tutarlilik izleme suresini bekliyor. Kapanis kaydi bolum 8.
+**Durum:** 01-03 URETIMDE (15 Eylul aksami, commit `5b441dc`); 04 ZINCIRE ALINDI (22 Eylul, `20260922100000_faz0_04_...`), uretim sirasi bolum 9. Kapanis kaydi bolum 8 (01-03) ve bolum 9 (04).
 **Kaynak belgeler:** `docs/architecture/01-veri-modeli.md` bolum 1, `02-guvenlik-modeli.md` bolum 4-5, `04-goc-plani.md` "FAZ 0".
 
 ---
@@ -53,7 +53,7 @@ Uygulama sirasinda alinan tasarim kararlari (belgelere islendi):
 | `supabase/migrations/20260915150000_faz0_01_kiraci_tablolari.sql` | 5 enum; `organizations`, `organization_memberships`, `organization_invitations`, `organization_modules`, `organization_sync_log`; indeksler; REVOKE/GRANT; RLS acik |
 | `supabase/migrations/20260915150100_faz0_02_fonksiyonlar_aynalama.sql` | rol esleme, `organization_id_for_profile`, `ensure_organization_for_profile`, `is_org_member`, `org_role_permissions`, `has_org_permission`, 5 SELECT politikasi, `log_org_sync_error`, 5 aynalama tetikleyicisi (profiles, agency_members, business_members, agency_invitations, business_invitations), `v_agency_members` / `v_business_members` (security_invoker) |
 | `supabase/migrations/20260915150200_faz0_03_dolum.sql` | VERI YAZAR: profiller -> kuruluslar + kurucu; uyelikler ve davetler ayni id ile. Idempotan |
-| `docs/envanter/bekleyen/20260915150300_faz0_04_yetki_fonksiyon_gecisi.sql` | BEKLER. `has_business_role`, `is_business_member`, `is_business_member_of_request` govdeleri yeni tablodan okur (imza ayni); yeni `is_agency_member`; bookings politikasi yeniden yazilir |
+| `supabase/migrations/20260922100000_faz0_04_yetki_fonksiyon_gecisi.sql` (15-22 Eylul arasi `docs/envanter/bekleyen/20260915150300_...` adiyla bekledi) | ZINCIRDE (22 Eylul). `has_business_role`, `is_business_member`, `is_business_member_of_request` govdeleri yeni tablodan okur (imza ayni); yeni `is_agency_member`; bookings politikasi yeniden yazilir |
 | `docs/envanter/asama5-faz0-tutarlilik.sql` | SALT OKUNUR, dal + uretim: 14 kontrol (K1-K8), hepsi ESIT olmali |
 | `docs/envanter/asama4-davranis-testi.sql` | T8 (FAZ 0) ve T9 (04; uygulanmamissa ATLANDI) eklendi; T0 temizligi kurum/uye sabitlerini de siler |
 
@@ -157,3 +157,34 @@ yapmadan once adres cubugundaki proje ref'i okunur; "main"/"dal" degil ref adi k
 **Kalan:** bolum 5 adim 7 — birkac gun sonra (en az bir gercek davet kabulu + bir uye cikarma yasandiginda)
 uretimde asama5 tekrar; hepsi ESIT ve K8 = 0 ise 04 dosyasi `git mv` ile `supabase/migrations/`'a, once
 dala (T9 GECTI beklenir), sonra uretime.
+
+## 9. 04 — zincire alinma ve uretim sirasi (22 Eylul 2026)
+
+**Neden simdi:** 15 Eylul'den beri uretimde asama5 hep 14/14 ESIT (K8 sync_log 0); dalda T3/T4/T8 gercek davet
+kabulu ve uye cikarma akislarini aynalama uzerinden dogruluyor. Uretimde bu sure icinde gercek davet/cikarma
+olmadi (bakim modu); daha uzun beklemek yeni kanit uretmez. Dosya icerigi 15 Eylul'deki ile ayni; **yalniz zaman
+damgasi yenilendi** (`20260922100000`): CLI, uzak gecmisteki son surumden eski bir yerel dosyayi `--include-all`
+olmadan uygulamaz; zincir sirasi bozulmasin diye yeniden damgalandi (baslik yorumu bunu soyler). Eski dosya
+`docs/envanter/bekleyen/`'den `git rm` ile kaldirilir (git yeniden adlandirma olarak gorur).
+
+**Yerel zincir (22 Eylul):** dosya (yeni adiyla) zaten 04 uygulanmis harness'a yeniden uygulandi; 4 fonksiyon
+govdesinin md5'i degismedi (idempotan); asama4 T9 GECTI.
+
+**Uretim sirasi:**
+1. `git rm docs/envanter/bekleyen/20260915150300_faz0_04_yetki_fonksiyon_gecisi.sql`; `git add -A`; commit
+   `FAZ 0/04: yetki fonksiyon gecisi zincire alindi (20260922100000)`.
+2. Uretimde on kontrol (SQL Editor, salt okunur): `asama5-faz0-tutarlilik.sql` -> 14/14 ESIT, K8 0; ve
+   `select proname from pg_proc where proname = 'is_agency_member';` -> bos.
+3. Dal: `supabase link --project-ref ukqhgspaallzjscjodbb` -> `supabase db push` (1 dosya).
+4. Dalda: `asama4-davranis-testi.sql` -> **T9 GECTI** (ilk kez; 15 satir hepsi GECTI); `asama5` -> 14/14 ESIT.
+5. Uretim: `supabase link --project-ref qydsooqmflrrwtgawhsv` -> `supabase db push` (1 dosya).
+6. Uretimde: `asama5` -> 14/14 ESIT; `select proname from pg_proc where proname = 'is_agency_member';` -> 1 satir.
+   Onizlemeyle kurumsal ekip (`/profil/kurumsal-ekip`) ve ajans ekibi (`/profil/ekibim`) sayfalari acilir;
+   uye listesi ve yetkiler ayni gorunmeli (politikalar artik yeni tablodan okuyor).
+7. `git push`.
+
+**Geri alma:** dosya basligindaki not — eski govdeler `20260620090200` ve `20260701120000` dosyalarindan
+`CREATE OR REPLACE` ile geri yazilir; bookings politikasi `06_politikalar` metniyle.
+
+**Kapanis (uretim sonrasi doldurulur):** asama5 degerleri, T9 sonucu, git commit.
+

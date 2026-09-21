@@ -1,10 +1,10 @@
 -- =============================================================================
 -- FAZ 0 / 04 — Yetki fonksiyonlarinin kaynagi organization_memberships olur
 --
--- BU DOSYA BILEREK docs/envanter/bekleyen/ ALTINDA BEKLER. Kosul (15 Eylul karari):
---   01-03 uretime cikar, asama5-faz0-tutarlilik.sql uretimde birkac gun boyunca SIFIR fark
---   ve organization_sync_log'da SIFIR kayit gosterir; ondan sonra bu dosya
---   supabase/migrations/ altina tasinir ve db push ile once dala, sonra uretime uygulanir.
+-- 15 Eylul - 22 Eylul arasi docs/envanter/bekleyen/20260915150300_... adiyla bekledi (kosul: 01-03 uretime cikar,
+--   asama5-faz0-tutarlilik.sql uretimde birkac gun SIFIR fark ve organization_sync_log SIFIR kayit).
+--   22 Eylul'de zincire alindi; zaman damgasi yenilendi cunku CLI, uzak gecmisteki son surumden ESKI
+--   bir yerel dosyayi --include-all olmadan uygulamaz (zincir sirasi korunur). Icerik degismedi.
 --
 -- NE YAPAR (04-goc-plani FAZ 0 madde 10; 05 RLS goc stratejisi "fonksiyon araciligi"):
 --   has_business_role, is_business_member, is_business_member_of_request govdeleri
