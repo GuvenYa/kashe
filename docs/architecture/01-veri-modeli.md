@@ -181,10 +181,25 @@ provider_services                  -- Coverage hesabinin temeli
   role_id             integer fk -> roles(id)
   is_primary          boolean
   capacity            integer      -- ayni tarihte kac kisi/ekip verebilir
+  pricing_mode        enum('fixed','range','on_request')   -- FAZ 2b eklemesi
   price_min, price_max numeric
   price_unit          enum(...)
   lead_time_days      integer
+  origin              text         -- FAZ 2b: 'legacy_sync' (services'tan turetildi) | 'provider' (uygulama yazdi)
+  legacy_service_id   uuid         -- FAZ 2b: fiyatin alindigi services satiri (bilgi; cift alan donemi)
+  unique(provider_id, role_id); saglayici basina en fazla bir is_primary
 ```
+
+**FAZ 2b uygulamasi (21 Eylul 2026, `docs/envanter/13-faz2b-saglayici-hizmetleri.md`):** cift alan doneminde
+`provider_services` **turetilir**: aktif `services` satirlari (kategori -> `service_roles.legacy_category_id`) +
+`profiles.primary_category_id` (birincil). Ayni rolde birden fazla aktif hizmet varsa temsilci = en dusuk
+(`sort_order`, `created_at`, `id`). Fiyat eslemesi: `price_on_request` -> on_request; `price_starting` -> range +
+`price_max` NULL; min = max -> fixed; birim total/hourly/half_day/full_day -> per_job/per_hour/per_half_day/per_day.
+`professional_profiles.pricing_mode/price_*` ozeti birincil rolden (fiyatsizsa en ucuz fiyatli rolden) turetilir.
+`services`, `portfolio_items`, `profile_experiences`, `reviews`, `favorites` tablolarina `provider_id` (NULL olabilir,
+FK providers ON DELETE SET NULL) eklendi; BEFORE tetikleyici `profile_id`/`professional_id`'den turetir, istemci
+degeri ezilir; NOT NULL + CASCADE FAZ 10'da. `v_provider_roles` (security_invoker) saglayici x rol x fiyat x
+`is_visible`. Uygulama 2c'ye kadar okumaz/yazmaz.
 
 ---
 

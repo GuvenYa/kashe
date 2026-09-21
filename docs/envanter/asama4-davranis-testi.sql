@@ -31,6 +31,11 @@
 --   T12 FAZ 3a taksonomi: service_roles = legacy kategoriler (slug birebir, arketip), admin kategori
 --       ekler -> rol dogar, guncelleme aynalanir, ust katman satiri rol olmaz, anon okur/yazamaz,
 --       slug kisiti (ON KOSUL: faz3a_01 dalda uygulanmis)
+--   T13 FAZ 2b saglayici hizmetleri: birincil kategori -> provider_services birincil satiri; hizmet ekle /
+--       fiyat degistir / temsilci degisimi / pasife al / sil -> satir turetilir veya silinir; fiyat birimi
+--       eslemesi; professional_profiles ozeti; 5 tabloda provider_id otomatik (istemci degeri ezilir,
+--       client sahibi -> NULL); RLS (yayinda degilse anon gormez), istemci yazamaz; v_provider_roles
+--       (ON KOSUL: faz2b 01-03 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -68,7 +73,15 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
 BEGIN
-  -- T12 test kategorileri (slug 'faz1test-%'): once rol, sonra kategori
+  -- T13 hizmetleri ve turetilen satirlar: kategori/rol silinmeden ONCE (FK: services.category_id,
+  -- provider_services.role_id RESTRICT). services her zaman var; provider_services 2b'den sonra.
+  DELETE FROM public.services WHERE profile_id = ANY(ids);
+  IF to_regclass('public.provider_services') IS NOT NULL THEN
+    DELETE FROM public.provider_services WHERE provider_id = ANY(ids);
+  END IF;
+  UPDATE public.profiles SET primary_category_id = NULL
+   WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T12/T13 test kategorileri (slug 'faz1test-%'): once rol, sonra kategori
   IF to_regclass('public.service_roles') IS NOT NULL THEN
     DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-%';
     DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-%';
@@ -1059,6 +1072,203 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (12, 'T12 FAZ 3a taksonomi', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T13) FAZ 2b saglayici hizmetleri. ON KOSUL: 20260920180000/180100/180200 dalda.
+-- T1 verisine dayanir: musteri (0001), pro1 (0002, T5 approved), pro2 (0003), ajans (0004, T5 admin).
+-- T2 sohbeti (musteri <-> pro1) yorum icin kullanilir. Test kategorileri 'faz1test-hizmet-%' (T0 siler).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  cat_a int; cat_b int; rol_a int; rol_b int;
+  svc_a uuid; svc_b1 uuid; svc_b2 uuid; conv uuid; v_prov uuid;
+  ps record; pp record; n int; st text;
+BEGIN
+  IF to_regclass('public.provider_services') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (13, 'T13 FAZ 2b saglayici hizmetleri', 'ATLANDI', 'provider_services yok; faz2b dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 13a) admin iki test kategorisi acar -> roller dogar (3a aynalamasi)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active)
+  VALUES ('faz1test-hizmet-a', 'Faz1 Test Hizmet A', 'A', 991, true) RETURNING id INTO cat_a;
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active)
+  VALUES ('faz1test-hizmet-b', 'Faz1 Test Hizmet B', 'B', 992, true) RETURNING id INTO cat_b;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT id INTO rol_a FROM public.service_roles WHERE legacy_category_id = cat_a;
+  SELECT id INTO rol_b FROM public.service_roles WHERE legacy_category_id = cat_b;
+  IF rol_a IS NULL OR rol_b IS NULL THEN RAISE EXCEPTION 'test kategorileri rol olarak dogmadi (3a)'; END IF;
+
+  -- 13b) birincil kategori -> fiyatsiz birincil satir (origin legacy_sync)
+  UPDATE public.profiles SET is_published = true, primary_category_id = cat_a WHERE id = pro1;
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a;
+  IF ps.id IS NULL OR NOT ps.is_primary OR ps.pricing_mode IS NOT NULL OR ps.origin <> 'legacy_sync' THEN
+    RAISE EXCEPTION 'birincil satir: id=% primary=% mode=% origin=%', ps.id, ps.is_primary, ps.pricing_mode, ps.origin; END IF;
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 icin % satir (beklenen 1)', n; END IF;
+
+  -- 13c) pro1 (authenticated, RLS) hizmet ekler; istemcinin verdigi provider_id (pro2) EZILIR; fiyat birincile yansir
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.services (profile_id, provider_id, category_id, title, price_min, price_max, price_unit)
+  VALUES (pro1, pro2, cat_a, 'T13 A saatlik', 1000, 2000, 'hourly') RETURNING id INTO svc_a;
+  EXECUTE 'RESET ROLE';
+  SELECT provider_id INTO v_prov FROM public.services WHERE id = svc_a;
+  IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'services.provider_id=% (istemci degeri ezilmeli, beklenen pro1)', v_prov; END IF;
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a;
+  IF NOT ps.is_primary OR ps.pricing_mode IS DISTINCT FROM 'range'::public.pricing_mode OR ps.price_min IS DISTINCT FROM 1000 OR ps.price_max IS DISTINCT FROM 2000
+     OR ps.price_unit IS DISTINCT FROM 'per_hour'::public.provider_price_unit OR ps.legacy_service_id IS DISTINCT FROM svc_a THEN
+    RAISE EXCEPTION 'rol_a fiyat: mode=% min=% max=% unit=% svc=%', ps.pricing_mode, ps.price_min, ps.price_max, ps.price_unit, ps.legacy_service_id; END IF;
+  SELECT * INTO pp FROM public.professional_profiles WHERE provider_id = pro1;
+  IF pp.pricing_mode IS DISTINCT FROM 'range'::public.pricing_mode OR pp.price_min IS DISTINCT FROM 1000 OR pp.price_unit IS DISTINCT FROM 'per_hour'::public.provider_price_unit THEN
+    RAISE EXCEPTION 'professional_profiles ozeti: mode=% min=% unit=%', pp.pricing_mode, pp.price_min, pp.price_unit; END IF;
+
+  -- 13d) kategori b: on_request -> daha dusuk sort_order ile fixed 500 full_day temsilci olur -> starting (max NULL) -> pasife alinca on_request'e doner
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.services (profile_id, category_id, title, price_on_request, price_unit, sort_order)
+  VALUES (pro1, cat_b, 'T13 B1 istek', true, 'total', 5) RETURNING id INTO svc_b1;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_b;
+  IF ps.id IS NULL OR ps.is_primary OR ps.pricing_mode IS DISTINCT FROM 'on_request'::public.pricing_mode OR ps.price_min IS NOT NULL OR ps.price_unit IS NOT NULL THEN
+    RAISE EXCEPTION 'rol_b on_request: id=% primary=% mode=% min=% unit=%', ps.id, ps.is_primary, ps.pricing_mode, ps.price_min, ps.price_unit; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit, sort_order)
+  VALUES (pro1, cat_b, 'T13 B2 gunluk', 500, 500, 'full_day', 1) RETURNING id INTO svc_b2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_b;
+  IF ps.pricing_mode IS DISTINCT FROM 'fixed'::public.pricing_mode OR ps.price_min IS DISTINCT FROM 500 OR ps.price_max IS DISTINCT FROM 500
+     OR ps.price_unit IS DISTINCT FROM 'per_day'::public.provider_price_unit OR ps.legacy_service_id IS DISTINCT FROM svc_b2 THEN
+    RAISE EXCEPTION 'rol_b temsilci degisimi: mode=% min=% max=% unit=% svc=%', ps.pricing_mode, ps.price_min, ps.price_max, ps.price_unit, ps.legacy_service_id; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.services SET price_starting = true WHERE id = svc_b2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_b;
+  IF ps.pricing_mode IS DISTINCT FROM 'range'::public.pricing_mode OR ps.price_min IS DISTINCT FROM 500 OR ps.price_max IS NOT NULL THEN
+    RAISE EXCEPTION 'rol_b starting: mode=% min=% max=% (beklenen range/500/NULL)', ps.pricing_mode, ps.price_min, ps.price_max; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.services SET is_active = false WHERE id = svc_b2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_b;
+  IF ps.pricing_mode IS DISTINCT FROM 'on_request'::public.pricing_mode OR ps.legacy_service_id IS DISTINCT FROM svc_b1 THEN
+    RAISE EXCEPTION 'rol_b pasife alma: mode=% svc=% (beklenen on_request / B1)', ps.pricing_mode, ps.legacy_service_id; END IF;
+
+  -- 13e) hizmet a silinir (RLS) -> rol_a birincil kalir ama fiyatsiz; ozet rol_b (on_request) olur
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.services WHERE id = svc_a;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT * INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a;
+  IF ps.id IS NULL OR NOT ps.is_primary OR ps.pricing_mode IS NOT NULL OR ps.legacy_service_id IS NOT NULL THEN
+    RAISE EXCEPTION 'hizmet silme sonrasi rol_a: id=% primary=% mode=%', ps.id, ps.is_primary, ps.pricing_mode; END IF;
+  SELECT * INTO pp FROM public.professional_profiles WHERE provider_id = pro1;
+  IF pp.pricing_mode IS DISTINCT FROM 'on_request'::public.pricing_mode OR pp.price_min IS NOT NULL THEN
+    RAISE EXCEPTION 'ozet on_request''e dusmedi: mode=% min=%', pp.pricing_mode, pp.price_min; END IF;
+
+  -- 13f) birincil b'ye gecer -> rol_a satiri silinir (hizmeti yok), rol_b birincil; birincil NULL -> birincil yok, rol_b kalir
+  UPDATE public.profiles SET primary_category_id = cat_b WHERE id = pro1;
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a;
+  IF n <> 0 THEN RAISE EXCEPTION 'hizmetsiz eski birincil (rol_a) silinmedi'; END IF;
+  SELECT is_primary INTO ps FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_b;
+  IF NOT ps.is_primary THEN RAISE EXCEPTION 'rol_b birincil olmadi'; END IF;
+  UPDATE public.profiles SET primary_category_id = NULL WHERE id = pro1;
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1 AND is_primary;
+  IF n <> 0 THEN RAISE EXCEPTION 'birincil NULL iken birincil satir kaldi'; END IF;
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 % satir (beklenen 1: rol_b)', n; END IF;
+
+  -- 13g) provider_id otomatik: portfoy + deneyim (pro1), yorum (musteri, T2 sohbeti) + favori (musteri -> pro1); client sahibi portfoy -> NULL
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (pro1, 'https://example.com/t13.jpg', 'image', 'T13')
+  RETURNING provider_id INTO v_prov;
+  IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'portfolio_items.provider_id=%', v_prov; END IF;
+  INSERT INTO public.profile_experiences (profile_id, kind, title) VALUES (pro1, 'work', 'T13') RETURNING provider_id INTO v_prov;
+  IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'profile_experiences.provider_id=%', v_prov; END IF;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  SELECT id INTO conv FROM public.conversations WHERE customer_id = musteri AND professional_id = pro1 ORDER BY created_at LIMIT 1;
+  IF conv IS NULL THEN RAISE EXCEPTION 'T2 sohbeti bulunamadi (yorum testi icin gerekli)'; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body) VALUES (conv, musteri, pro1, 5, 'T13 yorum')
+  RETURNING provider_id INTO v_prov;
+  IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'reviews.provider_id=%', v_prov; END IF;
+  INSERT INTO public.favorites (user_id, professional_id) VALUES (musteri, pro1) RETURNING provider_id INTO v_prov;
+  IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'favorites.provider_id=%', v_prov; END IF;
+  INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t13c.jpg', 'image', 'T13 client')
+  RETURNING provider_id INTO v_prov;
+  IF v_prov IS NOT NULL THEN RAISE EXCEPTION 'client portfoyunde provider_id=% (NULL beklenir)', v_prov; END IF;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 13h) yetki: anon yayindaki pro1'in satirini ve v_provider_roles'u gorur; yayindan cikinca anon 0, pro1 kendini gorur;
+  --      istemci provider_services'e yazamaz (INSERT/UPDATE 42501)
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'anon yayindaki pro1 icin % satir goruyor (beklenen 1)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.v_provider_roles WHERE provider_id = pro1 AND role_slug = 'faz1test-hizmet-b' AND pricing_mode = 'on_request';
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'anon v_provider_roles: % satir (beklenen 1)', n; END IF;
+  UPDATE public.profiles SET is_published = false WHERE id = pro1;
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'anon yayinda olmayan pro1 icin % satir goruyor (RLS delik)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 kendi satirini goremedi (%)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'INSERT INTO public.provider_services (provider_id, role_id) VALUES ($1, $2)' USING pro1, rol_a;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated provider_services INSERT yapabildi (yazma yolu 2c''ye kadar kapali)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'UPDATE public.provider_services SET is_primary = true WHERE provider_id = $1' USING pro1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated provider_services UPDATE yapabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  UPDATE public.profiles SET is_published = true WHERE id = pro1;
+
+  -- 13i) sync_log FAZ 2b bos
+  SELECT count(*) INTO n FROM public.organization_sync_log WHERE source ILIKE '%faz2b%';
+  IF n <> 0 THEN
+    SELECT string_agg(source || ': ' || detail, ' | ') INTO st FROM public.organization_sync_log WHERE source ILIKE '%faz2b%';
+    RAISE EXCEPTION 'sync_log FAZ 2b kaydi var (%): %', n, st; END IF;
+
+  -- temizlik: hizmetler silinir -> turetilen satirlar kendiliginden gider; sonra test rolleri/kategorileri
+  DELETE FROM public.services WHERE profile_id = pro1 AND title LIKE 'T13%';
+  DELETE FROM public.portfolio_items WHERE caption LIKE 'T13%' AND profile_id IN (pro1, musteri);
+  DELETE FROM public.profile_experiences WHERE profile_id = pro1 AND title = 'T13';
+  DELETE FROM public.reviews WHERE professional_id = pro1 AND body = 'T13 yorum';
+  DELETE FROM public.favorites WHERE user_id = musteri AND professional_id = pro1;
+  SELECT count(*) INTO n FROM public.provider_services WHERE provider_id = pro1;
+  IF n <> 0 THEN RAISE EXCEPTION 'temizlik: pro1 icin % provider_services satiri kaldi', n; END IF;
+  SELECT pricing_mode::text INTO st FROM public.professional_profiles WHERE provider_id = pro1;
+  IF st IS NOT NULL THEN RAISE EXCEPTION 'temizlik: ozet sifirlanmadi (%)', st; END IF;
+  DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-hizmet-%';
+  DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-hizmet-%';
+
+  INSERT INTO t_sonuc VALUES (13, 'T13 FAZ 2b saglayici hizmetleri', 'GECTI',
+    'birincil kategori -> fiyatsiz birincil satir; hizmet ekle (istemci provider_id ezildi) -> range 1000-2000 per_hour + ozet; kategori b: on_request -> temsilci fixed 500 per_day -> starting max NULL -> pasif on_request; hizmet sil -> birincil fiyatsiz, ozet on_request; birincil degisimi rol_a silindi/rol_b birincil, NULL -> birincil yok; portfoy/deneyim/yorum/favori provider_id otomatik, client NULL; anon yayinda 1 / yayinda degil 0, kendi 1, v_provider_roles; INSERT/UPDATE 42501; sync_log bos; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (13, 'T13 FAZ 2b saglayici hizmetleri', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

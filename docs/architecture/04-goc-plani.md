@@ -538,6 +538,15 @@ mevcut enum, business saglayici degil, talents PII bos. On kosul 11a-11d `10-faz
 kapandi (17 Eylul). Madde 17'deki koruma tetikleyicisi 2a'da kuruldu (alan tasimadan once — bosluk yok);
 madde 19 (profiles'tan alan cikarma) FAZ 10'a kadar yapilmaz.
 
+**Uygulama notu (21 Eylul 2026, `docs/envanter/13-faz2b-saglayici-hizmetleri.md`):** madde 15-16 **2b** olarak
+hazirlandi. `provider_services` `services`'tan KOPYALANMAZ, **turetilir** (saglayici x rol tek satir; aktif hizmetler
++ `primary_category_id`; ayni rolde birden fazla hizmette temsilci = en dusuk sort_order; `origin` sutunu 2c'de
+uygulamanin yazdigi satirlari aynalamadan ayirir). 5 tabloya `provider_id` NULL olabilir + FK SET NULL eklendi,
+BEFORE tetikleyici turetir (istemci degeri ezilir); NOT NULL/CASCADE ve `profile_id` kaldirma FAZ 10. Dolum eski
+tablolarda yalniz yeni sutunu yazar; `updated_at` tetikleyicileri dolum suresince gecici kapatilir (yorumlarda
+"duzenlendi" gorunmesin). Madde 21'deki `v_professional_roles` adi `v_provider_roles` oldu. Madde 18 (okuma
+yollari) **2c**.
+
 ### FAZ 3 — Taksonomi
 
 18. `roles`, `skills`, `role_skill_map` olusturulur (integer anahtarli).

@@ -148,6 +148,8 @@ talents).
 - **2b** `provider_services` (provider_id, role_id, is_primary, capacity, price_min/max, price_unit,
   lead_time_days) `services` + `profiles.primary_category_id`'den dolar; `provider_id` sutunlari 5 tabloya
   eklenir (= mevcut profile_id / professional_id; NOT NULL yapilmaz, aynalanir); `v_provider_roles`.
+  **Dosyalar hazir (21 Eylul): `docs/envanter/13-faz2b-saglayici-hizmetleri.md`** — turetme kurali, `origin`
+  sutunu, `professional_profiles` fiyat ozeti (2a'da bos birakilan alanlar burada dolar) orada.
 
 ## 8. Kapanis kaydi — 2a (18 Eylul 2026)
 
