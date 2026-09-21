@@ -20,7 +20,7 @@ Gocun en buyuk parcasi oldugu icin dort alt adima bolundu; her biri tek basina u
 | **2a** | talents, providers, alt profiller; koruma tetikleyicisi; profiles -> providers aynalamasi; dolum. **Okuma yolu degismez.** | dusuk (yalniz ekleme) | URETIMDE (18 Eylul) |
 | **3a** | `roles` tablosu: 23 kategori birebir rol (slug korunur), `legacy_category_id`; ust servis kategorisi katmani bos (esleme ekiple) | dusuk | siradaki |
 | **2b** | `provider_services` (`role_id -> roles`); `services`, `portfolio_items`, `profile_experiences`, `reviews`, `favorites`'a `provider_id` (= profil id, dolum + aynalama); `v_provider_roles` | dusuk-orta | 3a sonrasi |
-| **2c** | okuma yollarinin `providers`'a gecisi (Claude Code; `ProfileOpen` -> `Provider` tipleri), istemci yazma yolunun acilmasi; en sonda profiles'taki tasinan alanlarin salt-okunur yapilmasi | orta | 2b sonrasi, ayri plan |
+| **2c** | okuma yollarinin `providers`'a gecisi (Claude Code; `ProfileOpen` -> `Provider` tipleri), istemci yazma yolunun acilmasi; en sonda profiles'taki tasinan alanlarin salt-okunur yapilmasi | orta | 2b sonrasi, ayri plan — **`14-faz2c-okuma-yolu.md` (21 Eylul): gorunum sozlesmesi `v_providers_public`, yalniz okuma; yazma yolu FAZ 10** |
 
 Sira bagimliligi: `provider_services.role_id` `roles`'a baglidir; `roles` FAZ 3'un tablosu. Karar: 3a
 (yalniz tablo + kopya) 2b'den once cekilir. Ust servis kategorisi (6-8 grup) eslemesi ekip karari, 3b olur.

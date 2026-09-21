@@ -36,6 +36,9 @@
 --       eslemesi; professional_profiles ozeti; 5 tabloda provider_id otomatik (istemci degeri ezilir,
 --       client sahibi -> NULL); RLS (yayinda degilse anon gormez), istemci yazamaz; v_provider_roles
 --       (ON KOSUL: faz2b 01-03 dalda uygulanmis)
+--   T14 FAZ 2c v_providers_public: ortak sutunlar profiles ile birebir, saglayici sutunlari providers'tan,
+--       is_visible, aynalama gorunumden okunur, primary_role_id, anon/authenticated okur, kapali sutun yok
+--       (ON KOSUL: faz2c_01 dalda uygulanmis; PostgREST embed'leri onizlemede)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -1269,6 +1272,94 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (13, 'T13 FAZ 2b saglayici hizmetleri', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T14) FAZ 2c v_providers_public sozlesmesi. ON KOSUL: 20260921120000_faz2c_01 dalda.
+-- T1/T5/T11/T13 verisine dayanir: pro1 (0002, approved + T13 sonunda yayinda), ajans (0004, pending, admin).
+-- PostgREST embed'leri (turkish_cities, service_categories!profiles_primary_category_id_fkey) burada
+-- SINANAMAZ; onizlemede Claude Code P1 turu dogrular (14 bolum 5).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  pro1  uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans uuid := 'a0000000-0000-4000-8000-000000000004';
+  v record; p record; pr record; n int; st text; cat_id int; rol_id int;
+BEGIN
+  IF to_regclass('public.v_providers_public') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (14, 'T14 FAZ 2c gorunum sozlesmesi', 'ATLANDI', 'v_providers_public yok; faz2c_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 14a) pro1: ortak sutunlar profiles ile ayni; saglayici sutunlari providers ile ayni
+  SELECT * INTO v  FROM public.v_providers_public WHERE id = pro1;
+  SELECT * INTO p  FROM public.profiles  WHERE id = pro1;
+  SELECT * INTO pr FROM public.providers WHERE id = pro1;
+  IF v.id IS NULL THEN RAISE EXCEPTION 'pro1 gorunumde yok'; END IF;
+  IF v.full_name IS DISTINCT FROM p.full_name OR v.bio IS DISTINCT FROM p.bio OR v.city_id IS DISTINCT FROM p.city_id
+     OR v.is_published IS DISTINCT FROM p.is_published OR v.approval_status IS DISTINCT FROM p.approval_status
+     OR v.primary_category_id IS DISTINCT FROM p.primary_category_id OR v.premium_tier IS DISTINCT FROM p.premium_tier
+     OR v.role IS DISTINCT FROM p.role OR v.updated_at IS DISTINCT FROM p.updated_at THEN
+    RAISE EXCEPTION 'pro1 ortak sutunlar profiles ile ayni degil: ad %/% bio %/% yayin %/% onay %/%',
+      v.full_name, p.full_name, v.bio, p.bio, v.is_published, p.is_published, v.approval_status, p.approval_status; END IF;
+  IF v.provider_type <> 'professional' OR v.provider_slug IS DISTINCT FROM pr.slug OR v.display_name IS DISTINCT FROM pr.display_name THEN
+    RAISE EXCEPTION 'pro1 saglayici sutunlari: tip % slug %/% ad %/%', v.provider_type, v.provider_slug, pr.slug, v.display_name, pr.display_name; END IF;
+  SELECT provider_type::text INTO st FROM public.v_providers_public WHERE id = ajans;
+  IF st IS DISTINCT FROM 'organization' THEN RAISE EXCEPTION 'ajans provider_type=%', st; END IF;
+
+  -- 14b) is_visible: pro1 (approved + yayinda) true, ajans (pending) false
+  SELECT is_visible INTO v FROM public.v_providers_public WHERE id = pro1;
+  IF NOT v.is_visible THEN RAISE EXCEPTION 'pro1 is_visible false (approved + yayinda beklenir)'; END IF;
+  SELECT is_visible INTO v FROM public.v_providers_public WHERE id = ajans;
+  IF v.is_visible THEN RAISE EXCEPTION 'ajans is_visible true (pending beklenir)'; END IF;
+
+  -- 14c) profil guncellemesi gorunumden okunur (aynalama zinciri: profiles -> professional_profiles.bio)
+  UPDATE public.profiles SET bio = 'T14 bio' WHERE id = pro1;
+  SELECT bio INTO st FROM public.v_providers_public WHERE id = pro1;
+  IF st IS DISTINCT FROM 'T14 bio' THEN RAISE EXCEPTION 'bio gorunume yansimadi: %', st; END IF;
+
+  -- 14d) birincil rol: admin test kategorisi -> rol; pro1 birincil -> primary_role_id dolu; temizlik
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active)
+  VALUES ('faz1test-gorunum', 'Faz1 Test Gorunum', 'G', 993, true) RETURNING id INTO cat_id;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT id INTO rol_id FROM public.service_roles WHERE legacy_category_id = cat_id;
+  UPDATE public.profiles SET primary_category_id = cat_id WHERE id = pro1;
+  SELECT primary_role_id INTO n FROM public.v_providers_public WHERE id = pro1;
+  IF n IS DISTINCT FROM rol_id THEN RAISE EXCEPTION 'primary_role_id=% (beklenen %)', n, rol_id; END IF;
+  UPDATE public.profiles SET primary_category_id = NULL WHERE id = pro1;
+  SELECT count(*) INTO n FROM public.v_providers_public WHERE id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'birincil NULL iken pro1 satiri % (LEFT JOIN beklenir: 1)', n; END IF;
+  DELETE FROM public.service_roles WHERE slug = 'faz1test-gorunum';
+  DELETE FROM public.service_categories WHERE slug = 'faz1test-gorunum';
+
+  -- 14e) yetki: anon ve authenticated okur; kapali sutun gorunumde yok (42703)
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.v_providers_public;
+  EXECUTE 'RESET ROLE';
+  IF n < 3 THEN RAISE EXCEPTION 'anon gorunumde % satir goruyor (>= 3 beklenir)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.v_providers_public WHERE id = pro1;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF n <> 1 THEN RAISE EXCEPTION 'authenticated kendi satirini goremedi'; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT email FROM public.v_providers_public LIMIT 1' INTO st;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'gorunumde email sutunu VAR';
+  EXCEPTION WHEN undefined_column THEN EXECUTE 'RESET ROLE'; END;
+
+  INSERT INTO t_sonuc VALUES (14, 'T14 FAZ 2c gorunum sozlesmesi', 'GECTI',
+    'pro1 19 ortak sutun profiles ile ayni, saglayici sutunlari providers ile ayni, ajans organization; is_visible pro1 true / ajans false; bio guncellemesi gorunume yansidi; primary_role_id dolu/bos (LEFT JOIN); anon >= 3 satir, authenticated kendi satiri, email 42703');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (14, 'T14 FAZ 2c gorunum sozlesmesi', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

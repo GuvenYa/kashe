@@ -136,7 +136,7 @@ YALNIZ `supabase db push` ile uygulanir; SQL Editor salt okunur sorgular icindir
 
 Okuma yollarinin `providers` / `provider_services` / `v_provider_roles`'a gecisi (Claude Code; `ProfileOpen` ->
 `Provider` tipleri), `hizmetlerim` yazma yolunun `provider_services`'a acilmasi (`origin = 'provider'`), cift yazma
-doneminin bitis kriteri (11 bolum 2). Ayri plan dosyasi (14) ile.
+doneminin bitis kriteri (11 bolum 2). Plan: `14-faz2c-okuma-yolu.md` (21 Eylul; karar: gorunum sozlesmesi, yazma yolu FAZ 10).
 
 ## 8. Kapanis kaydi (21 Eylul 2026)
 

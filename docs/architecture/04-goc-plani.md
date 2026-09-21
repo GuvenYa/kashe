@@ -547,6 +547,13 @@ tablolarda yalniz yeni sutunu yazar; `updated_at` tetikleyicileri dolum suresinc
 "duzenlendi" gorunmesin). Madde 21'deki `v_professional_roles` adi `v_provider_roles` oldu. Madde 18 (okuma
 yollari) **2c**.
 
+**Uygulama notu (21 Eylul 2026, `docs/envanter/14-faz2c-okuma-yolu.md`):** madde 18 **2c** = gorunum sozlesmesi.
+`v_providers_public` (security_invoker) pazaryeri sutun kumesini profiles ile ayni adlarla sunar; kaynak providers /
+alt profiller / provider_services + profiles kimlik sutunlari. Uygulama uc parcada (liste yollari, detay + havuzlar,
+kalan) `.from('profiles')` -> `.from('v_providers_public')` yapar; yazma yolu FAZ 10'a kadar profiles/services'ta
+kalir (cift yazma tek kesimle biter). Tarama: profiles 133 cagri / 63 dosya; pazaryeri okumasi 10 dosya; kalan
+kimlik/operasyon okumalari profiles'ta kalir.
+
 ### FAZ 3 — Taksonomi
 
 18. `roles`, `skills`, `role_skill_map` olusturulur (integer anahtarli).
