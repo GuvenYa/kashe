@@ -105,6 +105,91 @@ export type ProfileListing = Pick<
 /** Herkese acik profil sayfasi (/p/[id]). */
 export type ProfilePublic = ProfileListing &
   Pick<ProfileOpen, 'is_published' | 'last_seen_at'>;
+
+// ===== FAZ 2c — pazaryeri okuma sozlesmesi: v_providers_public =====
+//
+// Gorunum: supabase/migrations/20260921120000_faz2c_01_v_providers_public.sql (33 sutun).
+// Kaynaklar: providers / professional_profiles / organization_profiles / provider_services
+// + profiles (kimlik sutunlari). Nullability gorunumun KAYNAK TABLOLARINDAN alinmistir:
+// alt profil tablolari LEFT JOIN ile bagli oldugu icin onlardan gelen her sutun nullable.
+// Kapali sutunlar (email, phone, ...) gorunumde YOKTUR.
+
+export type ProviderType = 'professional' | 'organization';
+export type VerificationLevel = 'none' | 'email' | 'document' | 'full';
+export type PricingMode = 'fixed' | 'range' | 'on_request';
+export type ProviderPriceUnit = 'per_job' | 'per_hour' | 'per_half_day' | 'per_day';
+
+export type ProviderPublic = {
+  id: string;
+  role: UserRole;
+  provider_type: ProviderType;
+  provider_slug: string;
+  display_name: string | null;
+  full_name: string | null;
+  company_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  city_id: number | null;
+  primary_category_id: number | null;
+  primary_role_id: number | null;
+  attributes: Record<string, string | string[]>;
+  category_attributes: Record<string, unknown>;
+  premium_tier: PremiumTier;
+  premium_until: string | null;
+  is_published: boolean;
+  approval_status: ProfileApprovalStatus;
+  approved_at: string | null;
+  suspended_at: string | null;
+  is_visible: boolean;
+  is_verified: boolean;
+  verification_level: VerificationLevel;
+  trust_score: number | null;
+  headline: string | null;
+  experience_years: number | null;
+  pricing_mode: PricingMode | null;
+  price_min: number | null;
+  price_max: number | null;
+  price_unit: ProviderPriceUnit | null;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Liste sorgularinin sectigi sutunlar — bugunku ProfileListing alan kumesiyle AYNI adlar,
+ * AYNI sira (uretilen select dizesi degismesin diye).
+ *
+ * `satisfies readonly (keyof ProviderPublic)[]`: gorunumden bir sutun duserse (ProviderPublic
+ * guncellenince) buradaki ad gecersiz olur ve derleme kirilir — own-profile.ts'teki sutun
+ * kilidinin ayni kalibi. Liste ile tip tek kaynaktan yurur.
+ */
+export const PROVIDER_LISTING_COLUMN_LIST = [
+  'id',
+  'full_name',
+  'avatar_url',
+  'bio',
+  'city_id',
+  'primary_category_id',
+  'company_name',
+  'role',
+  'attributes',
+  'category_attributes',
+  'created_at',
+  'approval_status',
+  'premium_tier',
+  'premium_until',
+] as const satisfies readonly (keyof ProviderPublic)[];
+
+/** Sorgularda kullanilan sutun dizesi — liste ile tek kaynaktan uretilir. */
+export const PROVIDER_LISTING_COLUMNS = PROVIDER_LISTING_COLUMN_LIST.join(', ');
+
+/** Kesfet ve kategori/[slug] listeleri (v_providers_public + embed'ler). */
+export type ProviderListing = Pick<
+  ProviderPublic,
+  (typeof PROVIDER_LISTING_COLUMN_LIST)[number]
+> &
+  CityEmbed &
+  CategoryEmbed;
 export type ServiceCategory = {
   id: number;
   slug: string;

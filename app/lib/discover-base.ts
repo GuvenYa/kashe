@@ -5,6 +5,9 @@
  *   • app/kesfet/page.tsx        → sonuç listesi
  *   • app/etkinlik-sihirbazi/    → sihirbazın canlı sayacı
  *
+ * FAZ 2c: iki taraf da artık `profiles` yerine `v_providers_public` görünümü üzerinde
+ * çalışır. Koşul DEĞİŞMEDİ — `is_published` ve `role` görünümde aynı adlarla var.
+ *
  * NEDEN FONKSİYON: iki yer aynı koşulu ayrı ayrı yazdığında sayaç ile listenin
  * sessizce ayrışması an meselesi — kullanıcıya "34 profesyonel uyuyor" deyip
  * Keşfet'te başka bir sayı göstermek doğrudan yalan olur. Yorum bağı ("değişirse

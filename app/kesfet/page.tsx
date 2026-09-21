@@ -14,7 +14,12 @@ import {
   isBusy as computeBusy,
   busyWindowKeys,
 } from '@/app/lib/badges';
-import type { ProfileListing, ServiceCategory, TurkishCity } from '@/app/lib/types';
+import {
+  PROVIDER_LISTING_COLUMNS,
+  type ProviderListing,
+  type ServiceCategory,
+  type TurkishCity,
+} from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
@@ -43,9 +48,9 @@ function formatReviewAuthor(
   return `${parts[0]} ${last.charAt(0).toLocaleUpperCase('tr')}.`;
 }
 
-// Sorgu ProfileListing'in tam alan kumesini seciyor (category_attributes dahil);
-// kategori/[slug] ile birebir ayni sekil.
-type PublishedProfile = ProfileListing;
+// FAZ 2c: liste artik v_providers_public gorunumunden okunur. Secilen sutunlar
+// PROVIDER_LISTING_COLUMNS ile tek kaynaktan gelir; kategori/[slug] ile ayni sekil.
+type PublishedProfile = ProviderListing;
 
 type ServicePriceInfo = {
   price_min: number | null;
@@ -129,10 +134,10 @@ export default async function KesfetPage({
   ]);
 
   let query = supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, category_attributes, created_at, approval_status, premium_tier, premium_until,
+      ${PROVIDER_LISTING_COLUMNS},
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `

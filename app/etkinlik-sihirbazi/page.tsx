@@ -4,6 +4,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { orderCities } from '@/app/lib/city-order';
 import { applyDiscoverBase } from '@/app/lib/discover-base';
 import { SihirbazClient, type SihirbazProfil } from './sihirbaz-client';
+import type { ProviderPublic } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Etkinlik Sihirbazı — Kashe',
@@ -37,14 +38,23 @@ export default async function EtkinlikSihirbaziPage() {
       .order('sort_order'),
     supabase.from('turkish_cities').select('id, name').order('name'),
     applyDiscoverBase(
+      // FAZ 2c: sayac da gorunumden okur; sutun adlari ve temel filtre ayni oldugu icin
+      // kesfet ile parite korunur (ikisi de applyDiscoverBase kullanir).
       supabase
-        .from('profiles')
+        .from('v_providers_public')
         .select('primary_category_id, city_id, role, category_attributes')
     ),
   ]);
 
+  type SayacSatiri = Pick<
+    ProviderPublic,
+    'primary_category_id' | 'city_id' | 'role' | 'category_attributes'
+  >;
+
   // Sayaç için gereken minimum şekle indir — category_attributes'ın tamamı taşınmaz.
-  const profiller: SihirbazProfil[] = (profilesRes.data ?? []).map((p) => {
+  const profiller: SihirbazProfil[] = (
+    (profilesRes.data ?? []) as unknown as SayacSatiri[]
+  ).map((p) => {
     const ca = (p.category_attributes ?? {}) as Record<string, unknown>;
     const et = ca.etkinlik_turleri;
     return {

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { createClient } from '@/app/lib/supabase-server';
 import { SITE_URL } from '@/app/lib/site';
+import type { ProviderPublic } from '@/app/lib/types';
 
 /**
  * SITEMAP — arama motoru keşif yüzeyi.
@@ -51,8 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select('slug')
         .eq('is_active', true)
         .order('sort_order'),
+      // FAZ 2c: profil URL'leri gorunumden okunur. updated_at kaynagi yine
+      // profiles.updated_at (14 bolum 2 karari) — lastModified davranisi degismez.
       supabase
-        .from('profiles')
+        .from('v_providers_public')
         .select('id, updated_at')
         .eq('is_published', true)
         .in('role', ['professional', 'agency']),
@@ -70,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  for (const p of profiles ?? []) {
+  for (const p of (profiles ?? []) as Pick<ProviderPublic, 'id' | 'updated_at'>[]) {
     entries.push({
       url: `${SITE_URL}/p/${p.id}`,
       lastModified: p.updated_at ? new Date(p.updated_at) : undefined,

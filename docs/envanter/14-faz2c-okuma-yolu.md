@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/04-goc-plani.md` FAZ 2 madde 18 ("okuma yollari tek tek providers'a gecirilir"),
 `11-faz2-saglayici-defteri.md` bolum 2 (cift alan doneminin bitis kriteri), `13-faz2b` bolum 7.
-**Durum:** P0 (veritabani) DOSYALAR HAZIR (21 Eylul 2026; yerelde test edildi). P1-P3 Claude Code isleri sirada.
+**Durum:** P0 URETIMDE, P1 KOD HAZIR (21 Eylul 2026; commit bekliyor). P2 gorev metni `14-claude-code-gorevi-p2.md`. Kapanis bolum 8.
 
 ## 1. Tarama (21 Eylul, repo `682b860`)
 
@@ -77,7 +77,7 @@ Kapali sutun (email, phone, ...) gorunumde YOK; profiles kimlik alanlari icin bu
 `profiles`'ta kalir. Kabul: tsc bos; onizleme turu (kesfet filtreleri/siralama/arama, kategori sayfasi, kategoriler
 sayaclari, sihirbaz sayaci = kesfet sonucu, sitemap.xml satir sayisi); asama7/asama9/asama10 degismedi.
 
-**P2 — detay ve havuzlar:** `p/[id]/page.tsx` (detay + benzer profiller; oturum sahibi/yorumcu profilleri profiles'ta),
+**P2 — detay ve havuzlar (`14-claude-code-gorevi-p2.md`):** `p/[id]/page.tsx` (detay + benzer profiller; oturum sahibi/yorumcu profilleri profiles'ta),
 `p/[id]/yorumlar/page.tsx`, `favoriler/page.tsx` (favori kartlari), `lib/ai-actions.ts` (pro-bul havuzu),
 `teklif-topla/actions.ts` (havuz). Kabul: /p/[id] ziyaretci + sahip + admin gorunumu, yorumlar, favoriler, pro-bul
 onerisi, teklif-topla dagitimi (kota algoritmasi ayni girdileri almali: premium_tier, premium_until, created_at).
@@ -124,4 +124,19 @@ Geri alma (P0): `DROP VIEW public.v_providers_public;` (kod henuz okumuyor; zara
 
 ## 8. Kapanis kaydi
 
-(P0 uretim sonrasi: asama10 uretim degerleri, git; P1-P3 her biri kendi commit'iyle buraya islenir)
+**P0 — uretimde (21 Eylul 2026):** dal: 1 dosya push, asama4 T0-T14 15/15 (T14 GECTI), asama10 6/6 ESIT. Uretim: 1 dosya
+push; asama10 **6/6 ESIT — K1 36/36, K2 0/0, K3 34/34 (is_visible), K4 21/21 (primary_role_id), K5 0, K6 3/3**.
+`git push` -> `682b860..18b41c3 main`.
+
+**P1 — liste yollari (21 Eylul 2026, Claude Code raporu):** 7 dosya (+128/-17): `types.ts` (`ProviderType`,
+`VerificationLevel`, `PricingMode`, `ProviderPriceUnit`, `ProviderPublic` 33 sutun, `PROVIDER_LISTING_COLUMN_LIST` +
+`PROVIDER_LISTING_COLUMNS`, `ProviderListing = Pick<ProviderPublic, liste> & CityEmbed & CategoryEmbed`), `kesfet`,
+`kategori/[slug]`, `kategoriler` (sayac), `sitemap`, `etkinlik-sihirbazi` (sayac) -> `v_providers_public`;
+`discover-base.ts` yalniz not. Oturum sahibi rol okumalari profiles'ta. tsc bos, build basarili. Uretilen select dizesi
+eskiyle karakter karakter ayni (14 sutun). Onizleme (ayni veri aninda profiles vs gorunum + dal kodu calistirilarak):
+kesfet 34/34 (ilk 5 id ve tum alanlar ayni), kategori/dj 3/3, kategoriler haritasi ayni (Yakinda rozeti 12 = db sifir
+kumesi 12), sihirbaz sayaci 34 = kesfet, sitemap 34/34 URL. **Embed kaniti:** gorunum uzerinden `turkish_cities(name)`
+ve `service_categories!profiles_primary_category_id_fkey(...)` dolu dondu (hint'li yazim korundu; hint'siz de
+calisiyor) — bolum 3'teki yedek plan gerekmedi. Sapmalar (kabul): sutun kilidi yalniz `satisfies` ile (liste 33
+sutunun alt kumesi; Exclude/never burada anlamsiz), tipler semadan yazildi ve bolum 3 ile ortustu, 2 ESLint hatasi
+onceden var (`tierWeight` icinde `Date.now()`, 6c0ede70). Commit Guven tarafindan.

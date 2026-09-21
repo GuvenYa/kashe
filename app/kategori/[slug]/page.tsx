@@ -13,7 +13,10 @@ import {
   USE_CASES,
   CATEGORY_TAGLINE,
 } from '@/app/lib/category-content';
-import type { ProfileListing } from '@/app/lib/types';
+import {
+  PROVIDER_LISTING_COLUMNS,
+  type ProviderListing,
+} from '@/app/lib/types';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -28,8 +31,8 @@ type CategoryRow = {
   seo_title: string | null;
 };
 
-// Kesfet ile birebir ayni sorgu ve sekil.
-type PublishedProfile = ProfileListing;
+// Kesfet ile birebir ayni sorgu ve sekil (FAZ 2c: v_providers_public gorunumu).
+type PublishedProfile = ProviderListing;
 
 type ServicePriceInfo = {
   price_min: number | null;
@@ -108,10 +111,10 @@ export default async function KategoriPage({ params }: Props) {
 
   // Bu kategorideki yayında profiller
   const { data: profilesData } = await supabase
-    .from('profiles')
+    .from('v_providers_public')
     .select(
       `
-      id, full_name, avatar_url, bio, city_id, primary_category_id, company_name, role, attributes, category_attributes, created_at, approval_status, premium_tier, premium_until,
+      ${PROVIDER_LISTING_COLUMNS},
       turkish_cities(name),
       service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `

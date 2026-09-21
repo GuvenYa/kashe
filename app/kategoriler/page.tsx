@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { createClient } from '@/app/lib/supabase-server';
+import type { ProviderPublic } from '@/app/lib/types';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { CategoryIcon } from '@/app/components/ui/category-icon';
@@ -78,12 +79,13 @@ export default async function KategorilerPage() {
   // Kategori başına yayında profesyonel sayısı (ana sayfa grid'iyle aynı sinyal)
   const countByCat: Record<number, number> = {};
   if (categories.length > 0) {
+    // FAZ 2c: sayac gorunumden okunur; sutun adi ve filtreler ayni kaldi.
     const { data: rows } = await supabase
-      .from('profiles')
+      .from('v_providers_public')
       .select('primary_category_id')
       .eq('is_published', true)
       .in('role', ['professional', 'agency']);
-    for (const r of rows || []) {
+    for (const r of (rows ?? []) as Pick<ProviderPublic, 'primary_category_id'>[]) {
       if (r.primary_category_id) {
         countByCat[r.primary_category_id] =
           (countByCat[r.primary_category_id] || 0) + 1;
