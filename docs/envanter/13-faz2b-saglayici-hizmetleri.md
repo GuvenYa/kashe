@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/01-veri-modeli.md` bolum 2 (provider_services), `04-goc-plani.md` FAZ 2 madde 15-16 ve
 madde 21 (`v_provider_roles`), `11-faz2-saglayici-defteri.md` bolum 7.
-**Durum:** DOSYALAR HAZIR (21 Eylul 2026; yerel zincirde test edildi). Uretim sirasi bolum 5. Siradaki: 2c.
+**Durum:** KAPANDI (21 Eylul 2026; uretimde, asama9 tam, canli aynalama kaniti). Kapanis bolum 8. Siradaki: 2c.
 
 ## 1. Amac ve sinir
 
@@ -138,6 +138,26 @@ Okuma yollarinin `providers` / `provider_services` / `v_provider_roles`'a gecisi
 `Provider` tipleri), `hizmetlerim` yazma yolunun `provider_services`'a acilmasi (`origin = 'provider'`), cift yazma
 doneminin bitis kriteri (11 bolum 2). Ayri plan dosyasi (14) ile.
 
-## 8. Kapanis kaydi
+## 8. Kapanis kaydi (21 Eylul 2026)
 
-(uretim sonrasi doldurulur: on kontrol (b)-(g) degerleri, dal/uretim NOTICE'lari, asama9 sonuclari, git commit)
+**Uretim on kontrolu (adim 2, degerler):** (a) bos. (b) 17 hizmet, hepsi aktif: `hourly` 1 (2000/2000), `total` 11
+(2000-200000, min=max yok), `total` + `price_starting` 1 (2000/2000), `total` + `price_on_request` 4. (c) 5 saglayici-kategori
+ciftinde birden fazla aktif hizmet (temsilci kurali devrede). (d) rolsuz hizmet 0 / rolsuz birincil 0. (e) 17 hizmetin
+hepsi `professional`. (f) birincil kategori dolu: professional 21/35, agency 0/1. (g) services 17, portfolio_items 20,
+profile_experiences 13, reviews 3, favorites 4. (h) `update_profile_experiences_updated_at`, `trg_reviews_updated_at`,
+`update_services_updated_at`.
+
+**Dal (`ukqhgspaallzjscjodbb`):** 3 dosya push; dolum NOTICE `provider_id yazildi — 0/0/0/0/0`, `3 saglayici hesaplandi,
+0 satir, hata 0`. asama4 T0-T13 **14/14** (T9 ATLANDI, **T13 GECTI**); asama9 hepsi ESIT (K10 0/0).
+
+**Uretim (`qydsooqmflrrwtgawhsv`):** 3 dosya push; NOTICE `provider_id yazildi — services 17, portfolio_items 20,
+profile_experiences 13, reviews 3, favorites 4` (on kontrol (g) ile birebir), `36 saglayici hesaplandi,
+provider_services toplam 23 satir, hata 0`. asama9: **hepsi ESIT** — K1 17/17, K2 20/20, K3 13/13, K4 3/3, K5 4/4, K5b 0,
+K6 0/0, K7 0, K8 0, K9 0, **K10 23 satir / 21 birincil** (21 = birincil kategorisi dolu profesyonel sayisi; 2 satir
+birincil disi rol), K11 0, K12 0. asama7 (2a) degismedi: hepsi ESIT (K1-K3 35/35, K4-K5 1/1). **Canli aynalama
+kaniti:** onizlemeyle `hizmetlerim`'de fiyat degistirildi, asama9 tekrar: K6 0/0 ESIT (turetilen = kayitli).
+`git push` -> `cf88dfc..7fef329 main`. Migration dosyalari yalniz `db push` ile uygulandi (SQL Editor'a
+yapistirilmadi).
+
+**Sonuc:** FAZ 2b uretimde ve kapali. `services` kaynak; `provider_services` 23 satirla turetilmis ve canli aynalanir;
+uygulama 2c'ye kadar yeni yapiyi okumaz. Siradaki: 2c plani (14).
