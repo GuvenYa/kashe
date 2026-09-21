@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/04-goc-plani.md` FAZ 2 madde 18 ("okuma yollari tek tek providers'a gecirilir"),
 `11-faz2-saglayici-defteri.md` bolum 2 (cift alan doneminin bitis kriteri), `13-faz2b` bolum 7.
-**Durum:** P0 URETIMDE, P1 DEPLOY EDILDI, P2 KOD HAZIR (21 Eylul 2026; commit bekliyor). P3 gorev metni `14-claude-code-gorevi-p3.md`. Kapanis bolum 8.
+**Durum:** P0 URETIMDE, P1-P2 DEPLOY EDILDI, P3 KOD HAZIR (22 Eylul 2026; commit bekliyor). Kapanis bolum 8, kesim listesi bolum 9.
 
 ## 1. Tarama (21 Eylul, repo `682b860`)
 
@@ -165,3 +165,170 @@ birebir) — gorev metnindeki "ayni sira" ile "PROVIDER_LISTING_COLUMNS + 2" cel
 3. **Tarama eksigi:** tek tirnakli grep cift tirnakli 5 dosyayi kacirmisti (bolum 1 duzeltmesi); 4'u ana sayfa
    pazaryeri okumasi -> P3.
 4. `ai-actions.ts:86` "davetkar" sapkali harf (e4cc541e, 22 Haziran) -> P3'te duzeltilir.
+
+**P2 deploy (22 Eylul):** Vercel deploy tamam (Guven).
+
+**P3 — ana sayfa, rol kapisi, siniflandirma (22 Eylul 2026, Claude Code raporu):** 7 dosya (+171/-24):
+`components/sections/featured-profiles.tsx`, `marquee-profiles.ts`, `categories.tsx`, `hero.tsx` -> gorunum
+(`top-nav.tsx` profiles'ta); `p/[id]/page.tsx` rol kapisi `professional`/`agency` (business cikti; TS daraltmasi
+yuzunden 400. satirdaki `business || agency` kiyasi da `agency` oldu — ajans davranisi ayni); `ai-actions.ts:86`
+"davetkar"; bolum 9 tablosu (120 cagri: kimlik 70, operasyon 5, yazma-yolu 12, admin 33, **pazaryeri-kaldi 0**).
+tsc bos, build basarili; `v_providers_public` 14 dosya. Veri katmani: one cikanlar 24/24 (sira ve alanlar), serit
+24/24, kategori sayaclari 11/20 esit, hero 34/34; embed 24/24 sehir, 15/15 kategori. Sayfa: /p/<professional> ve
+/p/<ajans> normalize birebir; /p/<business, yayinda degil> iki tarafta da "Profil bulunamadi" (fark yok); ana
+sayfa HEAD ile birebir (ilk farklar test trafigi ve RSC akis sirasiydi, olcumle kapatildi).
+
+**P3 bulgulari:**
+5. **`increment_profile_views` RPC'si `profiles.updated_at`'i tazeliyor** (updated_at tetikleyicisi); kesfet/serit
+   `updated_at desc` siraladigi icin bir profili ziyaret etmek onu listede one aliyor. Onceden var olan davranis;
+   2c disi. FAZ 10'da `views_count` providers'a tasinirken veya ayri bir isle ele alinir (siralama kaynagi
+   kullanici eylemi olmali).
+6. **Sapkali harf taramasi 43 satir** (arayuz metinleri: "hala", "zeka", "hikaye", "mekan", "imkansiz" vb.;
+   category-content/category-fields/filter-config, pro-bul, kashe-ai, etkinlik-planla, profil/* + 15 dosya).
+   Onceden var; P3 yalniz ai-actions.ts:86'yi duzeltti. Ayri kucuk temizlik isi (karar Guven'in).
+7. `p/[id]/yorumlar/page.tsx` 29 ve 63. satirlardaki `role === 'business'` kiyaslari artik olu (gorunumde business
+   yok); derlemeyi kirmiyor. Sonraki temizlige aday.
+8. `categories.tsx` ve `kategoriler/page.tsx`'te `as Pick<ProviderPublic, ...>[]` cast'i: gorunum uretilen
+   Supabase tiplerinde yok. Kalici cozum: `supabase gen types` ile gorunumun tiplere girmesi (ayri is).
+
+## 9. FAZ 10 kesim listesi — kalan `profiles` okumalari (22 Eylul 2026, P3)
+
+P3 sonrasi `app` altindaki her `.from('profiles')` / `.from("profiles")` cagrisi. Yorum satirlari
+(`app/lib/own-profile.ts:73` docblock ornegi) sayilmaz. Toplam **120 cagri**.
+
+| Sinif | Adet | Anlami |
+|---|---|---|
+| `pazaryeri-kaldi` | 0 | profiles'tan pazaryeri LISTE/DETAY okuyan yol (0 beklenir) |
+| `kimlik` | 70 | oturum sahibi veya karsi tarafin adi/avatari/rolu/is_admin, rol kapilari |
+| `operasyon` | 5 | ilan/basvuru/mesaj uygunluk kontrolleri (is_published, approval_status okur, LISTELEMEZ) |
+| `yazma-yolu` | 12 | profiles'a yazan yollar (profil duzenleme, kategori bilgileri, avatar, premium, auth, son gorulme) |
+| `admin` | 33 | admin paneli okuma/yazma |
+
+**`pazaryeri-kaldi` = 0** — pazaryeri liste/detay okumalarinin tamami `v_providers_public`'e gecti (P1+P2+P3, 14 dosya).
+
+| Yer | Islem | Secilen sutunlar | Sinif |
+|---|---|---|---|
+| `app/ajans/agency-actions.ts:51` | select | `role` | `kimlik` |
+| `app/ajans/agency-actions.ts:185` | select | `role` | `kimlik` |
+| `app/askiya-alindi/page.tsx:34` | select | `full_name, suspended_at` | `kimlik` |
+| `app/auth/callback/route.ts:51` | select | `role, full_name` | `kimlik` |
+| `app/auth/confirm/route.ts:81` | select | `role, full_name` | `kimlik` |
+| `app/basvurularim/page.tsx:27` | select | `role, suspended_at` | `kimlik` |
+| `app/bildirimler/page.tsx:71` | select | `suspended_at` | `kimlik` |
+| `app/components/sections/top-nav.tsx:26` | select | `role, full_name, avatar_url, is_admin` | `kimlik` |
+| `app/davetlerim/page.tsx:29` | select | `role, suspended_at` | `kimlik` |
+| `app/favoriler/actions.ts:32` | select | `role` | `kimlik` |
+| `app/favoriler/actions.ts:50` | select | `role` | `kimlik` |
+| `app/favoriler/page.tsx:90` | select | `role, suspended_at` | `kimlik` |
+| `app/giris/giris-form.tsx:158` | select | `suspended_at` | `kimlik` |
+| `app/ilanlar/[id]/duzenle/page.tsx:42` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/[id]/page.tsx:77` | select | `role, suspended_at, is_admin` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:105` | select | `role` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:188` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:416` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:666` | select | `full_name, company_name, role` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:867` | select | `full_name, company_name, role` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:1222` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:1278` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/listings-actions.ts:1458` | select | `is_admin` | `kimlik` |
+| `app/ilanlar/page.tsx:16` | select | `role` | `kimlik` |
+| `app/ilanlar/yeni/page.tsx:22` | select | `role, suspended_at` | `kimlik` |
+| `app/ilanlarim/page.tsx:43` | select | `role, suspended_at` | `kimlik` |
+| `app/ilanlarim/page.tsx:109` | select | `id, full_name, company_name` | `kimlik` |
+| `app/kategori/[slug]/page.tsx:237` | select | `role` | `kimlik` |
+| `app/kazanclarim/page.tsx:42` | select | `role, suspended_at` | `kimlik` |
+| `app/kazanclarim/page.tsx:73` | select | `id, full_name, company_name, role` | `kimlik` |
+| `app/kesfet/page.tsx:491` | select | `role` | `kimlik` |
+| `app/kurumsal/business-actions.ts:51` | select | `role` | `kimlik` |
+| `app/kurumsal/business-actions.ts:185` | select | `id` | `kimlik` |
+| `app/lib/check-suspension.ts:18` | select | `suspended_at` | `kimlik` |
+| `app/lib/check-suspension.ts:44` | select | `suspended_at` | `kimlik` |
+| `app/lib/own-profile.ts:83` | select | `PROFILE_OPEN_COLUMNS (23 acik sutun)` | `kimlik` |
+| `app/mesajlar/[id]/page.tsx:54` | select | `suspended_at` | `kimlik` |
+| `app/mesajlar/[id]/page.tsx:176` | select | `id, full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/actions.ts:189` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/actions.ts:194` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/actions.ts:256` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/actions.ts:261` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/page.tsx:47` | select | `suspended_at` | `kimlik` |
+| `app/mesajlar/page.tsx:135` | select | `id, full_name, company_name` | `kimlik` |
+| `app/mesajlar/quote-actions.ts:356` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/quote-actions.ts:361` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/quote-actions.ts:425` | select | `full_name, company_name, role` | `kimlik` |
+| `app/mesajlar/quote-actions.ts:430` | select | `full_name, company_name, role` | `kimlik` |
+| `app/odemelerim/page.tsx:66` | select | `suspended_at` | `kimlik` |
+| `app/odemelerim/page.tsx:91` | select | `id, full_name, company_name, role` | `kimlik` |
+| `app/p/[id]/page.tsx:117` | select | `role, is_admin` | `kimlik` |
+| `app/p/[id]/page.tsx:380` | select | `id, full_name, avatar_url` | `kimlik` |
+| `app/p/[id]/yorumlar/page.tsx:119` | select | `id, full_name, avatar_url` | `kimlik` |
+| `app/premium/actions.ts:30` | select | `role, suspended_at` | `kimlik` |
+| `app/premium/page.tsx:22` | select | `role, premium_tier, premium_until, suspended_at` | `kimlik` |
+| `app/profil/ekibim/page.tsx:28` | select | `role` | `kimlik` |
+| `app/profil/kurumsal-ekip/page.tsx:28` | select | `role` | `kimlik` |
+| `app/rezervasyon/[id]/actions.ts:259` | select | `full_name, company_name, role` | `kimlik` |
+| `app/rezervasyon/[id]/actions.ts:264` | select | `full_name, company_name, role` | `kimlik` |
+| `app/rezervasyon/[id]/actions.ts:338` | select | `full_name, company_name, role` | `kimlik` |
+| `app/rezervasyon/[id]/actions.ts:343` | select | `full_name, company_name, role` | `kimlik` |
+| `app/rezervasyon/[id]/page.tsx:139` | select | `suspended_at` | `kimlik` |
+| `app/rezervasyonlarim/page.tsx:136` | select | `suspended_at` | `kimlik` |
+| `app/takvimim/page.tsx:52` | select | `role` | `kimlik` |
+| `app/teklif-talepleri/page.tsx:21` | select | `role, suspended_at` | `kimlik` |
+| `app/teklif-taleplerim/[id]/page.tsx:78` | select | `full_name, company_name` | `kimlik` |
+| `app/teklif-taleplerim/page.tsx:28` | select | `suspended_at` | `kimlik` |
+| `app/teklif-taleplerim/page.tsx:57` | select | `id, full_name, company_name` | `kimlik` |
+| `app/teklif-topla/actions.ts:65` | select | `role` | `kimlik` |
+| `app/teklif-topla/page.tsx:50` | select | `role, suspended_at` | `kimlik` |
+| `app/ilanlar/invitations-actions.ts:64` | select | `id, role, is_published` | `operasyon` |
+| `app/ilanlar/listings-actions.ts:551` | select | `role, is_published` | `operasyon` |
+| `app/ilanlar/listings-actions.ts:599` | select | `default_allowed_applicant_roles` | `operasyon` |
+| `app/lib/email/send-email.ts:41` | select | `last_seen_at` | `operasyon` |
+| `app/mesajlar/actions.ts:376` | select | `id, role, is_published` | `operasyon` |
+| `app/auth/callback/route.ts:59` | update | `(yok)` | `yazma-yolu` |
+| `app/auth/confirm/route.ts:89` | update | `(yok)` | `yazma-yolu` |
+| `app/lib/supabase-middleware.ts:51` | update | `(yok)` | `yazma-yolu` |
+| `app/premium/actions.ts:61` | update | `(yok)` | `yazma-yolu` |
+| `app/premium/actions.ts:91` | update | `(yok)` | `yazma-yolu` |
+| `app/profil/duzenle/actions.ts:27` | select | `approval_status` | `yazma-yolu` |
+| `app/profil/duzenle/actions.ts:116` | update | `(yok)` | `yazma-yolu` |
+| `app/profil/duzenle/actions.ts:190` | update | `(yok)` | `yazma-yolu` |
+| `app/profil/duzenle/avatar-upload.tsx:74` | update | `(yok)` | `yazma-yolu` |
+| `app/profil/duzenle/avatar-upload.tsx:112` | update | `(yok)` | `yazma-yolu` |
+| `app/profil/kategori-bilgileri/actions.ts:83` | select | `role, category_attributes, service_categories!profiles_primary_category_id_fkey(slug)` | `yazma-yolu` |
+| `app/profil/kategori-bilgileri/actions.ts:355` | update | `(yok)` | `yazma-yolu` |
+| `app/admin/actions.ts:29` | select | `is_admin` | `admin` |
+| `app/admin/actions.ts:81` | select | `is_admin` | `admin` |
+| `app/admin/actions.ts:102` | update | `(yok)` | `admin` |
+| `app/admin/actions.ts:128` | update | `(yok)` | `admin` |
+| `app/admin/actions.ts:161` | update | `(yok)` | `admin` |
+| `app/admin/actions.ts:185` | update | `(yok)` | `admin` |
+| `app/admin/actions.ts:308` | update | `id, approval_status, is_published, full_name` | `admin` |
+| `app/admin/actions.ts:370` | update | `id, approval_status` | `admin` |
+| `app/admin/actions.ts:412` | update | `id, approval_status, full_name` | `admin` |
+| `app/admin/actions.ts:704` | select | `is_admin` | `admin` |
+| `app/admin/actions.ts:807` | update | `(yok)` | `admin` |
+| `app/admin/actions.ts:835` | update | `(yok)` | `admin` |
+| `app/admin/blog/actions.ts:18` | select | `is_admin` | `admin` |
+| `app/admin/gorusler/actions.ts:18` | select | `is_admin` | `admin` |
+| `app/admin/kullanicilar/page.tsx:70` | select | `id, full_name, company_name, role, avatar_url, created_at, updated_at, is_admin, suspended_at, premium_tier, premium_until` | `admin` |
+| `app/admin/layout.tsx:38` | select | `is_admin, full_name, avatar_url` | `admin` |
+| `app/admin/page.tsx:44` | select | `id [count]` | `admin` |
+| `app/admin/page.tsx:59` | select | `id [count]` | `admin` |
+| `app/admin/page.tsx:70` | select | `id [count]` | `admin` |
+| `app/admin/page.tsx:73` | select | `id [count]` | `admin` |
+| `app/admin/page.tsx:89` | select | `id, full_name, suspended_at` | `admin` |
+| `app/admin/page.tsx:97` | select | `id, full_name, company_name, role, created_at` | `admin` |
+| `app/admin/profiller/page.tsx:72` | select | `id [count]` | `admin` |
+| `app/admin/profiller/page.tsx:73` | select | `id [count]` | `admin` |
+| `app/admin/profiller/page.tsx:74` | select | `id [count]` | `admin` |
+| `app/admin/profiller/page.tsx:75` | select | `id [count]` | `admin` |
+| `app/admin/profiller/page.tsx:87` | select | `id, full_name, company_name, role, avatar_url, approval_status, is_published, created_at, service_categories!profiles_primary_category_id_fkey(name_tr) [count]` | `admin` |
+| `app/admin/rapor/route.ts:73` | select | `is_admin` | `admin` |
+| `app/admin/rapor/route.ts:82` | select | `id, full_name, company_name, role, created_at, last_seen_at, approval_status, is_published, suspended_at, category_attributes, turkish_cities(name), service_categories!profiles_primary_category_id_fkey(name_tr)` | `admin` |
+| `app/admin/sikayetler/actions.ts:15` | select | `is_admin` | `admin` |
+| `app/admin/sikayetler/page.tsx:94` | select | `id, full_name, company_name, role` | `admin` |
+| `app/admin/sikayetler/page.tsx:100` | select | `id, full_name, company_name, role` | `admin` |
+| `app/lib/admin.ts:15` | select | `id, full_name, is_admin` | `admin` |
+
+**Kesim kriteri (bolum 7) durumu:** pazaryeri okumasi 0; geri kalan 120 cagri kimlik/operasyon/
+yazma-yolu/admin. FAZ 10'da once `yazma-yolu` (12) yeni tablolara doner, sonra `profiles` pazaryeri
+sutunlari dusurulur.

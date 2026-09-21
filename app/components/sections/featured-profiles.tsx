@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { ProfileCard } from "@/app/kesfet/profile-card";
-import type { CityEmbed, ProfileOpen } from "@/app/lib/types";
+import type { CityEmbed, ProviderPublic } from "@/app/lib/types";
 
 // Üst filtre çıtası için popüler kategoriler (slug'larla)
 const TOP_CATEGORIES = [
@@ -13,7 +13,7 @@ const TOP_CATEGORIES = [
 ];
 
 type FeaturedProfile = Pick<
-  ProfileOpen,
+  ProviderPublic,
   | 'id'
   | 'full_name'
   | 'avatar_url'
@@ -45,8 +45,9 @@ export async function FeaturedProfiles() {
   });
 
   // Daha geniş havuz çek (premium önceliklendirme için), sonra 6'ya indir
+  // FAZ 2c: one cikanlar saglayici gorunumunden; filtre, siralama ve limit ayni.
   const { data: profiles } = await supabase
-    .from("profiles")
+    .from("v_providers_public")
     .select(
       `
       id, full_name, avatar_url, company_name, role, created_at, premium_tier, premium_until, approval_status,
@@ -63,7 +64,7 @@ export async function FeaturedProfiles() {
   // kullanilir (tip sorguya uyar, sorgu tipe degil).
   const rawList = (profiles || []) as unknown as Array<
     Pick<
-      ProfileOpen,
+      ProviderPublic,
       | 'id'
       | 'full_name'
       | 'avatar_url'

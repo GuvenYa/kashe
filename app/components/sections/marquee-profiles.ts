@@ -5,12 +5,12 @@
 // render'dan ayrı tutuldu (createQuoteRequest'teki selectQuoteRecipients gibi temiz ayrım).
 
 import { createClient } from "@/app/lib/supabase-server";
-import type { ProfileCard, ProfileOpen } from "@/app/lib/types";
+import type { ProviderCard, ProviderPublic } from "@/app/lib/types";
 
 /** Şeritte gösterilecek profil sayısı (over-fetch 24 → ilk N). */
 export const MARQUEE_COUNT = 10;
 
-export type MarqueeProfile = ProfileCard & {
+export type MarqueeProfile = ProviderCard & {
   category: string | null;
   categorySlug: string | null;
 };
@@ -35,8 +35,9 @@ export async function getMarqueeProfiles(): Promise<MarqueeProfile[]> {
   const supabase = await createClient();
 
   // Over-fetch (premium önceliklendirme için geniş havuz), sonra ilk MARQUEE_COUNT
+  // FAZ 2c: serit havuzu saglayici gorunumunden; filtre, siralama ve limit ayni.
   const { data } = await supabase
-    .from("profiles")
+    .from("v_providers_public")
     .select(
       `
       id, full_name, avatar_url, company_name, role, premium_tier, premium_until,
@@ -50,7 +51,7 @@ export async function getMarqueeProfiles(): Promise<MarqueeProfile[]> {
 
   const raw = (data || []) as unknown as Array<
     Pick<
-      ProfileOpen,
+      ProviderPublic,
       | 'id'
       | 'full_name'
       | 'avatar_url'

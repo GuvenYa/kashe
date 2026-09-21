@@ -4,6 +4,7 @@ import { createClient } from "@/app/lib/supabase-server";
 import { getCategoryIcon } from "@/app/lib/category-icon";
 import { CategoryIcon } from "@/app/components/ui/category-icon";
 import { KategoriTalepCta } from "@/app/components/kategori-talep-cta";
+import type { ProviderPublic } from "@/app/lib/types";
 
 type CategoryRow = {
   id: number;
@@ -45,12 +46,15 @@ export async function Categories() {
   // Her kategoride kaç yayında profesyonel var (id -> count)
   const profileCountByCat: Record<number, number> = {};
   if (allCategories.length > 0) {
+    // FAZ 2c: kategori sayaci saglayici gorunumunden; sutun adi ve filtreler ayni.
     const { data: profileRows } = await supabase
-      .from("profiles")
+      .from("v_providers_public")
       .select("primary_category_id")
       .eq("is_published", true)
       .in("role", ["professional", "agency"]);
-    (profileRows || []).forEach((r) => {
+    (
+      (profileRows ?? []) as Pick<ProviderPublic, "primary_category_id">[]
+    ).forEach((r) => {
       if (r.primary_category_id) {
         profileCountByCat[r.primary_category_id] =
           (profileCountByCat[r.primary_category_id] || 0) + 1;

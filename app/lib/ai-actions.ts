@@ -83,7 +83,7 @@ Müşterinin notları/anahtar kelimeler: ${keywords || '(yok)'}
 Kurallar:
 - Türkçe yaz.
 - 2-4 kısa paragraf, toplam 80-150 kelime.
-- Profesyonellerin başvurmak isteyeceği, net ve davetkâr bir dil kullan.
+- Profesyonellerin başvurmak isteyeceği, net ve davetkar bir dil kullan.
 - Etkinliğin ne olduğunu, ne tür bir profesyonel arandığını ve varsa beklentileri belirt.
 - Uydurma detay EKLEME (kesin tarih, bütçe, yer gibi bilgiler verilmediyse uydurma).
 - Başlık veya "Açıklama:" gibi etiketler ekleme, doğrudan metni yaz.

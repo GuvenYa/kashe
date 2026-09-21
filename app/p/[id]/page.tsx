@@ -60,18 +60,18 @@ export async function generateMetadata({
     .eq('id', id)
     .single();
 
+  // FAZ 2c/P3: business saglayici degil (gorunumde satiri yok); kurum sayfasi
+  // FAZ 8 (organizations). Kapi yalniz professional/agency.
   if (
     !data ||
     !data.is_published ||
-    (data.role !== 'professional' &&
-      data.role !== 'business' &&
-      data.role !== 'agency')
+    (data.role !== 'professional' && data.role !== 'agency')
   ) {
     return { title: 'Profil bulunamadı — Kashe' };
   }
 
   const name =
-    (data.role === 'business' || data.role === 'agency') && data.company_name
+    data.role === 'agency' && data.company_name
       ? data.company_name
       : data.full_name || 'Profil';
 
@@ -128,12 +128,10 @@ export default async function PublicProfilePage({
   if (!profile.is_published && !viewerIsAdmin) {
     notFound();
   }
-  // Kamu profili yalnız profesyonel/kurumsal/ajans (müşteri profilleri kapalı)
-  if (
-    profile.role !== 'professional' &&
-    profile.role !== 'business' &&
-    profile.role !== 'agency'
-  ) {
+  // Kamu profili yalnız profesyonel/ajans (müşteri ve kurumsal profiller kapalı).
+  // FAZ 2c/P3: business saglayici degil (gorunumde satiri yok); kurum sayfasi
+  // FAZ 8 (organizations).
+  if (profile.role !== 'professional' && profile.role !== 'agency') {
     notFound();
   }
 
@@ -397,9 +395,9 @@ export default async function PublicProfilePage({
   }
 
   const isOwnedByProfessional = user?.id === profile.id;
+  // Kapi business'i disarida biraktigi icin burada yalniz agency kalir (davranis ayni).
   const displayName =
-    (profile.role === 'business' || profile.role === 'agency') &&
-    profile.company_name
+    profile.role === 'agency' && profile.company_name
       ? profile.company_name
       : profile.full_name || 'İsimsiz';
 

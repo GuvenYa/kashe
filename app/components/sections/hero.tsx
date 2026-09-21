@@ -22,8 +22,9 @@ export async function Hero() {
       .eq("is_active", true)
       .order("sort_order"),
     supabase.from("turkish_cities").select("id, name").order("name"),
+    // FAZ 2c: yayinda saglayici sayaci gorunumden; filtreler ayni.
     supabase
-      .from("profiles")
+      .from("v_providers_public")
       .select("id", { count: "exact", head: true })
       .eq("is_published", true)
       .in("role", ["professional", "agency"]),
