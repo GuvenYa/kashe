@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/01-veri-modeli.md` bolum 4 (dort tablo, provenance, surum alanlari), `04-goc-plani.md`
 FAZ 4 madde 23-26, `02-guvenlik-modeli.md` (satir sahipligi + kurulus yetkisi).
-**Durum:** DOSYALAR HAZIR (22 Eylul 2026; yerel zincirde test edildi). Uretim sirasi bolum 5. Siradaki: 4b.
+**Durum:** KAPANDI (22 Eylul 2026; uretimde, asama11 tam). Kapanis bolum 8. Siradaki: 4b (`15-claude-code-gorevi-4b.md`).
 
 ## 1. Amac ve sinir
 
@@ -41,8 +41,8 @@ Fonksiyonlar: `fn_event_spec_version_before_insert()` (tetikleyici), `set_curren
 `can_access_event_scope(owner, org, permission)` (politika yardimcisi; sahip / kurulus yetkisi / admin).
 
 **Provenance sozlesmesi (01 bolum 4):** `{"<alan>": {"source": "extracted|user_input|derived", "confidence": 0-1, ...}}`.
-**spec_jsonb sozlesmesi:** `schema_version` ile surumlenir; 4b'de `docs/architecture/` altina EventSpec 1.0 alan listesi
-yazilir (bu dosya semayi kilitlemez; jsonb serbest, sorgulanan alanlar `events` sutunlarina onayda kopyalanir).
+**spec_jsonb sozlesmesi:** `docs/architecture/06-eventspec-sozlesmesi.md` (schema_version 1.0 alan listesi, provenance,
+surum damgalari, ureticiler). jsonb serbest; sorgulanan alanlar `events` sutunlarina onayda kopyalanir.
 
 ## 4. Dosyalar
 
@@ -91,9 +91,15 @@ DROP (bagimlilik: event_requirements -> events -> event_spec_versions -> event_b
 
 `analyzeEventNeeds` (etkinlik-planla) ve sihirbaz ciktisi `event_briefs` (raw_text = kullanici metni, source client_web)
 + `event_spec_versions` (spec_jsonb = onerilen kategoriler/roller + cikarilan alanlar, provenance, `schema_version` 1.0,
-`parser_version` = prompt/model damgasi) olarak kaydedilir; kullanici arayuzu degismez (yalniz kayit). EventSpec 1.0 alan
-listesi `docs/architecture/` altina yazilir. Claude Code gorev metni: `15-claude-code-gorevi-4b.md` (4a uretime cikinca).
+`parser_version` = `analyze-event-needs/1.0`, `prompt_version` p1, `model_id`) olarak kaydedilir; kullanici arayuzu
+degismez (yalniz kayit). Sozlesme `docs/architecture/06-eventspec-sozlesmesi.md`. Claude Code gorev metni:
+`15-claude-code-gorevi-4b.md`. Her cagri yeni brief (surumleme 4c'deki "duzelt" akisiyla); hata halinde de surum
+yazilir (`invalid`), altin kume icin.
 
-## 8. Kapanis kaydi
+## 8. Kapanis kaydi (22 Eylul 2026)
 
-(uretim sonrasi doldurulur)
+Commit `6b3b496` (4a + FAZ 0/04 ve 2c kapanislari). **Uretim on kontrolu:** 5 tablo yok; `conversations_event_type_check`
+15 anahtar, migration'daki `event_types` satirlariyla birebir. **Dal (`ukqhgspaallzjscjodbb`):** 1 dosya push; asama4
+T0-T15 **16/16 GECTI** (T9 ve T15 dahil); asama11 K1-K8 ESIT, K9 0. **Uretim (`qydsooqmflrrwtgawhsv`):** 1 dosya
+push; asama11 **K1-K8 ESIT, K9 0** (K1 0/0: event_types = CHECK listesi; K5 5; K6 0; K7 0; K8 2). `git push`
+sorunsuz. Uygulama bu tablolari henuz okumuyor/yazmiyor; ilk yazim 4b ile.
