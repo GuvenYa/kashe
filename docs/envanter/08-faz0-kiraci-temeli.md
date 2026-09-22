@@ -1,7 +1,7 @@
 # 08 — FAZ 0: Kiraci temeli (organizations)
 
 **Baslangic:** 15 Eylul 2026 (profiles PII kapanisindan sonra; goc planinin ilk fazi)
-**Durum:** 01-03 URETIMDE (15 Eylul aksami, commit `5b441dc`); 04 ZINCIRE ALINDI (22 Eylul, `20260922100000_faz0_04_...`), uretim sirasi bolum 9. Kapanis kaydi bolum 8 (01-03) ve bolum 9 (04).
+**Durum:** KAPANDI (01-03 15 Eylul, 04 22 Eylul uretimde; commit `77b1342`). Kapanis kaydi bolum 8 (01-03) ve bolum 9 (04).
 **Kaynak belgeler:** `docs/architecture/01-veri-modeli.md` bolum 1, `02-guvenlik-modeli.md` bolum 4-5, `04-goc-plani.md` "FAZ 0".
 
 ---
@@ -186,5 +186,12 @@ govdesinin md5'i degismedi (idempotan); asama4 T9 GECTI.
 **Geri alma:** dosya basligindaki not — eski govdeler `20260620090200` ve `20260701120000` dosyalarindan
 `CREATE OR REPLACE` ile geri yazilir; bookings politikasi `06_politikalar` metniyle.
 
-**Kapanis (uretim sonrasi doldurulur):** asama5 degerleri, T9 sonucu, git commit.
+**Kapanis (22 Eylul 2026):** uretim on kontrolu asama5 14/14 ESIT + `is_agency_member` yok; dal push -> asama4 15/15,
+**T9 GECTI** (ilk kez; has_business_role member/manager gecer owner gecmez, is_business_member true, kurucu false,
+mutasyon kaniti); uretim push -> asama5 **14/14 ESIT** (K1 3/3, K3 2/2, K4 1/1, K5 2/2, K6 2/2, K8 0); `supabase
+migration list` uretimde `20260922100000 | 20260922100000` (kayit var; CLI yalniz basarili dosyayi kaydeder, dolayisiyla
+`is_agency_member` ve yeni govdeler uretimde). `/profil/ekibim` (ajans): 2 uye + 2 kabul edilmis davet, yetkiler ayni.
+git `77b1342`. **FAZ 0 tamamen kapandi**; `docs/envanter/bekleyen/` bos. Yetki fonksiyonlari artik
+`organization_memberships`'ten okuyor; eski `agency_members`/`business_members` tablolari FAZ 8/10'a kadar aynalanmaya
+devam eder (asama5 K3/K4 bunu olcer).
 

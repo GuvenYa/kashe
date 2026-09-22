@@ -581,6 +581,13 @@ Madde 21 (`v_provider_roles`) 2b'de, madde 22 (`skills`) FAZ 9 sonrasi.
 
 **Risk: dusuk.** Paralel akis.
 
+**Uygulama notu (22 Eylul 2026, `docs/envanter/15-faz4a-etkinlik-eventspec.md`):** madde 23 ve 26 **4a** (sema; veri
+yazmaz), madde 24-25 **4b** (etkinlik-planla/sihirbaz AI ciktisi brief + surum olarak kaydedilir) ve **4c** (yeni talep
+akisi). Kararlar: `event_types` tablosu + FK (15 anahtar = bugunku CHECK listesi; eski text sutunlar FAZ 10), satir
+sahipligi RLS + `has_org_permission(events.view|manage)`, `event_spec_versions` ekle-yalniz + `set_current_event_spec`
+RPC, eski veriden dolum YOK (`event_brief_source.legacy_import` ileride). Plana ek: `events.spec_version_id`,
+`events.title`.
+
 ### FAZ 5 — Yetenek havuzu
 
 27. `organization_talent_records`, `organization_talent_record_roles` olusturulur.

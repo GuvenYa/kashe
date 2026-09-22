@@ -39,6 +39,10 @@
 --   T14 FAZ 2c v_providers_public: ortak sutunlar profiles ile birebir, saglayici sutunlari providers'tan,
 --       is_visible, aynalama gorunumden okunur, primary_role_id, anon/authenticated okur, kapali sutun yok
 --       (ON KOSUL: faz2c_01 dalda uygulanmis; PostgREST embed'leri onizlemede)
+--   T15 FAZ 4a etkinlik/EventSpec: brief -> surumler (otomatik version_no, tek is_current, ekle-yalniz, RPC ile
+--       gecerli surum), event (event_types FK, tarih/butce kisitlari) -> gereksinimler (rol FK, tekil, adet),
+--       sahiplik RLS (baskasi gormez, kurulus yetkisi, admin), anon 42501, conversations.event_id SET NULL
+--       (ON KOSUL: faz4a_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -76,6 +80,11 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
 BEGIN
+  -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik)
+  IF to_regclass('public.events') IS NOT NULL THEN
+    DELETE FROM public.events WHERE owner_user_id = ANY(ids);
+    DELETE FROM public.event_briefs WHERE created_by_user_id = ANY(ids);
+  END IF;
   -- T13 hizmetleri ve turetilen satirlar: kategori/rol silinmeden ONCE (FK: services.category_id,
   -- provider_services.role_id RESTRICT). services her zaman var; provider_services 2b'den sonra.
   DELETE FROM public.services WHERE profile_id = ANY(ids);
@@ -1360,6 +1369,200 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (14, 'T14 FAZ 2c gorunum sozlesmesi', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T15) FAZ 4a etkinlik ve EventSpec. ON KOSUL: 20260922150000_faz4a_01 dalda.
+-- T1 verisi: musteri (0001, client), pro1 (0002), ajans (0004, T5 admin), kurum (0005, business; T8: kurulus sahibi
+-- owner_seed), uye (0006; T9 sonunda uye DEGIL). T2 sohbeti (musteri <-> pro1) event_id bagi icin.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';
+  v_brief uuid; v1 uuid; v2 uuid; ev uuid; conv uuid; org_k uuid; v_brief_k uuid; rol_a int; rol_b int;
+  r record; n int; st text;
+BEGIN
+  IF to_regclass('public.events') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (15, 'T15 FAZ 4a etkinlik/EventSpec', 'ATLANDI', 'events tablosu yok; faz4a_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 15a) event_types: 15 satir, anon okur
+  SELECT count(*) INTO n FROM public.event_types;
+  IF n <> 15 THEN RAISE EXCEPTION 'event_types % satir (15 beklenir)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.event_types WHERE is_active;
+  EXECUTE 'RESET ROLE';
+  IF n <> 15 THEN RAISE EXCEPTION 'anon event_types okuyamadi (%)', n; END IF;
+
+  -- roller: T13 gibi test kategorileri (rol dogar); dalda kategori yok
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-etk-a', 'Faz1 Test Etkinlik Rol A', 'A', 994, true);
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-etk-b', 'Faz1 Test Etkinlik Rol B', 'B', 995, true);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT id INTO rol_a FROM public.service_roles WHERE slug = 'faz1test-etk-a';
+  SELECT id INTO rol_b FROM public.service_roles WHERE slug = 'faz1test-etk-b';
+  IF rol_a IS NULL OR rol_b IS NULL THEN RAISE EXCEPTION 'test rolleri dogmadi'; END IF;
+
+  -- 15b) musteri (authenticated, RLS) brief yazar; iki surum: version_no otomatik 1,2; ikinci gelince ilki dusuruldu
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, source, raw_text)
+  VALUES (musteri, 'client_web', 'T15: Haziranda Istanbulda 120 kisilik dugun, DJ ve fotografci lazim') RETURNING id INTO v_brief;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, provenance, schema_version, parser_version, model_id)
+  VALUES (v_brief, '{"event_type":"wedding","participant_count":120}'::jsonb, '{"event_type":{"source":"extracted","confidence":0.9}}'::jsonb, '1.0', 'p-test-1', 'test-model')
+  RETURNING id INTO v1;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version, validation_status)
+  VALUES (v_brief, '{"event_type":"wedding","participant_count":120,"city_id":34}'::jsonb, '1.0', 'p-test-2', 'valid')
+  RETURNING id INTO v2;
+  EXECUTE 'RESET ROLE';
+  SELECT version_no, is_current, created_by_user_id INTO r FROM public.event_spec_versions WHERE id = v1;
+  IF r.version_no <> 1 OR r.is_current OR r.created_by_user_id IS DISTINCT FROM musteri THEN
+    RAISE EXCEPTION 'v1: no=% current=% by=% (1/false/musteri beklenir)', r.version_no, r.is_current, r.created_by_user_id; END IF;
+  SELECT version_no, is_current INTO r FROM public.event_spec_versions WHERE id = v2;
+  IF r.version_no <> 2 OR NOT r.is_current THEN RAISE EXCEPTION 'v2: no=% current=% (2/true beklenir)', r.version_no, r.is_current; END IF;
+
+  -- 15c) ekle-yalniz: musteri UPDATE/DELETE yapamaz (42501); RPC ile gecerli surum v1'e doner
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'UPDATE public.event_spec_versions SET validation_status = ''valid'' WHERE id = $1' USING v1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'event_spec_versions UPDATE yapabildi (ekle-yalniz olmali)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'DELETE FROM public.event_spec_versions WHERE id = $1' USING v1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'event_spec_versions DELETE yapabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.set_current_event_spec(v1);
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.event_spec_versions WHERE brief_id = v_brief AND is_current;
+  IF n <> 1 THEN RAISE EXCEPTION 'is_current sayisi % (1 beklenir)', n; END IF;
+  SELECT is_current INTO r FROM public.event_spec_versions WHERE id = v1;
+  IF NOT r.is_current THEN RAISE EXCEPTION 'RPC v1''i gecerli yapmadi'; END IF;
+  -- baskasi (pro1) RPC ile degistiremez
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.set_current_event_spec(v2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'pro1 baskasinin surumunu gecerli yapabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 15d) event + gereksinimler (musteri); kisitlar: event_type FK, tarih sirasi, tekil rol, adet
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (brief_id, spec_version_id, owner_user_id, title, event_type, start_date, end_date, city_id, participant_count, budget_min, budget_max)
+  VALUES (v_brief, v1, musteri, 'T15 dugun', 'wedding', current_date + 60, current_date + 60,
+          (SELECT id FROM public.turkish_cities ORDER BY id LIMIT 1), 120, 50000, 80000) RETURNING id INTO ev;
+  INSERT INTO public.event_requirements (event_id, role_id, quantity, is_required) VALUES (ev, rol_a, 1, true);
+  INSERT INTO public.event_requirements (event_id, role_id, quantity, is_required, duration_hours) VALUES (ev, rol_b, 2, false, 4);
+  EXECUTE 'RESET ROLE';
+  BEGIN
+    INSERT INTO public.events (owner_user_id, event_type) VALUES (musteri, 'olmayan-tur');
+    RAISE EXCEPTION 'gecersiz event_type kabul edildi';
+  EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.events (owner_user_id, event_type, start_date, end_date) VALUES (musteri, 'wedding', current_date + 5, current_date + 1);
+    RAISE EXCEPTION 'ters tarih kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.event_requirements (event_id, role_id) VALUES (ev, rol_a);
+    RAISE EXCEPTION 'ayni rol ikinci kez kabul edildi';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.event_requirements (event_id, role_id, quantity) VALUES (ev, rol_b, 0);
+    RAISE EXCEPTION 'adet 0 kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+
+  -- 15e) sahiplik RLS: musteri kendi brief/event/gereksinimini gorur; pro1 hicbirini gormez; admin (ajans) gorur; anon 42501
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.event_briefs WHERE id = v_brief; IF n <> 1 THEN RAISE EXCEPTION 'musteri kendi brief''ini goremedi'; END IF;
+  SELECT count(*) INTO n FROM public.event_spec_versions WHERE brief_id = v_brief; IF n <> 2 THEN RAISE EXCEPTION 'musteri surumleri goremedi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.event_requirements WHERE event_id = ev; IF n <> 2 THEN RAISE EXCEPTION 'musteri gereksinimleri goremedi (%)', n; END IF;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.event_briefs WHERE id = v_brief;
+  SELECT n + count(*) INTO n FROM public.events WHERE id = ev;
+  SELECT n + count(*) INTO n FROM public.event_spec_versions WHERE brief_id = v_brief;
+  SELECT n + count(*) INTO n FROM public.event_requirements WHERE event_id = ev;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'pro1 baskasinin etkinlik verisini goruyor (% satir)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.events SET title = 'pro1 yazdi' WHERE id = ev;   -- RLS: 0 satir
+  EXECUTE 'RESET ROLE';
+  SELECT title INTO st FROM public.events WHERE id = ev;
+  IF st = 'pro1 yazdi' THEN RAISE EXCEPTION 'pro1 baskasinin etkinligini guncelledi (RLS delik)'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.events WHERE id = ev;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF n <> 1 THEN RAISE EXCEPTION 'admin etkinligi goremedi'; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM public.events' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon events OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 15f) kurulus yetkisi: kurum (kurulus sahibi) org brief'i yazar; uye (uye degil) goremez; pro1 org adina yazamaz
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  IF org_k IS NULL THEN RAISE EXCEPTION 'kurum kurulusu yok (T8)'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, organization_id, source, raw_text)
+  VALUES (kurum, org_k, 'business_workspace', 'T15 kurum lansmani') RETURNING id INTO v_brief_k;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.event_briefs WHERE id = v_brief_k;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'uye olmayan kisi kurulus brief''ini goruyor'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.event_briefs (created_by_user_id, organization_id, source, raw_text) VALUES (pro1, org_k, 'api', 'sizma');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'pro1 baskasinin kurulusu adina brief yazabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 15g) conversations.event_id: T2 sohbeti baglanir; etkinlik silinince NULL olur (SET NULL)
+  SELECT id INTO conv FROM public.conversations WHERE customer_id = musteri AND professional_id = pro1 ORDER BY created_at LIMIT 1;
+  IF conv IS NULL THEN RAISE EXCEPTION 'T2 sohbeti yok'; END IF;
+  UPDATE public.conversations SET event_id = ev WHERE id = conv;
+  DELETE FROM public.events WHERE id = ev;
+  SELECT event_id INTO r FROM public.conversations WHERE id = conv;
+  IF r.event_id IS NOT NULL THEN RAISE EXCEPTION 'etkinlik silindi ama conversations.event_id kaldi'; END IF;
+  SELECT count(*) INTO n FROM public.event_requirements WHERE event_id = ev;
+  IF n <> 0 THEN RAISE EXCEPTION 'gereksinimler cascade ile silinmedi'; END IF;
+
+  -- temizlik (brief silinince surumler cascade)
+  DELETE FROM public.event_briefs WHERE id IN (v_brief, v_brief_k);
+  SELECT count(*) INTO n FROM public.event_spec_versions WHERE brief_id = v_brief;
+  IF n <> 0 THEN RAISE EXCEPTION 'surumler cascade ile silinmedi'; END IF;
+  DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-etk-%';
+  DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-etk-%';
+
+  INSERT INTO t_sonuc VALUES (15, 'T15 FAZ 4a etkinlik/EventSpec', 'GECTI',
+    'event_types 15 + anon okur; brief -> v1/v2 otomatik no, tek is_current, created_by otomatik; UPDATE/DELETE 42501, RPC v1 gecerli, pro1 RPC 42501; event + 2 gereksinim; gecersiz tur 23503, ters tarih/adet 0 23514, tekrar rol 23505; RLS: musteri gorur, pro1 0 satir + UPDATE etkisiz, admin gorur, anon 42501; kurulus: kurum yazdi, uye olmayan gormedi, pro1 org adina 42501; conversations.event_id SET NULL, cascade');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (15, 'T15 FAZ 4a etkinlik/EventSpec', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

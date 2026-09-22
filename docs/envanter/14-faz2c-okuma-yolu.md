@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/04-goc-plani.md` FAZ 2 madde 18 ("okuma yollari tek tek providers'a gecirilir"),
 `11-faz2-saglayici-defteri.md` bolum 2 (cift alan doneminin bitis kriteri), `13-faz2b` bolum 7.
-**Durum:** P0 URETIMDE, P1-P2 DEPLOY EDILDI, P3 KOD HAZIR (22 Eylul 2026; commit bekliyor). Kapanis bolum 8, kesim listesi bolum 9.
+**Durum:** KAPANDI (22 Eylul 2026; P0-P3 uretimde, kapanis dogrulamasi asama7/9/10 hepsi ESIT). Kapanis bolum 8, FAZ 10 kesim listesi bolum 9.
 
 ## 1. Tarama (21 Eylul, repo `682b860`)
 
@@ -190,6 +190,16 @@ sayfa HEAD ile birebir (ilk farklar test trafigi ve RSC akis sirasiydi, olcumle 
    yok); derlemeyi kirmiyor. Sonraki temizlige aday.
 8. `categories.tsx` ve `kategoriler/page.tsx`'te `as Pick<ProviderPublic, ...>[]` cast'i: gorunum uretilen
    Supabase tiplerinde yok. Kalici cozum: `supabase gen types` ile gorunumun tiplere girmesi (ayri is).
+
+**2c KAPANIS (22 Eylul 2026):** P3 commit + push `e53fb9f..77b1342 main` (P3 ve FAZ 0/04 zincire alma ayni push'ta,
+iki commit). Vercel deploy tamam; onizlemeyle ana sayfa (hero sayaci, one cikan kartlarda sehir + kategori, kategori
+seridi), /p/<Test Pro>, /kesfet (34 sonuc) normal. **Kapanis dogrulamasi (uretim, deploy sonrasi):** asama7 10 ESIT +
+K9 BILGI (K1-K3 35/35, K4-K5 1/1), asama9 hepsi ESIT (K1 17, K2 20, K3 13, K4 3, K5 4, K6 0/0, K10 23/21), asama10
+6/6 ESIT (K1 36/36, K2 0/0, K3 34, K4 21). Kod yalniz okudugu icin veritabani tarafinda degisim beklenmiyordu ve
+olmadi. Pazaryeri okumasi 14 dosyada `v_providers_public`; `profiles` okumasi 120 cagri (bolum 9), pazaryeri 0.
+Acik kalanlar (2c disi, ayri isler): benzer profiller olu kodu (bulgu 2), increment_profile_views'in updated_at'i
+tazelemesi (bulgu 5), 43 sapkali arayuz metni (bulgu 6), yorumlar sayfasindaki olu business kiyaslari (bulgu 7),
+gorunum tipleri icin `supabase gen types` (bulgu 8). Yazma yolu ve cift yazmanin sonu: FAZ 10 (bolum 7 kriteri).
 
 ## 9. FAZ 10 kesim listesi — kalan `profiles` okumalari (22 Eylul 2026, P3)
 

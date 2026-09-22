@@ -360,6 +360,12 @@ Uc kaynak: `extracted` (metinden), `user_input` (soruldu ve cevaplandi), `derive
 
 Ucu ayni satirda tutulursa, yalniz siralama algoritmasi degistiginde EventSpec surumunu artirmak gerekir. Bu yanlis olur.
 
+**FAZ 4a uygulamasi (22 Eylul 2026, `docs/envanter/15-faz4a-etkinlik-eventspec.md`):** dort tablo bu bolumdeki gibi
+kuruldu; `event_type` `event_types(key)` tablosuna FK (15 tur, `group_key`); `events`'e `spec_version_id` (hangi surum
+onaylandi) ve `title` eklendi; `event_brief_source`'a `legacy_import`; `event_spec_versions` ekle-yalniz (surum no ve
+tek is_current tetikleyiciyle; gecerli surum `set_current_event_spec`); RLS satir sahipligi + `has_org_permission`
+(`events.view` / `events.manage`); `conversations.event_id`. Uygulama 4b'ye kadar okumaz/yazmaz.
+
 ---
 
 ## 5. ESLESTIRME
