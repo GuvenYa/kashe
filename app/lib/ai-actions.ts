@@ -3,6 +3,15 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/app/lib/supabase-server';
+import {
+  EVENTSPEC_SCHEMA_VERSION,
+  EVENT_NEEDS_MODEL_ID,
+  EVENT_NEEDS_PARSER_VERSION,
+  EVENT_NEEDS_PROMPT_VERSION,
+  type EventSpecProvenance,
+  type EventSpecV1,
+  type EventSpecValidationStatus,
+} from '@/app/lib/eventspec';
 
 type AIResult =
   | { success: true; text: string }
@@ -19,6 +28,9 @@ export type EventAnalysisResult =
       success: true;
       categories: EventNeedSuggestion[];
       tip: string;
+      /** FAZ 4b: EventSpec kaydi — 4c bunlari events.brief_id / spec_version_id icin kullanir. */
+      briefId?: string;
+      specVersionId?: string;
     }
   | { success: false; error: string };
 
@@ -293,6 +305,72 @@ export async function analyzeEventNeeds(input: {
     };
   }
 
+  // ── FAZ 4b — EventSpec kaydi (Event AI altin kumesinin kaynagi) ──────────────
+  // Kayit kullanici akisini HICBIR zaman kesmez: her iki INSERT de hatayi yalniz
+  // log'a yazar, analiz normal devam eder. organization_id GONDERILMEZ (kurulus
+  // atfi 4c). Her cagri YENI brief acar; surumleme 4c'deki "duzelt" akisiyla gelir.
+  let briefId: string | null = null;
+  try {
+    const { data: brief, error: briefErr } = await supabase
+      .from('event_briefs')
+      .insert({
+        created_by_user_id: user.id,
+        source: 'client_web',
+        raw_text: description,
+      })
+      .select('id')
+      .single();
+    if (briefErr) {
+      console.error('[eventspec] brief kaydi', briefErr);
+    } else {
+      briefId = (brief as { id: string } | null)?.id ?? null;
+    }
+  } catch (err) {
+    console.error('[eventspec] brief kaydi', err);
+  }
+
+  /**
+   * Surum satiri yazar. `version_no` ve `is_current` GONDERILMEZ (BEFORE INSERT
+   * tetikleyicisi verir), `created_by_user_id` de gonderilmez (tetikleyici auth.uid()
+   * yazar). Tablo ekle-yalniz: duzeltme = yeni surum.
+   */
+  async function specSurumuYaz(
+    spec: EventSpecV1,
+    provenance: EventSpecProvenance,
+    validationStatus: EventSpecValidationStatus
+  ): Promise<string | undefined> {
+    if (!briefId) return undefined;
+    try {
+      const { data, error } = await supabase
+        .from('event_spec_versions')
+        .insert({
+          brief_id: briefId,
+          spec_jsonb: spec,
+          provenance,
+          schema_version: EVENTSPEC_SCHEMA_VERSION,
+          parser_version: EVENT_NEEDS_PARSER_VERSION,
+          model_id: EVENT_NEEDS_MODEL_ID,
+          prompt_version: EVENT_NEEDS_PROMPT_VERSION,
+          validation_status: validationStatus,
+        })
+        .select('id')
+        .single();
+      if (error) {
+        console.error('[eventspec] surum kaydi', error);
+        return undefined;
+      }
+      return (data as { id: string } | null)?.id ?? undefined;
+    } catch (err) {
+      console.error('[eventspec] surum kaydi', err);
+      return undefined;
+    }
+  }
+
+  /** Uretim/parse hatasi: surum `invalid` + `extra.error` (altin kume icin saklanir). */
+  async function hataSurumuYaz(neden: string): Promise<void> {
+    await specSurumuYaz({ extra: { error: neden } }, {}, 'invalid');
+  }
+
   // Geçerli kategori listesi — Claude sadece bunlardan seçecek
   const validSlugs = new Set(input.categories.map((c) => c.slug));
   const categoryList = input.categories
@@ -326,7 +404,7 @@ Kurallar:
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5',
+      model: EVENT_NEEDS_MODEL_ID,
       max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -336,6 +414,7 @@ Kurallar:
       textBlock && textBlock.type === 'text' ? textBlock.text.trim() : '';
 
     if (!raw) {
+      await hataSurumuYaz('Analiz uretilemedi (bos yanit)');
       return { success: false, error: 'Analiz üretilemedi, tekrar dene.' };
     }
 
@@ -353,6 +432,7 @@ Kurallar:
     try {
       parsed = JSON.parse(raw);
     } catch {
+      await hataSurumuYaz('Analiz sonucu okunamadi (JSON parse)');
       return {
         success: false,
         error: 'Analiz sonucu okunamadı, tekrar dene.',
@@ -375,6 +455,7 @@ Kurallar:
       });
 
     if (categories.length === 0) {
+      await hataSurumuYaz('Uygun oneri bulunamadi (gecerli slug yok)');
       return {
         success: false,
         error:
@@ -382,13 +463,35 @@ Kurallar:
       };
     }
 
+    const tip = (parsed.tip || '').trim();
+
+    // 06 bolum 1: bilinmeyen alan YAZILMAZ (bos tip de yazilmaz); bolum 2: provenance
+    // yalniz spec_jsonb'de BULUNAN alanlar icin girdi alir.
+    const specVersionId = await specSurumuYaz(
+      {
+        suggested_roles: categories.map((c) => ({
+          slug: c.slug,
+          reason: c.reason,
+        })),
+        ...(tip ? { tip } : {}),
+      },
+      {
+        suggested_roles: { source: 'extracted' },
+        ...(tip ? { tip: { source: 'extracted' as const } } : {}),
+      },
+      'needs_input'
+    );
+
     return {
       success: true,
       categories,
-      tip: (parsed.tip || '').trim(),
+      tip,
+      ...(briefId ? { briefId } : {}),
+      ...(specVersionId ? { specVersionId } : {}),
     };
   } catch (err) {
     console.error('[ai] analyzeEventNeeds error:', err);
+    await hataSurumuYaz('Analiz sirasinda istisna');
     return {
       success: false,
       error: 'Analiz yapılırken bir sorun oluştu, tekrar dene.',
