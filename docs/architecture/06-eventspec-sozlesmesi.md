@@ -50,7 +50,7 @@ degisirse `model_id` degisir. Ucu ayni satirda ama bagimsizdir; altin kume karsi
 
 | Uretici | Yazdigi alanlar | Durum |
 |---|---|---|
-| `analyzeEventNeeds` (`/etkinlik-planla`, 4b) | `suggested_roles` (slug + reason), `tip` | `needs_input` (yapisal alan cikarilmiyor); hata halinde `invalid` + `extra.error` |
+| `analyzeEventNeeds` (`/etkinlik-planla`, 4b — **uretimde 22 Eylul**) | `suggested_roles` (slug + reason), `tip` | `needs_input` (yapisal alan cikarilmiyor); hata halinde `invalid` + `extra.error`; her cagri yeni brief |
 | Etkinlik sihirbazi / yeni talep akisi (4c) | tur, tarih, sehir, katilimci, butce + roller | `valid` -> onay -> `events` |
 | Event OS brief (FAZ 6+) | tam kume + `extra` | |
 

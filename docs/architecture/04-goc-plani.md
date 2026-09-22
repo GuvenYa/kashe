@@ -588,6 +588,14 @@ sahipligi RLS + `has_org_permission(events.view|manage)`, `event_spec_versions` 
 RPC, eski veriden dolum YOK (`event_brief_source.legacy_import` ileride). Plana ek: `events.spec_version_id`,
 `events.title`.
 
+**4c notu (22 Eylul 2026, `docs/envanter/16-faz4c-yeni-talep-akisi.md`):** madde 25 iki katmanda: **4c-DB** (migration
+`20260922200000`: `quote_requests.event_id`, `listings.event_id` NULL + FK SET NULL, `events_spec_version_id_key` kismi
+tekil indeks, `create_event_from_spec(p_version_id)` RPC = gecerli surumden `events` confirmed + `event_requirements`,
+atomik, SECURITY DEFINER) ve **4c-uygulama** (P1 genisletilmis cikarim prompt p2 / parser 1.1; P2 sihirbaz yeniden
+yazilir + `/etkinliklerim`; P3 eski akislara `event_id` bagi). Kararlar: sihirbaz yeniden yazilir (etkinlik-planla
+kalir), onay yalniz RPC ile, kullanici duzeltmesi = yeni surum (`user_input`), eski tablolara `event_id` disinda sutun
+eklenmez. Durum gecisleri 4c'de yalniz `confirmed`; `matching`/`booked` FAZ 5-7.
+
 ### FAZ 5 — Yetenek havuzu
 
 27. `organization_talent_records`, `organization_talent_record_roles` olusturulur.

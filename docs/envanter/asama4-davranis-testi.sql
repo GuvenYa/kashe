@@ -43,6 +43,9 @@
 --       gecerli surum), event (event_types FK, tarih/butce kisitlari) -> gereksinimler (rol FK, tekil, adet),
 --       sahiplik RLS (baskasi gormez, kurulus yetkisi, admin), anon 42501, conversations.event_id SET NULL
 --       (ON KOSUL: faz4a_01 dalda uygulanmis)
+--   T16 FAZ 4c onay: create_event_from_spec — valid olmayan / gecerli olmayan surum reddi, gecersiz slug atomik red,
+--       basarili onay (events confirmed + gereksinimler sirali/adetli), ayni surumden ikinci onay 23505, baskasi
+--       42501, anon yetkisiz; quote_requests.event_id SET NULL (ON KOSUL: faz4c_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -1563,6 +1566,160 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (15, 'T15 FAZ 4a etkinlik/EventSpec', 'HATA', SQLERRM);
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- T16) FAZ 4c onay RPC'si. ON KOSUL: 20260922200000_faz4c_01 dalda.
+-- T1 verisi: musteri (0001), pro1 (0002). Test rolleri 'faz1test-onay-%' (T0 siler).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  v_brief uuid; v1 uuid; v2 uuid; v3 uuid; ev uuid; ev2 uuid; qr uuid; rol_a int; rol_b int;
+  e record; n int; st text;
+BEGIN
+  IF to_regprocedure('public.create_event_from_spec(uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (16, 'T16 FAZ 4c onay RPC', 'ATLANDI', 'create_event_from_spec yok; faz4c_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- roller (admin kategori acar -> rol dogar)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-onay-a', 'Faz1 Test Onay A', 'A', 996, true);
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-onay-b', 'Faz1 Test Onay B', 'B', 997, true);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT id INTO rol_a FROM public.service_roles WHERE slug = 'faz1test-onay-a';
+  SELECT id INTO rol_b FROM public.service_roles WHERE slug = 'faz1test-onay-b';
+  IF rol_a IS NULL OR rol_b IS NULL THEN RAISE EXCEPTION 'test rolleri dogmadi'; END IF;
+
+  -- 16a) musteri brief + v1 (needs_input) -> onay reddi (22023)
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, source, raw_text) VALUES (musteri, 'client_web', 'T16 onay testi') RETURNING id INTO v_brief;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version)
+  VALUES (v_brief, '{"event_type":"wedding"}'::jsonb, '1.0', 'test') RETURNING id INTO v1;
+  BEGIN
+    PERFORM public.create_event_from_spec(v1);
+    RAISE EXCEPTION 'needs_input surum onaylandi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+
+  -- 16b) v2 valid: tur, katilimci, butce, 2 rol (b: adet 2, istege bagli; a tekrar -> ilki alinir) -> v1 artik gecerli degil
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, provenance, schema_version, parser_version, validation_status)
+  VALUES (v_brief,
+          jsonb_build_object('event_type', 'wedding', 'title', 'T16 dugun', 'participant_count', 120, 'budget_min', 50000, 'budget_max', 80000,
+                             'start_date', (current_date + 90)::text, 'is_date_flexible', true,
+                             'suggested_roles', jsonb_build_array(
+                               jsonb_build_object('slug', 'faz1test-onay-a', 'reason', 'a'),
+                               jsonb_build_object('slug', 'faz1test-onay-b', 'reason', 'b', 'quantity', 2, 'is_required', false),
+                               jsonb_build_object('slug', 'faz1test-onay-a', 'reason', 'tekrar'))),
+          '{"event_type":{"source":"user_input","confidence":1}}'::jsonb, '1.0', 'test', 'valid')
+  RETURNING id INTO v2;
+  BEGIN
+    PERFORM public.create_event_from_spec(v1);      -- artik is_current degil
+    RAISE EXCEPTION 'gecerli olmayan surum onaylandi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+
+  -- 16c) basarili onay
+  ev := public.create_event_from_spec(v2);
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO e FROM public.events WHERE id = ev;
+  IF e.owner_user_id <> musteri OR e.brief_id <> v_brief OR e.spec_version_id <> v2 OR e.status <> 'confirmed' OR e.confirmed_at IS NULL
+     OR e.event_type <> 'wedding' OR e.title <> 'T16 dugun' OR e.participant_count <> 120 OR e.budget_min <> 50000 OR e.budget_max <> 80000
+     OR e.start_date <> current_date + 90 OR NOT e.is_date_flexible OR e.venue_status <> 'searching' OR e.urgency <> 'normal' THEN
+    RAISE EXCEPTION 'events satiri beklenen gibi degil: %', e; END IF;
+  SELECT count(*) INTO n FROM public.event_requirements WHERE event_id = ev;
+  IF n <> 2 THEN RAISE EXCEPTION 'gereksinim sayisi % (2 beklenir; tekrar slug tekillesmeli)', n; END IF;
+  SELECT quantity::text || '/' || is_required::text || '/' || sort_order::text INTO st FROM public.event_requirements WHERE event_id = ev AND role_id = rol_a;
+  IF st <> '1/true/1' THEN RAISE EXCEPTION 'rol_a gereksinimi % (1/true/1 beklenir)', st; END IF;
+  SELECT quantity::text || '/' || is_required::text || '/' || sort_order::text INTO st FROM public.event_requirements WHERE event_id = ev AND role_id = rol_b;
+  IF st <> '2/false/2' THEN RAISE EXCEPTION 'rol_b gereksinimi % (2/false/2 beklenir)', st; END IF;
+
+  -- 16d) ayni surumden ikinci onay -> 23505; v3 gecersiz slug -> 22023 ve HICBIR satir yazilmaz (atomik)
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.create_event_from_spec(v2);
+    RAISE EXCEPTION 'ayni surumden ikinci etkinlik olustu';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version, validation_status)
+  VALUES (v_brief, jsonb_build_object('event_type', 'wedding', 'suggested_roles', jsonb_build_array(
+            jsonb_build_object('slug', 'faz1test-onay-a'), jsonb_build_object('slug', 'olmayan-rol'))), '1.0', 'test', 'valid')
+  RETURNING id INTO v3;
+  BEGIN
+    PERFORM public.create_event_from_spec(v3);
+    RAISE EXCEPTION 'gecersiz slug ile etkinlik olustu';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.events WHERE spec_version_id = v3;
+  IF n <> 0 THEN RAISE EXCEPTION 'gecersiz slug reddedildi ama events satiri kaldi (atomik degil)'; END IF;
+  -- gecersiz tur
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version, validation_status)
+  VALUES (v_brief, '{"event_type":"olmayan-tur"}'::jsonb, '1.0', 'test', 'valid') RETURNING id INTO v3;
+  BEGIN
+    PERFORM public.create_event_from_spec(v3);
+    RAISE EXCEPTION 'gecersiz tur ile etkinlik olustu';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+
+  -- 16e) baskasi (pro1) musterinin surumunu onaylayamaz (42501); anon RPC'yi cagiramaz (42501)
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version, validation_status)
+  VALUES (v_brief, '{"event_type":"wedding"}'::jsonb, '1.0', 'test', 'valid') RETURNING id INTO v3;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.create_event_from_spec(v3);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'pro1 baskasinin surumunu onayladi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.create_event_from_spec(v3);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon RPC cagirabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  -- admin (ajans) onaylayabilir: sahibi ajans olur (auth.uid()), brief musterinin kalir
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  ev2 := public.create_event_from_spec(v3);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT owner_user_id INTO e FROM public.events WHERE id = ev2;
+  IF e.owner_user_id <> ajans THEN RAISE EXCEPTION 'admin onayinda owner=% (ajans beklenir)', e.owner_user_id; END IF;
+
+  -- 16f) quote_requests.event_id: musteri etkinlikten talep acar; etkinlik silinince NULL olur
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.quote_requests (customer_id, category_id, event_type, event_id)
+  VALUES (musteri, (SELECT legacy_category_id FROM public.service_roles WHERE id = rol_a), 'wedding', ev) RETURNING id INTO qr;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  DELETE FROM public.events WHERE id IN (ev, ev2);
+  SELECT event_id INTO e FROM public.quote_requests WHERE id = qr;
+  IF e.event_id IS NOT NULL THEN RAISE EXCEPTION 'etkinlik silindi ama quote_requests.event_id kaldi'; END IF;
+
+  -- temizlik
+  DELETE FROM public.quote_requests WHERE id = qr;
+  DELETE FROM public.event_briefs WHERE id = v_brief;
+  DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-onay-%';
+  DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-onay-%';
+
+  INSERT INTO t_sonuc VALUES (16, 'T16 FAZ 4c onay RPC', 'GECTI',
+    'needs_input surum 22023; eski (is_current degil) surum 22023; onay: events confirmed + tur/baslik/katilimci/butce/tarih/esnek, 2 gereksinim (tekrar slug tekillesti, adet/zorunlu/sira dogru); ayni surum 23505; gecersiz slug 22023 + atomik; gecersiz tur 22023; pro1 42501; anon 42501; admin onayladi (owner admin); quote_requests.event_id SET NULL; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (16, 'T16 FAZ 4c onay RPC', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `docs/architecture/01-veri-modeli.md` bolum 4 (dort tablo, provenance, surum alanlari), `04-goc-plani.md`
 FAZ 4 madde 23-26, `02-guvenlik-modeli.md` (satir sahipligi + kurulus yetkisi).
-**Durum:** KAPANDI (22 Eylul 2026; uretimde, asama11 tam). Kapanis bolum 8. Siradaki: 4b (`15-claude-code-gorevi-4b.md`).
+**Durum:** 4a KAPANDI, 4b KAPANDI (22 Eylul 2026; ilk EventSpec kayitlari uretimde). Kapanis bolum 8-9. Siradaki: 4c (plan 16).
 
 ## 1. Amac ve sinir
 
@@ -103,3 +103,22 @@ Commit `6b3b496` (4a + FAZ 0/04 ve 2c kapanislari). **Uretim on kontrolu:** 5 ta
 T0-T15 **16/16 GECTI** (T9 ve T15 dahil); asama11 K1-K8 ESIT, K9 0. **Uretim (`qydsooqmflrrwtgawhsv`):** 1 dosya
 push; asama11 **K1-K8 ESIT, K9 0** (K1 0/0: event_types = CHECK listesi; K5 5; K6 0; K7 0; K8 2). `git push`
 sorunsuz. Uygulama bu tablolari henuz okumuyor/yazmiyor; ilk yazim 4b ile.
+
+## 9. 4b kapanis kaydi (22 Eylul 2026)
+
+**Kod (Claude Code, 2 dosya):** `app/lib/eventspec.ts` (sabitler `1.0` / `analyze-event-needs/1.0` / `p1` /
+`claude-haiku-4-5`; `EventSpecV1` 17 istege bagli alan; provenance ve enum tipleri), `app/lib/ai-actions.ts`
+`analyzeEventNeeds`: uzunluk kontrolunden sonra `event_briefs` INSERT (client_web), Claude cagrisi degismeden, sonucta
+`event_spec_versions` INSERT (basari: `suggested_roles` + `tip`, provenance `extracted`, `needs_input`; dort hata dalinda
+`extra.error` + `invalid`); iki INSERT de kendi try/catch'inde, akis kesilmez; sonuca `briefId`/`specVersionId` eklendi.
+tsc bos, build basarili. Sapmalar (kabul): `!anthropic` kapisi brief kaydindan once (bos anahtarla kayit olusmaz —
+kullaniciya gorunen mesaj degismesin diye yerinde birakildi; hata yolu kod incelemesiyle kapatildi); bos `tip` yazilmaz
+(06 bolum 1 kurali). Prompt metni, model, arayuz degismedi. Commit + push Guven.
+
+**Canli dogrulama (uretim, Test Musteri, onizleme):** ayni metin iki kez ("Haziranda Istanbul'da 120 kisilik dugun, DJ
+ve fotografci lazim") -> kullanici tarafinda fark yok; SQL: **2 brief** (`client_web`, `eb302fd8…`, `0a6ccd7d…`),
+her birinde **surum 1** (`is_current` true, `needs_input`, `1.0` / `analyze-event-needs/1.0` / `claude-haiku-4-5` /
+`p1`), `spec_jsonb.suggested_roles` 4 rol (dj, fotografci, etkinlik-koordinatoru, ses-isik; gerekceli) + `tip`.
+Iki kosunun gerekceleri farkli — altin kume icin tam da istenen: ayni girdi, surumlenmis farkli ciktilar.
+**Ilk EventSpec kayitlari uretimde.** asama11 K2/K3 ESIT beklenir, K9 = 2020000.
+
