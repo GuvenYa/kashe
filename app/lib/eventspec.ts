@@ -12,14 +12,21 @@
  * `prompt_version`, cikarim kodu degisirse `parser_version`, model degisirse `model_id` artar.
  */
 
-/** Bu dosyadaki tiplerin uydugu sozlesme surumu. */
+/** Bu dosyadaki tiplerin uydugu sozlesme surumu. Alan listesi degismedigi surece 1.0 kalir. */
 export const EVENTSPEC_SCHEMA_VERSION = '1.0';
 
-/** `analyzeEventNeeds` cikarim hattinin surumu (kod + prompt ailesi). */
-export const EVENT_NEEDS_PARSER_VERSION = 'analyze-event-needs/1.0';
+/**
+ * `analyzeEventNeeds` cikarim hattinin surumu (kod + prompt ailesi).
+ * 1.1 (FAZ 4c/P1): rollere ek olarak yapisal alanlar (tur, sehir, tarih, katilimci,
+ * butce, aciliyet, mekan durumu, baslik) cikariliyor ve alan bazinda suzuluyor.
+ */
+export const EVENT_NEEDS_PARSER_VERSION = 'analyze-event-needs/1.1';
 
-/** `analyzeEventNeeds` prompt metninin surumu — metin degisince artar. */
-export const EVENT_NEEDS_PROMPT_VERSION = 'p1';
+/**
+ * `analyzeEventNeeds` prompt metninin surumu — metin degisince artar.
+ * p2 (FAZ 4c/P1): baglam tarihi, etkinlik turu listesi ve yapisal alanlar eklendi.
+ */
+export const EVENT_NEEDS_PROMPT_VERSION = 'p2';
 
 /**
  * `analyzeEventNeeds` cagrisinin modeli. Cagri bu sabiti kullanir; model dizesi
@@ -80,7 +87,7 @@ export type EventSpecV1 = {
   suggested_roles?: EventSpecSuggestedRole[];
   /** kullaniciya gosterilen ipucu; `events` karsiligi yok */
   tip?: string;
-  /** stil/tercih/kisit ve hata ayrintisi gibi serbest alanlar */
+  /** stil/tercih/kisit, hata ayrintisi, eslesmeyen sehir/tarih notu gibi serbest alanlar */
   extra?: Record<string, unknown>;
 };
 
@@ -101,3 +108,35 @@ export type EventSpecProvenanceEntry = {
  * `suggested_roles` icin dizinin tamamina tek girdi yazilir.
  */
 export type EventSpecProvenance = Record<string, EventSpecProvenanceEntry>;
+
+/**
+ * Modelin YAPISAL alan icin verdigi ham cikti (parser 1.1). Kod bunu suzer:
+ * tip dogru + kume gecerli + `confidence` esigi gecerse `spec_jsonb`'ye yazilir,
+ * gecmezse alan hic yazilmaz (06 bolum 1: bilinmeyen alan yazilmaz).
+ */
+export type EventNeedsRawField<T> = {
+  value: T;
+  /** 0..1 */
+  confidence: number;
+  /** metinden kisa alinti; provenance `span`'i bununla hesaplanir */
+  evidence?: string;
+  /** model degeri varsaydiysa (ornek: yil yazilmamis tarih) */
+  inferred?: boolean;
+} | null;
+
+/**
+ * Turkce duyarsiz karsilastirma anahtari (sehir adi eslemesi, P2 formu da kullanir).
+ * Buyuk/kucuk harf, Turkce harfler ve bastaki/sondaki bosluk farkini siler.
+ */
+export function normalizeTr(s: string): string {
+  return s
+    .toLocaleLowerCase('tr')
+    .replace(/İ/g, 'i')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .trim();
+}

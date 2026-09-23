@@ -8,7 +8,9 @@ import {
   EVENT_NEEDS_MODEL_ID,
   EVENT_NEEDS_PARSER_VERSION,
   EVENT_NEEDS_PROMPT_VERSION,
+  normalizeTr,
   type EventSpecProvenance,
+  type EventSpecProvenanceEntry,
   type EventSpecV1,
   type EventSpecValidationStatus,
 } from '@/app/lib/eventspec';
@@ -28,6 +30,12 @@ export type EventAnalysisResult =
       success: true;
       categories: EventNeedSuggestion[];
       tip: string;
+      /**
+       * FAZ 4c/P1: kaydedilen EventSpec ve provenance (kayit basarisiz olsa da doner).
+       * P2 sihirbazi formu bunlarla on doldurur; `/etkinlik-planla` kullanmaz.
+       */
+      spec: EventSpecV1;
+      provenance: EventSpecProvenance;
       /** FAZ 4b: EventSpec kaydi — 4c bunlari events.brief_id / spec_version_id icin kullanir. */
       briefId?: string;
       specVersionId?: string;
@@ -371,27 +379,87 @@ export async function analyzeEventNeeds(input: {
     await specSurumuYaz({ extra: { error: neden } }, {}, 'invalid');
   }
 
+  // ── FAZ 4c/P1 — referans verisi (yapisal cikarim icin) ──────────────────────
+  // Ikisi de kullanici oturumuyla okunur (RLS herkese acik). Sorgu hatasi analizi
+  // KESMEZ: liste bos kalir ve ilgili alan cikarilmaz (tur listesi bos -> event_type
+  // yazilmaz; sehir listesi bos -> city_id yazilmaz), roller ve tip aynen calisir.
+  let eventTypes: { key: string; name_tr: string }[] = [];
+  let cities: { id: number; name: string }[] = [];
+  try {
+    const [
+      { data: turData, error: turErr },
+      { data: sehirData, error: sehirErr },
+    ] = await Promise.all([
+      supabase
+        .from('event_types')
+        .select('key, name_tr')
+        .eq('is_active', true)
+        .order('sort_order'),
+      supabase.from('turkish_cities').select('id, name').order('name'),
+    ]);
+    if (turErr) console.error('[eventspec] referans', turErr);
+    if (sehirErr) console.error('[eventspec] referans', sehirErr);
+    eventTypes = (turData as { key: string; name_tr: string }[] | null) ?? [];
+    cities = (sehirData as { id: number; name: string }[] | null) ?? [];
+  } catch (err) {
+    console.error('[eventspec] referans', err);
+  }
+
+  // Tarih ifadeleri bu güne göre çözülür (kullanıcı saat dilimi değil, ürünün saati).
+  const bugun = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+  }).format(new Date());
+
   // Geçerli kategori listesi — Claude sadece bunlardan seçecek
   const validSlugs = new Set(input.categories.map((c) => c.slug));
   const categoryList = input.categories
     .map((c) => `- ${c.name_tr} (slug: ${c.slug})`)
     .join('\n');
 
+  // Etkinlik türü listesi (prompt p2). Liste boşsa tür alanı hiç sorulmaz.
+  const turListesi = eventTypes
+    .map((t) => `- ${t.name_tr} (key: ${t.key})`)
+    .join('\n');
+  const turBlogu = turListesi
+    ? `
+Etkinlik türü için SADECE şu key'ler geçerli. Metne uyan key'i seç; hiçbiri uymuyorsa "other", emin değilsen null:
+${turListesi}
+`
+    : '';
+  const turAlani = turListesi
+    ? `  "event_type": { "value": "wedding", "confidence": 0.95, "evidence": "düğün" },
+`
+    : '';
+
   const prompt = `Sen Kashe adlı etkinlik ve yetenek pazaryeri için bir etkinlik planlama asistanısın. Müşteriler etkinliklerini anlatıyor, sen onlara hangi profesyonellere/hizmetlere ihtiyaçları olduğunu öneriyorsun.
+
+Bugün: ${bugun} (Europe/Istanbul). Tarih ifadelerini bu tarihe göre çöz.
 
 Müşterinin etkinlik açıklaması:
 "${description}"
 
 Kashe'de SADECE şu hizmet kategorileri var. Önerilerini KESİNLİKLE bu listeden seç, listede olmayan bir kategori UYDURMA:
 ${categoryList}
-
-Görevin: Bu etkinlik için en uygun hizmet kategorilerini öner. Yanıtını SADECE geçerli bir JSON nesnesi olarak ver, başka hiçbir metin, açıklama veya markdown ekleme. JSON yapısı:
+${turBlogu}
+Görevin: Bu etkinlik için en uygun hizmet kategorilerini öner ve metinde açıkça geçen yapısal bilgileri çıkar. Yanıtını SADECE geçerli bir JSON nesnesi olarak ver, başka hiçbir metin, açıklama veya markdown ekleme. JSON yapısı:
 
 {
   "categories": [
     { "slug": "kategori-slug", "name": "Kategori Adı", "reason": "Bu etkinlik için neden gerekli olduğunu açıklayan 1 kısa cümle" }
   ],
-  "tip": "Müşteriye etkinliğiyle ilgili 1-2 cümlelik faydalı bir ipucu"
+  "tip": "Müşteriye etkinliğiyle ilgili 1-2 cümlelik faydalı bir ipucu",
+${turAlani}  "title": "kısa başlık (en fazla 80 karakter), örnek: İstanbul'da 120 kişilik düğün",
+  "city_name": { "value": "İstanbul", "confidence": 0.9, "evidence": "İstanbul'da" },
+  "district": { "value": "Kadıköy", "confidence": 0.8, "evidence": "Kadıköy'de" },
+  "start_date": { "value": "YYYY-MM-DD", "confidence": 0.6, "evidence": "15 Haziran", "inferred": true },
+  "end_date": { "value": "YYYY-MM-DD", "confidence": 0.6, "evidence": "3 gün sürecek" },
+  "date_note": "metindeki tarih ifadesi, gün belli değilse (örnek: Haziran, yaz ayları, hafta sonu)",
+  "is_date_flexible": { "value": true, "confidence": 0.8, "evidence": "tarih esnek" },
+  "participant_count": { "value": 120, "confidence": 0.9, "evidence": "120 kişilik" },
+  "budget_min": { "value": 50000, "confidence": 0.9, "evidence": "50-80 bin TL" },
+  "budget_max": { "value": 80000, "confidence": 0.9, "evidence": "50-80 bin TL" },
+  "urgency": { "value": "urgent", "confidence": 0.7, "evidence": "acil" },
+  "venue_status": { "value": "confirmed", "confidence": 0.7, "evidence": "mekan belli" }
 }
 
 Kurallar:
@@ -399,13 +467,19 @@ Kurallar:
 - "categories" içinde 2-5 öneri olsun, en alakalı olanlar. Her slug yukarıdaki listeden BİREBİR olmalı.
 - "reason" kısa ve somut olsun.
 - "tip" samimi ve işe yarar olsun.
-- FİYAT/BÜTÇE YAZMA: rakam, para birimi veya bütçe aralığı ÜRETME — fiyatı yalnız profesyonelin kendisi belirler.
+- Yapısal alanlar: yalnız metinde OLAN bilgiyi çıkar; olmayan alan null. "confidence" 0-1 arası; "evidence" metinden kısa alıntı.
+- "city_name" İL adıdır (Türkiye'nin 81 ili); metinde yalnız ilçe/semt geçiyorsa bağlı olduğu ili yaz, ilçeyi "district" alanına koy.
+- Tarih: metinde GÜN (ayın kaçı) yazmıyorsa "start_date" MUTLAKA null olsun — ayın 1'i gibi bir gün UYDURMA — ve tarih ifadesini "date_note" alanına yaz. Gün yazıyorsa "start_date" doldur; yıl yazılmamışsa bugünden sonraki ilk uygun yılı al ve "inferred": true yaz. Geçmiş tarih üretme. "end_date" yalnız birden çok gün süren etkinlikte.
+- Bütçe: YALNIZ metinde açıkça yazılmış tutarı TRY olarak aktar ("50 bin" -> 50000); metinde yoksa null. "reason" ve "tip" içinde fiyat, rakam, para birimi veya bütçe aralığı ÜRETME — fiyatı yalnız profesyonelin kendisi belirler.
+- "urgency": metin kısa süre/acil diyorsa "urgent", tarih/plan esnek diyorsa "flexible"; belirtilmemişse null ("normal" yazma).
+- "venue_status": mekan belli/ayarlanmış -> "confirmed", mekan aranıyor -> "searching", mekan gerekmiyor -> "not_needed"; belirtilmemişse null.
+- "title": metni özetleyen kısa ad; şehir ve tür biliniyorsa onları kullan; uydurma ayrıntı ekleme.
 - SADECE JSON döndür, başına/sonuna hiçbir şey ekleme, markdown kod bloğu (üç backtick) kullanma.`;
 
   try {
     const message = await anthropic.messages.create({
       model: EVENT_NEEDS_MODEL_ID,
-      max_tokens: 800,
+      max_tokens: 1200,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -428,6 +502,20 @@ Kurallar:
     let parsed: {
       categories?: { slug?: string; name?: string; reason?: string }[];
       tip?: string;
+      // parser 1.1 — yapisal alanlar; hepsi ham, dogrulama asagida
+      event_type?: unknown;
+      title?: unknown;
+      city_name?: unknown;
+      district?: unknown;
+      start_date?: unknown;
+      end_date?: unknown;
+      date_note?: unknown;
+      is_date_flexible?: unknown;
+      participant_count?: unknown;
+      budget_min?: unknown;
+      budget_max?: unknown;
+      urgency?: unknown;
+      venue_status?: unknown;
     };
     try {
       parsed = JSON.parse(raw);
@@ -465,27 +553,286 @@ Kurallar:
 
     const tip = (parsed.tip || '').trim();
 
-    // 06 bolum 1: bilinmeyen alan YAZILMAZ (bos tip de yazilmaz); bolum 2: provenance
-    // yalniz spec_jsonb'de BULUNAN alanlar icin girdi alir.
-    const specVersionId = await specSurumuYaz(
-      {
-        suggested_roles: categories.map((c) => ({
-          slug: c.slug,
-          reason: c.reason,
-        })),
-        ...(tip ? { tip } : {}),
-      },
-      {
-        suggested_roles: { source: 'extracted' },
-        ...(tip ? { tip: { source: 'extracted' as const } } : {}),
-      },
-      'needs_input'
-    );
+    // ── parser 1.1 — yapisal alan suzgeci ─────────────────────────────────────
+    // 06 bolum 1: bilinmeyen/dogrulanmayan alan YAZILMAZ (null da yazilmaz);
+    // bolum 2: provenance yalniz spec_jsonb'de BULUNAN alanlar icin girdi alir.
+    // Suzgec kapali devre calisir: tip/kume/guven esigi tutmuyorsa alan duser.
+    const GUVEN_ESIGI = 0.5;
+    const spec: EventSpecV1 = {};
+    const provenance: EventSpecProvenance = {};
+    const extra: Record<string, unknown> = {};
+
+    type HamAlan = {
+      value: unknown;
+      confidence: number;
+      evidence?: string;
+      inferred: boolean;
+    };
+
+    /** Ham `{ value, confidence, evidence, inferred }` nesnesini cozer; esigi gecmezse null. */
+    function hamAlan(ham: unknown): HamAlan | null {
+      if (!ham || typeof ham !== 'object' || Array.isArray(ham)) return null;
+      const o = ham as Record<string, unknown>;
+      if (o.value === null || o.value === undefined) return null;
+      const c =
+        typeof o.confidence === 'number' ? o.confidence : Number(o.confidence);
+      if (!Number.isFinite(c) || c < GUVEN_ESIGI || c > 1) return null;
+      return {
+        value: o.value,
+        confidence: c,
+        evidence: typeof o.evidence === 'string' ? o.evidence : undefined,
+        inferred: o.inferred === true,
+      };
+    }
+
+    /** Provenance girdisi; `evidence` ham metinde bulunursa `span` de yazilir. */
+    function girdi(
+      source: EventSpecProvenanceEntry['source'],
+      confidence: number,
+      evidence?: string,
+      rule?: string
+    ): EventSpecProvenanceEntry {
+      const bas = evidence ? description.indexOf(evidence) : -1;
+      return {
+        source,
+        confidence,
+        ...(evidence && bas >= 0
+          ? { span: [bas, bas + evidence.length] as [number, number] }
+          : {}),
+        ...(rule ? { rule } : {}),
+      };
+    }
+
+    /** Alani ve provenance girdisini birlikte yazar (ikisi hep ayni anda olusur). */
+    function yaz<K extends keyof EventSpecV1>(
+      alan: K,
+      deger: NonNullable<EventSpecV1[K]>,
+      kaynak: EventSpecProvenanceEntry
+    ): void {
+      spec[alan] = deger;
+      provenance[alan] = kaynak;
+    }
+
+    /** "120" gibi duz sayi dizelerini cevirir; ayracli/ondalikli dizeyi REDDEDER. */
+    function sayiya(v: unknown): number | null {
+      if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+      if (typeof v === 'string') {
+        const t = v.replace(/\s/g, '');
+        if (!/^\d+$/.test(t)) return null;
+        const n = Number(t);
+        return Number.isFinite(n) ? n : null;
+      }
+      return null;
+    }
+
+    /** YYYY-MM-DD bicimi + gercek takvim gunu. */
+    function gecerliGun(v: unknown): string | null {
+      if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+      const d = new Date(v + 'T00:00:00Z');
+      if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v)
+        return null;
+      return v;
+    }
+
+    // event_type — yalniz aktif key listesinden
+    const gecerliTurler = new Set(eventTypes.map((t) => t.key));
+    const hamTur = hamAlan(parsed.event_type);
+    if (
+      hamTur &&
+      typeof hamTur.value === 'string' &&
+      gecerliTurler.has(hamTur.value)
+    ) {
+      yaz(
+        'event_type',
+        hamTur.value,
+        girdi('extracted', hamTur.confidence, hamTur.evidence)
+      );
+    }
+
+    // city_name -> city_id (Turkce duyarsiz esleme); eslesmezse extra.city_note
+    const hamSehir = hamAlan(parsed.city_name);
+    if (hamSehir && typeof hamSehir.value === 'string' && hamSehir.value.trim()) {
+      const aranan = normalizeTr(hamSehir.value);
+      const bulunan = cities.find((c) => normalizeTr(c.name) === aranan);
+      if (bulunan) {
+        yaz(
+          'city_id',
+          bulunan.id,
+          girdi(
+            'extracted',
+            hamSehir.confidence,
+            hamSehir.evidence,
+            'city_name_match'
+          )
+        );
+      } else {
+        extra.city_note = hamSehir.value.trim();
+      }
+    }
+
+    // district
+    const hamIlce = hamAlan(parsed.district);
+    if (hamIlce && typeof hamIlce.value === 'string') {
+      const ilce = hamIlce.value.trim();
+      if (ilce && ilce.length <= 100) {
+        yaz(
+          'district',
+          ilce,
+          girdi('extracted', hamIlce.confidence, hamIlce.evidence)
+        );
+      }
+    }
+
+    // start_date / end_date — gecmis tarih ve ters aralik yazilmaz
+    const hamBas = hamAlan(parsed.start_date);
+    let basTarih: string | null = null;
+    if (hamBas) {
+      const gun = gecerliGun(hamBas.value);
+      if (gun && gun >= bugun) {
+        basTarih = gun;
+        yaz(
+          'start_date',
+          gun,
+          girdi(
+            hamBas.inferred ? 'derived' : 'extracted',
+            hamBas.confidence,
+            hamBas.evidence,
+            hamBas.inferred ? 'date_assumed' : undefined
+          )
+        );
+      }
+    }
+    const hamSon = hamAlan(parsed.end_date);
+    if (hamSon) {
+      const gun = gecerliGun(hamSon.value);
+      if (gun && gun >= bugun && (!basTarih || gun >= basTarih)) {
+        yaz(
+          'end_date',
+          gun,
+          girdi(
+            hamSon.inferred ? 'derived' : 'extracted',
+            hamSon.confidence,
+            hamSon.evidence,
+            hamSon.inferred ? 'date_assumed' : undefined
+          )
+        );
+      }
+    }
+
+    // date_note — spec alani DEGIL (extra'ya gider, provenance girdisi yok)
+    if (typeof parsed.date_note === 'string') {
+      const not = parsed.date_note.trim();
+      if (not && not.length <= 100) extra.date_note = not;
+    }
+
+    // is_date_flexible
+    const hamEsnek = hamAlan(parsed.is_date_flexible);
+    if (hamEsnek && typeof hamEsnek.value === 'boolean') {
+      yaz(
+        'is_date_flexible',
+        hamEsnek.value,
+        girdi('extracted', hamEsnek.confidence, hamEsnek.evidence)
+      );
+    }
+
+    // participant_count — tam sayi 1..100000
+    const hamKisi = hamAlan(parsed.participant_count);
+    if (hamKisi) {
+      const sayi = sayiya(hamKisi.value);
+      if (sayi !== null && Number.isInteger(sayi) && sayi >= 1 && sayi <= 100000) {
+        yaz(
+          'participant_count',
+          sayi,
+          girdi('extracted', hamKisi.confidence, hamKisi.evidence)
+        );
+      }
+    }
+
+    // budget_min / budget_max — negatif yazilmaz; ikisi de varsa ters aralik duzeltilir
+    const hamMin = hamAlan(parsed.budget_min);
+    const hamMax = hamAlan(parsed.budget_max);
+    let butceMin = hamMin ? sayiya(hamMin.value) : null;
+    let butceMax = hamMax ? sayiya(hamMax.value) : null;
+    if (butceMin !== null && butceMin < 0) butceMin = null;
+    if (butceMax !== null && butceMax < 0) butceMax = null;
+    if (butceMin !== null && butceMax !== null && butceMin > butceMax) {
+      const gecici = butceMin;
+      butceMin = butceMax;
+      butceMax = gecici;
+    }
+    if (hamMin && butceMin !== null) {
+      yaz(
+        'budget_min',
+        butceMin,
+        girdi('extracted', hamMin.confidence, hamMin.evidence)
+      );
+    }
+    if (hamMax && butceMax !== null) {
+      yaz(
+        'budget_max',
+        butceMax,
+        girdi('extracted', hamMax.confidence, hamMax.evidence)
+      );
+    }
+
+    // urgency — `normal` yazilmaz (varsayilan zaten o)
+    const hamAcil = hamAlan(parsed.urgency);
+    if (hamAcil && (hamAcil.value === 'urgent' || hamAcil.value === 'flexible')) {
+      yaz(
+        'urgency',
+        hamAcil.value,
+        girdi('extracted', hamAcil.confidence, hamAcil.evidence)
+      );
+    }
+
+    // venue_status
+    const hamMekan = hamAlan(parsed.venue_status);
+    if (
+      hamMekan &&
+      (hamMekan.value === 'confirmed' ||
+        hamMekan.value === 'searching' ||
+        hamMekan.value === 'not_needed')
+    ) {
+      yaz(
+        'venue_status',
+        hamMekan.value,
+        girdi('extracted', hamMekan.confidence, hamMekan.evidence)
+      );
+    }
+
+    // title — model uretimi; arayuz "varsayim" isareti koyabilir
+    if (typeof parsed.title === 'string') {
+      const baslik = parsed.title.trim().slice(0, 200);
+      if (baslik) {
+        yaz('title', baslik, {
+          source: 'derived',
+          rule: 'model_title',
+          confidence: 0.5,
+        });
+      }
+    }
+
+    // suggested_roles ve tip — bugunku mantik AYNEN (quantity/is_required P2'de)
+    spec.suggested_roles = categories.map((c) => ({
+      slug: c.slug,
+      reason: c.reason,
+    }));
+    provenance.suggested_roles = { source: 'extracted' };
+    if (tip) {
+      spec.tip = tip;
+      provenance.tip = { source: 'extracted' };
+    }
+    if (Object.keys(extra).length > 0) spec.extra = extra;
+
+    // P1'de durum HER ZAMAN needs_input; `valid`'i kullanici onayiyla P2 yazar.
+    const specVersionId = await specSurumuYaz(spec, provenance, 'needs_input');
 
     return {
       success: true,
       categories,
       tip,
+      spec,
+      provenance,
       ...(briefId ? { briefId } : {}),
       ...(specVersionId ? { specVersionId } : {}),
     };
