@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { sonucEtiketi } from '@/app/lib/discover-base';
@@ -83,6 +90,66 @@ const ANLAT_ANAHTARLARI = [
   'sehir_notu',
 ];
 
+/**
+ * URL'ye bagli metin/sayi kutusu.
+ *
+ * NEDEN AYRI BILESEN: gosterilen deger YEREL state'ten gelir, yani tus aninda
+ * ekrana duser; URL'ye yazim yan etkidir. Kutu dogrudan URL'den okusaydi her
+ * karakter bir tur bekleyip gorunurdu (P2 canli turundaki 6-7 saniyelik gecikme).
+ *
+ * DISARIDAN DEGISIM: geri/ileri tusu, "Analiz et" sonucu ve giris donusu URL'yi
+ * degistirir. Bu durumda yerel deger tazelenir — ama YALNIZ odak bu kutuda
+ * degilken; aksi halde kullanicinin yazdigi harf ezilir.
+ */
+function UrlKutusu({
+  id,
+  urlDegeri,
+  onYaz,
+  type = 'text',
+  className,
+  maxLength,
+  min,
+  max,
+  placeholder,
+}: {
+  id: string;
+  urlDegeri: string;
+  onYaz: (deger: string) => void;
+  type?: 'text' | 'number';
+  className?: string;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  placeholder?: string;
+}) {
+  const [yerel, setYerel] = useState(urlDegeri);
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (document.activeElement !== ref.current) setYerel(urlDegeri);
+  }, [urlDegeri]);
+
+  function degisti(e: ChangeEvent<HTMLInputElement>) {
+    setYerel(e.target.value);
+    onYaz(e.target.value);
+  }
+
+  return (
+    <input
+      id={id}
+      ref={ref}
+      type={type}
+      value={yerel}
+      onChange={degisti}
+      className={className ?? ALAN}
+      maxLength={maxLength}
+      min={min}
+      max={max}
+      placeholder={placeholder}
+    />
+  );
+}
+
 export function SihirbazClient({
   kategoriler,
   sehirler,
@@ -98,10 +165,45 @@ export function SihirbazClient({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useSearchParams();
+  const aramaParams = useSearchParams();
 
-  // URL = TEK GERÇEK. Adım ve seçimler URL'de: tarayıcı geri/ileri doğal çalışır,
-  // link paylaşılabilir ve kayıt duvarından dönüşte state kaybolmaz.
+  /**
+   * URL = TEK GERÇEK, ama okuma YEREL AYNADAN yapilir.
+   *
+   * `guncelle` artik `router.push` cagirmiyor — `router.push` App Router'da sunucu
+   * bilesenini yeniden kosar (page.tsx `searchParams` okumadigi halde: kategoriler,
+   * sehirler, event_types ve sayac sorgulari yeniden doner) ve her tus bir tur
+   * beklerdi. Yerine `window.history.pushState/replaceState` kullaniliyor: adres
+   * cubugu ve gecmis dogru kalir, sunucuya gidilmez.
+   *
+   * Ayna (`sorgu`) neden var: history API ile yazinca arayuzun ANINDA guncellenmesi
+   * `useSearchParams`'in senkronuna kalir. Ayna sayesinde cipler, sayac ve ozet
+   * senkrondan bagimsiz olarak hemen tazelenir; ayna disaridan gelen degisimlerle
+   * (params ve `popstate`) geri beslenir.
+   */
+  const [sorgu, setSorgu] = useState(() => aramaParams.toString());
+  const sorguRef = useRef(sorgu);
+
+  // Disaridan gelen URL degisimi (giris donusu, Analiz sonrasi RSC senkronu, vb.)
+  useEffect(() => {
+    const yeni = aramaParams.toString();
+    sorguRef.current = yeni;
+    setSorgu(yeni);
+  }, [aramaParams]);
+
+  // Geri/ileri tusu: adres cubugundaki gercek degeri esas al.
+  useEffect(() => {
+    function gecmisDegisti() {
+      const yeni = window.location.search.replace(/^\?/, '');
+      sorguRef.current = yeni;
+      setSorgu(yeni);
+    }
+    window.addEventListener('popstate', gecmisDegisti);
+    return () => window.removeEventListener('popstate', gecmisDegisti);
+  }, []);
+
+  const params = useMemo(() => new URLSearchParams(sorgu), [sorgu]);
+
   const adim = Math.min(
     Math.max(Number(params.get('adim') ?? 0) || 0, 0),
     SON_ADIM
@@ -157,29 +259,47 @@ export function SihirbazClient({
   const [onayYukleniyor, setOnayYukleniyor] = useState(false);
   const [onayHatasi, setOnayHatasi] = useState<string | null>(null);
 
+  /**
+   * URL'yi gunceller. `gecmis: 'push'` yalniz ADIM degisimlerinde kullanilir
+   * (geri tusu adimlar arasinda dolassin); alan duzenlemeleri `replace` ile
+   * gecmis yigini sismeden yazilir.
+   */
   const guncelle = useCallback(
-    (yamalar: Record<string, string | null>) => {
-      const p = new URLSearchParams(params.toString());
+    (
+      yamalar: Record<string, string | null>,
+      secenek?: { gecmis?: 'push' | 'replace' }
+    ) => {
+      const p = new URLSearchParams(sorguRef.current);
       for (const [k, v] of Object.entries(yamalar)) {
         if (v === null || v === '') p.delete(k);
         else p.set(k, v);
       }
       const qs = p.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      sorguRef.current = qs;
+      setSorgu(qs);
+
+      const url = qs ? `${pathname}?${qs}` : pathname;
+      if (typeof window !== 'undefined') {
+        if (secenek?.gecmis === 'push') {
+          window.history.pushState(null, '', url);
+        } else {
+          window.history.replaceState(null, '', url);
+        }
+      }
     },
-    [params, pathname, router]
+    [pathname]
   );
 
   /** Giris duvarina giderken mevcut URL (metin dahil) korunur. */
   const girisYolu = useCallback(
     (metinDahil: boolean) => {
-      const p = new URLSearchParams(params.toString());
+      const p = new URLSearchParams(sorguRef.current);
       if (metinDahil && metin.trim()) p.set('metin', metin.trim());
       const qs = p.toString();
       const hedef = qs ? `${pathname}?${qs}` : pathname;
       return `/giris?redirect=${encodeURIComponent(hedef)}`;
     },
-    [params, pathname, metin]
+    [pathname, metin]
   );
 
   // SAYAÇ — Keşfet filtre semantiğinin birebir istemci karşılığı.
@@ -268,8 +388,8 @@ export function SihirbazClient({
 
   function adetDegistir(id: number, n: number) {
     const m = new Map(adetHaritasi);
-    if (n <= 1) m.delete(id);
-    else m.set(id, Math.min(n, 50));
+    if (!Number.isFinite(n) || n <= 1) m.delete(id);
+    else m.set(id, Math.min(Math.trunc(n), 50));
     const dize = [...m.entries()].map(([k, v]) => `${k}:${v}`).join(',');
     guncelle({ adet: dize || null });
   }
@@ -338,7 +458,8 @@ export function SihirbazClient({
     if (typeof ekstra.date_note === 'string') yama.tarih_notu = ekstra.date_note;
     if (typeof ekstra.city_note === 'string') yama.sehir_notu = ekstra.city_note;
 
-    guncelle(yama);
+    // Adim degisiyor -> gecmis kaydi (geri tusu Anlat adimina donsun).
+    guncelle(yama, { gecmis: 'push' });
   }
 
   async function onayla() {
@@ -463,7 +584,7 @@ export function SihirbazClient({
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => guncelle({ adim: '1' })}
+                  onClick={() => guncelle({ adim: '1' }, { gecmis: 'push' })}
                   className={BTN_IKINCIL}
                 >
                   Atla, formu kendim doldurayım
@@ -554,13 +675,11 @@ export function SihirbazClient({
               <label htmlFor="sihirbaz-ilce" className={ETIKET}>
                 İlçe / semt (isteğe bağlı)
               </label>
-              <input
+              <UrlKutusu
                 id="sihirbaz-ilce"
-                type="text"
+                urlDegeri={ilce}
+                onYaz={(v) => guncelle({ ilce: v || null })}
                 maxLength={100}
-                value={ilce}
-                onChange={(e) => guncelle({ ilce: e.target.value || null })}
-                className={ALAN}
                 placeholder="Örn: Kadıköy"
               />
             </div>
@@ -635,46 +754,37 @@ export function SihirbazClient({
                 <label htmlFor="sihirbaz-katilimci" className={ETIKET}>
                   Katılımcı sayısı
                 </label>
-                <input
+                <UrlKutusu
                   id="sihirbaz-katilimci"
                   type="number"
                   min={1}
                   max={100000}
-                  value={katilimci}
-                  onChange={(e) =>
-                    guncelle({ katilimci: e.target.value || null })
-                  }
-                  className={ALAN}
+                  urlDegeri={katilimci}
+                  onYaz={(v) => guncelle({ katilimci: v || null })}
                 />
               </div>
               <div>
                 <label htmlFor="sihirbaz-butce-min" className={ETIKET}>
                   Bütçe alt (TL)
                 </label>
-                <input
+                <UrlKutusu
                   id="sihirbaz-butce-min"
                   type="number"
                   min={0}
-                  value={butceMin}
-                  onChange={(e) =>
-                    guncelle({ butce_min: e.target.value || null })
-                  }
-                  className={ALAN}
+                  urlDegeri={butceMin}
+                  onYaz={(v) => guncelle({ butce_min: v || null })}
                 />
               </div>
               <div>
                 <label htmlFor="sihirbaz-butce-max" className={ETIKET}>
                   Bütçe üst (TL)
                 </label>
-                <input
+                <UrlKutusu
                   id="sihirbaz-butce-max"
                   type="number"
                   min={0}
-                  value={butceMax}
-                  onChange={(e) =>
-                    guncelle({ butce_max: e.target.value || null })
-                  }
-                  className={ALAN}
+                  urlDegeri={butceMax}
+                  onYaz={(v) => guncelle({ butce_max: v || null })}
                 />
               </div>
             </div>
@@ -763,15 +873,13 @@ export function SihirbazClient({
                           className="text-sm text-ink-72 flex items-center gap-2"
                         >
                           Adet
-                          <input
+                          <UrlKutusu
                             id={`adet-${id}`}
                             type="number"
                             min={1}
                             max={50}
-                            value={adet}
-                            onChange={(e) =>
-                              adetDegistir(id, Number(e.target.value) || 1)
-                            }
+                            urlDegeri={String(adet)}
+                            onYaz={(v) => adetDegistir(id, Number(v))}
                             className="w-20 px-2 py-1.5 bg-card border border-line rounded text-ink text-sm focus:outline-none focus:border-brand-ink"
                           />
                         </label>
@@ -797,13 +905,11 @@ export function SihirbazClient({
               <label htmlFor="sihirbaz-baslik" className={ETIKET}>
                 Etkinlik başlığı (isteğe bağlı)
               </label>
-              <input
+              <UrlKutusu
                 id="sihirbaz-baslik"
-                type="text"
+                urlDegeri={baslik}
+                onYaz={(v) => guncelle({ baslik: v || null })}
                 maxLength={200}
-                value={baslik}
-                onChange={(e) => guncelle({ baslik: e.target.value || null })}
-                className={ALAN}
                 placeholder="Örn: İstanbul'da 120 kişilik düğün"
               />
             </div>
@@ -863,7 +969,9 @@ export function SihirbazClient({
           {adim > 0 ? (
             <button
               type="button"
-              onClick={() => guncelle({ adim: String(adim - 1) })}
+              onClick={() =>
+                guncelle({ adim: String(adim - 1) }, { gecmis: 'push' })
+              }
               className={BTN_IKINCIL}
             >
               ← Geri
@@ -877,7 +985,9 @@ export function SihirbazClient({
           ) : adim < SON_ADIM ? (
             <button
               type="button"
-              onClick={() => guncelle({ adim: String(adim + 1) })}
+              onClick={() =>
+                guncelle({ adim: String(adim + 1) }, { gecmis: 'push' })
+              }
               className={BTN_BIRINCIL}
             >
               Devam →

@@ -116,4 +116,16 @@ olcumunde 2027-06-15 cikmisti — model kararsiz); lansman -> `launch`, `is_date
 **Acik madde (P3'e):** parser 1.2 — `inferred` tarih bugunden onceyse yili bugunden sonraki ilk uygun yila kaydir
 (`date_assumed`), boylece "15 Haziran" formu on doldurur.
 
-(P2-P3 kapanislari buraya eklenir)
+**P2 (23 Eylul 2026, commit `db3e1b3`):** `app/etkinlik-sihirbazi/actions.ts` (`confirmEventFromWizard`: dogrulama, taban
+surumle alan bazinda provenance karsilastirmasi, form-yalniz brief `[form] ...`, surum `wizard/1.0` + `valid`, RPC
+hata eslemesi), `sihirbaz-client.tsx` (adim 0 Anlat + 4 form adimi + Onayla; tur listesi `event_types`'tan),
+`page.tsx`, `app/etkinliklerim/page.tsx` + `[id]/page.tsx`, menu; `EVENT_WIZARD_PARSER_VERSION`. tsc bos, build
+basarili; embed adlari yoklamayla dogrulandi. Canli: Anlat -> on dolu form -> Onayla -> `/etkinliklerim/<id>`; brief
+`bb375985` v1 `needs_input` (`is_current=false`) + v2 `wizard/1.0` `valid`; form-yalniz brief `ceb638d8` v1 `wizard/1.0`
+`valid`; oturumsuz Onayla -> `/giris?redirect=` -> giris sonrasi ayni adim/secimlerle donus DOGRULANDI. Uretimde asama12
+K1-K6 ESIT, **K7 = 20000**. Kusurlar: (1) metin/sayi kutularinda 6-7 sn gecikme — her tus `router.push` ile sunucu
+bilesenini yeniden kosturuyor (page.tsx `searchParams` okumuyor; gereksiz) -> **P2b** (`16-claude-code-gorevi-p2b.md`:
+yerel history API + yerel state); (2) sayisi 0 olan kategori cipi secilemiyor (Ankara'da rol secilemedi) -> P3;
+(3) bitis = baslangic ise "tarih -> tarih" gosterimi -> P3.
+
+(P2b-P3 kapanislari buraya eklenir)
