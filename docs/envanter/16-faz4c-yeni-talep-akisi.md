@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `04-goc-plani.md` FAZ 4 madde 24-26, `06-eventspec-sozlesmesi.md` bolum 4 (onay), `15-faz4a` bolum 2
 (parcalama), `05-arayuz-modeli.md`.
-**Durum:** DB (4c-DB) DOSYALAR HAZIR (22 Eylul 2026; yerelde test edildi). Uygulama P1-P3 Claude Code (bolum 5).
+**Durum:** 4c-DB URETIMDE (23 Eylul 2026; bolum 7). Uygulama P1-P3 Claude Code (bolum 5): P1 sirada.
 
 ## 1. Amac ve sinir
 
@@ -98,4 +98,10 @@ Her parca: git-status-first -> tsc bos -> build -> onizleme turu (main vs dal) -
 
 ## 7. Kapanis kaydi
 
-(4c-DB uretim sonrasi ve her P icin doldurulur)
+**4c-DB (23 Eylul 2026, commit `0b67814`):** uretim on kontrolu beklendigi gibi (yalniz `conversations.event_id`, RPC
+0); dal `db push` 1 dosya; dalda asama4 **17/17** (T16 GECTI: needs_input/eski surum 22023, onay alanlari + 2 gereksinim
+sirali/adetli, ayni surum 23505, gecersiz slug/tur 22023 atomik, pro1/anon 42501, admin onayi owner=admin,
+quote_requests.event_id SET NULL), asama12 K1-K6 ESIT + K7/K8 0; uretim `db push` 1 dosya; uretimde asama12 K1-K6 ESIT,
+K7/K8 0 (henuz onaylanmis etkinlik yok). `git push` tamam. Siradaki: P1 (`16-claude-code-gorevi-p1.md`).
+
+(P1-P3 kapanislari buraya eklenir)
