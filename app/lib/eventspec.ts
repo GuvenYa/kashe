@@ -34,6 +34,13 @@ export const EVENT_NEEDS_PROMPT_VERSION = 'p2';
  */
 export const EVENT_NEEDS_MODEL_ID = 'claude-haiku-4-5';
 
+/**
+ * Sihirbazin (form) yazdigi surumlerin `parser_version` damgasi. Bu surumlerde
+ * model yoktur: `model_id` ve `prompt_version` GONDERILMEZ (NULL kalir).
+ * `schema_version` yine `EVENTSPEC_SCHEMA_VERSION`.
+ */
+export const EVENT_WIZARD_PARSER_VERSION = 'wizard/1.0';
+
 /** `event_briefs.source` enum'u. */
 export type EventBriefSource =
   | 'client_web'

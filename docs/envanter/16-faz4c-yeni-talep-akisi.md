@@ -104,4 +104,16 @@ sirali/adetli, ayni surum 23505, gecersiz slug/tur 22023 atomik, pro1/anon 42501
 quote_requests.event_id SET NULL), asama12 K1-K6 ESIT + K7/K8 0; uretim `db push` 1 dosya; uretimde asama12 K1-K6 ESIT,
 K7/K8 0 (henuz onaylanmis etkinlik yok). `git push` tamam. Siradaki: P1 (`16-claude-code-gorevi-p1.md`).
 
-(P1-P3 kapanislari buraya eklenir)
+**P1 (23 Eylul 2026, commit `1a0a79c`):** `app/lib/eventspec.ts` (`p2`, `analyze-event-needs/1.1`, `EventNeedsRawField`,
+`normalizeTr`), `app/lib/ai-actions.ts` (`event_types` + `turkish_cities` referans okumasi, baglam tarihi, prompt p2,
+parser 1.1 suzgeci: tip + kume + confidence 0.5-1, gecmis tarih/ters aralik yazilmaz, `50.000` gibi ayracli dize
+reddedilir; sonuca `spec` + `provenance`). tsc bos, build basarili. Uretim kaydi (3 metin, hepsi `needs_input` / `p2` /
+`1.1`): dugun -> `wedding`, `city_id` 34, `participant_count` 120, `extra.date_note` "Haziran", `title` derived;
+dogum gunu -> `birthday`, 34, `district` Kadikoy, butce 20000-30000, `venue_status` confirmed, 40 kisi — **`start_date`
+YAZILMADI** (`date_note` "15 Haziran" kaldi: model yili 2026 varsaydi, gecmis tarih suzgeci dusurdu; Claude Code'un yerel
+olcumunde 2027-06-15 cikmisti — model kararsiz); lansman -> `launch`, `is_date_flexible`, `urgency` flexible,
+`venue_status` searching (fazla; formda duzeltilir). Provenance anahtarlari = spec anahtarlari (extra haric).
+**Acik madde (P3'e):** parser 1.2 — `inferred` tarih bugunden onceyse yili bugunden sonraki ilk uygun yila kaydir
+(`date_assumed`), boylece "15 Haziran" formu on doldurur.
+
+(P2-P3 kapanislari buraya eklenir)

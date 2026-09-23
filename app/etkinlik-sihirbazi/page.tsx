@@ -3,13 +3,18 @@ import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { orderCities } from '@/app/lib/city-order';
 import { applyDiscoverBase } from '@/app/lib/discover-base';
-import { SihirbazClient, type SihirbazProfil } from './sihirbaz-client';
+import { getCachedUser } from '@/app/lib/auth';
+import {
+  SihirbazClient,
+  type EtkinlikTuru,
+  type SihirbazProfil,
+} from './sihirbaz-client';
 import type { ProviderPublic } from '@/app/lib/types';
 
 export const metadata = {
   title: 'Etkinlik Sihirbazı — Kashe',
   description:
-    'Etkinlik türünü, şehrini ve ihtiyaçlarını seç; sana uyan profesyonelleri gör.',
+    'Etkinliğini anlat ya da adım adım kur; onayla, etkinliğin hazır olsun.',
 };
 
 /**
@@ -26,25 +31,35 @@ export const metadata = {
  * FİLTRE PARİTESİ: temel görünürlük koşulu `applyDiscoverBase` ile TEK KAYNAKTAN
  * geliyor (app/lib/discover-base). Keşfet de aynı fonksiyonu çağırıyor, dolayısıyla
  * iki taraf yapısal olarak ayrışamaz — yorum bağına gerek kalmadı.
+ *
+ * FAZ 4c/P2: etkinlik türleri artık `event_types` tablosundan geliyor (sabit liste
+ * yok); oturum bilgisi "Anlat" ve "Onayla" adımlarının giriş duvarı için gerekli.
  */
 export default async function EtkinlikSihirbaziPage() {
   const supabase = await createClient();
 
-  const [categoriesRes, citiesRes, profilesRes] = await Promise.all([
-    supabase
-      .from('service_categories')
-      .select('id, slug, name_tr')
-      .eq('is_active', true)
-      .order('sort_order'),
-    supabase.from('turkish_cities').select('id, name').order('name'),
-    applyDiscoverBase(
-      // FAZ 2c: sayac da gorunumden okur; sutun adlari ve temel filtre ayni oldugu icin
-      // kesfet ile parite korunur (ikisi de applyDiscoverBase kullanir).
+  const [categoriesRes, citiesRes, eventTypesRes, profilesRes, user] =
+    await Promise.all([
       supabase
-        .from('v_providers_public')
-        .select('primary_category_id, city_id, role, category_attributes')
-    ),
-  ]);
+        .from('service_categories')
+        .select('id, slug, name_tr')
+        .eq('is_active', true)
+        .order('sort_order'),
+      supabase.from('turkish_cities').select('id, name').order('name'),
+      supabase
+        .from('event_types')
+        .select('key, name_tr, group_key, sort_order')
+        .eq('is_active', true)
+        .order('sort_order'),
+      applyDiscoverBase(
+        // FAZ 2c: sayac da gorunumden okur; sutun adlari ve temel filtre ayni oldugu icin
+        // kesfet ile parite korunur (ikisi de applyDiscoverBase kullanir).
+        supabase
+          .from('v_providers_public')
+          .select('primary_category_id, city_id, role, category_attributes')
+      ),
+      getCachedUser(),
+    ]);
 
   type SayacSatiri = Pick<
     ProviderPublic,
@@ -77,7 +92,9 @@ export default async function EtkinlikSihirbaziPage() {
             <SihirbazClient
               kategoriler={(categoriesRes.data ?? []) as { id: number; slug: string; name_tr: string }[]}
               sehirler={orderCities((citiesRes.data ?? []) as { id: number; name: string }[])}
+              turler={(eventTypesRes.data ?? []) as unknown as EtkinlikTuru[]}
               profiller={profiller}
+              oturumVar={!!user}
             />
           </Suspense>
         </div>

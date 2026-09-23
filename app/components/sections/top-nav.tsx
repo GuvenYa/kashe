@@ -96,6 +96,8 @@ export async function TopNav() {
   if (isProfessional || isAgency) {
     menuLinks.push({ href: "/premium", label: "Premium" });
   }
+  // FAZ 4c/P2: etkinlik akisi tum girisli rollerde (profilde bolum yok, tek erisim menu)
+  menuLinks.push({ href: "/etkinliklerim", label: "Etkinliklerim" });
   menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
 
   const navLinkClass =
