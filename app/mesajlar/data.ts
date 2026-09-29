@@ -61,3 +61,34 @@ export function getBudgetRangeLabel(key: BudgetRangeKey | string | null): string
   const found = BUDGET_RANGES.find((b) => b.key === key);
   return found?.label ?? null;
 }
+
+/**
+ * Gecerli bir butce araligi anahtari mi?
+ * `conversations_budget_range_check` yalniz BUDGET_RANGES anahtarlarini kabul eder;
+ * serbest metin 23514 verir ve o UPDATE'teki DIGER alanlar da yazilmaz.
+ */
+export function isBudgetRangeKey(v: unknown): v is BudgetRangeKey {
+  return (
+    typeof v === 'string' && (BUDGET_RANGE_KEYS as readonly string[]).includes(v)
+  );
+}
+
+/**
+ * Tutar araligini (TL) `budget_range` anahtarina cevirir.
+ * Esik UST sinira gore secilir (`max ?? min`): 20000-30000 -> `15k_30k`.
+ * Ikisi de bossa null doner (cagiran taraf paylasim aciksa `open`'a duser).
+ */
+export function budgetToRangeKey(
+  min: number | null | undefined,
+  max: number | null | undefined
+): BudgetRangeKey | null {
+  const deger = max ?? min;
+  if (deger === null || deger === undefined || !Number.isFinite(deger)) {
+    return null;
+  }
+  if (deger <= 5000) return 'under_5k';
+  if (deger <= 15000) return '5k_15k';
+  if (deger <= 30000) return '15k_30k';
+  if (deger <= 50000) return '30k_50k';
+  return 'over_50k';
+}

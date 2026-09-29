@@ -6,6 +6,7 @@ import {
   QUOTE_EXPIRY_OPTIONS,
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
+import { budgetToRangeKey } from '@/app/mesajlar/data';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
@@ -329,10 +330,13 @@ export async function submitOffer(
 
  // 3) Conversation: bu customer ↔ professional çifti için zaten var mı?
   // (conversations_unique_pair constraint — çift başına tek conversation)
-  const budgetRange =
-    request.share_budget && (request.budget_min || request.budget_max)
-      ? `${request.budget_min ?? '?'} - ${request.budget_max ?? '?'} TL`
-      : null;
+  // `conversations.budget_range` bir ENUM sutunudur (conversations_budget_range_check).
+  // Once serbest metin ("20000 - 30000 TL") yaziliyordu: UPDATE 23514 ile sessizce
+  // dusuyor ve ayni cagridaki tarih/tur/brief/event_id de yazilmiyordu.
+  // Paylasim acik ama tutar yoksa `open`.
+  const budgetRange = request.share_budget
+    ? budgetToRangeKey(request.budget_min, request.budget_max) ?? 'open'
+    : null;
 
   let conversationId: string;
 
@@ -346,7 +350,7 @@ export async function submitOffer(
   if (existingConv) {
     // Zaten konuşma var — onu kullan, brief/etkinlik bilgilerini güncelle
     conversationId = existingConv.id;
-    await supabase
+    const { error: sohbetHatasi } = await supabase
       .from('conversations')
       .update({
         event_date: request.event_date,
@@ -358,6 +362,17 @@ export async function submitOffer(
         ...(request.event_id ? { event_id: request.event_id } : {}),
       })
       .eq('id', conversationId);
+    if (sohbetHatasi) {
+      // Akis KESILMEZ — teklif yine gider. Ama sessiz dusmesin: logla ve en azindan
+      // etkinlik bagini dar bir denemeyle kurtarmaya calis.
+      console.error('[teklif] sohbet guncelleme', sohbetHatasi);
+      if (request.event_id) {
+        await supabase
+          .from('conversations')
+          .update({ event_id: request.event_id })
+          .eq('id', conversationId);
+      }
+    }
   } else {
     const { data: newConv, error: convError } = await supabase
       .from('conversations')

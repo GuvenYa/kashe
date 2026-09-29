@@ -8,6 +8,7 @@ import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import {
   EVENT_TYPE_KEYS,
   BUDGET_RANGE_KEYS,
+  isBudgetRangeKey,
   type EventTypeKey,
   type BudgetRangeKey,
 } from './data';
@@ -415,6 +416,13 @@ export async function startConversation(
   // FAZ 4c/P3: etkinlik bagi — istemciden gelen id RLS ile dogrulanir, gorunmuyorsa NULL.
   const etkinlikId = await gorunenEtkinlikId(supabase, data.event_id);
 
+  // Savunma: `conversations.budget_range` ENUM sutunudur (conversations_budget_range_check).
+  // Modal zaten enum anahtari gonderiyor; yine de taksonomi disi bir deger DB'ye
+  // ulasmadan null'a indirilir — aksi halde TUM UPDATE 23514 ile sessizce duser.
+  const safeBudgetRange = isBudgetRangeKey(data.budget_range)
+    ? data.budget_range
+    : null;
+
   if (existing) {
     conversationId = existing.id;
     // Mevcut konuşmaya yeni talep geldi — çubuğu en güncel talebe göre güncelle.
@@ -427,7 +435,7 @@ export async function startConversation(
     if (data.location !== null)
       updateFields.location = data.location?.trim() || null;
     if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
-    if (data.budget_range !== null) updateFields.budget_range = data.budget_range;
+    if (safeBudgetRange !== null) updateFields.budget_range = safeBudgetRange;
     if (data.brief_data) updateFields.brief_data = data.brief_data;
     if (data.start_time !== undefined && data.start_time !== null)
       updateFields.start_time = data.start_time;
@@ -436,10 +444,14 @@ export async function startConversation(
     // Etkinlik bagi yalniz DOLU gelirse yazilir (bos deger eskisini ezmesin — Yol A).
     if (etkinlikId) updateFields.event_id = etkinlikId;
 
-    await supabase
+    const { error: sohbetHatasi } = await supabase
       .from('conversations')
       .update(updateFields)
       .eq('id', conversationId);
+    if (sohbetHatasi) {
+      // Sessiz dusmesin: akis kesilmez ama hata log'a yazilir.
+      console.error('[mesaj] sohbet guncelleme', sohbetHatasi);
+    }
   } else {
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
@@ -450,7 +462,7 @@ export async function startConversation(
         event_type: safeEventType,
         location: data.location?.trim() || null,
         guest_count: data.guest_count,
-        budget_range: data.budget_range,
+        budget_range: safeBudgetRange,
         brief_data: data.brief_data ?? null,
         request_type: data.request_type ?? 'quote',
         start_time: data.start_time ?? null,
