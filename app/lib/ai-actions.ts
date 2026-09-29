@@ -683,12 +683,32 @@ Kurallar:
       }
     }
 
+    /**
+     * parser 1.2 — varsayilan yil kaydirma.
+     * Model yili metinde YOKKEN varsayiyorsa (`inferred: true`) ve cikan tarih
+     * gecmisteyse, yil bugunden sonraki ilk uygun yila tasinir (en fazla +2 yil;
+     * 29 Subat artik yil degilse `gecerliGun` eler). Metinde yil YAZIYORSA
+     * (`inferred` degil) gecmis tarih yine yazilmaz.
+     */
+    function ileriKaydir(gun: string, varsayildi: boolean): string | null {
+      if (gun >= bugun) return gun;
+      if (!varsayildi) return null;
+      const yil = Number(gun.slice(0, 4));
+      const ayGun = gun.slice(4);
+      for (let ek = 1; ek <= 2; ek++) {
+        const aday = String(yil + ek) + ayGun;
+        if (gecerliGun(aday) && aday >= bugun) return aday;
+      }
+      return null;
+    }
+
     // start_date / end_date — gecmis tarih ve ters aralik yazilmaz
     const hamBas = hamAlan(parsed.start_date);
     let basTarih: string | null = null;
     if (hamBas) {
-      const gun = gecerliGun(hamBas.value);
-      if (gun && gun >= bugun) {
+      const ham = gecerliGun(hamBas.value);
+      const gun = ham ? ileriKaydir(ham, hamBas.inferred) : null;
+      if (gun) {
         basTarih = gun;
         yaz(
           'start_date',
@@ -704,8 +724,9 @@ Kurallar:
     }
     const hamSon = hamAlan(parsed.end_date);
     if (hamSon) {
-      const gun = gecerliGun(hamSon.value);
-      if (gun && gun >= bugun && (!basTarih || gun >= basTarih)) {
+      const ham = gecerliGun(hamSon.value);
+      const gun = ham ? ileriKaydir(ham, hamSon.inferred) : null;
+      if (gun && (!basTarih || gun >= basTarih)) {
         yaz(
           'end_date',
           gun,

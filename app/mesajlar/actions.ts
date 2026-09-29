@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
 import { canWriteForBusiness } from '@/app/lib/business-write';
+import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import {
   EVENT_TYPE_KEYS,
   BUDGET_RANGE_KEYS,
@@ -48,6 +49,8 @@ export type StartConversationData = {
   end_time?: string | null;
   /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
   on_behalf_business_id?: string | null;
+  /** FAZ 4c/P3: sohbet bir etkinlikten baslatildiysa events.id (sunucuda dogrulanir). */
+  event_id?: string | null;
 };
 
 const SLIDING_WINDOW_MINUTES = 5;
@@ -409,6 +412,9 @@ export async function startConversation(
       ? data.event_type
       : null;
 
+  // FAZ 4c/P3: etkinlik bagi — istemciden gelen id RLS ile dogrulanir, gorunmuyorsa NULL.
+  const etkinlikId = await gorunenEtkinlikId(supabase, data.event_id);
+
   if (existing) {
     conversationId = existing.id;
     // Mevcut konuşmaya yeni talep geldi — çubuğu en güncel talebe göre güncelle.
@@ -427,6 +433,8 @@ export async function startConversation(
       updateFields.start_time = data.start_time;
     if (data.end_time !== undefined && data.end_time !== null)
       updateFields.end_time = data.end_time;
+    // Etkinlik bagi yalniz DOLU gelirse yazilir (bos deger eskisini ezmesin — Yol A).
+    if (etkinlikId) updateFields.event_id = etkinlikId;
 
     await supabase
       .from('conversations')
@@ -447,6 +455,7 @@ export async function startConversation(
         request_type: data.request_type ?? 'quote',
         start_time: data.start_time ?? null,
         end_time: data.end_time ?? null,
+        event_id: etkinlikId,
       })
       .select('id')
       .single();

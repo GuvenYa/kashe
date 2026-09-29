@@ -5,8 +5,21 @@ import { orderCities } from '@/app/lib/city-order';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { YeniIlanFormu } from './yeni-ilan-formu';
 import { getWritableBusinesses } from '@/app/lib/business-write';
+import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 
-export default async function YeniIlanPage() {
+type YeniIlanParams = {
+  /** FAZ 4c/P3: events.id — ilan bu etkinlige baglanir (sunucuda dogrulanir). */
+  etkinlik?: string;
+  /** service_categories.id — etkinlik detayindaki rol satirindan gelir. */
+  kategori?: string;
+};
+
+export default async function YeniIlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<YeniIlanParams>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -94,6 +107,60 @@ export default async function YeniIlanPage() {
     );
   }
 
+  // FAZ 4c/P3 — etkinlikten acilan ilan: id dogrulanir (RLS), alanlar on dolum
+  // ONERISI olarak forma gecer; kullanici hepsini degistirebilir.
+  const etkinlikId = await gorunenEtkinlikId(supabase, params.etkinlik);
+  let onDoldur: {
+    etkinlikId: string;
+    kategoriId: number | null;
+    eventType: string | null;
+    eventDate: string | null;
+    cityId: number | null;
+    guestCount: number | null;
+    budgetMin: number | null;
+    budgetMax: number | null;
+    title: string | null;
+  } | null = null;
+
+  if (etkinlikId) {
+    const { data: etkinlik } = await supabase
+      .from('events')
+      .select(
+        'id, title, event_type, start_date, city_id, participant_count, budget_min, budget_max, event_types(name_tr), turkish_cities(name)'
+      )
+      .eq('id', etkinlikId)
+      .maybeSingle();
+    if (etkinlik) {
+      const e = etkinlik as unknown as {
+        title: string | null;
+        event_type: string;
+        start_date: string | null;
+        city_id: number | null;
+        participant_count: number | null;
+        budget_min: number | null;
+        budget_max: number | null;
+        event_types: { name_tr: string } | null;
+        turkish_cities: { name: string } | null;
+      };
+      const onerilenBaslik =
+        e.title ||
+        [e.event_types?.name_tr ?? e.event_type, e.turkish_cities?.name]
+          .filter(Boolean)
+          .join(' — ');
+      onDoldur = {
+        etkinlikId,
+        kategoriId: params.kategori ? Number(params.kategori) : null,
+        eventType: e.event_type,
+        eventDate: e.start_date,
+        cityId: e.city_id,
+        guestCount: e.participant_count,
+        budgetMin: e.budget_min,
+        budgetMax: e.budget_max,
+        title: onerilenBaslik || null,
+      };
+    }
+  }
+
   // Kategoriler ve şehirler
   const [categoriesResult, citiesResult] = await Promise.all([
     supabase
@@ -141,6 +208,7 @@ export default async function YeniIlanPage() {
             cities={orderCities(citiesResult.data || [])}
             writableBusinesses={writableBusinesses}
             canSelfCreate={canSelfCreate}
+            onDoldur={onDoldur}
           />
         </div>
       </div>

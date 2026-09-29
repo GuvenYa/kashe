@@ -19,8 +19,10 @@ export const EVENTSPEC_SCHEMA_VERSION = '1.0';
  * `analyzeEventNeeds` cikarim hattinin surumu (kod + prompt ailesi).
  * 1.1 (FAZ 4c/P1): rollere ek olarak yapisal alanlar (tur, sehir, tarih, katilimci,
  * butce, aciliyet, mekan durumu, baslik) cikariliyor ve alan bazinda suzuluyor.
+ * 1.2 (FAZ 4c/P3): varsayilan yil ileri kaydirilir — model `inferred: true` ile
+ * gecmis bir tarih verdiyse yil bugunden sonraki ilk uygun yila tasinir.
  */
-export const EVENT_NEEDS_PARSER_VERSION = 'analyze-event-needs/1.1';
+export const EVENT_NEEDS_PARSER_VERSION = 'analyze-event-needs/1.2';
 
 /**
  * `analyzeEventNeeds` prompt metninin surumu — metin degisince artar.

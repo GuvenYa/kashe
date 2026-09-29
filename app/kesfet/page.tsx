@@ -74,6 +74,9 @@ type SearchParams = {
   musait?: string; // '1' → yoğun olanları gizle (AND kısıt)
   deneyim?: string; // 'junior,senior' → bu deneyimdekiler önce (sıralama)
   etkinlik?: string; // ilanlar taksonomisi key'i → category_attributes.etkinlik_turleri contains
+  // FAZ 4c/P3: events.id — `etkinlik` burada TUR demek oldugu icin ayri ad kullanilir.
+  // Filtreleme YAPMAZ; yalniz kart linklerine tasinir (DB sorgusu yok).
+  etkinlik_id?: string;
   [key: `attr_${string}`]: string | undefined;
 };
 
@@ -97,6 +100,15 @@ export default async function KesfetPage({
   const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
   const typeFilter: 'profesyonel' | 'ajans' | null =
     params.tip === 'profesyonel' || params.tip === 'ajans' ? params.tip : null;
+  // FAZ 4c/P3: etkinlik bagi yalniz kart linklerine tasinir — filtreye GIRMEZ,
+  // DB'ye sorulmaz. Yalniz uuid bicimi kontrol edilir (bicimsiz deger yok sayilir).
+  const etkinlikIdParam =
+    params.etkinlik_id &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      params.etkinlik_id
+    )
+      ? params.etkinlik_id
+      : null;
   // Fiyat tavanı (başlangıç fiyatı bu değerin altındakiler) ve min puan
   const maxPrice = params.fiyat ? parseInt(params.fiyat, 10) : null;
   const minRating = params.puan ? parseFloat(params.puan) : null;
@@ -597,6 +609,7 @@ export default async function KesfetPage({
                         isFavorited={favoritedIds.has(profile.id)}
                         isLoggedIn={isLoggedIn}
                         currentUserRole={currentUserRole}
+                        etkinlikId={etkinlikIdParam}
                         isBusy={busyByProfile[profile.id] ?? false}
                       />
                     ))}

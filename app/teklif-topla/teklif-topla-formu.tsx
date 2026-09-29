@@ -67,6 +67,11 @@ export type TeklifOnDoldur = {
   etkinlikTuru: string | null;
   /** ISO tarih → brief 'event_date' alanı */
   etkinlikTarihi: string | null;
+  /** FAZ 4c/P3: events.id — sunucuda dogrulanmis; talep bu etkinlige baglanir. */
+  etkinlikId?: string | null;
+  /** Etkinlikten gelen butce araligi (TL) — yalniz baslangic degeri. */
+  butceMin?: number | null;
+  butceMax?: number | null;
 };
 
 export function TeklifToplaFormu({
@@ -117,8 +122,14 @@ export function TeklifToplaFormu({
   const [deadlineDays, setDeadlineDays] = useState(3);
   const [shareBudget, setShareBudget] = useState(true);
   const [targetRole, setTargetRole] = useState<'both' | 'professional' | 'agency'>('both');
-  const [budgetMin, setBudgetMin] = useState('');
-  const [budgetMax, setBudgetMax] = useState('');
+  const [budgetMin, setBudgetMin] = useState(
+    onDoldur?.butceMin != null ? String(onDoldur.butceMin) : ''
+  );
+  const [budgetMax, setBudgetMax] = useState(
+    onDoldur?.butceMax != null ? String(onDoldur.butceMax) : ''
+  );
+  // Etkinlik bagi: gizli, kullanici degistiremez. Sunucu yine de dogrular.
+  const etkinlikId = onDoldur?.etkinlikId ?? null;
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -269,6 +280,7 @@ export function TeklifToplaFormu({
         recipient_count: recipientCount,
         target_roles: targetRoles,
         attachment,
+        event_id: etkinlikId,
       });
 
       if (result.success && result.data) {
@@ -291,6 +303,18 @@ export function TeklifToplaFormu({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {etkinlikId && (
+        <p className="text-sm text-ink-72 bg-brand-ink-08 border border-brand-ink/25 rounded-lg px-4 py-2.5">
+          Bu talep{' '}
+          <a
+            href={`/etkinliklerim/${etkinlikId}`}
+            className="text-brand-ink hover:underline font-medium"
+          >
+            etkinliğine
+          </a>{' '}
+          bağlanacak.
+        </p>
+      )}
       {/* Kimin adına (manager+ kurum üyesine görünür) */}
       {writableBusinesses.length > 0 && (
         <section className="bg-card border border-line rounded-lg p-6">

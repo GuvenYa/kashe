@@ -53,6 +53,23 @@ function buildQs(v: {
   for (const [key, vals] of Object.entries(v.attrs)) {
     if (vals.length > 0) params.set(`attr_${key}`, vals.join(','));
   }
+  // FAZ 4c/P3: etkinlik bagi FILTRE DEGILDIR ama URL'de korunur — kullanici filtre
+  // degistirince "etkinlikten geldim" bilgisi dusmesin (siralama zaten koruyordu).
+  // Deger yalniz canli URL'den okunur; uuid bicimine uymayan deger tasinmaz.
+  // Hem currentQs hem propQs bu fonksiyondan gectigi icin yanki karsilastirmasi bozulmaz.
+  if (typeof window !== 'undefined') {
+    const etkinlikId = new URLSearchParams(window.location.search).get(
+      'etkinlik_id'
+    );
+    if (
+      etkinlikId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        etkinlikId
+      )
+    ) {
+      params.set('etkinlik_id', etkinlikId);
+    }
+  }
   return params.toString();
 }
 

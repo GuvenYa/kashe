@@ -7,6 +7,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { TeklifToplaFormu } from './teklif-topla-formu';
 import { getWritableBusinesses } from '@/app/lib/business-write';
+import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 
 export const metadata = {
   title: 'Teklif Topla — Kashe',
@@ -21,6 +22,11 @@ type OnDolduParams = {
   tarih?: string;
   /** service_categories.id — YALNIZ tek değer ön-doldurulur (form tekil seçim). */
   kategori?: string;
+  /** FAZ 4c/P3: events.id — talep bu etkinlige baglanir (sunucuda dogrulanir). */
+  etkinlik?: string;
+  /** Etkinlikten gelen butce araligi (TL) */
+  butce_min?: string;
+  butce_max?: string;
 };
 
 export default async function TeklifToplaPage({
@@ -133,6 +139,11 @@ export default async function TeklifToplaPage({
             sehirId: params.sehir ? Number(params.sehir) : null,
             etkinlikTuru: params.tur ?? null,
             etkinlikTarihi: params.tarih ?? null,
+            // FAZ 4c/P3: id istemciden geliyor ama YAZILMADAN once sunucuda
+            // dogrulanir (gorunenEtkinlikId); burada yalniz forma tasinir.
+            etkinlikId: await gorunenEtkinlikId(supabase, params.etkinlik),
+            butceMin: params.butce_min ? Number(params.butce_min) : null,
+            butceMax: params.butce_max ? Number(params.butce_max) : null,
           }}
         />
       </div>

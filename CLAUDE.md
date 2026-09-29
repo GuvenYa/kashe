@@ -44,6 +44,8 @@ Ayrintili urun modeli: `docs/architecture/00-genel-bakis.md`
 
 **`provider_id` sutunlari istemciden yazilmaz (FAZ 2b).** `services`, `portfolio_items`, `profile_experiences`, `reviews`, `favorites` tablolarindaki `provider_id` BEFORE tetikleyiciyle `profile_id`/`professional_id`'den turetilir; uygulama kodu bu sutunu INSERT/UPDATE govdesine koymaz (koysa da ezilir). `provider_services` 2c'ye kadar uygulama tarafindan okunmaz ve yazilmaz; `services` kaynak kalir, `services` fiyat/kategori/aktiflik sutunlarina dokunan her degisiklik `derive_provider_services` + `trg_faz2b_sync_services` UPDATE OF listesini gunceller.
 
+**Derleme dogrulamasi cikis koduyla DEGIL (24 Eylul 2026).** `npm run build` Windows'ta hata verse de exit 0 donebiliyor (`Failed to collect page data for /...` ciktisi gecti, `.next/BUILD_ID` olusmadi). Kanit = cikti sonunda route tablosu + hata satiri yok + `.next/BUILD_ID` var. Ayrica `'use client'` modulunden sunucu bilesenine sabit/veri import edilmez (sayfa verisi toplamayi kirar); ortak veri `'use client'` OLMAYAN bir `*-data.ts` modulunde tutulur (ornek `app/ilanlar/listings-data.ts`).
+
 **Find/Replace All kullanma.** Buyuk dosyalarda toplu degistirme yapiyi bozuyor. Tek tek BUL/DEGISTIR ya da dosyanin tamamini yeniden yazma (Ctrl+A, Delete, yapistir) yontemi kullanilir.
 
 **`.next` onbellegi bozuluyor.** Beklenmeyen davranista once `.next` klasoru silinip sunucu yeniden baslatilir. Kod hatasi aramadan once bunu dene.

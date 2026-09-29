@@ -58,7 +58,6 @@ const CIP =
 const CIP_PASIF =
   'bg-card border-line text-ink-72 hover:border-brand-ink hover:text-brand-ink';
 const CIP_AKTIF = 'bg-brand-ink border-brand-ink text-paper';
-const CIP_KAPALI = 'bg-card border-line text-ink-32 cursor-not-allowed';
 
 const BTN_BIRINCIL =
   'kashe-tap px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors disabled:opacity-50';
@@ -823,28 +822,24 @@ export function SihirbazClient({
               {kategoriler.map((kat) => {
                 const sayi = kategoriSayilari.get(kat.id) ?? 0;
                 const secili = secilenKategoriler.includes(kat.id);
-                const kapali = sayi === 0 && !secili;
-                const cipSinif = secili
-                  ? `${CIP} ${CIP_AKTIF}`
-                  : kapali
-                    ? `${CIP} ${CIP_KAPALI}`
-                    : `${CIP} ${CIP_PASIF}`;
+                // IHTIYAC, bugunku arzdan BAGIMSIZDIR: sayisi 0 olan kategori de
+                // secilebilir (Ankara'da saglayici yoksa da "DJ lazim" denebilir).
+                // Sayi yalniz bilgi; 0 ise "henuz yok" yazilir.
                 return (
                   <button
                     key={kat.id}
                     type="button"
-                    disabled={kapali}
                     onClick={() => kategoriDegistir(kat.id)}
-                    className={cipSinif}
+                    className={secili ? `${CIP} ${CIP_AKTIF}` : `${CIP} ${CIP_PASIF}`}
                     title={
-                      kapali
-                        ? 'Bu seçimde şu an uygun profesyonel yok'
+                      sayi === 0
+                        ? 'Bu seçimde şu an uygun profesyonel yok — ihtiyaç olarak yine ekleyebilirsin'
                         : undefined
                     }
                   >
                     {kat.name_tr}
                     <span className="ml-2 font-mono text-[11px] opacity-70">
-                      {sayi}
+                      {sayi === 0 ? 'henüz yok' : sayi}
                     </span>
                   </button>
                 );

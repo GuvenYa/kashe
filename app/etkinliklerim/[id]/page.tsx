@@ -4,6 +4,8 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
+import { STATUS_LABELS as TALEP_DURUMLARI } from '@/app/teklif-taleplerim/page';
+import { LISTING_STATUS_OPTIONS } from '@/app/ilanlar/listings-data';
 
 export const metadata = {
   title: 'Etkinlik — Kashe',
@@ -29,6 +31,16 @@ const ACILIYET_ETIKETLERI: Record<string, string> = {
   urgent: 'Acil',
   flexible: 'Esnek',
 };
+
+/**
+ * Ilan durum etiketleri. Kaynak `listings-data.ts` — ilan alan adlarinin ve
+ * sabitlerinin yasadigi, istemciye bagli OLMAYAN modul. (Sekme listesi
+ * `ilanlarim-listesi.tsx` icinde ama o dosya `'use client'`; oradan sunucu
+ * bilesenine import etmek sayfa verisi toplamayi kiriyor.)
+ */
+const ILAN_DURUMLARI: Record<string, string> = Object.fromEntries(
+  LISTING_STATUS_OPTIONS.map((o) => [o.key, o.label])
+);
 
 type Gereksinim = {
   id: string;
@@ -132,6 +144,52 @@ export default async function EtkinlikDetayPage({
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
+  // FAZ 4c/P3 — bagli kayitlar. RLS ne gosteriyorsa o (kendi/kurulus/admin);
+  // bag kurulmamis kayitlar burada gorunmez.
+  type BagliTalep = {
+    id: string;
+    status: string;
+    created_at: string;
+    recipient_count: number;
+    category_id: number | null;
+    service_categories: { name_tr: string } | null;
+  };
+  type BagliIlan = {
+    id: string;
+    title: string;
+    status: string;
+    created_at: string;
+  };
+  type BagliSohbet = {
+    id: string;
+    professional_id: string;
+    last_message_at: string | null;
+    profiles: { full_name: string | null; company_name: string | null } | null;
+  };
+
+  const [talepRes, ilanRes, sohbetRes] = await Promise.all([
+    supabase
+      .from('quote_requests')
+      .select(
+        'id, status, created_at, recipient_count, category_id, service_categories(name_tr)'
+      )
+      .eq('event_id', id)
+      .order('created_at', { ascending: false }),
+    supabase.from('listings').select('id, title, status, created_at').eq('event_id', id),
+    supabase
+      .from('conversations')
+      .select(
+        'id, professional_id, last_message_at, profiles!conversations_professional_id_fkey(full_name, company_name)'
+      )
+      .eq('event_id', id),
+  ]);
+
+  const talepler = (talepRes.data ?? []) as unknown as BagliTalep[];
+  const ilanlar = (ilanRes.data ?? []) as unknown as BagliIlan[];
+  const sohbetler = (sohbetRes.data ?? []) as unknown as BagliSohbet[];
+  const bagliVar =
+    talepler.length > 0 || ilanlar.length > 0 || sohbetler.length > 0;
+
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
     typeof ekstra.date_note === 'string' ? ekstra.date_note : null;
@@ -146,9 +204,12 @@ export default async function EtkinlikDetayPage({
     {
       etiket: 'Tarih',
       deger: etkinlik.start_date
-        ? [
+        ? // Bitis = baslangic ise tek tarih gosterilir (ok isareti yok).
+          [
             gunMetni(etkinlik.start_date),
-            etkinlik.end_date ? gunMetni(etkinlik.end_date) : null,
+            etkinlik.end_date && etkinlik.end_date !== etkinlik.start_date
+              ? gunMetni(etkinlik.end_date)
+              : null,
           ]
             .filter(Boolean)
             .join(' → ') + (etkinlik.is_date_flexible ? ' (esnek)' : '')
@@ -259,12 +320,15 @@ export default async function EtkinlikDetayPage({
                 {gereksinimler.map((g) => {
                   const rol = g.service_roles;
                   const kategoriId = rol?.legacy_category_id ?? null;
+                  // FAZ 4c/P3: baglar — `etkinlik` kesfet'te TUR demek oldugu icin
+                  // orada `etkinlik_id` kullanilir.
                   const kesfetLinki =
                     '/kesfet' +
                     sorguDizesi([
                       ['kategori', kategoriId],
                       ['sehir', etkinlik.city_id],
                       ['etkinlik', etkinlik.event_type],
+                      ['etkinlik_id', etkinlik.id],
                     ]);
                   const teklifLinki =
                     '/teklif-topla' +
@@ -272,6 +336,15 @@ export default async function EtkinlikDetayPage({
                       ['tur', etkinlik.event_type],
                       ['sehir', etkinlik.city_id],
                       ['tarih', etkinlik.start_date],
+                      ['kategori', kategoriId],
+                      ['etkinlik', etkinlik.id],
+                      ['butce_min', etkinlik.budget_min],
+                      ['butce_max', etkinlik.budget_max],
+                    ]);
+                  const ilanLinki =
+                    '/ilanlar/yeni' +
+                    sorguDizesi([
+                      ['etkinlik', etkinlik.id],
                       ['kategori', kategoriId],
                     ]);
                   return (
@@ -307,7 +380,7 @@ export default async function EtkinlikDetayPage({
                           Teklif topla
                         </Link>
                         <Link
-                          href="/ilanlar/yeni"
+                          href={ilanLinki}
                           className="kashe-tap text-sm text-brand-ink hover:underline"
                         >
                           İlan aç
@@ -316,6 +389,69 @@ export default async function EtkinlikDetayPage({
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Bagli kayitlar — etkinlikten baslatilan talep / ilan / sohbet */}
+          <div className="mt-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+              Bağlı kayıtlar
+            </p>
+            {!bagliVar ? (
+              <div className="bg-card border border-line rounded-lg p-6 text-sm text-ink-72">
+                Henüz bağlı talep/ilan/sohbet yok.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {talepler.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/teklif-taleplerim/${t.id}`}
+                    className="block bg-card border border-line rounded-lg p-4 hover:border-brand-ink transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="text-sm text-ink">
+                        Teklif talebi
+                        {t.service_categories?.name_tr
+                          ? ` · ${t.service_categories.name_tr}`
+                          : ''}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                        {TALEP_DURUMLARI[t.status] ?? t.status} ·{' '}
+                        {t.recipient_count} profesyonel
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+                {ilanlar.map((i) => (
+                  <Link
+                    key={i.id}
+                    href={`/ilanlar/${i.id}`}
+                    className="block bg-card border border-line rounded-lg p-4 hover:border-brand-ink transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="text-sm text-ink">İlan · {i.title}</span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                        {ILAN_DURUMLARI[i.status] ?? i.status}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+                {sohbetler.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/mesajlar/${s.id}`}
+                    className="block bg-card border border-line rounded-lg p-4 hover:border-brand-ink transition-colors"
+                  >
+                    <span className="text-sm text-ink">
+                      Sohbet ·{' '}
+                      {s.profiles?.company_name ||
+                        s.profiles?.full_name ||
+                        'Profesyonel'}
+                    </span>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

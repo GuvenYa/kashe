@@ -5,6 +5,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { isUserSuspended } from '@/app/lib/check-suspension';
 import { sendPushToUser } from '@/app/lib/push-server';
 import { canWriteForBusiness, canOwnForBusiness } from '@/app/lib/business-write';
+import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import {
   validateListingInput,
   validateApplicationInput,
@@ -56,6 +57,8 @@ type CreateListingInput = {
   publish_immediately: boolean;
   /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
   on_behalf_business_id?: string | null;
+  /** FAZ 4c/P3: ilan bu etkinlikten acildiysa events.id (sunucuda dogrulanir). */
+  event_id?: string | null;
 };
 
 /**
@@ -149,6 +152,8 @@ export async function createListing(
       allowed_applicant_roles: input.allowed_applicant_roles,
       // Yayınla = admin onayına gönder (pending_approval). Aksi halde taslak.
       status: input.publish_immediately ? 'pending_approval' : 'draft',
+      // FAZ 4c/P3: istemciden gelen id dogrulanir; gorunmuyorsa NULL (bag kurulmaz).
+      event_id: await gorunenEtkinlikId(supabase, input.event_id),
     })
     .select('id')
     .single();
@@ -747,7 +752,7 @@ export async function acceptApplication(
   const { data: app } = await supabase
     .from('applications')
     .select(
-      'id, listing_id, applicant_id, status, listings(creator_id, event_date, event_type, location, guest_count)'
+      'id, listing_id, applicant_id, status, listings(creator_id, event_date, event_type, location, guest_count, event_id)'
     )
     .eq('id', applicationId)
     .single();
@@ -760,6 +765,7 @@ export async function acceptApplication(
     event_type: string | null;
     location: string | null;
     guest_count: number | null;
+    event_id: string | null;
   };
   const listingCreator = listingRel?.creator_id;
   // Sahibi VEYA kurum adına manager+ üye kabul edebilir (kaynak üzerinde yetki).
@@ -823,6 +829,9 @@ export async function acceptApplication(
     event_type: listingRel.event_type,
     location: listingRel.location,
     guest_count: listingRel.guest_count,
+    // FAZ 4c/P3: ilanin etkinlik bagi sohbete tasinir (Yol A: en son kabul edilen
+    // is kazanir; ilan bagsizsa NULL yazilir — mevcut eventInfo davranisiyla ayni).
+    event_id: listingRel.event_id,
   };
 
   if (!conversationId) {

@@ -10,7 +10,8 @@ export const metadata = {
   title: 'Teklif Taleplerim — Kashe',
 };
 
-const STATUS_LABELS: Record<string, string> = {
+/** Talep durum etiketleri — tek kaynak; etkinlik detay sayfasi da bunu kullanir. */
+export const STATUS_LABELS: Record<string, string> = {
   active: 'Aktif',
   closed: 'Kapatıldı',
   expired: 'Süresi doldu',

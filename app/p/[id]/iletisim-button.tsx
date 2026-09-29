@@ -39,6 +39,8 @@ type Props = {
     estimatedTotal: number | null;
   } | null;
   variant?: 'default' | 'package' | 'inline' | 'primary-accent';
+  /** FAZ 4c/P3: etkinlikten gelindiyse events.id — sohbet o etkinlige baglanir. */
+  etkinlikId?: string | null;
 };
 
 export function IletisimButton({
@@ -52,6 +54,7 @@ export function IletisimButton({
   packageContext = null,
   serviceContext = null,
   variant = 'default',
+  etkinlikId = null,
 }: Props) {
   const router = useRouter();
   // Pro-as-buyer: her ziyaretçi (professional dahil) kendi adına — customer koltuğu — teklif isteyebilir.
@@ -287,6 +290,8 @@ export function IletisimButton({
       budget_range: legacyBudget,
       brief_data: Object.keys(cleanBrief).length > 0 ? cleanBrief : null,
       on_behalf_business_id: onBehalfBusinessId,
+      // Etkinlikten gelindiyse bag tasinir; sunucu id'yi RLS ile dogrular.
+      event_id: etkinlikId,
     };
 
     // ANONİM AKIŞ (Model A): brief'i sessionStorage'a yaz, kayda yönlendir.

@@ -82,10 +82,22 @@ export async function generateMetadata({
 
 export default async function PublicProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ etkinlik?: string }>;
 }) {
   const { id } = await params;
+  const { etkinlik: etkinlikParam } = await searchParams;
+  // FAZ 4c/P3: etkinlikten gelindiyse sohbete bag tasinir. Burada yalniz bicim
+  // kontrolu yapilir; gecerliligi sunucu action'i (gorunenEtkinlikId) dogrular.
+  const etkinlikId =
+    etkinlikParam &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      etkinlikParam
+    )
+      ? etkinlikParam
+      : null;
   const supabase = await createClient();
 
   const { data: profileData } = await supabase
@@ -975,6 +987,7 @@ export default async function PublicProfilePage({
                           isLoggedIn={isLoggedIn}
                           currentUserIsProfessional={currentUserIsProfessional}
                           isOwnProfile={isOwnProfile}
+                          etkinlikId={etkinlikId}
                           packageContext={{
                             title: pkg.title,
                             price: pkgPrice,
@@ -1086,6 +1099,7 @@ export default async function PublicProfilePage({
                     isLoggedIn={isLoggedIn}
                     currentUserIsProfessional={currentUserIsProfessional}
                     isOwnProfile={isOwnProfile}
+                    etkinlikId={etkinlikId}
                     writableBusinesses={writableBusinesses}
                     variant="inline"
                   />
@@ -1120,6 +1134,7 @@ export default async function PublicProfilePage({
                 isLoggedIn={isLoggedIn}
                 currentUserIsProfessional={currentUserIsProfessional}
                 isOwnProfile={isOwnProfile}
+                etkinlikId={etkinlikId}
               />
             )}
             <YorumButton

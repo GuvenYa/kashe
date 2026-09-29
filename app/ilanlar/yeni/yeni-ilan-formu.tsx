@@ -37,6 +37,22 @@ type Props = {
    *  Kurum ilanını düzenleyen manager+ üye için false → kaydetince /ilan detayına
    *  değil /ilanlarim'a döner (detay sayfası sahibi olmayana published-dışını 404'ler). */
   editorIsOwner?: boolean;
+  /**
+   * FAZ 4c/P3 — etkinlikten acilan yeni ilan icin on dolum ONERISI.
+   * YALNIZ yeni ilan modunda (initialData yokken) baslangic degeri olarak kullanilir;
+   * duzenleme modu bundan etkilenmez. Kullanici her alani degistirebilir.
+   */
+  onDoldur?: {
+    etkinlikId: string;
+    kategoriId: number | null;
+    eventType: string | null;
+    eventDate: string | null;
+    cityId: number | null;
+    guestCount: number | null;
+    budgetMin: number | null;
+    budgetMax: number | null;
+    title: string | null;
+  } | null;
 };
 
 // Tek kaynak: app/mesajlar/data.ts → EVENT_TYPES (ilan taksonomisi = listings.event_type CHECK).
@@ -148,7 +164,12 @@ export function YeniIlanFormu({
   writableBusinesses = [],
   canSelfCreate = true,
   editorIsOwner = true,
+  onDoldur = null,
 }: Props) {
+  // Etkinlik bagi yalniz YENI ilan modunda anlamli; gizli, kullanici degistiremez.
+  const etkinlikId = initialData ? null : onDoldur?.etkinlikId ?? null;
+  /** On dolum yalniz yeni ilan modunda uygulanir (duzenleme modu DEGISMEZ). */
+  const od = initialData ? null : onDoldur;
   // "Kimin adına" — yalnız yeni ilan (create) modunda anlamlı
   const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
     canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
@@ -193,9 +214,9 @@ export function YeniIlanFormu({
 
   // Form state — initialData varsa onunla initialize
   const [categoryId, setCategoryId] = useState<number | ''>(
-    initialData?.category_id ?? ''
+    initialData?.category_id ?? od?.kategoriId ?? ''
   );
-  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [title, setTitle] = useState(initialData?.title ?? od?.title ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [requirements, setRequirements] = useState(
     initialData?.requirements ?? ''
@@ -206,18 +227,22 @@ export function YeniIlanFormu({
   const [workConditions, setWorkConditions] = useState(
     initialData?.work_conditions ?? ''
   );
-  const [eventDate, setEventDate] = useState(initialData?.event_date ?? '');
+  const [eventDate, setEventDate] = useState(
+    initialData?.event_date ?? od?.eventDate ?? ''
+  );
   const [eventType, setEventType] = useState<string>(
-    initialData?.event_type ?? ''
+    initialData?.event_type ?? od?.eventType ?? ''
   );
   const [location, setLocation] = useState(initialData?.location ?? '');
   const [cityId, setCityId] = useState<number | ''>(
-    initialData?.city_id ?? ''
+    initialData?.city_id ?? od?.cityId ?? ''
   );
   const [guestCount, setGuestCount] = useState(
     initialData?.guest_count !== null && initialData?.guest_count !== undefined
       ? String(initialData.guest_count)
-      : ''
+      : od?.guestCount != null
+        ? String(od.guestCount)
+        : ''
   );
   const [budgetPreset, setBudgetPreset] = useState<BudgetPresetKey>(
     detectBudgetPreset()
@@ -225,12 +250,16 @@ export function YeniIlanFormu({
   const [budgetMin, setBudgetMin] = useState(
     initialData?.budget_min !== null && initialData?.budget_min !== undefined
       ? String(initialData.budget_min)
-      : ''
+      : od?.budgetMin != null
+        ? String(od.budgetMin)
+        : ''
   );
   const [budgetMax, setBudgetMax] = useState(
     initialData?.budget_max !== null && initialData?.budget_max !== undefined
       ? String(initialData.budget_max)
-      : ''
+      : od?.budgetMax != null
+        ? String(od.budgetMax)
+        : ''
   );
   const [publishImmediately, setPublishImmediately] = useState(true);
   const [applicationDeadline, setApplicationDeadline] = useState(
@@ -372,6 +401,7 @@ export function YeniIlanFormu({
             : null,
           allowed_applicant_roles: rolesValue,
           publish_immediately: publishImmediately,
+          event_id: etkinlikId,
         });
 
         if (result.success && result.data) {

@@ -41,6 +41,8 @@ type Props = {
   isFavorited?: boolean;
   isLoggedIn?: boolean;
   currentUserRole?: string | null;
+  /** FAZ 4c/P3: etkinlikten gelen kesfet — profil linki `?etkinlik=` ile tasinir. */
+  etkinlikId?: string | null;
   /** Geriye dönük uyum: eski çağıranlar (favoriler/kategori/benzer profiller) fiyat için
    *  geçiyordu; kartta ARTIK kullanılmıyor (fiyat karttan kalktı). */
   services?: {
@@ -201,6 +203,7 @@ export function ProfileCard({
   isFavorited = false,
   isLoggedIn = false,
   currentUserRole = null,
+  etkinlikId = null,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
@@ -270,7 +273,9 @@ export function ProfileCard({
       : quote.text
     : null;
 
-  const profileHref = `/p/${profile.id}`;
+  const profileHref = etkinlikId
+    ? `/p/${profile.id}?etkinlik=${etkinlikId}`
+    : `/p/${profile.id}`;
 
   const PremiumBadge = isPremium ? (
     <span className="absolute top-3 right-14 font-mono text-[10px] uppercase tracking-[0.14em] bg-brand-accent text-paper px-2 py-1 rounded-md shadow-sm">

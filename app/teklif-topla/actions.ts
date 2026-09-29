@@ -8,6 +8,7 @@ import {
 } from '@/app/mesajlar/quotes-data';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
+import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -36,6 +37,8 @@ type CreateQuoteRequestInput = {
   } | null;
   /** Kurum adına oluşturma — manager+ üye seçtiyse kurumun id'si (yoksa kendi adına) */
   on_behalf_business_id?: string | null;
+  /** FAZ 4c/P3: talep bu etkinlikten baslatildiysa events.id (sunucuda dogrulanir). */
+  event_id?: string | null;
 };
 
 export async function createQuoteRequest(
@@ -183,6 +186,8 @@ export async function createQuoteRequest(
       attachment_path: attachment?.path ?? null,
       attachment_type: attachment?.type ?? null,
       attachment_name: attachment?.name ?? null,
+      // FAZ 4c/P3: istemciden gelen id dogrulanir; gorunmuyorsa NULL (bag kurulmaz).
+      event_id: await gorunenEtkinlikId(supabase, input.event_id),
     })
     .select('id')
     .single();
@@ -309,7 +314,7 @@ export async function submitOffer(
   const { data: request } = await supabase
     .from('quote_requests')
     .select(
-      'id, customer_id, status, brief_data, event_date, event_type, city_id, budget_min, budget_max, share_budget'
+      'id, customer_id, status, brief_data, event_date, event_type, city_id, budget_min, budget_max, share_budget, event_id'
     )
     .eq('id', recipient.request_id)
     .single();
@@ -348,6 +353,9 @@ export async function submitOffer(
         event_type: request.event_type,
         budget_range: budgetRange,
         brief_data: request.brief_data ?? null,
+        // FAZ 4c/P3: talep bir etkinlige bagliysa sohbet de baglanir (Yol A: en son
+        // is kazanir). Talepte bag yoksa mevcut bag EZILMEZ.
+        ...(request.event_id ? { event_id: request.event_id } : {}),
       })
       .eq('id', conversationId);
   } else {
@@ -362,6 +370,8 @@ export async function submitOffer(
         guest_count: null,
         budget_range: budgetRange,
         brief_data: request.brief_data ?? null,
+        // FAZ 4c/P3: talebin etkinlik bagi sohbete tasinir (yoksa NULL).
+        event_id: request.event_id ?? null,
       })
       .select('id')
       .single();
