@@ -206,4 +206,16 @@ kosuldu; dalda asama4 T17 GECTI, asama13 K1-K13 ESIT (K14 20200 test verisi). Ur
 K4 2 (2 Ekibim uyesi havuz kaydina dolduruldu), K5 0, K8 35 (talents kimlik aynasi), K14 20000; asama5 (FAZ 0) degismedi,
 sync_log 0. `git push` tamam. Siradaki: 5-DB/03 + P1.
 
-(5-DB/03 ve her P icin doldurulur)
+**5-DB/03 (30 Eylul 2026, commit `0cbe2d6`):** dalda asama4 19/19 (T18 GECTI), asama13 K10 = 22; uretimde asama13 K10 = 22, K14 20000; push tamam.
+
+**P1 (30 Eylul - 1 Ekim 2026, commit `bf24fc8` + ekler):** `app/ajans/havuz/` (page, havuz-paneli, havuz-actions, havuz-data),
+`app/lib/org-context.ts` (`getTalentPoolContext`), `app/lib/email/talent-invite-email.ts`, `agency-actions.ts` kabul sonrasi
+`ensure_talent_record_for_membership`, menu "Yetenek Havuzu", Ekibim'de havuz linki. Canli (Sunucu Ajans): 2 dolum kaydi +
+harici kayit, e-posta eslemesi ("Kashe uyesi olabilir" -> bagla -> ayni kurulusta zaten var 23505 mesaji), duzenleme/roller/
+birincil/pasif, Test Pro (viewer) erisim yok, SQL `invited/sent/dj,ses-isik*`. **Davet e-postasi 3 turda cozuldu:** Resend
+"test modu" hatasi (`from= Kashe <onboarding@resend.dev>`) — Vercel'de `EMAIL_FROM` okunmuyordu (degisken adi/kapsam;
+silinip ASCII adla yeniden eklendi + Redeploy). Bu, admin onay/revizyon e-postalarini da (`sendAccountEmail`) etkiliyordu.
+Log satirina `from=` eklendi (kalici teshis). Kusur -> P2: `Gonderildi` durumunda "Yeniden gonder" yok; Sil/Engelle onaysiz.
+Kural: **Vercel env degisikligi = Redeploy; degisken adlari ASCII (Turkce klavye `EMAİL` tuzagi).**
+
+(P2-P3 icin doldurulur)
