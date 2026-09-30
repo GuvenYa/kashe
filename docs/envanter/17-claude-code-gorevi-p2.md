@@ -70,6 +70,18 @@ olabilir). Client rolunde RPC cagrilmaz (satir donse de sahiplenemez).
   yetkiyi ayrica dogrular (duzgun mesaj icin; asil kapi DB).
 - Ic oran verisi istemciye yalniz karti acan istek aninda gider; sayfa ilk yuklemesinde TOPLU oran cekilmez.
 
+### C2. Davet: "Yeniden gönder" (P1 eksigi)
+
+`havuz-paneli.tsx`: `invitation_status = 'sent'` satirlarda da davet dugmesi gorunur, etiketi **"Yeniden gönder"**; ayni
+`sendTalentInvitation` action'i (RPC yeni token uretir, eskisini gecersiz kilar, `invitation_sent_at` yenilenir). `accepted`
+durumunda dugme yok. Onay penceresi: "Önceki bağlantı geçersiz olacak. Yeniden gönderilsin mi?"
+
+### C3. Yikici islemlerde onay (Guven istegi)
+
+`havuz-paneli.tsx`: **Sil** ve **Engelle** dugmeleri once satir ici onay ister (tarayici `confirm()` DEGIL; panel icinde
+kucuk onay kutusu): Sil -> "<Ad> havuzdan silinecek. Emin misin?" [Sil] [Vazgeç]; Engelle -> "<Ad> engellenecek; ekip
+onerilerinde gorunmez. Emin misin?" [Engelle] [Vazgeç]. Pasife al / Aktife al onay istemez (geri alinabilir).
+
 ### D. Dogrulama
 
 - `npx tsc --noEmit` bos; `npm run build` -> route tablosu (`/davet/havuz/[token]`) + hata yok + `.next/BUILD_ID`.
@@ -85,6 +97,7 @@ olabilir). Client rolunde RPC cagrilmaz (satir donse de sahiplenemez).
      "Sunucu Ajans seni yetenek havuzuna ekledi" bandi -> "Sahiplen" -> basari; `/ajans/havuz`'da "Deneme Harici" artik
      "Kashe üyesi" (talent bagli, source marketplace_linked, invitation accepted).
   4. Ayni baglanti tekrar -> "Davet bulunamadı ya da daha önce kullanılmış."
+  4b. Baska bir harici kayitta "Yeniden gönder" -> yeni e-posta, eski baglanti "kullanılmış" verir.
   5. Sunucu Ajans (owner: commercial.manage): Test Pro satirinda "İç oran" -> kart bos -> oran ekle (Fotoğrafçı, 5000, günlük)
      -> listede; ikinci oran (6000, bugun) -> ilki kapandi (valid_to = bugun-1), yenisi acik; "Kapat" -> valid_to bugun.
   6. Test Pro (Ekibim uyesi, viewer) `/ajans/havuz`'a giremez (P1'den); kart testi icin yetkili olmayan ikinci bir ajans uyesi

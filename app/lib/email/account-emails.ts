@@ -195,7 +195,7 @@ export async function sendAccountEmail(opts: {
       text: opts.text,
     });
     if (result.error) {
-      console.error('[account-email] Resend hata:', result.error);
+      console.error('[account-email] Resend hata:', result.error, 'from=', EMAIL_FROM);
       return { sent: false, reason: 'resend_error' };
     }
     return { sent: true };
