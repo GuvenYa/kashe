@@ -46,6 +46,10 @@
 --   T16 FAZ 4c onay: create_event_from_spec — valid olmayan / gecerli olmayan surum reddi, gecersiz slug atomik red,
 --       basarili onay (events confirmed + gereksinimler sirali/adetli), ayni surumden ikinci onay 23505, baskasi
 --       42501, anon yetkisiz; quote_requests.event_id SET NULL (ON KOSUL: faz4c_01 dalda uygulanmis)
+--   T17 FAZ 5 yetenek havuzu: modul kapisi (ajans acik/kurum kapali), kimlik aynasi, harici kayit + roller (RLS: owner/
+--       crew_coordinator yazar, viewer 0, kurum 42501, anon 42501), find_talent_by_contact, gizli oranlar (tarihce, finance
+--       okur, digerleri 42501, denetim), davet/claim/decline (token kapali, e-posta dogrulama, sure), dolum fonksiyonu
+--       idempotan (ON KOSUL: faz5_01-02 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -96,6 +100,11 @@ BEGIN
   END IF;
   UPDATE public.profiles SET primary_category_id = NULL
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T17 havuz kayitlari (roller service_roles'a RESTRICT ile bagli: test rolleri silinmeden ONCE; oranlar cascade)
+  IF to_regclass('public.organization_talent_records') IS NOT NULL THEN
+    DELETE FROM public.organization_talent_records
+     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T12/T13 test kategorileri (slug 'faz1test-%'): once rol, sonra kategori
   IF to_regclass('public.service_roles') IS NOT NULL THEN
     DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-%';
@@ -1720,6 +1729,323 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (16, 'T16 FAZ 4c onay RPC', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T17) FAZ 5 yetenek havuzu. ON KOSUL: 20260930120000/120100 (faz5 01-02) dalda.
+-- T8 verisine dayanir: ajans (0004) org_a sahibi (T5'ten beri admin), kurum (0005) org_k sahibi.
+-- Kendi verisi: pro1 (0002) Ekibim uyesi (agency_members -> FAZ 0 aynasi) + crew_coordinator; musteri (0001) viewer,
+-- uye (0006) finance (dogrudan uyelik); pro2 (0003) harici kayit -> davet -> claim; test rolleri faz1test-havuz-a/b.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';
+  org_a uuid; org_k uuid; rol_a int; rol_b int; cat_a int; am_id uuid; am2_id uuid;
+  rec uuid; rec2 uuid; rec3 uuid; tok uuid; tok2 uuid; tok3 uuid; rate1 uuid; rate2 uuid; t_pro1 uuid; t_pro2 uuid;
+  r record; d record; n int; n2 int; st text;
+BEGIN
+  IF to_regclass('public.organization_talent_records') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (17, 'T17 FAZ 5 yetenek havuzu', 'ATLANDI', 'organization_talent_records yok; faz5_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  IF org_a IS NULL OR org_k IS NULL THEN RAISE EXCEPTION 'kurulus yok (T8)'; END IF;
+  SELECT id INTO t_pro1 FROM public.talents WHERE user_id = pro1;
+  SELECT id INTO t_pro2 FROM public.talents WHERE user_id = pro2;
+  IF t_pro1 IS NULL OR t_pro2 IS NULL THEN RAISE EXCEPTION 'talents yok (2a)'; END IF;
+
+  -- 17a) modul kapisi: ajans acik (dolum/tetikleyici), kurum kapali
+  IF NOT public.org_module_enabled(org_a, 'talent_pool') THEN RAISE EXCEPTION 'ajans kurulusunda talent_pool kapali'; END IF;
+  IF public.org_module_enabled(org_k, 'talent_pool') THEN RAISE EXCEPTION 'business kurulusunda talent_pool acik'; END IF;
+  -- talents kimlik aynasi: pro1 kapali sutunlarda normalize e-posta
+  SELECT canonical_email INTO st FROM public.talents WHERE id = t_pro1;
+  IF st IS DISTINCT FROM 'faz1test+pro1@kashe.net' THEN RAISE EXCEPTION 'pro1 canonical_email=% (ayna)', st; END IF;
+
+  -- uyelikler: pro1 Ekibim uyesi (agency_members -> FAZ 0 aynasi, sonra crew_coordinator); musteri viewer, uye finance dogrudan
+  INSERT INTO public.agency_members (agency_id, professional_id, member_role) VALUES (ajans, pro1, 'member') RETURNING id INTO am_id;
+  SELECT count(*) INTO n FROM public.organization_memberships WHERE id = am_id AND organization_id = org_a AND user_id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 uyeligi aynalanmadi (FAZ 0)'; END IF;
+  UPDATE public.organization_memberships SET role = 'crew_coordinator', status = 'active' WHERE id = am_id;
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status)
+  VALUES (org_a, musteri, 'viewer', 'active'), (org_a, uye, 'finance', 'active')
+  ON CONFLICT (organization_id, user_id) DO UPDATE SET role = EXCLUDED.role, status = 'active';
+
+  -- test rolleri (kategori -> rol; ajans admin)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-havuz-a', 'Faz1 Test Havuz Rol A', 'A', 996, true);
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-havuz-b', 'Faz1 Test Havuz Rol B', 'B', 997, true);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT id INTO rol_a FROM public.service_roles WHERE slug = 'faz1test-havuz-a';
+  SELECT id INTO rol_b FROM public.service_roles WHERE slug = 'faz1test-havuz-b';
+  SELECT id INTO cat_a FROM public.service_categories WHERE slug = 'faz1test-havuz-a';
+  IF rol_a IS NULL OR rol_b IS NULL THEN RAISE EXCEPTION 'test rolleri dogmadi'; END IF;
+
+  -- 17b) owner (ajans) harici kayit ekler (RLS): pro2'nin e-postasi; 2 rol, tek birincil
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.organization_talent_records (organization_id, name, email, phone, relationship_type, notes)
+  VALUES (org_a, '  Harici Pro Iki ', 'FAZ1TEST+PRO2@kashe.net ', '+90 555 000 0003', 'occasional', 'T17') RETURNING id INTO rec;
+  INSERT INTO public.organization_talent_record_roles (record_id, role_id, is_primary) VALUES (rec, rol_a, true), (rec, rol_b, false);
+  BEGIN
+    UPDATE public.organization_talent_record_roles SET is_primary = true WHERE record_id = rec AND role_id = rol_b;
+    RAISE EXCEPTION 'ikinci birincil rol kabul edildi';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  SELECT count(*) INTO n FROM public.organization_talent_records WHERE organization_id = org_a;   -- owner okur
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF n <> 1 THEN RAISE EXCEPTION 'owner kendi havuzunu okuyamadi (%)', n; END IF;
+  SELECT * INTO r FROM public.organization_talent_records WHERE id = rec;
+  IF r.created_by IS DISTINCT FROM ajans OR r.source <> 'external_manual' OR r.talent_id IS NOT NULL OR r.name <> 'Harici Pro Iki'
+     OR r.visibility <> 'private' OR r.invitation_status <> 'none' THEN
+    RAISE EXCEPTION 'harici kayit: by=% source=% talent=% name=% vis=% inv=%', r.created_by, r.source, r.talent_id, r.name, r.visibility, r.invitation_status; END IF;
+  BEGIN
+    UPDATE public.organization_talent_records SET visibility = 'shared_to_marketplace' WHERE id = rec;   -- superuser: CHECK
+    RAISE EXCEPTION 'visibility shared_to_marketplace kabul edildi (FAZ 5 kisiti)';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    UPDATE public.organization_talent_records SET organization_id = org_k WHERE id = rec;
+    RAISE EXCEPTION 'kurulus degistirilebildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+
+  -- 17c) crew_coordinator (pro1) gunceller + okur; viewer (musteri) okumaz/yazamaz; kurum sahibi kendi kurulusuna yazamaz (modul kapali); anon 42501
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.organization_talent_records SET notes = 'T17 koordinator' WHERE id = rec;
+  SELECT count(*) INTO n FROM public.organization_talent_records WHERE organization_id = org_a;
+  SELECT count(*) INTO n2 FROM public.organization_talent_record_roles WHERE record_id = rec;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 OR n2 <> 2 THEN RAISE EXCEPTION 'crew_coordinator okuma: kayit=% rol=% (1/2)', n, n2; END IF;
+  SELECT notes INTO st FROM public.organization_talent_records WHERE id = rec;
+  IF st <> 'T17 koordinator' THEN RAISE EXCEPTION 'crew_coordinator guncellemesi yazilmadi (%)', st; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.organization_talent_records WHERE organization_id = org_a;
+  SELECT count(*) INTO n2 FROM public.organization_talent_record_roles WHERE record_id = rec;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 OR n2 <> 0 THEN RAISE EXCEPTION 'viewer havuzu gordu (kayit=% rol=%)', n, n2; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.organization_talent_records (organization_id, name) VALUES (org_a, 'Viewer yazdi');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'viewer havuza yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.organization_talent_records (organization_id, name) VALUES (org_k, 'Kurum yazdi');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'business kurulusu havuza yazdi (modul kapali olmali)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM public.organization_talent_records' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon havuzu OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 17d) find_talent_by_contact: ajans pro1'i e-postayla bulur (PII yok); musteri (client) bulunmaz; viewer cagiramaz; denetim satiri
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT * INTO d FROM public.find_talent_by_contact(org_a, ' Faz1Test+Pro1@kashe.net', NULL);
+  IF d.talent_id IS DISTINCT FROM t_pro1 OR d.match_kind IS DISTINCT FROM 'email' THEN
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'pro1 e-postayla bulunamadi (%, %)', d.talent_id, d.match_kind; END IF;
+  SELECT count(*) INTO n FROM public.find_talent_by_contact(org_a, 'faz1test+musteri@kashe.net', '+905550000001');
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'client icin talent bulundu (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT count(*) INTO n FROM public.find_talent_by_contact(org_a, 'faz1test+pro1@kashe.net', NULL);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'viewer kimlik eslemesi yapabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND action = 'read' AND target_table = 'talents' AND detail->>'op' = 'talent.lookup' AND actor_user_id = ajans;
+  IF n < 2 THEN RAISE EXCEPTION 'talent.lookup denetim satiri eksik (%)', n; END IF;
+
+  -- 17e) gizli oranlar: owner yazar (tarihce), finance okur, crew_coordinator/viewer/kurum/anon 42501, dogrudan tablo 42501
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.internal_talent_rate_upsert(org_a, rec, rol_a, 1500, 'per_day', 'TRY', current_date - 10, 'T17 eski') INTO rate1;
+  SELECT public.internal_talent_rate_upsert(org_a, rec, rol_a, 1800, 'per_day', 'TRY', current_date, NULL) INTO rate2;
+  SELECT count(*) INTO n FROM public.internal_talent_rates_list(org_a, rec);
+  SELECT count(*) INTO n2 FROM public.internal_talent_rates_list(org_a, rec) x WHERE x.valid_to IS NULL AND x.default_cost = 1800;
+  BEGIN
+    PERFORM public.internal_talent_rate_upsert(org_a, rec, rol_a, 1, 'saatlik', 'TRY', current_date, NULL);
+    RAISE EXCEPTION 'gecersiz cost_basis kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF rate1 IS NULL OR rate2 IS NULL OR rate1 = rate2 OR n <> 2 OR n2 <> 1 THEN
+    RAISE EXCEPTION 'oran tarihcesi: r1=% r2=% toplam=% acik1800=%', rate1, rate2, n, n2; END IF;
+  SELECT valid_to INTO r FROM internal.organization_talent_rates WHERE id = rate1;
+  IF r.valid_to IS DISTINCT FROM current_date - 1 THEN RAISE EXCEPTION 'eski oran kapanmadi (valid_to=%)', r.valid_to; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);        -- finance: commercial.view + manage
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.internal_talent_rates_list(org_a, rec);
+  PERFORM public.internal_talent_rate_close(org_a, rate2, current_date);
+  EXECUTE 'RESET ROLE';
+  IF n <> 2 THEN RAISE EXCEPTION 'finance oranlari okuyamadi (%)', n; END IF;
+  SELECT valid_to INTO r FROM internal.organization_talent_rates WHERE id = rate2;
+  IF r.valid_to IS DISTINCT FROM current_date THEN RAISE EXCEPTION 'finance orani kapatamadi (valid_to=%)', r.valid_to; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);       -- crew_coordinator: talent.manage var, commercial YOK
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT count(*) INTO n FROM public.internal_talent_rates_list(org_a, rec);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'crew_coordinator ic orani gordu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    EXECUTE 'SELECT count(*) FROM internal.organization_talent_rates' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated internal tabloyu dogrudan okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.internal_talent_rate_upsert(org_a, rec, rol_a, 5, 'per_job', 'TRY', current_date, NULL);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kurum baska kurulusun oranini yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM public.internal_talent_rates_list($1, $2)' INTO n USING org_a, rec;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon oran RPC''sini cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND target_table = 'organization_talent_rates' AND action = 'write';
+  SELECT count(*) INTO n2 FROM internal.access_audit WHERE organization_id = org_a AND target_table = 'organization_talent_rates' AND action = 'read';
+  IF n < 3 OR n2 < 2 THEN RAISE EXCEPTION 'oran denetimi eksik (write=% read=%)', n, n2; END IF;
+
+  -- 17f) davet + claim: token yalniz RPC ile; yanlis e-posta 42501; pro2 sahiplenir; ayni token ikinci kez yok; suresi gecmis 22023; client claim edemez; decline
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.send_talent_record_invitation(rec) INTO tok;
+  BEGIN
+    EXECUTE 'SELECT invitation_token FROM public.organization_talent_records WHERE id = $1' INTO tok2 USING rec;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'invitation_token sutunu authenticated tarafindan okundu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  IF tok IS NULL THEN RAISE EXCEPTION 'token uretilmedi'; END IF;
+  SELECT * INTO r FROM public.organization_talent_records WHERE id = rec;
+  IF r.invitation_status <> 'sent' OR r.invitation_token IS DISTINCT FROM tok OR r.source <> 'invited'
+     OR r.invitation_expires_at IS NULL OR r.invitation_expires_at < now() + interval '13 days' THEN
+    RAISE EXCEPTION 'davet: status=% token=% source=% expires=%', r.invitation_status, r.invitation_token, r.source, r.invitation_expires_at; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+pro1@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.claim_talent_record(tok);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'yanlis e-postali kullanici kaydi sahiplendi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+pro2@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.claimable_talent_records_for_me();
+  SELECT public.claim_talent_record(tok) INTO rec2;
+  SELECT count(*) INTO n2 FROM public.claimable_talent_records_for_me();
+  BEGIN
+    PERFORM public.claim_talent_record(tok);
+    RAISE EXCEPTION 'ayni token ikinci kez kullanildi';
+  EXCEPTION WHEN no_data_found THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 OR n2 <> 0 OR rec2 IS DISTINCT FROM rec THEN RAISE EXCEPTION 'claim: once=% sonra=% rec=%', n, n2, rec2; END IF;
+  SELECT * INTO r FROM public.organization_talent_records WHERE id = rec;
+  IF r.talent_id IS DISTINCT FROM t_pro2 OR r.source <> 'marketplace_linked' OR r.invitation_status <> 'accepted'
+     OR r.invitation_token IS NOT NULL OR r.linked_at IS NULL THEN
+    RAISE EXCEPTION 'claim sonrasi: talent=% source=% inv=% token=% linked=%', r.talent_id, r.source, r.invitation_status, r.invitation_token, r.linked_at; END IF;
+  SELECT claim_status::text INTO st FROM public.talents WHERE id = t_pro2;
+  IF st <> 'claimed' THEN RAISE EXCEPTION 'talents.claim_status=% (claimed beklenir)', st; END IF;
+  BEGIN
+    UPDATE public.organization_talent_records SET talent_id = t_pro1 WHERE id = rec;   -- superuser: guard
+    RAISE EXCEPTION 'bagli talent_id degistirilebildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+
+  -- suresi gecmis davet (musteri e-postali kayit): 22023; sure duzelince client claim edemez (talents yok) -> no_data_found
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.organization_talent_records (organization_id, name, email) VALUES (org_a, 'Harici Musteri', 'faz1test+musteri@kashe.net') RETURNING id INTO rec2;
+  SELECT public.send_talent_record_invitation(rec2) INTO tok2;
+  INSERT INTO public.organization_talent_records (organization_id, name, email) VALUES (org_a, 'Harici Uye', 'faz1test+uye@kashe.net') RETURNING id INTO rec3;
+  SELECT public.send_talent_record_invitation(rec3) INTO tok3;
+  EXECUTE 'RESET ROLE';
+  UPDATE public.organization_talent_records SET invitation_expires_at = now() - interval '1 day' WHERE id = rec2;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+musteri@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.claim_talent_record(tok2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'suresi gecmis davet kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  UPDATE public.organization_talent_records SET invitation_expires_at = now() + interval '1 day' WHERE id = rec2;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.claim_talent_record(tok2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'client (talents yok) kaydi sahiplendi';
+  EXCEPTION WHEN no_data_found THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+uye@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.decline_talent_record_invitation(tok3);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  SELECT invitation_status::text, invitation_token INTO r FROM public.organization_talent_records WHERE id = rec3;
+  IF r.invitation_status <> 'declined' OR r.invitation_token IS NOT NULL THEN RAISE EXCEPTION 'decline: status=% token=%', r.invitation_status, r.invitation_token; END IF;
+
+  -- 17g) dolum fonksiyonu: pro1 (agency_members) -> yeni kayit + rol (provider_services'tan); pro2 (agency_members) -> mevcut kayda iz; ikinci kosu 0
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit, sort_order)
+  VALUES (pro1, cat_a, 'T17 hizmet', 1000, 2000, 'hourly', 1);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a) THEN RAISE EXCEPTION 'provider_services turemedi (2b)'; END IF;
+  INSERT INTO public.agency_members (agency_id, professional_id, member_role) VALUES (ajans, pro2, 'member') RETURNING id INTO am2_id;
+
+  SELECT * INTO d FROM public.faz5_backfill_agency_members();
+  IF d.yeni_kayit <> 1 OR d.yeni_rol < 1 OR d.atlanan <> 0 THEN RAISE EXCEPTION 'dolum: yeni=% rol=% atlanan=% (1/>=1/0)', d.yeni_kayit, d.yeni_rol, d.atlanan; END IF;
+  SELECT * INTO r FROM public.organization_talent_records WHERE legacy_agency_member_id = am_id;
+  IF r.id IS NULL OR r.talent_id IS DISTINCT FROM t_pro1 OR r.source <> 'marketplace_linked' OR r.name IS DISTINCT FROM (SELECT trim(full_name) FROM public.profiles WHERE id = pro1) OR r.created_by IS DISTINCT FROM ajans THEN
+    RAISE EXCEPTION 'pro1 dolum kaydi: id=% talent=% source=% name=% by=%', r.id, r.talent_id, r.source, r.name, r.created_by; END IF;
+  SELECT count(*) INTO n FROM public.organization_talent_record_roles x WHERE x.record_id = r.id AND x.role_id = rol_a;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 dolum rolu yok'; END IF;
+  SELECT legacy_agency_member_id INTO r FROM public.organization_talent_records WHERE id = rec;
+  IF r.legacy_agency_member_id IS DISTINCT FROM am2_id THEN RAISE EXCEPTION 'pro2 mevcut kaydina dolum izi yazilmadi (%)', r.legacy_agency_member_id; END IF;
+  SELECT * INTO d FROM public.faz5_backfill_agency_members();
+  IF d.yeni_kayit <> 0 OR d.yeni_rol <> 0 THEN RAISE EXCEPTION 'dolum idempotan degil (yeni=% rol=%)', d.yeni_kayit, d.yeni_rol; END IF;
+  SELECT count(*) INTO n FROM public.agency_members a JOIN public.organizations o ON o.legacy_profile_id = a.agency_id
+    JOIN public.talents t ON t.user_id = a.professional_id
+   WHERE NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
+  IF n <> 0 THEN RAISE EXCEPTION 'havuz kaydi olmayan agency_members var (%)', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (17, 'T17 FAZ 5 yetenek havuzu', 'GECTI',
+    'modul: ajans acik / kurum kapali; kimlik aynasi; owner harici kayit + 2 rol (ikinci birincil 23505, visibility CHECK, kurulus sabit); crew_coordinator yazdi/okudu, viewer 0 satir + INSERT 42501, kurum 42501 (modul), anon 42501; find_talent_by_contact pro1 e-posta / client yok / viewer 42501 + denetim; oranlar: tarihce (eski kapandi), finance okudu+kapatti, crew_coordinator/kurum/anon 42501, dogrudan tablo 42501, denetim; davet: token sutunu kapali, yanlis e-posta 42501, pro2 claim (talent bagli, claimed), ayni token yok, suresi gecmis 22023, client claim yok, decline; dolum: pro1 yeni kayit+rol, pro2 mevcut kayda iz, idempotan, kayma 0');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  INSERT INTO t_sonuc VALUES (17, 'T17 FAZ 5 yetenek havuzu', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

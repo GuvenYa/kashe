@@ -607,6 +607,8 @@ eklenmez. Durum gecisleri 4c'de yalniz `confirmed`; `matching`/`booked` FAZ 5-7.
 
 **Risk: orta.** Ajans arayuzu degisir.
 
+**Uygulama notu (30 Eylul 2026, `docs/envanter/17-faz5-yetenek-havuzu.md`):** madde 27-28 **5-DB/01** (sema: kayitlar, roller, `internal.organization_talent_rates`, `talent_pool` modulu yalniz agency, `talents.canonical_*` aynasi, esleme/davet/claim/oran RPC'leri), madde 29 **5-DB/02** (tek seferlik dolum `faz5_backfill_agency_members`; aynalama tetikleyicisi YOK — Guven karari: yeni yazimlar uygulamada, Ekibim kabulu havuz kaydini da yazar), madde 30 uygulama **P1-P3** (`/ajans/havuz`, davet e-postasi, claim sayfasi, ic oran karti, pazaryerinden havuza ekleme). Harici kisi `talents` satiri acmaz; `visibility` FAZ 5'te `private`; kurulus atfi (brief/events) FAZ 8.
+
 ### FAZ 6 — Eslestirme ve ekip
 
 31. `match_runs`, `match_candidates` olusturulur.
