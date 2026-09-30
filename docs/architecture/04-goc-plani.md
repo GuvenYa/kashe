@@ -595,6 +595,8 @@ atomik, SECURITY DEFINER) ve **4c-uygulama** (P1 genisletilmis cikarim prompt p2
 yazilir + `/etkinliklerim`; P3 eski akislara `event_id` bagi). Kararlar: sihirbaz yeniden yazilir (etkinlik-planla
 kalir), onay yalniz RPC ile, kullanici duzeltmesi = yeni surum (`user_input`), eski tablolara `event_id` disinda sutun
 eklenmez. Durum gecisleri 4c'de yalniz `confirmed`; `matching`/`booked` FAZ 5-7.
+**FAZ 4 KAPANDI (30 Eylul 2026):** 4a/4b/4c uretimde; kapanis kayitlari `15-faz4a-etkinlik-eventspec.md` bolum 8-9 ve
+`16-faz4c-yeni-talep-akisi.md` bolum 7. Ilk gercek EventSpec surumleri ve onaylanmis etkinlikler uretimde.
 
 ### FAZ 5 — Yetenek havuzu
 

@@ -2,7 +2,7 @@
 
 **Kaynak plan:** `04-goc-plani.md` FAZ 4 madde 24-26, `06-eventspec-sozlesmesi.md` bolum 4 (onay), `15-faz4a` bolum 2
 (parcalama), `05-arayuz-modeli.md`.
-**Durum:** 4c-DB URETIMDE (23 Eylul 2026; bolum 7). Uygulama P1-P3 Claude Code (bolum 5): P1 sirada.
+**Durum:** KAPANDI (30 Eylul 2026). 4c-DB + P1/P2/P2b/P3/P3c uretimde; kapanis bolum 7. Siradaki faz: 04 plani (FAZ 5) — bkz. bolum 8.
 
 ## 1. Amac ve sinir
 
@@ -128,4 +128,41 @@ bilesenini yeniden kosturuyor (page.tsx `searchParams` okumuyor; gereksiz) -> **
 yerel history API + yerel state); (2) sayisi 0 olan kategori cipi secilemiyor (Ankara'da rol secilemedi) -> P3;
 (3) bitis = baslangic ise "tarih -> tarih" gosterimi -> P3.
 
-(P2b-P3 kapanislari buraya eklenir)
+**P2b (24 Eylul, commit `b74c391`):** `sihirbaz-client.tsx` — `guncelle()` `router.push` yerine `history.pushState/replaceState`
+(push yalniz adim degisiminde), metin/sayi kutulari `UrlKutusu` ile yerel state (odak korumali senkron), URL aynasi
+(`popstate` beslemeli). Canli: yazma gecikmesi gitti, RSC istegi yok, geri tusu ve F5 dogru.
+
+**P3 (24 Eylul, commit `e3dbc15`; ek `kesfet-filters` tasima + ilan durum etiketi `listings-data.ts`'ten):** 16 dosya +
+`app/lib/eventspec-server.ts` (`gorunenEtkinlikId`: uuid bicimi + RLS ile `events` SELECT; gorunmuyorsa NULL).
+`quote_requests.event_id` (`createQuoteRequest`), `listings.event_id` (`createListing`), `conversations.event_id`
+(`submitOffer` talepten, basvuru kabulu ilandan, `startConversation` `/p/[id]?etkinlik=` ile); on dolu formlar
+(`/teklif-topla?etkinlik=&butce_min=&butce_max=`, `/ilanlar/yeni?etkinlik=&kategori=`), etkinlik sayfasinda "Bagli
+kayitlar"; parser 1.2 (varsayilan yil ileri kaydirma — canli: "15 Haziran" -> 2027-06-15 `derived`/`date_assumed`);
+sihirbaz adim 4'te 0'li cip secilebilir ("henuz yok"). Derleme dersi: `npm run build` exit 0 verirken
+`Failed to collect page data` cikmisti (`'use client'` modulunden sunucu bilesenine import) -> CLAUDE.md kurali (kanit =
+route tablosu + `.next/BUILD_ID`).
+
+**P3c (29-30 Eylul, commit `9ec88ff`):** canli turda bulunan ESKI hata — `submitOffer` sohbete `budget_range` olarak
+serbest metin ("20000 - 30000 TL") yaziyordu; `conversations_budget_range_check` (under_5k..over_50k, open) UPDATE'i 23514
+ile dusuruyor, hata kontrol edilmedigi icin tarih/tur/brief (ve P3 ile `event_id`) sessizce yazilmiyordu. Duzeltme:
+`budgetToRangeKey(min, max)` (`app/mesajlar/data.ts`; ust sinira gore kova, tutar yoksa `open`), UPDATE hatasi loglanir +
+`event_id` icin dar ikinci deneme; `startConversation`'da enum savunmasi.
+
+**Canli kapanis kaniti (30 Eylul, etkinlik `d1998981…` "Kadikoy'de 40 kisilik dogum gunu", v2 wizard/1.0):** bagli
+talepler `598f9b81…` (fotografci, Test Pro quoted), `243f52bc…` (DJ, 3 alici), `b81c9936…` (fotografci, Test Pro teklif
+verdi); bagli ilan `6fed6fda…` (taslak, on dolu); sohbet `bcd665f7…` = `birthday / 2027-06-15 / 15k_30k / event_id dolu /
+brief_data dolu` (hem `submitOffer` hem `/p/[id]?etkinlik=` -> Teklif Al yolu). asama12 K1-K6 ESIT, K7 = 30000 (3 onayli
+etkinlik), K8 > 0. Notlar: Kesfet linki `etkinlik=<tur>` filtresi profilinde o turu isaretlememis saglayiciyi gizler
+(Test Pro fotografci, dogum gunu isaretsiz) — tasarim geregi, degisiklik yok. Ankara/0'li cip onayi icin tur secimi
+zorunlu (dogru davranis).
+
+## 8. Acik maddeler ve sonraki adim
+
+- Etkinlik duzenleme/iptal, `matching`/`booked` gecisleri: FAZ 5-7.
+- `organization_id` brief/etkinlikte NULL (kurulus atfi FAZ 8 Event OS).
+- `/etkinlik-planla` ile sihirbaz adim 0 ayni ureticiyi kullanir; planla sayfasi ileride sihirbaza yonlendirilebilir (karar yok).
+- Kesfet kart linkleri `etkinlik_id` tasir; filtre degisiminde korunur (P3 ek).
+- Eski `EVENT_TYPES` sabiti (`app/mesajlar/data.ts`) hala ilan/mesaj tarafinda; sihirbaz tabloya gecti. FAZ 10'da tek kaynak `event_types`.
+- Siradaki: **FAZ 5 — yetenek havuzu** (`organization_talent_records`, `organization_talent_record_roles`,
+  `internal.organization_talent_rates`, `agency_members` -> yerel kayit, harici profesyonel daveti). 3b (ust kategoriler)
+  ekip eslemesini bekler.
