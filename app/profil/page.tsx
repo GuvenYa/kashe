@@ -22,6 +22,7 @@ import {
 import type { Profile, ServiceWithCategory, PortfolioItem } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
 import { fetchOwnProfile } from '@/app/lib/own-profile';
+import { HavuzBandi, type HavuzBandiSatiri } from './havuz-bandi';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -63,6 +64,25 @@ export default async function ProfilPage() {
   const isClientUser = isClient(profile);
   const isBusinessUser = isBusiness(profile);
   const isAgencyUser = isAgency(profile);
+
+  // FAZ 5/P2 — "seni havuzuna ekledi" bandi. RPC yalniz e-postasi eslesen ve henuz
+  // bagli olmayan kayitlari doner. Musteri hesabinda CAGRILMAZ: satir donse de
+  // sahiplenemez (claim `talents` satiri ister).
+  let havuzDavetleri: HavuzBandiSatiri[] = [];
+  if (isPro || isAgencyUser) {
+    const { data: davetler, error: davetHatasi } = await supabase.rpc(
+      'claimable_talent_records_for_me'
+    );
+    if (davetHatasi) console.error('[havuz] band', davetHatasi);
+    else {
+      havuzDavetleri = (
+        (davetler ?? []) as { record_id: string; organization_name: string | null }[]
+      ).map((d) => ({
+        recordId: d.record_id,
+        organizationName: d.organization_name?.trim() || 'Bir kuruluş',
+      }));
+    }
+  }
 
   // Ajans ise: üye sayısı + bekleyen davet sayısı
   let agencyMemberCount = 0;
@@ -297,6 +317,10 @@ export default async function ProfilPage() {
       <TopNav />
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
+          {havuzDavetleri.length > 0 && (
+            <HavuzBandi satirlar={havuzDavetleri} />
+          )}
+
           {/* HEADER */}
           <div className="flex items-start justify-between mb-12 gap-4">
             <div className="flex items-center gap-5 min-w-0">

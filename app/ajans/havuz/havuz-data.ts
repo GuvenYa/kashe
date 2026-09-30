@@ -82,3 +82,40 @@ export const DURUM_SECENEKLERI = ['active', 'passive', 'blocked'] as const;
 export type HavuzIliskiTuru = (typeof ILISKI_SECENEKLERI)[number];
 export type HavuzDurum = (typeof DURUM_SECENEKLERI)[number];
 export type HavuzRolGirdisi = { roleId: number; isPrimary: boolean };
+
+/** FAZ 5/P2 — `internal_talent_rates_list` satiri (gizli ic oran). */
+export type HavuzOranSatiri = {
+  id: string;
+  role_id: number;
+  role_slug: string;
+  role_name: string;
+  default_cost: number;
+  cost_basis: string;
+  currency: string;
+  valid_from: string;
+  valid_to: string | null;
+  private_note: string | null;
+  created_at: string;
+};
+
+export const ORAN_BIRIM_SECENEKLERI = [
+  'per_job',
+  'per_hour',
+  'per_day',
+] as const;
+
+export type HavuzOranBirimi = (typeof ORAN_BIRIM_SECENEKLERI)[number];
+
+export const ORAN_BIRIM_ETIKETLERI: Record<string, string> = {
+  per_job: 'iş başı',
+  per_hour: 'saatlik',
+  per_day: 'günlük',
+};
+
+/** Tutar gosterimi — TL, Turkce bicim. */
+export function tutarMetni(tutar: number, currency: string): string {
+  const bicim = new Intl.NumberFormat('tr-TR', {
+    maximumFractionDigits: 2,
+  }).format(tutar);
+  return currency === 'TRY' ? `${bicim} TL` : `${bicim} ${currency}`;
+}

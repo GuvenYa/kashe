@@ -8,6 +8,11 @@ import {
   DURUM_SECENEKLERI,
   ILISKI_ETIKETLERI,
   ILISKI_SECENEKLERI,
+  ORAN_BIRIM_ETIKETLERI,
+  ORAN_BIRIM_SECENEKLERI,
+  tutarMetni,
+  type HavuzOranBirimi,
+  type HavuzOranSatiri,
   type HavuzDurum,
   type HavuzIliskiTuru,
   type HavuzKaydi,
@@ -24,6 +29,11 @@ import {
   setTalentRecordRoles,
   updateTalentRecord,
 } from './havuz-actions';
+import {
+  closeTalentRate,
+  listTalentRates,
+  upsertTalentRate,
+} from './havuz-rate-actions';
 
 const ALAN =
   'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
@@ -66,9 +76,18 @@ function tarih(v: string | null): string {
   });
 }
 
+/** Bugun (Europe/Istanbul) — oran gecerlilik tarihleri icin. */
+function bugunIso(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+  }).format(new Date());
+}
+
 export function HavuzPaneli({
   organizationId,
   canManage,
+  canSeeRates,
+  canManageRates,
   kayitlar,
   roller,
   sehirler,
@@ -76,6 +95,10 @@ export function HavuzPaneli({
 }: {
   organizationId: string;
   canManage: boolean;
+  /** `commercial.view` — false ise oran karti, dugmesi ve action cagrisi HIC yok. */
+  canSeeRates: boolean;
+  /** `commercial.manage` — oran yazma formu. */
+  canManageRates: boolean;
   kayitlar: HavuzKaydi[];
   roller: HavuzRolSecenegi[];
   sehirler: HavuzSehir[];
@@ -106,6 +129,31 @@ export function HavuzPaneli({
   const [duzForm, setDuzForm] = useState<FormDurumu>(BOS_FORM);
   const [rolDuzenlenen, setRolDuzenlenen] = useState<string | null>(null);
   const [rolSecimi, setRolSecimi] = useState<HavuzRolGirdisi[]>([]);
+
+  // Gizli ic oran karti — veri YALNIZ kart acilirken cekilir (ilk yuklemede toplu cekim yok).
+  const [oranAcik, setOranAcik] = useState<string | null>(null);
+  const [oranlar, setOranlar] = useState<Record<string, HavuzOranSatiri[]>>({});
+  const [oranYukleniyor, setOranYukleniyor] = useState(false);
+  const [oranHatasi, setOranHatasi] = useState<string | null>(null);
+  const [oranForm, setOranForm] = useState<{
+    roleId: string;
+    cost: string;
+    basis: HavuzOranBirimi;
+    validFrom: string;
+    note: string;
+  }>({
+    roleId: '',
+    cost: '',
+    basis: 'per_day',
+    validFrom: bugunIso(),
+    note: '',
+  });
+
+  // Yikici islemler icin satir ici onay (tarayici confirm() kullanilmaz).
+  const [onay, setOnay] = useState<{
+    id: string;
+    tur: 'sil' | 'engelle' | 'yeniden';
+  } | null>(null);
 
   const saglayiciHaritasi = useMemo(() => {
     const m = new Map<string, HavuzSaglayici>();
@@ -314,6 +362,82 @@ export function HavuzPaneli({
       const res = await deleteTalentRecord({ recordId, organizationId });
       if (res.success) setBilgi('Kayıt silindi.');
       else setHata(res.error);
+    });
+  }
+
+  function oranKartiAc(recordId: string) {
+    setOranHatasi(null);
+    if (oranAcik === recordId) {
+      setOranAcik(null);
+      return;
+    }
+    setOranAcik(recordId);
+    setOranForm((f) => ({ ...f, roleId: '', cost: '', note: '' }));
+    setOranYukleniyor(true);
+    startTransition(async () => {
+      const res = await listTalentRates(organizationId, recordId);
+      setOranYukleniyor(false);
+      if (res.success) {
+        setOranlar((o) => ({ ...o, [recordId]: res.data ?? [] }));
+      } else {
+        setOranHatasi(res.error);
+      }
+    });
+  }
+
+  async function oranlariTazele(recordId: string) {
+    const yeni = await listTalentRates(organizationId, recordId);
+    if (yeni.success) {
+      setOranlar((o) => ({ ...o, [recordId]: yeni.data ?? [] }));
+    }
+  }
+
+  function oranKaydet(recordId: string) {
+    setOranHatasi(null);
+    const rol = Number(oranForm.roleId);
+    if (!Number.isInteger(rol) || rol <= 0) {
+      setOranHatasi('Rol seç.');
+      return;
+    }
+    const tutar = Number(oranForm.cost.replace(',', '.'));
+    if (!Number.isFinite(tutar) || tutar < 0) {
+      setOranHatasi('Tutar 0 veya daha büyük olmalı.');
+      return;
+    }
+    startTransition(async () => {
+      const res = await upsertTalentRate({
+        organizationId,
+        recordId,
+        roleId: rol,
+        cost: tutar,
+        basis: oranForm.basis,
+        validFrom: oranForm.validFrom,
+        note: oranForm.note,
+      });
+      if (!res.success) {
+        setOranHatasi(res.error);
+        return;
+      }
+      await oranlariTazele(recordId);
+      setOranForm((f) => ({ ...f, cost: '', note: '' }));
+      setBilgi('İç oran kaydedildi.');
+    });
+  }
+
+  function oranKapat(recordId: string, rateId: string) {
+    setOranHatasi(null);
+    startTransition(async () => {
+      const res = await closeTalentRate({
+        organizationId,
+        rateId,
+        validTo: bugunIso(),
+      });
+      if (!res.success) {
+        setOranHatasi(res.error);
+        return;
+      }
+      await oranlariTazele(recordId);
+      setBilgi('Oran kapatıldı.');
     });
   }
 
@@ -737,78 +861,96 @@ export function HavuzPaneli({
                     )}
                   </div>
 
-                  {canManage && (
+                  {(canManage || canSeeRates) && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => duzenlemeyiAc(k)}
-                        className={BTN_IKINCIL}
-                      >
-                        Düzenle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => rolleriAc(k)}
-                        className={BTN_IKINCIL}
-                      >
-                        Roller
-                      </button>
-                      {!k.talent_id &&
-                        !!k.email &&
-                        (k.invitation_status === 'none' ||
-                          k.invitation_status === 'declined') && (
+                      {canSeeRates && (
+                        <button
+                          type="button"
+                          onClick={() => oranKartiAc(k.id)}
+                          className={BTN_IKINCIL}
+                        >
+                          İç oran
+                        </button>
+                      )}
+                      {canManage && (
+                        <>
                           <button
                             type="button"
-                            onClick={() => davetGonder(k.id)}
-                            disabled={isPending}
+                            onClick={() => duzenlemeyiAc(k)}
                             className={BTN_IKINCIL}
                           >
-                            Davet gönder
+                            Düzenle
                           </button>
-                        )}
-                      {k.status !== 'passive' && (
-                        <button
-                          type="button"
-                          onClick={() => durumDegistir(k, 'passive')}
-                          disabled={isPending}
-                          className={BTN_IKINCIL}
-                        >
-                          Pasife al
-                        </button>
-                      )}
-                      {k.status !== 'active' && (
-                        <button
-                          type="button"
-                          onClick={() => durumDegistir(k, 'active')}
-                          disabled={isPending}
-                          className={BTN_IKINCIL}
-                        >
-                          Aktife al
-                        </button>
-                      )}
-                      {k.status !== 'blocked' && (
-                        <button
-                          type="button"
-                          onClick={() => durumDegistir(k, 'blocked')}
-                          disabled={isPending}
-                          className={BTN_IKINCIL}
-                        >
-                          Engelle
-                        </button>
-                      )}
-                      {k.talent_id ? (
-                        <span className="text-xs text-ink-50">
-                          Ekibim&apos;den yönetilir
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => sil(k.id)}
-                          disabled={isPending}
-                          className={BTN_IKINCIL}
-                        >
-                          Sil
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => rolleriAc(k)}
+                            className={BTN_IKINCIL}
+                          >
+                            Roller
+                          </button>
+                          {!k.talent_id &&
+                            !!k.email &&
+                            k.invitation_status !== 'accepted' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  k.invitation_status === 'sent'
+                                    ? setOnay({ id: k.id, tur: 'yeniden' })
+                                    : davetGonder(k.id)
+                                }
+                                disabled={isPending}
+                                className={BTN_IKINCIL}
+                              >
+                                {k.invitation_status === 'sent'
+                                  ? 'Yeniden gönder'
+                                  : 'Davet gönder'}
+                              </button>
+                            )}
+                          {k.status !== 'passive' && (
+                            <button
+                              type="button"
+                              onClick={() => durumDegistir(k, 'passive')}
+                              disabled={isPending}
+                              className={BTN_IKINCIL}
+                            >
+                              Pasife al
+                            </button>
+                          )}
+                          {k.status !== 'active' && (
+                            <button
+                              type="button"
+                              onClick={() => durumDegistir(k, 'active')}
+                              disabled={isPending}
+                              className={BTN_IKINCIL}
+                            >
+                              Aktife al
+                            </button>
+                          )}
+                          {k.status !== 'blocked' && (
+                            <button
+                              type="button"
+                              onClick={() => setOnay({ id: k.id, tur: 'engelle' })}
+                              disabled={isPending}
+                              className={BTN_IKINCIL}
+                            >
+                              Engelle
+                            </button>
+                          )}
+                          {k.talent_id ? (
+                            <span className="text-xs text-ink-50">
+                              Ekibim&apos;den yönetilir
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setOnay({ id: k.id, tur: 'sil' })}
+                              disabled={isPending}
+                              className={BTN_IKINCIL}
+                            >
+                              Sil
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -983,6 +1125,208 @@ export function HavuzPaneli({
                         Vazgeç
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* Yikici islem onayi — tarayici confirm() kullanilmaz */}
+                {onay?.id === k.id && (
+                  <div className="mt-4 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
+                    <p className="text-sm text-ink">
+                      {onay.tur === 'sil'
+                        ? `${k.name} havuzdan silinecek. Emin misin?`
+                        : onay.tur === 'engelle'
+                          ? `${k.name} engellenecek; ekip önerilerinde görünmez. Emin misin?`
+                          : 'Önceki bağlantı geçersiz olacak. Yeniden gönderilsin mi?'}
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => {
+                          const tur = onay.tur;
+                          setOnay(null);
+                          if (tur === 'sil') sil(k.id);
+                          else if (tur === 'engelle') durumDegistir(k, 'blocked');
+                          else davetGonder(k.id);
+                        }}
+                        className={BTN_BIRINCIL}
+                      >
+                        {onay.tur === 'sil'
+                          ? 'Sil'
+                          : onay.tur === 'engelle'
+                            ? 'Engelle'
+                            : 'Yeniden gönder'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnay(null)}
+                        className={BTN_IKINCIL}
+                      >
+                        Vazgeç
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Gizli ic oran karti — yalniz commercial.view */}
+                {canSeeRates && oranAcik === k.id && (
+                  <div className="mt-5 pt-5 border-t border-line space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <p className="font-display text-base text-ink">
+                        İç oranlar
+                      </p>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 bg-paper-2 border border-line px-2 py-0.5 rounded">
+                        Gizli — yalnız ticari yetkililer görür
+                      </span>
+                    </div>
+
+                    {oranHatasi && (
+                      <p className="text-sm text-danger">{oranHatasi}</p>
+                    )}
+
+                    {oranYukleniyor ? (
+                      <p className="text-sm text-ink-72">Yükleniyor…</p>
+                    ) : (oranlar[k.id] ?? []).length === 0 ? (
+                      <p className="text-sm text-ink-72">
+                        Bu kişi için kayıtlı iç oran yok.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                              <th className="py-1.5 pr-3">Rol</th>
+                              <th className="py-1.5 pr-3">Tutar</th>
+                              <th className="py-1.5 pr-3">Birim</th>
+                              <th className="py-1.5 pr-3">Geçerlilik</th>
+                              <th className="py-1.5 pr-3">Not</th>
+                              <th className="py-1.5" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(oranlar[k.id] ?? []).map((o) => {
+                              const kapali = !!o.valid_to;
+                              return (
+                                <tr
+                                  key={o.id}
+                                  className={kapali ? 'text-ink-50' : 'text-ink'}
+                                >
+                                  <td className="py-1.5 pr-3">{o.role_name}</td>
+                                  <td className="py-1.5 pr-3">
+                                    {tutarMetni(Number(o.default_cost), o.currency)}
+                                  </td>
+                                  <td className="py-1.5 pr-3">
+                                    {ORAN_BIRIM_ETIKETLERI[o.cost_basis] ??
+                                      o.cost_basis}
+                                  </td>
+                                  <td className="py-1.5 pr-3">
+                                    {tarih(o.valid_from)} –{' '}
+                                    {o.valid_to ? tarih(o.valid_to) : 'açık'}
+                                  </td>
+                                  <td className="py-1.5 pr-3">
+                                    {o.private_note ?? ''}
+                                  </td>
+                                  <td className="py-1.5">
+                                    {canManageRates && !kapali && (
+                                      <button
+                                        type="button"
+                                        disabled={isPending}
+                                        onClick={() => oranKapat(k.id, o.id)}
+                                        className="kashe-tap text-xs text-brand-ink hover:underline"
+                                      >
+                                        Kapat
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {canManageRates &&
+                      ((k.organization_talent_record_roles ?? []).length === 0 ? (
+                        <p className="text-sm text-ink-72">
+                          Oran girmek için önce rol ata.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                          <select
+                            value={oranForm.roleId}
+                            onChange={(e) =>
+                              setOranForm({ ...oranForm, roleId: e.target.value })
+                            }
+                            className={ALAN}
+                          >
+                            <option value="">Rol seç</option>
+                            {(k.organization_talent_record_roles ?? []).map(
+                              (r) => (
+                                <option key={r.id} value={r.role_id}>
+                                  {r.service_roles?.name_tr ?? r.role_id}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={oranForm.cost}
+                            onChange={(e) =>
+                              setOranForm({ ...oranForm, cost: e.target.value })
+                            }
+                            placeholder="Tutar (TL)"
+                            className={ALAN}
+                          />
+                          <select
+                            value={oranForm.basis}
+                            onChange={(e) =>
+                              setOranForm({
+                                ...oranForm,
+                                basis: e.target.value as HavuzOranBirimi,
+                              })
+                            }
+                            className={ALAN}
+                          >
+                            {ORAN_BIRIM_SECENEKLERI.map((b) => (
+                              <option key={b} value={b}>
+                                {ORAN_BIRIM_ETIKETLERI[b]}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            value={oranForm.validFrom}
+                            onChange={(e) =>
+                              setOranForm({
+                                ...oranForm,
+                                validFrom: e.target.value,
+                              })
+                            }
+                            className={ALAN}
+                          />
+                          <input
+                            type="text"
+                            value={oranForm.note}
+                            onChange={(e) =>
+                              setOranForm({ ...oranForm, note: e.target.value })
+                            }
+                            placeholder="Not (isteğe bağlı)"
+                            className={ALAN}
+                          />
+                          <div className="sm:col-span-2 lg:col-span-5">
+                            <button
+                              type="button"
+                              onClick={() => oranKaydet(k.id)}
+                              disabled={isPending}
+                              className={BTN_BIRINCIL}
+                            >
+                              Oran ekle/güncelle
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 )}
               </div>

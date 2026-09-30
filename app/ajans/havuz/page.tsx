@@ -179,6 +179,8 @@ export default async function AjansHavuzPage({
           <HavuzPaneli
             organizationId={secili.id}
             canManage={secili.canManage}
+            canSeeRates={secili.canSeeRates}
+            canManageRates={secili.canManageRates}
             kayitlar={kayitlar}
             roller={roller}
             sehirler={sehirler}

@@ -16,8 +16,10 @@ export type TalentPoolOrg = {
   name: string;
   canView: boolean;
   canManage: boolean;
-  /** Ic oran karti P2'de; bayrak simdiden tasinir. */
+  /** `commercial.view` — gizli ic oran kartini gorur (P2). */
   canSeeRates: boolean;
+  /** `commercial.manage` — oran ekler/kapatir (P2). */
+  canManageRates: boolean;
 };
 
 type UyelikSatiri = {
@@ -60,24 +62,29 @@ export async function getTalentPoolContext(): Promise<{
     const org = uyelik.organizations;
     if (!org) continue;
 
-    const [modul, gorebilir, yonetebilir, oranGorebilir] = await Promise.all([
-      supabase.rpc('org_module_enabled', {
-        p_org_id: org.id,
-        p_module_key: 'talent_pool',
-      }),
-      supabase.rpc('has_org_permission', {
-        p_org_id: org.id,
-        p_permission: 'talent.view',
-      }),
-      supabase.rpc('has_org_permission', {
-        p_org_id: org.id,
-        p_permission: 'talent.manage',
-      }),
-      supabase.rpc('has_org_permission', {
-        p_org_id: org.id,
-        p_permission: 'commercial.view',
-      }),
-    ]);
+    const [modul, gorebilir, yonetebilir, oranGorebilir, oranYonetir] =
+      await Promise.all([
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'talent_pool',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'talent.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'talent.manage',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'commercial.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'commercial.manage',
+        }),
+      ]);
 
     if (modul.error) console.error('[havuz] modul kontrolu', modul.error);
     if (gorebilir.error) console.error('[havuz] yetki kontrolu', gorebilir.error);
@@ -90,6 +97,7 @@ export async function getTalentPoolContext(): Promise<{
       canView: true,
       canManage: yonetebilir.data === true,
       canSeeRates: oranGorebilir.data === true,
+      canManageRates: oranYonetir.data === true,
     });
   }
 
