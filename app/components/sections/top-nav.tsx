@@ -84,6 +84,8 @@ export async function TopNav() {
   // özel) → menüde kalır. Pro'da bölüm olduğundan pro'nun menüsünden çıkarıldı.
   if (isAgency) {
     menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
+    // FAZ 5: yetenek havuzu — yalniz ajans (modul kapisi sayfada da kontrol edilir)
+    menuLinks.push({ href: "/ajans/havuz", label: "Yetenek Havuzu" });
   }
   // Profesyonel/ajans → Teklif Talepleri (profilde bölüm yok → kalır)
   if (isProfessional || isAgency) {

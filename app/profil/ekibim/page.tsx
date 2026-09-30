@@ -86,6 +86,16 @@ export default async function EkibimPage() {
               Ajansın altındaki profesyonelleri yönet, yeni üyeler davet et,
               davet durumlarını takip et.
             </p>
+            {/* FAZ 5: ekip uyeleri havuzda da gorunur (harici kisilerle tek liste) */}
+            <p className="mt-3 text-sm text-ink-72">
+              Ekibin havuzda:{' '}
+              <Link
+                href="/ajans/havuz"
+                className="text-brand-ink hover:underline font-medium"
+              >
+                Yetenek havuzu →
+              </Link>
+            </p>
           </header>
 
           <EkibimPaneli

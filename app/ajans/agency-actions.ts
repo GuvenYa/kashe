@@ -221,6 +221,29 @@ async function updateInvitationStatus(
     return { success: false, error: 'Güncellenemedi: ' + error.message };
   }
 
+  // FAZ 5/P1 — Ekibim kabulu = havuz kaydi. `agency_members` satirini davet
+  // tetikleyicisi yaratti; havuz kaydini RPC tamamlar (kabul eden profesyonelin
+  // kurulusta `talent.manage` yetkisi yoktur, dogrudan INSERT RLS'ten gecmez).
+  // Hata akisi KESMEZ: `/ajans/havuz` acilirken `sync_org_talent_pool` tamamlar.
+  if (newStatus === 'accepted') {
+    const { data: uyelik } = await supabase
+      .from('agency_members')
+      .select('id')
+      .eq('agency_id', invitation.agency_id)
+      .eq('professional_id', user.id)
+      .maybeSingle();
+    const uyelikId = (uyelik as { id: string } | null)?.id ?? null;
+    if (uyelikId) {
+      const { error: havuzHatasi } = await supabase.rpc(
+        'ensure_talent_record_for_membership',
+        { p_agency_member_id: uyelikId }
+      );
+      if (havuzHatasi) console.error('[havuz] ensure', havuzHatasi);
+    } else {
+      console.error('[havuz] ensure: agency_members satiri bulunamadi');
+    }
+  }
+
   revalidatePath('/profil/ekibim');
   revalidatePath('/davetlerim');
   return { success: true };
