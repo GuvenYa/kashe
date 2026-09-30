@@ -85,12 +85,12 @@ function rolleriDogrula(roles: HavuzRolGirdisi[]): string | null {
   const idler = new Set<number>();
   let birincil = 0;
   for (const r of roles) {
-    if (!Number.isInteger(r.roleId) || r.roleId <= 0) return 'Rol secimi gecersiz.';
-    if (idler.has(r.roleId)) return 'Ayni rol iki kez secilemez.';
+    if (!Number.isInteger(r.roleId) || r.roleId <= 0) return 'Rol seçimi geçersiz.';
+    if (idler.has(r.roleId)) return 'Aynı rol iki kez seçilemez.';
     idler.add(r.roleId);
     if (r.isPrimary) birincil++;
   }
-  if (birincil > 1) return 'Yalniz bir rol birincil olabilir.';
+  if (birincil > 1) return 'Yalnız bir rol birincil olabilir.';
   return null;
 }
 
@@ -106,7 +106,7 @@ async function rolleriYaz(
     .eq('record_id', recordId);
   if (silmeHatasi) {
     console.error('[havuz] rol silme', silmeHatasi);
-    return 'Roller guncellenemedi.';
+    return 'Roller güncellenemedi.';
   }
   if (roles.length === 0) return null;
 
@@ -126,7 +126,7 @@ async function rolleriYaz(
   if (eklemeHatasi) {
     console.error('[havuz] rol ekleme', eklemeHatasi);
     if (eklemeHatasi.code === '23505') {
-      return 'Roller cakisti (tek birincil rol olabilir).';
+      return 'Roller çakıştı (tek birincil rol olabilir).';
     }
     return 'Roller kaydedilemedi.';
   }
@@ -143,7 +143,7 @@ export async function lookupTalentByContact(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   const email = metin(input.email, 200);
   const phone = metin(input.phone, 40);
@@ -157,9 +157,9 @@ export async function lookupTalentByContact(input: {
   if (error) {
     console.error('[havuz] kimlik esleme', error);
     if (error.code === '42501') {
-      return { success: false, error: 'Bu kurulusta arama yetkin yok.' };
+      return { success: false, error: 'Bu kuruluşta arama yetkin yok.' };
     }
-    return { success: false, error: 'Esleme yapilamadi.' };
+    return { success: false, error: 'Eşleme yapılamadı.' };
   }
 
   const satirlar = (data ?? []) as { talent_id: string; match_kind: string }[];
@@ -177,18 +177,18 @@ export async function addTalentRecord(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   const ad = metin(input.name, 200);
   if (!ad) return { success: false, error: 'Ad zorunlu.' };
   if (!ILISKI_TURLERI.includes(input.relationshipType)) {
-    return { success: false, error: 'Iliski turu gecersiz.' };
+    return { success: false, error: 'İlişki türü geçersiz.' };
   }
   const rolHatasi = rolleriDogrula(input.roles ?? []);
   if (rolHatasi) return { success: false, error: rolHatasi };
 
   if (!(await yonetebilirMi(supabase, input.organizationId))) {
-    return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+    return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
   }
 
   const bagli = !!input.talentId;
@@ -214,12 +214,12 @@ export async function addTalentRecord(
   if (error || !kayit) {
     console.error('[havuz] kayit ekleme', error);
     if (error?.code === '23505') {
-      return { success: false, error: 'Bu kisi havuzda zaten var.' };
+      return { success: false, error: 'Bu kişi havuzda zaten var.' };
     }
     if (error?.code === '42501') {
-      return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+      return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
     }
-    return { success: false, error: 'Kayit eklenemedi, tekrar dene.' };
+    return { success: false, error: 'Kayıt eklenemedi, tekrar dene.' };
   }
 
   const recordId = (kayit as { id: string }).id;
@@ -236,18 +236,18 @@ export async function updateTalentRecord(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   const ad = metin(input.name, 200);
   if (!ad) return { success: false, error: 'Ad zorunlu.' };
   if (!ILISKI_TURLERI.includes(input.relationshipType)) {
-    return { success: false, error: 'Iliski turu gecersiz.' };
+    return { success: false, error: 'İlişki türü geçersiz.' };
   }
   if (!DURUMLAR.includes(input.status)) {
-    return { success: false, error: 'Durum gecersiz.' };
+    return { success: false, error: 'Durum geçersiz.' };
   }
   if (!(await yonetebilirMi(supabase, input.organizationId))) {
-    return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+    return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
   }
 
   // `talent_id` ve `organization_id` istemciden DEGISTIRILMEZ.
@@ -269,9 +269,9 @@ export async function updateTalentRecord(
   if (error) {
     console.error('[havuz] kayit guncelleme', error);
     if (error.code === '42501') {
-      return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+      return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
     }
-    return { success: false, error: 'Kayit guncellenemedi.' };
+    return { success: false, error: 'Kayıt güncellenemedi.' };
   }
   revalidatePath('/ajans/havuz');
   return { success: true };
@@ -286,12 +286,12 @@ export async function setTalentRecordRoles(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   const rolHatasi = rolleriDogrula(input.roles ?? []);
   if (rolHatasi) return { success: false, error: rolHatasi };
   if (!(await yonetebilirMi(supabase, input.organizationId))) {
-    return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+    return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
   }
 
   const hata = await rolleriYaz(supabase, input.recordId, input.roles ?? []);
@@ -308,10 +308,10 @@ export async function deleteTalentRecord(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   if (!(await yonetebilirMi(supabase, input.organizationId))) {
-    return { success: false, error: 'Bu kurulusta havuzu yonetme yetkin yok.' };
+    return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
   }
 
   // Kashe uyesi (talent_id dolu) kayit BURADAN silinmez — Ekibim'den yonetilir.
@@ -322,11 +322,11 @@ export async function deleteTalentRecord(input: {
     .eq('organization_id', input.organizationId)
     .maybeSingle();
 
-  if (!kayit) return { success: false, error: 'Kayit bulunamadi.' };
+  if (!kayit) return { success: false, error: 'Kayıt bulunamadı.' };
   if ((kayit as { talent_id: string | null }).talent_id) {
     return {
       success: false,
-      error: 'Kashe uyesi kayitlari Ekibim uzerinden yonetilir.',
+      error: 'Kashe üyesi kayıtları Ekibim üzerinden yönetilir.',
     };
   }
 
@@ -338,7 +338,7 @@ export async function deleteTalentRecord(input: {
 
   if (error) {
     console.error('[havuz] kayit silme', error);
-    return { success: false, error: 'Kayit silinemedi.' };
+    return { success: false, error: 'Kayıt silinemedi.' };
   }
   revalidatePath('/ajans/havuz');
   return { success: true };
@@ -356,7 +356,7 @@ export async function sendTalentInvitation(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Giris yapmalisin.' };
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   const { data: token, error } = await supabase.rpc(
     'send_talent_record_invitation',
@@ -366,16 +366,16 @@ export async function sendTalentInvitation(input: {
   if (error) {
     console.error('[havuz] davet rpc', error);
     if (error.code === '42501') {
-      return { success: false, error: 'Davet gonderme yetkin yok.' };
+      return { success: false, error: 'Davet gönderme yetkin yok.' };
     }
     if (error.code === '22023') {
       return {
         success: false,
         error:
-          'Davet gonderilemez: kayitta e-posta yok, kisi zaten bagli ya da engelli.',
+          'Davet gönderilemez: kayıtta e-posta yok, kişi zaten bağlı ya da engelli.',
       };
     }
-    return { success: false, error: 'Davet olusturulamadi, tekrar dene.' };
+    return { success: false, error: 'Davet oluşturulamadı, tekrar dene.' };
   }
 
   // E-posta icerigi icin kayit + kurulus adi + roller
@@ -407,7 +407,7 @@ export async function sendTalentInvitation(input: {
   if (!adres) {
     // RPC zaten e-posta sart kosuyor; buraya dusmek beklenmez.
     revalidatePath('/ajans/havuz');
-    return { success: false, error: 'Kayitta e-posta yok.' };
+    return { success: false, error: 'Kayıtta e-posta yok.' };
   }
 
   const roller = (k?.organization_talent_record_roles ?? [])
@@ -417,7 +417,7 @@ export async function sendTalentInvitation(input: {
   const icerik = havuzDavetEmail({
     organizationName:
       (kurulus as { display_name: string | null } | null)?.display_name?.trim() ||
-      'Kashe kurulusu',
+      'Kashe kuruluşu',
     recipientName: k?.name ?? null,
     roleLabels: roller,
     token: token as string,
@@ -435,7 +435,7 @@ export async function sendTalentInvitation(input: {
     // RPC kaydi `sent` yapti: panelde "Gonderildi" gorunur ama e-posta cikmadi.
     // Tekrar cagrilirsa YENI token uretilir, eski gecersiz olur.
     console.error('[havuz] davet e-postasi', sonuc.reason);
-    return { success: false, error: 'E-posta gonderilemedi, tekrar dene.' };
+    return { success: false, error: 'E-posta gönderilemedi, tekrar dene.' };
   }
   return { success: true };
 }
