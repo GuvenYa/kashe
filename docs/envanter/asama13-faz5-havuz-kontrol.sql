@@ -10,7 +10,7 @@
 --   K7  talents.canonical_email/phone sutun yetkisi anon + authenticated SELECT (0 = kapali)
 --   K8  canonical_email dolu talents = e-postali profili olan talents (fark 0)
 --   K9  internal.organization_talent_rates tablo yetkisi anon/authenticated/service_role (0)
---   K10 9 RPC: authenticated EXECUTE var + anon yok (18)
+--   K10 11 RPC: authenticated EXECUTE var + anon yok (22)
 --   K11 records + roles RLS politikasi (8)
 --   K12 kayit basina >1 birincil rol (0)
 --   K13 invitation_token sutunu authenticated SELECT (0 = kapali)
@@ -84,7 +84,7 @@ k9 AS (
          0::bigint
 ),
 k10 AS (
-  SELECT 'K10 9 RPC: authenticated var + anon yok (18)' AS kontrol,
+  SELECT 'K10 11 RPC: authenticated var + anon yok (22)' AS kontrol,
          (SELECT sum((has_function_privilege('authenticated', f, 'EXECUTE'))::int
                    + (NOT has_function_privilege('anon', f, 'EXECUTE'))::int)
             FROM unnest(ARRAY[
@@ -96,8 +96,10 @@ k10 AS (
               'public.claimable_talent_records_for_me()',
               'public.internal_talent_rates_list(uuid,uuid)',
               'public.internal_talent_rate_upsert(uuid,uuid,integer,numeric,text,character,date,text)',
-              'public.internal_talent_rate_close(uuid,uuid,date)']) AS f)::bigint,
-         18::bigint
+              'public.internal_talent_rate_close(uuid,uuid,date)',
+              'public.ensure_talent_record_for_membership(uuid)',
+              'public.sync_org_talent_pool(uuid)']) AS f)::bigint,
+         22::bigint
 ),
 k11 AS (
   SELECT 'K11 records + roles RLS politikasi (8)' AS kontrol,

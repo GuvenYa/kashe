@@ -50,6 +50,8 @@
 --       crew_coordinator yazar, viewer 0, kurum 42501, anon 42501), find_talent_by_contact, gizli oranlar (tarihce, finance
 --       okur, digerleri 42501, denetim), davet/claim/decline (token kapali, e-posta dogrulama, sure), dolum fonksiyonu
 --       idempotan (ON KOSUL: faz5_01-02 dalda uygulanmis)
+--   T18 FAZ 5/03 Ekibim -> havuz RPC'leri: ensure_talent_record_for_membership (profesyonel kendisi / talent.manage; viewer 42501,
+--       idempotan), sync_org_talent_pool (1 -> 0, viewer 42501, denetim), kayma 0 (ON KOSUL: faz5_03 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -2046,6 +2048,92 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('request.jwt.claim.email', '', true);
   INSERT INTO t_sonuc VALUES (17, 'T17 FAZ 5 yetenek havuzu', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T18) FAZ 5/03 Ekibim -> havuz RPC'leri. ON KOSUL: 20260930130000 (faz5 03) dalda. T17 verisine dayanir
+-- (ajans org_a; agency_members: pro1 ve pro2; havuz kayitlari dolumla yazilmis; musteri viewer uyesi).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  org_a uuid; am1 uuid; am2 uuid; rec uuid; rec2 uuid; t_pro2 uuid; n int; r record;
+BEGIN
+  IF to_regprocedure('public.sync_org_talent_pool(uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (18, 'T18 FAZ 5 Ekibim -> havuz RPC', 'ATLANDI', 'sync_org_talent_pool yok; faz5_03 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO am1 FROM public.agency_members WHERE agency_id = ajans AND professional_id = pro1;
+  SELECT id INTO am2 FROM public.agency_members WHERE agency_id = ajans AND professional_id = pro2;
+  SELECT id INTO t_pro2 FROM public.talents WHERE user_id = pro2;
+  IF org_a IS NULL OR am1 IS NULL OR am2 IS NULL THEN RAISE EXCEPTION 'T17 verisi yok (org=%, am1=%, am2=%)', org_a, am1, am2; END IF;
+
+  -- 18a) pro2'nin havuz kaydini sil; pro2 (profesyonelin kendisi) RPC ile yeniden yaratir (davet kabulu senaryosu)
+  DELETE FROM public.organization_talent_records WHERE organization_id = org_a AND talent_id = t_pro2;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.ensure_talent_record_for_membership(am2) INTO rec;
+  SELECT public.ensure_talent_record_for_membership(am2) INTO rec2;  -- idempotan: ayni id
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.organization_talent_records WHERE id = rec;
+  IF r.id IS NULL OR r.talent_id IS DISTINCT FROM t_pro2 OR r.source <> 'marketplace_linked' OR r.legacy_agency_member_id IS DISTINCT FROM am2 THEN
+    RAISE EXCEPTION 'pro2 kaydi: id=% talent=% source=% legacy=%', r.id, r.talent_id, r.source, r.legacy_agency_member_id; END IF;
+  IF rec2 IS DISTINCT FROM rec THEN RAISE EXCEPTION 'ensure idempotan degil (% / %)', rec, rec2; END IF;
+  SELECT count(*) INTO n FROM public.organization_talent_records WHERE organization_id = org_a AND talent_id = t_pro2;
+  IF n <> 1 THEN RAISE EXCEPTION 'pro2 icin % kayit (1 beklenir)', n; END IF;
+
+  -- 18b) baskasinin uyeligi: musteri (viewer, talent.manage yok) -> 42501; pro1 (crew_coordinator, talent.manage) am2 icin -> OK
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.ensure_talent_record_for_membership(am2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'viewer baskasinin uyeligi icin kayit yazabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.ensure_talent_record_for_membership(am2);
+  EXECUTE 'RESET ROLE';
+
+  -- 18c) sync_org_talent_pool: pro1'in kaydi silinir; ajans (talent.manage) sync -> 1; ikinci -> 0; musteri -> 42501; denetim
+  DELETE FROM public.organization_talent_records WHERE organization_id = org_a AND legacy_agency_member_id = am1;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.sync_org_talent_pool(org_a) INTO n;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'sync ilk kosu % (1 beklenir)', n; END IF;
+  SELECT count(*) INTO n FROM public.organization_talent_records WHERE organization_id = org_a AND legacy_agency_member_id = am1 AND source = 'marketplace_linked';
+  IF n <> 1 THEN RAISE EXCEPTION 'pro1 kaydi sync ile gelmedi'; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.sync_org_talent_pool(org_a) INTO n;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'sync ikinci kosu % (0 beklenir)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT public.sync_org_talent_pool(org_a) INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'viewer sync cagirabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND detail->>'op' = 'talent.sync';
+  IF n < 1 THEN RAISE EXCEPTION 'talent.sync denetim satiri yok'; END IF;
+  -- kayma sifir
+  SELECT count(*) INTO n FROM public.agency_members a JOIN public.organizations o ON o.legacy_profile_id = a.agency_id
+    JOIN public.talents t ON t.user_id = a.professional_id
+   WHERE NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
+  IF n <> 0 THEN RAISE EXCEPTION 'kayma % (0 beklenir)', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (18, 'T18 FAZ 5 Ekibim -> havuz RPC', 'GECTI',
+    'profesyonel kendi uyeligi icin kaydi yeniden yaratti (marketplace_linked + legacy iz, idempotan); viewer 42501, crew_coordinator OK; sync_org_talent_pool 1 -> 0, viewer 42501, denetim; kayma 0');
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (18, 'T18 FAZ 5 Ekibim -> havuz RPC', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

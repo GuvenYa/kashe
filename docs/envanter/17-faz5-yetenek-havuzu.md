@@ -3,7 +3,7 @@
 **Kaynak plan:** `04-goc-plani.md` FAZ 5 madde 27-30; `01-veri-modeli.md` bolum 3 (yetenek ve havuz, tekillestirme,
 claim), bolum 8 (`internal.organization_talent_rates`); `02-guvenlik-modeli.md` (internal sema); `08-faz0` (kurulus,
 uyelik, `has_org_permission`, `organization_modules`); `09-faz1` (assert -> log -> sorgu deseni); `11-faz2a` (`talents`).
-**Durum:** 5-DB DOSYALAR HAZIR (30 Eylul 2026; yerelde test edildi, bolum 6). Uretim sirasi bolum 7; uygulama P1-P3 Claude Code (bolum 8).
+**Durum:** 5-DB/01-02 URETIMDE (30 Eylul 2026; bolum 10). 5-DB/03 (Ekibim -> havuz RPC'leri) dosya hazir, yerelde test edildi (bolum 6); uretim sirasi bolum 7. Uygulama P1-P3 Claude Code (bolum 8).
 
 ## 1. Amac ve sinir
 
@@ -79,7 +79,8 @@ Ek nesneler:
 - `claim_talent_record(p_token uuid) RETURNS uuid` SECURITY DEFINER (govde `fn_faz5_claim_record`, `claim_talent_record_by_id(p_record_id)` ayni govdeyi token'siz kullanir): token gecerli + suresi gecmemis + kayit `invitation_status = 'sent'`; cagiranin `auth.email()` kaydin `email`'i ile (normalize) esit; `talents` satiri (user_id = auth.uid()) yoksa hata (`no_data_found`; profesyonel/ajans olmadan claim yok); kaydi `talent_id`, `source = 'invited' -> 'marketplace_linked'`, `invitation_status = 'accepted'`, `linked_at = now()`, token NULL; `talents.claim_status = 'claimed'`, `claimed_at`; kaydin id'sini doner. Ayni kurulusta ayni talent icin baska kayit varsa `unique_violation` (23505) — birlestirme P2/FAZ 8.
 - `decline_talent_record_invitation(p_token uuid)`: `declined`, token NULL.
 - `claimable_talent_records_for_me() RETURNS TABLE (record_id uuid, organization_name text, invited_at timestamptz)`: e-postasi `auth.email()` ile eslesen, `talent_id` NULL kayitlar (giris sonrasi "sizi eklemis" bandi; P2).
-- Oran RPC'leri (public, `internal_` on eki; assert -> log -> sorgu; toplam RPC 9):
+- **5-DB/03 — Ekibim -> havuz RPC'leri** (aynalama tetikleyicisi yerine; `agency_members` satirini davet kabulunde DB tetikleyicisi yarattigi ve kabul eden profesyonel kurulusta `talent.manage` olmadigi icin dogrudan INSERT RLS'ten gecmez): `ensure_talent_record_for_membership(p_agency_member_id)` (cagiran = o satirin profesyoneli VEYA kurulusta `talent.manage`; idempotan; kayit + roller `provider_services`'tan; dolumla ayni kural), `sync_org_talent_pool(p_org_id)` (`talent.manage`; kurulusun havuz kaydi olmayan tum Ekibim uyelerini tamamlar; olusturulan sayiyi doner; >0 ise denetim `detail.op = talent.sync`). Uygulama: `acceptInvitation` sonrasi `ensure_...`, `/ajans/havuz` acilirken `sync_...` (kendi kendini onarir).
+- Oran RPC'leri (public, `internal_` on eki; assert -> log -> sorgu; toplam RPC 11):
   - `internal_talent_rates_list(p_org uuid, p_record_id uuid)` -> `commercial.view`; kaydin gecerli (valid_to NULL veya >= today) ve gecmis oranlari.
   - `internal_talent_rate_upsert(p_org, p_record_id, p_role_id, p_cost numeric, p_basis, p_currency, p_valid_from date, p_note)` -> `commercial.manage`; ayni (kayit, rol) icin acik oran varsa `valid_to = p_valid_from - 1` ile kapatir, yeniyi ekler (tarihce korunur).
   - `internal_talent_rate_close(p_org, p_rate_id, p_valid_to date)` -> `commercial.manage`.
@@ -117,7 +118,7 @@ sayilari. Idempotan (ikinci kosuda 0 yeni).
 | K7 | `talents.canonical_email/phone` sutun yetkisi anon/authenticated | 0 (kapali) |
 | K8 | `canonical_email` dolu talents = e-postali profili olan talents | fark 0 |
 | K9 | `internal.organization_talent_rates` tablo yetkisi anon/authenticated/service_role | 0 |
-| K10 | 9 RPC: authenticated EXECUTE var + anon yok | 18 |
+| K10 | 11 RPC: authenticated EXECUTE var + anon yok | 22 |
 | K11 | records + roles RLS politikasi | 8 |
 | K12 | kayit basina >1 birincil rol | 0 |
 | K13 | `invitation_token` sutunu authenticated SELECT | 0 (kapali) |
@@ -136,7 +137,12 @@ kapali (42501), yanlis e-posta 42501, pro2 `claimable` 1 -> claim -> 0, talent b
 `no_data_found`, suresi gecmis 22023, client (talents yok) `no_data_found`, decline. (g) dolum fonksiyonu: pro1 yeni kayit
 + rol (`provider_services`'tan), pro2 mevcut kayda iz, ikinci kosu 0, kayma 0.
 
-**Yerel zincir (30 Eylul):** 01 + 02 iki kez uygulandi (ikincisi 0 degisiklik); asama13 K1-K13 ESIT (K14 = 20200 test
+T18 (5-DB/03): pro2'nin kaydi silinir, pro2 (profesyonelin kendisi) `ensure_talent_record_for_membership` ile yeniden yaratir
+(marketplace_linked + legacy iz; ikinci cagri ayni id); viewer 42501, crew_coordinator OK; pro1'in kaydi silinir, ajans
+`sync_org_talent_pool` -> 1, ikinci -> 0, viewer 42501, denetim `talent.sync`; kayma 0. Mutasyon: sahiplik kontrolu
+kaldirildi -> HATA ("viewer baskasinin uyeligi icin kayit yazabildi").
+
+**Yerel zincir (30 Eylul):** 01 + 02 (+ 03 iki kez, ikincisi 0 degisiklik; asama4 T0-T18 **19/19**, asama13 K10 = 22) iki kez uygulandi (ikincisi 0 degisiklik); asama13 K1-K13 ESIT (K14 = 20200 test
 verisiyle); asama4 T0-T17 **18/18 GECTI**. Mutasyon: `otr_insert` modul kapisi kaldirildi -> HATA ("business kurulusu
 havuza yazdi"); `internal_talent_rates_list` assert kaldirildi -> HATA ("crew_coordinator ic orani gordu"); claim
 e-posta kontrolu kaldirildi -> HATA ("yanlis e-postali kullanici kaydi sahiplendi"). Duzeltilen: `access_audit.action`
@@ -160,18 +166,20 @@ yalniz read|write (islem turu `detail.op`); dolum izi guard'i NULL -> deger yazi
 4. Dalda: `asama4-davranis-testi.sql` -> **18 satir, T17 GECTI**; `asama13-faz5-havuz-kontrol.sql` -> K1-K13 ESIT.
 5. Uretim: `supabase link --project-ref qydsooqmflrrwtgawhsv` -> `supabase db push` (2 dosya). NOTICE'taki `atlanan` 0 olmali.
 6. Uretimde: `asama13` -> K1-K13 ESIT (K2 = ajans sayisi, K4 = agency_members sayisi, K5 0), K14 bilgi; `asama5` degismedi.
-7. `git push` -> P1 (`17-claude-code-gorevi-p1.md`).
+7. `git push`.
+
+**5-DB/03 (Ekibim -> havuz RPC'leri; 01-02 uretimdeyken):** 1. Commit (`FAZ 5-DB/03: Ekibim -> havuz RPC'leri (ensure_talent_record_for_membership, sync_org_talent_pool), T18, asama13 K10; P1 gorev metni`). 2. Dal push (1 dosya). 3. Dalda asama4 -> **19 satir, T18 GECTI**; asama13 -> K10 = 22, hepsi ESIT. 4. Uretim push (1 dosya). 5. Uretimde asama13 (K10 = 22; K14 20000). 6. `git push` -> P1 (`17-claude-code-gorevi-p1.md`).
 
 Geri alma: fonksiyon/tetikleyici/tablo DROP (veri: yalniz dolum kayitlari; `agency_members` dokunulmadi); `organization_modules` satirlari silinir; `talents.canonical_*` NULL'lanir.
 
 ## 8. Uygulama parcalari (Claude Code)
 
-**P1 — `/ajans/havuz` + Ekibim kaydi (`17-claude-code-gorevi-p1.md`):** liste (kaynak/rol/iliski/durum filtreleri; uc havuz
+**P1 — `/ajans/havuz` + Ekibim kaydi (`17-claude-code-gorevi-p1.md`; ON KOSUL 5-DB/03 uretimde):** liste (kaynak/rol/iliski/durum filtreleri; uc havuz
 tek listede: `talent_id` dolu = Kashe uyesi, NULL = harici), harici kisi ekleme formu (ad, e-posta, telefon, sehir,
 Instagram, roller + birincil, iliski turu, not) -> INSERT (RLS); e-posta girildiyse `find_talent_by_contact` ile
 "Kashe uyesi olabilir" onerisi (baglama secenegi: `talent_id` set, source marketplace_linked); davet gonder (token
 uretimi sunucuda `gen_random_uuid()`, `invitation_expires_at = now() + 14 gun`, Resend sablonu; `/davet/havuz/<token>`);
-**Ekibim davet kabulu** (`agency-actions.ts` accept) ayni islemde havuz kaydi INSERT (ON CONFLICT (org, talent) DO NOTHING).
+**Ekibim davet kabulu** (`agency-actions.ts` `acceptInvitation`): kabul basarili olunca `agency_members` satiri (tetikleyici yaratir) icin `ensure_talent_record_for_membership(am_id)` cagrilir (hata akisi kesmez, loglanir); `/ajans/havuz` sayfasi acilirken `sync_org_talent_pool(org)` cagrilir (kendi kendini onarir).
 Menu: ajans icin "Yetenek havuzu".
 **P2 — claim + oranlar (`-p2.md`):** `/davet/havuz/[token]` sayfasi (oturumsuz: kurulus adi + "Kashe'ye katil / giris yap"
 -> redirect; oturumlu: e-posta eslesiyorsa "Kaydi sahiplen" -> `claim_talent_record`; eslesmiyorsa aciklama);
@@ -192,4 +200,10 @@ saglayicinin talents.id; roller `provider_services`'tan on dolu); kesfet kartind
 
 ## 10. Kapanis kaydi
 
-(5-DB uretim sonrasi ve her P icin doldurulur)
+**5-DB/01-02 (30 Eylul 2026, commit `5ef79b5`):** uretim on kontrolu: `agency_members` 2 satir (Sunucu Ajans -> 2 profesyonel), ikisinde de
+kurulus + talent eslesmesi var; `organization_modules` bos; 1 ajans kurulusu. Dal: ilk `db push` onay sorusunda kalmis (y/n), tekrar
+kosuldu; dalda asama4 T17 GECTI, asama13 K1-K13 ESIT (K14 20200 test verisi). Uretim: `db push` 2 dosya; asama13 K1-K13 ESIT — K2 1,
+K4 2 (2 Ekibim uyesi havuz kaydina dolduruldu), K5 0, K8 35 (talents kimlik aynasi), K14 20000; asama5 (FAZ 0) degismedi,
+sync_log 0. `git push` tamam. Siradaki: 5-DB/03 + P1.
+
+(5-DB/03 ve her P icin doldurulur)
