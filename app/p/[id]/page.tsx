@@ -16,7 +16,6 @@ import { ProfileCard } from '@/app/kesfet/profile-card';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
 import {
   formatPriceRange,
-  formatDuration,
   getRoleLabel,
   formatLastSeen,
   getLastSeenTone,
@@ -383,8 +382,8 @@ export default async function PublicProfilePage({
     updated_at: string;
   };
 
-  let customerMap = new Map<string, CustomerMini>();
-  let replyMap = new Map<string, ReplyMini>();
+  const customerMap = new Map<string, CustomerMini>();
+  const replyMap = new Map<string, ReplyMini>();
 
   if (recentReviews.length > 0) {
     const customerIds = recentReviews.map((r) => r.customer_id);
