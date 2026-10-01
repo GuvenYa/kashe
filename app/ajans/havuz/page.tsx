@@ -92,6 +92,7 @@ export default async function AjansHavuzPage({
         `
         id, talent_id, name, email, phone, city_id, instagram, notes, source,
         relationship_type, status, invitation_status, invitation_sent_at, linked_at, created_at,
+        legacy_agency_member_id,
         turkish_cities(name),
         talents(user_id),
         organization_talent_record_roles(id, role_id, is_primary, service_roles(slug, name_tr))
@@ -109,7 +110,42 @@ export default async function AjansHavuzPage({
 
   if (kayitRes.error) console.error('[havuz] kayit listesi', kayitRes.error);
 
-  const kayitlar = (kayitRes.data ?? []) as unknown as HavuzKaydi[];
+  // FAZ 5/P3-ek — "Ekibim'den yonetilir" (Sil gizli) yalniz AKTIF Ekibim uyeliginde:
+  // `legacy_agency_member_id` dolu VE o satir `agency_members`'ta hala var. Tek sorgu.
+  // `agency_members` SELECT'i herkese acik; yine de RLS satiri gizlerse kume bos doner
+  // -> Sil GORUNUR. O yoldan yanlis silinen kayit, sayfa acilisindaki
+  // `sync_org_talent_pool` ile kendini onarir (kayit + roller geri yaratilir).
+  const hamKayitlar = (kayitRes.data ?? []) as unknown as Omit<
+    HavuzKaydi,
+    'ekibimUyesi'
+  >[];
+
+  const legacyIdler = [
+    ...new Set(
+      hamKayitlar
+        .map((k) => k.legacy_agency_member_id)
+        .filter((v): v is string => !!v)
+    ),
+  ];
+
+  let aktifUyelikIdleri = new Set<string>();
+  if (legacyIdler.length > 0) {
+    const { data: uyelikler, error: uyelikHatasi } = await supabase
+      .from('agency_members')
+      .select('id')
+      .in('id', legacyIdler);
+    if (uyelikHatasi) console.error('[havuz] ekibim uyelikleri', uyelikHatasi);
+    aktifUyelikIdleri = new Set(
+      ((uyelikler ?? []) as { id: string }[]).map((u) => u.id)
+    );
+  }
+
+  const kayitlar: HavuzKaydi[] = hamKayitlar.map((k) => ({
+    ...k,
+    ekibimUyesi:
+      !!k.legacy_agency_member_id &&
+      aktifUyelikIdleri.has(k.legacy_agency_member_id),
+  }));
   const roller = (rolRes.data ?? []) as unknown as HavuzRolSecenegi[];
   const sehirler = orderCities(
     (sehirRes.data ?? []) as { id: number; name: string }[]

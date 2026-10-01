@@ -936,7 +936,7 @@ export function HavuzPaneli({
                               Engelle
                             </button>
                           )}
-                          {k.talent_id ? (
+                          {k.ekibimUyesi ? (
                             <span className="text-xs text-ink-50">
                               Ekibim&apos;den yönetilir
                             </span>
@@ -1133,7 +1133,9 @@ export function HavuzPaneli({
                   <div className="mt-4 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
                     <p className="text-sm text-ink">
                       {onay.tur === 'sil'
-                        ? `${k.name} havuzdan silinecek. Emin misin?`
+                        ? k.talent_id
+                          ? `${k.name} havuzdan silinecek; iç oran kayıtları da silinir. Emin misin?`
+                          : `${k.name} havuzdan silinecek. Emin misin?`
                         : onay.tur === 'engelle'
                           ? `${k.name} engellenecek; ekip önerilerinde görünmez. Emin misin?`
                           : 'Önceki bağlantı geçersiz olacak. Yeniden gönderilsin mi?'}

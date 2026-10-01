@@ -317,20 +317,32 @@ export async function deleteTalentRecord(input: {
     return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
   }
 
-  // Kashe uyesi (talent_id dolu) kayit BURADAN silinmez — Ekibim'den yonetilir.
+  // FAZ 5/P3-ek: `talent_id` dolu olmasi silmeye engel DEGIL (P2 sahiplenme ve P3
+  // pazaryeri eklemesi de doldurur). Yalniz AKTIF Ekibim uyeligi korunur:
+  // `legacy_agency_member_id` dolu VE o satir `agency_members`'ta hala var.
   const { data: kayit } = await supabase
     .from('organization_talent_records')
-    .select('id, talent_id')
+    .select('id, legacy_agency_member_id')
     .eq('id', input.recordId)
     .eq('organization_id', input.organizationId)
     .maybeSingle();
 
   if (!kayit) return { success: false, error: 'Kayıt bulunamadı.' };
-  if ((kayit as { talent_id: string | null }).talent_id) {
-    return {
-      success: false,
-      error: 'Kashe üyesi kayıtları Ekibim üzerinden yönetilir.',
-    };
+
+  const legacyId = (kayit as { legacy_agency_member_id: string | null })
+    .legacy_agency_member_id;
+  if (legacyId) {
+    const { data: uyelik } = await supabase
+      .from('agency_members')
+      .select('id')
+      .eq('id', legacyId)
+      .maybeSingle();
+    if (uyelik) {
+      return {
+        success: false,
+        error: 'Aktif Ekibim üyesi havuzdan silinemez; önce Ekibim\'den çıkar.',
+      };
+    }
   }
 
   const { error } = await supabase

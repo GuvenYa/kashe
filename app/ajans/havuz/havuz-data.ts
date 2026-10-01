@@ -26,10 +26,17 @@ export type HavuzKaydi = {
   invitation_sent_at: string | null;
   linked_at: string | null;
   created_at: string;
+  legacy_agency_member_id: string | null;
   turkish_cities: { name: string } | null;
   organization_talent_record_roles: HavuzRolSatiri[] | null;
   /** `talents.id` != `profiles.id`; pazaryeri bilgisi icin kullanici id'si buradan gelir. */
   talents: { user_id: string } | null;
+  /**
+   * FAZ 5/P3-ek: kayit AKTIF bir Ekibim uyeliginden geliyor mu (sunucuda turetilir).
+   * Yalniz bu durumda Sil gizlenir; `talent_id` dolu olmasi yetmez (P2 sahiplenme ve
+   * P3 pazaryeri eklemesi de `talent_id` doldurur).
+   */
+  ekibimUyesi: boolean;
 };
 
 /** `v_providers_public`'ten gelen saglayici bilgisi (yalniz Kashe uyesi satirlar icin). */
