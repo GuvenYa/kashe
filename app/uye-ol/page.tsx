@@ -10,7 +10,9 @@ export const metadata = {
 export default async function UyeOlPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rol?: string }>;
+  // `redirect` yalniz TIP icin burada: formu `useSearchParams` ile istemci okur
+  // ve `sanitizeReturnPath`'ten gecirir.
+  searchParams: Promise<{ rol?: string; redirect?: string }>;
 }) {
   const params = await searchParams;
   const rol = params.rol || "musteri";

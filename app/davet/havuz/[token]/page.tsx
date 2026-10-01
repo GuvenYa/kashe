@@ -64,8 +64,10 @@ export default async function HavuzDavetPage({
               <p className="text-ink-72 leading-relaxed">
                 Kashe&apos;de profesyonel ya da ajans hesabı olan kişi bu kaydı
                 sahiplenebilir; kayıt profiline bağlanır. Hesabın yoksa
-                profesyonel olarak kaydolabilirsin — kaydolduktan sonra profil
-                sayfanda &quot;seni havuzuna ekledi&quot; bildirimini görürsün.
+                profesyonel olarak kaydolabilirsin — kayıt ve e-posta
+                doğrulaması sonrası bu sayfaya dönersin. Dönmezsen kaydı profil
+                sayfandaki &quot;seni havuzuna ekledi&quot; bildiriminden de
+                sahiplenebilirsin.
               </p>
               <div className="flex items-center gap-3 flex-wrap">
                 <Link
@@ -75,7 +77,7 @@ export default async function HavuzDavetPage({
                   Giriş yap
                 </Link>
                 <Link
-                  href="/uye-ol?rol=profesyonel"
+                  href={`/uye-ol?rol=profesyonel&redirect=${encodeURIComponent(donusYolu)}`}
                   className="kashe-tap px-5 py-2.5 border border-line-strong text-ink rounded-lg font-display font-semibold text-sm hover:border-brand-ink hover:text-brand-ink transition-colors"
                 >
                   Profesyonel olarak kaydol

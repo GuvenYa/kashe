@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { sanitizeReturnPath } from "@/app/lib/safe-redirect";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
@@ -98,12 +99,9 @@ export function UyeOlForm({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Güvenlik: sadece site-içi yollara izin
+  // Guvenlik: donus yolu TEK MERKEZDEN sertlestirilir (open redirect).
   const rawRedirect = searchParams.get("redirect");
-  const redirectTo =
-    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-      ? rawRedirect
-      : "/profil";
+  const redirectTo = sanitizeReturnPath(rawRedirect, "/profil");
 
   const startingRole: RoleKey =
     initialRole === "profesyonel" || initialRole === "kurumsal"
@@ -189,7 +187,9 @@ export function UyeOlForm({
         email: mail,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
+          // E-posta dogrulamasi ACIK: kullanici baglantidan donerken ayni hedefe duser
+          // (callback tarafinda `next` yine sanitizeReturnPath'ten gecer).
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
           data: {
             full_name: fullName.trim(),
             role: config.role,
@@ -472,8 +472,8 @@ export function UyeOlForm({
         Zaten üye misin?{" "}
         <a
           href={
-            rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-              ? `/giris?redirect=${encodeURIComponent(rawRedirect)}`
+            rawRedirect
+              ? `/giris?redirect=${encodeURIComponent(redirectTo)}`
               : "/giris"
           }
           className="text-brand-ink hover:text-ink font-medium"
