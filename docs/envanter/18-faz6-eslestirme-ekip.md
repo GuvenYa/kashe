@@ -3,7 +3,7 @@
 **Kaynak plan:** `04-goc-plani.md` FAZ 6 madde 31-33; `01-veri-modeli.md` bolum 5 (eslestirme, coverage), bolum 6 (ekip),
 bolum 8 (`internal.crew_member_commercials`); `02-guvenlik-modeli.md` (gerekce kodlari, "sunucu tarafi kurallar: fiyat/butce/
 musaitlik deterministik servislerde", KVKK itiraz hakki); `15-faz4a` (events, event_requirements); `17-faz5` (havuz, ic oran).
-**Durum:** 6-DB/01 DOSYA HAZIR, yerelde test edildi (1 Ekim 2026): migration iki kez uygulandi, asama4 21/21 (T19-T20 GECTI), asama14 hepsi ESIT. Uretim sirasi bolum 7.
+**Durum:** 6-DB/01 URETIMDE (1 Ekim 2026, commit `0b473f0`; bolum 10). Uygulama P1-P2 Claude Code (bolum 8).
 
 ## 1. Amac ve sinir
 
@@ -167,4 +167,8 @@ kurulusun ekipleri (crew.view).
 
 ## 10. Kapanis kaydi
 
-(6-DB/01, P1, P2 icin doldurulur)
+**6-DB/01 (1 Ekim 2026, commit `0b473f0`):** yerelde uc kez uygulandi (idempotan), asama4 21/21, asama14 hepsi ESIT. Dal: ilk asama4
+kosusu push bitmeden yapildi (T19-T20 ATLANDI — fonksiyon yoktu), push sonrasi **21/21 GECTI**, asama14 K7/K10 BILGI digerleri ESIT.
+Uretim: `db push` 1 dosya; asama14 hepsi ESIT, K10 0 (tablolar bos); asama13 K14 30000 degismedi. `git push` tamam. Siradaki: P1 (`-p1.md`).
+
+(P1, P2 icin doldurulur)

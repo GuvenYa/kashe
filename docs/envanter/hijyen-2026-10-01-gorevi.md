@@ -80,10 +80,12 @@ veritabaninda bu degeri tasiyan satir yok) `12cc4f0`. Lint 118 -> 115 (kalanlar 
 -> dogrulama -> **profil sayfasina** dustu (davet sayfasina DEGIL) -> profil bandi karsiladi -> sahiplen basarili -> Sil -> 3 kayit,
 K14 30000.
 
-**Acik: H1-ek.** Dogrulama baglantisi `/auth/confirm?token_hash=...&type=signup&next=...` (token_hash akisi; Supabase e-posta sablonu
-uretir). `emailRedirectTo` yalniz sablon `{{ .RedirectTo }}` kullaniyorsa etkilidir; bugunku sablon buyuk olasilikla `next=/profil`
-sabit tasiyor. Cozum adaylari: (a) sablon `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup` + uygulama
-`emailRedirectTo = ${origin}/auth/confirm?next=<yol>` (kod degisikligi kucuk, Redirect URLs allowlist `kashe.net/**` ise yeter);
-(b) sablon `next={{ .RedirectTo }}` + `sanitizeReturnPath` ayni origin'li tam URL'yi yola indirir. Karar icin once Dashboard
-"Authentication -> Email Templates -> Confirm signup" govdesi okunacak. Bu arada profil bandi akisi tasiyor; is ENGELLEYICI DEGIL.
-
+**H1-ek KAPANDI (1 Ekim 2026, commit `e14e70f`).** Dogrulama baglantisi `/auth/confirm?token_hash=...&type=signup&next=/profil`
+sabitti (Supabase "Confirm signup" sablonu; `emailRedirectTo` hic okunmuyordu). Cozum: sablonda `next={{ .RedirectTo }}` (Dashboard'da
+degistirildi; depo kopyasi `docs/email-templates/supabase-auth/confirm-signup.html` ayni), kodda `returnPathFromRedirectTo` (`safe-redirect.ts`):
+ayni origin'li tam URL yola iner, `/`, `/auth/callback*`, `/auth/confirm*` ve farkli origin -> fallback (`/profil`); `emailRedirectTo`
+uc cagrida hedefin tam URL'si (uye ol, ajans uye ol, dogrulama yeniden gonder). Redirect URLs `https://kashe.net/**` var. Canli:
+`+h2` ile kayit -> e-postada `next=https://kashe.net/davet/havuz/<token>` -> davet sayfasina oturumlu donus -> sahiplen -> Sil -> 3 kayit,
+K14 30000. **Tuzak (not):** Reset Password sablonu `next=/sifre-sifirla` sabit; ileride `{{ .RedirectTo }}`'ya cevrilirse
+`sifremi-unuttum-form.tsx` AYNI commit'te `${origin}/sifre-sifirla` gondermeli, yoksa yardimci `/auth/callback?next=` degerini
+`/giris`'e indirir ve kullanici yeni sifre belirleyemez. Kalan lint: `giris-form.tsx` `set-state-in-effect` (eski), sonraki tur.

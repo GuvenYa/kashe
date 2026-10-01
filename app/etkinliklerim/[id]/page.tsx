@@ -6,6 +6,17 @@ import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 import { STATUS_LABELS as TALEP_DURUMLARI } from '@/app/teklif-taleplerim/page';
 import { LISTING_STATUS_OPTIONS } from '@/app/ilanlar/listings-data';
+import { AdayPaneli } from './aday-paneli';
+import {
+  gerekceEtiketleri,
+  kapsamYuzdesi,
+  uyumYuzdesi,
+  type AdayKarti,
+  type AdayKosu,
+  type AdayRolGrubu,
+  type AdaySaglayici,
+  type AdaySatiri,
+} from './aday-data';
 
 export const metadata = {
   title: 'Etkinlik — Kashe',
@@ -58,6 +69,8 @@ type Gereksinim = {
 
 type Etkinlik = {
   id: string;
+  /** FAZ 6/P1: eslestirmeyi yalniz sahip calistirir. */
+  owner_user_id: string;
   title: string | null;
   event_type: string;
   start_date: string | null;
@@ -189,6 +202,104 @@ export default async function EtkinlikDetayPage({
   const sohbetler = (sohbetRes.data ?? []) as unknown as BagliSohbet[];
   const bagliVar =
     talepler.length > 0 || ilanlar.length > 0 || sohbetler.length > 0;
+
+  // ---- FAZ 6/P1 — eslestirme kosulari ve adaylar ----
+  // Skor/siralama DB'de uretildi; burada YALNIZ okuma + gosterim birlestirmesi var.
+  // `match_*` tablolarina yazma YOK (yetki de yok); kosu `run_event_match` ile.
+  const sahip = etkinlik.owner_user_id === user.id;
+  const durumUygun =
+    etkinlik.status === 'confirmed' || etkinlik.status === 'matching';
+
+  const { data: kosuData, error: kosuHatasi } = await supabase
+    .from('match_runs')
+    .select('id, strategy, algorithm_version, candidate_count, created_at')
+    .eq('event_id', id)
+    .order('created_at', { ascending: false });
+  if (kosuHatasi) console.error('[match] kosu listesi', kosuHatasi);
+
+  const kosular = (kosuData ?? []) as unknown as AdayKosu[];
+  const sonKosu = kosular[0] ?? null;
+  const oncekiKosular = kosular.slice(1);
+
+  let ajansAdaylari: AdayKarti[] = [];
+  let rolGruplari: AdayRolGrubu[] = [];
+
+  if (sonKosu) {
+    const { data: adayData, error: adayHatasi } = await supabase
+      .from('match_candidates')
+      .select(
+        `id, provider_id, role_id, match_score, coverage_ratio,
+         full_service_eligible, final_rank, reason_codes, was_shown, was_clicked`
+      )
+      .eq('match_run_id', sonKosu.id)
+      .order('final_rank');
+    if (adayHatasi) console.error('[match] aday listesi', adayHatasi);
+
+    const adaylar = (adayData ?? []) as unknown as AdaySatiri[];
+    const saglayiciIdleri = [...new Set(adaylar.map((a) => a.provider_id))];
+
+    // Pazaryeri bilgisi gorunumden (FAZ 2c sozlesmesi), profiles'tan DEGIL.
+    let saglayicilar: AdaySaglayici[] = [];
+    if (saglayiciIdleri.length > 0) {
+      const { data: sagData, error: sagHatasi } = await supabase
+        .from('v_providers_public')
+        .select(
+          'id, display_name, provider_slug, city_id, avatar_url, provider_type, headline'
+        )
+        .in('id', saglayiciIdleri);
+      if (sagHatasi) console.error('[match] saglayici bilgisi', sagHatasi);
+      saglayicilar = (sagData ?? []) as unknown as AdaySaglayici[];
+    }
+    const saglayiciMap = new Map(saglayicilar.map((s) => [s.id, s]));
+
+    const sehirIdleri = [
+      ...new Set(
+        saglayicilar
+          .map((s) => s.city_id)
+          .filter((v): v is number => typeof v === 'number')
+      ),
+    ];
+    const sehirMap = new Map<number, string>();
+    if (sehirIdleri.length > 0) {
+      const { data: sehirData } = await supabase
+        .from('turkish_cities')
+        .select('id, name')
+        .in('id', sehirIdleri);
+      for (const s of (sehirData ?? []) as { id: number; name: string }[]) {
+        sehirMap.set(s.id, s.name);
+      }
+    }
+
+    const kart = (a: AdaySatiri): AdayKarti => {
+      const s = saglayiciMap.get(a.provider_id);
+      return {
+        id: a.id,
+        providerId: a.provider_id,
+        ad: s?.display_name?.trim() || 'İsimsiz profil',
+        sehir: s?.city_id != null ? (sehirMap.get(s.city_id) ?? null) : null,
+        headline: s?.headline?.trim() || null,
+        uyum: uyumYuzdesi(a.match_score),
+        kapsam: kapsamYuzdesi(a.coverage_ratio),
+        tamHizmet: a.full_service_eligible,
+        gerekceler: gerekceEtiketleri(a.reason_codes),
+        wasShown: a.was_shown,
+      };
+    };
+
+    // Siralama DB'den (`final_rank`); filtreleme sirayi korur.
+    ajansAdaylari = adaylar.filter((a) => a.role_id === null).map(kart);
+    rolGruplari = gereksinimler
+      .filter((g) => g.service_roles != null)
+      .map((g) => ({
+        roleId: g.service_roles!.id,
+        rolAdi: g.service_roles!.name_tr,
+        ihtiyac: g.quantity,
+        zorunlu: g.is_required,
+        adaylar: adaylar
+          .filter((a) => a.role_id === g.service_roles!.id)
+          .map(kart),
+      }));
+  }
 
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
@@ -392,6 +503,24 @@ export default async function EtkinlikDetayPage({
               </div>
             )}
           </div>
+
+          {/* Adaylar — FAZ 6/P1. Kosu yoksa ve sahip degilse bolum HIC render edilmez. */}
+          {(sonKosu || sahip) && (
+            <div className="mt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                Adaylar
+              </p>
+              <AdayPaneli
+                eventId={etkinlik.id}
+                sahip={sahip}
+                durumUygun={durumUygun}
+                sonKosu={sonKosu}
+                oncekiKosular={oncekiKosular}
+                ajansAdaylari={ajansAdaylari}
+                rolGruplari={rolGruplari}
+              />
+            </div>
+          )}
 
           {/* Bagli kayitlar — etkinlikten baslatilan talep / ilan / sohbet */}
           <div className="mt-6">
