@@ -69,3 +69,21 @@ icinde bu harfler varsa DEGISTIRME, raporla. Sonra ayni tarama -> 0 dosya. `app/
   `asama13` K14 30000.
 
 Rapor: madde basina degisen dosyalar, H3 olcumleri, tsc/build (BUILD_ID), grep ve lint sayilari, sapma ve nedeni. Commit ATMA.
+
+---
+
+## Kapanis (1 Ekim 2026)
+
+Commit'ler: H1 `478de87`, H2 `85efc11`, H3 `5bf05b7`, H5 `91e04f5`, H4 (+ek: 'Hikaye anlatimi' saklanan degeri uc dosyada birden,
+veritabaninda bu degeri tasiyan satir yok) `12cc4f0`. Lint 118 -> 115 (kalanlar sonraki tur). Sapkali harf `app` altinda 0
+(docs/content/kategori-genisleme-set1.md kaynak dokuman, dokunulmadi). Canli (H1): yeni harici kayit + `+h1` ile profesyonel kayit
+-> dogrulama -> **profil sayfasina** dustu (davet sayfasina DEGIL) -> profil bandi karsiladi -> sahiplen basarili -> Sil -> 3 kayit,
+K14 30000.
+
+**Acik: H1-ek.** Dogrulama baglantisi `/auth/confirm?token_hash=...&type=signup&next=...` (token_hash akisi; Supabase e-posta sablonu
+uretir). `emailRedirectTo` yalniz sablon `{{ .RedirectTo }}` kullaniyorsa etkilidir; bugunku sablon buyuk olasilikla `next=/profil`
+sabit tasiyor. Cozum adaylari: (a) sablon `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup` + uygulama
+`emailRedirectTo = ${origin}/auth/confirm?next=<yol>` (kod degisikligi kucuk, Redirect URLs allowlist `kashe.net/**` ise yeter);
+(b) sablon `next={{ .RedirectTo }}` + `sanitizeReturnPath` ayni origin'li tam URL'yi yola indirir. Karar icin once Dashboard
+"Authentication -> Email Templates -> Confirm signup" govdesi okunacak. Bu arada profil bandi akisi tasiyor; is ENGELLEYICI DEGIL.
+
