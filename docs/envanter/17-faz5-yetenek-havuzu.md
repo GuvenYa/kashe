@@ -218,4 +218,16 @@ silinip ASCII adla yeniden eklendi + Redeploy). Bu, admin onay/revizyon e-postal
 Log satirina `from=` eklendi (kalici teshis). Kusur -> P2: `Gonderildi` durumunda "Yeniden gonder" yok; Sil/Engelle onaysiz.
 Kural: **Vercel env degisikligi = Redeploy; degisken adlari ASCII (Turkce klavye `EMAİL` tuzagi).**
 
-(P2-P3 icin doldurulur)
+**P2 (1 Ekim 2026, commit `c3d077f`):** `app/davet/havuz/[token]/` (page + davet-paneli; uuid degilse 404, noindex),
+`app/lib/havuz-claim-actions.ts` (claim / claim_by_id / decline + hata eslemesi 42501/P0002/22023/23505), `app/profil/havuz-bandi.tsx`
++ `profil/page.tsx` (`claimable_talent_records_for_me` yalniz professional/agency; "Simdi degil" localStorage),
+`app/ajans/havuz/havuz-rate-actions.ts` (3 ic oran RPC'si, sunucuda `has_org_permission`), panelde ic oran karti (tembel yukleme,
+yalniz commercial.view; yazma commercial.manage), "Yeniden gonder" (`sent` durumunda), Sil/Engelle/Yeniden gonder satir ici onay.
+Sapma: `/uye-ol` redirect desteklemiyor (`?rol=profesyonel`; kayit sonrasi bant karsilar). Canli: oturumsuz sayfa + giris donusu;
+Sunucu Ajans ile "e-posta eslesmiyor" (42501); Test Musteri rol mesaji; `+harici` ile profesyonel kayit -> bant -> sahiplen
+(`via_token false`) -> Deneme Harici `marketplace_linked / accepted / linked_at`; ic oran 30 Eylul 5000 -> 1 Ekim 6000 (ilki kapandi)
+-> Kapat; yeniden gonder sonrasi eski baglanti "kullanilmis"; Sil onayi (harici_2 silindi). Denetim: `talent.claim`, 3 rate write +
+read'ler, 2 `talent.invite`, `talent.lookup`. asama13 K1-K13 ESIT, K14 30000. Not: onizleme kapisi (`?onizleme=`) her yolda calisir
+(cerez 30 gun); lansmana kadar harici kisinin davet baglantisi "yakinda" sayfasina duser. Siradaki: P3 (`-p3.md`).
+
+(P3 icin doldurulur)
