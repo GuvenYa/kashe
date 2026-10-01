@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 
 /**
@@ -13,33 +13,40 @@ import Link from 'next/link';
  * banner reddet/kabul'a evrilir.)
  *
  * Kararı localStorage'da saklar; sonraki ziyaretlerde gösterilmez.
- * SSR uyumlu: client-side mount sonrası kontrol eder.
+ * SSR uyumlu: okuma EFEKTSIZ, `useSyncExternalStore` ile yapilir
+ * (efekt icinde setState cascading render demek).
  */
 
 const STORAGE_KEY = 'kashe_cookie_consent_v1';
 
-export function CerezBanner() {
-  const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+// localStorage ayni sekmede olay yayinlamaz; abonelige gerek yok — deger yalniz
+// "Anladim" tiklamasiyla degisir, o da ayri state'te tutulur.
+function abone(): () => void {
+  return () => {};
+}
 
-  useEffect(() => {
-    setMounted(true);
-    // localStorage'a güvenli erişim (private mode'da hata verebilir)
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        setVisible(true);
-      }
-    } catch {
-      // localStorage erişilemiyorsa banner göster, kullanıcı kabul edince
-      // sessiz fail (sayfa başına banner görünür ama işlevsel kayıp yok)
-      setVisible(true);
-    }
-  }, []);
+/**
+ * Onay durumu METIN olarak doner ('1' = onay var, '' = yok): useSyncExternalStore
+ * anlik goruntuyu DEGER esitligiyle karsilastirir, her cagrida yeni nesne donmek
+ * sonsuz render olur. localStorage okunamazsa (private mode, kapali site verisi)
+ * '' doner -> banner gorunur (guvenli taraf; kullanici kabul edince sessiz fail).
+ */
+function onayDurumu(): string {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ? '1' : '';
+  } catch {
+    return '';
+  }
+}
+
+export function CerezBanner() {
+  const [kabulEdildi, setKabulEdildi] = useState(false);
+  // Sunucu anlik goruntusu '1' (gizli): hidrasyondan sonra gercek deger gelir.
+  const onay = useSyncExternalStore(abone, onayDurumu, () => '1');
 
   function handleAccept() {
     try {
-      localStorage.setItem(
+      window.localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           accepted: true,
@@ -47,12 +54,12 @@ export function CerezBanner() {
         })
       );
     } catch {
-      // ignore
+      // yoksay — yalniz bu oturumda gizli kalir
     }
-    setVisible(false);
+    setKabulEdildi(true);
   }
 
-  if (!mounted || !visible) return null;
+  if (kabulEdildi || onay === '1') return null;
 
   return (
     <div
