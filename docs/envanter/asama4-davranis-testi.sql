@@ -52,7 +52,7 @@
 --       idempotan (ON KOSUL: faz5_01-02 dalda uygulanmis)
 --   T18 FAZ 5/03 Ekibim -> havuz RPC'leri: ensure_talent_record_for_membership (profesyonel kendisi / talent.manage; viewer 42501,
 --       idempotan), sync_org_talent_pool (1 -> 0, viewer 42501, denetim), kayma 0 (ON KOSUL: faz5_03 dalda uygulanmis)
---   T19 FAZ 6 Match V0.1: run_event_match hybrid (rol basina profesyonel: kodlar/puan/conf; ajans: agirlikli kapsam, eligible,
+--   T19 FAZ 6 Match V0.2: run_event_match hybrid (butce: affordable) (rol basina profesyonel: kodlar/puan/conf; ajans: agirlikli kapsam, eligible,
 --       coverage_full), full_service suzgeci, ekle-yalniz, was_shown/was_clicked (sahip; baskasi 42501), baskasi/anon/gereksinimsiz
 --       red, RLS (sahip gorur, baskasi gormez, anon 42501, authenticated yazamaz) (ON KOSUL: faz6_01 dalda uygulanmis)
 --   T20 FAZ 6 ekip + ic goruntu: bireysel ekip (kaynaksiz uye 22023, guard, ic goruntu yok), kurulus ekibi (havuz uyesi private +
@@ -2143,9 +2143,10 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- T19) FAZ 6 Match V0.1. ON KOSUL: 20261002120000 (faz6 01) dalda. T17 Ekibim verisine (pro1 + pro2 ajans uyesi) dayanir.
+-- T19) FAZ 6 Match V0.2. ON KOSUL: 20261002120000 + 20261002130000 (faz6 01-02) dalda. T17 Ekibim verisine (pro1 + pro2 ajans uyesi) dayanir.
 --      Kendi verisi: test rolleri faz1test-match-a/b/c (T0 siler); pro1 -> match-a, pro2 -> match-b hizmeti; pro2 ve ajans yayina
---      alinir (admin = ajans); musteri etkinligi 'T19 dugun' (match-a zorunlu 1, match-b istege bagli 2, match-c zorunlu 1 — kimse vermez)
+--      alinir (admin = ajans); pro1 40-60 bin (butce 50-80 bin: uygun), pro2 90-120 bin (ust butceyi asar: v0.2 'affordable' kurali);
+--      musteri etkinligi 'T19 dugun' (match-a zorunlu 1, match-b istege bagli 2, match-c zorunlu 1 — kimse vermez)
 --      create_event_from_spec ile; ajans etkinligi gereksinimsiz (ev2). T20 bu veriye dayanir.
 -- -----------------------------------------------------------------------------
 DO $$
@@ -2158,7 +2159,7 @@ DECLARE
   run1 uuid; run2 uuid; run3 uuid; n int; n2 int; r record; ids uuid[]; st text;
 BEGIN
   IF to_regprocedure('public.run_event_match(uuid, public.match_strategy)') IS NULL THEN
-    INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'ATLANDI', 'run_event_match yok; faz6_01 dalda uygulanmamis');
+    INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.2', 'ATLANDI', 'run_event_match yok; faz6_01 dalda uygulanmamis');
     RETURN;
   END IF;
 
@@ -2174,7 +2175,7 @@ BEGIN
   SELECT id INTO rol_c FROM public.service_roles WHERE slug = 'faz1test-match-c';
   IF rol_a IS NULL OR rol_b IS NULL OR rol_c IS NULL THEN RAISE EXCEPTION 'test rolleri dogmadi'; END IF;
   INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit) VALUES (pro1, cat_a, 'T19 A', 40000, 60000, 'total');
-  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit) VALUES (pro2, cat_b, 'T19 B', 1000, 2000, 'hourly');
+  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit) VALUES (pro2, cat_b, 'T19 B', 90000, 120000, 'total');   -- ust butceyi asar
   UPDATE public.profiles SET is_published = true, approval_status = 'approved', approved_at = COALESCE(approved_at, now()) WHERE id IN (pro2, ajans);
   PERFORM set_config('request.jwt.claim.sub', '', true);
   SELECT count(*) INTO n FROM public.providers WHERE id IN (pro1, pro2, ajans) AND is_published AND approval_status = 'approved' AND suspended_at IS NULL;
@@ -2219,7 +2220,7 @@ BEGIN
   SELECT status INTO st FROM public.events WHERE id = ev;
   IF st <> 'matching' THEN RAISE EXCEPTION 'durum % (matching beklenir)', st; END IF;
   SELECT * INTO r FROM public.match_runs WHERE id = run1;
-  IF r.algorithm_version <> 'v0.1' OR r.strategy <> 'hybrid' OR r.created_by <> musteri OR r.candidate_count < 3 OR r.latency_ms IS NULL THEN
+  IF r.algorithm_version <> 'v0.2' OR r.strategy <> 'hybrid' OR r.created_by <> musteri OR r.candidate_count < 3 OR r.latency_ms IS NULL THEN
     RAISE EXCEPTION 'kosu satiri beklenen gibi degil: %', r; END IF;
   SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = pro1 AND role_id = rol_a;
   IF r.id IS NULL THEN RAISE EXCEPTION 'pro1 match-a adayi yok'; END IF;
@@ -2227,7 +2228,8 @@ BEGIN
     RAISE EXCEPTION 'pro1 adayi: kodlar=% puan=% conf=%', r.reason_codes, r.match_score, r.availability_conf; END IF;
   SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = pro2 AND role_id = rol_b;
   IF r.id IS NULL THEN RAISE EXCEPTION 'pro2 match-b adayi yok'; END IF;
-  IF r.reason_codes @> ARRAY['budget_fit'] THEN RAISE EXCEPTION 'pro2 butceye uymaz ama budget_fit aldi (%)', r.reason_codes; END IF;
+  IF r.reason_codes @> ARRAY['budget_fit'] THEN RAISE EXCEPTION 'pro2 ust butceyi asar ama budget_fit aldi (%)', r.reason_codes; END IF;
+  IF (SELECT params->>'budget_rule' FROM public.match_runs WHERE id = run1) <> 'affordable' THEN RAISE EXCEPTION 'params.budget_rule yok'; END IF;
   SELECT count(*) INTO n FROM public.match_candidates WHERE match_run_id = run1 AND role_id = rol_c;
   IF n <> 0 THEN RAISE EXCEPTION 'kimse vermeyen rol icin % aday', n; END IF;
   SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = ajans;
@@ -2330,11 +2332,11 @@ BEGIN
     RAISE EXCEPTION 'anon match_runs okudu';
   EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
 
-  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'GECTI',
-    'hybrid: rol basina profesyonel (kodlar, puan, conf), ajans coverage 0.5 eligible degil; full_service 0; zorunlu rol kalkinca 0.875 eligible + coverage_full; ekle-yalniz; shown/clicked (sahip, baskasi 42501); baskasi/anon/gereksinimsiz red; RLS');
+  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.2', 'GECTI',
+    'v0.2 hybrid: rol basina profesyonel (kodlar, puan, conf; ust butceyi asan budget_fit almaz), ajans coverage 0.5 eligible degil; full_service 0; zorunlu rol kalkinca 0.875 eligible + coverage_full; ekle-yalniz; shown/clicked (sahip, baskasi 42501); baskasi/anon/gereksinimsiz red; RLS');
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
-  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'HATA', SQLERRM);
+  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.2', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------
