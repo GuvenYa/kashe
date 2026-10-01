@@ -6,7 +6,16 @@ import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 import { STATUS_LABELS as TALEP_DURUMLARI } from '@/app/teklif-taleplerim/page';
 import { LISTING_STATUS_OPTIONS } from '@/app/ilanlar/listings-data';
+import { getCrewContext } from '@/app/lib/org-context';
 import { AdayPaneli } from './aday-paneli';
+import { EkipPaneli } from './ekip-paneli';
+import type {
+  EkipRolBloku,
+  EkipSatiri,
+  EkipUyesi,
+  KapsamSatiri,
+  UyeKarti,
+} from './ekip-data';
 import {
   gerekceEtiketleri,
   kapsamYuzdesi,
@@ -301,6 +310,217 @@ export default async function EtkinlikDetayPage({
       }));
   }
 
+  // ---- FAZ 6/P2 — ekip ----
+  // Yazim RLS ile (action'lar); burada yalniz okuma. Ekip yoksa ve sahip degilse
+  // bolum render edilmez. V0: etkinlik basina TEK ekip (DB coklu ekibe izin verir).
+  const { orgs: ekipKuruluslari } = await getCrewContext();
+
+  const { data: ekipData, error: ekipHatasi } = await supabase
+    .from('crews')
+    .select(
+      'id, event_id, organization_id, name, status, source_policy, objective, created_at'
+    )
+    .eq('event_id', id)
+    .order('created_at');
+  if (ekipHatasi) console.error('[ekip] liste', ekipHatasi);
+
+  const ekip = ((ekipData ?? []) as unknown as EkipSatiri[])[0] ?? null;
+
+  let ekipUyeleri: UyeKarti[] = [];
+  let kapsam: KapsamSatiri[] = [];
+  let rolBloklari: EkipRolBloku[] = [];
+
+  const rolSlugAdlari: Record<string, string> = {};
+  for (const g of gereksinimler) {
+    if (g.service_roles) rolSlugAdlari[g.service_roles.slug] = g.service_roles.name_tr;
+  }
+
+  const ekipKurulusu = ekip?.organization_id
+    ? (ekipKuruluslari.find((o) => o.id === ekip.organization_id) ?? null)
+    : null;
+
+  if (ekip) {
+    const { data: uyeData, error: uyeHatasi } = await supabase
+      .from('crew_members')
+      .select(
+        `id, crew_id, role_id, talent_record_id, provider_id, pool_origin, status,
+         is_locked, sort_order, note, match_candidate_id, created_at`
+      )
+      .eq('crew_id', ekip.id)
+      .order('sort_order')
+      .order('created_at');
+    if (uyeHatasi) console.error('[ekip] uyeler', uyeHatasi);
+
+    const uyeSatirlari = (uyeData ?? []) as unknown as EkipUyesi[];
+
+    // Kisi bilgisi: pazaryeri saglayicisi gorunumden, havuz kaydi adi RLS ile.
+    const uyeSaglayiciIdleri = [
+      ...new Set(
+        uyeSatirlari
+          .map((u) => u.provider_id)
+          .filter((v): v is string => !!v)
+      ),
+    ];
+    const uyeKayitIdleri = [
+      ...new Set(
+        uyeSatirlari
+          .map((u) => u.talent_record_id)
+          .filter((v): v is string => !!v)
+      ),
+    ];
+
+    const uyeSaglayiciMap = new Map<
+      string,
+      { display_name: string | null; city_id: number | null }
+    >();
+    if (uyeSaglayiciIdleri.length > 0) {
+      const { data: sagData } = await supabase
+        .from('v_providers_public')
+        .select('id, display_name, city_id')
+        .in('id', uyeSaglayiciIdleri);
+      for (const s of (sagData ?? []) as {
+        id: string;
+        display_name: string | null;
+        city_id: number | null;
+      }[]) {
+        uyeSaglayiciMap.set(s.id, {
+          display_name: s.display_name,
+          city_id: s.city_id,
+        });
+      }
+    }
+
+    const uyeKayitMap = new Map<string, string>();
+    if (uyeKayitIdleri.length > 0) {
+      const { data: kayitData } = await supabase
+        .from('organization_talent_records')
+        .select('id, name')
+        .in('id', uyeKayitIdleri);
+      for (const k of (kayitData ?? []) as { id: string; name: string }[]) {
+        uyeKayitMap.set(k.id, k.name);
+      }
+    }
+
+    const uyeSehirIdleri = [
+      ...new Set(
+        [...uyeSaglayiciMap.values()]
+          .map((s) => s.city_id)
+          .filter((v): v is number => typeof v === 'number')
+      ),
+    ];
+    const uyeSehirMap = new Map<number, string>();
+    if (uyeSehirIdleri.length > 0) {
+      const { data: sehirData } = await supabase
+        .from('turkish_cities')
+        .select('id, name')
+        .in('id', uyeSehirIdleri);
+      for (const s of (sehirData ?? []) as { id: number; name: string }[]) {
+        uyeSehirMap.set(s.id, s.name);
+      }
+    }
+
+    const rolAdiById = new Map<number, string>();
+    for (const g of gereksinimler) {
+      if (g.service_roles) rolAdiById.set(g.service_roles.id, g.service_roles.name_tr);
+    }
+
+    ekipUyeleri = uyeSatirlari.map((u) => {
+      const sag = u.provider_id ? uyeSaglayiciMap.get(u.provider_id) : null;
+      const kayitAdi = u.talent_record_id
+        ? uyeKayitMap.get(u.talent_record_id)
+        : null;
+      // Iki kaynagi da silinmis uye kalabilir (FK SET NULL; asama14 K7).
+      const ad =
+        kayitAdi?.trim() ||
+        sag?.display_name?.trim() ||
+        (u.provider_id || u.talent_record_id
+          ? 'İsimsiz üye'
+          : 'Kaynağı silinmiş üye');
+      return {
+        id: u.id,
+        roleId: u.role_id,
+        rolAdi: rolAdiById.get(u.role_id) ?? 'Rol',
+        ad,
+        sehir:
+          sag?.city_id != null ? (uyeSehirMap.get(sag.city_id) ?? null) : null,
+        kaynak: u.pool_origin,
+        durum: u.status,
+        kilitli: u.is_locked,
+        not: u.note,
+        providerId: u.provider_id,
+        havuzKaydiVar: !!u.talent_record_id,
+      };
+    });
+
+    kapsam = gereksinimler
+      .filter((g) => g.service_roles != null)
+      .map((g) => ({
+        roleId: g.service_roles!.id,
+        rolAdi: g.service_roles!.name_tr,
+        gereken: g.quantity,
+        onaylanan: uyeSatirlari.filter(
+          (u) => u.role_id === g.service_roles!.id && u.status === 'confirmed'
+        ).length,
+        zorunlu: g.is_required,
+      }));
+
+    // Havuzdan ekleme: yalniz kurulus ekibi + talent.view + modul acik (RLS de kisitlar).
+    const havuzAcik =
+      !!ekip.organization_id &&
+      !!ekipKurulusu?.canViewTalent &&
+      !!ekipKurulusu?.talentPoolEnabled;
+
+    type HavuzKayitSatiri = {
+      id: string;
+      name: string;
+      status: string;
+      organization_talent_record_roles: { role_id: number }[] | null;
+    };
+    let havuzKayitlari: HavuzKayitSatiri[] = [];
+    if (havuzAcik) {
+      const { data: havuzData, error: havuzHatasi } = await supabase
+        .from('organization_talent_records')
+        .select('id, name, status, organization_talent_record_roles(role_id)')
+        .eq('organization_id', ekip.organization_id!)
+        .neq('status', 'blocked')
+        .order('name');
+      if (havuzHatasi) console.error('[ekip] havuz listesi', havuzHatasi);
+      havuzKayitlari = (havuzData ?? []) as unknown as HavuzKayitSatiri[];
+    }
+
+    rolBloklari = gereksinimler
+      .filter((g) => g.service_roles != null)
+      .map((g) => {
+        const roleId = g.service_roles!.id;
+        const grup = rolGruplari.find((r) => r.roleId === roleId);
+        return {
+          roleId,
+          rolAdi: g.service_roles!.name_tr,
+          gereken: g.quantity,
+          zorunlu: g.is_required,
+          adaylar: (grup?.adaylar ?? []).map((a) => ({
+            candidateId: a.id,
+            providerId: a.providerId,
+            ad: a.ad,
+            uyum: a.uyum,
+            ekipte: uyeSatirlari.some(
+              (u) => u.role_id === roleId && u.provider_id === a.providerId
+            ),
+          })),
+          // Rolu atanmis kayitlar once, digerleri altta ("rolu yok" notuyla).
+          havuz: [...havuzKayitlari]
+            .map((k) => ({
+              recordId: k.id,
+              ad: k.name,
+              roldeVar: (k.organization_talent_record_roles ?? []).some(
+                (r) => r.role_id === roleId
+              ),
+            }))
+            .sort((a, b) => Number(b.roldeVar) - Number(a.roldeVar)),
+        };
+      });
+  }
+
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
     typeof ekstra.date_note === 'string' ? ekstra.date_note : null;
@@ -518,6 +738,39 @@ export default async function EtkinlikDetayPage({
                 oncekiKosular={oncekiKosular}
                 ajansAdaylari={ajansAdaylari}
                 rolGruplari={rolGruplari}
+              />
+            </div>
+          )}
+
+          {/* Ekip — FAZ 6/P2. Ekip yoksa ve sahip degilse bolum HIC render edilmez. */}
+          {(ekip || sahip) && (
+            <div className="mt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                Ekip
+              </p>
+              <EkipPaneli
+                eventId={etkinlik.id}
+                sahip={sahip}
+                ekip={ekip}
+                uyeler={ekipUyeleri}
+                kapsam={kapsam}
+                rolBloklari={rolBloklari}
+                rolAdlari={rolSlugAdlari}
+                kurulusSecenekleri={ekipKuruluslari
+                  .filter((o) => o.canManageCrew)
+                  .map((o) => ({ id: o.id, name: o.name }))}
+                yazabilir={sahip || !!ekipKurulusu?.canManageCrew}
+                havuzdanEklenebilir={
+                  !!ekip?.organization_id &&
+                  !!ekipKurulusu?.canViewTalent &&
+                  !!ekipKurulusu?.talentPoolEnabled
+                }
+                maliyetGorulur={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canSeeRates
+                }
+                maliyetYazilir={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
+                }
               />
             </div>
           )}

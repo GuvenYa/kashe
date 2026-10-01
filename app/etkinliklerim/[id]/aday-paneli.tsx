@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   DESTEK_EPOSTA,
   kosuZamani,
@@ -111,8 +112,23 @@ export function AdayPaneli({
   ajansAdaylari: AdayKarti[];
   rolGruplari: AdayRolGrubu[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [hata, setHata] = useState<string | null>(null);
+
+  // "Az once eslestirildi": cift tiklama ve yenileme ile gereksiz kosu uretimini onler.
+  // Saat ILK RENDER'da okunmaz (sunucu/istemci farki = hidrasyon uyarisi); zamanlayici
+  // mount sonrasi gunceller, o ana kadar deger null (sunucu ile ayni).
+  const [simdi, setSimdi] = useState<number | null>(null);
+  useEffect(() => {
+    const tik = () => setSimdi(Date.now());
+    const hemen = setTimeout(tik, 0);
+    const araliksiz = setInterval(tik, 1000);
+    return () => {
+      clearTimeout(hemen);
+      clearInterval(araliksiz);
+    };
+  }, []);
 
   const gosterilecekIdler = useMemo(
     () =>
@@ -136,11 +152,22 @@ export function AdayPaneli({
 
   function eslestir() {
     setHata(null);
+    // router.refresh() AYNI transition icinde: dugme, yeni liste gelene kadar pasif kalir.
     startTransition(async () => {
       const res = await runEventMatch(eventId);
-      if (!res.success) setHata(res.error);
+      if (!res.success) {
+        setHata(res.error);
+        return;
+      }
+      router.refresh();
     });
   }
+
+  // Son kosu 10 saniyeden yeni mi (yalniz mount sonrasi bilinir).
+  const azOnce =
+    !!sonKosu &&
+    simdi !== null &&
+    simdi - new Date(sonKosu.created_at).getTime() < 10000;
 
   function profilTiklandi(candidateId: string) {
     if (!sahip) return;
@@ -181,14 +208,16 @@ export function AdayPaneli({
             <button
               type="button"
               onClick={eslestir}
-              disabled={isPending}
+              disabled={isPending || azOnce}
               className={BTN_BIRINCIL}
             >
               {isPending
                 ? 'Eşleştiriliyor…'
-                : sonKosu
-                  ? 'Yeniden eşleştir'
-                  : 'Aday öner'}
+                : azOnce
+                  ? 'Az önce eşleştirildi'
+                  : sonKosu
+                    ? 'Yeniden eşleştir'
+                    : 'Aday öner'}
             </button>
           )}
         </div>

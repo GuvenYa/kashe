@@ -103,3 +103,138 @@ export async function getTalentPoolContext(): Promise<{
 
   return { orgs };
 }
+
+/**
+ * FAZ 6 / P2 — ekip baglami.
+ *
+ * `getTalentPoolContext`'ten AYRI tutulur (farkli kullanim, farkli kapi): burada
+ * `talent_pool` modulu LISTEYI SUZMEZ, yalniz bilgi olarak doner — ekip kurulus
+ * ekibi olabilir ama havuzdan uye ekleme modul + `talent.view` isteyebilir.
+ * Listeye `crew.view` sahibi her aktif uyelik girer.
+ */
+export type CrewOrg = {
+  id: string;
+  name: string;
+  /** `crew.view` — ekibi gorur (liste girişi bunu gerektirir). */
+  canViewCrew: boolean;
+  /** `crew.manage` — ekip kurar, uye ekler/cikarir, durum degistirir. */
+  canManageCrew: boolean;
+  /** `commercial.view` — gizli ic maliyet kartini gorur. */
+  canSeeRates: boolean;
+  /** `commercial.manage` — maliyet yazar. */
+  canManageRates: boolean;
+  /** `talent.view` — havuzdan uye eklemek icin gerekir. */
+  canViewTalent: boolean;
+  /** `talent_pool` modulu acik mi (havuzdan ekleme kapisi). */
+  talentPoolEnabled: boolean;
+};
+
+export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { orgs: [] };
+
+  const { data, error } = await supabase
+    .from('organization_memberships')
+    .select(
+      'organization_id, role, status, organizations(id, display_name, account_type)'
+    )
+    .eq('user_id', user.id)
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('[ekip] uyelik okuma', error);
+    return { orgs: [] };
+  }
+
+  const orgs: CrewOrg[] = [];
+  // Kurulus sayisi kucuk (bugun 1); bes yetki + bir modul RPC'si kurulus basina.
+  for (const uyelik of (data ?? []) as unknown as UyelikSatiri[]) {
+    const org = uyelik.organizations;
+    if (!org) continue;
+
+    const [gorebilir, yonetebilir, oranGorebilir, oranYonetir, havuzGorebilir, modul] =
+      await Promise.all([
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'crew.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'crew.manage',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'commercial.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'commercial.manage',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'talent.view',
+        }),
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'talent_pool',
+        }),
+      ]);
+
+    if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
+    if (gorebilir.data !== true) continue;
+
+    orgs.push({
+      id: org.id,
+      name: org.display_name?.trim() || 'Kurulus',
+      canViewCrew: true,
+      canManageCrew: yonetebilir.data === true,
+      canSeeRates: oranGorebilir.data === true,
+      canManageRates: oranYonetir.data === true,
+      canViewTalent: havuzGorebilir.data === true,
+      talentPoolEnabled: modul.data === true,
+    });
+  }
+
+  return { orgs };
+}
+
+/**
+ * TopNav icin ucuz kontrol: menude "Ekipler" gorunsun mu.
+ * `getCrewContext` kurulus basina alti RPC atar; global menude o maliyet
+ * gereksiz — burada yalniz `crew.view` sorulur (uyelik sorgusu + N RPC).
+ */
+export async function hasCrewAccess(): Promise<boolean> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data, error } = await supabase
+    .from('organization_memberships')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .eq('status', 'active');
+  if (error) {
+    console.error('[ekip] menu uyelik okuma', error);
+    return false;
+  }
+
+  const idler = (data ?? []).map((u) => (u as { organization_id: string }).organization_id);
+  if (idler.length === 0) return false;
+
+  const sonuclar = await Promise.all(
+    idler.map((id) =>
+      supabase.rpc('has_org_permission', {
+        p_org_id: id,
+        p_permission: 'crew.view',
+      })
+    )
+  );
+  return sonuclar.some((r) => r.data === true);
+}
