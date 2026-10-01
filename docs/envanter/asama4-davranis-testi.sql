@@ -52,6 +52,12 @@
 --       idempotan (ON KOSUL: faz5_01-02 dalda uygulanmis)
 --   T18 FAZ 5/03 Ekibim -> havuz RPC'leri: ensure_talent_record_for_membership (profesyonel kendisi / talent.manage; viewer 42501,
 --       idempotan), sync_org_talent_pool (1 -> 0, viewer 42501, denetim), kayma 0 (ON KOSUL: faz5_03 dalda uygulanmis)
+--   T19 FAZ 6 Match V0.1: run_event_match hybrid (rol basina profesyonel: kodlar/puan/conf; ajans: agirlikli kapsam, eligible,
+--       coverage_full), full_service suzgeci, ekle-yalniz, was_shown/was_clicked (sahip; baskasi 42501), baskasi/anon/gereksinimsiz
+--       red, RLS (sahip gorur, baskasi gormez, anon 42501, authenticated yazamaz) (ON KOSUL: faz6_01 dalda uygulanmis)
+--   T20 FAZ 6 ekip + ic goruntu: bireysel ekip (kaynaksiz uye 22023, guard, ic goruntu yok), kurulus ekibi (havuz uyesi private +
+--       provider turetimi, yabanci kayit 22023), snapshot/list/override (finance okur, crew_coordinator 42501, denetim), viewer okur
+--       yazamaz, confirm kapsam kontrolu (ON KOSUL: faz6_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -89,7 +95,7 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
 BEGIN
-  -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik)
+  -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik). FAZ 6 match_runs/crews etkinlikle cascade.
   IF to_regclass('public.events') IS NOT NULL THEN
     DELETE FROM public.events WHERE owner_user_id = ANY(ids);
     DELETE FROM public.event_briefs WHERE created_by_user_id = ANY(ids);
@@ -2134,6 +2140,363 @@ EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (18, 'T18 FAZ 5 Ekibim -> havuz RPC', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T19) FAZ 6 Match V0.1. ON KOSUL: 20261002120000 (faz6 01) dalda. T17 Ekibim verisine (pro1 + pro2 ajans uyesi) dayanir.
+--      Kendi verisi: test rolleri faz1test-match-a/b/c (T0 siler); pro1 -> match-a, pro2 -> match-b hizmeti; pro2 ve ajans yayina
+--      alinir (admin = ajans); musteri etkinligi 'T19 dugun' (match-a zorunlu 1, match-b istege bagli 2, match-c zorunlu 1 — kimse vermez)
+--      create_event_from_spec ile; ajans etkinligi gereksinimsiz (ev2). T20 bu veriye dayanir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  ev uuid; ev2 uuid; rol_a int; rol_b int; rol_c int; cat_a int; cat_b int; req_c uuid; v_brief uuid; v1 uuid;
+  run1 uuid; run2 uuid; run3 uuid; n int; n2 int; r record; ids uuid[]; st text;
+BEGIN
+  IF to_regprocedure('public.run_event_match(uuid, public.match_strategy)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'ATLANDI', 'run_event_match yok; faz6_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 19a) veri: roller, hizmetler, yayin, etkinlikler
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);   -- admin
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES
+    ('faz1test-match-a', 'Faz1 Test Match A', 'A', 993, true), ('faz1test-match-b', 'Faz1 Test Match B', 'B', 994, true),
+    ('faz1test-match-c', 'Faz1 Test Match C', 'C', 995, true);
+  EXECUTE 'RESET ROLE';
+  SELECT id, legacy_category_id INTO rol_a, cat_a FROM public.service_roles WHERE slug = 'faz1test-match-a';
+  SELECT id, legacy_category_id INTO rol_b, cat_b FROM public.service_roles WHERE slug = 'faz1test-match-b';
+  SELECT id INTO rol_c FROM public.service_roles WHERE slug = 'faz1test-match-c';
+  IF rol_a IS NULL OR rol_b IS NULL OR rol_c IS NULL THEN RAISE EXCEPTION 'test rolleri dogmadi'; END IF;
+  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit) VALUES (pro1, cat_a, 'T19 A', 40000, 60000, 'total');
+  INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit) VALUES (pro2, cat_b, 'T19 B', 1000, 2000, 'hourly');
+  UPDATE public.profiles SET is_published = true, approval_status = 'approved', approved_at = COALESCE(approved_at, now()) WHERE id IN (pro2, ajans);
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT count(*) INTO n FROM public.providers WHERE id IN (pro1, pro2, ajans) AND is_published AND approval_status = 'approved' AND suspended_at IS NULL;
+  IF n <> 3 THEN RAISE EXCEPTION 'pro1/pro2/ajans yayinda degil (%)', n; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a)
+     OR NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro2 AND role_id = rol_b) THEN
+    RAISE EXCEPTION 'provider_services turetilmedi'; END IF;
+  IF (SELECT count(*) FROM public.agency_members WHERE agency_id = ajans AND professional_id IN (pro1, pro2)) <> 2 THEN
+    RAISE EXCEPTION 'pro1/pro2 ajans uyesi degil (T17 verisi)'; END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, source, raw_text) VALUES (musteri, 'client_web', 'T19 eslestirme testi') RETURNING id INTO v_brief;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, provenance, schema_version, parser_version, validation_status)
+  VALUES (v_brief,
+          jsonb_build_object('event_type', 'wedding', 'title', 'T19 dugun', 'participant_count', 120, 'budget_min', 50000, 'budget_max', 80000,
+                             'start_date', (current_date + 90)::text,
+                             'suggested_roles', jsonb_build_array(
+                               jsonb_build_object('slug', 'faz1test-match-a', 'reason', 'a'),
+                               jsonb_build_object('slug', 'faz1test-match-b', 'reason', 'b', 'quantity', 2, 'is_required', false),
+                               jsonb_build_object('slug', 'faz1test-match-c', 'reason', 'c'))),
+          '{"event_type":{"source":"user_input","confidence":1}}'::jsonb, '1.0', 'test', 'valid')
+  RETURNING id INTO v1;
+  ev := public.create_event_from_spec(v1);
+  EXECUTE 'RESET ROLE';
+  SELECT id INTO req_c FROM public.event_requirements WHERE event_id = ev AND role_id = rol_c;
+  IF req_c IS NULL THEN RAISE EXCEPTION 'match-c gereksinimi yok'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, source, raw_text) VALUES (ajans, 'client_web', 'T19 ajans etkinligi') RETURNING id INTO v_brief;
+  INSERT INTO public.event_spec_versions (brief_id, spec_jsonb, schema_version, parser_version, validation_status)
+  VALUES (v_brief, '{"event_type":"wedding","title":"T19 ajans"}'::jsonb, '1.0', 'test', 'valid') RETURNING id INTO v1;
+  ev2 := public.create_event_from_spec(v1);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 19b) sahip hybrid kosu: profesyoneller rol basina, ajans eligible DEGIL, durum matching
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  run1 := public.run_event_match(ev, 'hybrid');
+  EXECUTE 'RESET ROLE';
+  SELECT status INTO st FROM public.events WHERE id = ev;
+  IF st <> 'matching' THEN RAISE EXCEPTION 'durum % (matching beklenir)', st; END IF;
+  SELECT * INTO r FROM public.match_runs WHERE id = run1;
+  IF r.algorithm_version <> 'v0.1' OR r.strategy <> 'hybrid' OR r.created_by <> musteri OR r.candidate_count < 3 OR r.latency_ms IS NULL THEN
+    RAISE EXCEPTION 'kosu satiri beklenen gibi degil: %', r; END IF;
+  SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = pro1 AND role_id = rol_a;
+  IF r.id IS NULL THEN RAISE EXCEPTION 'pro1 match-a adayi yok'; END IF;
+  IF NOT (r.reason_codes @> ARRAY['date_available','budget_fit']) OR r.match_score < 45 OR r.availability_conf <> 0.90 OR r.was_shown THEN
+    RAISE EXCEPTION 'pro1 adayi: kodlar=% puan=% conf=%', r.reason_codes, r.match_score, r.availability_conf; END IF;
+  SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = pro2 AND role_id = rol_b;
+  IF r.id IS NULL THEN RAISE EXCEPTION 'pro2 match-b adayi yok'; END IF;
+  IF r.reason_codes @> ARRAY['budget_fit'] THEN RAISE EXCEPTION 'pro2 butceye uymaz ama budget_fit aldi (%)', r.reason_codes; END IF;
+  SELECT count(*) INTO n FROM public.match_candidates WHERE match_run_id = run1 AND role_id = rol_c;
+  IF n <> 0 THEN RAISE EXCEPTION 'kimse vermeyen rol icin % aday', n; END IF;
+  SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run1 AND provider_id = ajans;
+  IF r.id IS NULL OR r.role_id IS NOT NULL OR r.coverage_ratio IS NULL THEN RAISE EXCEPTION 'ajans adayi yok/yanlis: %', r; END IF;
+  -- kapsam: match-a (3) pro1 uye -> 1.0; match-b (1, adet 2) pro2 uye 1 kisi -> 0.5; match-c (3) -> 0  => (3 + 0.5) / 7 = 0.5
+  IF r.full_service_eligible OR r.coverage_ratio <> 0.500 OR r.reason_codes @> ARRAY['coverage_full'] THEN
+    RAISE EXCEPTION 'ajans kapsami: eligible=% coverage=% kodlar=%', r.full_service_eligible, r.coverage_ratio, r.reason_codes; END IF;
+  -- full_service kosusu: eligible ajans yok -> 0 ajans adayi, profesyonel de yok
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  run2 := public.run_event_match(ev, 'full_service');
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.match_candidates WHERE match_run_id = run2;
+  IF n <> 0 THEN RAISE EXCEPTION 'full_service: eligible olmayan ajans listelendi (%)', n; END IF;
+
+  -- 19c) zorunlu rol kaldirilinca ajans eligible, coverage (3 + 0.5) / 4 = 0.875, coverage_full; full_service'te listelenir
+  DELETE FROM public.event_requirements WHERE id = req_c;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  run3 := public.run_event_match(ev, 'full_service');
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.match_candidates WHERE match_run_id = run3 AND provider_id = ajans;
+  IF r.id IS NULL OR NOT r.full_service_eligible OR r.coverage_ratio <> 0.875 OR NOT (r.reason_codes @> ARRAY['coverage_full']) OR r.final_rank <> 1 THEN
+    RAISE EXCEPTION 'ajans eligible bekleniyordu: %', r; END IF;
+  SELECT count(*) INTO n FROM public.match_candidates WHERE match_run_id = run3 AND role_id IS NOT NULL;
+  IF n <> 0 THEN RAISE EXCEPTION 'full_service kosusunda profesyonel aday var (%)', n; END IF;
+  -- ekle-yalniz: ilk kosu degismedi
+  SELECT candidate_count INTO n FROM public.match_runs WHERE id = run1;
+  SELECT count(*) INTO n2 FROM public.match_candidates WHERE match_run_id = run1;
+  IF n <> n2 THEN RAISE EXCEPTION 'ilk kosu degisti (%/%)', n, n2; END IF;
+
+  -- 19d) gosterim / tik: sahip isaretler, baskasi 42501; was_shown yalniz false -> true
+  SELECT array_agg(id) INTO ids FROM public.match_candidates WHERE match_run_id = run1 AND role_id = rol_a;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  n := public.mark_match_candidates_shown(run1, ids);
+  IF n <> array_length(ids, 1) THEN RAISE EXCEPTION 'gosterim isareti % (% beklenir)', n, array_length(ids, 1); END IF;
+  n := public.mark_match_candidates_shown(run1, ids);
+  IF n <> 0 THEN RAISE EXCEPTION 'ikinci gosterim isareti % (0 beklenir)', n; END IF;
+  IF NOT public.mark_match_candidate_clicked(ids[1]) THEN RAISE EXCEPTION 'tik isareti basarisiz'; END IF;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.match_candidates WHERE id = ANY(ids) AND was_shown;
+  IF n <> array_length(ids, 1) THEN RAISE EXCEPTION 'was_shown yazilmadi'; END IF;
+  SELECT count(*) INTO n FROM public.match_candidates WHERE id = ids[1] AND was_clicked;
+  IF n <> 1 THEN RAISE EXCEPTION 'was_clicked yazilmadi'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.mark_match_candidates_shown(run1, ids);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'baskasi gosterim isaretledi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 19e) yetki: baskasi kosamaz (42501), anon kosamaz, gereksinimsiz etkinlik 22023, taslak/baska durum 22023
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.run_event_match(ev, 'hybrid');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'pro1 baskasinin etkinligini eslestirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.run_event_match(ev, 'hybrid');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon RPC cagirabildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.run_event_match(ev2, 'hybrid');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'gereksinimsiz etkinlik eslestirildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 19f) RLS: sahip kosulari gorur, pro1 gormez, anon 42501; authenticated match_* yazamaz
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.match_runs WHERE event_id = ev;
+  SELECT count(*) INTO n2 FROM public.match_candidates WHERE match_run_id = run1;
+  EXECUTE 'RESET ROLE';
+  IF n < 3 OR n2 < 3 THEN RAISE EXCEPTION 'sahip kosulari goremedi (%/%)', n, n2; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.match_runs WHERE event_id = ev;
+  BEGIN
+    INSERT INTO public.match_runs (event_id, algorithm_version) VALUES (ev, 'x');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated match_runs yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'pro1 baskasinin kosusunu gordu (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.match_runs;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon match_runs okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'GECTI',
+    'hybrid: rol basina profesyonel (kodlar, puan, conf), ajans coverage 0.5 eligible degil; full_service 0; zorunlu rol kalkinca 0.875 eligible + coverage_full; ekle-yalniz; shown/clicked (sahip, baskasi 42501); baskasi/anon/gereksinimsiz red; RLS');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (19, 'T19 FAZ 6 Match V0.1', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T20) FAZ 6 ekip + ic ticari goruntu. ON KOSUL: faz6 01 dalda. T19 verisine dayanir (T19 dugun / T19 ajans etkinlikleri, match-a rolu, org_a, pro1 havuz kaydi).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';   -- finance (commercial.view + manage)
+  ev uuid; ev2 uuid; org_a uuid; rol_a int; rec1 uuid; crew1 uuid; crew2 uuid; m1 uuid; m2 uuid;
+  n int; r record; st text;
+BEGIN
+  IF to_regprocedure('public.crew_member_commercial_snapshot(uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (20, 'T20 FAZ 6 ekip + ic goruntu', 'ATLANDI', 'faz6_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO ev FROM public.events WHERE owner_user_id = musteri AND title = 'T19 dugun';
+  SELECT id INTO ev2 FROM public.events WHERE owner_user_id = ajans AND title = 'T19 ajans';
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO rol_a FROM public.service_roles WHERE slug = 'faz1test-match-a';
+  SELECT otr.id INTO rec1 FROM public.organization_talent_records otr
+   WHERE otr.organization_id = org_a AND otr.talent_id = (SELECT t.id FROM public.talents t WHERE t.user_id = pro1 AND t.claim_status <> 'merged');
+  IF ev IS NULL OR ev2 IS NULL OR org_a IS NULL OR rec1 IS NULL THEN RAISE EXCEPTION 'on kosul verisi yok (ev=% ev2=% org=% rec=%)', ev, ev2, org_a, rec1; END IF;
+  -- ajans etkinligine zorunlu gereksinim (match-a) — confirm kontrolu icin
+  INSERT INTO public.event_requirements (event_id, role_id, quantity, is_required) VALUES (ev2, rol_a, 1, true) ON CONFLICT DO NOTHING;
+
+  -- 20a) bireysel ekip (musteri): crews + uye (pazaryeri); kaynaksiz uye 22023; crew_id degismez; ic goruntu yok (22023)
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.crews (event_id, name) VALUES (ev, 'T20 bireysel') RETURNING id INTO crew1;
+  INSERT INTO public.crew_members (crew_id, role_id, provider_id) VALUES (crew1, rol_a, pro1) RETURNING id INTO m1;
+  BEGIN
+    INSERT INTO public.crew_members (crew_id, role_id) VALUES (crew1, rol_a);
+    RAISE EXCEPTION 'kaynaksiz uye eklendi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.crew_member_commercial_snapshot(m1);
+    RAISE EXCEPTION 'bireysel ekipte ic goruntu alindi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  -- guard (sutun yetkisi authenticated'da zaten yok; tetikleyici superuser ile olculur)
+  BEGIN
+    UPDATE public.crews SET event_id = ev2 WHERE id = crew1;
+    RAISE EXCEPTION 'ekibin etkinligi degisti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    UPDATE public.crew_members SET crew_id = crew1 WHERE id = m1;   -- ayni deger: serbest
+    UPDATE public.crew_members SET crew_id = gen_random_uuid() WHERE id = m1;
+    RAISE EXCEPTION 'uyenin ekibi degisti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  SELECT * INTO r FROM public.crews WHERE id = crew1;
+  IF r.created_by <> musteri OR r.source_policy <> 'marketplace_only' OR r.status <> 'draft' THEN RAISE EXCEPTION 'bireysel ekip satiri: %', r; END IF;
+  SELECT pool_origin::text INTO st FROM public.crew_members WHERE id = m1;
+  IF st <> 'marketplace' THEN RAISE EXCEPTION 'pool_origin % (marketplace beklenir)', st; END IF;
+  -- baskasi (pro1) ekibi gormez / uye ekleyemez
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.crews WHERE id = crew1;
+  BEGIN
+    INSERT INTO public.crew_members (crew_id, role_id, provider_id) VALUES (crew1, rol_a, pro1);
+    RAISE EXCEPTION 'baskasi uye ekledi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'pro1 baskasinin ekibini gordu'; END IF;
+
+  -- 20b) kurulus ekibi (ajans owner): havuz kaydindan uye -> pool_origin private, provider_id turetildi; kurulusa ait olmayan kayit 22023
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.crews (event_id, organization_id, name) VALUES (ev2, org_a, 'T20 ajans') RETURNING id INTO crew2;
+  INSERT INTO public.crew_members (crew_id, role_id, talent_record_id) VALUES (crew2, rol_a, rec1) RETURNING id INTO m2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.crews WHERE id = crew2;
+  IF r.source_policy <> 'private_first' THEN RAISE EXCEPTION 'kurulus ekibi source_policy % (private_first beklenir)', r.source_policy; END IF;
+  SELECT * INTO r FROM public.crew_members WHERE id = m2;
+  IF r.pool_origin <> 'private' OR r.provider_id IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'havuz uyesi: origin=% provider=%', r.pool_origin, r.provider_id; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.crew_members (crew_id, role_id, talent_record_id) VALUES (crew1, rol_a, rec1);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'bireysel ekibe havuz kaydi eklendi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 20c) ic goruntu: acik oran yokken snapshot 22023; owner oran acar; snapshot -> default 5000; finance okur; override -> marj; pro1 (crew_coordinator) 42501
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.crew_member_commercial_snapshot(m2);
+    RAISE EXCEPTION 'oran yokken snapshot alindi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  PERFORM public.internal_talent_rate_upsert(org_a, rec1, rol_a, 5000, 'per_day', 'TRY', current_date, 'T20');
+  PERFORM public.crew_member_commercial_snapshot(m2);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT * INTO r FROM public.internal_crew_commercials_list(crew2);
+  IF r.crew_member_id IS DISTINCT FROM m2 OR r.agreed_cost <> 5000 OR r.cost_basis <> 'per_day' OR r.rate_source <> 'default' OR r.client_price IS NOT NULL THEN
+    RAISE EXCEPTION 'snapshot satiri: %', r; END IF;
+  PERFORM public.internal_crew_commercial_upsert(m2, 6000, 'per_day', 'TRY', 9000, 'T20 override');
+  SELECT * INTO r FROM public.internal_crew_commercials_list(crew2);
+  IF r.agreed_cost <> 6000 OR r.client_price <> 9000 OR r.markup_amount <> 3000 OR r.margin_rate <> 0.3333 OR r.rate_source <> 'manual_override' THEN
+    RAISE EXCEPTION 'override satiri: %', r; END IF;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);   -- crew_coordinator: crew.manage var, commercial yok
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.internal_crew_commercials_list(crew2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'crew_coordinator ic goruntuyu okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    SELECT count(*) INTO n FROM internal.crew_member_commercials;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated internal tabloyu okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  -- denetim: read + write satirlari
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND target_table = 'crew_member_commercials';
+  IF n < 3 THEN RAISE EXCEPTION 'denetim satiri az (%)', n; END IF;
+
+  -- 20d) kurulus yetkisi: pro1 (crew_coordinator) ekibi gorur ve uye ekler; musteri (viewer) gorur ama ekleyemez
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.crews WHERE id = crew2;
+  UPDATE public.crew_members SET status = 'contacted' WHERE id = m2;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'crew_coordinator kurulus ekibini goremedi'; END IF;
+  SELECT status::text INTO st FROM public.crew_members WHERE id = m2;
+  IF st <> 'contacted' THEN RAISE EXCEPTION 'crew_coordinator uye guncelleyemedi (%)', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.crews WHERE id = crew2;
+  BEGIN
+    UPDATE public.crew_members SET status = 'declined' WHERE id = m2;
+    GET DIAGNOSTICS n := ROW_COUNT;   -- RLS: 0 satir (hata degil)
+  EXCEPTION WHEN insufficient_privilege THEN n := 0; END;
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.crew_members WHERE id = m2;
+  IF st <> 'contacted' THEN RAISE EXCEPTION 'viewer uye guncelledi (%)', st; END IF;
+
+  -- 20e) confirm kontrolu: zorunlu rol onaylanmis uyeyle kapsanmadan 'confirmed' olmaz; uye confirmed -> ekip confirmed
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    UPDATE public.crews SET status = 'confirmed' WHERE id = crew2;
+    RAISE EXCEPTION 'kapsanmamis ekip confirmed oldu';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  UPDATE public.crew_members SET status = 'confirmed' WHERE id = m2;
+  UPDATE public.crews SET status = 'confirmed' WHERE id = crew2;
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.crews WHERE id = crew2;
+  IF st <> 'confirmed' THEN RAISE EXCEPTION 'ekip confirmed olmadi (%)', st; END IF;
+  -- havuz kaydi silinirse uye kalir (SET NULL), ic goruntu kalir; kaynak silinmis uye K7'de sayilir — burada yalniz FK davranisi
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  INSERT INTO t_sonuc VALUES (20, 'T20 FAZ 6 ekip + ic goruntu', 'GECTI',
+    'bireysel ekip (kaynaksiz uye 22023, event_id sabit, ic goruntu yok); kurulus ekibi (havuz uyesi private + provider turetildi, yabanci kayit 22023); snapshot (oran yok 22023 -> 5000 default), finance okur, override marj 0.3333, crew_coordinator/authenticated 42501, denetim; viewer okur yazamaz; confirm kapsam kontrolu');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (20, 'T20 FAZ 6 ekip + ic goruntu', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

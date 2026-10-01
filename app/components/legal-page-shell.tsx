@@ -63,7 +63,7 @@ export function LegalPageShell({
               <p className="text-sm text-ink leading-relaxed">
                 Kashe şu an kuruluş aşamasındadır. Tüzel kişilik ve VERBİS
                 kaydı işlemleri tamamlandıkça bu metinler güncellenecek; nihai
-                hukuki incelemenin ardından son hâli yayınlanacaktır.
+                hukuki incelemenin ardından son hali yayınlanacaktır.
                 Mevcut metin platformun mevcut işleyişine ilişkin
                 taslak bilgilendirmedir.
               </p>

@@ -112,7 +112,7 @@ export function EtkinlikPlanlaClient({ categories }: Props) {
           )}
 
           <p className="text-[11px] text-ink-72 mt-5 leading-relaxed">
-            Bu öneriler yapay zekâ tarafından hazırlanmıştır, yalnızca yol
+            Bu öneriler yapay zeka tarafından hazırlanmıştır, yalnızca yol
             gösterme amaçlıdır. Etkinliğinin ihtiyaçları farklılık gösterebilir.
           </p>
         </div>

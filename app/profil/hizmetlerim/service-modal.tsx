@@ -245,7 +245,7 @@ export function ServiceModal({
                 </div>
                 <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
                   Başlığı doldur, istersen birkaç detay ekle (kapsam, süre, dahil
-                  olanlar). Yapay zekâ bir taslak yazsın — sonra düzenleyebilirsin.
+                  olanlar). Yapay zeka bir taslak yazsın — sonra düzenleyebilirsin.
                 </p>
                 <input
                   type="text"

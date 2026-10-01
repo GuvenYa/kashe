@@ -1176,7 +1176,7 @@ export default function IstatistiklerPage() {
                   <strong style={{ color: '#8C5A1F' }}>
                     {num(opsAppResp?.pending_count)} başvuru
                   </strong>{' '}
-                  hâlâ yanıt bekliyor. İlan sahiplerine hatırlatma, yanıt oranını
+                  hala yanıt bekliyor. İlan sahiplerine hatırlatma, yanıt oranını
                   ve profesyonel memnuniyetini artırır.
                 </p>
               </div>

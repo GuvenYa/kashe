@@ -6,7 +6,7 @@ import { orderCities } from '@/app/lib/city-order';
 export const metadata = {
   title: 'Profesyonel Bul — Kashe',
   description:
-    'Ne tür bir profesyonel aradığını anlat, yapay zekâ sana en uygun profesyonelleri önersin.',
+    'Ne tür bir profesyonel aradığını anlat, yapay zeka sana en uygun profesyonelleri önersin.',
 };
 
 export default async function ProBulPage() {
@@ -28,7 +28,7 @@ export default async function ProBulPage() {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-              Yapay Zekâ Asistanı
+              Yapay Zeka Asistanı
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Sana en uygun{' '}
@@ -39,7 +39,7 @@ export default async function ProBulPage() {
             </h1>
             <p className="text-ink-72 mt-4 leading-relaxed">
               Hangi kategoride, nasıl bir profesyonel aradığını anlat. Yapay
-              zekâ, yayındaki profiller arasından sana en uygun olanları
+              zeka, yayındaki profiller arasından sana en uygun olanları
               gerekçesiyle önersin.
             </p>
           </div>

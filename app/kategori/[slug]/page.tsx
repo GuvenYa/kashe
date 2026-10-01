@@ -440,7 +440,7 @@ export default async function KategoriPage({ params }: Props) {
                     profesyonelini bulalım
                   </p>
                   <p className="text-sm text-ink-72 mt-0.5 leading-relaxed">
-                    Nasıl biri aradığını anlat, yapay zekâ gerekçesiyle önersin.
+                    Nasıl biri aradığını anlat, yapay zeka gerekçesiyle önersin.
                   </p>
                 </div>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-72 group-hover:text-brand-ink transition">

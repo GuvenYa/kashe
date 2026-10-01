@@ -70,7 +70,7 @@ export function promotionLabel(type: PromotionType): string {
 }
 
 /**
- * Bir "...until" tarihinin hâlâ aktif olup olmadığı.
+ * Bir "...until" tarihinin hala aktif olup olmadığı.
  * null/geçmiş = aktif değil.
  */
 export function isPromotionActive(until: string | null | undefined): boolean {

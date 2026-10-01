@@ -523,7 +523,7 @@ export function YeniIlanFormu({
                 </div>
                 <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
                   Başlık ve kategoriyi doldur, istersen birkaç detay ekle. Yapay
-                  zekâ senin için taslak bir açıklama yazsın — sonra düzenleyebilirsin.
+                  zeka senin için taslak bir açıklama yazsın — sonra düzenleyebilirsin.
                 </p>
                 <input
                   type="text"

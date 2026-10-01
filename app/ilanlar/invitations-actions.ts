@@ -167,7 +167,7 @@ export async function acceptListingInvitation(
     return { success: false, error: 'Bu davet artık geçerli değil.' };
   }
 
-  // İlan hâlâ yayında mı?
+  // İlan hala yayında mı?
   const { data: listing } = await supabase
     .from('listings')
     .select('id, status, title')

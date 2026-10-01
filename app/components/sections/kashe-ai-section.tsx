@@ -17,7 +17,7 @@ export function KasheAiSection() {
             <h2 className="font-display font-semibold text-3xl md:text-4xl lg:text-5xl text-ink leading-[1.1] tracking-[-0.03em] max-w-2xl mb-4">
               Ne aradığını bilmiyor musun?{' '}
               <em className="text-brand-ink not-italic italic">
-                Yapay zekâ
+                Yapay zeka
               </em>{' '}
               sana yol göstersin.
             </h2>

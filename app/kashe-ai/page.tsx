@@ -3,7 +3,7 @@ import { Sparkles, Calendar, Users, ArrowRight } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
 
 export const metadata = {
-  title: 'Kashe AI — Yapay Zekâ Asistanı',
+  title: 'Kashe AI — Yapay Zeka Asistanı',
   description:
     'Kashe AI ile etkinliğin için hangi profesyonellere ihtiyacın olduğunu keşfet, sana en uygun profesyonelleri bul.',
 };
@@ -37,7 +37,7 @@ export default function KasheAiPage() {
               </p>
             </div>
             <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
-              Yapay zekâ,{' '}
+              Yapay zeka,{' '}
               <em className="text-brand-ink not-italic italic font-medium">
                 senin yanında
               </em>

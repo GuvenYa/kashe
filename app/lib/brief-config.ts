@@ -1429,7 +1429,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'Kısa set', label: 'Kısa set' },
           { value: 'Tam gösteri', label: 'Tam gösteri' },
           { value: 'Doğaçlama', label: 'Doğaçlama' },
-          { value: 'Hikâye anlatımı', label: 'Hikâye anlatımı' },
+          { value: 'Hikaye anlatımı', label: 'Hikaye anlatımı' },
           { value: 'Roast/özel konsept', label: 'Roast / özel konsept' },
           { value: 'no_pref', label: 'Fark etmez / Önerin' },
         ],

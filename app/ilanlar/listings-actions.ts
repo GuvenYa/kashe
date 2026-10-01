@@ -966,7 +966,7 @@ export async function reopenListing(
 
 /**
  * Reddedilen başvuruyu geri al (rejected → pending).
- * Sadece ilan hâlâ published iken (dolmuş ilanda anlamsız).
+ * Sadece ilan hala published iken (dolmuş ilanda anlamsız).
  */
 export async function unrejectApplication(
   applicationId: string

@@ -140,7 +140,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   sunucu: {
     heroHeadline: "Etkinliğini Profesyonel Sunucularla Akıcı ve Etkili Hale Getir",
     description:
-      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar. Sahnedeki içeriğin kendisi profesyonele aitse; mizah ve hikâye için Stand-up Komedyenleri ve Sahne Anlatıcıları, uzmanlık içeriği için Konuşmacılar ve Eğitmenler kategorisine bak. Sahnede sunum değil de kendi kanalında içerik üretecek biri arıyorsan Influencer ve İçerik Üreticileri kategorisine bak.",
+      "Sunucular / Moderatörler kategorisi; lansman, konferans, panel, gala, ödül töreni, açılış, fuar etkinliği, düğün, nişan, kına, özel parti, sahne etkinliği, marka aktivasyonu ve hibrit/çevrim içi etkinliklerde akışı yönetecek profesyonelleri kapsar. Sunum tarzı, dil yetkinliği, deneyim ve referanslar bu kategoride öne çıkar. Sahnedeki içeriğin kendisi profesyonele aitse; mizah ve hikaye için Stand-up Komedyenleri ve Sahne Anlatıcıları, uzmanlık içeriği için Konuşmacılar ve Eğitmenler kategorisine bak. Sahnede sunum değil de kendi kanalında içerik üretecek biri arıyorsan Influencer ve İçerik Üreticileri kategorisine bak.",
     subServices: [
       { name: "Kurumsal Etkinlik Sunucusu", description: "Lansman, şirket toplantısı, bayi buluşması, gala ve marka etkinlikleri" },
       { name: "Konferans / Panel Moderatörü", description: "Panel, seminer, zirve, çalıştay ve resmi toplantılarda oturum yönetimi" },
@@ -362,7 +362,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   },
 
   "stand-up-komedyen": {
-    heroHeadline: "Etkinliğine Mizah, Hikâye ve Sahne Etkisi Kat",
+    heroHeadline: "Etkinliğine Mizah, Hikaye ve Sahne Etkisi Kat",
     description:
       "Stand-up Komedyenleri ve Sahne Anlatıcıları kategorisi; kurumsal etkinlik, gala, açılış/kapanış programı, mezuniyet, özel parti, sahne programı ve üniversite etkinliklerinde mizah veya anlatı performansı sunan profesyonelleri kapsar. Kullanıcılar gösteri türü, mizah tarzı, süre, dil, kurumsal dile uygunluk, şehir ve fiyat aralığına göre profilleri karşılaştırabilir. Sahnedeki içerik profesyonelin kendisine ait değil de programı akıtacak biri arıyorsan Sunucular / Moderatörler kategorisine bak.",
     subServices: [
@@ -370,7 +370,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
       { name: "Kurumsal Etkinlik Komedyeni", description: "Gala, bayi buluşması, şirket partisi ve marka etkinlikleri" },
       { name: "Özel Davet Stand-up'ı", description: "Doğum günü, yıl dönümü ve özel kutlamalar" },
       { name: "Doğaçlama Gösteri Sanatçısı", description: "Etkileşimli, seyirciyle kurgulanan doğaçlama sahne" },
-      { name: "Hikâye Anlatıcısı", description: "Tematik sahne anlatımı ve anlatı odaklı performans" },
+      { name: "Hikaye Anlatıcısı", description: "Tematik sahne anlatımı ve anlatı odaklı performans" },
       { name: "Mizah Sunucusu", description: "Program akışını mizahla yöneten sahne performansı" },
       { name: "Roast / Özel Konsept Performans", description: "Kuruma veya kişiye özel yazılmış konsept gösteri" },
       { name: "Açılış / Kapanış Performansçısı", description: "Gala ve ödül töreni ara performansları" },
@@ -381,7 +381,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
     seoDescription:
       "Kurumsal etkinlik, gala, özel davet ve sahne programları için stand-up komedyenleri ve sahne anlatıcılarını Kashe'de keşfet. Portföyleri incele, fiyatları karşılaştır, teklif al.",
     landingText:
-      "Etkinliğine mizah, hikâye ve sahne etkisi kat. Kurumsal etkinlik, gala, mezuniyet ve özel davetler için stand-up komedyenlerini ve sahne anlatıcılarını incele, sana en uygun profesyonelden teklif al.",
+      "Etkinliğine mizah, hikaye ve sahne etkisi kat. Kurumsal etkinlik, gala, mezuniyet ve özel davetler için stand-up komedyenlerini ve sahne anlatıcılarını incele, sana en uygun profesyonelden teklif al.",
   },
 
   tercuman: {
@@ -436,7 +436,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
   "sac-makyaj-styling": {
     heroHeadline: "Çekim, Sahne ve Özel Günler İçin Profesyonel Görünüm Hazırlığı Al",
     description:
-      "Saç, Makyaj ve Styling Profesyonelleri kategorisi; düğün, nişan, kına, sahne, çekim, reklam, model ve oyuncu projelerinde saç, makyaj, styling ve görünüm hazırlığı yapan profesyonelleri kapsar. Kullanıcılar hizmet türü, prova durumu, kişi kapasitesi, mekânda hizmet, ekip desteği, şehir ve fiyat aralığına göre profilleri karşılaştırabilir. Hazırlığı yapan değil de hazırlanan kişiyi arıyorsan Modeller ve Oyuncular / Figüranlar kategorilerine bak.",
+      "Saç, Makyaj ve Styling Profesyonelleri kategorisi; düğün, nişan, kına, sahne, çekim, reklam, model ve oyuncu projelerinde saç, makyaj, styling ve görünüm hazırlığı yapan profesyonelleri kapsar. Kullanıcılar hizmet türü, prova durumu, kişi kapasitesi, mekanda hizmet, ekip desteği, şehir ve fiyat aralığına göre profilleri karşılaştırabilir. Hazırlığı yapan değil de hazırlanan kişiyi arıyorsan Modeller ve Oyuncular / Figüranlar kategorilerine bak.",
     subServices: [
       { name: "Gelin Makyajı", description: "Düğün günü makyajı, prova ve gün boyu tazeleme" },
       { name: "Gelin Saçı", description: "Düğün ve nişan için saç tasarımı ve prova" },
@@ -485,7 +485,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
       { name: "Motivasyon Konuşmacısı", description: "Kurumsal buluşma, bayi toplantısı ve ilham konuşmaları" },
       { name: "Sektörel Konuşmacı", description: "Alanında uzman konferans ve zirve konuşmaları" },
       { name: "Girişimcilik Konuşmacısı", description: "Startup etkinlikleri, hızlandırma programları ve kampüs" },
-      { name: "Teknoloji Konuşmacısı", description: "Yapay zekâ, dijital dönüşüm ve inovasyon oturumları" },
+      { name: "Teknoloji Konuşmacısı", description: "Yapay zeka, dijital dönüşüm ve inovasyon oturumları" },
       { name: "Panelist", description: "Panel, oturum ve moderatörlü tartışma katılımı" },
       { name: "Kurumsal Eğitmen", description: "Yarım/tam gün kurum içi eğitim ve materyal" },
       { name: "Workshop Lideri", description: "Uygulamalı oturum, fasilitasyon ve grup çalışması" },
@@ -530,7 +530,7 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
       { name: "Instagram Influencer", description: "Post, reels ve story ile marka görünürlüğü" },
       { name: "YouTuber", description: "Uzun format video, inceleme ve tanıtım içerikleri" },
       { name: "TikTok İçerik Üreticisi", description: "Kısa format dikey video ve trend içerikler" },
-      { name: "Etkinlik İçerik Üreticisi", description: "Etkinlik günü canlı içerik ve arka plan hikâyesi" },
+      { name: "Etkinlik İçerik Üreticisi", description: "Etkinlik günü canlı içerik ve arka plan hikayesi" },
       { name: "Marka Elçisi", description: "Uzun dönemli marka temsili ve düzenli içerik" },
       { name: "Ürün Tanıtım İçerik Üreticisi", description: "Ürün kutu açılışı, deneyim ve kullanım videoları" },
       { name: "Canlı Yayın Sunucusu", description: "Etkinlikten canlı yayın ve ortak yayın" },

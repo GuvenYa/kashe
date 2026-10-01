@@ -446,7 +446,7 @@ export const QUICK_OPTIONS_BY_SLUG: Record<string, Record<string, readonly strin
       'Kısa set',
       'Tam gösteri',
       'Doğaçlama',
-      'Hikâye anlatımı',
+      'Hikaye anlatımı',
       'Roast/özel konsept',
     ],
     gosteri_suresi: GOSTERI_SURESI_OPTIONS,
@@ -1010,7 +1010,7 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: 'sahne_gosteri', label: 'Sahne & Gösteri' },
     ],
     logisticsChecks: [
-      { key: 'mekanda_hizmet', label: 'Mekânda hizmet', description: 'Gelin evi, otel veya sette hizmet verir' },
+      { key: 'mekanda_hizmet', label: 'Mekanda hizmet', description: 'Gelin evi, otel veya sette hizmet verir' },
       { key: 'kendi_urunleri', label: 'Kendi ürünleri', description: 'Kendi ürün ve kitiyle gelir' },
       { key: 'ekiple_gelir', label: 'Ekiple gelir', description: 'Kalabalık hazırlıkta ekiple çalışır' },
     ],
@@ -1259,7 +1259,7 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
     what_to_expect: 'Etkileşimli, güncel, doğaçlamaya açık gösteri',
     language_pairs: 'Türkçe, İngilizce',
     // Kapsam genişledi: mizah + sahne anlatıcılığı (kaynak doküman §17).
-    areas: 'Kurumsal etkinlik, Gala, Üniversite, Hikâye anlatımı',
+    areas: 'Kurumsal etkinlik, Gala, Üniversite, Hikaye anlatımı',
   },
   illuzyonist: {
     what_to_expect: 'Sahne illüzyonu + close-up + mentalizm',
@@ -1334,7 +1334,7 @@ export const CATEGORY_EXAMPLES: Record<string, Record<string, string>> = {
   },
   konusmaci: {
     // Burada KONU ALANI ekseni (rol/format quick_array'de).
-    areas: 'Liderlik, Dijital dönüşüm, Girişimcilik, Satış, Yapay zekâ',
+    areas: 'Liderlik, Dijital dönüşüm, Girişimcilik, Satış, Yapay zeka',
     language_pairs: 'Türkçe, İngilizce',
     notes: 'Kuruma özel içerik için ön görüşme yapılır',
     summary_stats: '200+ konuşma, 14 yıl deneyim, 40 kurum',
@@ -1450,7 +1450,7 @@ export const ARCHETYPE_TAGLINE_EXAMPLES: Record<
     egitim: 'Tekniğini sürekli tazeleyen bir icra.',
   },
   cast: {
-    hakkimda: 'Kadraja girdiği anda hikâyeyi taşıyan bir yüz.',
+    hakkimda: 'Kadraja girdiği anda hikayeyi taşıyan bir yüz.',
     hizmetler: 'Defileden kampanyaya, her projede doğru duruş.',
     deneyim: 'Sezonlara yayılan çekimler ve podyumlar.',
     egitim: 'Kamera ve sahne önünde eğitimli bir hazırlık.',
@@ -1459,7 +1459,7 @@ export const ARCHETYPE_TAGLINE_EXAMPLES: Record<
     hakkimda: 'Anı en doğru ışıkla kadraja alan bir bakış.',
     hizmetler: 'Düğünden reklama, teslimde titiz bir prodüksiyon.',
     deneyim: 'Yüzlerce proje, zamanında teslim.',
-    egitim: 'Ekipman ve tekniğe hâkim, sertifikalı bir altyapı.',
+    egitim: 'Ekipman ve tekniğe hakim, sertifikalı bir altyapı.',
   },
   uzmanlik: {
     hakkimda: 'Kelimenin değil anlamın çevirisi.',

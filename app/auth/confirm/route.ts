@@ -15,7 +15,7 @@ import { getOwnPrivateProfile } from '@/app/lib/own-profile';
  * Link doğrudan bu domaine gelir (Supabase /auth/v1/verify uğrağı YOK), bu yüzden
  * Supabase "Redirect URLs" allowlist'i de bu akışı kapıda tutmaz.
  *
- * /auth/callback KALDIRILMADI: uçuşta olan eski maillerin linkleri hâlâ oraya gider.
+ * /auth/callback KALDIRILMADI: uçuşta olan eski maillerin linkleri hala oraya gider.
  */
 
 /** Şablonlardan gelebilecek TEK tip kümesi. Listede olmayan değer verifyOtp'a GEÇİRİLMEZ. */

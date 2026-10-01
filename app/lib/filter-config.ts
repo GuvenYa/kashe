@@ -1065,7 +1065,7 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
           { value: 'Kısa set', label: 'Kısa set' },
           { value: 'Tam gösteri', label: 'Tam gösteri' },
           { value: 'Doğaçlama', label: 'Doğaçlama' },
-          { value: 'Hikâye anlatımı', label: 'Hikâye anlatımı' },
+          { value: 'Hikaye anlatımı', label: 'Hikaye anlatımı' },
           { value: 'Roast/özel konsept', label: 'Roast / özel konsept' },
         ],
       },
@@ -1248,7 +1248,7 @@ const CATEGORY_ATTRIBUTE_FILTERS: CategoryFilters[] = [
       },
       {
         key: 'mekanda_hizmet',
-        label: 'Mekânda hizmet',
+        label: 'Mekanda hizmet',
         type: 'single',
         path: { kind: 'logistics', key: 'mekanda_hizmet' },
         options: [{ value: 'true', label: 'Gelin evi / otel / sette hizmet verir' }],
@@ -1682,7 +1682,7 @@ export function buildCategoryFilterExpression(
 
 /**
  * ESKİ sistem (attributes) için JS tarafı eşleştirici — mevcut davranışın birebir
- * taşınmış hâli: alanlar arası AND (`every`), alan içi OR (`some`), boş değer elenir.
+ * taşınmış hali: alanlar arası AND (`every`), alan içi OR (`some`), boş değer elenir.
  */
 function buildAttributesJsFilter(
   activeFilters: Record<string, string[]>

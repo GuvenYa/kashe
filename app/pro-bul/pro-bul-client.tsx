@@ -149,7 +149,7 @@ export function ProBulClient({ categories, cities }: Props) {
           </div>
 
           <p className="text-[11px] text-ink-72 mt-5 leading-relaxed">
-            Bu öneriler yapay zekâ tarafından, yayındaki profiller arasından
+            Bu öneriler yapay zeka tarafından, yayındaki profiller arasından
             hazırlanmıştır. Yalnızca yol gösterme amaçlıdır; profillerini
             incelemeni öneririz.
           </p>

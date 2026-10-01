@@ -210,7 +210,7 @@ export function KategoriForm({
   };
   if (preset.archetype === 'uzmanlik') payload.summary = summary;
 
-  // İlk yüklemedeki hâlin imzası; sonrası onunla karşılaştırılır.
+  // İlk yüklemedeki halin imzası; sonrası onunla karşılaştırılır.
   // (Kayıt başarılıysa action /profil'e yönlendirdiği için sıfırlamaya gerek yok.)
   const savedSnapshot = useRef(JSON.stringify(payload));
   const isDirty = JSON.stringify(payload) !== savedSnapshot.current;
@@ -1088,7 +1088,7 @@ function StatsEditor({
     <div>
       <label className={LABEL}>Öne çıkan rakamların</label>
       <p className="text-[11.5px] text-ink-72/80 -mt-1 mb-2">
-        Bandın altında küçük çipler hâlinde görünür — en fazla 3 tane.
+        Bandın altında küçük çipler halinde görünür — en fazla 3 tane.
         {hints.length > 0 && ` Örn: ${hints.join(' · ')}`}
       </p>
       <div className="flex flex-col gap-2">

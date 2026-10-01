@@ -328,7 +328,7 @@ export function DuzenleForm({ profile, cities, categories }: Props) {
                 </div>
                 <p className="text-[11px] text-ink-72 mb-2 leading-relaxed">
                   Kategorini seç, istersen birkaç detay ekle (deneyim, tarz,
-                  uzmanlık). Yapay zekâ senin için bir taslak yazsın — sonra
+                  uzmanlık). Yapay zeka senin için bir taslak yazsın — sonra
                   düzenleyebilirsin.
                 </p>
                 <input

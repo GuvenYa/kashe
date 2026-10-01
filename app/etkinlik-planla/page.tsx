@@ -5,7 +5,7 @@ import { EtkinlikPlanlaClient } from './etkinlik-planla-client';
 export const metadata = {
   title: 'Etkinlik Planlama Asistanı — Kashe',
   description:
-    'Etkinliğini anlat, yapay zekâ sana hangi profesyonellere ihtiyacın olduğunu önersin.',
+    'Etkinliğini anlat, yapay zeka sana hangi profesyonellere ihtiyacın olduğunu önersin.',
 };
 
 export default async function EtkinlikPlanlaPage() {
@@ -24,7 +24,7 @@ export default async function EtkinlikPlanlaPage() {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-              Yapay Zekâ Asistanı
+              Yapay Zeka Asistanı
             </p>
             <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
               Etkinliğini anlat,{' '}
@@ -34,7 +34,7 @@ export default async function EtkinlikPlanlaPage() {
               .
             </h1>
             <p className="text-ink-72 mt-4 leading-relaxed">
-              Nasıl bir etkinlik planladığını birkaç cümleyle yaz. Yapay zekâ
+              Nasıl bir etkinlik planladığını birkaç cümleyle yaz. Yapay zeka
               sana hangi profesyonellere ihtiyacın olabileceğini önersin.
             </p>
           </div>

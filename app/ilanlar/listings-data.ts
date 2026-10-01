@@ -462,7 +462,7 @@ export function canRejectApplication(status: ApplicationStatus): boolean {
   return status === 'pending' || status === 'shortlisted';
 }
 
-// Reddedilen başvuru geri alınabilir (rejected → pending), ama sadece ilan hâlâ açıkken
+// Reddedilen başvuru geri alınabilir (rejected → pending), ama sadece ilan hala açıkken
 export function canUnrejectApplication(status: ApplicationStatus): boolean {
   return status === 'rejected';
 }

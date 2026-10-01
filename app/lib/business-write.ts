@@ -111,7 +111,7 @@ export async function getOwnedBusinessIds(): Promise<string[]> {
  * kopyalanan "business_members çek + filtrele" bloğunu (5+ yer) tek kaynağa taşır.
  *
  * - teamBusinessIds: üyesi olunan TÜM kurumlar (owner/manager/member) — okuma
- *   görünürlüğü. Kurum-kendine-üyelik DB'de imkânsız (no_self_business_membership),
+ *   görünürlüğü. Kurum-kendine-üyelik DB'de imkansız (no_self_business_membership),
  *   o yüzden ayrıca filtre gerekmez.
  * - canWriteSet: owner+manager (kurum adına yazma / yönetim — edit/publish/composer).
  * - canOwnSet: yalnız owner (owner-only aksiyonlar — silme/close/cancel/promotion).
