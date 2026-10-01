@@ -58,6 +58,9 @@ type HavuzGuncellemeGirdisi = {
 const ILISKI_TURLERI: readonly HavuzIliskiTuru[] = ILISKI_SECENEKLERI;
 const DURUMLAR: readonly HavuzDurum[] = DURUM_SECENEKLERI;
 
+const UUID_KALIBI =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Sunucu tarafi yetki kontrolu — mesaj kalitesi icin (asil kapi RLS). */
 async function yonetebilirMi(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -438,4 +441,103 @@ export async function sendTalentInvitation(input: {
     return { success: false, error: 'E-posta gönderilemedi, tekrar dene.' };
   }
   return { success: true };
+}
+
+/**
+ * FAZ 5 / P3 — pazaryerinden havuza: `/p/[id]` ve kesfet kartindaki kisa yol.
+ *
+ * Istemci YALNIZ `providerId` gonderir; `talent_id` SUNUCUDA `providers`'tan okunur
+ * (istemciden gelen kimlige guvenilmez). Roller `provider_services`'tan on dolar —
+ * `fn_faz5_ensure_record_for_member` ile ayni kural (role_id + is_primary).
+ * Kisisel iletisim KOPYALANMAZ: `email`/`phone` yazilmaz (Kashe uyesinin kimligi
+ * `talents` aynasindadir). `visibility` ve `invitation_*` dokunulmaz.
+ */
+export async function addProviderToTalentPool(input: {
+  organizationId: string;
+  providerId: string;
+  relationshipType: HavuzIliskiTuru;
+}): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  if (!UUID_KALIBI.test(input.providerId)) {
+    return { success: false, error: 'Profil geçersiz.' };
+  }
+  if (!ILISKI_TURLERI.includes(input.relationshipType)) {
+    return { success: false, error: 'İlişki türü geçersiz.' };
+  }
+  if (!(await yonetebilirMi(supabase, input.organizationId))) {
+    return { success: false, error: 'Bu kuruluşta havuzu yönetme yetkin yok.' };
+  }
+
+  const { data: saglayici, error: saglayiciHatasi } = await supabase
+    .from('providers')
+    .select('id, provider_type, talent_id, display_name, city_id')
+    .eq('id', input.providerId)
+    .maybeSingle();
+
+  if (saglayiciHatasi) {
+    console.error('[havuz] saglayici okuma', saglayiciHatasi);
+    return { success: false, error: 'Profil okunamadı, tekrar dene.' };
+  }
+
+  const s = saglayici as {
+    id: string;
+    provider_type: string;
+    talent_id: string | null;
+    display_name: string | null;
+    city_id: number | null;
+  } | null;
+
+  // Ajans profilleri ve talent'siz kayitlar havuza eklenmez (17 bolum 9).
+  if (!s || s.provider_type !== 'professional' || !s.talent_id) {
+    return { success: false, error: 'Bu profil havuza eklenemez.' };
+  }
+
+  // Ayni kurulusta ayni kisi icin kayit varsa tekrar eklenmez (DB'de de kismi
+  // tekil indeks var; bu kontrol mesaji duzgun vermek icin).
+  const { data: mevcut } = await supabase
+    .from('organization_talent_records')
+    .select('id')
+    .eq('organization_id', input.organizationId)
+    .eq('talent_id', s.talent_id)
+    .maybeSingle();
+  if (mevcut) {
+    return { success: false, error: 'Bu kişi havuzunda zaten var.' };
+  }
+
+  const { data: rolSatirlari, error: rolHatasi } = await supabase
+    .from('provider_services')
+    .select('role_id, is_primary')
+    .eq('provider_id', s.id);
+  if (rolHatasi) console.error('[havuz] saglayici rolleri', rolHatasi);
+
+  // Tek birincil kismi indeksi var: birden fazla birincil gelirse ilki kalir.
+  let birincilKullanildi = false;
+  const roles: HavuzRolGirdisi[] = (
+    (rolSatirlari ?? []) as { role_id: number; is_primary: boolean }[]
+  ).map((r) => {
+    const birincil = r.is_primary && !birincilKullanildi;
+    if (birincil) birincilKullanildi = true;
+    return { roleId: r.role_id, isPrimary: birincil };
+  });
+
+  const sonuc = await addTalentRecord({
+    organizationId: input.organizationId,
+    name: s.display_name?.trim() || 'Kashe üyesi',
+    cityId: s.city_id,
+    relationshipType: input.relationshipType,
+    talentId: s.talent_id,
+    roles,
+  });
+
+  if (!sonuc.success) return sonuc;
+
+  revalidatePath(`/p/${input.providerId}`);
+  revalidatePath('/kesfet');
+  revalidatePath('/ajans/havuz');
+  return sonuc;
 }

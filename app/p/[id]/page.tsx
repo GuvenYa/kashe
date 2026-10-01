@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { createClient } from '@/app/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -38,6 +39,8 @@ import {
 import { getBadges, isVerified, BADGE_TONE_CLASS, getBadgeCards, isPremiumActive, isBusy } from '@/app/lib/badges';
 import type { PremiumTier } from '@/app/lib/badges';
 import { ProfessionalProfile } from './professional-profile';
+import { HavuzaEkle } from './havuza-ekle';
+import { getTalentPoolContext } from '@/app/lib/org-context';
 import type { ProfileExperience } from '@/app/lib/category-fields';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
@@ -513,6 +516,87 @@ export default async function PublicProfilePage({
       }
     }
 
+    // ---- FAZ 5/P3 — "Havuza ekle" (yalniz `talent.manage` yetkisi olan ajans uyesi) ----
+    // Yetkili kurulus yoksa slot NULL kalir: DOM'da hicbir sey yok. `talent_id` ve
+    // roller SUNUCUDA okunur, istemciye gitmez (istemci yalniz providerId gonderir).
+    let havuzSlot: ReactNode = null;
+    if (isLoggedIn && !isOwnProfile) {
+      const { orgs } = await getTalentPoolContext();
+      const yonetilen = orgs.filter((o) => o.canManage);
+      if (yonetilen.length > 0) {
+        const { data: saglayiciRow } = await supabase
+          .from('providers')
+          .select('id, provider_type, talent_id')
+          .eq('id', profile.id)
+          .maybeSingle();
+        const saglayici = saglayiciRow as {
+          provider_type: string;
+          talent_id: string | null;
+        } | null;
+        // Ajans profilleri ve talent'siz kayitlar havuza eklenmez.
+        const talentId =
+          saglayici?.provider_type === 'professional'
+            ? (saglayici.talent_id ?? null)
+            : null;
+
+        if (talentId) {
+          const [{ data: havuzKayitlari }, { data: saglayiciRolleri }] =
+            await Promise.all([
+              supabase
+                .from('organization_talent_records')
+                .select('id, status, organization_id')
+                .eq('talent_id', talentId)
+                .in(
+                  'organization_id',
+                  yonetilen.map((o) => o.id)
+                ),
+              supabase
+                .from('provider_services')
+                .select('role_id, is_primary, service_roles(name_tr)')
+                .eq('provider_id', profile.id),
+            ]);
+
+          const kayitliOrgIdleri = new Set(
+            ((havuzKayitlari ?? []) as { organization_id: string }[]).map(
+              (k) => k.organization_id
+            )
+          );
+
+          type SaglayiciRol = {
+            role_id: number;
+            is_primary: boolean;
+            service_roles: { name_tr: string } | null;
+          };
+          const rolEtiketleri = (
+            (saglayiciRolleri ?? []) as unknown as SaglayiciRol[]
+          )
+            .slice()
+            .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
+            .map((r) => {
+              const ad = r.service_roles?.name_tr;
+              if (!ad) return null;
+              return r.is_primary ? `${ad} (birincil)` : ad;
+            })
+            .filter((v): v is string => !!v);
+
+          havuzSlot = (
+            <HavuzaEkle
+              providerId={profile.id}
+              providerName={displayName}
+              kuruluslar={yonetilen.map((o) => ({
+                id: o.id,
+                name: o.name,
+                durum: kayitliOrgIdleri.has(o.id)
+                  ? ('havuzda' as const)
+                  : ('eklenebilir' as const),
+              }))}
+              rolEtiketleri={rolEtiketleri}
+            />
+          );
+        }
+      }
+    }
+
     // Temsil eden ajans (mini kart) — ilki
     const repAg = representingAgencies[0]?.agency ?? null;
     const representingAgency = repAg
@@ -572,6 +656,7 @@ export default async function PublicProfilePage({
           canReview={canReview}
           hasCompletedBooking={hasCompletedBooking}
           existingReview={existingReview}
+          havuzSlot={havuzSlot}
         />
       </>
     );

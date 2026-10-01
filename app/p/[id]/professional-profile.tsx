@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { IletisimButton } from './iletisim-button';
 import { RezervasyonButton } from './rezervasyon-button';
@@ -70,6 +71,8 @@ export type ProfessionalProfileProps = {
   canReview: boolean;
   hasCompletedBooking: boolean;
   existingReview: { id: string; rating: number; body: string | null } | null;
+  /** FAZ 5/P3: ajans uyesine "Havuza ekle" karti; yetki yoksa sunucu HIC gondermez. */
+  havuzSlot?: ReactNode;
 };
 
 const EYEBROW =
@@ -102,7 +105,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
     showFavoriteButton, initialFavorited, canReview, hasCompletedBooking,
-    existingReview,
+    existingReview, havuzSlot,
   } = props;
 
   const slug = profile.service_categories?.slug ?? null;
@@ -437,6 +440,9 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
             {/* CTA — masaüstü tam blok; mobilde primer'ler alt sabit bara taşınır,
                 ikon satırı (favori/paylaş/şikayet) rail sonunda (ajanstan sonra) kalır. */}
             <div className="hidden lg:block">{ctaBlock}</div>
+
+            {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
+            {havuzSlot}
 
             {/* Yetenekler */}
             {skills.length > 0 && (

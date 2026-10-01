@@ -7,6 +7,7 @@ import {
 } from '@/app/lib/filter-config';
 import { isVerified, isPremiumActive } from '@/app/lib/badges';
 import { CoverMedia } from './cover-media';
+import { HavuzKisaYol } from './havuz-kisa-yol';
 
 type Props = {
   profile: {
@@ -51,6 +52,8 @@ type Props = {
     price_on_request: boolean;
   }[];
   isBusy?: boolean;
+  /** FAZ 5/P3: havuz kisa yolu. Yetki/kurulus yoksa sunucu bu prop'u HIC gondermez. */
+  havuz?: { orgId: string; durum: 'havuzda' | 'eklenebilir' };
 };
 
 const QUOTE_MAX = 90;
@@ -204,6 +207,7 @@ export function ProfileCard({
   isLoggedIn = false,
   currentUserRole = null,
   etkinlikId = null,
+  havuz,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
@@ -383,6 +387,15 @@ export function ProfileCard({
             >
               Teklif Al
             </Link>
+            {havuz && (
+              <div className="relative z-20">
+                <HavuzKisaYol
+                  providerId={profile.id}
+                  orgId={havuz.orgId}
+                  durum={havuz.durum}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -451,6 +464,15 @@ export function ProfileCard({
             >
               Teklif Al
             </Link>
+            {havuz && (
+              <div className="mt-2">
+                <HavuzKisaYol
+                  providerId={profile.id}
+                  orgId={havuz.orgId}
+                  durum={havuz.durum}
+                />
+              </div>
+            )}
           </div>
         </div>
 

@@ -21,6 +21,7 @@ import {
   type TurkishCity,
 } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
+import { getTalentPoolContext } from '@/app/lib/org-context';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
 export const metadata = {
@@ -513,6 +514,49 @@ export default async function KesfetPage({
 
   const isLoggedIn = !!user;
 
+  // ---- FAZ 5/P3 — havuz kisa yolu (kesfet sorgusu/filtreleri/siralamasi DEGISMEZ) ----
+  // Kart bu bilgiyi yalniz TEK yonetilebilir kurulus varsa alir; kurulus secimi
+  // /p/[id] panelinde. talent_id istemciye GITMEZ: kartlara yalniz durum gider.
+  let havuzOrgId: string | null = null;
+  const havuzDurumu: Record<string, 'havuzda' | 'eklenebilir'> = {};
+  if (user && profiles.length > 0) {
+    const { orgs } = await getTalentPoolContext();
+    const yonetilen = orgs.filter((o) => o.canManage);
+    if (yonetilen.length === 1) {
+      const orgId = yonetilen[0].id;
+      const [{ data: saglayicilar }, { data: havuzKayitlari }] = await Promise.all([
+        supabase
+          .from('providers')
+          .select('id, provider_type, talent_id')
+          .in(
+            'id',
+            profiles.map((p) => p.id)
+          ),
+        supabase
+          .from('organization_talent_records')
+          .select('talent_id')
+          .eq('organization_id', orgId)
+          .not('talent_id', 'is', null),
+      ]);
+      const havuzdaki = new Set(
+        ((havuzKayitlari ?? []) as { talent_id: string }[]).map((k) => k.talent_id)
+      );
+      havuzOrgId = orgId;
+      for (const sag of (saglayicilar ?? []) as {
+        id: string;
+        provider_type: string;
+        talent_id: string | null;
+      }[]) {
+        // Ajans profilleri, talent'siz kayitlar ve kullanicinin kendi profili disarida.
+        if (sag.provider_type !== 'professional' || !sag.talent_id) continue;
+        if (sag.id === user.id) continue;
+        havuzDurumu[sag.id] = havuzdaki.has(sag.talent_id)
+          ? 'havuzda'
+          : 'eklenebilir';
+      }
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -611,6 +655,11 @@ export default async function KesfetPage({
                         currentUserRole={currentUserRole}
                         etkinlikId={etkinlikIdParam}
                         isBusy={busyByProfile[profile.id] ?? false}
+                        havuz={
+                          havuzOrgId && havuzDurumu[profile.id]
+                            ? { orgId: havuzOrgId, durum: havuzDurumu[profile.id] }
+                            : undefined
+                        }
                       />
                     ))}
                   </div>
