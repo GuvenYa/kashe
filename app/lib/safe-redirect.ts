@@ -37,3 +37,46 @@ export function sanitizeReturnPath(
   // Ham VE decode edilmis - IKISI de gecmeli.
   return ok(raw) && ok(decoded) ? raw : fallback;
 }
+
+/**
+ * Supabase e-posta sablonundaki `next={{ .RedirectTo }}` degerini YOLA indirir.
+ *
+ * `RedirectTo`, `signUp`/`resend` cagrisindaki `emailRedirectTo`'nun TAM URL'sidir;
+ * parametre Dashboard'daki "Redirect URLs" allowlist'inden gecmezse Supabase onun
+ * yerine `SiteURL`'u koyar. Kurallar:
+ *  - bos/NULL -> `fallback`
+ *  - http(s) ile baslayan deger: ayristirilamazsa ya da BASKA origin ise -> `fallback`;
+ *    ayni origin ise yol = `pathname + search` (hash tasinmaz)
+ *  - yol `/` (SiteURL'e dusme) ya da `/auth/callback*` / `/auth/confirm*` (ucustaki eski
+ *    baglantilar, dongu riski) -> `fallback`
+ *  - kalan deger yine `sanitizeReturnPath`'ten gecer (acik yonlendirme sertlestirmesi)
+ */
+export function returnPathFromRedirectTo(
+  raw: string | null | undefined,
+  origin: string,
+  fallback = '/'
+): string {
+  if (!raw || typeof raw !== 'string') return fallback;
+
+  let yol = raw;
+  if (/^https?:\/\//i.test(raw)) {
+    let url: URL;
+    try {
+      url = new URL(raw);
+    } catch {
+      return fallback; // bozuk URL
+    }
+    if (url.origin !== origin) return fallback;
+    yol = url.pathname + url.search;
+  }
+
+  if (
+    yol === '/' ||
+    yol.startsWith('/auth/callback') ||
+    yol.startsWith('/auth/confirm')
+  ) {
+    return fallback;
+  }
+
+  return sanitizeReturnPath(yol, fallback);
+}

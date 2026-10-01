@@ -96,6 +96,11 @@ export default function GirisForm({
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
+  // Dogrulama e-postasindaki donus hedefi: `redirect` ile gelinmisse o yol (sayfa
+  // tarafinda `sanitizeReturnPath`'ten gecti), yoksa profil. '/' anasayfa varsayilani
+  // dogrulama donusu icin anlamsiz oldugu icin profile cevrilir.
+  const dogrulamaHedefi = redirectTo && redirectTo !== '/' ? redirectTo : '/profil';
+
   // URL fragmanındaki auth hatası (ör. #error=access_denied&error_code=otp_expired&
   // error_description=...) → TR mesaj + fragmanı temizle. Supabase'in süresi dolmuş/geçersiz
   // link geri dönüşü giris sayfasına hash ile gelir; sunucuya gitmez, client'ta yakalanır.
@@ -185,7 +190,10 @@ export default function GirisForm({
       type: 'signup',
       email: mail,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
+        // Hedef sayfanin TAM URL'si (sablon `next={{ .RedirectTo }}` tasir;
+        // `/auth/confirm` rotasi yola indirir). Giris sayfasina `redirect` ile
+        // gelinmisse ayni hedef korunur; yoksa profil.
+        emailRedirectTo: `${window.location.origin}${dogrulamaHedefi}`,
       },
     });
     setResending(false);

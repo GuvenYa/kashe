@@ -187,9 +187,11 @@ export function UyeOlForm({
         email: mail,
         password,
         options: {
-          // E-posta dogrulamasi ACIK: kullanici baglantidan donerken ayni hedefe duser
-          // (callback tarafinda `next` yine sanitizeReturnPath'ten gecer).
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+          // E-posta dogrulamasi ACIK: kullanici baglantidan donerken ayni hedefe duser.
+          // Deger HEDEF SAYFANIN TAM URL'si: sablon `next={{ .RedirectTo }}` ile bunu
+          // tasir, `/auth/confirm` rotasi yola indirir (returnPathFromRedirectTo).
+          // Allowlist'ten gecmezse Supabase SiteURL koyar -> rota `/profil`'e duser.
+          emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             full_name: fullName.trim(),
             role: config.role,

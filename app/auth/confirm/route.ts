@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/lib/supabase-server';
-import { sanitizeReturnPath } from '@/app/lib/safe-redirect';
+import { returnPathFromRedirectTo } from '@/app/lib/safe-redirect';
 import { hosgeldinEmail, sendAccountEmail } from '@/app/lib/email/account-emails';
 import { getOwnPrivateProfile } from '@/app/lib/own-profile';
 
@@ -38,8 +38,6 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const tokenHash = requestUrl.searchParams.get('token_hash');
   const typeParam = requestUrl.searchParams.get('type');
-  // Open redirect sertleştirmesi: 'next' yalnız aynı origin'e göreli yol olabilir.
-  const next = sanitizeReturnPath(requestUrl.searchParams.get('next'), '/giris');
 
   // ALLOWLIST — bilinmeyen tip verifyOtp'a hiç ulaşmaz.
   if (!isAllowedType(typeParam)) {
@@ -48,6 +46,16 @@ export async function GET(request: Request) {
   if (!tokenHash) {
     return errorRedirect(requestUrl.origin, typeParam, 'invalid');
   }
+
+  // Şablon `next={{ .RedirectTo }}` taşır → değer AYNI origin'li TAM URL olabilir;
+  // yardımcı onu yola indirir ve açık yönlendirmeye karşı yine sertleştirir.
+  // Fallback signup'ta `/profil`; recovery'de `/giris` (mevcut davranış: 'next' bozuk
+  // ya da eksikse kayıt onayı kullanıcısı şifre sıfırlama sayfasına düşmesin).
+  const next = returnPathFromRedirectTo(
+    requestUrl.searchParams.get('next'),
+    requestUrl.origin,
+    typeParam === 'signup' ? '/profil' : '/giris'
+  );
 
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({

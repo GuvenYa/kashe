@@ -61,7 +61,9 @@ export function AjansUyeOlForm() {
         email: mail,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profil`,
+          // Hedef sayfanin TAM URL'si (sablon `next={{ .RedirectTo }}` tasir;
+          // `/auth/confirm` rotasi yola indirir). Ajans kaydinda hedef hep profil.
+          emailRedirectTo: `${window.location.origin}/profil`,
           data: {
             full_name: contactName.trim(),
             company_name: agencyName.trim(),
