@@ -3,7 +3,7 @@
 **Kaynak plan:** `04-goc-plani.md` FAZ 6 madde 31-33; `01-veri-modeli.md` bolum 5 (eslestirme, coverage), bolum 6 (ekip),
 bolum 8 (`internal.crew_member_commercials`); `02-guvenlik-modeli.md` (gerekce kodlari, "sunucu tarafi kurallar: fiyat/butce/
 musaitlik deterministik servislerde", KVKK itiraz hakki); `15-faz4a` (events, event_requirements); `17-faz5` (havuz, ic oran).
-**Durum:** 6-DB/01 URETIMDE (1 Ekim 2026, commit `0b473f0`; bolum 10). Uygulama P1-P2 Claude Code (bolum 8).
+**Durum:** 6-DB/01-02 URETIMDE, P1 deploy'da (2 Ekim 2026; bolum 10). Sirada P2 (`-p2.md`).
 
 ## 1. Amac ve sinir
 
@@ -174,4 +174,19 @@ kurulusun ekipleri (crew.view).
 kosusu push bitmeden yapildi (T19-T20 ATLANDI — fonksiyon yoktu), push sonrasi **21/21 GECTI**, asama14 K7/K10 BILGI digerleri ESIT.
 Uretim: `db push` 1 dosya; asama14 hepsi ESIT, K10 0 (tablolar bos); asama13 K14 30000 degismedi. `git push` tamam. Siradaki: P1 (`-p1.md`).
 
-(P1, P2 icin doldurulur)
+**P1 (2 Ekim 2026, commit ile birlikte 6-DB/02):** `app/etkinliklerim/[id]/aday-data.ts` (gerekce etiketleri, yuzdeler, tipler),
+`aday-actions.ts` (3 RPC sarmalayicisi; hata eslemesi), `aday-paneli.tsx` (son kosu / onceki kosular / "Aday öner"-"Yeniden eşleştir";
+"Tam hizmet: ajanslar" + "Rol bazında profesyoneller"; KVKK notu `mailto:kasheofficial@gmail.com`), `page.tsx` (match_runs +
+match_candidates + v_providers_public okumalari; bolum kosu yoksa ve sahip degilse yok). Isaret muhafizi kosu kimligine bagli (ikinci
+kosunun adaylari da isaretlenir). **Ilk gercek kosu** (Test Musteri, Kadikoy dogum gunu, 4 zorunlu rol): 7 aday, 126 ms -> 17 ms;
+Sunucu Ajans kapsam 0.50 (Fotografci + DJ Ekibim uyeleriyle; Koordinator ve Ses & Isik yok) eligible degil, puan 60; DJ: Ahmet Yilmaz
+90 / Test Pro2 80 / dj test 80; Fotografci: Test Pro 70 / Selin Demir (Izmir) 50 / Foto Cag (Kirikkale) 40; `was_shown` hepsi, Test Pro
+`was_clicked`; etkinlik `matching`; "Önceki eşleştirmeler" listesi. Admin (Sunucu Ajans hesabi) sayfayi salt okunur gordu, dugme yok —
+beklenen (RLS admin yolu). **Kalibrasyon kusuru -> 6-DB/02 (Match V0.2):** v0.1 `budget_fit` kesisim kurali butcenin altinda kalan
+ucuz saglayiciyi uygun saymiyordu (Test Pro "Bütçeye uygun" alamadi, Izmir'deki aldi). v0.2 "affordable": baslangic fiyati rolun /
+etkinligin ust butcesini asmiyorsa uygun. Yerel: faz6_02 iki kez, asama4 21/21 (T19 v0.2), asama14 ESIT. Dal 21/21. Uretim: asama14
+hepsi ESIT, K10 500 (5 kosu); "Yeniden eşleştir" -> `v0.2`, Test Pro 90 + "Bütçeye uygun". **Acik (P2'ye):** yeniden eslestirme
+dugmesi yavas hissediliyor (sunucu action + sayfa yenileme); kullanici birkac kez tiklayinca 3 ek kosu olustu -> bekleme durumu +
+10 sn kilit (P2 madde E). Ajans kartinda rol bazinda kapsam listesi yok (yalniz oran; `coverage_detail` 6-ek adayi).
+
+(P2 icin doldurulur)
