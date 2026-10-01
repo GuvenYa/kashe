@@ -3,7 +3,7 @@
 **Kaynak plan:** `04-goc-plani.md` FAZ 5 madde 27-30; `01-veri-modeli.md` bolum 3 (yetenek ve havuz, tekillestirme,
 claim), bolum 8 (`internal.organization_talent_rates`); `02-guvenlik-modeli.md` (internal sema); `08-faz0` (kurulus,
 uyelik, `has_org_permission`, `organization_modules`); `09-faz1` (assert -> log -> sorgu deseni); `11-faz2a` (`talents`).
-**Durum:** 5-DB/01-02 URETIMDE (30 Eylul 2026; bolum 10). 5-DB/03 (Ekibim -> havuz RPC'leri) dosya hazir, yerelde test edildi (bolum 6); uretim sirasi bolum 7. Uygulama P1-P3 Claude Code (bolum 8).
+**Durum:** **FAZ 5 KAPANDI (1 Ekim 2026).** 5-DB/01-02-03 uretimde, uygulama P1-P3 (+P3-ek) deploy'da; kapanis kayitlari bolum 10.
 
 ## 1. Amac ve sinir
 
@@ -197,6 +197,10 @@ saglayicinin talents.id; roller `provider_services`'tan on dolu); kesfet kartind
 - **Ekibim kabulu = havuz kaydi.** `agency_members`'a yazan her yol ayni islemde havuz kaydini da yazar; asama13 K5 kaymayi yakalar.
 - **Yalniz isimle birlestirme yok.** Claim yalniz dogrulanmis e-posta (auth.email) ile.
 - **`visibility` FAZ 5'te `private`.** Pazaryerine acma (harici kisiyi vitrine tasima) ayri karar (FAZ 8+).
+- **Sil kurali (P3-ek).** Yalniz AKTIF Ekibim uyesi kaydi (`legacy_agency_member_id` dolu ve `agency_members`'ta satir var) "Ekibim'den
+  yonetilir" sayilir, havuzdan silinmez (silinse sync geri yaratirdi). Diger her kayit — harici, pazaryerinden eklenen, sahiplenilmis,
+  Ekibim'den cikarilmis eski uye — `talent.manage` ile silinir; kaydin ic oranlari birlikte silinir (CASCADE), onay metni bunu soyler.
+  Ekibim'den cikarma (`removeMember`) havuz kaydina dokunmaz: eski uye havuzda kalir, istenirse Sil ile cikarilir.
 
 ## 10. Kapanis kaydi
 
@@ -230,4 +234,20 @@ Sunucu Ajans ile "e-posta eslesmiyor" (42501); Test Musteri rol mesaji; `+harici
 read'ler, 2 `talent.invite`, `talent.lookup`. asama13 K1-K13 ESIT, K14 30000. Not: onizleme kapisi (`?onizleme=`) her yolda calisir
 (cerez 30 gun); lansmana kadar harici kisinin davet baglantisi "yakinda" sayfasina duser. Siradaki: P3 (`-p3.md`).
 
-(P3 icin doldurulur)
+**P3 (1 Ekim 2026, commit `994ac22`) + P3-ek (`0ccf336`):** `app/p/[id]/havuza-ekle.tsx` + `page.tsx` (`havuzSlot`: oturumlu, kendi profili
+degil, talent.manage kurulus var, saglayici professional + `talent_id` dolu; yoksa DOM'da yok), `professional-profile.tsx` (rail CTA alti),
+`app/kesfet/havuz-kisa-yol.tsx` + `profile-card.tsx` + `page.tsx` (sayfadaki kart id'leriyle sinirli iki sorgu; kesfet sorgu/filtre/siralama
+degismedi; >1 kurulusta kisa yol gizli), `havuz-actions.ts` `addProviderToTalentPool` (`talent_id` sunucuda `providers`'tan, roller
+`provider_services`'tan, iletisim kopyalanmaz, mevcut `addTalentRecord` ile). Canli: Test Musteri'de dugme yok; Sunucu Ajans'ta Test Pro
+"Havuzunda", "dj test" eklendi (occasional, 1 rol), kesfet kartindan rozet donusu, Test Pro (viewer) dugme yok. **P3-ek kusuru:** P1 paneli
+`talent_id` dolu her kaydi "Ekibim'den yonetilir" sayiyordu (P1'de dogru, P2/P3 ile yanlis) -> sahiplenilmis/pazaryerinden eklenen kayit
+silinemiyordu. Duzeltme: yalniz aktif Ekibim uyesi korunur (`legacy_agency_member_id` + `agency_members` var), `deleteTalentRecord` ayni
+kural, onay metninde "ic oran kayitlari da silinir" (bolum 9 kurali). Canli: Test Pro/Pro2 korunuyor, dj test silindi, Deneme_Harici
+duruyor; 3 kayit. asama13 K1-K13 ESIT, K14 30000.
+
+**FAZ 5 KAPANDI (1 Ekim 2026).** Uretim: 3 migration (01 sema + RPC'ler, 02 tek seferlik dolum, 03 Ekibim RPC'leri) ve uygulama
+P1-P3 + P3-ek. Uretim verisi: 3 havuz kaydi (2 dolum + 1 sahiplenilmis harici), tek ajans kurulusu. asama4 19/19 (dal), asama13 hepsi ESIT.
+**Acik kalanlar (FAZ 5 disi):** `/uye-ol` `redirect` destegi (kayit sonrasi davet sayfasina donus; bugun profil bandi karsiliyor);
+onizleme kapisi lansmana kadar harici davet baglantisini "yakinda" sayfasina dusurur (lansman oncesi davet gonderilecekse not);
+birden fazla yonetilebilir kurulusta kesfet kisa yolu gizli; `cerez-banner.tsx` `set-state-in-effect` lint hatasi (eski); mukerrer
+birlestirme ve pazaryerine acma FAZ 8; eslestirme/ekip FAZ 6.
