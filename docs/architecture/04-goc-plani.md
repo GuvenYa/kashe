@@ -618,6 +618,13 @@ Kapanis kayitlari ve acik kalanlar `17-faz5-yetenek-havuzu.md` bolum 10; kalici 
 32. `crews`, `crew_members`, `internal.crew_member_commercials` olusturulur.
 33. Match V0 kural tabanli calisir; sonuclar kaydedilir.
 
+**Uygulama notu ve FAZ 6 KAPANDI (1-2 Ekim 2026, `docs/envanter/18-faz6-eslestirme-ekip.md`):** madde 31-32 **6-DB/01** (`match_runs`,
+`match_candidates`, `crews`, `crew_members`, `internal.crew_member_commercials`, 7 enum; RLS: sahip / kurulus `crew.view`/`crew.manage` /
+admin), madde 33 **Match V0.1 -> V0.2** DB fonksiyonu `run_event_match` (hybrid: rol basina profesyonel + etkinlik basina ajans; ajans
+kapsami 01 bolum 5 agirlikli formul, yalniz acik verilerden; gerekce kodlari 02 listesi; `was_shown`/`was_clicked`; v0.2 butce kurali
+"affordable" — Guven karari: ajanslar da aday). Uygulama P1 (Adaylar bolumu) + P2 (Ekip kurma, kapsam/"Tam hizmet" kontrolu DB
+tetikleyicisinde, gizli ic maliyet karti yalniz kurulus ekibinde, `/ajans/ekipler`). Acik kalanlar bolum 10.
+
 ### FAZ 7 — Ticari katman
 
 34. `proposals`, `proposal_versions`, `proposal_items`, `internal.proposal_internal_items` olusturulur.

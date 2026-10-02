@@ -3,7 +3,7 @@
 **Kaynak plan:** `04-goc-plani.md` FAZ 6 madde 31-33; `01-veri-modeli.md` bolum 5 (eslestirme, coverage), bolum 6 (ekip),
 bolum 8 (`internal.crew_member_commercials`); `02-guvenlik-modeli.md` (gerekce kodlari, "sunucu tarafi kurallar: fiyat/butce/
 musaitlik deterministik servislerde", KVKK itiraz hakki); `15-faz4a` (events, event_requirements); `17-faz5` (havuz, ic oran).
-**Durum:** 6-DB/01-02 URETIMDE, P1 deploy'da (2 Ekim 2026; bolum 10). Sirada P2 (`-p2.md`).
+**Durum:** **FAZ 6 KAPANDI (2 Ekim 2026).** 6-DB/01-02 uretimde, P1-P2 deploy'da; kapanis kayitlari ve acik kalanlar bolum 10.
 
 ## 1. Amac ve sinir
 
@@ -189,4 +189,28 @@ hepsi ESIT, K10 500 (5 kosu); "Yeniden eşleştir" -> `v0.2`, Test Pro 90 + "Bü
 dugmesi yavas hissediliyor (sunucu action + sayfa yenileme); kullanici birkac kez tiklayinca 3 ek kosu olustu -> bekleme durumu +
 10 sn kilit (P2 madde E). Ajans kartinda rol bazinda kapsam listesi yok (yalniz oran; `coverage_detail` 6-ek adayi).
 
-(P2 icin doldurulur)
+**P2 (2 Ekim 2026, commit `207cf3f`):** `app/lib/org-context.ts` (`getCrewContext`, `hasCrewAccess`), `app/etkinliklerim/[id]/ekip-data.ts`,
+`ekip-actions.ts` (crews/crew_members RLS yazimi, yalniz GRANT'li sutunlar; hata eslemesi slug->name_tr), `ekip-paneli.tsx` (ekip kur,
+durum gecisleri, kapsam ozeti "Tam hizmet"/"Eksik", uye satirlari, adaylardan/havuzdan ekleme), `ekip-maliyet-actions.ts` (3 RPC +
+`has_org_permission`; kart ekip duzeyinde tek kutu — RPC ekip basina), `app/ajans/ekipler/page.tsx` + TopNav "Ekipler" (`hasCrewAccess`,
+ucuz), `aday-paneli.tsx` bekleme durumu + 10 sn "Az önce eşleştirildi". V0 sinirlari: etkinlik basina tek ekip (UI), confirmed/cancelled
+ekipte uye ekleme/cikarma yalniz UI'da kilitli, "Varsayilan orandan al" yalniz havuz uyesinde. Canli: (1) Test Musteri bireysel ekip
+(Pazaryeri uyeler; onay hatasi 4 rolu saydi; kart yok). (2) Sunucu Ajans sihirbazdan lansman (sihirbaz 4 rol onerdi) -> 6 aday
+(kendi ajansi listede yok — dogru) -> kurulus ekibi `private_first` -> Test Pro2 adaydan (Pazaryeri), Test Pro havuzdan (Havuz,
+provider_id turetildi), Deneme_Harici (Antalya) ve Test Pro2 (rolu yok notuyla) havuzdan -> snapshot "açık iç oran yok; elle gir" ->
+elle 7000 / 10000 -> marj %30 -> 4 uye Onaylandi -> ekip **confirmed + "Tam hizmet"**. (3) `/ajans/ekipler`: owner etkinlik basligiyla,
+Test Pro (viewer) "Etkinlik ayrıntısı görünmüyor" + etkinlik URL'si 404. (4) "Eşleştiriliyor…" / "Az önce eşleştirildi". SQL: 2 ekip
+(bireysel draft 2 uye; kurulus confirmed 4 uye), uyeler kaynaklariyla (`adaydan` izi), denetim 3 `crew.override` + 3 `read`.
+asama14 K7 0, K12 0, K13 0, K10 802 (8 kosu, 2 ekip).
+
+**FAZ 6 KAPANDI (2 Ekim 2026).** Uretim: 6-DB/01 (sema, RLS, Match V0.1, 6 RPC), 6-DB/02 (Match V0.2 butce kurali); uygulama P1
+(Adaylar) + P2 (Ekip, ic maliyet, /ajans/ekipler). Event AI zinciri "anla -> bul -> ekip kur" uctan uca canlida. asama4 21/21 (dal),
+asama14 hepsi ESIT.
+**Acik kalanlar (FAZ 6 disi / 6-ek adaylari):** (a) ajans adayinda rol bazinda kapsam listesi yok (`coverage_detail jsonb` 6-ek);
+(b) ekip basliginda kurulus adi yerine "Kuruluş ekibi"; (c) etkinlik basina coklu ekip (DB izin verir, UI tek); (d) confirmed ekipte
+uye degisikligi DB'de serbest (UI kilidi) — gerekirse guard; (e) hibrit koordinasyon cezasi (01) ve `acceptance_prob` FAZ 9;
+(f) ajans adayi ekibe eklenmez — ajansla tam hizmet teklifi FAZ 7; (g) `events.organization_id` NULL: kurulus uyesi etkinlik sayfasini
+acamaz, `/ajans/ekipler` ayrintisiz — FAZ 8; (h) butce kurali rol basina pay hesabi (V0.3 adayi; bugun etkinlik ust butcesi);
+(i) sihirbaz "DJ ve fotografci" icin 4 rol onerdi — FAZ 4c ayristirici kalibrasyon notu; (j) kosu yavas hissi: sunucu action + sayfa
+yenileme, DB 17 ms — P2 bekleme durumu ile yumusadi; (k) `/etkinliklerim/[id]` sayfasi buyudu (Adaylar + Ekip) — FAZ 7'de sekmelere
+bolunebilir.
