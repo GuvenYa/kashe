@@ -60,7 +60,7 @@
 --       yazamaz, confirm kapsam kontrolu (ON KOSUL: faz6_01 dalda uygulanmis)
 --   T21 FAZ 7a teklif: ekipten teklif (kalem + ic kalem), toplamlar (gizli kalem haric, tax_rate), sales fiyat girer / ic liste 42501 /
 --       status-INSERT 42501, finance marj + maliyet, send (token, dondurma 22023), yeni surum kopyasi, crew_coordinator 0 satir,
---       token_hash kapali, anon 42501 (ON KOSUL: faz7a_01 dalda uygulanmis)
+--       token_hash kapali, anon 42501, taslak silme (7a-DB/02) (ON KOSUL: faz7a_01-02 dalda uygulanmis)
 --   T22 FAZ 7a portal: anon view (alanlar, kimlik yok, sayac, viewed), yanlis jeton, onay (ad kontrolu, approved, ikinci onay red),
 --       revizyon -> yeni surum -> eski jeton iptal, max_views, suresi dolmus -> expired, declined -> linkler iptal
 --       (ON KOSUL: faz7a_01 dalda uygulanmis)
@@ -2654,8 +2654,23 @@ BEGIN
     RAISE EXCEPTION 'anon teklif okudu';
   EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
 
+  -- 21f) taslak silme (7a-DB/02): hic gonderilmemis bos taslak owner tarafindan silinir; gonderilmis teklif silinemez (0 satir)
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'proposals' AND policyname = 'proposals_delete') THEN
+    PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    v2 := public.proposal_create(org_a, 'T21 bos taslak', NULL, NULL, NULL, NULL, NULL);
+    DELETE FROM public.proposals WHERE id = v2;
+    DELETE FROM public.proposals WHERE id = prop;      -- gonderilmis: RLS 0 satir
+    EXECUTE 'RESET ROLE';
+    SELECT count(*) INTO n FROM public.proposals WHERE id IN (v2, prop);
+    IF n <> 1 THEN RAISE EXCEPTION 'taslak silme: kalan % (1 beklenir: gonderilmis teklif durur, bos taslak gider)', n; END IF;
+    st := '; taslak silme OK (gonderilmis silinmedi)';
+  ELSE
+    st := '; taslak silme ATLANDI (7a-DB/02 yok)';
+  END IF;
+
   INSERT INTO t_sonuc VALUES (21, 'T21 FAZ 7a teklif', 'GECTI',
-    'ekipten teklif: 1 kalem 9000 + ic 6000, toplam 9000/1800/10800; sales fiyat 9500 -> 9500/1900/11400, gizli kalem toplama girmedi, ic liste 42501, status/INSERT 42501, tax 0.10 -> 950/10450; finance marj 0.3684, maliyet 6500; send: token 64, surum dondu (kalem/tax/ic 22023), yeni surum 2 kopyali; crew_coordinator 0 satir + 42501; token_hash kapali; anon 42501');
+    'ekipten teklif: 1 kalem 9000 + ic 6000, toplam 9000/1800/10800; sales fiyat 9500 -> 9500/1900/11400, gizli kalem toplama girmedi, ic liste 42501, status/INSERT 42501, tax 0.10 -> 950/10450; finance marj 0.3684, maliyet 6500; send: token 64, surum dondu (kalem/tax/ic 22023), yeni surum 2 kopyali; crew_coordinator 0 satir + 42501; token_hash kapali; anon 42501' || st);
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (21, 'T21 FAZ 7a teklif', 'HATA', SQLERRM);

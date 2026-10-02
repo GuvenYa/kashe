@@ -6,7 +6,7 @@
 --   K3  portal_access_links.token_hash sutun SELECT yetkisi anon+authenticated (0 = kapali)
 --   K4  internal.proposal_internal_items tablo yetkisi anon/authenticated/service_role (0)
 --   K5  7 kurulus RPC + 4 erisim fonksiyonu: authenticated var + anon yok (22) ve 3 portal RPC: anon VE authenticated var (6) -> 28
---   K6  RLS politikasi: proposals 2 + versions 2 + items 4 + links 1 (9)
+--   K6  RLS politikasi: proposals 3 (select/update/delete) + versions 2 + items 4 + links 1 (10)
 --   K7  surum toplamlari kalemlerle tutarsiz (subtotal = gorunur kalemler; tax = round(subtotal*rate,2); total = subtotal+tax) (0)
 --   K8  current_version_id olmayan teklif (0)
 --   K9  dondurma ihlali: sent_at dolu surumde sent_at sonrasi guncellenen kalem (0)
@@ -76,10 +76,10 @@ k5 AS (
          28::bigint
 ),
 k6 AS (
-  SELECT 'K6 RLS politikasi (9)' AS kontrol,
+  SELECT 'K6 RLS politikasi (10)' AS kontrol,
          (SELECT count(*) FROM pg_policies WHERE schemaname = 'public'
            AND tablename IN ('proposals','proposal_versions','proposal_items','portal_access_links'))::bigint,
-         9::bigint
+         10::bigint
 ),
 k7 AS (
   SELECT 'K7 surum toplamlari kalemlerle tutarsiz (0)' AS kontrol,

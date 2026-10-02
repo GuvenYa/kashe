@@ -4,7 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01 URETIMDE (2 Ekim 2026, commit `6a5be05`; bolum 10). Sirada P1 (`19-claude-code-gorevi-p1.md`).
+**Durum:** 7a-DB/01 URETIMDE (2 Ekim 2026, commit `6a5be05`), P1 DEPLOY'DA (commit `6e90b32`; canli tur bolum 10). Sirada 7a-DB/02
+(`20261003130000_faz7a_02_taslak_sil.sql`, taslak silme) + P2 (`19-claude-code-gorevi-p2.md`, musteri portali).
 
 ## 1. Amac ve sinir
 
@@ -71,7 +72,9 @@ gorunur kalemler toplami; gizli kalem ajans ici not niteligindedir — ajans giz
 Yetki: public tablolara REVOKE -> `proposals` SELECT + UPDATE(title, client_name, client_email, buyer_user_id, event_id, crew_id) ;
 `proposal_versions` SELECT + UPDATE(tax_rate, valid_until, notes) ; `proposal_items` SELECT/INSERT/UPDATE/DELETE (duzenlenebilir sutunlar);
 `portal_access_links` SELECT (token_hash HARIC) ; INSERT'ler (`proposals`, `proposal_versions`, `portal_access_links`) YALNIZ RPC.
-`internal.proposal_internal_items` tablo yetkisi 0.
+`internal.proposal_internal_items` tablo yetkisi 0. **7a-DB/02 (`20261003130000_faz7a_02_taslak_sil.sql`):** `proposals` DELETE yetkisi +
+`proposals_delete` politikasi — yalniz `status = draft` VE hicbir surumu gonderilmemis (`sent_at` NULL) teklif, `proposals.manage` ile
+silinir (surum/kalem/ic kalem CASCADE). Gonderilmis teklif silinmez; `proposal_set_status(..., 'declined')` ile kapatilir.
 
 RLS: satici kurulus `proposals.view` okur, `proposals.manage` yazar (`has_org_permission`); `buyer_user_id = auth.uid()` ve status
 <> draft ise okur (kalemler yalniz `is_visible_to_client`; **not**: RLS satir bazli — alici icin gizli kalemleri gizlemek icin
@@ -97,7 +100,8 @@ Yok. `quotes`/`bookings` dokunulmaz (7c'de nullable sutunlar).
 `docs/envanter/asama15-faz7a-teklif-kontrol.sql`: K1 tablolar (4 public + 1 internal) + 4 enum (9); K2 `proposals`/`proposal_versions`/
 `portal_access_links` INSERT yetkisi anon+authenticated, tablo + sutun (0 — yalniz RPC); K3 `portal_access_links.token_hash` SELECT
 yetkisi (0 — mutasyon: GRANT -> 1 FARK); K4 `internal.proposal_internal_items` tablo yetkisi (0); K5 RPC yetkileri: 7 kurulus RPC +
-4 erisim fonksiyonu authenticated var + anon yok (22) ve 3 portal RPC anon VE authenticated var (6) = 28; K6 RLS politikasi (9);
+4 erisim fonksiyonu authenticated var + anon yok (22) ve 3 portal RPC anon VE authenticated var (6) = 28; K6 RLS politikasi (10;
+7a-DB/01 ile 9, 7a-DB/02 `proposals_delete` ile 10);
 K7 surum toplamlari kalemlerle tutarsiz (0); K8 gecerli surumu olmayan teklif (0); K9 dondurma ihlali — `sent_at` sonrasi guncellenen
 kalem (0); K10 bilgi teklif*100 + baglanti; K11 bilgi gecerliligi gecmis ama sent/viewed; K12 bilgi ekip kaynakli ic kalemsiz kalem;
 K13 durum/surum tutarsizligi (`status = draft` <> `sent_at IS NULL`) (0). Beklenen: K1-K9, K13 ESIT; K10-K12 BILGI. Yerelde hepsi ESIT, K10 204.
@@ -110,7 +114,8 @@ gizli kalem (500, is_visible false) toplama girmedi; sales `internal_proposal_it
 proposals INSERT 42501; `tax_rate` 0.10 -> 950/10450; finance liste: maliyet 6000, markup 3500, marj 0.3684; upsert 6500 -> markup 3000,
 source manual; owner `proposal_new_version` taslakken 22023; `proposal_send` -> link + 64 karakter jeton, surum dondu: kalem/tax_rate/ic
 kalem 22023; `proposal_new_version` -> surum 2 draft, kalem + ic kalem (6500) kopyali, toplam 9500/11400; surum 1 `sent_at`/`valid_until`
-(14 gun); aktif baglanti 1; pro1 (crew_coordinator) 0 satir + `proposal_create` 42501; owner bile `token_hash` okuyamaz (42501); anon 42501.
+(14 gun); aktif baglanti 1; pro1 (crew_coordinator) 0 satir + `proposal_create` 42501; owner bile `token_hash` okuyamaz (42501); anon 42501;
+**21f (7a-DB/02):** owner bos taslak acar ve siler (1 satir), gonderilmis teklifi silmeye calisir -> 0 satir ("taslak silme OK").
 T22 (portal): T21 teklifinin surum 2'si gonderilir (eski link iptal), ikinci teklif (kalemsiz send 22023, fiyatsiz kalemle send 22023)
 gonderilir; anon `portal_proposal_view`: surum 2 alanlari, 1 gorunur kalem, toplam 11400, `seller_name` var, kurulus/kullanici kimligi
 yok, `view_count` 1, durum viewed; yanlis/kisa jeton P0002; onay kisa ad 22023; onay -> approved + "Ad Soyad"; ikinci onay 22023;
@@ -126,6 +131,9 @@ Yakalanan: `portal_proposal_approve` icinde expired isaretleyip RAISE etmek yazi
 `supabase link --project-ref ukqhgspaallzjscjodbb` + `supabase db push` (y!) -> dalda asama4 **23/23**, asama15 ESIT. 4. Uretim
 `supabase link --project-ref qydsooqmflrrwtgawhsv` + `supabase db push` (y!) -> uretimde asama15 hepsi ESIT, K10 0; asama14/asama13 degismedi.
 5. `git push` -> P1 (`19-claude-code-gorevi-p1.md`).
+**7a-DB/02 (`20261003130000_faz7a_02_taslak_sil.sql`; P1 canli turunda cikti):** 1. Yerel: iki kez, asama4 23/23 (T21 21f), asama15 ESIT
+K6 10 (yapildi). 2. Commit (asama4 + asama15 guncel). 3. Dal push -> asama4 **23/23**, asama15 K6 10. 4. Uretim push -> asama15 ESIT.
+5. `git push` -> P2 (`19-claude-code-gorevi-p2.md`; portal + "Taslağı sil").
 
 ## 8. Uygulama parcalari (Claude Code)
 
@@ -155,4 +163,16 @@ sayfasi `internal`'a dokunan HICBIR action icermez; kurulus id istemciye gitmez.
 K10-K12 BILGI digerleri ESIT. Uretim: `supabase db push` 1 dosya; asama15 hepsi ESIT, K10 0; asama14 degismedi (K10 802). `git push` tamam.
 Siradaki: P1 (`-p1.md`).
 
-(P1, P2, 7c, 7b icin doldurulur)
+**P1 — teklif editoru (2 Ekim 2026, commit `6e90b32`, Vercel Ready):** `app/ajans/teklifler/{page, yeni-teklif, teklif-data,
+teklif-actions, teklif-maliyet-actions, [id]/page, [id]/teklif-editoru}`, `app/lib/email/proposal-email.ts`, ekip panelinde "Teklif
+oluştur", menude "Teklifler". Canli tur (Sunucu Ajans, lansman etkinliginin kurulus ekibi): ekipten teklif -> 4 kalem; baslangic fiyatlari
+ekip ic maliyet kartindaki musteri fiyatlarindan geldi (0 / 10.000 / 7.500 / 8.500); DJ 15.000, Koordinator 8.000, Ses & Isik 12.000
+yapildi -> 45.000 / KDV 9.000 / **54.000** (DB tetikleyicisi); Gonder -> onay kapisi -> baglanti `/portal/teklif/c80866b5...` + Gmail'e
+e-posta geldi (portal P2 oncesi 404 — beklenen); Yeni surum -> surum 2 duzenlendi -> Gonder -> yeni baglanti `/portal/teklif/c3baab27...`,
+eski baglanti iptal; liste "Sürüm 2 · 52.800 TL". **Yakalanan:** (1) bos "Yeni teklif" taslagi silinemiyor (DELETE yetkisi yoktu) ->
+7a-DB/02 + P2 (C) "Taslağı sil". (2) Test Pro (viewer) `/ajans/teklifler`'de yonlendirme yerine "Test Guven" basligiyla bos liste gordu;
+sayfa kapisi dogru (`proposals.view` olan kurulus yoksa yonlendirir) -> Test Pro'nun "Test Guven" adli ikinci bir uyeligi olmasi
+muhtemel; SQL ile dogrulanacak (P2 kapanisinda not). Uretim SQL + asama15 (K7 0, K9 0, K13 0) 7a-DB/02 adiminda birlikte calisir.
+Siradaki: 7a-DB/02 -> P2 (`-p2.md`).
+
+(7a-DB/02, P2, 7c, 7b icin doldurulur)
