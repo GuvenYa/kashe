@@ -58,6 +58,12 @@
 --   T20 FAZ 6 ekip + ic goruntu: bireysel ekip (kaynaksiz uye 22023, guard, ic goruntu yok), kurulus ekibi (havuz uyesi private +
 --       provider turetimi, yabanci kayit 22023), snapshot/list/override (finance okur, crew_coordinator 42501, denetim), viewer okur
 --       yazamaz, confirm kapsam kontrolu (ON KOSUL: faz6_01 dalda uygulanmis)
+--   T21 FAZ 7a teklif: ekipten teklif (kalem + ic kalem), toplamlar (gizli kalem haric, tax_rate), sales fiyat girer / ic liste 42501 /
+--       status-INSERT 42501, finance marj + maliyet, send (token, dondurma 22023), yeni surum kopyasi, crew_coordinator 0 satir,
+--       token_hash kapali, anon 42501 (ON KOSUL: faz7a_01 dalda uygulanmis)
+--   T22 FAZ 7a portal: anon view (alanlar, kimlik yok, sayac, viewed), yanlis jeton, onay (ad kontrolu, approved, ikinci onay red),
+--       revizyon -> yeni surum -> eski jeton iptal, max_views, suresi dolmus -> expired, declined -> linkler iptal
+--       (ON KOSUL: faz7a_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -108,6 +114,11 @@ BEGIN
   END IF;
   UPDATE public.profiles SET primary_category_id = NULL
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T21 teklifler (kalemler service_roles'a RESTRICT: test rolleri silinmeden ONCE; surum/kalem/ic kalem/baglanti cascade)
+  IF to_regclass('public.proposals') IS NOT NULL THEN
+    DELETE FROM public.proposals
+     WHERE seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T17 havuz kayitlari (roller service_roles'a RESTRICT ile bagli: test rolleri silinmeden ONCE; oranlar cascade)
   IF to_regclass('public.organization_talent_records') IS NOT NULL THEN
     DELETE FROM public.organization_talent_records
@@ -2499,6 +2510,316 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (20, 'T20 FAZ 6 ekip + ic goruntu', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T21) FAZ 7a teklif yasam dongusu. ON KOSUL: 20261003120000 (faz7a 01) dalda. T20 verisine dayanir (Test Ajans kurulus ekibi,
+--      1 confirmed uye, ic goruntu 6000/9000). Roller: ajans owner (proposals.manage + commercial.*), musteri -> 'sales'
+--      (proposals.manage, commercial YOK; T17'deki viewer uyeligi bu testte sales yapilir), uye (0006) finance (commercial.*),
+--      pro1 crew_coordinator (proposals.view YOK).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';
+  org_a uuid; crew2 uuid; prop uuid; v1 uuid; v2 uuid; item1 uuid; item2 uuid; n int; r record; st text; tok text; lnk uuid;
+BEGIN
+  IF to_regprocedure('public.proposal_create(uuid,text,uuid,uuid,text,text,uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (21, 'T21 FAZ 7a teklif', 'ATLANDI', 'proposal_create yok; faz7a_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO crew2 FROM public.crews WHERE organization_id = org_a AND name = 'T20 ajans';
+  IF org_a IS NULL OR crew2 IS NULL THEN RAISE EXCEPTION 'on kosul: org_a=% crew2=% (T20 kosmali)', org_a, crew2; END IF;
+  UPDATE public.organization_memberships SET role = 'sales' WHERE organization_id = org_a AND user_id = musteri;
+
+  -- 21a) owner ekipten teklif acar: 1 kalem (confirmed uye), fiyat 9000 (client_price), ic kalem 6000 (crew_snapshot), toplamlar
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop := public.proposal_create(org_a, 'T21 teklif', NULL, crew2, 'Musteri Adi', 'Faz1Test+Musteri@kashe.net');
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.proposals WHERE id = prop;
+  IF r.status <> 'draft' OR r.current_version_id IS NULL OR r.client_email <> 'faz1test+musteri@kashe.net' OR r.crew_id <> crew2 OR r.created_by <> ajans THEN
+    RAISE EXCEPTION 'teklif satiri: %', r; END IF;
+  v1 := r.current_version_id;
+  SELECT * INTO r FROM public.proposal_versions WHERE id = v1;
+  IF r.version_no <> 1 OR r.subtotal <> 9000 OR r.tax_rate <> 0.20 OR r.tax_amount <> 1800 OR r.total_amount <> 10800 OR r.sent_at IS NOT NULL THEN
+    RAISE EXCEPTION 'surum 1 toplamlari: %', r; END IF;
+  SELECT count(*) INTO n FROM public.proposal_items WHERE proposal_version_id = v1;
+  IF n <> 1 THEN RAISE EXCEPTION 'kalem sayisi % (1 beklenir)', n; END IF;
+  SELECT id INTO item1 FROM public.proposal_items WHERE proposal_version_id = v1;
+  SELECT count(*) INTO n FROM internal.proposal_internal_items WHERE proposal_item_id = item1 AND internal_cost = 6000 AND source = 'crew_snapshot';
+  IF n <> 1 THEN RAISE EXCEPTION 'ic kalem yok/yanlis'; END IF;
+
+  -- 21b) sales (musteri): fiyat gunceller (toplam yeniden), gizli kalem toplama girmez, ic kalem listesi 42501, status/INSERT dogrudan 42501
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.proposal_items SET unit_client_price = 9500 WHERE id = item1;
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+  VALUES (v1, 'T21 gizli', 1, 500, false, 9) RETURNING id INTO item2;
+  SELECT * INTO r FROM public.proposal_versions WHERE id = v1;
+  IF r.subtotal <> 9500 OR r.tax_amount <> 1900 OR r.total_amount <> 11400 THEN
+    RAISE EXCEPTION 'sales guncellemesi sonrasi toplam %/%/% (9500/1900/11400 beklenir; gizli kalem girmemeli)', r.subtotal, r.tax_amount, r.total_amount; END IF;
+  DELETE FROM public.proposal_items WHERE id = item2;
+  BEGIN
+    PERFORM public.internal_proposal_items_list(v1);
+    RAISE EXCEPTION 'sales ic kalemleri gordu';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  BEGIN
+    UPDATE public.proposals SET status = 'sent' WHERE id = prop;
+    RAISE EXCEPTION 'sales durumu dogrudan degistirdi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  BEGIN
+    INSERT INTO public.proposals (seller_organization_id, seller_provider_id, title) VALUES (org_a, ajans, 'x');
+    RAISE EXCEPTION 'sales dogrudan teklif acti';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  UPDATE public.proposal_versions SET tax_rate = 0.10 WHERE id = v1;
+  SELECT * INTO r FROM public.proposal_versions WHERE id = v1;
+  IF r.tax_amount <> 950 OR r.total_amount <> 10450 THEN RAISE EXCEPTION 'tax_rate degisimi sonrasi %/% (950/10450 beklenir)', r.tax_amount, r.total_amount; END IF;
+  UPDATE public.proposal_versions SET tax_rate = 0.20 WHERE id = v1;
+  EXECUTE 'RESET ROLE';
+
+  -- 21c) finance (uye): ic kalem listesi (marj), ic maliyet guncelle
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT * INTO r FROM public.internal_proposal_items_list(v1);
+  IF r.item_id <> item1 OR r.internal_cost <> 6000 OR r.markup_amount <> 3500 OR r.margin_rate <> 0.3684 THEN
+    RAISE EXCEPTION 'finance liste: %', r; END IF;
+  PERFORM public.internal_proposal_item_upsert(item1, 6500, 'T21 elle');
+  SELECT * INTO r FROM public.internal_proposal_items_list(v1);
+  IF r.internal_cost <> 6500 OR r.markup_amount <> 3000 OR r.source <> 'manual' THEN RAISE EXCEPTION 'finance guncelleme: %', r; END IF;
+  EXECUTE 'RESET ROLE';
+
+  -- 21d) owner gonderir: token, surum dondu, kalem/ic kalem/tax degisimi 22023; yeni surum kopyalar
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.proposal_new_version(prop);
+    RAISE EXCEPTION 'taslakken yeni surum acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  SELECT s.link_id, s.token INTO lnk, tok FROM public.proposal_send(prop, 14) s;
+  IF lnk IS NULL OR char_length(tok) <> 64 THEN RAISE EXCEPTION 'send donusu: link=% token_len=%', lnk, char_length(tok); END IF;
+  BEGIN
+    UPDATE public.proposal_items SET unit_client_price = 1 WHERE id = item1;
+    RAISE EXCEPTION 'dondurulmus kalem degisti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    UPDATE public.proposal_versions SET tax_rate = 0.1 WHERE id = v1;
+    RAISE EXCEPTION 'dondurulmus surum tax_rate degisti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.internal_proposal_item_upsert(item1, 1, NULL);
+    RAISE EXCEPTION 'dondurulmus ic kalem degisti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  v2 := public.proposal_new_version(prop);
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.proposals WHERE id = prop;
+  IF r.status <> 'draft' OR r.current_version_id <> v2 THEN RAISE EXCEPTION 'yeni surum sonrasi teklif: %', r; END IF;
+  SELECT * INTO r FROM public.proposal_versions WHERE id = v2;
+  IF r.version_no <> 2 OR r.sent_at IS NOT NULL OR r.subtotal <> 9500 OR r.total_amount <> 11400 THEN RAISE EXCEPTION 'surum 2: %', r; END IF;
+  SELECT count(*) INTO n FROM public.proposal_items i JOIN internal.proposal_internal_items x ON x.proposal_item_id = i.id
+   WHERE i.proposal_version_id = v2 AND x.internal_cost = 6500;
+  IF n <> 1 THEN RAISE EXCEPTION 'surum 2 kalem/ic kalem kopyasi eksik (%)', n; END IF;
+  SELECT * INTO r FROM public.proposal_versions WHERE id = v1;
+  IF r.sent_at IS NULL OR r.valid_until IS NULL OR r.valid_until < now() + interval '13 days' THEN RAISE EXCEPTION 'surum 1 sent_at/valid_until: %', r; END IF;
+  SELECT count(*) INTO n FROM public.portal_access_links WHERE resource_id = prop AND revoked_at IS NULL;
+  IF n <> 1 THEN RAISE EXCEPTION 'aktif baglanti % (1)', n; END IF;
+
+  -- 21e) yetki: pro1 (crew_coordinator) teklif gormez, acamaz; token_hash sutunu owner'a bile kapali; anon 42501
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.proposals WHERE id = prop;
+  BEGIN
+    PERFORM public.proposal_create(org_a, 'x', NULL, NULL, NULL, NULL, NULL);
+    RAISE EXCEPTION 'crew_coordinator teklif acti';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'crew_coordinator teklifi gordu'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.portal_access_links WHERE resource_id = prop;
+  BEGIN
+    EXECUTE 'SELECT token_hash FROM public.portal_access_links LIMIT 1';
+    RAISE EXCEPTION 'token_hash okunabildi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'owner baglanti satirlarini goremedi (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.proposals;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon teklif okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  INSERT INTO t_sonuc VALUES (21, 'T21 FAZ 7a teklif', 'GECTI',
+    'ekipten teklif: 1 kalem 9000 + ic 6000, toplam 9000/1800/10800; sales fiyat 9500 -> 9500/1900/11400, gizli kalem toplama girmedi, ic liste 42501, status/INSERT 42501, tax 0.10 -> 950/10450; finance marj 0.3684, maliyet 6500; send: token 64, surum dondu (kalem/tax/ic 22023), yeni surum 2 kopyali; crew_coordinator 0 satir + 42501; token_hash kapali; anon 42501');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (21, 'T21 FAZ 7a teklif', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T22) FAZ 7a musteri portali (anon RPC'ler). ON KOSUL: faz7a 01 dalda. T21 verisine dayanir (T21 teklif: v1 gonderildi, v2 taslak).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; prop uuid; prop2 uuid; lnk uuid; tok text; tok2 text; tok3 text; lnk3 uuid; j jsonb; n int; r record; st text; v uuid;
+BEGIN
+  IF to_regprocedure('public.portal_proposal_view(text)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (22, 'T22 FAZ 7a portal', 'ATLANDI', 'faz7a_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO prop FROM public.proposals WHERE seller_organization_id = org_a AND title = 'T21 teklif';
+  IF prop IS NULL THEN RAISE EXCEPTION 'T21 teklifi yok'; END IF;
+  -- T21'in ham jetonu bu blokta yok: yeni bir teklif acip gonderelim (prop2), T21 teklifini ise yeniden gondererek jeton alalim
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT s.token INTO tok FROM public.proposal_send(prop, 10) s;      -- v2 taslagi gonderilir -> v2 dondu, eski link iptal
+  prop2 := public.proposal_create(org_a, 'T22 revizyon', NULL, NULL, 'Ikinci Musteri', 'faz1test+ikinci@kashe.net');
+  SELECT current_version_id INTO v FROM public.proposals WHERE id = prop2;
+  BEGIN
+    PERFORM public.proposal_send(prop2, 14);
+    RAISE EXCEPTION 'kalemsiz teklif gonderildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, sort_order) VALUES (v, 'T22 hizmet', 2, 1000, 1);
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, sort_order) VALUES (v, 'T22 fiyatsiz', 1, 0, 2);
+  BEGIN
+    PERFORM public.proposal_send(prop2, 14);
+    RAISE EXCEPTION 'fiyatsiz kalemle gonderildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  DELETE FROM public.proposal_items WHERE proposal_version_id = v AND description = 'T22 fiyatsiz';
+  SELECT s.token INTO tok2 FROM public.proposal_send(prop2, 14) s;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 22a) anon goruntuleme: alanlar, kimlik yok, sayac, sent -> viewed; yanlis jeton
+  EXECUTE 'SET LOCAL ROLE anon';
+  j := public.portal_proposal_view(tok);
+  EXECUTE 'RESET ROLE';
+  IF (j->>'version_no')::int <> 2 OR (j->>'status') <> 'viewed' OR jsonb_array_length(j->'items') <> 1 OR (j->>'total_amount')::numeric <> 11400
+     OR (j->>'seller_name') IS NULL OR j ? 'seller_organization_id' OR j ? 'created_by' THEN
+    RAISE EXCEPTION 'portal view: %', j; END IF;
+  SELECT view_count INTO n FROM public.portal_access_links WHERE resource_id = prop AND revoked_at IS NULL;
+  IF n <> 1 THEN RAISE EXCEPTION 'view_count % (1)', n; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop;
+  IF st <> 'viewed' THEN RAISE EXCEPTION 'durum % (viewed)', st; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    j := public.portal_proposal_view(repeat('a', 64));
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'yanlis jeton kabul edildi';
+  EXCEPTION WHEN no_data_found THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    j := public.portal_proposal_view('kisa');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kisa jeton kabul edildi';
+  EXCEPTION WHEN no_data_found THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 22b) onay: kisa ad 22023; onay -> approved + ad; ikinci onay 22023; onaylanmis teklifte yeni surum 22023
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.portal_proposal_approve(tok, 'A');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kisa adla onaylandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE anon';
+  PERFORM public.portal_proposal_approve(tok, 'Ad Soyad');
+  EXECUTE 'RESET ROLE';
+  SELECT p.status::text || '/' || COALESCE(pv.approved_by_name, '-') INTO st
+    FROM public.proposals p JOIN public.proposal_versions pv ON pv.id = p.current_version_id WHERE p.id = prop;
+  IF st <> 'approved/Ad Soyad' THEN RAISE EXCEPTION 'onay sonrasi % (approved/Ad Soyad)', st; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.portal_proposal_approve(tok, 'Ad Soyad');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'ikinci onay gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.proposal_new_version(prop);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'onaylanmis teklifte yeni surum acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 22c) revizyon: view -> request_revision -> owner yeni surum -> send -> eski jeton iptal, yeni jeton surum 2
+  EXECUTE 'SET LOCAL ROLE anon';
+  j := public.portal_proposal_view(tok2);
+  PERFORM public.portal_proposal_request_revision(tok2, 'Daha uygun fiyat rica ederiz');
+  EXECUTE 'RESET ROLE';
+  SELECT p.status::text || '/' || COALESCE(pv.client_note, '-') INTO st
+    FROM public.proposals p JOIN public.proposal_versions pv ON pv.id = p.current_version_id WHERE p.id = prop2;
+  IF st <> 'revision_requested/Daha uygun fiyat rica ederiz' THEN RAISE EXCEPTION 'revizyon sonrasi %', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v := public.proposal_new_version(prop2);
+  UPDATE public.proposal_items SET unit_client_price = 900 WHERE proposal_version_id = v;
+  SELECT s.link_id, s.token INTO lnk3, tok3 FROM public.proposal_send(prop2, 5) s;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    j := public.portal_proposal_view(tok2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'iptal edilmis jeton calisti';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE anon';
+  j := public.portal_proposal_view(tok3);
+  EXECUTE 'RESET ROLE';
+  IF (j->>'version_no')::int <> 2 OR (j->>'subtotal')::numeric <> 1800 OR (j->>'total_amount')::numeric <> 2160 THEN
+    RAISE EXCEPTION 'surum 2 portal: %', j; END IF;
+
+  -- 22d) max_views, suresi dolmus surum -> expired, onay 22023; satici declined -> baglantilar iptal
+  UPDATE public.portal_access_links SET max_views = 1 WHERE id = lnk3;   -- superuser (test)
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    j := public.portal_proposal_view(tok3);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'max_views asildi ama goruntulendi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  UPDATE public.portal_access_links SET max_views = NULL WHERE id = lnk3;
+  PERFORM set_config('kashe.faz7_rpc', '1', true);
+  UPDATE public.proposal_versions SET valid_until = now() - interval '1 hour' WHERE id = v;   -- superuser + bayrak (test)
+  PERFORM set_config('kashe.faz7_rpc', '0', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.portal_proposal_approve(tok3, 'Gec Kalan');     -- view'dan once: gecerlilik kontrolu
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'suresi dolmus teklif onaylandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE anon';
+  j := public.portal_proposal_view(tok3);                           -- goruntuleme expired isaretler
+  EXECUTE 'RESET ROLE';
+  IF (j->>'status') <> 'expired' THEN RAISE EXCEPTION 'portal durum % (expired)', j->>'status'; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop2;
+  IF st <> 'expired' THEN RAISE EXCEPTION 'durum % (expired)', st; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.portal_proposal_approve(tok3, 'Gec Kalan');     -- expired durumda onay yok
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'expired teklif onaylandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.proposal_set_status(prop2, 'declined');
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT count(*) INTO n FROM public.portal_access_links WHERE resource_id = prop2 AND revoked_at IS NULL;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop2;
+  IF n <> 0 OR st <> 'declined' THEN RAISE EXCEPTION 'declined sonrasi aktif link=% durum=%', n, st; END IF;
+
+  INSERT INTO t_sonuc VALUES (22, 'T22 FAZ 7a portal', 'GECTI',
+    'anon view: surum 2 alanlari, kimlik yok, sayac 1, viewed; yanlis/kisa jeton P0002; onay (kisa ad 22023) -> approved + ad, ikinci onay 22023, onayli teklifte yeni surum 22023; revizyon -> client_note -> yeni surum + send -> eski jeton iptal, yeni jeton surum 2 (1800/2160); max_views; suresi dolmus -> expired, onay 22023; declined -> linkler iptal');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (22, 'T22 FAZ 7a portal', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
