@@ -4,7 +4,7 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01 DOSYA HAZIR, yerelde test edildi (2 Ekim 2026): migration iki kez uygulandi, asama4 **23/23** (T21-T22 GECTI), asama15 hepsi ESIT, asama13/14 degismedi. Uretim sirasi bolum 7.
+**Durum:** 7a-DB/01 URETIMDE (2 Ekim 2026, commit `6a5be05`; bolum 10). Sirada P1 (`19-claude-code-gorevi-p1.md`).
 
 ## 1. Amac ve sinir
 
@@ -151,4 +151,8 @@ sayfasi `internal`'a dokunan HICBIR action icermez; kurulus id istemciye gitmez.
 
 ## 10. Kapanis kaydi
 
-(7a-DB/01, P1, P2, 7c, 7b icin doldurulur)
+**7a-DB/01 (2 Ekim 2026, commit `6a5be05`):** yerelde uc kez (idempotan), asama4 23/23, asama15 ESIT. Dal: asama4 **23/23**, asama15
+K10-K12 BILGI digerleri ESIT. Uretim: `supabase db push` 1 dosya; asama15 hepsi ESIT, K10 0; asama14 degismedi (K10 802). `git push` tamam.
+Siradaki: P1 (`-p1.md`).
+
+(P1, P2, 7c, 7b icin doldurulur)

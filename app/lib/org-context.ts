@@ -127,6 +127,10 @@ export type CrewOrg = {
   canViewTalent: boolean;
   /** `talent_pool` modulu acik mi (havuzdan ekleme kapisi). */
   talentPoolEnabled: boolean;
+  /** FAZ 7a: `proposals.view` — teklifleri gorur. */
+  canViewProposals: boolean;
+  /** FAZ 7a: `proposals.manage` — teklif acar, duzenler, gonderir. */
+  canManageProposals: boolean;
 };
 
 export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
@@ -156,7 +160,16 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
     const org = uyelik.organizations;
     if (!org) continue;
 
-    const [gorebilir, yonetebilir, oranGorebilir, oranYonetir, havuzGorebilir, modul] =
+    const [
+      gorebilir,
+      yonetebilir,
+      oranGorebilir,
+      oranYonetir,
+      havuzGorebilir,
+      modul,
+      teklifGorebilir,
+      teklifYonetir,
+    ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
           p_org_id: org.id,
@@ -182,6 +195,14 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
           p_org_id: org.id,
           p_module_key: 'talent_pool',
         }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'proposals.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'proposals.manage',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -196,6 +217,8 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       canManageRates: oranYonetir.data === true,
       canViewTalent: havuzGorebilir.data === true,
       talentPoolEnabled: modul.data === true,
+      canViewProposals: teklifGorebilir.data === true,
+      canManageProposals: teklifYonetir.data === true,
     });
   }
 
@@ -203,11 +226,11 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
 }
 
 /**
- * TopNav icin ucuz kontrol: menude "Ekipler" gorunsun mu.
- * `getCrewContext` kurulus basina alti RPC atar; global menude o maliyet
- * gereksiz — burada yalniz `crew.view` sorulur (uyelik sorgusu + N RPC).
+ * TopNav icin ucuz kontrol: menude ilgili baglanti gorunsun mu.
+ * `getCrewContext` kurulus basina sekiz RPC atar; global menude o maliyet
+ * gereksiz — burada yalniz TEK izin sorulur (uyelik sorgusu + N RPC).
  */
-export async function hasCrewAccess(): Promise<boolean> {
+async function tekIzinVarMi(izin: string, etiket: string): Promise<boolean> {
   const supabase = await createClient();
 
   const {
@@ -221,20 +244,32 @@ export async function hasCrewAccess(): Promise<boolean> {
     .eq('user_id', user.id)
     .eq('status', 'active');
   if (error) {
-    console.error('[ekip] menu uyelik okuma', error);
+    console.error(`[${etiket}] menu uyelik okuma`, error);
     return false;
   }
 
-  const idler = (data ?? []).map((u) => (u as { organization_id: string }).organization_id);
+  const idler = (data ?? []).map(
+    (u) => (u as { organization_id: string }).organization_id
+  );
   if (idler.length === 0) return false;
 
   const sonuclar = await Promise.all(
     idler.map((id) =>
       supabase.rpc('has_org_permission', {
         p_org_id: id,
-        p_permission: 'crew.view',
+        p_permission: izin,
       })
     )
   );
   return sonuclar.some((r) => r.data === true);
+}
+
+/** Menude "Ekipler" (FAZ 6/P2). */
+export async function hasCrewAccess(): Promise<boolean> {
+  return tekIzinVarMi('crew.view', 'ekip');
+}
+
+/** Menude "Teklifler" (FAZ 7a/P1). */
+export async function hasProposalAccess(): Promise<boolean> {
+  return tekIzinVarMi('proposals.view', 'teklif');
 }

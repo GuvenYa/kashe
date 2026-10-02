@@ -7,6 +7,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { STATUS_LABELS as TALEP_DURUMLARI } from '@/app/teklif-taleplerim/page';
 import { LISTING_STATUS_OPTIONS } from '@/app/ilanlar/listings-data';
 import { getCrewContext } from '@/app/lib/org-context';
+import { TEKLIF_DURUM_ETIKETLERI } from '@/app/ajans/teklifler/teklif-data';
 import { AdayPaneli } from './aday-paneli';
 import { EkipPaneli } from './ekip-paneli';
 import type {
@@ -521,6 +522,30 @@ export default async function EtkinlikDetayPage({
       });
   }
 
+  // FAZ 7a/P1 — ekipten acilmis ilk teklif (varsa dugme yerine baglanti).
+  // RLS: teklif yalniz satici kurulusta proposals.view olana gorunur.
+  let mevcutTeklif: { id: string; title: string; durum: string } | null = null;
+  if (ekip) {
+    const { data: teklifData } = await supabase
+      .from('proposals')
+      .select('id, title, status, created_at')
+      .eq('crew_id', ekip.id)
+      .order('created_at')
+      .limit(1);
+    const satir = ((teklifData ?? []) as {
+      id: string;
+      title: string;
+      status: string;
+    }[])[0];
+    if (satir) {
+      mevcutTeklif = {
+        id: satir.id,
+        title: satir.title,
+        durum: TEKLIF_DURUM_ETIKETLERI[satir.status] ?? satir.status,
+      };
+    }
+  }
+
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
     typeof ekstra.date_note === 'string' ? ekstra.date_note : null;
@@ -768,6 +793,11 @@ export default async function EtkinlikDetayPage({
                 maliyetGorulur={
                   !!ekip?.organization_id && !!ekipKurulusu?.canSeeRates
                 }
+                teklifYazilir={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canManageProposals
+                }
+                mevcutTeklif={mevcutTeklif}
+                etkinlikBasligi={baslik}
                 maliyetYazilir={
                   !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
                 }

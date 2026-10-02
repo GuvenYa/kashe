@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createProposal } from '@/app/ajans/teklifler/teklif-actions';
 import {
   EKIP_DURUM_ETIKETLERI,
   KAYNAK_ETIKETLERI,
@@ -70,6 +72,9 @@ export function EkipPaneli({
   havuzdanEklenebilir,
   maliyetGorulur,
   maliyetYazilir,
+  teklifYazilir,
+  mevcutTeklif,
+  etkinlikBasligi,
 }: {
   eventId: string;
   /** `events.owner_user_id === user.id` — ekip kurma yalniz sahipte. */
@@ -87,7 +92,14 @@ export function EkipPaneli({
   havuzdanEklenebilir: boolean;
   maliyetGorulur: boolean;
   maliyetYazilir: boolean;
+  /** FAZ 7a/P1: kurulus ekibinde teklif acma yetkisi (proposals.manage). */
+  teklifYazilir: boolean;
+  /** Ekipten acilmis ilk teklif (varsa dugme yerine baglanti). */
+  mevcutTeklif: { id: string; title: string; durum: string } | null;
+  /** Teklif basligi icin etkinlik basligi. */
+  etkinlikBasligi: string;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [hata, setHata] = useState<string | null>(null);
   const [bilgi, setBilgi] = useState<string | null>(null);
@@ -234,6 +246,26 @@ export function EkipPaneli({
       const res = await removeCrewMember({ memberId, eventId });
       if (!res.success) setHata(res.error);
       else setBilgi('Üye ekipten çıkarıldı.');
+    });
+  }
+
+  // FAZ 7a/P1 — ekipten teklif: kalemler DB'de uye basina olusur (rol adi +
+  // ic goruntudeki client_price). Teklif yalniz `proposal_create` ile acilir.
+  function teklifOlustur() {
+    if (!ekip?.organization_id) return;
+    mesajlariTemizle();
+    startTransition(async () => {
+      const res = await createProposal({
+        organizationId: ekip.organization_id!,
+        title: etkinlikBasligi,
+        eventId,
+        crewId: ekip.id,
+      });
+      if (!res.success) {
+        setHata(res.error);
+        return;
+      }
+      router.push(`/ajans/teklifler/${res.data!.id}`);
     });
   }
 
@@ -419,6 +451,28 @@ export function EkipPaneli({
           )}
         </div>
 
+        {/* FAZ 7a/P1 — ekipten teklif (yalniz kurulus ekibi + proposals.manage) */}
+        {ekip.organization_id && (teklifYazilir || mevcutTeklif) && (
+          <div className="mt-3 pt-3 border-t border-line flex items-center gap-2 flex-wrap">
+            {mevcutTeklif ? (
+              <Link
+                href={`/ajans/teklifler/${mevcutTeklif.id}`}
+                className="kashe-tap text-sm text-brand-ink hover:underline"
+              >
+                Teklif: {mevcutTeklif.title} · {mevcutTeklif.durum}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={teklifOlustur}
+                disabled={isPending}
+                className={BTN_IKINCIL}
+              >
+                Teklif oluştur
+              </button>
+            )}
+          </div>
+        )}
         {hata && <p className="text-sm text-danger mt-3">{hata}</p>}
         {bilgi && <p className="text-sm text-moss mt-3">{bilgi}</p>}
 

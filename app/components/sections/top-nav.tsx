@@ -8,7 +8,7 @@ import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
-import { hasCrewAccess } from "@/app/lib/org-context";
+import { hasCrewAccess, hasProposalAccess } from "@/app/lib/org-context";
 import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
 
 export async function TopNav() {
@@ -91,6 +91,10 @@ export async function TopNav() {
     // Ucuz kontrol (uyelik + crew.view); sayfa yine yetkisizi /profil'e yollar.
     if (await hasCrewAccess()) {
       menuLinks.push({ href: "/ajans/ekipler", label: "Ekipler" });
+    }
+    // FAZ 7a/P1: teklifler — `proposals.view` yetkili kurulusu olan ajans kullanicisi.
+    if (await hasProposalAccess()) {
+      menuLinks.push({ href: "/ajans/teklifler", label: "Teklifler" });
     }
   }
   // Profesyonel/ajans → Teklif Talepleri (profilde bölüm yok → kalır)
