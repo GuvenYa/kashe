@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01 URETIMDE (2 Ekim 2026, commit `6a5be05`), P1 DEPLOY'DA (commit `6e90b32`; canli tur bolum 10). Sirada 7a-DB/02
-(`20261003130000_faz7a_02_taslak_sil.sql`, taslak silme) + P2 (`19-claude-code-gorevi-p2.md`, musteri portali).
+**Durum:** 7a-DB/01 ve 7a-DB/02 URETIMDE (2-3 Ekim 2026; bolum 10), P1 DEPLOY'DA (commit `6e90b32`). Sirada P2
+(`19-claude-code-gorevi-p2.md`: musteri portali + taslak silme + satici yuzeyi yalniz ajans).
 
 ## 1. Amac ve sinir
 
@@ -145,7 +145,9 @@ durum rozeti; portal izleri). Etkinlik sayfasi ekip panelinde "Teklif oluştur" 
 **P2 — musteri portali (`-p2.md`):** `/portal/teklif/[token]` (oturumsuz; noindex; `portal_proposal_view`): satici adi, baslik, etkinlik
 ozeti, kalemler (gorunur), KDV/toplam, gecerlilik; "Onayla" (ad-soyad + onay kutusu + acik onay ekrani) -> `portal_proposal_approve`;
 "Revizyon iste" (not) -> `portal_proposal_request_revision`; durum sayfalari (onaylandi / suresi doldu / baglanti gecersiz). Portal
-sayfasi `internal`'a dokunan HICBIR action icermez; kurulus id istemciye gitmez.
+sayfasi `internal`'a dokunan HICBIR action icermez; kurulus id istemciye gitmez. P1 turundan eklenen: (C) "Taslağı sil" (7a-DB/02
+politikasi uzerinden RLS DELETE; yalniz hic gonderilmemis taslak), (D) satici yuzeyi (menu "Teklifler", `/ajans/teklifler`, "Teklif
+oluştur") yalniz `account_type = 'agency'` kuruluslara — `business` kurulusunun saglayici kaydi yoktur, `proposal_create` zaten reddeder.
 **7c (ayri plan bolumu, 7a kapaninca):** bookings sutunlari + `booking_from_proposal`; **7b:** RFP.
 
 ## 9. Kalici kurallar (7 sonrasi)
@@ -156,6 +158,9 @@ sayfasi `internal`'a dokunan HICBIR action icermez; kurulus id istemciye gitmez.
 - **Gizli kalem toplama girmez**; portal toplami = gorunur kalemler.
 - **Teklif dosyasi kurulus aracidir**; profesyonel-musteri teklifi `quotes`'ta kalir (FAZ 10 karari).
 - **Kritik islemde onay kapisi** (05): gonderme ve onaylama tek tikla gecilmez.
+- **Satici yalniz ajans kurulusu** (`account_type = 'agency'`, 'organization' saglayicisi olan): kurum (`business`) teklif yazmaz,
+  alir. Uygulama satici yuzeyini bu kurala gore gosterir; DB `proposal_create`'te saglayici kaydini zorunlu tutar.
+- **Gonderilmis teklif silinmez**, kapatilir (`declined`); yalniz hic gonderilmemis taslak silinir (7a-DB/02).
 
 ## 10. Kapanis kaydi
 
@@ -175,4 +180,14 @@ sayfa kapisi dogru (`proposals.view` olan kurulus yoksa yonlendirir) -> Test Pro
 muhtemel; SQL ile dogrulanacak (P2 kapanisinda not). Uretim SQL + asama15 (K7 0, K9 0, K13 0) 7a-DB/02 adiminda birlikte calisir.
 Siradaki: 7a-DB/02 -> P2 (`-p2.md`).
 
-(7a-DB/02, P2, 7c, 7b icin doldurulur)
+**7a-DB/02 (3 Ekim 2026):** yerelde iki kez (idempotan), asama4 23/23, asama15 K6 10. Dal: `supabase db push` 1 dosya; asama4 **23/23**
+(T21 "... taslak silme OK (gonderilmis silinmedi)"), asama15 K6 10 ESIT, K10-K12 BILGI. Uretim: push; asama15 hepsi ESIT, K6 10,
+K10 **203** (2 teklif, 3 baglanti), K11 0. Uretim SQL (P1 turunun devami): lansman `sent` — surum 1 45.000/9.000/54.000 ve surum 2
+44.000/8.800/52.800 gonderildi; Guven turda ikinci bir teklif ("qas", 250/50/300) acip musteri e-postasiz gonderdi (baglanti
+`recipient_email` NULL) ve `declined` ile kapatti -> baglantisi iptal; lansman baglantilari: ilki iptal, ikincisi aktif (`view_count` 0,
+portal P2 oncesi). Denetim: `proposal.create` x2, `proposal.send` x3, `proposal.new_version`, `proposal.decline`; ic kalem `read` yok
+(ic maliyet karti tembel yuklenir, turda acilmadi — P2 turunda acilir). Test Pro uyelikleri: Sunucu Ajans `viewer` + "Test Guven"
+(`business`) `admin` -> admin tum izinleri tasidigi icin Teklifler gorundu; kapi dogru, kural eksikti -> P2 (D): satici yuzeyi
+yalniz `agency`. `git push` P2 oncesi. Siradaki: P2 (`-p2.md`).
+
+(P2, 7c, 7b icin doldurulur)

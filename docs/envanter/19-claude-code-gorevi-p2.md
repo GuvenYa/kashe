@@ -14,7 +14,8 @@ scope eksikse 42501), `20261003130000_faz7a_02_taslak_sil.sql` (taslak DELETE po
 `davet-paneli.tsx` (oturumsuz sayfa deseni, noindex, uuid kontrolu), `app/ajans/teklifler/[id]/teklif-editoru.tsx` + `teklif-actions.ts`
 (P1), `app/ajans/teklifler/page.tsx`, `app/components/legal-page-shell.tsx` (sade kabuk ornegi), `app/lib/supabase-server.ts`.
 
-Bu is **yalniz uygulama kodu**: migration yok, RPC yok. Parcalar: (A) portal sayfasi, (B) portal islemleri, (C) taslak silme (P1 eksigi).
+Bu is **yalniz uygulama kodu**: migration yok, RPC yok. Parcalar: (A) portal sayfasi, (B) portal islemleri, (C) taslak silme (P1 eksigi),
+(D) satici yuzeyi yalniz ajans kurulusuna (P1 canli turunda cikti).
 Baslamadan: `git status --short` temiz olmali; degilse dur ve soyle.
 
 ## Kesin kurallar (19 bolum 9 + 02 bolum 6)
@@ -69,6 +70,19 @@ Baslamadan: `git status --short` temiz olmali; degilse dur ve soyle.
   yonlendir. Gonderilmis teklifte dugme yok (DB zaten 0 satir siler; mesaj "Gönderilmiş teklif silinemez; kapatabilirsin.").
 - Listede taslak satirlarinda da "Sil" (ayni onay).
 
+### D. Satici yuzeyi yalniz ajans kurulusuna (`app/lib/org-context.ts`, `teklifler/page.tsx`, `[id]/page.tsx`, `etkinliklerim/[id]/page.tsx`)
+
+- Kural (19 bolum 2): teklif saticisi **ajans** kurulusudur (`organizations.account_type = 'agency'`; kurum/`business` kurulusunun
+  saglayici kaydi yoktur, `proposal_create` zaten 'kurulusun saglayici kaydi yok' ile reddeder). Canli turda: Test Pro, "Test Guven"
+  adli `business` kurulusunda admin oldugu icin Teklifler menusunu ve bos listeyi gordu; "Yeni teklif" DB'de patlayacakti.
+- `CrewOrg`'a `accountType: string` ekle (uyelik sorgusunda `organizations(account_type)` zaten geliyor). `canViewProposals` ve
+  `canManageProposals` **yalniz `account_type = 'agency'` ise** true olsun (hesaplamada `&& org.account_type === 'agency'`); boylece
+  liste sayfasi, `[id]` sayfasi, "Yeni teklif" kurulus secimi ve ekip panelindeki "Teklif oluştur" tek noktadan duzelir.
+- `hasProposalAccess` (menu): `tekIzinVarMi`'ye secimlik `yalnizAjans` parametresi — uyelik sorgusu `organization_id,
+  organizations(account_type)` ceker, ajans olmayan kuruluslari RPC'ye gitmeden eler. `hasCrewAccess` degismez (kurum ekibi vardir).
+- Kurum kurulusu uyesi `/ajans/teklifler`'e dogrudan gelirse `/profil`'e yonlenir (mevcut kapi). Alici tarafi (`/tekliflerim`) bu
+  parcanin disinda (7a kapsami disi).
+
 ## Dogrulama
 
 - `npx tsc --noEmit` bos; `npm run build` -> route tablosu (`/portal/teklif/[token]`) + hata yok + `.next/BUILD_ID`.
@@ -85,17 +99,23 @@ Baslamadan: `git status --short` temiz olmali; degilse dur ve soyle.
   4. Yeni baglanti -> Sürüm 3, 42.000 / 8.400 / 50.400 -> **Teklifi onayla** -> ad soyad bos -> hata; "Deneme Müşteri" + kutu ->
      Onaylıyorum -> yesil "Onaylandı · Deneme Müşteri · <tarih>". Yenile -> ayni. Editor: "Onaylandı · Deneme Müşteri", kalemler kilitli,
      "Yeni sürüm" yok.
-  5. Editorde bos "Yeni teklif" taslagi -> **Taslağı sil** -> onay -> listeden gitti. Listede taslak yoksa yeni bir bos taslak ac ve
-     listeden Sil.
+  5. Sunucu Ajans listesinde "Yeni teklif" -> bos taslak acilir -> editorde **Taslağı sil** -> onay -> listeden gitti. Bir bos taslak
+     daha ac, bu kez listeden **Sil**. Kapatilmis "qas" teklifinde Sil YOK (gonderilmis).
+  6. Lansman editorunde **ic maliyet kartini ac** (tembel yuklenir) -> kalem basina maliyet/markup/marj gorunur (denetim `read` satiri).
+  7. **Test Pro** ile giris: menude "Teklifler" YOK; `/ajans/teklifler` -> `/profil`'e yonlenir (Test Guven `business`). Sunucu Ajans
+     ile menu ve liste eskisi gibi.
   SQL (uretim, salt okunur, tek tek):
   ```sql
   select p.title, p.status, v.version_no, v.total_amount, v.sent_at is not null as gonderildi, v.approved_by_name, v.client_note
     from public.proposals p join public.proposal_versions v on v.proposal_id = p.id order by p.created_at, v.version_no;
   select recipient_email, view_count, first_viewed_at is not null as goruldu, revoked_at is not null as iptal
     from public.portal_access_links order by created_at;
+  select action, target_table, detail->>'op' as op, created_at from internal.access_audit
+    where target_table in ('proposals','proposal_internal_items') order by created_at desc limit 6;
   ```
-  Beklenen: lansman teklifi `approved`; surum 2 `client_note` dolu, surum 3 `approved_by_name = Deneme Müşteri`; 3 baglanti: ilk iki
-  iptal, ucuncu `view_count >= 2`; bos taslak yok. `asama15`: K7 0, K9 0, K11 0, K13 0.
+  Beklenen: lansman teklifi `approved` (surum 1-2 gonderildi, surum 2 `client_note` dolu, surum 3 `approved_by_name = Deneme Müşteri`);
+  "qas" `declined` degismedi; bos taslak YOK (2 teklif). 4 baglanti: lansman ilk iki iptal, ucuncu `view_count >= 2` + goruldu, "qas"
+  baglantisi iptal. Denetimde `proposal_internal_items` `read` satiri var. `asama15`: K7 0, K9 0, K11 0, K13 0, K10 **204**.
 
 ## Yapilmayacaklar
 
