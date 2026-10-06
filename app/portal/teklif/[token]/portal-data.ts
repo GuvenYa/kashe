@@ -42,6 +42,14 @@ export type PortalTeklif = {
   sent_at: string | null;
 };
 
+/**
+ * Kashe saati Istanbul: portal sayfasi SUNUCUDA (Vercel, UTC) render edilir;
+ * dilim acikca verilmezse ayni an portalda ve editorde farkli gorunur
+ * (P2 canli turu). Portal ayri yuzey oldugu icin satici tarafindaki sabiti
+ * import ETMEZ, ayni degeri burada tasir.
+ */
+export const KASHE_SAAT_DILIMI = 'Europe/Istanbul';
+
 /** Jeton bicimi: `encode(gen_random_bytes(32), 'hex')` -> 64 hex. */
 export const JETON_KALIBI = /^[0-9a-f]{64}$/;
 
@@ -76,6 +84,7 @@ export function tarihMetni(iso: string | null | undefined): string | null {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: KASHE_SAAT_DILIMI,
   });
 }
 
@@ -90,6 +99,7 @@ export function zamanMetni(iso: string | null | undefined): string | null {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: KASHE_SAAT_DILIMI,
   });
 }
 

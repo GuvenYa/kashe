@@ -6,6 +6,13 @@
 // Toplamlar DB'de hesaplanir (`proposal_versions.subtotal/tax_amount/total_amount`,
 // tetikleyici); burada YALNIZ gosterim bicimi var — istemci toplam hesaplamaz.
 
+/**
+ * Kashe saati Istanbul: sunucu (Vercel) UTC render ettigi icin dilim ACIKCA
+ * verilir, yoksa ayni an sunucuda ve istemcide farkli gorunur (P2 canli turu).
+ * Turkiye tek dilim; tarayici dilimi farkli olsa bile gosterim Istanbul saatidir.
+ */
+export const KASHE_SAAT_DILIMI = 'Europe/Istanbul';
+
 export const TEKLIF_DURUM_ETIKETLERI: Record<string, string> = {
   draft: 'Taslak',
   sent: 'Gönderildi',
@@ -138,6 +145,7 @@ export function tarihMetni(iso: string | null | undefined): string | null {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: KASHE_SAAT_DILIMI,
   });
 }
 
@@ -152,6 +160,7 @@ export function zamanMetni(iso: string | null | undefined): string | null {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: KASHE_SAAT_DILIMI,
   });
 }
 
@@ -161,6 +170,6 @@ export function tarihAlani(iso: string | null | undefined): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Istanbul',
+    timeZone: KASHE_SAAT_DILIMI,
   }).format(d);
 }

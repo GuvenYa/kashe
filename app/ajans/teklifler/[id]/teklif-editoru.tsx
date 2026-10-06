@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   IC_KALEM_KAYNAK_ETIKETLERI,
@@ -92,6 +92,25 @@ export function TeklifEditoru({
   const [bilgi, setBilgi] = useState<string | null>(null);
   const [onay, setOnay] = useState<Onay>(null);
 
+  // Kaydetme geri bildirimi: alandan cikinca kaydedildigi anlasilsin.
+  // Deger kalem id'si (satir yaninda gosterilir) ya da 'ust' (baslik/musteri/surum).
+  const [kaydedildi, setKaydedildi] = useState<string | null>(null);
+  const [kaydediliyor, setKaydediliyor] = useState<string | null>(null);
+  const zamanlayici = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bilesen soklerse bekleyen zamanlayici kalmasin.
+  useEffect(
+    () => () => {
+      if (zamanlayici.current) clearTimeout(zamanlayici.current);
+    },
+    []
+  );
+
+  function kaydedildiGoster(anahtar: string) {
+    if (zamanlayici.current) clearTimeout(zamanlayici.current);
+    setKaydedildi(anahtar);
+    zamanlayici.current = setTimeout(() => setKaydedildi(null), 2000);
+  }
+
   // Baslik / musteri
   const [baslik, setBaslik] = useState(teklif.title);
   const [musteriAdi, setMusteriAdi] = useState(teklif.client_name ?? '');
@@ -136,12 +155,15 @@ export function TeklifEditoru({
     if (!canManage) return;
     if (baslik.trim() === teklif.title) return;
     mesajlariTemizle();
+    setKaydediliyor('ust');
     startTransition(async () => {
       const res = await updateProposalFields({
         proposalId: teklif.id,
         title: baslik,
       });
+      setKaydediliyor(null);
       if (!res.success) setHata(res.error);
+      else kaydedildiGoster('ust');
     });
   }
 
@@ -154,19 +176,23 @@ export function TeklifEditoru({
       return;
     }
     mesajlariTemizle();
+    setKaydediliyor('ust');
     startTransition(async () => {
       const res = await updateProposalFields({
         proposalId: teklif.id,
         clientName: musteriAdi,
         clientEmail: musteriEposta,
       });
+      setKaydediliyor(null);
       if (!res.success) setHata(res.error);
+      else kaydedildiGoster('ust');
     });
   }
 
   function surumKaydet(alan: 'kdv' | 'gecerlilik' | 'notlar') {
     if (!duzenlenebilir || !gecerliSurum) return;
     mesajlariTemizle();
+    setKaydediliyor('ust');
     startTransition(async () => {
       const girdi: Parameters<typeof updateVersionFields>[0] = {
         versionId: gecerliSurum.id,
@@ -175,6 +201,8 @@ export function TeklifEditoru({
       if (alan === 'kdv') {
         const n = sayi(kdv);
         if (n === null) {
+          // Erken cikis: "Kaydediliyor…" isareti asili kalmasin.
+          setKaydediliyor(null);
           setHata('KDV oranı geçersiz.');
           return;
         }
@@ -183,7 +211,9 @@ export function TeklifEditoru({
       if (alan === 'gecerlilik') girdi.validUntil = gecerlilik;
       if (alan === 'notlar') girdi.notes = notlar;
       const res = await updateVersionFields(girdi);
+      setKaydediliyor(null);
       if (!res.success) setHata(res.error);
+      else kaydedildiGoster('ust');
     });
   }
 
@@ -211,13 +241,16 @@ export function TeklifEditoru({
   ) {
     if (!duzenlenebilir) return;
     mesajlariTemizle();
+    setKaydediliyor(itemId);
     startTransition(async () => {
       const res = await updateProposalItem({
         itemId,
         proposalId: teklif.id,
         ...alan,
       });
+      setKaydediliyor(null);
       if (!res.success) setHata(res.error);
+      else kaydedildiGoster(itemId);
     });
   }
 
@@ -409,6 +442,11 @@ export function TeklifEditoru({
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
               {TEKLIF_DURUM_ETIKETLERI[teklif.status] ?? teklif.status}
             </p>
+            {kaydediliyor === 'ust' ? (
+              <p className="text-xs text-ink-50 mt-1">Kaydediliyor…</p>
+            ) : kaydedildi === 'ust' ? (
+              <p className="text-xs text-moss mt-1">Kaydedildi</p>
+            ) : null}
             {gecerliSurum && (
               <p className="font-display font-semibold text-ink mt-1">
                 Sürüm {gecerliSurum.version_no}
@@ -463,7 +501,7 @@ export function TeklifEditoru({
       {/* Kalemler */}
       {gecerliSurum && (
         <div className="bg-card border border-line rounded-lg p-5">
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
             <p className="font-display font-semibold text-ink">Kalemler</p>
             {dondurulmus && (
               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72">
@@ -471,6 +509,13 @@ export function TeklifEditoru({
               </span>
             )}
           </div>
+          {/* Kaydet dugmesi yok: alandan cikinca kaydedilir (P2-ek bulgusu) */}
+          {duzenlenebilir && (
+            <p className="text-xs text-ink-50 mb-3">
+              Değişiklikler alandan çıkınca kaydedilir.
+            </p>
+          )}
+          {!duzenlenebilir && <div className="mb-3" />}
 
           {kalemler.length === 0 ? (
             <p className="text-sm text-ink-72">Henüz kalem yok.</p>
@@ -574,11 +619,18 @@ export function TeklifEditoru({
                       />
                       Müşteriye görünür
                     </label>
-                    {!k.is_visible_to_client && (
-                      <span className="text-xs text-ink-50">
-                        Gizli kalem — toplama girmez
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-3">
+                      {!k.is_visible_to_client && (
+                        <span className="text-xs text-ink-50">
+                          Gizli kalem — toplama girmez
+                        </span>
+                      )}
+                      {kaydediliyor === k.id ? (
+                        <span className="text-xs text-ink-50">Kaydediliyor…</span>
+                      ) : kaydedildi === k.id ? (
+                        <span className="text-xs text-moss">Kaydedildi</span>
+                      ) : null}
+                    </span>
                   </div>
 
                   {onay?.tur === 'kalemSil' && onay.id === k.id && (
