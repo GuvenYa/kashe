@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01-02 URETIMDE, P1 (`6e90b32`) ve P2 (`9672df0`) DEPLOY'DA; P2 canli turu gecti (6 Ekim 2026; bolum 10). Sirada
-P2-ek (`19-claude-code-gorevi-p2-ek.md`: saat dilimi + kaydetme geri bildirimi) -> 7a KAPANIS -> 7c (bookings).
+**Durum:** 7a-DB/01-02 URETIMDE, P1 (`6e90b32`), P2 (`9672df0`) ve P2-ek DEPLOY'DA; canli turlar gecti (6-7 Ekim 2026; bolum 10).
+Sirada P2-cila (`19-claude-code-gorevi-p2-cila.md`: portal kabugu/belge duzeni, kalem satiri etiketleri, liste tarihi) -> 7a KAPANIS -> 7c.
 
 ## 1. Amac ve sinir
 
@@ -211,4 +211,15 @@ lansman ilk ikisi iptal (0 ve 4 goruntuleme), "qas" iptal, ucuncusu aktif 4 goru
 bildirim yok — ipucu + "Kaydedildi". Not: portal action'larindaki `revalidatePath` jeton yolunu aliyor (bellek ici, kalici degil; sayfa
 `force-dynamic`) — kabul. Siradaki: P2-ek (`-p2-ek.md`) -> 7a KAPANIS -> 7c.
 
-(P2-ek, 7a kapanis, 7c, 7b icin doldurulur)
+**P2-ek — saat dilimi + kaydetme geri bildirimi (7 Ekim 2026):** `teklif-data.ts` ve `portal-data.ts`'te `KASHE_SAAT_DILIMI = 'Europe/Istanbul'`
+(portal sabiti kendi dosyasinda; satici tarafini import etmez), 5 bicimleyici cagrisinin hepsinde `timeZone`; editorde "Değişiklikler alandan
+çıkınca kaydedilir." ipucu + "Kaydediliyor… / Kaydedildi" (2 sn, `useEffect` temizligi). tsc bos, build 88 rota + BUILD_ID. Canli: portal
+"gönderim 6 Ekim 2026 22:30" / "Onaylandı · … 22:33" (UTC 19:xx yerine), liste "qas" 3 Ekim; Kaydedildi gorunup kayboldu; taslak silindi.
+**Hijyen kalemi H6 (acik):** repo genelinde `timeZone` olmadan tarih bicimleyen 25 sunucu cagrisi (admin sayfalari, blog, agency/business-data,
+listings-data, kazanclarim/odemelerim, e-posta sablonu, mesajlar, takvimim, rezervasyon, teklif-taleplerim, review-card, FAZ 6 aday-data
+"Son eşleştirme") — ayri hijyen turunda `KASHE_SAAT_DILIMI` ortak sabitine baglanacak; istemci bilesenlerindeki 32 cagri tarayici saatiyle
+dogru, dokunulmaz. **Yakalanan (P2-cila):** (a) portal kabugu yalniz "Kashe" yazisi — logo, "Kashe nedir?"/"Yardım" baglantilari, alt bilgi
+baglantilari yok; icerik belge gibi durmuyor; (b) "Kalem ekle" satiri dolu geliyor ("Yeni kalem", 1, 0) — hangi kutuya ne girilecegi belirsiz;
+(c) liste "Sürüm 3 · 3 Ekim" teklifin `created_at`'ini gosteriyor, surum tarihi olmali. Siradaki: P2-cila (`-p2-cila.md`) -> 7a KAPANIS -> 7c.
+
+(P2-cila, 7a kapanis, 7c, 7b icin doldurulur)
