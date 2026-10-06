@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01 ve 7a-DB/02 URETIMDE (2-3 Ekim 2026; bolum 10), P1 DEPLOY'DA (commit `6e90b32`). Sirada P2
-(`19-claude-code-gorevi-p2.md`: musteri portali + taslak silme + satici yuzeyi yalniz ajans).
+**Durum:** 7a-DB/01-02 URETIMDE, P1 (`6e90b32`) ve P2 (`9672df0`) DEPLOY'DA; P2 canli turu gecti (6 Ekim 2026; bolum 10). Sirada
+P2-ek (`19-claude-code-gorevi-p2-ek.md`: saat dilimi + kaydetme geri bildirimi) -> 7a KAPANIS -> 7c (bookings).
 
 ## 1. Amac ve sinir
 
@@ -190,4 +190,25 @@ portal P2 oncesi). Denetim: `proposal.create` x2, `proposal.send` x3, `proposal.
 (`business`) `admin` -> admin tum izinleri tasidigi icin Teklifler gorundu; kapi dogru, kural eksikti -> P2 (D): satici yuzeyi
 yalniz `agency`. `git push` P2 oncesi. Siradaki: P2 (`-p2.md`).
 
-(P2, 7c, 7b icin doldurulur)
+**P2 — musteri portali + taslak silme + satici yuzeyi (6 Ekim 2026, commit `9672df0`, Vercel Ready):** `app/portal/layout.tsx`,
+`app/portal/teklif/[token]/{page, portal-data, portal-islemleri, portal-actions}`, `app/ajans/teklifler/teklif-sil.tsx`, editor/liste/
+actions, `app/lib/org-context.ts` (`CrewOrg.accountType`, `hasProposalAccess` yalniz ajans). Claude Code kaniti: tsc bos, build 88 rota +
+BUILD_ID, `app/portal` icinde tablo sorgusu 0 / yalniz 3 portal RPC'si / `internal` 0 / loglarda jeton yok; gercek istekle P0002 ve 32 hex
+`notFound()` dogrulandi. **Canli tur (Guven, iki pencere):** (1) iptal edilmis ilk baglanti -> "Bu bağlantı iptal edilmiş…" sayfasi.
+(2) ikinci baglanti -> Surum 2, 4 kalem (DJ 14.000, Fotografci 10.000, Ses & Isik 12.000, Koordinator 8.000), 44.000 / 8.800 / 52.800,
+gecerlilik 16 Ekim; "Revizyon iste" + not -> sari band, F5 sonrasi kalici. (3) Editor: liste rozeti "Revizyon istendi", not sari kutuda,
+Surum 2 kilitli; "Yeni sürüm" -> Surum 3 kopya; Ses & Isik 10.000 -> 42.000 / 8.400 / 50.400; Gonder -> 3. baglanti + e-posta; ikinci
+baglanti "iptal edilmiş" oldu. (4) 3. baglanti -> Surum 3; onayda ad bos -> "Ad soyad 2-120 karakter olmalı."; "Deneme Müşteri" + kutu ->
+yesil "Onaylandı · Deneme Müşteri · …"; editorde onayli, kalemler kilitli, Yeni surum / Gonder yok. (5) Bos taslak: editorden "Taslağı sil"
+ve listeden "Sil" calisti; lansman ve "qas" satirinda Sil yok. (6) Ic maliyet karti: DJ "iç maliyet girilmedi", Fotografci 7.000/3.000/%30,
+Ses & Isik 6.000/4.000/%40, Koordinator 6.000/2.000/%25, toplam 19.000 / marj 9.000, "sürüm gönderildi; salt okunur". (7) Test Pro: menude
+Teklifler yok, `/ajans/teklifler` -> `/profil`; Sunucu Ajans eskisi gibi. **Uretim SQL:** lansman `approved` — surum 1-3 gonderildi,
+surum 2 `client_note`, surum 3 `approved_by_name = Deneme Müşteri`; "qas" `declined`; 2 teklif (bos taslaklar silindi). 4 baglanti:
+lansman ilk ikisi iptal (0 ve 4 goruntuleme), "qas" iptal, ucuncusu aktif 4 goruntuleme + goruldu. Denetim: `proposal_internal_items`
+`read`, `proposal.create` x2 (silinen taslaklar; RLS DELETE denetime yazmaz — kabul: gonderilmemis taslak, kayit yok), `proposal.send`,
+`proposal.new_version`. asama15: K10 **204**, K7/K9/K11/K13 0. **Yakalanan (P2-ek):** (a) sunucuda render edilen tarih/saatler UTC
+(portal "19:30/19:33", liste "2 Ekim") — bicimleyicilere `timeZone: 'Europe/Istanbul'`; (b) kalem fiyati `onBlur` ile kaydediliyor, geri
+bildirim yok — ipucu + "Kaydedildi". Not: portal action'larindaki `revalidatePath` jeton yolunu aliyor (bellek ici, kalici degil; sayfa
+`force-dynamic`) — kabul. Siradaki: P2-ek (`-p2-ek.md`) -> 7a KAPANIS -> 7c.
+
+(P2-ek, 7a kapanis, 7c, 7b icin doldurulur)
