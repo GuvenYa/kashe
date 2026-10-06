@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   IC_KALEM_KAYNAK_ETIKETLERI,
   TEKLIF_DURUM_ETIKETLERI,
@@ -19,6 +20,7 @@ import {
 import {
   addProposalItem,
   closeProposal,
+  deleteDraftProposal,
   deleteProposalItem,
   newProposalVersion,
   revokeProposalLink,
@@ -50,7 +52,12 @@ const BTN_IKINCIL =
 const ALAN =
   'px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:border-brand-ink focus:outline-none';
 
-type Onay = { tur: 'kalemSil'; id: string } | { tur: 'kapat' } | { tur: 'baglantiIptal'; id: string } | null;
+type Onay =
+  | { tur: 'kalemSil'; id: string }
+  | { tur: 'kapat' }
+  | { tur: 'taslakSil' }
+  | { tur: 'baglantiIptal'; id: string }
+  | null;
 
 function sayi(v: string): number | null {
   const n = Number(v.replace(',', '.'));
@@ -66,6 +73,7 @@ export function TeklifEditoru({
   canManage,
   maliyetGorulur,
   maliyetYazilir,
+  silinebilir,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -75,7 +83,10 @@ export function TeklifEditoru({
   canManage: boolean;
   maliyetGorulur: boolean;
   maliyetYazilir: boolean;
+  /** FAZ 7a/P2: hicbir surumu gonderilmemis taslak -> "Taslagi sil" (DB politikasi ayni kurali uygular). */
+  silinebilir: boolean;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [hata, setHata] = useState<string | null>(null);
   const [bilgi, setBilgi] = useState<string | null>(null);
@@ -233,6 +244,18 @@ export function TeklifEditoru({
       const res = await closeProposal(teklif.id);
       if (!res.success) setHata(res.error);
       else setBilgi('Teklif kapatıldı.');
+    });
+  }
+
+  function taslakSil() {
+    mesajlariTemizle();
+    startTransition(async () => {
+      const res = await deleteDraftProposal(teklif.id);
+      if (!res.success) {
+        setHata(res.error);
+        return;
+      }
+      router.push('/ajans/teklifler');
     });
   }
 
@@ -710,7 +733,45 @@ export function TeklifEditoru({
                 Onaylanmış teklifte değişiklik yapılamaz.
               </p>
             )}
+            {silinebilir && (
+              <button
+                type="button"
+                onClick={() => setOnay({ tur: 'taslakSil' })}
+                disabled={isPending}
+                className={BTN_IKINCIL}
+              >
+                Taslağı sil
+              </button>
+            )}
           </div>
+
+          {onay?.tur === 'taslakSil' && (
+            <div className="mt-3 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-sm text-ink">
+                {teklif.title} silinecek. Emin misin?
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    setOnay(null);
+                    taslakSil();
+                  }}
+                  className={BTN_BIRINCIL}
+                >
+                  Sil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnay(null)}
+                  className={BTN_IKINCIL}
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
 
           {onay?.tur === 'kapat' && (
             <div className="mt-3 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">

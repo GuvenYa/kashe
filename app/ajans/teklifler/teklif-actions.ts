@@ -507,3 +507,40 @@ export async function sendProposal(input: {
   revalidatePath('/ajans/teklifler');
   return { success: true, data: { link: baglanti, mailSent, mailReason } };
 }
+
+/**
+ * FAZ 7a / P2 — hic gonderilmemis taslak teklifi siler (7a-DB/02 politikasi).
+ * DB kapisi: `proposals.manage` + `status = 'draft'` + hicbir surumde `sent_at`.
+ * Gonderilmis teklifte politika 0 satir siler -> kullaniciya "kapatabilirsin" denir.
+ */
+export async function deleteDraftProposal(
+  proposalId: string
+): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(proposalId)) {
+    return { success: false, error: 'Teklif geçersiz.' };
+  }
+
+  const { supabase, user } = await oturum();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { data, error } = await supabase
+    .from('proposals')
+    .delete()
+    .eq('id', proposalId)
+    .select('id');
+
+  if (error) {
+    console.error('[teklif] taslak silme', error);
+    return { success: false, error: teklifHataMesaji(error) };
+  }
+  if (!data || data.length === 0) {
+    // Politika satiri suzdu: gonderilmis ya da yetki yok.
+    return {
+      success: false,
+      error: 'Gönderilmiş teklif silinemez; kapatabilirsin.',
+    };
+  }
+
+  revalidatePath('/ajans/teklifler');
+  return { success: true };
+}

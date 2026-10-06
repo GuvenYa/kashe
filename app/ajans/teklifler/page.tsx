@@ -6,6 +6,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { YeniTeklif } from './yeni-teklif';
+import { TeklifSil } from './teklif-sil';
 import {
   TEKLIF_DURUM_ETIKETLERI,
   paraMetni,
@@ -66,6 +67,23 @@ export default async function AjansTekliflerPage() {
       .in('id', surumIdleri);
     for (const s of (surumData ?? []) as unknown as SurumSatiri[]) {
       surumMap.set(s.id, s);
+    }
+  }
+
+  // FAZ 7a/P2 — silinebilir taslaklar: proposal_new_version durumu tekrar
+  // draft yaptigi icin "taslak" olmak yetmez; HICBIR surumu gonderilmemis olmali.
+  const gonderilmisOlanlar = new Set<string>();
+  if (teklifler.length > 0) {
+    const { data: gonderimData } = await supabase
+      .from('proposal_versions')
+      .select('proposal_id, sent_at')
+      .in(
+        'proposal_id',
+        teklifler.map((t) => t.id)
+      )
+      .not('sent_at', 'is', null);
+    for (const v of (gonderimData ?? []) as { proposal_id: string }[]) {
+      gonderilmisOlanlar.add(v.proposal_id);
     }
   }
 
@@ -158,6 +176,15 @@ export default async function AjansTekliflerPage() {
                         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
                           {TEKLIF_DURUM_ETIKETLERI[t.status] ?? t.status}
                         </p>
+                        {t.status === 'draft' &&
+                          !gonderilmisOlanlar.has(t.id) &&
+                          kurulusSecenekleri.some(
+                            (k) => k.id === t.seller_organization_id
+                          ) && (
+                            <div className="mt-1">
+                              <TeklifSil proposalId={t.id} baslik={t.title} />
+                            </div>
+                          )}
                         {surum && (
                           <>
                             <p className="font-display font-semibold text-ink mt-0.5">

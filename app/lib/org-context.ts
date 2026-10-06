@@ -131,6 +131,8 @@ export type CrewOrg = {
   canViewProposals: boolean;
   /** FAZ 7a: `proposals.manage` — teklif acar, duzenler, gonderir. */
   canManageProposals: boolean;
+  /** `organizations.account_type` (agency | business | ...). */
+  accountType: string;
 };
 
 export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
@@ -217,8 +219,14 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       canManageRates: oranYonetir.data === true,
       canViewTalent: havuzGorebilir.data === true,
       talentPoolEnabled: modul.data === true,
-      canViewProposals: teklifGorebilir.data === true,
-      canManageProposals: teklifYonetir.data === true,
+      // FAZ 7a/P2 — teklif saticisi AJANS kurulusudur (19 bolum 2): kurum
+      // (business) kurulusunun saglayici kaydi yok, proposal_create reddeder.
+      // Yuzeyi tek noktadan kesiyoruz: liste, detay, yeni teklif, ekip paneli.
+      canViewProposals:
+        teklifGorebilir.data === true && org.account_type === 'agency',
+      canManageProposals:
+        teklifYonetir.data === true && org.account_type === 'agency',
+      accountType: org.account_type,
     });
   }
 
@@ -230,7 +238,11 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
  * `getCrewContext` kurulus basina sekiz RPC atar; global menude o maliyet
  * gereksiz — burada yalniz TEK izin sorulur (uyelik sorgusu + N RPC).
  */
-async function tekIzinVarMi(izin: string, etiket: string): Promise<boolean> {
+async function tekIzinVarMi(
+  izin: string,
+  etiket: string,
+  yalnizAjans = false
+): Promise<boolean> {
   const supabase = await createClient();
 
   const {
@@ -240,7 +252,7 @@ async function tekIzinVarMi(izin: string, etiket: string): Promise<boolean> {
 
   const { data, error } = await supabase
     .from('organization_memberships')
-    .select('organization_id')
+    .select('organization_id, organizations(account_type)')
     .eq('user_id', user.id)
     .eq('status', 'active');
   if (error) {
@@ -248,9 +260,15 @@ async function tekIzinVarMi(izin: string, etiket: string): Promise<boolean> {
     return false;
   }
 
-  const idler = (data ?? []).map(
-    (u) => (u as { organization_id: string }).organization_id
-  );
+  // Ajans olmayan kuruluslar RPC'ye GITMEDEN elenir (teklif yuzeyi ajansa ozel).
+  const idler = ((data ?? []) as unknown as {
+    organization_id: string;
+    organizations: { account_type: string } | null;
+  }[])
+    .filter(
+      (u) => !yalnizAjans || u.organizations?.account_type === 'agency'
+    )
+    .map((u) => u.organization_id);
   if (idler.length === 0) return false;
 
   const sonuclar = await Promise.all(
@@ -269,7 +287,7 @@ export async function hasCrewAccess(): Promise<boolean> {
   return tekIzinVarMi('crew.view', 'ekip');
 }
 
-/** Menude "Teklifler" (FAZ 7a/P1). */
+/** Menude "Teklifler" (FAZ 7a/P1) — yalniz AJANS kurulusu (P2/D). */
 export async function hasProposalAccess(): Promise<boolean> {
-  return tekIzinVarMi('proposals.view', 'teklif');
+  return tekIzinVarMi('proposals.view', 'teklif', true);
 }

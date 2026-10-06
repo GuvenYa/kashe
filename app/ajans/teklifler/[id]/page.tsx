@@ -120,6 +120,11 @@ export default async function TeklifDetayPage({
               canManage={!!kurulus?.canManageProposals}
               maliyetGorulur={!!kurulus?.canSeeRates}
               maliyetYazilir={!!kurulus?.canManageRates}
+              silinebilir={
+                !!kurulus?.canManageProposals &&
+                teklif.status === 'draft' &&
+                surumler.every((s) => !s.sent_at)
+              }
             />
           </div>
 
