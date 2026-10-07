@@ -40,7 +40,7 @@ export async function createOrUpdateReview(params: {
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Yorum bağlamını çöz: önce kendi adına (customer_id = user.id); yoksa owner-ROL
@@ -151,7 +151,7 @@ export async function deleteReview(reviewId: string): Promise<ActionResult> {
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Silmeden önce profesyonel id'yi al (revalidate için)
@@ -207,7 +207,7 @@ export async function createOrUpdateReply(params: {
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Yanıtladığı yorumun gerçekten kendisine ait olduğunu RLS zaten kontrol edecek,
@@ -273,7 +273,7 @@ export async function deleteReply(reviewId: string): Promise<ActionResult> {
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   const { data: review } = await supabase

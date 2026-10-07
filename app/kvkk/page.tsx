@@ -33,8 +33,8 @@ export default function KvkkPage() {
             alan kullanıcılar ile hizmet sağlayıcı profesyonelleri ve ajansları
             bir araya getiren aracı bir dijital platform olarak faaliyet
             gösterir. Sorularınız için{" "}
-            <a href="mailto:kasheofficial@gmail.com">
-              kasheofficial@gmail.com
+            <a href="mailto:info@kashe.net">
+              info@kashe.net
             </a>{" "}
             adresinden bize ulaşabilirsiniz.
           </p>
@@ -117,8 +117,8 @@ export default function KvkkPage() {
           </p>
           <p>
             Bu haklarınızı kullanmak için{" "}
-            <a href="mailto:kasheofficial@gmail.com">
-              kasheofficial@gmail.com
+            <a href="mailto:info@kashe.net">
+              info@kashe.net
             </a>{" "}
             adresine başvurabilirsiniz. Talepleriniz, mevzuatta öngörülen
             süreler içinde sonuçlandırılır.

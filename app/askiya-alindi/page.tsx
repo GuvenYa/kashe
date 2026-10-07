@@ -110,10 +110,10 @@ export default async function AskiyaAlindiPage() {
 
           {/* İletişim CTA */}
           <a
-            href="mailto:kasheofficial@gmail.com?subject=Hesap%20Askısı%20%C4%B0tirazı"
+            href="mailto:info@kashe.net?subject=Hesap%20Askısı%20%C4%B0tirazı"
             className="kashe-tap inline-flex items-center justify-center gap-2 w-full px-5 py-3 bg-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-ink/85 transition shadow-[3px_3px_0_rgba(26,18,14,0.12)] mb-3"
           >
-            kasheofficial@gmail.com&apos;a yaz
+            info@kashe.net&apos;a yaz
             <span>→</span>
           </a>
 

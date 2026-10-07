@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** 7a-DB/01-02 URETIMDE, P1 (`6e90b32`), P2 (`9672df0`) ve P2-ek DEPLOY'DA; canli turlar gecti (6-7 Ekim 2026; bolum 10).
-Sirada P2-cila (`19-claude-code-gorevi-p2-cila.md`: portal kabugu/belge duzeni, kalem satiri etiketleri, liste tarihi) -> 7a KAPANIS -> 7c.
+**Durum:** **FAZ 7a KAPANDI (7 Ekim 2026)** — 7a-DB/01-02 uretimde; P1 (`6e90b32`), P2 (`9672df0`), P2-ek (`64e567a`), P2-cila (`d84e653`)
+deploy'da; canli turlar gecti (bolum 10). Sirada **7c** (bookings genislemesi + `booking_from_proposal`; bolum 11), sonra **7b** (RFP).
 
 ## 1. Amac ve sinir
 
@@ -31,6 +31,8 @@ Uc parca, sirasi Guven karari: **7a** teklif + portal -> **7c** bookings genisle
 | Portal RPC'leri | `portal_proposal_view(p_token)`, `portal_proposal_approve(p_token, p_name)`, `portal_proposal_request_revision(p_token, p_note)` — **anon cagirir**; token sunucuda sha256 ile eslenir; donus yalniz musteriye gorunen alanlar (satici gorunen adi, baslik, etkinlik ozeti, `is_visible_to_client` kalemler, toplamlar, gecerlilik, durum, scope). Kurulus/kullanici kimligi DONMEZ | 02 bolum 6: ayri yuzey, internal'a hicbir yoldan ulasmaz |
 | Jeton teslimi | `proposal_send` ham jetonu BIR KEZ doner; uygulama baglantiyi ekranda gosterir (kopyala) ve `client_email` doluysa Resend ile gonderir (`teklifEmail`, `EMAIL_FROM`). Yeniden gonder = eski baglanti `revoked_at`, yeni jeton | FAZ 5 davet deseni |
 | Ic kalem erisimi | Yalniz `internal_proposal_items_list(p_version_id)` (commercial.view) ve `internal_proposal_item_upsert(p_item_id, p_internal_cost, p_note)` (commercial.manage); marj/markup liste RPC'sinde hesaplanir (`client_price` public, `internal_cost` internal) | 02: sales musteri fiyatini girer, marji finance gorur |
+| Bakim modu (7 Ekim) | `/portal` bakim modundan **muaf** (`proxy.ts`): portal oturumsuz, noindex, jetonla korunur; pazaryerini acmaz | Ajansin lansmandan once gonderdigi teklif baglantisi "Yakinda"ya dusmesin (P2-cila bulgusu) |
+| Iletisim adresi (7 Ekim) | Kullaniciya gorunen tek adres **`info@kashe.net`**; `kasheofficial@gmail.com` uygulamadan tamamen kaldirildi (17 dosya, 45 metin; mantik yok) | Yakinda sayfasiyla tutarlilik; kurumsal adres. `info@kashe.net` kutusunun lansmandan once aktif oldugundan emin olunmali (Fahri) |
 | 7c bookings | Yeni sutunlar NULLABLE (`buyer_organization_id`, `seller_provider_id`, `event_id`, `crew_member_id`, `proposal_version_id`); `on_quote_accepted_create_booking` tetikleyicisi AYNEN; onaylanan teklif icin `booking_from_proposal(p_proposal_id)` RPC ekip uyesi basina veya tek satir (karar 7c planinda) | 04 "risk yuksek" uyarisi: eski davranis korunur |
 | 7b RFP | `rfps`, `rfp_items`, `rfp_invites`; business kurulusu olusturur, davet edilen saticilar `proposals.rfp_id` + `source_type = rfp_response` ile yanit verir | 7a bitince ayri plan bolumu |
 
@@ -222,4 +224,39 @@ dogru, dokunulmaz. **Yakalanan (P2-cila):** (a) portal kabugu yalniz "Kashe" yaz
 baglantilari yok; icerik belge gibi durmuyor; (b) "Kalem ekle" satiri dolu geliyor ("Yeni kalem", 1, 0) — hangi kutuya ne girilecegi belirsiz;
 (c) liste "Sürüm 3 · 3 Ekim" teklifin `created_at`'ini gosteriyor, surum tarihi olmali. Siradaki: P2-cila (`-p2-cila.md`) -> 7a KAPANIS -> 7c.
 
-(P2-cila, 7a kapanis, 7c, 7b icin doldurulur)
+**P2-cila — portal kabugu ve belge duzeni, kalem satiri, liste tarihi (7 Ekim 2026, commit `d84e653`):** `app/portal/layout.tsx` (KasheMark +
+"Kashe" -> `/`, "Kashe nedir?" -> `/hakkimizda`, "Yardım" -> `/yardim`; alt bilgi Gizlilik · KVKK · Kullanım koşulları · İletişim), `page.tsx`
+belge karti (`bg-card`, eyebrow "Teklif" + satici adi, sagda durum rozeti `PORTAL_DURUM_ETIKETLERI/SINIFLARI`, etkinlik kutusu etiketli,
+masaustu tablo / `sm` alti kalem kutulari, sagda toplam blogu, "Not" kutusu), editor kalem satiri (sutun basliklari, mobil etiketler, birim
+fiyat 0 -> bos girdi + placeholder, yeni kalemde aciklama odak + secili — efektte `focus()+select()`, `useRef` bayragi), liste "Sürüm N ·
+gönderim/taslak <tarih>" + soluk "Açıldı". Guven kararlariyla iki satir daha: `proxy.ts` muafiyetine `/portal` (Claude Code uyarisi: bakim
+modunda gercek musteri Yakinda'ya dusuyordu), portal iletisimi `info@kashe.net`. Claude Code kaniti: tsc bos, build 88 rota + BUILD_ID, uretilen
+CSS'te sinif kurallari, DOM'da metinler, portal kurallari degismedi (tablo sorgusu 0, 3 RPC, TopNav/Footer yok, loglarda jeton yok).
+**Canli tur (Guven):** 3. baglantida logo + iki ust baglanti, belge karti, yesil "Onaylandı" rozeti, etkinlik kutusu, 4 kalem, toplam blogu
+42.000 / 8.400 / 50.400, alt bilgi baglantilari; telefon genisliginde kalemler kutu kutu; iptal edilmis baglanti ayni kabukta; **cerezsiz yeni
+gizli pencerede** 3. baglanti acildi (muafiyet calisiyor), ana sayfa Yakinda (kapi duruyor). Liste: lansman "Sürüm 3 · gönderim 6 Ekim 2026"
++ "Açıldı: 3 Ekim 2026", "qas" "Sürüm 1 · gönderim 3 Ekim 2026". Kalem satiri etiketleri/odak canlida gorulmedi (onayli teklifte kalem
+eklenemez; Claude Code DOM/CSS kanitiyla yetinildi) — 7c turunda taslak acilinca gorulecek. Ayni gun: `kasheofficial@gmail.com` uygulamadan
+tamamen `info@kashe.net` yapildi (17 dosya, 45 metin; hepsi iletisim metni / mailto / VAPID subject varsayilani; kimlik kontrolu yok).
+
+**FAZ 7a KAPANDI (7 Ekim 2026).** Uretimde: 7a-DB/01 (`6a5be05`), 7a-DB/02 (`d289555`); deploy'da P1, P2, P2-ek, P2-cila. Kanit: dal asama4
+23/23 (T21/T22), asama15 K1-K9/K13 ESIT (K6 10), uretim asama15 ESIT K10 204; canli: 3 surumlu lansman teklifi (gonderim -> revizyon -> yeni
+surum -> onay) portal uzerinden uctan uca, 4 baglanti (3 iptal, 1 aktif), ic maliyet karti ve denetim izi, taslak silme, satici yuzeyi yalniz
+ajans, Istanbul saati, bakim modu muafiyeti. **Acik kalanlar (7a):** (a) H6 — repo genelinde 25 sunucu tarih cagrisi `KASHE_SAAT_DILIMI`'ne
+baglanacak (ayri hijyen turu); (b) alici Kashe kullanicisiysa `/tekliflerim` (RLS hazir, sayfa yok — 7b/8 ile); (c) portal PDF/yazdirma,
+belge seti, mesajlasma (05, ileride); (d) portal action'larinda `revalidatePath` jeton yolu (bellek ici; kabul); (e) RLS DELETE denetime
+yazmaz (gonderilmemis taslak; kabul); (f) `info@kashe.net` kutusunun aktif oldugu dogrulanmali (Fahri); (g) Ekibim/havuz davet baglantilari
+hala bakim kapisinin arkasinda (oturum gerektirdigi icin muafiyet anlamsiz; lansmanla cozulur). Siradaki: **7c** (bolum 11).
+
+(7c, 7b icin doldurulur)
+
+## 11. 7c — bookings genislemesi (plan; 7a kapaninca acildi, 7 Ekim 2026)
+
+Cerceve (bolum 2 "7c bookings" karari + 04 madde 36, risk yuksek): `bookings` uretimde aktif, `on_quote_accepted_create_booking` tetikleyicisi
+eski `quotes` akisini besliyor; **tetikleyici ve mevcut sutunlar AYNEN**, yalniz NULLABLE sutun eklenir: `buyer_organization_id`,
+`seller_provider_id`, `event_id`, `crew_member_id`, `proposal_version_id` (FK'lar SET NULL / RESTRICT karari asagida). Onaylanan teklif icin
+`booking_from_proposal(p_proposal_id)` RPC (SECURITY DEFINER; satici `proposals.manage`): onayli (`approved`) teklifin **gecerli surumunden**
+rezervasyon(lar) acar — ekip uyesi basina (kalemde `crew_member_id` doluysa) ya da tek satir; idempotan (ayni surumden ikinci cagri 23505 ya
+da mevcut satirlari doner). Ayrintili karar listesi, asama16 kontrol dosyasi, asama4 T23 ve 7c-DB/01 migration'i siradaki adimda yazilir;
+Guven'in karar vermesi gerekenler: (1) rezervasyon granularitesi (uye basina / tek), (2) `bookings.status` baslangici (`confirmed` mi, `pending`
+mi), (3) eski `quotes` kaynakli rezervasyonlarla ayni listede gosterim (`/rezervasyonlarim`) — uygulama parcasi 7c-P1.

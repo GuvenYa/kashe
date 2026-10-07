@@ -79,7 +79,7 @@ export async function createListing(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -349,7 +349,7 @@ async function updateListingStatus(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -540,7 +540,7 @@ export async function applyToListing(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -744,7 +744,7 @@ export async function acceptApplication(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -920,7 +920,7 @@ export async function reopenListing(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -983,7 +983,7 @@ export async function unrejectApplication(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -1062,7 +1062,7 @@ async function updateApplicationStatus(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -1337,7 +1337,7 @@ export async function activateUrgentSimulation(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 
@@ -1450,7 +1450,7 @@ async function setFeatured(
   if (await isUserSuspended(user.id)) {
     return {
       success: false,
-      error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com',
+      error: 'Hesabın askıya alındı. İletişim: info@kashe.net',
     };
   }
 

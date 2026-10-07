@@ -20,8 +20,8 @@ export const LEGAL_OPERATOR = {
 
 // İletişim adresleri — domain alınınca kvkk@kashe.app olacak
 export const LEGAL_CONTACT = {
-  general: 'kasheofficial@gmail.com',
-  privacy: 'kasheofficial@gmail.com', // domain sonrası: kvkk@kashe.app
+  general: 'info@kashe.net',
+  privacy: 'info@kashe.net', // domain sonrası: kvkk@kashe.app
   // Domain alımı sonrası: kvkk@kashe.app + bildirim@kashe.app aktif olacak
   isTemporaryEmail: true,
 };

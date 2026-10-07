@@ -121,4 +121,4 @@ export function kosuZamani(iso: string): string {
 }
 
 /** KVKK itiraz notundaki adres — footer ile ayni. */
-export const DESTEK_EPOSTA = 'kasheofficial@gmail.com';
+export const DESTEK_EPOSTA = 'info@kashe.net';

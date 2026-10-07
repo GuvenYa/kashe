@@ -32,7 +32,7 @@ export async function inviteProfessionalToListing(input: {
   if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   if (input.professionalId === user.id) {
@@ -149,7 +149,7 @@ export async function acceptListingInvitation(
   if (!user) return { success: false, error: 'Giriş yapmalısın.' };
 
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Daveti çek + doğrula

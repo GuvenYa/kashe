@@ -58,7 +58,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Sonradan rol değiştirebilir miyim?',
-        a: 'Şu an rol değişikliği otomatik değil. Eğer rolünü değiştirmek istersen kasheofficial@gmail.com adresinden bizimle iletişime geç, yardımcı olalım.',
+        a: 'Şu an rol değişikliği otomatik değil. Eğer rolünü değiştirmek istersen info@kashe.net adresinden bizimle iletişime geç, yardımcı olalım.',
       },
       {
         q: 'Profilimi nasıl yayına alırım?',
@@ -70,7 +70,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Hesabımı nasıl silerim?',
-        a: 'Hesap silme şu an otomatik bir akış değil. kasheofficial@gmail.com adresinden talep gönderdiğinde verilerini Gizlilik Politikası’nda belirtilen süreler içinde sileriz.',
+        a: 'Hesap silme şu an otomatik bir akış değil. info@kashe.net adresinden talep gönderdiğinde verilerini Gizlilik Politikası’nda belirtilen süreler içinde sileriz.',
       },
     ],
   },
@@ -135,7 +135,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Sahte profil veya kötü niyetli kullanıcı bildirebilir miyim?',
-        a: 'Evet. kasheofficial@gmail.com adresinden bize ulaş, durumu inceleyip gerekli aksiyonu alalım. Lansman sonrası profil bazlı şikayet butonu eklenecek.',
+        a: 'Evet. info@kashe.net adresinden bize ulaş, durumu inceleyip gerekli aksiyonu alalım. Lansman sonrası profil bazlı şikayet butonu eklenecek.',
       },
       {
         q: 'Bir profesyonelin gerçekten o kişi olduğunu nasıl bilirim?',
@@ -190,10 +190,10 @@ export default function YardimPage() {
             <p className="text-base md:text-lg text-ink-72 mt-4 max-w-2xl leading-relaxed">
               Kashe hakkında merak ettiklerin. Aradığını bulamazsan{' '}
               <a
-                href="mailto:kasheofficial@gmail.com"
+                href="mailto:info@kashe.net"
                 className="text-brand-ink hover:underline"
               >
-                kasheofficial@gmail.com
+                info@kashe.net
               </a>{' '}
               adresinden bize ulaşabilirsin.
             </p>
@@ -235,10 +235,10 @@ export default function YardimPage() {
               Mümkün olduğunca hızlı dönüş yapıyoruz.
             </p>
             <a
-              href="mailto:kasheofficial@gmail.com"
+              href="mailto:info@kashe.net"
               className="kashe-tap inline-flex items-center gap-2 px-6 py-3 bg-brand-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-brand-ink-deep transition shadow-[3px_3px_0_var(--color-brand-ink-12)]"
             >
-              kasheofficial@gmail.com
+              info@kashe.net
               <span>→</span>
             </a>
           </div>

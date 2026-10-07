@@ -91,7 +91,7 @@ export function Footer() {
                 </a>
                 </li>
               <li>
-                <a href="mailto:kasheofficial@gmail.com" className="text-paper/80 hover:text-paper transition-colors">
+                <a href="mailto:info@kashe.net" className="text-paper/80 hover:text-paper transition-colors">
                   İletişim
                 </a>
               </li>

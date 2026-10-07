@@ -634,6 +634,14 @@ tetikleyicisinde, gizli ic maliyet karti yalniz kurulus ekibinde, `/ajans/ekiple
 
 **Risk: yuksek.** `bookings` uretimde aktif ve `on_quote_accepted_create_booking` tetikleyicisi var. Yeni alanlar nullable eklenmeli, tetikleyici once eski davranisini korumali.
 
+**FAZ 7a KAPANDI (2-7 Ekim 2026, `docs/envanter/19-faz7-ticari-katman.md`):** madde 34 ve 35 **7a-DB/01** (`proposals`, `proposal_versions`,
+`proposal_items`, `internal.proposal_internal_items`, `portal_access_links`, 4 enum; INSERT yalniz RPC, surum dondurma, toplamlar tetikleyicide;
+7 kurulus RPC + 3 anon portal RPC) ve **7a-DB/02** (hic gonderilmemis taslak RLS DELETE). Kararlar: satici yalniz ajans kurulusu; alici misafir
+(baglanti + ad soyad onayi) ya da Kashe kullanicisi; KDV haric fiyat + %20 satiri; gonderilmis teklif silinmez, kapatilir. Uygulama P1 (teklif
+editoru, ic maliyet karti, gonderme onay kapisi + e-posta), P2 (`/portal/teklif/[token]` ayri yuzey: yalniz 3 anon RPC, acik onay ekrani,
+revizyon istegi; taslak silme; satici yuzeyi yalniz ajans), P2-ek (Europe/Istanbul), P2-cila (belge duzeni; `/portal` bakim modundan muaf).
+Madde 34b (RFP) **7b**, madde 36 (`bookings`) **7c** olarak devam ediyor; acik kalanlar 19 bolum 10.
+
 ### FAZ 8 — Event OS modulleri
 
 37. `crm_leads`, `tasks`, `suppliers`, `activity_logs`.

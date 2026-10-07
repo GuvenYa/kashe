@@ -78,7 +78,7 @@ export function LegalPageShell({
           {/* Footer linki */}
           <div className="mt-16 pt-8 border-t border-line text-center">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
-              Sorun mu var? <a href="mailto:kasheofficial@gmail.com" className="text-brand-ink hover:underline">kasheofficial@gmail.com</a>
+              Sorun mu var? <a href="mailto:info@kashe.net" className="text-brand-ink hover:underline">info@kashe.net</a>
             </p>
           </div>
         </div>

@@ -38,7 +38,7 @@ export async function cancelBooking(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Rezervasyonu çek + yetki kontrol
@@ -160,7 +160,7 @@ export async function completeBooking(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   const { data: booking } = await supabase

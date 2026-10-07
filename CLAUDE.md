@@ -68,8 +68,10 @@ Ham jeton yalniz `proposal_send` donusunde BIR KEZ gorunur; `token_hash` sutunu 
 yazilmaz. Portal (`/portal/teklif/[token]`) AYRI YUZEY: yalniz 3 anon RPC (`portal_proposal_view/approve/request_revision`), tabloya sorgu yok,
 `internal` yok, kurulus/kullanici kimligi donmez; sayfa `force-dynamic`, noindex, referrer no-referrer; onay acik onay ekraniyla (ad soyad +
 kutu), revizyon notu zorunlu. Gonderilmis teklif SILINMEZ (`proposal_set_status(..., 'declined')` ile kapatilir); yalniz hic gonderilmemis
-taslak RLS DELETE ile silinir (7a-DB/02). Sunucuda render edilen tarih/saat `timeZone: 'Europe/Istanbul'` ile bicimlenir (P2-ek). 7a:
-DB/01-02 uretimde, P1-P2 deploy'da; 7c (bookings) ve 7b (RFP) devam — bkz. `docs/envanter/19-faz7-ticari-katman.md`.
+taslak RLS DELETE ile silinir (7a-DB/02). Sunucuda render edilen tarih/saat `timeZone: 'Europe/Istanbul'` ile bicimlenir
+(`KASHE_SAAT_DILIMI`; P2-ek). `/portal` bakim modundan muaftir (`proxy.ts`): ajansin gonderdigi baglanti lansmandan once de acilir.
+Kullaniciya gorunen tek iletisim adresi `info@kashe.net` (7 Ekim 2026; eski gmail adresi kaldirildi). FAZ 7a KAPANDI (7 Ekim 2026);
+7c (bookings) ve 7b (RFP) devam — bkz. `docs/envanter/19-faz7-ticari-katman.md`.
 
 **Derleme dogrulamasi cikis koduyla DEGIL (24 Eylul 2026).** `npm run build` Windows'ta hata verse de exit 0 donebiliyor (`Failed to collect page data for /...` ciktisi gecti, `.next/BUILD_ID` olusmadi). Kanit = cikti sonunda route tablosu + hata satiri yok + `.next/BUILD_ID` var. Ayrica `'use client'` modulunden sunucu bilesenine sabit/veri import edilmez (sayfa verisi toplamayi kirar); ortak veri `'use client'` OLMAYAN bir `*-data.ts` modulunde tutulur (ornek `app/ilanlar/listings-data.ts`).
 

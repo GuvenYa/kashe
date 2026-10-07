@@ -71,7 +71,7 @@ const SECTIONS: Section[] = [
   {
     title: 'Yolculuğun başındayız',
     body: 'Kashe genç bir platform ve her gün gelişiyor. Aklındaki soru, öneri ya da iş birliği için bize yaz: ',
-    email: 'kasheofficial@gmail.com',
+    email: 'info@kashe.net',
   },
 ];
 

@@ -321,7 +321,7 @@ export async function startConversation(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   if (!data.message || data.message.trim().length === 0) {
@@ -562,7 +562,7 @@ export async function sendMessage(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   if (!body || body.trim().length === 0) {
@@ -766,7 +766,7 @@ export async function assignConversation(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   const { data: conv } = await supabase
@@ -823,7 +823,7 @@ export async function unassignConversation(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   const { data: conv } = await supabase
@@ -879,7 +879,7 @@ export async function sendMessageWithAttachment(
   }
 
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Path güvenliği: dosya gerçekten bu kullanıcının klasöründe mi?

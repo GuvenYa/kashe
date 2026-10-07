@@ -5,7 +5,7 @@ import { createClient } from '@/app/lib/supabase-server';
 // VAPID yapılandırması (modül yüklenince bir kez)
 const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-const rawSubject = process.env.VAPID_SUBJECT || 'mailto:kasheofficial@gmail.com';
+const rawSubject = process.env.VAPID_SUBJECT || 'mailto:info@kashe.net';
 // mailto: veya https: öneki yoksa ekle (yanlış env build'i çökertmesin)
 const vapidSubject =
   rawSubject.startsWith('mailto:') || rawSubject.startsWith('http')

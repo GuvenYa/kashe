@@ -55,7 +55,7 @@ export async function createCategoryRequest(
 
   // Suspension kontrolü
   if (await isUserSuspended(user.id)) {
-    return { success: false, error: 'Hesabın askıya alındı. İletişim: kasheofficial@gmail.com' };
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
   }
 
   // Validation
