@@ -12,7 +12,10 @@ function bakimKontrolu(request: NextRequest): NextResponse | null {
     pathname.startsWith('/yakinda') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/auth') ||
-    pathname.startsWith('/icons');
+    pathname.startsWith('/icons') ||
+    // FAZ 7a: musteri portali ayri yuzey (oturumsuz, noindex, jetonla korunur);
+    // ajansin gonderdigi teklif baglantisi bakim modunda da acilir.
+    pathname.startsWith('/portal');
 
   if (muaf) return null;
 

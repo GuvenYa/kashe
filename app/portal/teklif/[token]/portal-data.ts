@@ -53,6 +53,31 @@ export const KASHE_SAAT_DILIMI = 'Europe/Istanbul';
 /** Jeton bicimi: `encode(gen_random_bytes(32), 'hex')` -> 64 hex. */
 export const JETON_KALIBI = /^[0-9a-f]{64}$/;
 
+/**
+ * Durum rozeti etiketleri (`proposal_status`). Portal yalniz gonderilmis
+ * surumu gosterdigi icin `draft` pratikte gorunmez; yine de eslemede durur.
+ */
+export const PORTAL_DURUM_ETIKETLERI: Record<string, string> = {
+  draft: 'Taslak',
+  sent: 'Gönderildi',
+  viewed: 'Görüntülendi',
+  approved: 'Onaylandı',
+  revision_requested: 'Revizyon istendi',
+  declined: 'Kapatıldı',
+  expired: 'Süresi doldu',
+};
+
+/** Rozet renkleri — durum bandi renkleriyle ayni dil. */
+export const PORTAL_DURUM_SINIFLARI: Record<string, string> = {
+  approved: 'bg-moss/10 border-moss/40 text-ink',
+  revision_requested: 'bg-amber-500/10 border-amber-500/40 text-ink',
+  declined: 'bg-paper-2 border-line text-ink-72',
+  expired: 'bg-paper-2 border-line text-ink-72',
+  sent: 'bg-brand-ink-08 border-brand-ink/25 text-brand-ink',
+  viewed: 'bg-brand-ink-08 border-brand-ink/25 text-brand-ink',
+  draft: 'bg-paper-2 border-line text-ink-72',
+};
+
 /** Tutar gosterimi — TL, Turkce bicim. */
 export function paraMetni(
   tutar: number | string | null | undefined,

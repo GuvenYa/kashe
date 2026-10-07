@@ -191,9 +191,17 @@ export default async function AjansTekliflerPage() {
                               {paraMetni(surum.total_amount, surum.currency) ??
                                 '—'}
                             </p>
+                            {/* Tarih GECERLI SURUMUN tarihi: eskiden teklifin
+                                created_at'i yaziliyordu ve surum tarihi
+                                saniliyordu (P2-cila bulgusu). */}
                             <p className="text-xs text-ink-50 mt-0.5">
                               Sürüm {surum.version_no} ·{' '}
-                              {tarihMetni(t.created_at)}
+                              {surum.sent_at
+                                ? `gönderim ${tarihMetni(surum.sent_at)}`
+                                : `taslak ${tarihMetni(surum.created_at)}`}
+                            </p>
+                            <p className="text-xs text-ink-50">
+                              Açıldı: {tarihMetni(t.created_at)}
                             </p>
                           </>
                         )}

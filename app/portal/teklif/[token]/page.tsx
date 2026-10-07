@@ -3,6 +3,8 @@ import { createClient } from '@/app/lib/supabase-server';
 import { PortalIslemleri } from './portal-islemleri';
 import {
   JETON_KALIBI,
+  PORTAL_DURUM_ETIKETLERI,
+  PORTAL_DURUM_SINIFLARI,
   kdvYuzdesi,
   paraMetni,
   portalDurumMesaji,
@@ -13,7 +15,7 @@ import {
 } from './portal-data';
 
 /**
- * FAZ 7a / P2 — misafir portali: teklif gorunumu.
+ * FAZ 7a / P2 — misafir portali: teklif gorunumu (P2-cila: belge duzeni).
  *
  * Portal AYRI YUZEY (02 bolum 6): bu sayfa YALNIZ `portal_proposal_view`
  * RPC'sini cagirir. `proposals`/`proposal_versions`/`proposal_items`/
@@ -22,6 +24,9 @@ import {
  *
  * Jeton yalniz URL'den gelir ve yalniz RPC'ye verilir; loglanmaz.
  * `force-dynamic`: her acilis goruntuleme sayar (onbellek yok).
+ *
+ * P2-cila: icerik ve alanlar AYNI; yalniz dizilis belge gibi (tek kart,
+ * rozet, etiketli etkinlik kutusu, mobilde kalem kutulari).
  */
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +35,10 @@ export const metadata = {
   robots: { index: false, follow: false },
   referrer: 'no-referrer' as const,
 };
+
+const EYEBROW =
+  'font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink';
+const KART = 'bg-card border border-line rounded-2xl p-6 md:p-8';
 
 function DurumSayfasi({ mesaj }: { mesaj: string }) {
   return (
@@ -43,6 +52,25 @@ function DurumSayfasi({ mesaj }: { mesaj: string }) {
       <p className="mt-4 text-sm text-ink-72">
         Sorun sürerse teklifi gönderen kuruluşla iletişime geç.
       </p>
+    </div>
+  );
+}
+
+/** Etkinlik ozeti satiri — yalniz dolu alanlar. */
+function OzetSatiri({
+  etiket,
+  deger,
+}: {
+  etiket: string;
+  deger: string | null;
+}) {
+  if (!deger) return null;
+  return (
+    <div className="flex items-start justify-between gap-4 flex-wrap">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+        {etiket}
+      </dt>
+      <dd className="text-sm text-ink text-right">{deger}</dd>
     </div>
   );
 }
@@ -76,48 +104,16 @@ export default async function PortalTeklifPage({
   const gecerlilikGecti = suresiDoldu(teklif.valid_until);
   const toplamMetni = paraMetni(teklif.total_amount, teklif.currency);
   const gecerlilikMetni = tarihMetni(teklif.valid_until);
-
-  const etkinlikSatiri = teklif.event
-    ? [
-        teklif.event.title,
-        teklif.event.event_type,
-        teklif.event.start_date ? tarihMetni(teklif.event.start_date) : null,
-        teklif.event.city,
-        teklif.event.participant_count
-          ? `${teklif.event.participant_count} kişi`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : null;
+  const durumEtiketi =
+    PORTAL_DURUM_ETIKETLERI[teklif.status] ?? teklif.status;
+  const durumSinifi =
+    PORTAL_DURUM_SINIFLARI[teklif.status] ?? 'bg-paper-2 border-line text-ink-72';
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Ust blok */}
-      <header className="mb-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-2">
-          {teklif.seller_name?.trim() || 'Kashe kuruluşu'} · teklif
-        </p>
-        {teklif.client_name && (
-          <p className="text-sm text-ink-72 mb-2">
-            Sayın {teklif.client_name},
-          </p>
-        )}
-        <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
-          {teklif.title}
-        </h1>
-        <p className="text-sm text-ink-72 mt-2">
-          Sürüm {teklif.version_no}
-          {teklif.sent_at ? ` · gönderim ${zamanMetni(teklif.sent_at)}` : ''}
-        </p>
-        {etkinlikSatiri && (
-          <p className="text-sm text-ink-72 mt-1">{etkinlikSatiri}</p>
-        )}
-      </header>
-
-      {/* Durum bandi */}
+      {/* Durum bandi — kartin USTUNDE, rozetle ayni dil */}
       {teklif.status === 'approved' && (
-        <div className="mb-6 px-4 py-3 bg-moss/10 border border-moss/40 rounded-lg">
+        <div className="mb-4 px-4 py-3 bg-moss/10 border border-moss/40 rounded-lg">
           <p className="text-sm text-ink">
             Onaylandı
             {teklif.approved_by_name ? ` · ${teklif.approved_by_name}` : ''}
@@ -126,7 +122,7 @@ export default async function PortalTeklifPage({
         </div>
       )}
       {teklif.status === 'revision_requested' && (
-        <div className="mb-6 px-4 py-3 bg-amber-500/10 border border-amber-500/40 rounded-lg">
+        <div className="mb-4 px-4 py-3 bg-amber-500/10 border border-amber-500/40 rounded-lg">
           <p className="text-sm text-ink">
             Revizyon talebin iletildi
             {teklif.client_note ? `: ${teklif.client_note}` : '.'}
@@ -134,93 +130,191 @@ export default async function PortalTeklifPage({
         </div>
       )}
       {teklif.status === 'expired' && (
-        <div className="mb-6 px-4 py-3 bg-paper-2 border border-line rounded-lg">
+        <div className="mb-4 px-4 py-3 bg-paper-2 border border-line rounded-lg">
           <p className="text-sm text-ink-72">
             Bu teklifin geçerlilik süresi doldu; kuruluştan güncel teklif iste.
           </p>
         </div>
       )}
       {teklif.status === 'declined' && (
-        <div className="mb-6 px-4 py-3 bg-paper-2 border border-line rounded-lg">
+        <div className="mb-4 px-4 py-3 bg-paper-2 border border-line rounded-lg">
           <p className="text-sm text-ink-72">Bu teklif kapatıldı.</p>
         </div>
       )}
 
-      {/* Kalem tablosu */}
-      <div className="bg-card border border-line rounded-lg p-5 md:p-6">
-        {teklif.items.length === 0 ? (
-          <p className="text-sm text-ink-72">Teklifte kalem yok.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-                  <th className="py-2 pr-3">Kalem</th>
-                  <th className="py-2 pr-3">Adet</th>
-                  <th className="py-2 pr-3">Birim</th>
-                  <th className="py-2 text-right">Toplam</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teklif.items.map((k, i) => (
-                  <tr key={i} className="border-t border-line">
-                    <td className="py-2.5 pr-3 text-ink">
-                      {k.description}
-                      {k.role && k.role !== k.description && (
-                        <span className="text-ink-72"> · {k.role}</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 text-ink-72">{k.quantity}</td>
-                    <td className="py-2.5 pr-3 text-ink-72">
-                      {paraMetni(k.unit_client_price, teklif.currency) ?? '—'}
-                    </td>
-                    <td className="py-2.5 text-right text-ink">
-                      {paraMetni(k.total_client_price, teklif.currency) ?? '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* BELGE KARTI */}
+      <article className={KART}>
+        {/* Kart ustu: satici + durum rozeti */}
+        <header className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <p className={EYEBROW}>Teklif</p>
+            <h1 className="mt-2 font-display text-2xl md:text-3xl text-ink leading-tight">
+              {teklif.seller_name?.trim() || 'Kashe kuruluşu'}
+            </h1>
           </div>
-        )}
+          <span
+            className={`font-mono text-[10px] uppercase tracking-[0.14em] border px-2.5 py-1 rounded-full shrink-0 ${durumSinifi}`}
+          >
+            {durumEtiketi}
+          </span>
+        </header>
 
-        {/* Toplamlar — DB'de hesaplandi */}
-        <div className="mt-5 pt-5 border-t border-line space-y-1.5 text-sm text-right">
-          <p className="text-ink-72">
-            Ara toplam:{' '}
-            <span className="text-ink">
-              {paraMetni(teklif.subtotal, teklif.currency) ?? '—'}
-            </span>
+        <div className="mt-5 pt-5 border-t border-line">
+          {teklif.client_name && (
+            <p className="text-sm text-ink-72">Sayın {teklif.client_name},</p>
+          )}
+          <p className="mt-1 font-display text-lg md:text-xl text-ink leading-snug">
+            {teklif.title}
           </p>
-          <p className="text-ink-72">
-            KDV ({kdvYuzdesi(teklif.tax_rate)}%):{' '}
-            <span className="text-ink">
-              {paraMetni(teklif.tax_amount, teklif.currency) ?? '—'}
-            </span>
-          </p>
-          <p className="font-display font-semibold text-lg text-ink">
-            Genel toplam: {toplamMetni ?? '—'}
+          <p className="mt-1.5 text-xs text-ink-72">
+            Sürüm {teklif.version_no}
+            {teklif.sent_at ? ` · gönderim ${zamanMetni(teklif.sent_at)}` : ''}
           </p>
         </div>
 
-        {/* Gecerlilik */}
-        {gecerlilikMetni && (
-          <p
-            className={
-              gecerlilikGecti
-                ? 'mt-4 text-sm text-danger'
-                : 'mt-4 text-sm text-ink-72'
-            }
-          >
-            {gecerlilikGecti
-              ? `Geçerlilik: ${gecerlilikMetni} — süresi doldu`
-              : `Geçerlilik: ${gecerlilikMetni}`}
-          </p>
+        {/* Etkinlik ozeti — etiketli, yalniz dolu alanlar */}
+        {teklif.event && (
+          <div className="mt-6 bg-paper border border-line rounded-xl p-4 md:p-5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-3">
+              Etkinlik
+            </p>
+            <dl className="space-y-2">
+              <OzetSatiri etiket="Etkinlik" deger={teklif.event.title} />
+              <OzetSatiri etiket="Tür" deger={teklif.event.event_type} />
+              <OzetSatiri
+                etiket="Tarih"
+                deger={tarihMetni(teklif.event.start_date)}
+              />
+              <OzetSatiri etiket="Şehir" deger={teklif.event.city} />
+              <OzetSatiri
+                etiket="Katılımcı"
+                deger={
+                  teklif.event.participant_count
+                    ? `${teklif.event.participant_count} kişi`
+                    : null
+                }
+              />
+            </dl>
+          </div>
         )}
+
+        {/* KALEMLER */}
+        <div className="mt-6">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-3">
+            Kalemler
+          </p>
+
+          {teklif.items.length === 0 ? (
+            <p className="text-sm text-ink-72">Teklifte kalem yok.</p>
+          ) : (
+            <>
+              {/* Masaustu: tablo */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 border-b border-line-strong">
+                      <th className="py-2 pr-3 font-normal">Kalem</th>
+                      <th className="py-2 pr-3 font-normal">Adet</th>
+                      <th className="py-2 pr-3 font-normal">Birim fiyat</th>
+                      <th className="py-2 text-right font-normal">Toplam</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teklif.items.map((k, i) => (
+                      <tr key={i} className="border-b border-line">
+                        <td className="py-3 pr-3 text-ink">
+                          {k.description}
+                          {k.role && k.role !== k.description && (
+                            <span className="text-ink-72"> · {k.role}</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-3 text-ink-72">{k.quantity}</td>
+                        <td className="py-3 pr-3 text-ink-72">
+                          {paraMetni(k.unit_client_price, teklif.currency) ??
+                            '—'}
+                        </td>
+                        <td className="py-3 text-right text-ink">
+                          {paraMetni(k.total_client_price, teklif.currency) ??
+                            '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobil: her kalem bir kutu */}
+              <div className="sm:hidden space-y-2">
+                {teklif.items.map((k, i) => (
+                  <div
+                    key={i}
+                    className="border border-line rounded-lg p-3 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink">{k.description}</p>
+                      {k.role && k.role !== k.description && (
+                        <p className="text-xs text-ink-72 mt-0.5">{k.role}</p>
+                      )}
+                      <p className="text-xs text-ink-72 mt-1">
+                        {k.quantity} adet · birim{' '}
+                        {paraMetni(k.unit_client_price, teklif.currency) ?? '—'}
+                      </p>
+                    </div>
+                    <p className="text-sm text-ink shrink-0">
+                      {paraMetni(k.total_client_price, teklif.currency) ?? '—'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* TOPLAMLAR — DB'de hesaplandi */}
+        <div className="mt-6 pt-5 border-t border-line">
+          <div className="sm:ml-auto sm:max-w-xs space-y-1.5 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-ink-72">Ara toplam</span>
+              <span className="text-ink">
+                {paraMetni(teklif.subtotal, teklif.currency) ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-ink-72">
+                KDV ({kdvYuzdesi(teklif.tax_rate)}%)
+              </span>
+              <span className="text-ink">
+                {paraMetni(teklif.tax_amount, teklif.currency) ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-4 pt-2 border-t border-line">
+              <span className="font-display font-semibold text-ink">
+                Genel toplam
+              </span>
+              <span className="font-display font-semibold text-lg text-ink">
+                {toplamMetni ?? '—'}
+              </span>
+            </div>
+
+            {gecerlilikMetni && (
+              <p
+                className={
+                  gecerlilikGecti
+                    ? 'pt-2 text-xs text-danger'
+                    : 'pt-2 text-xs text-ink-72'
+                }
+              >
+                {gecerlilikGecti
+                  ? `Geçerlilik: ${gecerlilikMetni} — süresi doldu`
+                  : `Geçerlilik: ${gecerlilikMetni}`}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Satici notu */}
         {teklif.notes && (
-          <div className="mt-5 pt-5 border-t border-line">
+          <div className="mt-6 bg-paper border border-line rounded-xl p-4 md:p-5">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-2">
               Not
             </p>
@@ -229,11 +323,11 @@ export default async function PortalTeklifPage({
             </p>
           </div>
         )}
-      </div>
+      </article>
 
-      {/* Islemler — yalniz sent/viewed */}
+      {/* Islemler — kartin ALTINDA, yalniz sent/viewed */}
       {islemDurumu && (
-        <div className="mt-6">
+        <div className="mt-5">
           <PortalIslemleri
             token={token}
             toplamMetni={toplamMetni}

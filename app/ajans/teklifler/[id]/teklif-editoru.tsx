@@ -96,6 +96,21 @@ export function TeklifEditoru({
   // Deger kalem id'si (satir yaninda gosterilir) ya da 'ust' (baslik/musteri/surum).
   const [kaydedildi, setKaydedildi] = useState<string | null>(null);
   const [kaydediliyor, setKaydediliyor] = useState<string | null>(null);
+
+  // Yeni kalem eklenince aciklama girdisine odak + metin secili (P2-cila).
+  // Bayrak state DEGIL ref: efekt govdesinde setState cagirmak repo lint
+  // kuralini (react-hooks/set-state-in-effect) ihlal ederdi.
+  const aciklamaRefleri = useRef<Record<string, HTMLInputElement | null>>({});
+  const yeniKalemBekliyor = useRef(false);
+  useEffect(() => {
+    if (!yeniKalemBekliyor.current) return;
+    const son = kalemler[kalemler.length - 1];
+    const girdi = son ? aciklamaRefleri.current[son.id] : null;
+    if (!girdi) return;
+    yeniKalemBekliyor.current = false;
+    girdi.focus();
+    girdi.select();
+  }, [kalemler]);
   const zamanlayici = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Bilesen soklerse bekleyen zamanlayici kalmasin.
   useEffect(
@@ -220,6 +235,7 @@ export function TeklifEditoru({
   function kalemEkle() {
     if (!duzenlenebilir || !gecerliSurum) return;
     mesajlariTemizle();
+    yeniKalemBekliyor.current = true;
     startTransition(async () => {
       const res = await addProposalItem({
         versionId: gecerliSurum.id,
@@ -521,6 +537,14 @@ export function TeklifEditoru({
             <p className="text-sm text-ink-72">Henüz kalem yok.</p>
           ) : (
             <div className="space-y-2">
+              {/* Sutun basliklari — mobilde her girdinin ustunde kendi etiketi var */}
+              <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                <span className="sm:col-span-5">Açıklama</span>
+                <span className="sm:col-span-2">Adet</span>
+                <span className="sm:col-span-2">Birim fiyat (TL)</span>
+                <span className="sm:col-span-2 text-right">Toplam</span>
+                <span className="sm:col-span-1" />
+              </div>
               {kalemler.map((k) => (
                 <div
                   key={k.id}
@@ -533,7 +557,14 @@ export function TeklifEditoru({
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                     <div className="sm:col-span-5">
                       {duzenlenebilir ? (
+                        <>
+                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
+                            Açıklama
+                          </label>
                         <input
+                          ref={(el) => {
+                            aciklamaRefleri.current[k.id] = el;
+                          }}
                           type="text"
                           defaultValue={k.description}
                           onBlur={(e) => {
@@ -544,12 +575,17 @@ export function TeklifEditoru({
                           }}
                           className={`${ALAN} w-full`}
                         />
+                        </>
                       ) : (
                         <p className="text-sm text-ink">{k.description}</p>
                       )}
                     </div>
                     <div className="sm:col-span-2">
                       {duzenlenebilir ? (
+                        <>
+                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
+                            Adet
+                          </label>
                         <input
                           type="text"
                           inputMode="decimal"
@@ -563,33 +599,47 @@ export function TeklifEditoru({
                           placeholder="Adet"
                           className={`${ALAN} w-full`}
                         />
+                        </>
                       ) : (
                         <p className="text-sm text-ink-72">{k.quantity} adet</p>
                       )}
                     </div>
                     <div className="sm:col-span-2">
                       {duzenlenebilir ? (
+                        <>
+                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
+                            Birim fiyat (TL)
+                          </label>
                         <input
                           type="text"
                           inputMode="decimal"
-                          defaultValue={String(k.unit_client_price)}
+                          /* 0 ise bos gelir ki placeholder gorunsun; bos birakilirsa 0 kalir */
+                          defaultValue={
+                            Number(k.unit_client_price) === 0
+                              ? ''
+                              : String(k.unit_client_price)
+                          }
                           onBlur={(e) => {
                             const n = sayi(e.target.value);
                             if (n !== null && n !== Number(k.unit_client_price)) {
                               kalemGuncelle(k.id, { unitPrice: n });
                             }
                           }}
-                          placeholder="Birim (TL)"
+                          placeholder="Birim fiyat (TL)"
                           className={`${ALAN} w-full`}
                         />
+                        </>
                       ) : (
                         <p className="text-sm text-ink-72">
                           {paraMetni(k.unit_client_price) ?? '—'}
                         </p>
                       )}
                     </div>
-                    <div className="sm:col-span-2 text-right">
+                    <div className="sm:col-span-2 sm:text-right">
                       <p className="text-sm font-display font-semibold text-ink">
+                        <span className="sm:hidden font-body font-normal text-ink-72">
+                          Toplam:{' '}
+                        </span>
                         {paraMetni(k.total_client_price) ?? '—'}
                       </p>
                     </div>
