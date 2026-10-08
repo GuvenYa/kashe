@@ -3060,9 +3060,12 @@ BEGIN
   SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
   SELECT id INTO prov_a FROM public.providers WHERE organization_id = org_a AND provider_type = 'organization';
   IF org_k IS NULL OR org_a IS NULL OR prov_a IS NULL THEN RAISE EXCEPTION 'on kosul: org_k=% org_a=% prov_a=%', org_k, org_a, prov_a; END IF;
-  -- rol secimi: is_active'e bakilmaz (dalda/uretimde eski kategorilerden aynalanan deger NULL olabilir); test rolleri haric ilk 3 rol
-  SELECT array_agg(id ORDER BY id) INTO rol FROM (SELECT id FROM public.service_roles WHERE slug NOT LIKE 'faz1test-%' ORDER BY id LIMIT 3) s;
-  IF rol IS NULL OR array_length(rol, 1) <> 3 THEN RAISE EXCEPTION 'on kosul: service_roles''ta en az 3 rol gerekir (bulunan %)', COALESCE(array_length(rol, 1), 0); END IF;
+  -- kurulum: 3 test rolu (kategori -> rol otomatik dogar; FAZ 3a). Dal yalniz test verisi tasir, legacy rol olmayabilir; T0 'faz1test-%' siler.
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-rfp-a', 'Faz1 Test RFP A', 'A', 981, true);
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-rfp-b', 'Faz1 Test RFP B', 'B', 982, true);
+  INSERT INTO public.service_categories (slug, name_tr, emoji, sort_order, is_active) VALUES ('faz1test-rfp-c', 'Faz1 Test RFP C', 'C', 983, true);
+  SELECT array_agg(id ORDER BY slug) INTO rol FROM public.service_roles WHERE slug IN ('faz1test-rfp-a', 'faz1test-rfp-b', 'faz1test-rfp-c');
+  IF rol IS NULL OR array_length(rol, 1) <> 3 THEN RAISE EXCEPTION 'on kosul: test rolleri dogmadi (bulunan %)', COALESCE(array_length(rol, 1), 0); END IF;
 
   -- kurulum: ikinci ajans (0007) -> kurulus + organization saglayicisi otomatik (FAZ 0 / 2a)
   INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
