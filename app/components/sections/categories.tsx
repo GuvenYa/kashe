@@ -104,6 +104,7 @@ export async function Categories() {
               <Link
                 key={cat.id}
                 href={`/kategori/${cat.slug}`}
+                prefetch={false}
                 className="group relative bg-card border border-line rounded-2xl p-6 transition-all duration-300 hover:border-brand-ink hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,18,14,0.22)] overflow-hidden"
               >
                 {/* Hover'da hafif renk yıkaması (zemin) */}
@@ -160,6 +161,7 @@ export async function Categories() {
           {hasMore && (
             <Link
               href="/kategoriler"
+              prefetch={false}
               className="group inline-flex items-center gap-2 px-5 py-2.5 bg-card border border-line rounded-lg font-display font-semibold text-sm text-ink hover:border-brand-ink hover:-translate-y-0.5 transition-all"
             >
               Tüm kategoriler

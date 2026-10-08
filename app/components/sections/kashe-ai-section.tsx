@@ -22,13 +22,15 @@ export function KasheAiSection() {
               sana yol göstersin.
             </h2>
             <p className="font-body text-base text-ink-72 leading-[1.6] max-w-xl mb-8">
-              Etkinliğini anlat, hangi profesyonellere ihtiyacın olduğunu öğren.
-              Ya da nasıl biri aradığını söyle, sana en uygun profilleri bulalım.
+              Etkinliğini serbest metinle anlat: tür, tarih, şehir, katılımcı
+              sayısı, bütçe. Kashe ihtiyaç duyduğun rolleri çıkarır; eksik bilgiyi
+              uydurmak yerine sorar. Ya da nasıl biri aradığını söyle, sana en
+              uygun profilleri gerekçesiyle bulalım.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Link
-                href="/etkinlik-planla"
+                href="/etkinlik-sihirbazi"
                 className="kashe-tap group flex items-start gap-3 bg-paper border border-line rounded-2xl p-5 hover:border-brand-ink transition"
               >
                 <div className="w-10 h-10 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">
@@ -39,7 +41,7 @@ export function KasheAiSection() {
                     Etkinlik Planlama
                   </p>
                   <p className="text-sm text-ink-72 leading-relaxed">
-                    Hangi hizmetlere ihtiyacın var, tahmini bütçen ne?
+                    Hangi rollere ihtiyacın var, tahmini bütçen ne?
                   </p>
                 </div>
               </Link>
@@ -61,6 +63,13 @@ export function KasheAiSection() {
                 </div>
               </Link>
             </div>
+
+            {/* Sinir notu — "Yapay zeka rakam uretmez / kritik islem yapmaz" kurali
+                kullaniciya da yazili soylenir (CLAUDE.md degismez kurallar 3-4). */}
+            <p className="mt-5 font-body text-xs text-ink-50 leading-relaxed max-w-xl">
+              Kashe AI öneri üretir; fiyat belirlemez, rezervasyon yapmaz. Son
+              karar her zaman sende.
+            </p>
           </div>
         </div>
       </div>

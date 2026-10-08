@@ -38,9 +38,12 @@ export function FooterCTA() {
             >
               Hizmet ver →
             </a>
+            {/* T7: beyaz/75 metin gradyan (cyan→pembe) uzerinde 4.5:1 altinda
+                kaliyordu — gradyanin HICBIR noktasinda duz beyaz yazi 4:1 gecmiyor.
+                Dugme brand-ink zemine alindi: beyaz/brand-ink = 19.3:1. Metin ayni. */}
             <a
               href="/uye-ol?rol=musteri"
-              className="inline-flex items-center gap-2 font-body text-white/75 hover:text-white text-base underline-offset-4 hover:underline transition-colors px-4 py-3.5"
+              className="inline-flex items-center gap-2 bg-brand-ink border border-white/30 text-white font-display font-semibold rounded-lg px-8 py-3.5 text-base hover:bg-brand-ink-deep transition-colors"
             >
               Hizmet ara
             </a>

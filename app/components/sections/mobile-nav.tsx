@@ -112,7 +112,7 @@ export function MobileNav({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="md:hidden p-2 -mr-2 text-ink"
+        className="lg:hidden p-2 -mr-2 text-ink"
         aria-label={open ? 'Menüyü kapat' : 'Menüyü aç'}
         aria-expanded={open}
       >
@@ -133,12 +133,12 @@ export function MobileNav({
           {/* Portal → document.body: üst bardaki backdrop-filter'ın fixed
               containing-block etkisinden kaç → viewport-göreli konumlan. */}
           <div
-            className="md:hidden fixed inset-0 top-[73px] bg-ink/40 backdrop-blur-sm z-[90]"
+            className="lg:hidden fixed inset-0 top-[73px] bg-ink/40 backdrop-blur-sm z-[90]"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
 
-          <div className="md:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-[100] shadow-lg">
+          <div className="lg:hidden fixed top-[73px] left-0 right-0 max-h-[calc(100dvh-73px)] overflow-y-auto overscroll-contain bg-paper border-b border-line z-[100] shadow-lg">
             <nav className="px-6 py-4">
               {isLoggedIn ? (
                 <>

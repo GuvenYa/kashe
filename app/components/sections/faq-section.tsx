@@ -22,9 +22,9 @@ const FAQ: FaqItem[] = [
       "Her profesyonel başvuruda profil, portföy ve iletişim bilgilerini paylaşır. Ekibimiz bilgileri inceleyip onayladıktan sonra profil yayına alınır. Amacımız Kashe'de gerçek, güvenilir profesyoneller olması — sahte profil yok.",
   },
   {
-    question: "Aracı veya ajans var mı?",
+    question: "Ajanslar ve organizasyon firmaları Kashe'de nasıl yer alır?",
     answer:
-      "Hayır. Kashe doğrudan iletişim modelidir — müşteri profesyonelle direkt yazışır, fiyat pazarlığı veya ajans kesintisi yok. (Ajanslar ayrı rol olarak platformda var, kendi ekibini yöneten profesyonel ajanslar buraya kayıt olabilir.)",
+      "Kashe'de bağımsız profesyoneller, ekipler ve organizasyon firmaları aynı platformdadır. Hizmet alan; tekil profesyonel, ihtiyacın tamamını üstlenen bir firma ya da ikisinin birleşimi arasından seçim yapar. Ajanslar ekiplerini, özel yetenek havuzlarını ve tekliflerini yönettikleri operasyon araçlarına erken erişimle ulaşır; tüm iletişim ve teklifler platform içinde kalır.",
   },
   {
     question: "Ödeme nasıl güvende?",
@@ -39,7 +39,12 @@ const FAQ: FaqItem[] = [
   {
     question: "Profilim ve verilerim güvende mi?",
     answer:
-      "Verilerin KVKK uyumlu şekilde saklanır, üçüncü taraflarla paylaşılmaz. Hesabını dilediğin zaman silebilirsin; profil bilgilerin sadece sen ve ekibimiz tarafından görüntülenir.",
+      "Verilerin KVKK uyumlu şekilde saklanır, üçüncü taraflarla paylaşılmaz. Profilinde yalnız senin yayınladığın bilgiler görünür; telefon ve e-posta adresin herkese açık değildir, anlaşma netleşene kadar gizli kalır. Hesabını dilediğin zaman silebilirsin.",
+  },
+  {
+    question: "Kashe'de yapay zeka ne yapar, ne yapmaz?",
+    answer:
+      "Kashe AI etkinlik ihtiyacını yapılandırır, eksik bilgiyi sorar ve uygun profilleri gerekçesiyle önerir. Fiyat belirlemez, rezervasyon yapmaz, ödeme veya iade kararı vermez; bu kararlar her zaman kullanıcıda kalır.",
   },
 ];
 

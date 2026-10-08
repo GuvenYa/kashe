@@ -14,10 +14,12 @@ export const DISCOVERY_LINKS: NavLink[] = [
 
 // Pazarlama — yalnız GİRİŞSİZ kullanıcıya, her iki yüzeyde.
 // Hedefler ana sayfa section anchor'larıdır (categories#hizmetler,
-// how-it-works#nasil-calisir, b2b-section#kurumsal) + /fiyatlandirma sayfası.
+// how-it-works#nasil-calisir, b2b-section#kurumsal, ajanslar-section#ajanslar)
+// + /fiyatlandirma sayfası.
 export const MARKETING_LINKS: NavLink[] = [
   { href: '/#hizmetler', label: 'Hizmetler' },
   { href: '/#nasil-calisir', label: 'Nasıl çalışır' },
   { href: '/#kurumsal', label: 'Kurumsal' },
+  { href: '/#ajanslar', label: 'Ajanslar' },
   { href: '/fiyatlandirma', label: 'Fiyatlandırma' },
 ];

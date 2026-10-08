@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { CerezBanner } from "@/app/components/cerez-banner";
+import { SITE_URL } from "@/app/lib/site";
 
 // Gilroy (marka fontu) — next/font/local. Ağırlıklar BİZ atarız: dosyaların OS/2
 // meta'sı bozuk (hepsi 400 der), dosya içeriğine değil bu eşlemeye güvenilir.
@@ -27,11 +28,41 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
+const SITE_BASLIK =
+  "Kashe — Türkiye'nin Yetenek Sahnesi · Etkinlik sektörü için yapay zeka destekli pazaryeri ve operasyon platformu";
+const SITE_ACIKLAMA =
+  "Türkiye'nin etkinlik ve yetenek pazaryeri. Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu ve organizasyon firmaları — şeffaf fiyatla, tek platformda.";
+
 export const metadata: Metadata = {
-  title: "Kashe — Türkiye'nin Yetenek Sahnesi | DJ, Fotoğrafçı, Sunucu & Etkinlik",
-  description:
-    "Türkiye'nin etkinlik ve yetenek pazaryeri. Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu — ajanssız, şeffaf fiyatla.",
+  // metadataBase: goreli OG/canonical yollarini mutlak URL'e cevirir (tek kaynak: lib/site).
+  metadataBase: new URL(SITE_URL),
+  title: SITE_BASLIK,
+  description: SITE_ACIKLAMA,
   manifest: "/manifest.json",
+  // NOT: canonical BURADA degil, app/page.tsx'te. Layout'a yazilirsa her alt sayfa
+  // onu miras alir ve tum site "/" kanonigine duser.
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    siteName: "Kashe",
+    title: SITE_BASLIK,
+    description: SITE_ACIKLAMA,
+    url: "/",
+    images: [
+      {
+        url: "/og-anasayfa.png",
+        width: 1200,
+        height: 630,
+        alt: "Kashe — Türkiye'nin etkinlik ve yetenek pazaryeri",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_BASLIK,
+    description: SITE_ACIKLAMA,
+    images: ["/og-anasayfa.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

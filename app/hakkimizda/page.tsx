@@ -3,7 +3,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 export const metadata = {
   title: 'Hakkımızda — Kashe',
   description:
-    "Kashe, etkinlik düzenleyenlerle sahne profesyonellerini doğrudan buluşturan Türkiye'nin etkinlik ve yetenek pazaryeri.",
+    "Kashe, etkinlik düzenleyenlerle profesyonelleri, ekipleri ve organizasyon firmalarını buluşturan Türkiye'nin etkinlik ve yetenek pazaryeri.",
 };
 
 type Cta = { label: string; href: string };
@@ -18,7 +18,7 @@ type Section = {
 const SECTIONS: Section[] = [
   {
     title: 'Kashe nedir?',
-    body: "Kashe, etkinlik düzenleyenlerle sahne profesyonellerini doğrudan buluşturan Türkiye'nin etkinlik ve yetenek pazaryeri. Düğünden kurumsal lansmana, DJ'den fotoğrafçıya — doğru profesyoneli aracısız, şeffaf fiyatla bulursun.",
+    body: "Kashe, etkinlik düzenleyenlerle profesyonelleri, ekipleri ve organizasyon firmalarını buluşturan Türkiye'nin etkinlik ve yetenek pazaryeri. Düğünden kurumsal lansmana, DJ'den fotoğrafçıya — doğru profesyoneli şeffaf fiyatla, tek platformda bulursun.",
   },
   {
     title: 'Neden Kashe?',
@@ -28,7 +28,7 @@ const SECTIONS: Section[] = [
     id: 'etkinlik-sahipleri',
     title: 'Etkinlik sahipleri için',
     body: [
-      `Bir düğün, bir doğum günü, bir mezuniyet... İyi bir etkinliğin arkasında doğru insanlar vardır. DJ'den fotoğrafçıya, sunucudan illüzyoniste 16 kategorideki profesyonelleri Kashe'de tek yerden keşfedersin. Şehre, bütçene, müsaitliğe ve etkinlik türüne göre filtrele. Profillerde fiyat aralıklarını, geçmiş işleri, deneyim ve eğitim kayıtlarını gör.`,
+      `Bir düğün, bir doğum günü, bir mezuniyet... İyi bir etkinliğin arkasında doğru insanlar vardır. DJ'den fotoğrafçıya, sunucudan illüzyoniste 23 kategorideki profesyonelleri Kashe'de tek yerden keşfedersin. Şehre, bütçene, müsaitliğe ve etkinlik türüne göre filtrele. Profillerde fiyat aralıklarını, geçmiş işleri, deneyim ve eğitim kayıtlarını gör.`,
       `Karar vermeden önce iki yolun var: beğendiğin profesyonelden doğrudan teklif iste ya da Teklif Topla ile ihtiyacını bir kez yaz, teklifler sana gelsin. Tarihini seç, rezervasyon talebini gönder, tüm süreci Kashe mesajları üzerinden yürüt.`,
       `Ne arayacağından emin değilsen Kashe AI etkinlik planlayıcısı ihtiyaç listeni saniyeler içinde çıkarır.`,
       `Güvenin altyapısı da hazır: her profil yayına alınmadan önce ekibimiz tarafından incelenir. Gerçekleşmiş çalışmalardan gelen değerlendirmeler "Onaylı yorum" rozetiyle ayrışır. İletişim platform üzerinde, kayıt altında ilerler.`,
@@ -52,7 +52,7 @@ const SECTIONS: Section[] = [
     title: 'Profesyoneller için',
     body: [
       `Kashe'de profilin bir ilan değil, bir vitrin. Kategorine özel alanlarla kendini tam anlatırsın: DJ'sen repertuarın ve sahne bilgilerin, modelsen ölçülerin ve çalışma şeklin, tercümansan dil çiftlerin. Deneyimlerini, eğitimlerini ve ödüllerini ekle, portföyünü yükle. Hizmetlerini ister sabit fiyatla, ister aralıkla, ister "fiyat görüşülür" olarak yayınla. Birden çok hizmeti tek pakette topla.`,
-      `Müşteriler sana Teklif Al ve Rezervasyon Talebi ile ulaşır. İlan tahtasındaki işlere sen de başvurursun. "Doğrulanmış" ve "Tekrar tercih ediliyor" gibi rozetler gerçek performansından beslenir. Profil metnin için Kashe AI'dan destek al; daha fazla görünürlük istersen Premium seni keşfetin üst sıralarına taşır.`,
+      `Müşteriler sana Teklif Al ve Rezervasyon Talebi ile ulaşır. İlan tahtasındaki işlere sen de başvurursun. "Doğrulanmış" ve "Tekrar tercih ediliyor" gibi rozetler gerçek performansından beslenir. Profil metnin için Kashe AI'dan destek al; daha fazla görünürlük istersen Premium profiller "Sponsorlu" etiketiyle ayrı bir alanda öne çıkar; organik sıralama ve yapay zeka önerisi satın alınamaz.`,
       `Telefonun ve e-postan, anlaşma netleşene kadar gizli kalır — vitrindesin ama kontrol sende.`,
     ],
     ctas: [
@@ -64,13 +64,18 @@ const SECTIONS: Section[] = [
     id: 'ajanslar',
     title: 'Ajanslar için',
     body: [
-      `Ekibin tek çatı altında. Ajans profili aç, profesyonellerini davet et. Kabul eden her üyenin profilinde ajansın görünür, ajans sayfanda ekibin listelenir. Müşteriler hem tek tek profesyonellerini hem ajansını keşfedebilir. Davetleri ve üyelikleri ajans panelinden yönetirsin.`,
+      `Ekibiniz tek çatı altında. Ajans profilinizi açın, profesyonellerinizi davet edin. Kabul eden her üyenin profilinde ajansınız görünür, ajans sayfanızda ekibiniz listelenir. Müşteriler hem tek tek profesyonellerinizi hem ajansınızı keşfedebilir. Davetleri ve üyelikleri ajans panelinden yönetirsiniz.`,
+      `Bugün erken erişimde üç yüzey var: ajans profili ve ekip sayfası; yalnız size görünen, pazaryerine açılmayan özel yetenek havuzu — Kashe hesabı olmayan profesyonellerinizi de kaydedebilirsiniz; ve teklif akışı — teklifinizi oluşturur, müşterinize bağlantıyla gönderir, onayı platformda alırsınız. İç maliyetiniz müşteriye görünmez.`,
+      `2027 pilot programında geliştirilenler: brief'ten otomatik ekip kurgusu (rol, tarih, bütçe ve müsaitlik kısıtları altında alternatifler), maliyet ve marj kısıtlı teklif seçenekleri ve insan onaylı operasyon asistanı — görev, risk ve taslak teklif üretir, bağlayıcı işlemleri siz onaylarsınız.`,
     ],
     ctas: [{ label: 'Ajans hesabı oluştur', href: '/uye-ol/ajans' }],
   },
   {
     title: 'Yolculuğun başındayız',
-    body: 'Kashe genç bir platform ve her gün gelişiyor. Aklındaki soru, öneri ya da iş birliği için bize yaz: ',
+    body: [
+      `Kashe üç katmanlı kuruluyor. Pazaryeri bugün canlı: profil, portföy, teklif ve rezervasyon burada işliyor. Event AI — serbest metinle anlattığın etkinliği yapılandırıp rol ve aday önerisine çeviren katman — geliştiriliyor. Ajanslar ve organizatörler için ekip, teklif ve müşteri onayını tek yerde toplayan Event OS ise erken erişimde. Merkezimiz İstanbul.`,
+      'Kashe genç bir platform ve her gün gelişiyor. Aklındaki soru, öneri ya da iş birliği için bize yaz: ',
+    ],
     email: 'info@kashe.net',
   },
 ];

@@ -28,7 +28,7 @@ const PLANS = [
     period: '/ ay',
     highlight: true,
     features: [
-      'Arama sonuçlarında öne çıkma',
+      'Sponsorlu alanda öne çıkma (organik sıralama değişmez)',
       'Daha geniş portföy',
       'Profil istatistikleri',
       'Premium rozeti',
@@ -44,7 +44,7 @@ const PLANS = [
       'Premium\'un tüm özellikleri',
       'Daha fazla ilan başvurusu',
       'Kategori vitrini',
-      'Gelişmiş görünürlük',
+      'Sponsorlu alanda öne çıkma (organik sıralama değişmez)',
     ],
   },
   {
@@ -200,6 +200,10 @@ export default function FiyatlandirmaPage() {
             ))}
           </div>
           <p className="text-center text-xs text-ink-72 mt-6">
+            Öne çıkarılan ilanlar ve premium profiller &quot;Sponsorlu&quot;
+            etiketiyle gösterilir.
+          </p>
+          <p className="text-center text-xs text-ink-72 mt-2">
             Tüm fiyatlara KDV dahil değildir. Lansman kampanyası boyunca premium
             özellikler ücretsiz sunulur.
           </p>

@@ -6,27 +6,33 @@ type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
 type PopularLink = { label: string; slug: string };
 
+export type HeroSayac = { key: string; value: number; label: string };
+
 type Props = {
   categories: Category[];
   cities: City[];
   popularLinks: PopularLink[];
-  proCount: number;
-  cityCount: number;
-  eventCount: number;
+  sayaclar: HeroSayac[];
 };
 
 /**
  * MOBİL HERO (<lg) — davul ARKADA (z-0) + metin ÖNDE ortada (z-3).
  * Masaüstü grid'inden tamamen izole; sadece hero.tsx'in lg:hidden dalında render edilir.
  * Hero3D mobilde kendini fill + camZ 10.0 + parallax/hover kapalı + scroll-itme'ye ayarlar.
+ *
+ * BASLIK: masaustu hero ile mobil hero DOM'da AYNI ANDA bulunur. Sayfada tek <h1>
+ * kalsin diye buradaki baslik <p>'dir (gorsel olarak ayni; masaustundeki h1 tek).
+ *
+ * PERDE (T11): 375 px'te metin fotograf halkasinin uzerine biniyordu. Iki perde
+ * katmani guclendirildi; renk degeri de `paper` token'ina (#F7F9FC) cekildi —
+ * dosya eski sicak kagit degerini (251,248,244) tasiyordu, soguk zeminde sari
+ * bir leke birakiyordu.
  */
 export function HeroMobile({
   categories,
   cities,
   popularLinks,
-  proCount,
-  cityCount,
-  eventCount,
+  sayaclar,
 }: Props) {
   return (
     <div className="bg-paper">
@@ -35,30 +41,30 @@ export function HeroMobile({
         {/* z-0 — davul (mobilde fill) */}
         <Hero3DWrapper />
 
-        {/* z-1 — hafif tek-tip paper perdesi (davul biraz solsun) */}
+        {/* z-1 — tek-tip paper perdesi (davul solsun) */}
         <div
           aria-hidden="true"
           className="absolute inset-0"
           style={{
             zIndex: 1,
-            background: "rgba(251,248,244,0.1)",
+            background: "rgba(247,249,252,0.30)",
             pointerEvents: "none",
           }}
         />
 
-        {/* z-2 — güçlü geniş glow (başlık ekranın çoğunu kaplar) */}
+        {/* z-2 — geniş glow (başlık bloğunun arkası okunur kalsın) */}
         <div
           aria-hidden="true"
           className="absolute inset-0"
           style={{
             zIndex: 2,
             background:
-              "radial-gradient(ellipse 90% 50% at 50% 45%, rgba(251,248,244,0.95) 0%, rgba(251,248,244,0.8) 50%, transparent 85%)",
+              "radial-gradient(ellipse 100% 58% at 50% 46%, rgba(247,249,252,0.98) 0%, rgba(247,249,252,0.90) 52%, transparent 86%)",
             pointerEvents: "none",
           }}
         />
 
-        {/* z-3 — metin merkezi (eyebrow + h1 + paragraf) */}
+        {/* z-3 — metin merkezi (eyebrow + başlık + paragraf) */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
           style={{ zIndex: 3, pointerEvents: "none" }}
@@ -70,21 +76,21 @@ export function HeroMobile({
               style={{ background: "var(--color-brand-accent)" }}
             />
             <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-brand-ink">
-              Etkinlik &amp; Yetenek Pazaryeri
+              Etkinlik ve Yetenek Pazaryeri
             </span>
           </div>
 
-          <h1
+          <p
             className="kashe-rise font-display font-semibold leading-[1.02] tracking-[-0.035em] text-ink mb-5"
             style={{
               fontSize: "clamp(40px, 12vw, 56px)",
               animationDelay: "80ms",
               textShadow:
-                "0 1px 3px rgba(251,248,244,0.9), 0 0 12px rgba(251,248,244,0.6)",
+                "0 1px 3px rgba(247,249,252,0.95), 0 0 14px rgba(247,249,252,0.75)",
             }}
           >
             Türkiye&apos;nin <em>yetenek</em> sahnesi.
-          </h1>
+          </p>
 
           <p
             className="kashe-rise font-body font-medium text-[16px] leading-[1.55] max-w-[42ch]"
@@ -92,11 +98,12 @@ export function HeroMobile({
               color: "var(--color-ink)",
               animationDelay: "160ms",
               textShadow:
-                "0 1px 3px rgba(251,248,244,0.9), 0 0 12px rgba(251,248,244,0.6)",
+                "0 1px 3px rgba(247,249,252,0.95), 0 0 14px rgba(247,249,252,0.75)",
             }}
           >
             Düğün, kurumsal etkinlik ya da özel bir kutlama. Türkiye&apos;nin en
-            yetenekli profesyonelleri — ajanssız, şeffaf fiyatla.
+            yetenekli profesyonelleri, ekipleri ve organizasyon firmaları —
+            şeffaf fiyatla, tek platformda.
           </p>
         </div>
       </div>
@@ -131,41 +138,25 @@ export function HeroMobile({
           })}
         </div>
 
-        {/* İstatistikler */}
-        <div className="kashe-rise flex items-center justify-center gap-6 mt-7 pt-6 border-t border-line w-full max-w-[420px]">
-          <div className="text-center">
-            <StatCounter
-              value={proCount}
-              suffix="+"
-              className="font-display font-semibold text-[24px] text-ink leading-none block"
-            />
-            <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-              Profesyonel
-            </small>
+        {/* İstatistikler — değeri olmayan sayaç basılmaz */}
+        {sayaclar.length > 0 && (
+          <div className="kashe-rise flex items-center justify-center gap-6 mt-7 pt-6 border-t border-line w-full max-w-[420px]">
+            {sayaclar.map((s, i) => (
+              <div key={s.key} className="flex items-center gap-6">
+                {i > 0 && <div className="w-px h-7 bg-line shrink-0" />}
+                <div className="text-center">
+                  <StatCounter
+                    value={s.value}
+                    className="font-display font-semibold text-[24px] text-ink leading-none block"
+                  />
+                  <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
+                    {s.label}
+                  </small>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="w-px h-7 bg-line shrink-0" />
-          <div className="text-center">
-            <StatCounter
-              value={cityCount}
-              suffix="+"
-              className="font-display font-semibold text-[24px] text-ink leading-none block"
-            />
-            <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-              Şehir
-            </small>
-          </div>
-          <div className="w-px h-7 bg-line shrink-0" />
-          <div className="text-center">
-            <StatCounter
-              value={eventCount}
-              suffix="+"
-              className="font-display font-semibold text-[24px] text-ink leading-none block"
-            />
-            <small className="font-body text-[10px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-              Etkinlik
-            </small>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { createClient } from "@/app/lib/supabase-server";
 import { orderCities } from "@/app/lib/city-order";
 import { QuickSearch } from "./quick-search";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
-import { HeroMobile } from "./hero-mobile";
+import { HeroMobile, type HeroSayac } from "./hero-mobile";
 import { StatCounter } from "./stat-counter";
 
 export async function Hero() {
@@ -39,14 +39,18 @@ export async function Hero() {
     { label: "Düğün fotoğrafçısı", slug: "fotografci" },
     { label: "DJ", slug: "dj" },
     { label: "Sunucu", slug: "sunucu" },
+    { label: "Oyuncu", slug: "oyuncu" },
+    { label: "Dansçı", slug: "dansci" },
     { label: "Müzisyen", slug: "muzisyen" },
-    { label: "Hostes", slug: "hostes" },
   ];
 
-  // İstatistik değerleri — tek kaynak (mobil + masaüstü aynı), ileride güncellenecek.
-  const proNum = (proCount ?? 0) > 0 ? (proCount ?? 0) : 2400;
-  const cityNum = cityCount ?? 81;
-  const eventNum = 12000;
+  // Istatistikler — UCU DE GERCEK veri; yedek sabit YOK. Degeri olmayan sayac
+  // (null ya da 0) hic render edilmez; uydurma rakam gosterilmez.
+  const sayaclar: HeroSayac[] = [
+    { key: "pro", value: proCount ?? 0, label: "Profesyonel" },
+    { key: "city", value: cityCount ?? 0, label: "Şehir" },
+    { key: "cat", value: categories.length, label: "Kategori" },
+  ].filter((s) => s.value > 0);
 
   return (
     <section className="relative bg-paper">
@@ -56,9 +60,7 @@ export async function Hero() {
           categories={categories}
           cities={cities}
           popularLinks={popularLinks}
-          proCount={proNum}
-          cityCount={cityNum}
-          eventCount={eventNum}
+          sayaclar={sayaclar}
         />
       </div>
 
@@ -80,7 +82,7 @@ export async function Hero() {
                 style={{ background: "var(--color-brand-accent)" }}
               />
               <span className="font-body font-semibold text-[11px] uppercase tracking-[0.2em] text-brand-ink">
-                Etkinlik &amp; Yetenek Pazaryeri
+                Etkinlik ve Yetenek Pazaryeri
               </span>
             </div>
 
@@ -98,10 +100,11 @@ export async function Hero() {
             {/* Alt metin */}
             <p
               className="kashe-rise font-body text-[18px] leading-[1.6] mb-8"
-              style={{ color: "var(--color-ink-50)", maxWidth: "40ch", animationDelay: "160ms" }}
+              style={{ color: "var(--color-ink-50)", maxWidth: "44ch", animationDelay: "160ms" }}
             >
               Düğün, kurumsal etkinlik ya da özel bir kutlama. Türkiye&apos;nin en
-              yetenekli profesyonelleri — ajanssız, şeffaf fiyatla.
+              yetenekli profesyonelleri, ekipleri ve organizasyon firmaları —
+              şeffaf fiyatla, tek platformda.
             </p>
 
             {/* Arama çubuğu */}
@@ -149,44 +152,28 @@ export async function Hero() {
               })}
             </div>
 
-            {/* İstatistikler — 3 kolon, ince ayırıcılar */}
-            <div
-              className="kashe-rise flex items-center gap-6 pt-6 border-t border-line"
-              style={{ animationDelay: "320ms" }}
-            >
-              <div>
-                <StatCounter
-                  value={proNum}
-                  suffix="+"
-                  className="font-display font-semibold text-[28px] text-ink leading-none block"
-                />
-                <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-                  Profesyonel
-                </small>
+            {/* İstatistikler — ince ayırıcılar; değeri olmayan sayaç basılmaz */}
+            {sayaclar.length > 0 && (
+              <div
+                className="kashe-rise flex items-center gap-6 pt-6 border-t border-line"
+                style={{ animationDelay: "320ms" }}
+              >
+                {sayaclar.map((s, i) => (
+                  <div key={s.key} className="flex items-center gap-6">
+                    {i > 0 && <div className="w-px h-7 bg-line shrink-0" />}
+                    <div>
+                      <StatCounter
+                        value={s.value}
+                        className="font-display font-semibold text-[28px] text-ink leading-none block"
+                      />
+                      <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
+                        {s.label}
+                      </small>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="w-px h-7 bg-line shrink-0" />
-              <div>
-                <StatCounter
-                  value={cityNum}
-                  suffix="+"
-                  className="font-display font-semibold text-[28px] text-ink leading-none block"
-                />
-                <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-                  Şehir
-                </small>
-              </div>
-              <div className="w-px h-7 bg-line shrink-0" />
-              <div>
-                <StatCounter
-                  value={eventNum}
-                  suffix="+"
-                  className="font-display font-semibold text-[28px] text-ink leading-none block"
-                />
-                <small className="font-body text-[11px] text-ink-50 mt-1.5 block uppercase tracking-[0.08em]">
-                  Etkinlik
-                </small>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* ——— SAĞ SÜTUN: 3D helix (lg+) / kolaj fallback (mobil) ——— */}

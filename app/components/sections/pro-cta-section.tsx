@@ -1,6 +1,7 @@
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Button } from "@/app/components/ui/button";
 import { getCategoryIcon } from "@/app/lib/category-icon";
+import { OrnekRozeti } from "@/app/components/ui/ornek-rozeti";
 
 type Promise = {
   number: string;
@@ -17,9 +18,9 @@ const PROMISES: Promise[] = [
   },
   {
     number: "2",
-    title: "Aracısız iletişim.",
+    title: "Doğrudan iletişim.",
     description:
-      "Müşteriyle doğrudan konuş. Ajans kesintisi, aracı pazarlığı yok.",
+      "Müşteriyle platform içinde doğrudan konuş. Teklifler ve mesajlar kayıt altında kalır, iletişim bilgilerin anlaşma netleşene kadar gizlidir.",
   },
   {
     number: "3",
@@ -70,9 +71,9 @@ export function ProCtaSection() {
             </h2>
 
             <p className="text-lg text-ink-72 leading-[1.55] mb-10 max-w-xl">
-              DJ, fotoğrafçı, sunucu, müzisyen, hostes ya da organizasyon —
-              profilini aç, portfolyonu yükle, sana doğrudan ulaşılsın.
-              Aracısız, şeffaf, kontrol sende.
+              DJ, fotoğrafçı, sunucu, oyuncu, dansçı, müzisyen, hostes ya da
+              organizasyon — profilini aç, portfolyonu yükle, sana doğrudan
+              ulaşılsın. Şeffaf, kontrol sende.
             </p>
 
             <div className="space-y-5 mb-10">
@@ -98,7 +99,7 @@ export function ProCtaSection() {
                 </Button>
               </a>
               <a href="/#nasil-calisir">
-                <Button variant="secondary" size="lg">
+                <Button variant="secondary" size="lg" className="border-ink">
                   Nasıl çalışır?
                 </Button>
               </a>
@@ -110,9 +111,12 @@ export function ProCtaSection() {
             <div className="bg-card border border-line rounded-2xl shadow-[0_24px_60px_-16px_rgba(26,18,14,0.22)] overflow-hidden max-w-sm mx-auto">
               {/* Üst — renkli ikon zemini */}
               <div
-                className="h-32 flex items-center justify-center"
+                className="relative h-32 flex items-center justify-center"
                 style={{ background: "rgba(200,68,42,0.12)" }}
               >
+                <div className="absolute top-3 right-3">
+                  <OrnekRozeti />
+                </div>
                 {fotograf ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img

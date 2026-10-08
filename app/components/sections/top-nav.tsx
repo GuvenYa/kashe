@@ -137,7 +137,7 @@ export async function TopNav() {
         </a>
 
         {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden lg:flex items-center gap-7">
           {/* İşlevsel keşif — her kullanıcıya */}
           {DISCOVERY_LINKS.map((link) => (
             <a
@@ -175,7 +175,7 @@ export async function TopNav() {
         </div>
 
         {/* Sağ */}
-        <div className="hidden md:flex items-center gap-4 shrink-0">
+        <div className="hidden lg:flex items-center gap-4 shrink-0">
           {user ? (
             <>
               <a href="/mesajlar" className={navLinkClass + " inline-flex items-center gap-1.5"}>

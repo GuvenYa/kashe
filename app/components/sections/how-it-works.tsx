@@ -57,7 +57,7 @@ export function HowItWorks() {
               ulaş.
             </h2>
             <p className="font-body text-lg text-white/85 leading-[1.6]">
-              İhtiyacını yaz, teklif al, güvenle öde. Bütün süreç ortalama 48 saat.
+              İhtiyacını yaz, teklif al, güvenle öde.
             </p>
           </div>
 

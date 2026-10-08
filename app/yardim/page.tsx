@@ -35,7 +35,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Kashe kimlere uygun?',
-        a: 'İki tarafa hitap eder: (1) Etkinlik düzenleyen bireyler ve kurumsal firmalar — düğün, doğum günü, açılış, kurumsal toplantı vb. için profesyonel arayanlar. (2) Etkinlik, eğlence ve medya sektöründe çalışan profesyoneller, ajanslar ve menajerler — yeni iş fırsatlarına ulaşmak isteyenler.',
+        a: 'İki tarafa hitap eder: (1) Etkinlik düzenleyen bireyler ve kurumsal firmalar — düğün, doğum günü, açılış, kurumsal toplantı vb. için profesyonel arayanlar. (2) Etkinlik, eğlence ve medya sektöründe çalışan profesyoneller, organizasyon firmaları, ajanslar ve menajerler — yeni iş fırsatlarına ulaşmak isteyenler.',
       },
       {
         q: 'Üye olmadan da gezebilir miyim?',
@@ -54,7 +54,7 @@ const FAQ_GROUPS: FaqGroup[] = [
     questions: [
       {
         q: 'Hangi rolde kayıt olmalıyım?',
-        a: 'Dört seçenek var: (1) Hizmet alan kullanıcı (bireysel — düğün, doğum günü, kurumsal etkinlik için profesyonel arıyorsan), (2) İşletme (kurumsal etkinlik düzenleyen firma), (3) Profesyonel hizmet sağlayıcı (kendi adına çalışan fotoğrafçı, DJ, sunucu vb.), (4) Ajans/menajer (birden fazla profesyoneli temsil eden yapı).',
+        a: 'Dört seçenek var: (1) Hizmet alan kullanıcı (bireysel — düğün, doğum günü, kurumsal etkinlik için profesyonel arıyorsan), (2) İşletme (kurumsal etkinlik düzenleyen firma), (3) Profesyonel hizmet sağlayıcı (kendi adına çalışan fotoğrafçı, DJ, sunucu vb.), (4) Ajans, organizasyon firması veya menajer (birden fazla profesyoneli temsil eden ya da etkinliğin tamamını üstlenen yapı).',
       },
       {
         q: 'Sonradan rol değiştirebilir miyim?',
@@ -62,7 +62,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Profilimi nasıl yayına alırım?',
-        a: 'Profesyonel veya ajans olarak kayıt olduktan sonra profil bilgilerini doldur (kategori, şehir, hizmet açıklaması, fiyat aralığı, portföy). Tamamlanan profiller otomatik yayına geçer.',
+        a: 'Profesyonel veya ajans olarak kayıt olduktan sonra profilini doldur (kategori, şehir, hizmet açıklaması, fiyat aralığı, portföy). Profil bilgilerini tamamladıktan sonra ekibimiz inceler; onaylanan profil yayına alınır.',
       },
       {
         q: 'Profil fotoğrafımı/portföyümü nasıl güncellerim?',
@@ -150,7 +150,7 @@ const FAQ_GROUPS: FaqGroup[] = [
     questions: [
       {
         q: 'Hangi kategoriler var?',
-        a: 'Etkinlik hizmetleri (düğün, açılış, lansman), eğlence ve sahne (müzisyen, DJ, palyaço, sihirbaz, dansçı, sunucu), medya ve prodüksiyon (fotoğrafçı, videograf, oyuncu, model, figüran, seslendirme), etkinlik personeli ve teknik ekip (hostes, garson, ses-ışık), ajanslar ve kurumsal hizmetler. Tam liste için Keşfet sayfasına bakabilirsin.',
+        a: 'Bugün 23 aktif kategori var. Sahne ve eğlence: DJ, müzisyen, dansçı, illüzyonist, palyaço, komedyen, akrobat. Medya ve prodüksiyon: fotoğrafçı, videograf, oyuncu, model, canlı yayın, drone pilotu, influencer. Etkinlik ve sahne desteği: sunucu, konuşmacı, hostes, ses ve ışık, saç-makyaj-styling, çevirmen, karikatürist, etkinlik koordinatörü ve organizasyon hizmetleri. Tam liste için Kategoriler sayfasına bakabilirsin.',
       },
       {
         q: 'Aradığım kategori yok, ne yapabilirim?',

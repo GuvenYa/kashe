@@ -151,6 +151,7 @@ export async function FeaturedProfiles() {
           </div>
           <Link
             href="/kesfet"
+            prefetch={false}
             className="kashe-tap shrink-0 font-mono text-xs uppercase tracking-[0.16em] text-brand-ink hover:underline inline-flex items-center gap-1.5 self-start md:self-auto"
           >
             Tümünü keşfet →
@@ -161,6 +162,7 @@ export async function FeaturedProfiles() {
         <div className="flex flex-wrap gap-2 mb-8">
           <Link
             href="/kesfet"
+            prefetch={false}
             className="kashe-tap px-4 py-2 rounded-full text-xs font-mono uppercase tracking-[0.14em] bg-ink text-paper border border-ink hover:bg-ink-2 transition-colors"
           >
             Tümü
@@ -172,6 +174,7 @@ export async function FeaturedProfiles() {
               <Link
                 key={c.slug}
                 href={`/kesfet?kategori=${catId}`}
+                prefetch={false}
                 className="kashe-tap px-4 py-2 rounded-full text-xs font-mono uppercase tracking-[0.14em] bg-transparent text-ink-72 border border-line hover:border-ink hover:text-ink transition-colors"
               >
                 {c.label}

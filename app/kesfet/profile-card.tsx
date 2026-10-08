@@ -294,6 +294,7 @@ export function ProfileCard({
     return (
       <Link
         href={profileHref}
+        prefetch={false}
         aria-label={displayName}
         className={`group relative block rounded-2xl overflow-hidden bg-card border transition-all duration-300 hover:-translate-y-1 ${
           isPremium
@@ -383,6 +384,7 @@ export function ProfileCard({
             {/* Teklif Al — mobilde HER ZAMAN görünür, brand-ink, tam genişlik */}
             <Link
               href={profileHref}
+              prefetch={false}
               className="relative z-20 mt-auto block w-full text-center bg-brand-ink text-paper rounded-lg py-2.5 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
             >
               Teklif Al
@@ -460,6 +462,7 @@ export function ProfileCard({
             {/* Teklif Al — brand-ink (mobil ile tutarlı), tam genişlik */}
             <Link
               href={profileHref}
+              prefetch={false}
               className="mt-2.5 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
             >
               Teklif Al
@@ -479,6 +482,7 @@ export function ProfileCard({
         {/* Kart geneli tıklama → profil (stretched link, z-10; interaktifler z-20) */}
         <Link
           href={profileHref}
+          prefetch={false}
           className="absolute inset-0 z-10"
           aria-label={displayName}
         />

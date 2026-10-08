@@ -1,4 +1,5 @@
 import { Button } from "@/app/components/ui/button";
+import { OrnekRozeti } from "@/app/components/ui/ornek-rozeti";
 
 type Feature = {
   number: string;
@@ -30,8 +31,11 @@ export function B2BSection() {
       id="kurumsal"
       className="bg-paper-2"
     >
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-28">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      {/* T6: md kiriliminda bolum dolgusu kisaldi (py-28 → py-20); lg'de eski
+          comert bosluk korunur. Ust uste binen py-28'ler 807 px'te ~220 px bos
+          bant birakiyordu. */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-20 lg:py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div>
             <div className="mb-6">
               <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-brand-accent">
@@ -46,9 +50,11 @@ export function B2BSection() {
             </h2>
 
             <p className="text-lg text-ink-72 leading-[1.55] mb-10 max-w-xl">
-              Otel, fuar şirketi veya kurumsal etkinlik ekibi misiniz? Şirket
-              adınızla iş ilanı açın, tek brief ile çok sayıda profesyonelden
-              teklif toplayın.
+              Lansman, konferans, bayi toplantısı, gala, fuar ya da marka
+              etkinliği düzenleyen pazarlama, kurumsal iletişim, insan kaynakları
+              ve satın alma ekipleri için. Şirket adınızla ilan açın, tek brief
+              ile çok sayıda profesyonelden teklif toplayın, süreci ekipçe
+              yönetin.
             </p>
 
             <div className="space-y-5 mb-10">
@@ -82,19 +88,16 @@ export function B2BSection() {
 
           <div className="relative">
             <div className="bg-ink-2 border border-paper-14 rounded-2xl p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-paper-14">
+              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-paper-14">
                 <span className="font-display text-base text-paper">
-                  İlan #4231 · Hilton İstanbul
+                  İlan · Yıllık bayi toplantısı
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-sky px-2 py-1 bg-sky/12">
-                  Aktif
-                </span>
+                <OrnekRozeti ton="koyu" />
               </div>
 
               <div className="space-y-4">
-                <MockupRow label="Etkinlik" value="Yıllık iftar daveti" />
-                <MockupRow label="Tarih" value="22 Mart 2026" />
-                <MockupRow label="Aranan" value="8 hostes · 1 sunucu" />
+                <MockupRow label="Tarih" value="14 Mayıs 2027" />
+                <MockupRow label="Aranan" value="6 hostes · 1 sunucu · 1 DJ" />
                 <MockupRow label="Teklif istenen" value="18 profesyonel" />
                 <div className="pt-2">
                   <MockupRow label="Bütçe" value="28.000 ₺" highlight />
@@ -122,7 +125,7 @@ function MockupRow({
   highlight?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper-50">
         {label}
       </span>

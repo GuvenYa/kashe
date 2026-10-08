@@ -50,7 +50,8 @@ const TONES = [
 export function TrustSection() {
   return (
     <section className="bg-paper border-t border-line">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
+      {/* T6: md kiriliminda dolgu kisaldi; lg kiriliminda comert bosluk korunur. */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-20 lg:py-24">
         {/* Section header */}
         <div className="mb-12 md:mb-16 max-w-2xl">
           <Eyebrow variant="inline" className="mb-4">

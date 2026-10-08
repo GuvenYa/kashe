@@ -3,8 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Hero istatistik sayacı — viewport'a girince 0'dan hedefe ease-out sayar (~1.5sn).
- * "+" gibi ekler suffix ile sabit kalır. prefers-reduced-motion'da direkt hedef değer.
+ * Hero istatistik sayacı.
+ *
+ * SUNUCU HTML'inde NIHAI deger basilir (ilk state = `value`) — boylece kaynakta
+ * "0" ya da "0+" hic gecmez; tarayicisiz okuyan (hakem, arama motoru, paylasim
+ * onizlemesi) dogru sayiyi gorur.
+ *
+ * Animasyon yalniz tarayicida, oge goruse girdiginde calisir ve
+ * `prefers-reduced-motion: reduce` acikken HIC calismaz.
  * Sayı tr-TR binlik ayracıyla biçimlenir (12000 → "12.000").
  */
 export function StatCounter({
@@ -19,7 +25,8 @@ export function StatCounter({
   durationMs?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [display, setDisplay] = useState(0);
+  // Ilk render = nihai deger (SSR ve istemcide ayni → hydration uyusmazligi yok).
+  const [display, setDisplay] = useState(value);
   const started = useRef(false);
 
   useEffect(() => {
@@ -29,10 +36,7 @@ export function StatCounter({
     const prefersReduced = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches;
-    if (prefersReduced) {
-      setDisplay(value);
-      return;
-    }
+    if (prefersReduced) return; // nihai deger zaten basili
 
     const io = new IntersectionObserver(
       (entries) => {

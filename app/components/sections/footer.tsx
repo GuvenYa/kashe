@@ -16,8 +16,10 @@ export function Footer() {
               </span>
             </a>
             <p className="text-paper/70 max-w-xs leading-relaxed">
-              Türkiye&apos;nin etkinlik ve yetenek pazaryeri. Doğru profesyoneli ajanssız, şeffaf fiyatla bul.
+              Türkiye&apos;nin etkinlik ve yetenek pazaryeri. Doğru profesyoneli,
+              ekibi ya da organizasyon firmasını şeffaf fiyatla bul.
             </p>
+            <p className="text-paper/50 text-sm mt-3">İstanbul, Türkiye</p>
           </div>
 
           {/* Keşfet linkleri */}
@@ -63,6 +65,11 @@ export function Footer() {
               <li>
                 <a href="/hakkimizda#kurumsal" className="text-paper/80 hover:text-paper transition-colors">
                   Kurumsal müşteriler
+                </a>
+              </li>
+              <li>
+                <a href="/#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
+                  Ajanslar ve organizasyon firmaları
                 </a>
               </li>
               <li>
