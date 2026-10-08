@@ -16,6 +16,7 @@ import {
   type IcKalemSatiri,
   type KalemSatiri,
   type PortalBaglantisi,
+  type RfpBaglami,
   type SurumSatiri,
   type TeklifRezervasyonu,
   type TeklifSatiri,
@@ -80,6 +81,7 @@ export function TeklifEditoru({
   maliyetYazilir,
   silinebilir,
   rezervasyon,
+  rfpBaglami,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -93,6 +95,8 @@ export function TeklifEditoru({
   silinebilir: boolean;
   /** FAZ 7c: gecerli surumun rezervasyonu (varsa); yalniz RPC acar. */
   rezervasyon: TeklifRezervasyonu | null;
+  /** FAZ 7b: RFP yaniti baglami; null ise dogrudan teklif (portal akisi). */
+  rfpBaglami: RfpBaglami | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -355,12 +359,15 @@ export function TeklifEditoru({
         return;
       }
       setGonderOnayi(false);
+      // FAZ 7b: RFP yanitinda portal baglantisi YOK (action null doner).
       setBaglantiKutusu(res.data!.link);
       setMailNotu(res.data!.mailReason ?? null);
       setBilgi(
-        res.data!.mailSent
-          ? 'Teklif gönderildi; e-posta müşteriye ulaştı.'
-          : 'Teklif gönderildi.'
+        res.data!.link === null
+          ? 'Teklif alıcıya iletildi.'
+          : res.data!.mailSent
+            ? 'Teklif gönderildi; e-posta müşteriye ulaştı.'
+            : 'Teklif gönderildi.'
       );
     });
   }
@@ -430,6 +437,25 @@ export function TeklifEditoru({
 
   return (
     <div className="space-y-5">
+      {/* FAZ 7b — RFP yaniti bandi */}
+      {rfpBaglami && (
+        <div className="px-4 py-3 bg-brand-ink-08 border border-brand-ink/25 rounded-lg flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-ink">
+            Teklif talebine yanıt: <strong>{rfpBaglami.title}</strong>
+            {rfpBaglami.buyerName ? ` · ${rfpBaglami.buyerName}` : ''}
+            {rfpBaglami.deadline
+              ? ` · son tarih ${zamanMetni(rfpBaglami.deadline)}`
+              : ''}
+          </p>
+          <Link
+            href={`/ajans/rfp/${rfpBaglami.id}`}
+            className="kashe-tap text-sm text-brand-ink hover:underline"
+          >
+            Talebi gör
+          </Link>
+        </div>
+      )}
+
       {/* Baslik satiri */}
       <div className="bg-card border border-line rounded-lg p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -446,7 +472,7 @@ export function TeklifEditoru({
               <p className="font-display text-2xl text-ink">{teklif.title}</p>
             )}
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl">
-              {canManage ? (
+              {canManage && !rfpBaglami ? (
                 <>
                   <input
                     type="text"
@@ -469,7 +495,11 @@ export function TeklifEditoru({
                 </>
               ) : (
                 <p className="text-sm text-ink-72">
-                  {teklif.client_name || teklif.client_email || 'Müşteri girilmedi'}
+                  {rfpBaglami
+                    ? `Alıcı kuruluş: ${rfpBaglami.buyerName ?? teklif.client_name ?? 'Kuruluş'}`
+                    : teklif.client_name ||
+                      teklif.client_email ||
+                      'Müşteri girilmedi'}
                 </p>
               )}
             </div>
@@ -1002,8 +1032,9 @@ export function TeklifEditoru({
                     '—'}
                 </li>
                 <li>
-                  Alıcı e-posta:{' '}
-                  {teklif.client_email || 'yok — bağlantıyı elle iletmen gerekir'}
+                  {rfpBaglami
+                    ? `Alıcı: ${rfpBaglami.buyerName ?? 'alıcı kuruluş'} (Kashe içinde görür)`
+                    : `Alıcı e-posta: ${teklif.client_email || 'yok — bağlantıyı elle iletmen gerekir'}`}
                 </li>
               </ul>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1017,8 +1048,9 @@ export function TeklifEditoru({
                 />
               </div>
               <p className="text-xs text-ink-50">
-                Gönderdikten sonra bu sürüm kilitlenir; değişiklik için yeni
-                sürüm açman gerekir.
+                {rfpBaglami
+                  ? 'Teklif alıcı kuruluşa iletilecek. Gönderdikten sonra bu sürüm kilitlenir; değişiklik için yeni sürüm açman gerekir.'
+                  : 'Gönderdikten sonra bu sürüm kilitlenir; değişiklik için yeni sürüm açman gerekir.'}
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
@@ -1073,8 +1105,8 @@ export function TeklifEditoru({
         </div>
       )}
 
-      {/* Portal baglantilari */}
-      {baglantilar.length > 0 && (
+      {/* Portal baglantilari — RFP yanitinda YOK (baglanti acilmaz) */}
+      {!rfpBaglami && baglantilar.length > 0 && (
         <div className="bg-card border border-line rounded-lg p-5">
           <p className="font-display font-semibold text-ink mb-3">
             Müşteri bağlantıları

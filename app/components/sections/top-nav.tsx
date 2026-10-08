@@ -8,7 +8,11 @@ import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
-import { hasCrewAccess, hasProposalAccess } from "@/app/lib/org-context";
+import {
+  hasCrewAccess,
+  hasProposalAccess,
+  hasRfpBuyerAccess,
+} from "@/app/lib/org-context";
 import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
 
 export async function TopNav() {
@@ -95,6 +99,8 @@ export async function TopNav() {
     // FAZ 7a/P1: teklifler — `proposals.view` yetkili kurulusu olan ajans kullanicisi.
     if (await hasProposalAccess()) {
       menuLinks.push({ href: "/ajans/teklifler", label: "Teklifler" });
+      // FAZ 7b/P1: ajansa gelen teklif talepleri (RFP).
+      menuLinks.push({ href: "/ajans/rfp", label: "Gelen RFP'ler" });
     }
   }
   // Profesyonel/ajans → Teklif Talepleri (profilde bölüm yok → kalır)
@@ -110,6 +116,10 @@ export async function TopNav() {
   }
   // FAZ 4c/P2: etkinlik akisi tum girisli rollerde (profilde bolum yok, tek erisim menu)
   menuLinks.push({ href: "/etkinliklerim", label: "Etkinliklerim" });
+  // FAZ 7b/P1: RFP alici tarafi — `events.view` yetkili kurulusu olan (kurum ve ajans).
+  if (await hasRfpBuyerAccess()) {
+    menuLinks.push({ href: "/kurumsal/rfp", label: "RFP Talepleri" });
+  }
   menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
 
   const navLinkClass =

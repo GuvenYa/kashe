@@ -57,11 +57,24 @@ const GROUP_LABELS: Record<'today' | 'week' | 'older', string> = {
 };
 
 // Bildirim tipine göre etiket
-const TYPE_LABELS: Record<Notification['type'], string> = {
+const TYPE_LABELS: Record<string, string> = {
   message: 'Mesaj',
   review: 'Yorum',
   review_reply: 'Yanıt',
+  listing_invitation: 'İlan daveti',
+  booking_request: 'Rezervasyon',
+  // FAZ 7b
+  rfp: 'Teklif talebi',
+  proposal: 'Teklif',
 };
+
+/**
+ * Bilinmeyen tip genel etiketle gosterilir: DB'deki CHECK listesi uygulamadan
+ * once genisleyebilir (FAZ 7b'de 'rfp' ve 'proposal' boyle eklendi).
+ */
+function tipEtiketi(tur: string): string {
+  return TYPE_LABELS[tur] ?? 'Bildirim';
+}
 
 export function BildirimListesi({
   initialNotifications,
@@ -242,7 +255,7 @@ export function BildirimListesi({
                             {notif.body}
                           </p>
                           <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 shrink-0">
-                            {TYPE_LABELS[notif.type]}
+                            {tipEtiketi(notif.type)}
                           </p>
                         </div>
                         <p className="text-xs text-ink-72">

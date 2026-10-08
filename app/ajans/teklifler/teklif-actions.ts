@@ -406,7 +406,12 @@ export async function sendProposal(input: {
   proposalId: string;
   validDays: number;
 }): Promise<
-  ActionResult<{ link: string; mailSent: boolean; mailReason?: string | null }>
+  ActionResult<{
+    /** RFP yanitinda NULL: portal baglantisi acilmaz (alici Kashe icinde okur). */
+    link: string | null;
+    mailSent: boolean;
+    mailReason?: string | null;
+  }>
 > {
   if (!UUID_KALIBI.test(input.proposalId)) {
     return { success: false, error: 'Teklif geçersiz.' };
@@ -428,8 +433,18 @@ export async function sendProposal(input: {
     return { success: false, error: teklifHataMesaji(error) };
   }
 
-  const satir = ((data ?? []) as { link_id: string; token: string }[])[0];
-  if (!satir?.token) {
+  const satir = ((data ?? []) as { link_id: string | null; token: string | null }[])[0];
+
+  // FAZ 7b: RFP yaniti — RPC (NULL, NULL) doner; portal baglantisi acilmaz,
+  // e-posta gonderilmez. Alici teklifi Kashe icinde (RLS ile) okur.
+  if (!satir || (satir.link_id === null && satir.token === null)) {
+    revalidatePath(`/ajans/teklifler/${input.proposalId}`);
+    revalidatePath('/ajans/teklifler');
+    revalidatePath('/kurumsal/rfp');
+    return { success: true, data: { link: null, mailSent: false } };
+  }
+
+  if (!satir.token) {
     console.error('[teklif] gonderim: jeton donmedi');
     return { success: false, error: 'Bağlantı oluşturulamadı, tekrar dene.' };
   }

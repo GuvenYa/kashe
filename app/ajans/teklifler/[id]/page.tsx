@@ -8,6 +8,7 @@ import { getCrewContext } from '@/app/lib/org-context';
 import { TeklifEditoru } from './teklif-editoru';
 import type {
   KalemSatiri,
+  RfpBaglami,
   TeklifRezervasyonu,
   PortalBaglantisi,
   SurumSatiri,
@@ -41,7 +42,7 @@ export default async function TeklifDetayPage({
     .from('proposals')
     .select(
       `id, title, client_name, client_email, status, current_version_id,
-       event_id, crew_id, seller_organization_id, created_at, updated_at`
+       event_id, crew_id, rfp_id, seller_organization_id, created_at, updated_at`
     )
     .eq('id', id)
     .maybeSingle();
@@ -98,6 +99,35 @@ export default async function TeklifDetayPage({
     rezervasyon = (rezData as TeklifRezervasyonu | null) ?? null;
   }
 
+  // FAZ 7b: RFP yaniti ise talebi oku (RLS: satici davetli kurulus uyesi gorur).
+  // Embed ipucu: rfps -> organizations FK adiyla verilir.
+  let rfpBaglami: RfpBaglami | null = null;
+  if (teklif.rfp_id) {
+    const { data: rfpData, error: rfpHatasi } = await supabase
+      .from('rfps')
+      .select(
+        'id, title, status, deadline, buyer:organizations!rfps_organization_id_fkey(display_name)'
+      )
+      .eq('id', teklif.rfp_id)
+      .maybeSingle();
+    if (rfpHatasi) console.error('[teklif] rfp baglami', rfpHatasi);
+    const r = rfpData as {
+      id: string;
+      title: string;
+      status: string;
+      deadline: string | null;
+      buyer: { display_name: string | null } | null;
+    } | null;
+    if (r) {
+      rfpBaglami = {
+        id: r.id,
+        title: r.title,
+        status: r.status,
+        deadline: r.deadline,
+        buyerName: r.buyer?.display_name ?? null,
+      };
+    }
+  }
   // `token_hash` SECILMEZ — sutun yetkisi yok (secilirse 42501).
   const { data: baglantiData, error: baglantiHatasi } = await supabase
     .from('portal_access_links')
@@ -134,6 +164,7 @@ export default async function TeklifDetayPage({
               canManage={!!kurulus?.canManageProposals}
               maliyetGorulur={!!kurulus?.canSeeRates}
               maliyetYazilir={!!kurulus?.canManageRates}
+              rfpBaglami={rfpBaglami}
               rezervasyon={rezervasyon}
               silinebilir={
                 !!kurulus?.canManageProposals &&

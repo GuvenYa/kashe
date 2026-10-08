@@ -6,7 +6,9 @@ import { revalidatePath } from 'next/cache';
 export type Notification = {
   id: string;
   user_id: string;
-  type: 'message' | 'review' | 'review_reply';
+  // FAZ 7b: notifications.type CHECK listesi genisledi; bilinmeyen tip genel
+  // etiketle gosterilir (bildirim-listesi.tsx).
+  type: string;
   link: string;
   body: string;
   read_at: string | null;

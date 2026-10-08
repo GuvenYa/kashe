@@ -34,6 +34,8 @@ export type TeklifSatiri = {
   current_version_id: string | null;
   event_id: string | null;
   crew_id: string | null;
+  /** FAZ 7b: RFP yaniti ise talep kimligi. */
+  rfp_id: string | null;
   seller_organization_id: string;
   created_at: string;
   updated_at: string;
@@ -150,4 +152,17 @@ export const REZERVASYON_DURUM_ETIKETLERI: Record<string, string> = {
   confirmed: 'Onaylı',
   cancelled: 'İptal',
   completed: 'Tamamlandı',
+};
+
+/**
+ * FAZ 7b — RFP yaniti baglami (editorde band + kilitli musteri alanlari).
+ * Teklif `rfp_id` dolu ise alici bir KURULUS'tur: musteri adi/e-postasi
+ * duzenlenmez, portal baglantisi acilmaz (`proposal_send` NULL doner).
+ */
+export type RfpBaglami = {
+  id: string;
+  title: string;
+  status: string;
+  deadline: string | null;
+  buyerName: string | null;
 };

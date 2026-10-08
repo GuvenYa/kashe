@@ -40,7 +40,7 @@ export default async function AjansTekliflerPage() {
     .from('proposals')
     .select(
       `id, title, client_name, client_email, status, current_version_id,
-       event_id, crew_id, seller_organization_id, created_at, updated_at`
+       event_id, crew_id, rfp_id, seller_organization_id, created_at, updated_at`
     )
     .in(
       'seller_organization_id',
@@ -169,6 +169,11 @@ export default async function AjansTekliflerPage() {
                         <p className="font-display font-semibold text-ink">
                           {t.title}
                         </p>
+                        {t.rfp_id && (
+                          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-brand-ink mt-0.5">
+                            RFP yanıtı
+                          </p>
+                        )}
                         <p className="text-sm text-ink-72 mt-0.5">
                           {[
                             t.client_name || t.client_email || 'Müşteri girilmedi',

@@ -133,6 +133,10 @@ export type CrewOrg = {
   canManageProposals: boolean;
   /** `organizations.account_type` (agency | business | ...). */
   accountType: string;
+  /** FAZ 7b: `events.view` — kurulusun etkinlik/RFP yuzeyini gorur (kurum ve ajans). */
+  canViewEvents: boolean;
+  /** FAZ 7b: `events.manage` — RFP acar, duzenler, gonderir. */
+  canManageEvents: boolean;
 };
 
 export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
@@ -171,6 +175,8 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       modul,
       teklifGorebilir,
       teklifYonetir,
+      etkinlikGorebilir,
+      etkinlikYonetir,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -205,6 +211,14 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
           p_org_id: org.id,
           p_permission: 'proposals.manage',
         }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'events.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'events.manage',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -227,6 +241,10 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       canManageProposals:
         teklifYonetir.data === true && org.account_type === 'agency',
       accountType: org.account_type,
+      // FAZ 7b: RFP alici tarafi kurum VE ajans kurulusunda calisir (hesap turu
+      // suzgeci YOK; teklif saticiligi ise yalniz ajans — yukaridaki iki alan).
+      canViewEvents: etkinlikGorebilir.data === true,
+      canManageEvents: etkinlikYonetir.data === true,
     });
   }
 
@@ -285,6 +303,11 @@ async function tekIzinVarMi(
 /** Menude "Ekipler" (FAZ 6/P2). */
 export async function hasCrewAccess(): Promise<boolean> {
   return tekIzinVarMi('crew.view', 'ekip');
+}
+
+/** Menude "RFP Talepleri" (FAZ 7b/P1) — `events.view` yetkili kurulus (kurum ve ajans). */
+export async function hasRfpBuyerAccess(): Promise<boolean> {
+  return tekIzinVarMi('events.view', 'rfp');
 }
 
 /** Menude "Teklifler" (FAZ 7a/P1) — yalniz AJANS kurulusu (P2/D). */

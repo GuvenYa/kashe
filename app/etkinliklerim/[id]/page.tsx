@@ -81,6 +81,8 @@ type Etkinlik = {
   id: string;
   /** FAZ 6/P1: eslestirmeyi yalniz sahip calistirir. */
   owner_user_id: string;
+  /** FAZ 7b: kurulusa ait etkinlikte "Teklif talebi ac" (RFP) baglantisi. */
+  organization_id: string | null;
   title: string | null;
   event_type: string;
   start_date: string | null;
@@ -546,6 +548,14 @@ export default async function EtkinlikDetayPage({
     }
   }
 
+  // FAZ 7b/P1 — etkinlik bir kurulusa aitse ve kullanici `events.manage` ise
+  // ust bilgi satirinda "Teklif talebi ac" baglantisi (RFP formu o etkinlikle acilir).
+  const rfpAcilabilir =
+    !!etkinlik.organization_id &&
+    ekipKuruluslari.some(
+      (o) => o.id === etkinlik.organization_id && o.canManageEvents
+    );
+
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
     typeof ekstra.date_note === 'string' ? ekstra.date_note : null;
@@ -630,6 +640,16 @@ export default async function EtkinlikDetayPage({
             <h1 className="font-display text-4xl text-ink leading-tight">
               {baslik}
             </h1>
+            {rfpAcilabilir && (
+              <p className="mt-3">
+                <Link
+                  href={`/kurumsal/rfp?etkinlik=${etkinlik.id}`}
+                  className="kashe-tap text-sm text-brand-ink hover:underline"
+                >
+                  Teklif talebi aç (RFP)
+                </Link>
+              </p>
+            )}
           </div>
 
           {/* Alanlar */}
