@@ -640,7 +640,15 @@ tetikleyicisinde, gizli ic maliyet karti yalniz kurulus ekibinde, `/ajans/ekiple
 (baglanti + ad soyad onayi) ya da Kashe kullanicisi; KDV haric fiyat + %20 satiri; gonderilmis teklif silinmez, kapatilir. Uygulama P1 (teklif
 editoru, ic maliyet karti, gonderme onay kapisi + e-posta), P2 (`/portal/teklif/[token]` ayri yuzey: yalniz 3 anon RPC, acik onay ekrani,
 revizyon istegi; taslak silme; satici yuzeyi yalniz ajans), P2-ek (Europe/Istanbul), P2-cila (belge duzeni; `/portal` bakim modundan muaf).
-Madde 34b (RFP) **7b**, madde 36 (`bookings`) **7c** olarak devam ediyor; acik kalanlar 19 bolum 10.
+Madde 34b (RFP) **7b** olarak devam ediyor; acik kalanlar 19 bolum 10.
+
+**FAZ 7c KAPANDI (7-8 Ekim 2026, `docs/envanter/19-faz7-ticari-katman.md` bolum 11):** madde 36 **7c-DB/01** — `bookings` + 5 nullable sutun
+(`buyer_organization_id`, `seller_provider_id`, `event_id`, `crew_member_id`, `proposal_version_id`), dort eski sutun NULLABLE + `bookings_shape_check`
+(eski sekil / teklif sekli), surum basina tekil indeks, yetki sikilastirma (INSERT/DELETE yok, UPDATE yalniz durum sutunlari), kurulus RLS
+(`can_access_booking_row`), `booking_from_proposal` (onayli surumden TEK rezervasyon, idempotan), portal `has_booking`. Eski
+`on_quote_accepted_create_booking` tetikleyicisi DOKUNULMADI (asama4 T2 + asama16 K9 kanit; uretimde 12 eski rezervasyon sekli tam).
+Uygulama 7c-P1: editorde "Rezervasyon oluştur", `/rezervasyonlarim` Kurulus bolumu, `/rezervasyon/[id]` teklif sekli, portal bandi.
+Kararlar (Guven): ayri tablo yok; tek rezervasyon/surum (uye basina FAZ 8); kurulus rezervasyonlari `/rezervasyonlarim` icinde.
 
 ### FAZ 8 — Event OS modulleri
 

@@ -4,9 +4,9 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** **FAZ 7a KAPANDI (7 Ekim 2026)** — 7a-DB/01-02 uretimde; P1 (`6e90b32`), P2 (`9672df0`), P2-ek (`64e567a`), P2-cila (`d84e653`)
-deploy'da. **7c-DB/01 hazir** (`20261008120000_faz7c_01_bookings_genisleme.sql`; yerelde asama4 24/24, asama16 ESIT; bolum 11) -> dal -> uretim
--> 7c-P1 (`19-claude-code-gorevi-7c-p1.md`). Sonra **7b** (RFP).
+**Durum:** **FAZ 7a KAPANDI (7 Ekim 2026)**, **FAZ 7c KAPANDI (8 Ekim 2026)** — 7a-DB/01-02 ve 7c-DB/01 (`8121a74`) uretimde; 7a P1/P2/P2-ek/P2-cila
+ve 7c-P1 deploy'da; canli turlar gecti (bolum 10 ve 11). Sirada hijyen **H6** (`hijyen-h6-saat-dilimi-gorevi.md`: tum tarih/saat Istanbul) ve
+**7b** (RFP; bolum 12 — kararlar Guven ile).
 
 ## 1. Amac ve sinir
 
@@ -296,3 +296,24 @@ Yerel zincir (7 Ekim 2026): faz7c_01 iki kez (idempotan), asama4 **24/24** (T2 e
 "Kuruluş rezervasyonları" bolumu, `/rezervasyon/[id]` teklif sekli (satici kurulus / alici; iptal: musteri veya proposals.manage; tamamlama:
 proposals.manage), portal "Rezervasyon oluşturuldu" bandi. Acik: alici Kashe kullanicisina bildirim; kurulus geliri kazanc/odeme sayfalarinda
 (finance); kesfet/kategori "tamamlanan is" sayaci RLS yuzunden zaten bos (H8 — toplu RPC ile FAZ 9).
+
+**Kapanis — 7c-DB/01 (8 Ekim 2026, commit `8121a74`):** dal: push 1 dosya; asama4 **24/24** (T2 eski akis GECTI, T23 "... sekilsiz satir 23514"),
+asama16 K1-K9/K12 ESIT. Uretim: push; asama16 hepsi ESIT, K10 **12000** (12 eski rezervasyon, 0 teklif), K11 1 (lansman); asama15 degismedi
+(K10 204); `select count(*), count(*) filter (where quote_id is null)` -> 12 / 0 (eski sekil tam).
+**Kapanis — 7c-P1 (8 Ekim 2026):** `teklif-data/actions`, `[id]/page` + `teklif-editoru` ("Rezervasyon oluştur" -> onay -> `booking_from_proposal`;
+"Rezervasyon: <durum>" + "Rezervasyona git"), liste "Rezervasyon var", `rezervasyonlarim/page` + yeni `kurulus-karti.tsx` ("Kuruluş rezervasyonları";
+eski bolumler `eskiSekilMi` tip koruyucusuyla eski sekle sabit), `rezervasyon/[id]/page` + `actions` (teklif sekli: satici kurulus `getCrewContext`
+ile, musteri e-postasi yalniz kurulus uyesine, "Teklife git", sohbet karti gizli; iptal musteri veya proposals.manage, tamamlama proposals.manage;
+sohbet/e-posta kodu `conversation_id` NULL ise atlanir), portal `has_booking` bandi. Claude Code kaniti: tsc bos, build 88 rota + BUILD_ID,
+PostgREST on yoklamasi (embed ipucu zorunlulugu PGRST201 ile dogrulandi), INSERT 0, portal kurallari degismedi. **Canli tur (Guven):**
+lansman editoru -> "Rezervasyon oluştur" -> onay -> "Rezervasyon oluşturuldu", rozet + "Rezervasyona git", F5 sonrasi dugme yok; listede
+"Rezervasyon var"; `/rezervasyon/49e694e4...`: baslik, "Müşteri: Deneme Müşteri" + e-posta, Sürüm 3 · Onaylandı, 50.400 TL, etkinlik satiri,
+"Teklife git", sohbet yok; `/rezervasyonlarim` ucuncu bolumde kart, eski bolumler ve eski rezervasyon sayfasi aynen; portal bandi; Test Pro:
+bolum yok, URL 404. SQL: yeni satir confirmed / 50400 / misafir / teklif / quotesuz / 2026-11-20 / "İstanbul" / 100; denetim `booking.from_proposal`
+1; asama16 K10 **12001**, K11 0. **Yakalanan:** detay sayfasi "19:33" — `rezervasyon/[id]/page.tsx` kendi `toLocaleString`'i, timeZone'suz
+(H6 listesindeydi) -> H6 hijyen gorevi SIMDI (`hijyen-h6-saat-dilimi-gorevi.md`: ortak `app/lib/tarih.ts`, sunucu + istemci tum cagrilar).
+Not: alici **kurulus** (`buyer_organization_id`) detayda taraf olarak tanimlanmadi — bugun veri yok, 7b ile gelir.
+
+**FAZ 7c KAPANDI (8 Ekim 2026).** Acik kalanlar: (a) H6 (bu gorev); (b) alici Kashe kullanicisina/kurulusuna bildirim ve detayda alici kurulus tarafi
+(7b); (c) kurulus geliri kazanc/odeme sayfalarinda (finance); (d) H8 kesfet/kategori "tamamlanan is" sayaci; (e) ekip uyesi basina gorevlendirme
+(FAZ 8); (f) anon `bookings` SELECT eski `is_agency_member` politikasiyla 42501 (eski davranis; FAZ 10 temizlik).
