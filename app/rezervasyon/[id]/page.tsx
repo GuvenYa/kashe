@@ -5,6 +5,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { getEventTypeLabel } from '@/app/mesajlar/data';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
+import { getCrewContext } from '@/app/lib/org-context';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -12,10 +13,16 @@ type Props = {
 
 type BookingDetay = {
   id: string;
-  quote_id: string;
-  conversation_id: string;
-  customer_id: string;
-  professional_id: string;
+  // FAZ 7c: dort eski sutun NULLABLE (teklif sekli); kod null'i acikca ele alir.
+  quote_id: string | null;
+  conversation_id: string | null;
+  customer_id: string | null;
+  professional_id: string | null;
+  // FAZ 7c teklif sekli
+  proposal_version_id: string | null;
+  seller_provider_id: string | null;
+  buyer_organization_id: string | null;
+  event_id: string | null;
   event_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -49,6 +56,21 @@ type BookingDetay = {
     id: string;
     services_description: string | null;
     cancellation_policy: string | null;
+  } | null;
+  /** FAZ 7c: teklif sekli — embed ipucu ZORUNLU (proposals <-> versions iki iliski). */
+  surum: {
+    version_no: number;
+    total_amount: number | string;
+    approved_by_name: string | null;
+    approved_at: string | null;
+    proposal: {
+      id: string;
+      title: string;
+      client_name: string | null;
+      client_email: string | null;
+      seller_organization_id: string;
+      seller: { display_name: string | null } | null;
+    } | null;
   } | null;
 };
 
@@ -147,6 +169,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     .select(
       `
       id, quote_id, conversation_id, customer_id, professional_id,
+      proposal_version_id, seller_provider_id, buyer_organization_id, event_id,
       event_date, start_time, end_time, event_type, location, guest_count,
       total_amount, currency, status,
       created_at, cancelled_at, cancelled_by, cancellation_reason, completed_at,
@@ -159,6 +182,13 @@ export default async function RezervasyonDetayPage({ params }: Props) {
       ),
       quote:quotes!bookings_quote_id_fkey (
         id, services_description, cancellation_policy
+      ),
+      surum:proposal_versions!bookings_proposal_version_id_fkey (
+        version_no, total_amount, approved_by_name, approved_at,
+        proposal:proposals!proposal_versions_proposal_id_fkey (
+          id, title, client_name, client_email, seller_organization_id,
+          seller:organizations!proposals_seller_organization_id_fkey (display_name)
+        )
       )
     `
     )
@@ -171,21 +201,42 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     notFound();
   }
 
-  const isCustomer = booking.customer_id === user.id;
-  const isProfessional = booking.professional_id === user.id;
+  const isCustomer = !!booking.customer_id && booking.customer_id === user.id;
+  const isProfessional =
+    !!booking.professional_id && booking.professional_id === user.id;
 
-  if (!isCustomer && !isProfessional) {
+  // FAZ 7c — teklif sekli: satici kurulus uyesi de gorebilir (proposals.view);
+  // iptal/tamamlama yetkisi proposals.manage. RLS zaten suzuyor; burada taraf
+  // tespiti gosterim ve 404 icin.
+  const teklifSekli = !!booking.proposal_version_id;
+  const saticiOrgId = booking.surum?.proposal?.seller_organization_id ?? null;
+  let isSellerOrg = false;
+  let sellerOrgManage = false;
+  if (teklifSekli && saticiOrgId) {
+    const { orgs } = await getCrewContext();
+    const org = orgs.find((o) => o.id === saticiOrgId) ?? null;
+    isSellerOrg = !!org?.canViewProposals;
+    sellerOrgManage = !!org?.canManageProposals;
+  }
+
+  if (!isCustomer && !isProfessional && !isSellerOrg) {
     notFound();
   }
 
   const viewer = isCustomer ? 'customer' : 'professional';
+  const teklif = booking.surum?.proposal ?? null;
+  // Teklif seklinde: satici kurulus uyesine musteri adi, aliciya kurulus adi.
   const otherParty = viewer === 'customer' ? booking.professional : booking.customer;
-  const otherName = otherParty
-    ? (otherParty.role === 'business' || otherParty.role === 'agency') &&
-      otherParty.company_name
-      ? otherParty.company_name
-      : otherParty.full_name || 'İsimsiz'
-    : 'İsimsiz';
+  const otherName = teklifSekli
+    ? isSellerOrg
+      ? teklif?.client_name?.trim() || 'Müşteri'
+      : teklif?.seller?.display_name?.trim() || 'Kuruluş'
+    : otherParty
+      ? (otherParty.role === 'business' || otherParty.role === 'agency') &&
+        otherParty.company_name
+        ? otherParty.company_name
+        : otherParty.full_name || 'İsimsiz'
+      : 'İsimsiz';
 
   const initials = otherName
     .split(' ')
@@ -198,8 +249,10 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   const tone = pickTone(otherParty?.id ?? booking.id);
   const statusStyle = STATUS_STYLES[booking.status];
   const cancelledByCustomer = booking.cancelled_by === booking.customer_id;
-  const backHref = viewer === 'customer' ? '/rezervasyonlarim' : '/takvimim';
-  const backLabel = viewer === 'customer' ? 'Rezervasyonlarım' : 'Takvimim';
+  const backHref =
+    teklifSekli || viewer === 'customer' ? '/rezervasyonlarim' : '/takvimim';
+  const backLabel =
+    teklifSekli || viewer === 'customer' ? 'Rezervasyonlarım' : 'Takvimim';
 
   return (
     <>
@@ -237,14 +290,47 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               </div>
               <div className="min-w-0 flex-1">
                 <Eyebrow variant="inline" className="mb-2">
-                  {viewer === 'customer' ? 'Profesyonel' : 'Müşteri'}
+                  {teklifSekli
+                    ? isSellerOrg
+                      ? 'Müşteri'
+                      : 'Kuruluş'
+                    : viewer === 'customer'
+                      ? 'Profesyonel'
+                      : 'Müşteri'}
                 </Eyebrow>
-                <Link
-                  href={viewer === 'customer' ? `/p/${otherParty?.id}` : '#'}
-                  className="font-display font-semibold text-2xl text-ink hover:text-brand-ink transition-colors block"
-                >
-                  {otherName}
-                </Link>
+                {teklifSekli ? (
+                  <p className="font-display font-semibold text-2xl text-ink">
+                    {otherName}
+                  </p>
+                ) : (
+                  <Link
+                    href={viewer === 'customer' ? `/p/${otherParty?.id}` : '#'}
+                    className="font-display font-semibold text-2xl text-ink hover:text-brand-ink transition-colors block"
+                  >
+                    {otherName}
+                  </Link>
+                )}
+                {teklifSekli && (
+                  <>
+                    <p className="text-sm text-ink-72 mt-1">
+                      {teklif?.title ?? 'Teklif'}
+                    </p>
+                    {/* Musteri e-postasi YALNIZ kurulus uyesine */}
+                    {isSellerOrg && teklif?.client_email && (
+                      <p className="text-sm text-ink-72">
+                        {teklif.client_email}
+                      </p>
+                    )}
+                    {booking.surum && (
+                      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 mt-1">
+                        Sürüm {booking.surum.version_no}
+                        {booking.surum.approved_at
+                          ? ` · Onaylandı · ${booking.surum.approved_by_name ?? 'Müşteri'} · ${formatDateTime(booking.surum.approved_at)}`
+                          : ''}
+                      </p>
+                    )}
+                  </>
+                )}
                 {viewer === 'customer' &&
                   booking.professional?.service_categories && (
                     <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 mt-1">
@@ -267,8 +353,12 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 İptal kaydı
               </Eyebrow>
               <p className="text-sm text-ink leading-relaxed">
-                {cancelledByCustomer ? 'Müşteri' : 'Profesyonel'} bu rezervasyonu
-                iptal etti.
+                {cancelledByCustomer
+                  ? 'Müşteri'
+                  : teklifSekli
+                    ? 'Kuruluş'
+                    : 'Profesyonel'}{' '}
+                bu rezervasyonu iptal etti.
                 {booking.cancelled_at && (
                   <>
                     {' '}
@@ -398,7 +488,31 @@ export default async function RezervasyonDetayPage({ params }: Props) {
             </p>
           </div>
 
-          {/* KONUŞMAYA GİT */}
+          {/* TEKLİFE GİT — FAZ 7c, yalniz kurulus uyesine */}
+          {teklifSekli && isSellerOrg && teklif?.id && (
+            <Link
+              href={`/ajans/teklifler/${teklif.id}`}
+              className="block bg-card border border-line rounded-2xl p-5 mb-6 hover:border-brand-ink transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-display font-semibold text-base text-ink group-hover:text-brand-ink transition-colors">
+                    Teklife git
+                  </p>
+                  <p className="text-xs text-ink-72 mt-0.5">
+                    Kalemler, sürümler ve iç maliyet
+                  </p>
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink inline-flex items-center gap-1 transition-transform group-hover:translate-x-1">
+                  Aç
+                  <span>→</span>
+                </span>
+              </div>
+            </Link>
+          )}
+
+          {/* KONUŞMAYA GİT — yalniz eski sekil (teklif seklinde sohbet yok) */}
+          {booking.conversation_id && (
           <Link
             href={`/mesajlar/${booking.conversation_id}`}
             className="block bg-card border border-line rounded-2xl p-5 mb-6 hover:border-brand-ink transition-colors group"
@@ -425,15 +539,28 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               </span>
             </div>
           </Link>
-
-          {/* AKSİYONLAR — iptal/tamamlama */}
-          {booking.status === 'confirmed' && (
-            <RezervasyonAksiyonlari
-              bookingId={booking.id}
-              viewer={viewer}
-              cancellationPolicy={booking.quote?.cancellation_policy ?? null}
-            />
           )}
+
+          {/* AKSİYONLAR — iptal/tamamlama.
+              Teklif seklinde: iptal musteri (customer_id) veya satici kurulus
+              proposals.manage; tamamlama yalniz satici kurulus proposals.manage
+              (action tarafinda da dogrulanir, RLS asil kapi). */}
+          {booking.status === 'confirmed' &&
+            (teklifSekli ? (
+              sellerOrgManage || isCustomer ? (
+                <RezervasyonAksiyonlari
+                  bookingId={booking.id}
+                  viewer={sellerOrgManage ? 'professional' : 'customer'}
+                  cancellationPolicy={null}
+                />
+              ) : null
+            ) : (
+              <RezervasyonAksiyonlari
+                bookingId={booking.id}
+                viewer={viewer}
+                cancellationPolicy={booking.quote?.cancellation_policy ?? null}
+              />
+            ))}
         </div>
       </main>
     </>

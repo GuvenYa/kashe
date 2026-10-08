@@ -22,6 +22,43 @@ type ActionResult = { success: true } | { success: false; error: string };
  * - Sistem mesajı atılır (mesajlaşma akışına düşer)
  * - Karşı tarafa e-posta gider
  */
+/**
+ * FAZ 7c — teklif sekli yardimcilari.
+ * `bookings` satirindan satici kurulusu cikarir (embed ipucu ZORUNLU: proposals
+ * <-> proposal_versions arasinda iki iliski var) ve kurulus yetkisini sorar.
+ * Asil kapi RLS'tir; bu kontrol yalniz duzgun mesaj icin.
+ */
+function tek<T>(v: unknown): T | null {
+  // PostgREST to-one embed'i NESNE doner; uretilen tipler DIZI diyor —
+  // iki sekle de dayanikli okuma.
+  if (Array.isArray(v)) return (v[0] as T) ?? null;
+  return (v as T) ?? null;
+}
+
+function saticiKurulusId(b: unknown): string | null {
+  const satir = b as { proposal_version_id?: string | null; surum?: unknown } | null;
+  if (!satir?.proposal_version_id) return null;
+  const surum = tek<{ proposal?: unknown }>(satir.surum);
+  const teklif = tek<{ seller_organization_id?: string | null }>(surum?.proposal);
+  return teklif?.seller_organization_id ?? null;
+}
+
+async function yetkiVarMi(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string,
+  izin: 'proposals.manage' | 'proposals.view'
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc('has_org_permission', {
+    p_org_id: organizationId,
+    p_permission: izin,
+  });
+  if (error) {
+    console.error('[rezervasyon] kurulus yetkisi', error);
+    return false;
+  }
+  return data === true;
+}
+
 export async function cancelBooking(
   bookingId: string,
   reason: string | null
@@ -47,7 +84,11 @@ export async function cancelBooking(
     .select(
       `
       id, conversation_id, customer_id, professional_id,
-      status, total_amount, currency, event_date, event_type
+      status, total_amount, currency, event_date, event_type,
+      proposal_version_id,
+      surum:proposal_versions!bookings_proposal_version_id_fkey (
+        proposal:proposals!proposal_versions_proposal_id_fkey (seller_organization_id)
+      )
     `
     )
     .eq('id', bookingId)
@@ -57,10 +98,18 @@ export async function cancelBooking(
     return { success: false, error: 'Rezervasyon bulunamadı' };
   }
 
-  const isCustomer = booking.customer_id === user.id;
-  const isProfessional = booking.professional_id === user.id;
+  const isCustomer = !!booking.customer_id && booking.customer_id === user.id;
+  const isProfessional =
+    !!booking.professional_id && booking.professional_id === user.id;
 
-  if (!isCustomer && !isProfessional) {
+  // FAZ 7c — teklif sekli: iptal musteri (customer_id) VEYA satici kurulus
+  // proposals.manage. RLS zaten suzer; buradaki kontrol yalniz mesaj icin.
+  const saticiOrgId = saticiKurulusId(booking);
+  const isSellerManage = saticiOrgId
+    ? await yetkiVarMi(supabase, saticiOrgId, 'proposals.manage')
+    : false;
+
+  if (!isCustomer && !isProfessional && !isSellerManage) {
     return { success: false, error: 'Bu rezervasyonu iptal etme yetkin yok' };
   }
 
@@ -96,6 +145,9 @@ export async function cancelBooking(
     };
   }
 
+  // FAZ 7c: teklif seklinde sohbet YOK (conversation_id NULL) — sistem mesaji ve
+  // karsi tarafa e-posta atlanir (alici bildirimi acik kalem).
+  if (booking.conversation_id && booking.professional_id && booking.customer_id) {
   // Sistem mesajı
   const systemBody = isCustomer
     ? 'Müşteri rezervasyonu iptal etti'
@@ -130,11 +182,14 @@ export async function cancelBooking(
   } catch (err) {
     console.error('[mail:booking-cancelled]', err);
   }
+  }
 
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/takvimim');
   revalidatePath(`/rezervasyon/${bookingId}`);
-  revalidatePath(`/mesajlar/${booking.conversation_id}`);
+  if (booking.conversation_id) {
+    revalidatePath(`/mesajlar/${booking.conversation_id}`);
+  }
   return { success: true };
 }
 
@@ -168,7 +223,11 @@ export async function completeBooking(
     .select(
       `
       id, conversation_id, customer_id, professional_id,
-      status, total_amount, currency, event_date
+      status, total_amount, currency, event_date,
+      proposal_version_id,
+      surum:proposal_versions!bookings_proposal_version_id_fkey (
+        proposal:proposals!proposal_versions_proposal_id_fkey (seller_organization_id)
+      )
     `
     )
     .eq('id', bookingId)
@@ -178,11 +237,19 @@ export async function completeBooking(
     return { success: false, error: 'Rezervasyon bulunamadı' };
   }
 
-  // Sadece profesyonel tamamlayabilir
-  if (booking.professional_id !== user.id) {
+  // Eski sekilde yalniz profesyonel; teklif seklinde yalniz satici kurulus
+  // (proposals.manage) tamamlar.
+  const tamamlaOrgId = saticiKurulusId(booking);
+  const tamamlaYetkisi = tamamlaOrgId
+    ? await yetkiVarMi(supabase, tamamlaOrgId, 'proposals.manage')
+    : booking.professional_id === user.id;
+
+  if (!tamamlaYetkisi) {
     return {
       success: false,
-      error: 'Sadece profesyonel rezervasyonu tamamlayabilir',
+      error: tamamlaOrgId
+        ? 'Rezervasyonu yalnız kuruluş tamamlayabilir'
+        : 'Sadece profesyonel rezervasyonu tamamlayabilir',
     };
   }
 
@@ -208,33 +275,38 @@ export async function completeBooking(
     };
   }
 
-  // Sistem mesajı
-  await supabase
-    .from('messages')
-    .insert({
-      conversation_id: booking.conversation_id,
-      sender_id: user.id,
-      body: 'Profesyonel işi tamamlandı olarak işaretledi',
-      message_type: 'system',
-    });
+  // FAZ 7c: teklif seklinde sohbet YOK -> sistem mesaji ve yorum e-postasi atlanir.
+  if (booking.conversation_id && booking.customer_id && booking.professional_id) {
+    // Sistem mesajı
+    await supabase
+      .from('messages')
+      .insert({
+        conversation_id: booking.conversation_id,
+        sender_id: user.id,
+        body: 'Profesyonel işi tamamlandı olarak işaretledi',
+        message_type: 'system',
+      });
 
-  // E-posta — müşteriye "yorum bırak"
-  try {
-    await notifyBookingCompleted(
-      supabase,
-      booking.conversation_id,
-      bookingId,
-      booking.customer_id,
-      booking.professional_id
-    );
-  } catch (e) {
-    console.error('[mail:booking-completed]', e);
+    // E-posta — müşteriye "yorum bırak"
+    try {
+      await notifyBookingCompleted(
+        supabase,
+        booking.conversation_id,
+        bookingId,
+        booking.customer_id,
+        booking.professional_id
+      );
+    } catch (e) {
+      console.error('[mail:booking-completed]', e);
+    }
   }
 
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/takvimim');
   revalidatePath(`/rezervasyon/${bookingId}`);
-  revalidatePath(`/mesajlar/${booking.conversation_id}`);
+  if (booking.conversation_id) {
+    revalidatePath(`/mesajlar/${booking.conversation_id}`);
+  }
   return { success: true };
 }
 

@@ -7,13 +7,17 @@ import { RezervasyonKarti } from './rezervasyon-karti';
 import { Calendar } from 'lucide-react';
 import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
+import { getCrewContext } from '@/app/lib/org-context';
+import { KurulusKarti, type KurulusRezervasyonu } from './kurulus-karti';
 
+// FAZ 7c: dort eski sutun artik NULLABLE (teklif sekli). Bu sayfadaki iki eski
+// bolum yalniz kendi koltugunu suzdugu icin davranis DEGISMEZ.
 type BookingRow = {
   id: string;
-  quote_id: string;
-  conversation_id: string;
-  customer_id: string;
-  professional_id: string;
+  quote_id: string | null;
+  conversation_id: string | null;
+  customer_id: string | null;
+  professional_id: string | null;
   event_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -43,16 +47,33 @@ type BookingRow = {
   } | null;
 };
 
+/**
+ * Eski sekil: dort sutun DOLU (teklif kabulu akisi). Eski kart bunu bekler;
+ * teklif sekli (FAZ 7c) ayri kartla ve ayri bolumde gosterilir.
+ */
+type EskiBookingRow = BookingRow & {
+  quote_id: string;
+  conversation_id: string;
+  customer_id: string;
+  professional_id: string;
+};
+
+function eskiSekilMi(b: BookingRow): b is EskiBookingRow {
+  return (
+    !!b.quote_id && !!b.conversation_id && !!b.customer_id && !!b.professional_id
+  );
+}
+
 export const metadata = {
   title: 'Rezervasyonlarım — Kashe',
 };
 
 // Yaklaşan / geçmiş ayrımı — koltuktan bağımsız (her grup içinde uygulanır).
-function splitByTime(list: BookingRow[]) {
+function splitByTime(list: EskiBookingRow[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const upcoming: BookingRow[] = [];
-  const past: BookingRow[] = [];
+  const upcoming: EskiBookingRow[] = [];
+  const past: EskiBookingRow[] = [];
   for (const b of list) {
     if (b.status === 'cancelled' || b.status === 'completed') {
       past.push(b);
@@ -78,7 +99,7 @@ function SeatGroup({
   viewer,
 }: {
   title: string;
-  list: BookingRow[];
+  list: EskiBookingRow[];
   viewer: 'customer' | 'professional';
 }) {
   if (list.length === 0) return null;
@@ -166,8 +187,86 @@ export default async function RezervasyonlarimPage() {
   const bookings = (bookingsData ?? []) as unknown as BookingRow[];
 
   // Koltuk ayrımı (self-guard sayesinde bir kayıt iki koltukta birden olamaz).
-  const asBuyer = bookings.filter((b) => b.customer_id === user.id);
-  const asSeller = bookings.filter((b) => b.professional_id === user.id);
+  // FAZ 7c: koltuk bolumleri yalniz ESKI sekil satirlarini alir — teklif seklinde
+  // conversation_id/professional_id NULL olabilir ve eski kart onlari gosteremez.
+  // Teklif sekli "Kuruluş rezervasyonları" bolumunde; cakisma olmaz (ayrik sekiller).
+  const eskiSekil = bookings.filter(eskiSekilMi);
+  const asBuyer = eskiSekil.filter((b) => b.customer_id === user.id);
+  const asSeller = eskiSekil.filter((b) => b.professional_id === user.id);
+
+  // ---- FAZ 7c / P1 — ucuncu bolum: kurulus rezervasyonlari ----
+  // Yalniz `proposals.view` yetkili AJANS kurulusu uyesine. Teklif sekli
+  // (`proposal_version_id` dolu); embed ipucu ZORUNLU: proposals <-> proposal_versions
+  // arasinda iki iliski var (proposal_id ve current_version_id) -> ipucusuz PGRST201.
+  const { orgs: teklifKuruluslari } = await getCrewContext();
+  const teklifGorenler = teklifKuruluslari.filter((o) => o.canViewProposals);
+
+  const kurulusRezervasyonlari: KurulusRezervasyonu[] = [];
+  if (teklifGorenler.length > 0) {
+    type OrgBookingRow = {
+      id: string;
+      status: string;
+      event_date: string | null;
+      location: string | null;
+      total_amount: number | string;
+      currency: string;
+      created_at: string;
+      customer_id: string | null;
+      proposal_version_id: string | null;
+      surum: {
+        version_no: number;
+        proposal: {
+          id: string;
+          title: string;
+          client_name: string | null;
+          seller_organization_id: string;
+          seller: { display_name: string | null } | null;
+        } | null;
+      } | null;
+    };
+
+    const { data: orgData, error: orgHatasi } = await supabase
+      .from('bookings')
+      .select(
+        `
+        id, status, event_date, start_time, end_time, event_type, location,
+        guest_count, total_amount, currency, created_at, completed_at, cancelled_at,
+        customer_id, proposal_version_id,
+        surum:proposal_versions!bookings_proposal_version_id_fkey (
+          version_no,
+          proposal:proposals!proposal_versions_proposal_id_fkey (
+            id, title, client_name, seller_organization_id,
+            seller:organizations!proposals_seller_organization_id_fkey (display_name)
+          )
+        )
+      `
+      )
+      .not('proposal_version_id', 'is', null)
+      .order('event_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (orgHatasi) console.error('[rezervasyon] kurulus listesi', orgHatasi);
+
+    // Kullanici ayni zamanda aliciysa satir ilk bolumde de cikar; id ile tekillestirilir.
+    const gorulen = new Set<string>();
+    for (const r of (orgData ?? []) as unknown as OrgBookingRow[]) {
+      if (gorulen.has(r.id)) continue;
+      gorulen.add(r.id);
+      const teklif = r.surum?.proposal ?? null;
+      kurulusRezervasyonlari.push({
+        id: r.id,
+        status: r.status,
+        event_date: r.event_date,
+        location: r.location,
+        total_amount: r.total_amount,
+        currency: r.currency,
+        created_at: r.created_at,
+        teklifBasligi: teklif?.title ?? 'Teklif',
+        musteriAdi: teklif?.client_name ?? null,
+        kurulusAdi: teklif?.seller?.display_name ?? null,
+        versionNo: r.surum?.version_no ?? null,
+      });
+    }
+  }
 
   return (
     <>
@@ -187,7 +286,7 @@ export default async function RezervasyonlarimPage() {
             </p>
           </div>
 
-          {bookings.length === 0 ? (
+          {bookings.length === 0 && kurulusRezervasyonlari.length === 0 ? (
             <EmptyState
               icon={Calendar}
               title="Henüz rezervasyon yok"
@@ -206,6 +305,26 @@ export default async function RezervasyonlarimPage() {
                 list={asSeller}
                 viewer="professional"
               />
+
+              {/* FAZ 7c — kurulus rezervasyonlari (yalniz proposals.view yetkili ajans uyesi) */}
+              {kurulusRezervasyonlari.length > 0 && (
+                <section>
+                  <h2 className="font-display font-semibold text-xl md:text-2xl text-ink tracking-tight mb-1">
+                    Kuruluş rezervasyonları{' '}
+                    <span className="text-ink-50 font-normal text-base">
+                      ({kurulusRezervasyonlari.length})
+                    </span>
+                  </h2>
+                  <p className="text-sm text-ink-72 mb-5">
+                    Onaylanan tekliflerden açılan rezervasyonlar.
+                  </p>
+                  <div className="space-y-3">
+                    {kurulusRezervasyonlari.map((r) => (
+                      <KurulusKarti key={r.id} rez={r} />
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </div>

@@ -8,6 +8,7 @@ import { getCrewContext } from '@/app/lib/org-context';
 import { TeklifEditoru } from './teklif-editoru';
 import type {
   KalemSatiri,
+  TeklifRezervasyonu,
   PortalBaglantisi,
   SurumSatiri,
   TeklifSatiri,
@@ -84,6 +85,19 @@ export default async function TeklifDetayPage({
     kalemler = (kalemData ?? []) as unknown as KalemSatiri[];
   }
 
+  // FAZ 7c: gecerli surumun rezervasyonu (surum basina tek satir; RLS kurulus
+  // politikasi gosterir). Rezervasyon yalniz `booking_from_proposal` ile acilir.
+  let rezervasyon: TeklifRezervasyonu | null = null;
+  if (gecerliSurum) {
+    const { data: rezData, error: rezHatasi } = await supabase
+      .from('bookings')
+      .select('id, status, created_at')
+      .eq('proposal_version_id', gecerliSurum.id)
+      .maybeSingle();
+    if (rezHatasi) console.error('[teklif] rezervasyon okuma', rezHatasi);
+    rezervasyon = (rezData as TeklifRezervasyonu | null) ?? null;
+  }
+
   // `token_hash` SECILMEZ — sutun yetkisi yok (secilirse 42501).
   const { data: baglantiData, error: baglantiHatasi } = await supabase
     .from('portal_access_links')
@@ -120,6 +134,7 @@ export default async function TeklifDetayPage({
               canManage={!!kurulus?.canManageProposals}
               maliyetGorulur={!!kurulus?.canSeeRates}
               maliyetYazilir={!!kurulus?.canManageRates}
+              rezervasyon={rezervasyon}
               silinebilir={
                 !!kurulus?.canManageProposals &&
                 teklif.status === 'draft' &&

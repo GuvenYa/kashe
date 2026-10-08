@@ -544,3 +544,49 @@ export async function deleteDraftProposal(
   revalidatePath('/ajans/teklifler');
   return { success: true };
 }
+
+/**
+ * FAZ 7c / P1 — onayli tekliften rezervasyon.
+ *
+ * Rezervasyon YALNIZ `booking_from_proposal` RPC'siyle acilir; uygulama
+ * `bookings`'e INSERT yapmaz (yetki de yok). RPC idempotan: surumun
+ * rezervasyonu varsa onu doner, ikinci satir acilmaz.
+ */
+export async function createBookingFromProposal(
+  proposalId: string
+): Promise<ActionResult<{ id: string }>> {
+  if (!UUID_KALIBI.test(proposalId)) {
+    return { success: false, error: 'Teklif geçersiz.' };
+  }
+
+  const { supabase, user } = await oturum();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { data, error } = await supabase.rpc('booking_from_proposal', {
+    p_proposal_id: proposalId,
+  });
+
+  if (error || !data) {
+    console.error('[teklif] rezervasyon', error);
+    const kod = error?.code ?? '';
+    const mesaj = error?.message ?? '';
+    if (kod === '42501') {
+      return { success: false, error: 'Bu işlem için yetkin yok.' };
+    }
+    if (kod === '22023') {
+      if (mesaj.includes('onayli degil')) {
+        return { success: false, error: 'Teklif onaylı değil.' };
+      }
+      if (mesaj.includes('onayli surum yok')) {
+        return { success: false, error: 'Onaylı sürüm yok.' };
+      }
+    }
+    if (kod === 'P0002') return { success: false, error: 'Teklif bulunamadı.' };
+    return { success: false, error: 'İşlem yapılamadı, tekrar dene.' };
+  }
+
+  revalidatePath(`/ajans/teklifler/${proposalId}`);
+  revalidatePath('/ajans/teklifler');
+  revalidatePath('/rezervasyonlarim');
+  return { success: true, data: { id: data as string } };
+}

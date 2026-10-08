@@ -87,6 +87,19 @@ export default async function AjansTekliflerPage() {
     }
   }
 
+  // FAZ 7c: hangi gecerli surumlerin rezervasyonu var (tek sorgu; RLS kurulus
+  // politikasiyla suzer). Rezervasyon yalniz RPC ile acilir, burada yalniz okuma.
+  const rezervasyonluSurumler = new Set<string>();
+  if (surumIdleri.length > 0) {
+    const { data: rezData } = await supabase
+      .from('bookings')
+      .select('proposal_version_id')
+      .in('proposal_version_id', surumIdleri);
+    for (const r of (rezData ?? []) as { proposal_version_id: string }[]) {
+      rezervasyonluSurumler.add(r.proposal_version_id);
+    }
+  }
+
   // Etkinlik basligi: RLS gostermeyebilir (kurulus uyesi etkinligin sahibi degilse).
   const etkinlikIdleri = [
     ...new Set(teklifler.map((t) => t.event_id).filter((v): v is string => !!v)),
@@ -203,6 +216,12 @@ export default async function AjansTekliflerPage() {
                             <p className="text-xs text-ink-50">
                               Açıldı: {tarihMetni(t.created_at)}
                             </p>
+                            {t.status === 'approved' &&
+                              rezervasyonluSurumler.has(surum.id) && (
+                                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-moss mt-1">
+                                  Rezervasyon var
+                                </p>
+                              )}
                           </>
                         )}
                       </div>

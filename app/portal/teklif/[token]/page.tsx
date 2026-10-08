@@ -119,6 +119,12 @@ export default async function PortalTeklifPage({
             {teklif.approved_by_name ? ` · ${teklif.approved_by_name}` : ''}
             {teklif.approved_at ? ` · ${zamanMetni(teklif.approved_at)}` : ''}
           </p>
+          {/* FAZ 7c: rezervasyon acildiysa musteri bunu gorur */}
+          {teklif.has_booking && (
+            <p className="text-sm text-ink mt-1">
+              Rezervasyon oluşturuldu; kuruluş sizinle iletişime geçecek.
+            </p>
+          )}
         </div>
       )}
       {teklif.status === 'revision_requested' && (

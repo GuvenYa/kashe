@@ -173,3 +173,19 @@ export function tarihAlani(iso: string | null | undefined): string {
     timeZone: KASHE_SAAT_DILIMI,
   }).format(d);
 }
+
+/**
+ * FAZ 7c — onayli tekliften acilan rezervasyon (surum basina tek satir).
+ * Rezervasyon YALNIZ `booking_from_proposal` RPC'siyle acilir.
+ */
+export type TeklifRezervasyonu = {
+  id: string;
+  status: string;
+  created_at: string;
+};
+
+export const REZERVASYON_DURUM_ETIKETLERI: Record<string, string> = {
+  confirmed: 'Onaylı',
+  cancelled: 'İptal',
+  completed: 'Tamamlandı',
+};

@@ -40,6 +40,8 @@ export type PortalTeklif = {
   /** Baglantinin izinleri: 'view' | 'approve' | 'request_revision'. */
   scope: string[] | null;
   sent_at: string | null;
+  /** FAZ 7c: iptal edilmemis rezervasyon var mi (RPC hesaplar). */
+  has_booking: boolean;
 };
 
 /**

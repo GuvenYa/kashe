@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   IC_KALEM_KAYNAK_ETIKETLERI,
+  REZERVASYON_DURUM_ETIKETLERI,
   TEKLIF_DURUM_ETIKETLERI,
   kdvYuzdesi,
   marjYuzdesi,
@@ -15,11 +17,13 @@ import {
   type KalemSatiri,
   type PortalBaglantisi,
   type SurumSatiri,
+  type TeklifRezervasyonu,
   type TeklifSatiri,
 } from '../teklif-data';
 import {
   addProposalItem,
   closeProposal,
+  createBookingFromProposal,
   deleteDraftProposal,
   deleteProposalItem,
   newProposalVersion,
@@ -56,6 +60,7 @@ type Onay =
   | { tur: 'kalemSil'; id: string }
   | { tur: 'kapat' }
   | { tur: 'taslakSil' }
+  | { tur: 'rezervasyon' }
   | { tur: 'baglantiIptal'; id: string }
   | null;
 
@@ -74,6 +79,7 @@ export function TeklifEditoru({
   maliyetGorulur,
   maliyetYazilir,
   silinebilir,
+  rezervasyon,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -85,6 +91,8 @@ export function TeklifEditoru({
   maliyetYazilir: boolean;
   /** FAZ 7a/P2: hicbir surumu gonderilmemis taslak -> "Taslagi sil" (DB politikasi ayni kurali uygular). */
   silinebilir: boolean;
+  /** FAZ 7c: gecerli surumun rezervasyonu (varsa); yalniz RPC acar. */
+  rezervasyon: TeklifRezervasyonu | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -296,6 +304,19 @@ export function TeklifEditoru({
     });
   }
 
+  function rezervasyonOlustur() {
+    mesajlariTemizle();
+    startTransition(async () => {
+      const res = await createBookingFromProposal(teklif.id);
+      if (!res.success) {
+        setHata(res.error);
+        return;
+      }
+      setBilgi('Rezervasyon oluşturuldu.');
+      router.refresh();
+    });
+  }
+
   function taslakSil() {
     mesajlariTemizle();
     startTransition(async () => {
@@ -474,8 +495,69 @@ export function TeklifEditoru({
                 {zamanMetni(gecerliSurum.approved_at)}
               </p>
             )}
+
+            {/* FAZ 7c — rezervasyon: varsa rozet + baglanti, yoksa olusturma */}
+            {rezervasyon ? (
+              <div className="mt-2">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72">
+                  Rezervasyon:{' '}
+                  {REZERVASYON_DURUM_ETIKETLERI[rezervasyon.status] ??
+                    rezervasyon.status}
+                </p>
+                <Link
+                  href={`/rezervasyon/${rezervasyon.id}`}
+                  className="kashe-tap text-sm text-brand-ink hover:underline"
+                >
+                  Rezervasyona git
+                </Link>
+              </div>
+            ) : (
+              canManage &&
+              teklif.status === 'approved' && (
+                <button
+                  type="button"
+                  onClick={() => setOnay({ tur: 'rezervasyon' })}
+                  disabled={isPending}
+                  className={`${BTN_IKINCIL} mt-2`}
+                >
+                  Rezervasyon oluştur
+                </button>
+              )
+            )}
           </div>
         </div>
+
+        {/* Rezervasyon onayi — kritik islem, tek tikla gecilmez */}
+        {onay?.tur === 'rezervasyon' && gecerliSurum && (
+          <div className="mt-3 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-ink">
+              {teklif.title} için{' '}
+              {paraMetni(gecerliSurum.total_amount, gecerliSurum.currency) ??
+                '—'}{' '}
+              tutarında rezervasyon oluşturulacak. Emin misin?
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  setOnay(null);
+                  rezervasyonOlustur();
+                }}
+                className={BTN_BIRINCIL}
+              >
+                Oluştur
+              </button>
+              <button
+                type="button"
+                onClick={() => setOnay(null)}
+                className={BTN_IKINCIL}
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        )}
 
         {hata && <p className="text-sm text-danger mt-3">{hata}</p>}
         {bilgi && <p className="text-sm text-moss mt-3">{bilgi}</p>}
