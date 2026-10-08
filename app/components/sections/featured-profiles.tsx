@@ -149,7 +149,7 @@ export async function FeaturedProfiles() {
 
         {/* Profil kartları — Keşfet ile AYNI standart kart: masaüstünde hover
             paneli (tanıtım + etiketler + Teklif Al), mobilde açık gövde.
-            4 sütun; `yogun` ile foto alanı aspect-[4/5]'e daralır. 9-12. kartlar
+            4 sütun; `yogun` ile foto alanı kareye (aspect-square) daralır. 9-12. kartlar
             yalnız lg+ (telefon/tablette 8 kart yeterli). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {list.map((p, i) => (
