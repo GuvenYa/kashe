@@ -44,7 +44,6 @@ const PLANS = [
       'Premium\'un tüm özellikleri',
       'Daha fazla ilan başvurusu',
       'Kategori vitrini',
-      'Sponsorlu alanda öne çıkma (organik sıralama değişmez)',
     ],
   },
   {

@@ -104,10 +104,6 @@ export function B2BSection() {
                 </div>
               </div>
             </div>
-
-            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 text-center">
-              ↑ Örnek bir kurumsal ilan kartı
-            </p>
           </div>
         </div>
       </div>

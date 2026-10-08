@@ -4,53 +4,57 @@ import { OrnekRozeti } from "@/app/components/ui/ornek-rozeti";
 /**
  * AJANSLAR — organizasyon firmalari, ajanslar ve menajerler icin bolum.
  *
- * Renk: eyebrow ve kart vurgulari `ink-blue` — DESIGN.md'de bu ton ajans/kurumsal
+ * Renk: eyebrow ve metin vurgulari `ink-blue` — DESIGN.md'de bu ton ajans/kurumsal
  * kimligin rengi olarak tanimli. Kurumsal bolumuyle ayni duzen (solda metin, sagda
  * ornek kart), farkli zemin (paper) ve farkli vurgu rengi.
  *
- * FIYAT YAZILMAZ. "Gelistiriliyor" maddeleri bugun calisan ozellik DEGIL; etiketi
- * bu yuzden kartin ustunde duruyor.
+ * LISTE YALNIZ BUGUN CALISANI ANLATIR (9 Ekim 2026 karari): bes madde de uretimde.
+ * Henuz olmayan ozellik ana sayfaya yazilmaz — "yakinda" / "gelistiriliyor" etiketi
+ * de kullanilmaz; yol haritasi ayri belgelerin isi.
+ *
+ * FIYAT YAZILMAZ. Ornek kartta para birimi, marka ve kisi adi gecmez.
  */
 
 type Madde = { baslik: string; metin: string };
 
-// Bugun uretimde olan uc yuzey: /ajans/ekipler + /ajans/havuz + /ajans/teklifler
-// (musteri onayi /portal/teklif/[token] baglantisiyla aliniyor).
-const BUGUN: Madde[] = [
+// Bes maddenin uretimdeki karsiligi: /ajans/ekipler + /profil/ekibim (1),
+// /ajans/havuz + internal.organization_talent_rates (2), /ajans/teklifler +
+// internal.proposal_internal_items (3), /portal/teklif/[token] +
+// booking_from_proposal (4), /ajans/rfp (5).
+const YETENEKLER: Madde[] = [
   {
-    baslik: "Ajans profili ve ekip sayfası",
+    baslik: "Ekip ve profil",
     metin:
       "Ekibinizi davet edin; kabul eden her üyenin profilinde ajansınız görünür.",
   },
   {
     baslik: "Özel yetenek havuzu",
     metin:
-      "Kashe hesabı olmayan profesyonellerinizi de kaydedin. Havuz yalnız size görünür, pazaryerine açılmaz.",
+      "Kashe hesabı olmayan profesyonellerinizi ve iç ücretlerini kaydedin. Havuz yalnız size görünür, pazaryerine açılmaz.",
   },
   {
-    baslik: "Teklif ve müşteri onayı",
+    baslik: "Teklif, iç maliyet ve marj",
     metin:
-      "Teklifinizi oluşturun, müşterinize bağlantıyla gönderin, onayı platformda alın. İç maliyetiniz müşteriye görünmez.",
+      "Teklifinizi sürümleyin. İç maliyet ve marjınız yalnız ekibinize görünür; müşteri yalnız teklifi görür.",
+  },
+  {
+    baslik: "Müşteri onayı tek bağlantıyla",
+    metin:
+      "Müşteriniz teklifi bağlantıdan inceler, onaylar ya da revizyon ister. Onaylanan teklif rezervasyona dönüşür.",
+  },
+  {
+    baslik: "Kurumsal teklif taleplerine yanıt",
+    metin:
+      "Kurumların açtığı taleplere davetle katılın, yanıtınızı aynı teklif editöründen gönderin.",
   },
 ];
 
-const GELISTIRILIYOR: Madde[] = [
-  {
-    baslik: "Brief'ten otomatik ekip kurgusu",
-    metin: "Rol, tarih, bütçe ve müsaitlik kısıtları altında ekip alternatifleri.",
-  },
-  {
-    baslik: "Maliyet ve marj kısıtlı teklif alternatifleri",
-    metin: "En uygun, en ekonomik ve hedef marja uygun seçenekler yan yana.",
-  },
-  {
-    baslik: "İnsan onaylı operasyon asistanı",
-    metin:
-      "Görev, risk ve taslak teklif üretir; bağlayıcı işlemleri siz onaylarsınız.",
-  },
-];
-
-export function AjanslarSection() {
+export function AjanslarSection({
+  ajansPaneli = false,
+}: {
+  /** `proposals.view` yetkili ajans kurulusu olan girisli kullanici. */
+  ajansPaneli?: boolean;
+}) {
   return (
     <section id="ajanslar" className="bg-paper border-t border-line scroll-mt-20">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-20 lg:py-28">
@@ -78,75 +82,87 @@ export function AjanslarSection() {
               keşfetsin. Eksik rolleri pazaryerinden tamamlayın.
             </p>
 
-            {/* BUGÜN */}
-            <div className="mb-9">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-moss bg-moss/10 border border-moss/40 px-2.5 py-1 rounded-full">
-                  Erken erişim
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-                  Bugün
-                </span>
-              </div>
-              <MaddeListesi maddeler={BUGUN} />
-            </div>
-
-            {/* GELİŞTİRİLİYOR */}
-            <div className="mb-10">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 bg-paper-2 border border-line px-2.5 py-1 rounded-full">
-                  Geliştiriliyor
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-                  2027 pilot programı
-                </span>
-              </div>
-              <MaddeListesi maddeler={GELISTIRILIYOR} soluk />
-            </div>
+            <ul className="space-y-3.5 mb-10">
+              {YETENEKLER.map((m) => (
+                <li key={m.baslik} className="flex gap-3 items-start">
+                  <span
+                    className="mt-2 w-1.5 h-1.5 rounded-full bg-ink-blue shrink-0"
+                    aria-hidden="true"
+                  />
+                  <p className="text-base leading-[1.5] text-ink-72">
+                    <span className="font-medium text-ink">{m.baslik}</span> —{' '}
+                    {m.metin}
+                  </p>
+                </li>
+              ))}
+            </ul>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="mailto:info@kashe.net?subject=Tasarim%20ortagi%20programi">
+              <a href={ajansPaneli ? "/ajans/teklifler" : "/uye-ol/ajans"}>
                 <Button variant="primary" size="lg">
-                  Tasarım ortağı olun →
+                  {ajansPaneli
+                    ? "Ajans paneline gidin →"
+                    : "Ajans hesabı açın →"}
                 </Button>
               </a>
-              <a href="/uye-ol/ajans">
+              <a href="mailto:info@kashe.net?subject=Ajans%20demo">
                 <Button variant="secondary" size="lg" className="border-ink">
-                  Ajans hesabı açın
+                  Demo isteyin
                 </Button>
               </a>
             </div>
+
+            {!ajansPaneli && (
+              <p className="mt-4 text-sm text-ink-50">
+                Ajans hesabınız var mı?{' '}
+                <a
+                  href="/giris?redirect=/ajans/teklifler"
+                  className="underline text-ink"
+                >
+                  Giriş yapın
+                </a>
+              </p>
+            )}
           </div>
 
-          {/* ——— SAĞ: örnek teklif kartı ——— */}
+          {/* ——— SAĞ: örnek teklif kartı (koyu; Kashe AI kartiyla ayni imza) ——— */}
           <div className="relative lg:pt-10">
-            <div className="bg-card border border-line rounded-2xl p-6 md:p-8 shadow-[0_18px_44px_-24px_rgba(4,13,38,0.25)]">
-              <div className="flex items-start justify-between gap-3 mb-6 pb-4 border-b border-line">
+            <div className="relative overflow-hidden bg-ink border border-paper-14 rounded-2xl p-6 md:p-8 shadow-[0_24px_60px_-28px_rgba(4,13,38,0.45)]">
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 h-[3px] bg-gradient-brand"
+              />
+
+              <div className="flex items-start justify-between gap-3 mb-6 pb-4 border-b border-paper-14">
                 <div className="min-w-0">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-blue mb-1.5">
-                    Event OS
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-sky mb-1.5">
+                    Ajans paneli · Teklif
                   </p>
-                  <p className="font-display text-base text-ink leading-tight">
+                  <p className="font-display text-base text-paper leading-tight">
                     Teklif · Kurumsal yıl sonu daveti
                   </p>
                 </div>
-                <OrnekRozeti />
+                <OrnekRozeti ton="koyu" />
               </div>
 
               <div className="space-y-4">
                 <KartSatiri label="Ekip" value="1 sunucu · 1 DJ · 4 hostes" />
-                <KartSatiri label="Kaynak" value="3 özel havuz, 3 pazaryeri" />
-                <KartSatiri
-                  label="Durum"
-                  value="Müşteri onayı bekleniyor"
-                  vurgu
+                <KartSatiri label="Kaynak" value="3 özel havuz · 3 pazaryeri" />
+                <KartSatiri label="Sürüm" value="2 · müşteriye gönderildi" />
+              </div>
+
+              {/* Durum seridi — bolumun ozu musteri onayi; fiyat satiri YOK */}
+              <div className="grid grid-cols-3 gap-2 pt-4 mt-5 border-t border-paper-14">
+                <DurumAdimi cubuk="bg-paper-50" etiket="text-paper-50" ad="Taslak" />
+                <DurumAdimi cubuk="bg-sky" etiket="text-paper-72" ad="Gönderildi" />
+                <DurumAdimi
+                  cubuk="bg-brand-accent"
+                  etiket="text-brand-accent"
+                  ad="Müşteri onayı"
+                  etkin
                 />
               </div>
             </div>
-
-            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 text-center">
-              ↑ Örnek bir ajans teklif kartı
-            </p>
           </div>
         </div>
       </div>
@@ -154,65 +170,46 @@ export function AjanslarSection() {
   );
 }
 
-function MaddeListesi({
-  maddeler,
-  soluk = false,
-}: {
-  maddeler: Madde[];
-  soluk?: boolean;
-}) {
+function KartSatiri({ label, value }: { label: string; value: string }) {
   return (
-    <ul className="space-y-3.5">
-      {maddeler.map((m) => (
-        <li key={m.baslik} className="flex gap-3 items-start">
-          <span
-            className={
-              soluk
-                ? 'mt-2 w-1.5 h-1.5 rounded-full bg-ink-32 shrink-0'
-                : 'mt-2 w-1.5 h-1.5 rounded-full bg-ink-blue shrink-0'
-            }
-            aria-hidden="true"
-          />
-          <p
-            className={
-              soluk
-                ? 'text-base leading-[1.5] text-ink-50'
-                : 'text-base leading-[1.5] text-ink-72'
-            }
-          >
-            <span className={soluk ? 'font-medium text-ink-72' : 'font-medium text-ink'}>
-              {m.baslik}
-            </span>{' '}
-            — {m.metin}
-          </p>
-        </li>
-      ))}
-    </ul>
+    <div className="flex items-center justify-between gap-4">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper-50">
+        {label}
+      </span>
+      <span className="text-right font-medium text-base text-paper">
+        {value}
+      </span>
+    </div>
   );
 }
 
-function KartSatiri({
-  label,
-  value,
-  vurgu = false,
+function DurumAdimi({
+  cubuk,
+  etiket,
+  ad,
+  etkin = false,
 }: {
-  label: string;
-  value: string;
-  vurgu?: boolean;
+  cubuk: string;
+  etiket: string;
+  ad: string;
+  etkin?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
-        {label}
-      </span>
+    <div>
       <span
-        className={
-          vurgu
-            ? 'text-right font-medium text-base text-ink-blue'
-            : 'text-right font-medium text-base text-ink'
-        }
+        className={`block h-1 rounded-full ${cubuk}`}
+        aria-hidden="true"
+      />
+      <span
+        className={`mt-2 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] ${etiket}`}
       >
-        {value}
+        {ad}
+        {etkin && (
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        )}
       </span>
     </div>
   );

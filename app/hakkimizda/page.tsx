@@ -42,8 +42,8 @@ const SECTIONS: Section[] = [
     id: 'kurumsal',
     title: 'Kurumsal müşteriler için',
     body: [
-      `Lansman, bayi toplantısı, yıl sonu daveti, fuar... Kurumsal etkinlikler ritim ister. Kurumsal hesabınla ekip arkadaşlarını Kashe'ye davet et. Teklifleri ve rezervasyon taleplerini ekipçe tek yerden takip edin. Aynı anda birden çok etkinlik yürütsen de hangi talebin hangi aşamada olduğu herkes için görünür kalır.`,
-      `Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve etkinlik türü beyanları kararlarını hızlandırır. Kurumsal davet deneyimi olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsin.`,
+      `Lansman, bayi toplantısı, yıl sonu daveti, fuar... Kurumsal etkinlikler ritim ister. Kurumsal hesabınızla ekip arkadaşlarınızı Kashe'ye davet edin. Teklifleri ve rezervasyon taleplerini ekipçe tek yerden takip edin. Aynı anda birden çok etkinlik yürütseniz de hangi talebin hangi aşamada olduğu herkes için görünür kalır.`,
+      `Profesyonellerin deneyim geçmişleri, kurumsal sahne referansları ve etkinlik türü beyanları kararlarınızı hızlandırır. Kurumsal davet deneyimi olan profesyonelleri etkinlik türü filtresiyle ayrıca listeleyebilirsiniz.`,
     ],
     ctas: [{ label: 'Kurumsal hesap aç', href: '/uye-ol?rol=kurumsal' }],
   },

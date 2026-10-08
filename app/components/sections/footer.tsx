@@ -16,8 +16,8 @@ export function Footer() {
               </span>
             </a>
             <p className="text-paper/70 max-w-xs leading-relaxed">
-              Türkiye&apos;nin etkinlik ve yetenek pazaryeri. Doğru profesyoneli,
-              ekibi ya da organizasyon firmasını şeffaf fiyatla bul.
+              Türkiye&apos;nin yetenek sahnesi. Etkinliğin için doğru profesyonel,
+              ekip ve organizasyon firması — tek yerde.
             </p>
             <p className="text-paper/50 text-sm mt-3">İstanbul, Türkiye</p>
           </div>

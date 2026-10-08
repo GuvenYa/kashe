@@ -123,7 +123,7 @@ export async function TopNav() {
   menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
 
   const navLinkClass =
-    "font-body text-xs uppercase tracking-[0.16em] text-ink-50 hover:text-ink transition-colors duration-200";
+    "font-body text-xs uppercase tracking-[0.16em] text-ink-50 hover:text-ink transition-colors duration-200 whitespace-nowrap";
 
   return (
     <nav className="w-full border-b border-line bg-paper/95 backdrop-blur-md sticky top-0 z-50">
@@ -137,7 +137,9 @@ export async function TopNav() {
         </a>
 
         {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}
-        <div className="hidden lg:flex items-center gap-7">
+        {/* Orta nav TEK SATIR kalir: anonim kullanicida 9 baglanti var (gap-5),
+            girisli kullanicida 5 (gap-7). Sayfa-ici capalar xl'den itibaren. */}
+        <div className={"hidden lg:flex items-center " + (user ? "gap-7" : "gap-5")}>
           {/* İşlevsel keşif — her kullanıcıya */}
           {DISCOVERY_LINKS.map((link) => (
             <a
@@ -167,7 +169,13 @@ export async function TopNav() {
           ) : (
             // Pazarlama — yalnız girişsiz
             MARKETING_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className={navLinkClass}>
+              <a
+                key={link.href}
+                href={link.href}
+                className={
+                  link.xlOnly ? navLinkClass + " hidden xl:inline-flex" : navLinkClass
+                }
+              >
                 {link.label}
               </a>
             ))

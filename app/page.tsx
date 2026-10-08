@@ -16,6 +16,8 @@ import { FooterCTA } from "@/app/components/sections/footer-cta";
 import { Footer } from "@/app/components/sections/footer";
 import { Reveal } from "@/app/components/sections/reveal";
 import { SITE_URL } from "@/app/lib/site";
+import { getCachedUser } from "@/app/lib/auth";
+import { hasProposalAccess } from "@/app/lib/org-context";
 
 // Canonical YALNIZ burada: layout'a yazilirsa tum alt sayfalar "/" kanonigini
 // miras alirdi. Baslik/aciklama/OG layout'tan gelir.
@@ -42,7 +44,13 @@ const ORGANIZATION_JSONLD = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  // Ajanslar bolumunun birincil dugmesi role gore degisir: paneli olan kullaniciyi
+  // kayit sayfasina gondermek yanlis olur. hasProposalAccess = proposals.view
+  // yetkili ajans kurulusu (top-nav ile ayni kaynak).
+  const user = await getCachedUser();
+  const ajansPaneli = !!user && (await hasProposalAccess());
+
   return (
     <>
       <script
@@ -69,7 +77,7 @@ export default function Home() {
           <B2BSection />
         </Reveal>
         <Reveal>
-          <AjanslarSection />
+          <AjanslarSection ajansPaneli={ajansPaneli} />
         </Reveal>
         <Reveal>
           <ProCtaSection />
