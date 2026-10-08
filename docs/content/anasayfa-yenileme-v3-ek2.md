@@ -128,3 +128,13 @@ FAZ 7 dosyalarina DOKUNMA. **Commit ATMA.**
 
 Degisen dosyalar (sayi), her bolum icin 1-2 satir, tsc/build (BUILD_ID), grep sonuclari, `uye-ol` satir
 listesi (dosya:satir + kosul), sapma varsa gerekcesiyle. Commit ATMA.
+
+## Kapanis (9 Ekim 2026)
+
+- Uygulandi ve canliya cikti: EK `e66bee7`, EK-2 `2715660`, kare kart `c52f4b4` (+ gorev belgeleri `a9b0998`, `a679665`).
+- Canli dogrulama: nav 1024/1280/1920 px tek satir (olculdu, 16 px). Girissiz, ajans (Sunucu Ajans) ve kurum (Test Pro / Test Guven)
+  turlari sorunsuz: role gore CTA'lar, FooterCTA girisli metni, fiyatlandirma/hakkimizda rol davranisi, One cikanlar 4 sutun x 3 satir
+  (kare kart; "bu sekilde idare edelim"), telefonda 8 kart tek sutun ve tam genislik Kashe AI dugmeleri.
+- Footer "Profesyonel ol" -> "Profesyoneller için" (`/#profesyoneller`, sorgu yok) ayni commit'te.
+- Acik kalan: lansman adimlari (Vercel `NEXT_PUBLIC_BAKIM_MODU` kaldir -> Redeploy -> `/sitemap.xml` + portal baglantisi kontrolu) — Guven/Fahri karari.
+- Istisna kaydi: One cikanlar brief v3 "Degismeyecekler" listesindeydi; 9 Ekim istegiyle degisti (kompakt kart -> standart kart + hover paneli, 6 -> 12).
