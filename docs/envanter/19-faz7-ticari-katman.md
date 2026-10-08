@@ -4,9 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** **FAZ 7a KAPANDI (7 Ekim 2026)**, **FAZ 7c KAPANDI (8 Ekim 2026)** — 7a-DB/01-02 ve 7c-DB/01 (`8121a74`) uretimde; 7a P1/P2/P2-ek/P2-cila
-ve 7c-P1 deploy'da; canli turlar gecti (bolum 10 ve 11). Sirada hijyen **H6** (`hijyen-h6-saat-dilimi-gorevi.md`: tum tarih/saat Istanbul) ve
-**7b** (RFP; bolum 12 — kararlar Guven ile).
+**Durum:** **FAZ 7a KAPANDI (7 Ekim)**, **FAZ 7c KAPANDI (8 Ekim)**, H6 deploy'da. **7b-DB/01 hazir** (`20261009120000_faz7b_01_rfp.sql`; yerelde
+asama4 25/25, asama17 ESIT; bolum 12) -> dal -> uretim -> 7b-P1 (`19-claude-code-gorevi-7b-p1.md`) -> 7b-P2 (karsilastirma/secim).
 
 ## 1. Amac ve sinir
 
@@ -317,3 +316,60 @@ Not: alici **kurulus** (`buyer_organization_id`) detayda taraf olarak tanimlanma
 **FAZ 7c KAPANDI (8 Ekim 2026).** Acik kalanlar: (a) H6 (bu gorev); (b) alici Kashe kullanicisina/kurulusuna bildirim ve detayda alici kurulus tarafi
 (7b); (c) kurulus geliri kazanc/odeme sayfalarinda (finance); (d) H8 kesfet/kategori "tamamlanan is" sayaci; (e) ekip uyesi basina gorevlendirme
 (FAZ 8); (f) anon `bookings` SELECT eski `is_agency_member` politikasiyla 42501 (eski davranis; FAZ 10 temizlik).
+
+## 12. 7b — RFP (teklif talebi): alici kurulus talep acar, davetli ajanslar yanitlar (8 Ekim 2026)
+
+**Kararlar (Guven, 8 Ekim):** (1) RFP'yi **etkinligi olan her kurulus** acar (kurum veya ajans; `events.manage` + FAZ 4a etkinligi); satici yine
+yalniz ajans kurulusu. (2) **Kapali RFP**: yalniz davetli ajanslar gorur/yanitlar (`rfp_invites.provider_id`); e-posta daveti (Kashe disi ajans)
+7b'de yok (`invited_email` ayrilmis). (3) **Butce ipucu saticiya gorunmez** (`rfp_items.budget_hint_*` sutun SELECT yetkisi yok; alici `rfp_detail`
+ile okur). (4) **Secim**: secilen teklif `approved` (onaylayan = alici kullanicinin adi), RFP `awarded`; diger yanitlarin teklif durumu degismez,
+davetleri `not_selected`.
+
+**7b-DB/01 (`20261009120000_faz7b_01_rfp.sql`):**
+- Enum `rfp_status` (draft, sent, collecting, evaluating, awarded, cancelled), `rfp_invite_status` (sent, viewed, responded, declined, not_selected).
+- `rfps` (organization_id, event_id NOT NULL CASCADE, title 2-200, description, status, deadline, awarded_proposal_id, created_by), `rfp_items`
+  (role_id RESTRICT, quantity > 0, is_required, budget_hint_min/max, notes, sort_order), `rfp_invites` (provider_id — organization saglayicisi;
+  UNIQUE (rfp, provider); proposal_id tekil; viewed_at/responded_at). `proposals.rfp_id` FK (SET NULL).
+- Koruma: `rfps`/`rfp_invites` INSERT yalniz RPC (bayrak); `rfps.status`/`awarded_proposal_id` yalniz RPC; gonderilmis RFP ve kalemleri
+  degismez (tetikleyici 22023); kurulus/etkinlik sabit.
+- Yetki: `rfps` SELECT + UPDATE(title, description, deadline); `rfp_items` SELECT (ipucu HARIC) + INSERT/UPDATE (ipucu dahil) + DELETE;
+  `rfp_invites` SELECT. RLS: `can_access_rfp_row` (alici kurulus events.view/manage | admin | davetli saticinin kurulusu proposals.view, taslak
+  disinda), `can_access_rfp_invite_row`.
+- **Teklif erisimi genisledi:** `can_access_proposal_row` 6 parametreli (id, satici, alici kisi, alici kurulus, durum, izin) — alici kurulus
+  (`events.view`) EN AZ BIR SURUMU GONDERILMIS teklifi okur (satici yeni surum taslagi acarken gonderilmis surum kaybolmaz; portal ilkesiyle
+  ayni); `is_proposal_buyer` alici kurulusu kapsar; `proposal_versions_select` gonderilmemis surumu aliciya kapatir; `proposal_items_select`
+  aliciya yalniz gonderilmis surumun gorunur kalemlerini acar. Eski 4 parametreli `can_access_proposal_row` yerinde (asama15 K5), politikada
+  kullanilmiyor. Politika sayilari degismedi (asama15 K6 10).
+- RPC'ler (SECURITY DEFINER; assert + log): alici `rfp_create(org, event, title, description, deadline)` (etkinlik kurulusun olmali; kalemler
+  `event_requirements`'tan ipucu dahil kopyalanir), `rfp_invite(rfp, provider)` (organization saglayicisi, kendisi degil; idempotan),
+  `rfp_send(rfp)` (>=1 kalem, >=1 davet, son tarih gelecekte; `sent`; davetli kuruluslarin proposals.manage uyelerine bildirim),
+  `rfp_close` (-> evaluating), `rfp_cancel` (davetler not_selected), `rfp_request_revision(proposal, note)` (revision_requested + satici bildirimi),
+  `rfp_award(rfp, proposal)` (approved + awarded + not_selected + bildirimler), `rfp_detail(rfp)` (role gore JSON: alici ipucu + davetler +
+  yanit ozetleri; satici ipucusuz + `my_invite`); satici `rfp_mark_viewed`, `rfp_invite_decline` (alici bildirimi), `proposal_create_from_rfp(rfp,
+  org)` (`proposal_create` + rfp_id/source rfp_response/buyer_organization_id; kalemler rfp_items'tan fiyatsiz; davete tek yanit, idempotan);
+  **`proposal_send` RFP dali**: portal baglantisi ACILMAZ (NULL, NULL doner), davet responded, RFP collecting, alici bildirimi; talep kapali/son
+  tarih gecmisse 22023. Dogrudan teklif dali aynen.
+- `notifications.type` CHECK listesine `rfp` ve `proposal` eklendi (eski degerler aynen); `fn_faz7b_notify_org(org, izin, link, govde)`.
+  E-posta bildirimi 7b'de yok (acik kalem).
+
+**asama17 (`asama17-faz7b-rfp-kontrol.sql`):** K1 tablo 3 + enum 2; K2 INSERT yetkisi; K3 ipucu sutunu kapali; K4 RPC/erisim 34; K5 RLS 7;
+K6 teklif politikalari 7b surumu 2; K7 FK + bildirim tipi 2; K8 davet tutarsizligi 0; K9 RFP yanitina portal baglantisi 0; K10 alici/kaynak
+tutarsizligi 0; K11 awarded-approved 0; K12/K13 bilgi. **asama4 T24** (ikinci ajans 0007 testte acilir; kurum etkinligi kurulum): rfp_create ve
+hata yollari; taslak duzenleme; ipucu 42501; durum dogrudan 42501; davet/send/bildirimler (owner+sales, viewer/crew yok); satici gorunurlugu
+(viewer 0; ajans 0004 onceki testlerde admin oldugundan sales ile olculur); yanit baglantisiz, responded, collecting; alici teklif + 3 gorunur
+kalem, ic kalem 42501, taslak surum gorunmez; revizyon -> yeni surum -> 2 surum; ikinci ajans yaniti; award (approved/Test Kurum Sahibi,
+awarded, not_selected, bildirimler, ikinci secim 22023, kapali RFP send 22023); rezervasyon alici kurulusla, kurum gorur; RFP2 ret/evaluating/
+cancel; anon 42501. Yerel zincir (8 Ekim): faz7b_01 iki kez (idempotan), asama4 **25/25**, asama17 hepsi ESIT (K12 204), asama15/16 degismedi.
+Yakalanan: `notifications_type_check` 'rfp' icermiyordu (genisletildi); alici erisimi "status <> draft" ile satici yeni surum acinca kayboluyordu
+(-> en az bir gonderilmis surum kurali).
+
+**Uretim sirasi:** 1. Commit. 2. Dal push -> asama4 25/25, asama17 ESIT, asama15/16 degismedi. 3. Uretim push -> asama17 ESIT (K12 0), asama15/16
+degismedi. 4. `git push` -> 7b-P1.
+
+**Uygulama:** **7b-P1 (`19-claude-code-gorevi-7b-p1.md`)** — alici: `/kurumsal/rfp` (liste + "Yeni teklif talebi": kurulus + etkinlik -> `rfp_create`),
+`/kurumsal/rfp/[id]` (taslak: kalemler ipucuyla duzenlenir, aciklama/son tarih, ajans davet et — `providers` organization tipi arama —, "Gönder";
+gonderilmis: davet durumlari, yanit listesi); satici: `/ajans/rfp` (gelen davetler), `/ajans/rfp/[id]` (ipucusuz talep, "Teklif hazırla" ->
+`proposal_create_from_rfp` -> editor, "Daveti reddet"); editorde RFP yaniti modu (alici kurulus basligi, Gönder -> "alıcıya iletildi", portal
+baglantisi/musteri alanlari yok); menu; bildirim listesinde `rfp` tipi. **7b-P2** — alici karsilastirma: rol bazinda yan yana kalemler/toplamlar,
+"Revizyon iste", "Seç" (onay kapisi) -> `rfp_award`, "Değerlendirmeye al", "İptal"; satici tarafinda "seçildi / başka teklife verildi"; secilen
+tekliften rezervasyon (7c). Acik: e-posta bildirimi; Kashe disi ajans daveti; acik (davetsiz) RFP (FAZ 9 ile).

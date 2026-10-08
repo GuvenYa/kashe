@@ -67,6 +67,10 @@
 --   T23 FAZ 7c rezervasyon: booking_from_proposal (yetkisiz 42501; onayli teklif -> tek satir/surum, idempotan, teklif sekli, etkinlik
 --       alanlari, KDV dahil toplam, denetim; declined 22023), kurulus RLS (owner/finance gorur, digerleri 0), INSERT/total_amount 42501,
 --       durum sutunu guncellemesi, portal has_booking, misafir rezervasyonu, eski sekil + sekil kisiti (ON KOSUL: faz7c_01 dalda uygulanmis)
+--   T24 FAZ 7b RFP: rfp_create (gereksinimlerden kalem + ipucu), taslak duzenleme, ipucu sutunu kapali, davet/send/bildirimler, satici
+--       gorunurlugu, proposal_create_from_rfp + baglantisiz send, alici kurulus teklif okuma (gizli kalem/taslak surum yok), revizyon,
+--       rfp_detail, award (approved/awarded/not_selected), kapali RFP, rezervasyon alici kurulusla, ret/evaluating/cancel, anon
+--       (ON KOSUL: faz7b_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -102,7 +106,8 @@ DO $$
 DECLARE
   ids uuid[] := ARRAY['a0000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000002',
                       'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
-                      'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006']::uuid[];
+                      'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006',
+                      'a0000000-0000-4000-8000-000000000007']::uuid[];
 BEGIN
   -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik). FAZ 6 match_runs/crews etkinlikle cascade.
   IF to_regclass('public.events') IS NOT NULL THEN
@@ -3029,6 +3034,353 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (23, 'T23 FAZ 7c rezervasyon', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T24) FAZ 7b RFP (teklif talebi). ON KOSUL: 20261009120000 (faz7b 01) dalda. T8 (Test Kurum kurulusu, owner 0005), T21-T23 (Test Ajans
+--      kurulusu: owner 0004, sales 0001, crew_coordinator 0002, viewer 0003, finance 0006) verisine dayanir. Ikinci ajans (0007, "Test Ajans
+--      Iki") bu testte auth.users ile acilir (T0 temizligi ids listesinde). Etkinlik kurum adina superuser ile acilir (kurulum; davranis degil).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  ajans2  uuid := 'a0000000-0000-4000-8000-000000000007';
+  org_k uuid; org_a uuid; org_b uuid; prov_a uuid; prov_b uuid; ev uuid; rfp uuid; rfp2 uuid; inv_a uuid; inv_b uuid; prop_a uuid; prop_b uuid;
+  v uuid; v2 uuid; b_id uuid; n int; n2 int; r record; j jsonb; st text; lnk uuid; tok text; rol int[];
+BEGIN
+  IF to_regprocedure('public.rfp_create(uuid,uuid,text,text,timestamptz)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (24, 'T24 FAZ 7b RFP', 'ATLANDI', 'rfp_create yok; faz7b_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO prov_a FROM public.providers WHERE organization_id = org_a AND provider_type = 'organization';
+  IF org_k IS NULL OR org_a IS NULL OR prov_a IS NULL THEN RAISE EXCEPTION 'on kosul: org_k=% org_a=% prov_a=%', org_k, org_a, prov_a; END IF;
+  SELECT array_agg(id ORDER BY id) INTO rol FROM (SELECT id FROM public.service_roles WHERE is_active AND slug NOT LIKE 'faz1test-%' ORDER BY id LIMIT 3) s;
+  IF array_length(rol, 1) <> 3 THEN RAISE EXCEPTION 'on kosul: 3 aktif rol gerekir'; END IF;
+
+  -- kurulum: ikinci ajans (0007) -> kurulus + organization saglayicisi otomatik (FAZ 0 / 2a)
+  INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+                          raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                          confirmation_token, recovery_token, email_change_token_new, email_change)
+  VALUES ('00000000-0000-0000-0000-000000000000', ajans2, 'authenticated', 'authenticated',
+          'faz1test+ajans2@kashe.net', extensions.crypt('Faz1Test!2026', extensions.gen_salt('bf')), now(),
+          '{"provider":"email","providers":["email"]}'::jsonb,
+          '{"role":"agency","full_name":"Test Ajans Iki Sahibi","company_name":"Test Ajans Iki"}'::jsonb, now(), now(), '', '', '', '');
+  SELECT id INTO org_b FROM public.organizations WHERE legacy_profile_id = ajans2;
+  SELECT id INTO prov_b FROM public.providers WHERE organization_id = org_b AND provider_type = 'organization';
+  IF org_b IS NULL OR prov_b IS NULL THEN RAISE EXCEPTION 'ikinci ajans kurulusu/saglayicisi olusmadi: org_b=% prov_b=%', org_b, prov_b; END IF;
+  -- kurulum: kurumun etkinligi + 2 gereksinim (butce ipucu dahil)
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, city_id, participant_count, status)
+  VALUES (org_k, kurum, 'T24 lansman', 'launch', current_date + 45, current_date + 45, (SELECT id FROM public.turkish_cities ORDER BY id LIMIT 1), 100, 'confirmed')
+  RETURNING id INTO ev;
+  INSERT INTO public.event_requirements (event_id, role_id, quantity, is_required, budget_hint_min, budget_hint_max, sort_order) VALUES (ev, rol[1], 1, true, 10000, 15000, 1);
+  INSERT INTO public.event_requirements (event_id, role_id, quantity, is_required, sort_order) VALUES (ev, rol[2], 2, false, 2);
+
+  -- 24a) rfp_create: kurum owner acar (kalemler gereksinimlerden, ipucu dahil); pro1 42501; baska kurulusun etkinligi 22023; kisa baslik 22023
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.rfp_create(org_k, ev, 'T24 RFP');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'uye olmayan RFP acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.rfp_create(org_a, ev, 'T24 RFP');                       -- etkinlik kurumun, org_a degil
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'baska kurulusun etkinligiyle RFP acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.rfp_create(org_k, ev, 'X');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kisa baslikla RFP acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  rfp := public.rfp_create(org_k, ev, 'T24 RFP', 'Lansman icin ekip', now() + interval '7 days');
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.rfps WHERE id = rfp;
+  IF r.status <> 'draft' OR r.organization_id <> org_k OR r.event_id <> ev OR r.created_by <> kurum THEN RAISE EXCEPTION 'rfp satiri: %', r; END IF;
+  SELECT count(*), count(*) FILTER (WHERE budget_hint_min = 10000 AND budget_hint_max = 15000 AND is_required) INTO n, n2 FROM public.rfp_items WHERE rfp_id = rfp;
+  IF n <> 2 OR n2 <> 1 THEN RAISE EXCEPTION 'kalemler gereksinimden kopyalanmadi: %/%', n, n2; END IF;
+
+  -- 24b) taslak duzenleme: kurum baslik/son tarih gunceller, kalem ekler (RLS + sutun yetkisi); butce sutunu SELECT 42501; durum dogrudan 42501;
+  --      rfp_detail (alici) ipucu TASIR
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.rfps SET title = 'T24 RFP lansman', deadline = now() + interval '10 days' WHERE id = rfp;
+  INSERT INTO public.rfp_items (rfp_id, role_id, quantity, is_required, budget_hint_min, budget_hint_max, sort_order) VALUES (rfp, rol[3], 1, false, 2000, 4000, 3);
+  BEGIN
+    PERFORM budget_hint_min FROM public.rfp_items WHERE rfp_id = rfp;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'butce ipucu sutunu okundu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.rfps SET status = 'sent' WHERE id = rfp;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'durum dogrudan degisti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  j := public.rfp_detail(rfp);
+  EXECUTE 'RESET ROLE';
+  IF (j->>'title') <> 'T24 RFP lansman' OR jsonb_array_length(j->'items') <> 3 OR NOT (j->'items'->0 ? 'budget_hint_min') OR (j->>'is_buyer')::boolean IS NOT TRUE
+     OR (j->'event'->>'title') <> 'T24 lansman' THEN RAISE EXCEPTION 'rfp_detail (alici): %', j; END IF;
+
+  -- 24c) davet: davetsiz gonderim 22023; iki ajans davet (ikinci cagri ayni id); profesyonel saglayici 22023; gonderim -> sent + bildirimler
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.rfp_send(rfp);
+    RAISE EXCEPTION 'davetsiz gonderildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  inv_a := public.rfp_invite(rfp, prov_a);
+  inv_b := public.rfp_invite(rfp, prov_b);
+  IF public.rfp_invite(rfp, prov_a) <> inv_a THEN RAISE EXCEPTION 'tekrar davet yeni satir acti'; END IF;
+  BEGIN
+    PERFORM public.rfp_invite(rfp, pro1);                                 -- profesyonel saglayici (id = profil id)
+    RAISE EXCEPTION 'profesyonel davet edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  PERFORM public.rfp_send(rfp);
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.rfps WHERE id = rfp;
+  IF st <> 'sent' THEN RAISE EXCEPTION 'gonderim sonrasi durum % (sent)', st; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id IN (ajans, musteri) AND link = '/ajans/rfp/' || rfp::text;
+  IF n <> 2 THEN RAISE EXCEPTION 'ajans bildirimleri % (2: owner + sales)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id IN (pro1, pro2);
+  IF n <> 0 THEN RAISE EXCEPTION 'yetkisiz uyeye bildirim gitti'; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans2;
+  IF n <> 1 THEN RAISE EXCEPTION 'ikinci ajans bildirimi % (1)', n; END IF;
+  -- gonderilmis taslak duzenlenemez (RLS gecer, tetikleyici 22023)
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.rfps SET title = 'degisti' WHERE id = rfp;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'gonderilmis RFP duzenlendi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 24d) satici gorunurlugu: musteri (org_a sales, proposals.view; admin DEGIL — ajans 0004 onceki testlerde is_admin) 1 satir, ipucu yok,
+  --      my_invite sent -> viewed; pro2 (viewer, proposals.view yok) 0; dogrudan INSERT 42501
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.rfps WHERE id = rfp;
+  j := public.rfp_detail(rfp);
+  PERFORM public.rfp_mark_viewed(rfp);
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'davetli ajans RFP gormedi'; END IF;
+  IF (j->'items'->0 ? 'budget_hint_min') OR (j ? 'invites') OR (j->'my_invite'->>'status') <> 'sent' OR (j->>'is_buyer')::boolean IS NOT FALSE THEN
+    RAISE EXCEPTION 'rfp_detail (satici): %', j; END IF;
+  SELECT status::text INTO st FROM public.rfp_invites WHERE id = inv_a;
+  IF st <> 'viewed' THEN RAISE EXCEPTION 'goruntuleme isareti % (viewed)', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.rfps WHERE id = rfp;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'viewer RFP gordu'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.rfps (organization_id, event_id, title) VALUES (org_a, ev, 'kacak');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'dogrudan rfps INSERT gecti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 24e) yanit: ajans proposal_create_from_rfp (rfp_id, rfp_response, alici kurulus, 3 kalem fiyatsiz; ikinci cagri ayni id);
+  --      gizli kalem + fiyatlar; proposal_send -> baglanti YOK, davet responded, RFP collecting, kurum bildirimi
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop_a := public.proposal_create_from_rfp(rfp, org_a);
+  IF public.proposal_create_from_rfp(rfp, org_a) <> prop_a THEN RAISE EXCEPTION 'ikinci yanit acildi'; END IF;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.proposals WHERE id = prop_a;
+  IF r.rfp_id <> rfp OR r.source_type::text <> 'rfp_response' OR r.buyer_organization_id <> org_k OR r.event_id <> ev OR r.status <> 'draft' THEN
+    RAISE EXCEPTION 'yanit teklifi: %', r; END IF;
+  v := r.current_version_id;
+  SELECT count(*), count(*) FILTER (WHERE unit_client_price = 0) INTO n, n2 FROM public.proposal_items WHERE proposal_version_id = v;
+  IF n <> 3 OR n2 <> 3 THEN RAISE EXCEPTION 'yanit kalemleri %/% (3/3)', n, n2; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.proposal_items SET unit_client_price = 12000 WHERE proposal_version_id = v AND role_id = rol[1];
+  UPDATE public.proposal_items SET unit_client_price = 5000 WHERE proposal_version_id = v AND role_id = rol[2];
+  UPDATE public.proposal_items SET unit_client_price = 3000 WHERE proposal_version_id = v AND role_id = rol[3];
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, is_visible_to_client, sort_order) VALUES (v, 'T24 gizli', 1, 1, false, 9);
+  SELECT s.link_id, s.token INTO lnk, tok FROM public.proposal_send(prop_a, 14) s;
+  EXECUTE 'RESET ROLE';
+  IF lnk IS NOT NULL OR tok IS NOT NULL THEN RAISE EXCEPTION 'RFP yanitina portal baglantisi acildi'; END IF;
+  SELECT count(*) INTO n FROM public.portal_access_links WHERE resource_id = prop_a;
+  IF n <> 0 THEN RAISE EXCEPTION 'portal_access_links satiri var (%)', n; END IF;
+  SELECT status::text || '/' || COALESCE(proposal_id::text, '-') INTO st FROM public.rfp_invites WHERE id = inv_a;
+  IF st <> 'responded/' || prop_a::text THEN RAISE EXCEPTION 'davet durumu % (responded/prop)', st; END IF;
+  SELECT status::text INTO st FROM public.rfps WHERE id = rfp;
+  IF st <> 'collecting' THEN RAISE EXCEPTION 'yanit sonrasi RFP % (collecting)', st; END IF;
+  SELECT total_amount INTO n FROM public.proposal_versions WHERE id = v;        -- 12000 + 2*5000 + 3000 = 25000 (+KDV 5000)
+  IF n <> 30000 THEN RAISE EXCEPTION 'yanit toplami % (30000)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = kurum AND link = '/kurumsal/rfp/' || rfp::text;
+  IF n <> 1 THEN RAISE EXCEPTION 'kurum bildirimi % (1)', n; END IF;
+
+  -- 24f) alici okur: kurum teklifi, gonderilmis surumu ve YALNIZ gorunur kalemleri gorur; sales (musteri, org_a) 4 kalem; ic kalem RPC kurum 42501
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.proposals WHERE id = prop_a;
+  IF n <> 1 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'alici kurulus teklifi gormedi'; END IF;
+  SELECT count(*) INTO n FROM public.proposal_items WHERE proposal_version_id = v;
+  IF n <> 3 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'alici % kalem gordu (3; gizli haric)', n; END IF;
+  BEGIN
+    PERFORM public.internal_proposal_items_list(v);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'alici ic kalemleri gordu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.proposal_items WHERE proposal_version_id = v;
+  EXECUTE 'RESET ROLE';
+  IF n <> 4 THEN RAISE EXCEPTION 'sales % kalem gordu (4)', n; END IF;
+
+  -- 24g) revizyon: kurum rfp_request_revision -> revision_requested + not + ajans bildirimi; ajans yeni surum (kurum taslak surumu GORMEZ) -> fiyat -> send -> kurum 2 surum
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.rfp_request_revision(prop_a, 'DJ fiyati yuksek');
+  EXECUTE 'RESET ROLE';
+  SELECT p.status::text || '/' || COALESCE(pv.client_note, '-') INTO st FROM public.proposals p JOIN public.proposal_versions pv ON pv.id = p.current_version_id WHERE p.id = prop_a;
+  IF st <> 'revision_requested/DJ fiyati yuksek' THEN RAISE EXCEPTION 'revizyon sonrasi %', st; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans AND link = '/ajans/teklifler/' || prop_a::text;
+  IF n <> 1 THEN RAISE EXCEPTION 'revizyon bildirimi % (1)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v2 := public.proposal_new_version(prop_a);
+  UPDATE public.proposal_items SET unit_client_price = 9000 WHERE proposal_version_id = v2 AND role_id = rol[1];
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.proposal_versions WHERE proposal_id = prop_a;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'alici taslak surumu gordu (% surum; 1)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.proposal_send(prop_a, 14);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.proposal_versions WHERE proposal_id = prop_a;
+  EXECUTE 'RESET ROLE';
+  IF n <> 2 THEN RAISE EXCEPTION 'alici % surum gordu (2)', n; END IF;
+
+  -- 24h) ikinci ajans yanitlar (20000 + KDV)
+  PERFORM set_config('request.jwt.claim.sub', ajans2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop_b := public.proposal_create_from_rfp(rfp, org_b);
+  SELECT current_version_id INTO v FROM public.proposals WHERE id = prop_b;
+  UPDATE public.proposal_items SET unit_client_price = 10000 WHERE proposal_version_id = v AND role_id = rol[1];
+  UPDATE public.proposal_items SET unit_client_price = 4000 WHERE proposal_version_id = v AND role_id = rol[2];
+  UPDATE public.proposal_items SET unit_client_price = 2000 WHERE proposal_version_id = v AND role_id = rol[3];
+  PERFORM public.proposal_send(prop_b, 14);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  j := public.rfp_detail(rfp);
+  EXECUTE 'RESET ROLE';
+  IF jsonb_array_length(j->'invites') <> 2 OR (SELECT count(*) FROM jsonb_array_elements(j->'invites') x WHERE x->>'status' = 'responded' AND (x->>'total_amount')::numeric IN (26400, 24000)) <> 2 THEN
+    RAISE EXCEPTION 'rfp_detail davetler/yanit ozetleri: %', j->'invites'; END IF;   -- ajans v2: 9000+10000+3000 = 22000 -> 26400; ajans2: 20000 -> 24000
+
+  -- 24i) secim: pro1 42501; kurum rfp_award(prop_a) -> approved (onaylayan ad), rfp awarded, ajans2 daveti not_selected, bildirimler;
+  --      ikinci secim 22023; ajans2 yeni surum gonderemez 22023; rezervasyon (7c) alici kurulusla, kurum gorur
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.rfp_award(rfp, prop_a);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'yetkisiz secim yapti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.rfp_award(rfp, prop_a);
+  BEGIN
+    PERFORM public.rfp_award(rfp, prop_b);
+    RAISE EXCEPTION 'ikinci secim gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT p.status::text || '/' || COALESCE(pv.approved_by_name, '-') INTO st FROM public.proposals p JOIN public.proposal_versions pv ON pv.id = p.current_version_id WHERE p.id = prop_a;
+  IF st <> 'approved/Test Kurum Sahibi' THEN RAISE EXCEPTION 'secim sonrasi teklif % (approved/Test Kurum Sahibi)', st; END IF;
+  SELECT status::text || '/' || COALESCE(awarded_proposal_id::text, '-') INTO st FROM public.rfps WHERE id = rfp;
+  IF st <> 'awarded/' || prop_a::text THEN RAISE EXCEPTION 'secim sonrasi RFP %', st; END IF;
+  SELECT status::text INTO st FROM public.rfp_invites WHERE id = inv_b;
+  IF st <> 'not_selected' THEN RAISE EXCEPTION 'ikinci davet % (not_selected)', st; END IF;
+  SELECT status::text INTO st FROM public.rfp_invites WHERE id = inv_a;
+  IF st <> 'responded' THEN RAISE EXCEPTION 'kazanan davet % (responded)', st; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop_b;
+  IF st <> 'sent' THEN RAISE EXCEPTION 'secilmeyen teklif durumu degisti (%)', st; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans2 AND body LIKE 'Teklif talebi baska%';
+  IF n <> 1 THEN RAISE EXCEPTION 'secilmedi bildirimi % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans AND body LIKE 'Teklifin kabul edildi%';
+  IF n <> 1 THEN RAISE EXCEPTION 'kabul bildirimi % (1)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v2 := public.proposal_new_version(prop_b);
+  BEGIN
+    PERFORM public.proposal_send(prop_b, 14);
+    RAISE EXCEPTION 'kapali RFP''ye yanit gonderildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  b_id := public.booking_from_proposal(prop_a);
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.bookings WHERE id = b_id;
+  IF r.buyer_organization_id <> org_k OR r.customer_id IS NOT NULL OR r.event_id <> ev OR r.total_amount <> 26400 THEN RAISE EXCEPTION 'RFP rezervasyonu: %', r; END IF;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.bookings WHERE id = b_id;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'alici kurulus rezervasyonu gormedi'; END IF;
+
+  -- 24j) ikinci RFP: davet reddi (bildirim), degerlendirmeye alma, iptal (davetler not_selected; reddedilen kalir)
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  rfp2 := public.rfp_create(org_k, ev, 'T24 ikinci RFP', NULL, now() + interval '3 days');
+  PERFORM public.rfp_invite(rfp2, prov_a);
+  PERFORM public.rfp_invite(rfp2, prov_b);
+  PERFORM public.rfp_send(rfp2);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', ajans2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.rfp_invite_decline(rfp2);
+  BEGIN
+    PERFORM public.proposal_create_from_rfp(rfp2, org_b);
+    RAISE EXCEPTION 'reddedilen davetle yanit acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = kurum AND body LIKE '%daveti reddetti%';
+  IF n <> 1 THEN RAISE EXCEPTION 'ret bildirimi % (1)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.rfp_close(rfp2);
+  SELECT status::text INTO st FROM public.rfps WHERE id = rfp2;
+  IF st <> 'evaluating' THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'degerlendirme durumu % (evaluating)', st; END IF;
+  PERFORM public.rfp_cancel(rfp2);
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.rfps WHERE id = rfp2;
+  IF st <> 'cancelled' THEN RAISE EXCEPTION 'iptal durumu % (cancelled)', st; END IF;
+  SELECT string_agg(status::text, ',' ORDER BY status::text) INTO st FROM public.rfp_invites WHERE rfp_id = rfp2;
+  IF st <> 'declined,not_selected' THEN RAISE EXCEPTION 'iptal sonrasi davetler % (declined,not_selected)', st; END IF;
+  -- anon hicbir RPC'yi cagiramaz
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.rfp_detail(rfp);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon rfp_detail cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  INSERT INTO t_sonuc VALUES (24, 'T24 FAZ 7b RFP', 'GECTI',
+    'rfp_create (kalemler gereksinimden + ipucu; uye olmayan 42501, yabanci etkinlik/kisa baslik 22023); taslak duzenleme + kalem ekleme, ipucu sutunu 42501, durum dogrudan 42501, rfp_detail alici ipucu tasir; davet (idempotan, profesyonel 22023), davetsiz send 22023, send -> sent + bildirimler (owner+sales, viewer/crew yok), gonderilmis RFP duzenlenemez; satici: davetli gorur (ipucu yok, my_invite viewed), viewer 0, INSERT 42501; yanit: rfp_response + alici kurulus + 3 kalem, idempotan, send baglantisiz, davet responded, collecting, kurum bildirimi, toplam 30000; alici: teklif + gorunur 3 kalem, ic kalem 42501, taslak surum gorunmez; revizyon -> yeni surum -> 2 surum; ikinci ajans yaniti, rfp_detail ozetleri; award: yetkisiz 42501, approved/Test Kurum Sahibi, awarded, not_selected, bildirimler, ikinci secim 22023, kapali RFP send 22023, rezervasyon alici kurulusla + kurum gorur; RFP2: ret + bildirim, evaluating, cancel -> declined,not_selected; anon 42501');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (24, 'T24 FAZ 7b RFP', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
