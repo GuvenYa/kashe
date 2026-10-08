@@ -5,7 +5,8 @@
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
 **Durum:** **FAZ 7a KAPANDI (7 Ekim 2026)** — 7a-DB/01-02 uretimde; P1 (`6e90b32`), P2 (`9672df0`), P2-ek (`64e567a`), P2-cila (`d84e653`)
-deploy'da; canli turlar gecti (bolum 10). Sirada **7c** (bookings genislemesi + `booking_from_proposal`; bolum 11), sonra **7b** (RFP).
+deploy'da. **7c-DB/01 hazir** (`20261008120000_faz7c_01_bookings_genisleme.sql`; yerelde asama4 24/24, asama16 ESIT; bolum 11) -> dal -> uretim
+-> 7c-P1 (`19-claude-code-gorevi-7c-p1.md`). Sonra **7b** (RFP).
 
 ## 1. Amac ve sinir
 
@@ -250,13 +251,48 @@ hala bakim kapisinin arkasinda (oturum gerektirdigi icin muafiyet anlamsiz; lans
 
 (7c, 7b icin doldurulur)
 
-## 11. 7c — bookings genislemesi (plan; 7a kapaninca acildi, 7 Ekim 2026)
+## 11. 7c — bookings genislemesi ve onayli tekliften rezervasyon (7 Ekim 2026)
 
-Cerceve (bolum 2 "7c bookings" karari + 04 madde 36, risk yuksek): `bookings` uretimde aktif, `on_quote_accepted_create_booking` tetikleyicisi
-eski `quotes` akisini besliyor; **tetikleyici ve mevcut sutunlar AYNEN**, yalniz NULLABLE sutun eklenir: `buyer_organization_id`,
-`seller_provider_id`, `event_id`, `crew_member_id`, `proposal_version_id` (FK'lar SET NULL / RESTRICT karari asagida). Onaylanan teklif icin
-`booking_from_proposal(p_proposal_id)` RPC (SECURITY DEFINER; satici `proposals.manage`): onayli (`approved`) teklifin **gecerli surumunden**
-rezervasyon(lar) acar — ekip uyesi basina (kalemde `crew_member_id` doluysa) ya da tek satir; idempotan (ayni surumden ikinci cagri 23505 ya
-da mevcut satirlari doner). Ayrintili karar listesi, asama16 kontrol dosyasi, asama4 T23 ve 7c-DB/01 migration'i siradaki adimda yazilir;
-Guven'in karar vermesi gerekenler: (1) rezervasyon granularitesi (uye basina / tek), (2) `bookings.status` baslangici (`confirmed` mi, `pending`
-mi), (3) eski `quotes` kaynakli rezervasyonlarla ayni listede gosterim (`/rezervasyonlarim`) — uygulama parcasi 7c-P1.
+**Kararlar (Guven, 7 Ekim):** (1) `bookings` tek rezervasyon merkezi kalir, ayri tablo YOK: `quote_id`/`conversation_id`/`customer_id`/
+`professional_id` NULLABLE olur, `bookings_shape_check` iki sekilden birini zorunlu kilar — **eski** (dordu dolu) ya da **teklif**
+(`proposal_version_id` + `seller_provider_id` dolu). (2) Onayli teklif -> **tek rezervasyon / surum**; ekip uyesi basina rezervasyon FAZ 8
+(gorevlendirme) — uye basina satir musteri fiyatini (marj dahil) profesyonele gosterirdi. (3) Kurulus kendi teklif rezervasyonlarini
+`/rezervasyonlarim`'daki ucuncu bolumde ("Kuruluş rezervasyonları") gorur; detay sayfasi teklif seklini tanir.
+
+**7c-DB/01 (`20261008120000_faz7c_01_bookings_genisleme.sql`):**
+- Sutunlar (NULLABLE): `buyer_organization_id` (organizations, SET NULL), `seller_provider_id` (providers, RESTRICT), `event_id` (events,
+  SET NULL), `crew_member_id` (crew_members, SET NULL; 7c'de hep NULL), `proposal_version_id` (proposal_versions, RESTRICT; kismi tekil indeks
+  = surum basina tek rezervasyon). Dort eski sutunda NOT NULL kalkar; `bookings_shape_check`. Indeksler seller/buyer/event.
+- Yetki: `REVOKE ALL` anon+authenticated -> `GRANT SELECT` (anon dahil: eski durum; RLS politikasi olmadigindan anon 0 satir ya da eski
+  `is_agency_member` politikasi yuzunden 42501 — eskiden beri boyle, 7c degistirmez) + authenticated `UPDATE (status, cancelled_at,
+  cancelled_by, cancellation_reason, completed_at)`. Dogrudan INSERT/DELETE yok. Eski tetikleyici `on_quote_accepted_create_booking`
+  SECURITY DEFINER: dokunulmadi, etkilenmez (asama16 K9 + asama4 T2 kanit).
+- RLS: eski 6 politika aynen; `bookings_select_org` / `bookings_update_org` -> `can_access_booking_row(seller_provider_id,
+  buyer_organization_id, mode)`: satici kurulus (`providers.organization_id`) `proposals.view` / `proposals.manage`, alici kurulus
+  `events.view` / `events.manage`, admin.
+- RPC `booking_from_proposal(p_proposal_id) RETURNS uuid` (SECURITY DEFINER; `proposals.manage`): teklif `approved` + gecerli surum
+  `approved_at` dolu degilse 22023; surumun rezervasyonu varsa onu doner (idempotan); yoksa INSERT: `proposal_version_id`, `seller_provider_id`,
+  `buyer_organization_id`, `customer_id = buyer_user_id` (misafirde NULL), `event_id`; etkinlikten `event_date/start_time/end_time/event_type/
+  guest_count`, `location = sehir / ilce`; `total_amount = surum.total_amount` (KDV dahil), `platform_fee 0`, `currency`, `status confirmed`;
+  denetim `internal.log_access(... 'bookings', id, {op: booking.from_proposal})`.
+- `portal_proposal_view` -> `has_booking` (iptal edilmemis rezervasyon var mi) eklendi; govde aynen.
+
+**asama16 (`asama16-faz7c-bookings-kontrol.sql`):** K1 yeni sutun 5; K2 eski sutun NULLABLE 4; K3 sekil kisiti + tekil indeks 2; K4 sekil ihlali 0;
+K5 INSERT/DELETE yetkisi 0 + UPDATE sutun 5 = 5; K6 RPC/erisim yetkileri 4; K7 RLS politikasi 8; K8 teklif rezervasyonu tutari surumden farkli 0;
+K9 eski quote tetikleyicisi yerinde 1; K10 bilgi eski*1000 + teklif; K11 bilgi onayli teklif rezervasyonsuz; K12 portal has_booking 1.
+Beklenen: K1-K9, K12 ESIT; K10-K11 BILGI. Uretimde ilk kosu: K10 = eski rezervasyon sayisi * 1000 + 0, K11 1 (lansman teklifi).
+
+**asama4 T23:** yetkisiz 42501 (crew_coordinator, yabanci, anon); owner: tek satir/surum, idempotan, teklif sekli (eski sutunlar NULL),
+etkinlikten tarih/sehir/katilimci, total 11400 KDV dahil, confirmed, denetim; declined 22023; RLS owner+finance 1 / crew_coordinator+yabanci
+0 / anon 0 ya da 42501; INSERT 42501, `total_amount` 42501, finance iptal 0 satir, owner iptal 1; portal `has_booking` false -> true; misafir
+`customer_id` NULL (2400); eski sekil korunur, sekilsiz satir 23514. T0 temizligi teklif rezervasyonlarini tekliflerden ONCE siler (RESTRICT).
+Yerel zincir (7 Ekim 2026): faz7c_01 iki kez (idempotan), asama4 **24/24** (T2 eski akis GECTI), asama16 hepsi ESIT (K10 1002), asama15 degismedi.
+
+**Uretim sirasi:** 1. Commit. 2. Dal `supabase link --project-ref ukqhgspaallzjscjodbb` + `supabase db push` (y) -> asama4 24/24, asama16 ESIT.
+3. Uretim `supabase link --project-ref qydsooqmflrrwtgawhsv` + `supabase db push` (y) -> asama16 ESIT (K10 N000, K11 1), asama15 degismedi.
+4. `git push` -> 7c-P1 (`19-claude-code-gorevi-7c-p1.md`).
+
+**7c-P1 (uygulama):** editorde "Rezervasyon oluştur" (approved + proposals.manage; idempotan -> "Rezervasyona git"), `/rezervasyonlarim`
+"Kuruluş rezervasyonları" bolumu, `/rezervasyon/[id]` teklif sekli (satici kurulus / alici; iptal: musteri veya proposals.manage; tamamlama:
+proposals.manage), portal "Rezervasyon oluşturuldu" bandi. Acik: alici Kashe kullanicisina bildirim; kurulus geliri kazanc/odeme sayfalarinda
+(finance); kesfet/kategori "tamamlanan is" sayaci RLS yuzunden zaten bos (H8 — toplu RPC ile FAZ 9).

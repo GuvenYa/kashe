@@ -64,6 +64,9 @@
 --   T22 FAZ 7a portal: anon view (alanlar, kimlik yok, sayac, viewed), yanlis jeton, onay (ad kontrolu, approved, ikinci onay red),
 --       revizyon -> yeni surum -> eski jeton iptal, max_views, suresi dolmus -> expired, declined -> linkler iptal
 --       (ON KOSUL: faz7a_01 dalda uygulanmis)
+--   T23 FAZ 7c rezervasyon: booking_from_proposal (yetkisiz 42501; onayli teklif -> tek satir/surum, idempotan, teklif sekli, etkinlik
+--       alanlari, KDV dahil toplam, denetim; declined 22023), kurulus RLS (owner/finance gorur, digerleri 0), INSERT/total_amount 42501,
+--       durum sutunu guncellemesi, portal has_booking, misafir rezervasyonu, eski sekil + sekil kisiti (ON KOSUL: faz7c_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -116,6 +119,12 @@ BEGIN
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
   -- T21 teklifler (kalemler service_roles'a RESTRICT: test rolleri silinmeden ONCE; surum/kalem/ic kalem/baglanti cascade)
   IF to_regclass('public.proposals') IS NOT NULL THEN
+    -- T23 teklif rezervasyonlari (bookings.proposal_version_id RESTRICT): tekliflerden ONCE
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings' AND column_name = 'proposal_version_id') THEN
+      DELETE FROM public.bookings
+       WHERE proposal_version_id IN (SELECT v.id FROM public.proposal_versions v JOIN public.proposals p ON p.id = v.proposal_id
+                                      WHERE p.seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids)));
+    END IF;
     DELETE FROM public.proposals
      WHERE seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
   END IF;
@@ -2835,6 +2844,191 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (22, 'T22 FAZ 7a portal', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T23) FAZ 7c onayli tekliften rezervasyon. ON KOSUL: 20261008120000 (faz7c 01) dalda. T21/T22 verisine dayanir
+--      ("T21 teklif": approved, surum 2 "Ad Soyad", event_id = T20 etkinligi; "T22 revizyon": declined). Roller: ajans owner
+--      (proposals.manage), uye (0006) finance (proposals.view), pro1 crew_coordinator (proposals.* YOK), pro2 (0003) kurulusa yabanci.
+--      Eski akis kaniti: T2 (quote kabul -> booking) ayni kosuda GECTI olmali (tetikleyici dokunulmadi).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';
+  org_a uuid; prop uuid; prop2 uuid; prop3 uuid; v uuid; v3 uuid; b1 uuid; b2 uuid; b3 uuid; n int; r record; ev record; tok text; j jsonb; st text;
+BEGIN
+  IF to_regprocedure('public.booking_from_proposal(uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (23, 'T23 FAZ 7c rezervasyon', 'ATLANDI', 'booking_from_proposal yok; faz7c_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id, current_version_id INTO prop, v FROM public.proposals WHERE seller_organization_id = org_a AND title = 'T21 teklif';
+  SELECT id INTO prop2 FROM public.proposals WHERE seller_organization_id = org_a AND title = 'T22 revizyon';
+  IF org_a IS NULL OR prop IS NULL OR prop2 IS NULL THEN RAISE EXCEPTION 'on kosul: org_a=% prop=% prop2=% (T21/T22 kosmali)', org_a, prop, prop2; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop;
+  IF st <> 'approved' THEN RAISE EXCEPTION 'on kosul: T21 teklif durumu % (approved beklenir)', st; END IF;
+
+  -- 23a) yetkisiz: pro1 (crew_coordinator) 42501; yabanci pro2 42501; anon 42501 (EXECUTE yok)
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.booking_from_proposal(prop);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'crew_coordinator rezervasyon acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.booking_from_proposal(prop);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'yabanci kullanici rezervasyon acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.booking_from_proposal(prop);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon rezervasyon acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 23b) owner: onayli teklif -> tek rezervasyon; teklif sekli; etkinlikten tarih/sehir/katilimci; total = surum KDV dahil
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  b1 := public.booking_from_proposal(prop);
+  b2 := public.booking_from_proposal(prop);                       -- idempotan: ayni id
+  EXECUTE 'RESET ROLE';
+  IF b1 IS NULL OR b1 <> b2 THEN RAISE EXCEPTION 'idempotanlik: % / %', b1, b2; END IF;
+  SELECT count(*) INTO n FROM public.bookings WHERE proposal_version_id = v;
+  IF n <> 1 THEN RAISE EXCEPTION 'surum basina rezervasyon % (1)', n; END IF;
+  SELECT b.*, pv.total_amount AS v_total, p.seller_provider_id AS p_seller, p.event_id AS p_event INTO r
+    FROM public.bookings b JOIN public.proposal_versions pv ON pv.id = b.proposal_version_id JOIN public.proposals p ON p.id = pv.proposal_id
+   WHERE b.id = b1;
+  IF r.quote_id IS NOT NULL OR r.conversation_id IS NOT NULL OR r.customer_id IS NOT NULL OR r.professional_id IS NOT NULL THEN
+    RAISE EXCEPTION 'teklif seklinde eski sutunlar dolu: %', r; END IF;
+  IF r.seller_provider_id <> r.p_seller OR r.event_id IS DISTINCT FROM r.p_event OR r.status::text <> 'confirmed'
+     OR r.total_amount <> r.v_total OR r.total_amount <> 11400 OR r.currency <> 'TRY' OR r.platform_fee <> 0 OR r.crew_member_id IS NOT NULL THEN
+    RAISE EXCEPTION 'rezervasyon alanlari: %', r; END IF;
+  SELECT * INTO ev FROM public.events WHERE id = r.event_id;
+  IF ev.id IS NULL THEN RAISE EXCEPTION 'T21 teklifinin etkinligi yok (T20 ekibi etkinlige bagli olmali)'; END IF;
+  IF r.event_date IS DISTINCT FROM ev.start_date OR r.guest_count IS DISTINCT FROM ev.participant_count
+     OR r.event_type IS DISTINCT FROM ev.event_type OR (ev.city_id IS NOT NULL AND r.location IS NULL) THEN
+    RAISE EXCEPTION 'etkinlik alanlari tasinmadi: date=%/% guest=%/% type=%/% loc=%', r.event_date, ev.start_date, r.guest_count, ev.participant_count, r.event_type, ev.event_type, r.location; END IF;
+  SELECT count(*) INTO n FROM internal.access_audit WHERE target_table = 'bookings' AND target_id = b1 AND detail->>'op' = 'booking.from_proposal';
+  IF n <> 1 THEN RAISE EXCEPTION 'denetim satiri % (1)', n; END IF;
+
+  -- 23c) onayli olmayan teklif 22023 (declined)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.booking_from_proposal(prop2);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'declined tekliften rezervasyon acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 23d) RLS: owner ve finance (proposals.view) gorur; crew_coordinator 0; yabanci 0; anon 0 satir (SELECT yetkisi var, politika yok)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.bookings WHERE id = b1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'owner rezervasyonu gormedi'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.bookings WHERE id = b1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'finance rezervasyonu gormedi'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.bookings WHERE id = b1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'crew_coordinator rezervasyonu gordu'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.bookings WHERE id = b1;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'yabanci rezervasyonu gordu'; END IF;
+  -- anon: SELECT yetkisi eskiden beri var; eski politika is_agency_member()'i cagirir ve anon'da EXECUTE yoktur -> 42501
+  -- (eski davranis, 7c degistirmez); 42501 ya da 0 satir kabul, satir gormek HATA
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.bookings WHERE id = b1;
+    EXECUTE 'RESET ROLE';
+    IF n <> 0 THEN RAISE EXCEPTION 'anon rezervasyon gordu'; END IF;
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 23e) yetki: authenticated dogrudan INSERT 42501; finance (manage yok) UPDATE 0 satir; owner total_amount 42501 (sutun yetkisi yok);
+  --      owner status -> cancelled gecer (sutun yetkisi + kurulus politikasi)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.bookings (proposal_version_id, seller_provider_id, total_amount, status) VALUES (v, r.seller_provider_id, 1, 'confirmed');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated dogrudan rezervasyon yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.bookings SET total_amount = 1 WHERE id = b1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'owner total_amount degistirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.bookings SET status = 'cancelled', cancelled_at = now() WHERE id = b1;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'finance (manage yok) rezervasyonu iptal etti'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.bookings SET status = 'cancelled', cancelled_at = now(), cancelled_by = ajans, cancellation_reason = 'T23 test' WHERE id = b1;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'owner iptal edemedi (satir %)', n; END IF;
+
+  -- 23f) portalda has_booking: yeni teklif -> gonder -> anon onay -> has_booking false -> rezervasyon -> true; misafir (customer_id NULL)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop3 := public.proposal_create(org_a, 'T23 rezervasyon', NULL, NULL, 'Rez Musteri', 'faz1test+rez@kashe.net');
+  SELECT current_version_id INTO v3 FROM public.proposals WHERE id = prop3;
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, sort_order) VALUES (v3, 'T23 hizmet', 1, 2000, 1);
+  SELECT s.token INTO tok FROM public.proposal_send(prop3, 14) s;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  PERFORM public.portal_proposal_approve(tok, 'Rez Musteri');
+  j := public.portal_proposal_view(tok);
+  EXECUTE 'RESET ROLE';
+  IF (j->>'status') <> 'approved' OR (j->>'has_booking')::boolean IS DISTINCT FROM false THEN RAISE EXCEPTION 'portal onay sonrasi: %', j; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  b3 := public.booking_from_proposal(prop3);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  j := public.portal_proposal_view(tok);
+  EXECUTE 'RESET ROLE';
+  IF (j->>'has_booking')::boolean IS DISTINCT FROM true THEN RAISE EXCEPTION 'portal has_booking true degil: %', j; END IF;
+  SELECT * INTO r FROM public.bookings WHERE id = b3;
+  IF r.customer_id IS NOT NULL OR r.event_id IS NOT NULL OR r.event_date IS NOT NULL OR r.total_amount <> 2400 THEN
+    RAISE EXCEPTION 'misafir/etkinliksiz rezervasyon: %', r; END IF;
+
+  -- 23g) eski sekil korunur: T2'nin quote rezervasyonu dort eski sutunla duruyor; sekil kisiti bos satiri reddeder
+  SELECT count(*) INTO n FROM public.bookings b WHERE b.quote_id IS NOT NULL
+     AND (b.conversation_id IS NULL OR b.customer_id IS NULL OR b.professional_id IS NULL);
+  IF n <> 0 THEN RAISE EXCEPTION 'eski sekilde eksik sutun: %', n; END IF;
+  BEGIN
+    INSERT INTO public.bookings (total_amount, status) VALUES (1, 'confirmed');   -- superuser: yalniz CHECK test edilir
+    RAISE EXCEPTION 'sekil kisiti sekilsiz satiri kabul etti';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+
+  INSERT INTO t_sonuc VALUES (23, 'T23 FAZ 7c rezervasyon', 'GECTI',
+    'yetkisiz 42501 (crew_coordinator, yabanci, anon); owner: tek satir/surum, idempotan, teklif sekli (eski sutunlar NULL), etkinlikten tarih/sehir/katilimci, total 11400 KDV dahil, confirmed, denetim; declined 22023; RLS owner+finance 1 / crew_coordinator+yabanci 0 / anon 0 ya da 42501 (eski politika); INSERT 42501, total_amount 42501, finance iptal 0 satir, owner iptal 1; portal has_booking false->true, misafir customer_id NULL, 2400; eski sekil korunur, sekilsiz satir 23514');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (23, 'T23 FAZ 7c rezervasyon', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
