@@ -1,5 +1,6 @@
 'use server';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
@@ -487,6 +488,7 @@ export async function startConversation(
   if (data.request_type === 'booking_request') {
     const dateText = data.event_date
       ? new Date(data.event_date).toLocaleDateString('tr-TR', {
+          timeZone: KASHE_SAAT_DILIMI,
           day: 'numeric',
           month: 'long',
           year: 'numeric',

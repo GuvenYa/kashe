@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 // FAZ 6 / P1 — aday listesi ortak tipler, etiketler ve bicimleyiciler.
 //
 // 'use client' YOKTUR: hem sunucu sayfasi hem istemci paneli buradan import eder.
@@ -112,6 +113,7 @@ export function kosuZamani(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

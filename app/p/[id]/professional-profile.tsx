@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { IletisimButton } from './iletisim-button';
@@ -82,7 +83,7 @@ const CARD = 'bg-card border border-line rounded-2xl';
 function formatReviewDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  return d.toLocaleDateString('tr-TR', { timeZone: KASHE_SAAT_DILIMI, month: 'long', year: 'numeric' });
 }
 
 function Stars({ rating, size = 15 }: { rating: number; size?: number }) {

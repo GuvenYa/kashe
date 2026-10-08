@@ -3,6 +3,7 @@
  * 'use server' OLMAYAN dosya — async olmayan export'lar burada yaşar.
  */
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { EVENT_TYPES, type EventTypeKey } from '../mesajlar/data';
 
 // =============================================================================
@@ -274,6 +275,7 @@ export function formatListingAge(publishedAt: string | null): string {
   if (diffHour < 24) return `${diffHour} saat önce yayınlandı`;
   if (diffDay < 7) return `${diffDay} gün önce yayınlandı`;
   return date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -432,6 +434,7 @@ export function formatApplicationDeadline(
   const date = new Date(deadline);
   const diffMs = date.getTime() - Date.now();
   const dateLabel = date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

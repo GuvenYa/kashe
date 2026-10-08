@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -108,6 +109,7 @@ export function QuoteCard({
 
   const expiresDate = new Date(quote.expires_at);
   const expiresFormatted = expiresDate.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -329,6 +331,7 @@ type SystemMessageProps = {
 export function SystemMessage({ body, createdAt }: SystemMessageProps) {
   const date = new Date(createdAt);
   const time = date.toLocaleTimeString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     hour: '2-digit',
     minute: '2-digit',
   });

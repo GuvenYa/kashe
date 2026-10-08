@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useRef, useEffect, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -94,6 +95,7 @@ function pickTone(id: string) {
 
 function formatMessageTime(isoDate: string): string {
   return new Date(isoDate).toLocaleTimeString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -112,11 +114,13 @@ function formatDayLabel(isoDate: string): string {
 
   if (date.getFullYear() === now.getFullYear()) {
     return date.toLocaleDateString('tr-TR', {
+      timeZone: KASHE_SAAT_DILIMI,
       day: 'numeric',
       month: 'long',
     });
   }
   return date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -466,6 +470,7 @@ export function KonusmaDetay({
     briefBits.push({
       label: 'Tarih',
       value: new Date(eventDate).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'long',
         year: 'numeric',

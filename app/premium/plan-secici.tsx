@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -69,6 +70,7 @@ export function PlanSecici({
 
   const untilFormatted = premiumUntil
     ? new Date(premiumUntil).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'long',
         year: 'numeric',

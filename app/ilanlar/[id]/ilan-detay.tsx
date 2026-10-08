@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -137,6 +138,7 @@ export function IlanDetay({
 
   const eventDateFormatted = listing.event_date
     ? new Date(listing.event_date).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -155,6 +157,7 @@ export function IlanDetay({
   );
   const publishedDateLabel = listing.published_at
     ? new Date(listing.published_at).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -162,6 +165,7 @@ export function IlanDetay({
     : '—';
   const deadlineDateOnly = listing.application_deadline
     ? new Date(listing.application_deadline).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -940,6 +944,7 @@ function OwnerInfoCard({
   const typeLabel = creator.role === 'business' ? 'Kurumsal' : 'Müşteri';
   const memberSince = creator.created_at
     ? new Date(creator.created_at).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         month: 'long',
         year: 'numeric',
       })
@@ -1102,6 +1107,7 @@ function ApplicationCard({
             </p>
             <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
               {new Date(application.created_at).toLocaleDateString('tr-TR', {
+                timeZone: KASHE_SAAT_DILIMI,
                 day: 'numeric',
                 month: 'short',
                 hour: '2-digit',
@@ -1533,6 +1539,7 @@ function DavetSatiri({ invitation }: { invitation: SentInvitation }) {
             </p>
             <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72">
               {new Date(invitation.created_at).toLocaleDateString('tr-TR', {
+                timeZone: KASHE_SAAT_DILIMI,
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',

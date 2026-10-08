@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
@@ -53,7 +54,7 @@ function formatRelativeTime(isoDate: string): string {
   if (diffMin < 60) return `${diffMin} dakika önce`;
   if (diffHour < 24) return `${diffHour} saat önce`;
   if (diffDay < 7) return `${diffDay} gün önce`;
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString('tr-TR', { timeZone: KASHE_SAAT_DILIMI, day: 'numeric', month: 'short' });
 }
 
 type DateGroup = 'today' | 'week' | 'older';
@@ -287,7 +288,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                               (getEventTypeLabel(conv.event_type) ?? conv.event_type)}
                             {conv.event_type && conv.event_date && ' · '}
                             {conv.event_date &&
-                              new Date(conv.event_date).toLocaleDateString('tr-TR')}
+                              new Date(conv.event_date).toLocaleDateString('tr-TR', { timeZone: KASHE_SAAT_DILIMI })}
                           </p>
                         )}
                       </div>

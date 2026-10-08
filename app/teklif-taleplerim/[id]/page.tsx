@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
@@ -16,6 +17,7 @@ function formatBriefValue(field: BriefField, value: string): string {
     return isNaN(d.getTime())
       ? value
       : d.toLocaleDateString('tr-TR', {
+          timeZone: KASHE_SAAT_DILIMI,
           day: 'numeric',
           month: 'long',
           year: 'numeric',

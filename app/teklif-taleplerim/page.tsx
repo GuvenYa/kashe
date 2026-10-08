@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
@@ -139,6 +140,7 @@ export default async function TeklifTaleplerimPage() {
             <p className="text-sm text-ink-72">
               {req.recipient_count} profesyonele gönderildi ·{' '}
               {new Date(req.created_at).toLocaleDateString('tr-TR', {
+                timeZone: KASHE_SAAT_DILIMI,
                 day: 'numeric',
                 month: 'long',
               })}

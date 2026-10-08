@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { findProfileIdsByEmail, getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
@@ -33,6 +34,7 @@ type UserRow = {
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     year: 'numeric',

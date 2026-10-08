@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -159,7 +160,11 @@ export function IlanSatiri({
             ? formatListingAge(listing.published_at)
             : `Oluşturuldu: ${new Date(listing.created_at).toLocaleDateString(
                 'tr-TR',
-                { day: 'numeric', month: 'short' }
+                {
+                  day: 'numeric',
+                  month: 'short',
+                  timeZone: KASHE_SAAT_DILIMI,
+                }
               )}`}
         </span>
         <span className="flex items-center gap-1">

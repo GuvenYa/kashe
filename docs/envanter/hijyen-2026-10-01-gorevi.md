@@ -89,3 +89,17 @@ uc cagrida hedefin tam URL'si (uye ol, ajans uye ol, dogrulama yeniden gonder). 
 K14 30000. **Tuzak (not):** Reset Password sablonu `next=/sifre-sifirla` sabit; ileride `{{ .RedirectTo }}`'ya cevrilirse
 `sifremi-unuttum-form.tsx` AYNI commit'te `${origin}/sifre-sifirla` gondermeli, yoksa yardimci `/auth/callback?next=` degerini
 `/giris`'e indirir ve kullanici yeni sifre belirleyemez. Kalan lint: `giris-form.tsx` `set-state-in-effect` (eski), sonraki tur.
+
+**H6 KAPANDI (8 Ekim 2026; gorev metni `hijyen-h6-saat-dilimi-gorevi.md`).** Sunucuda render edilen bilesenler Vercel'de UTC ile tarih
+bicimliyordu (P2-ek'te portal 19:30/19:33, 7c-P1'de `/rezervasyon/[id]` 19:33). Ortak modul `app/lib/tarih.ts` (`KASHE_SAAT_DILIMI =
+'Europe/Istanbul'`; `tarihMetni`, `zamanMetni`, `saatMetni`, `kisaTarihMetni`, `tarihAlani`; `'use client'` yok), `teklif-data.ts` re-export;
+repo genelinde 45 tarih/saat cagrisi / 33 dosyada (sunucu + istemci — Kashe tek dilimli urun, her yerde Istanbul) `timeZone: KASHE_SAAT_DILIMI`
+eklendi, metin bicimleri degismedi; secenek nesnesi olmayan 17 cagri sayi bicimleme (number), dokunulmadi. Portal kendi sabitini korur (ayri
+yuzey). Kanit: tsc bos, build 88 rota + BUILD_ID, `TZ=UTC` ile 19:33 -> 22:33 ve 2 Ekim -> 3 Ekim; eslint 112 sorun degisiklik oncesiyle ayni.
+**H9 (acik; davranis degisikligi riski — ayri tur):** gun HESAPLAYAN yerlerde dilim kaymasi olasiligi (`getDate/getMonth/setHours`,
+`toISOString().slice(0,10)` UTC): `components/availability-calendar.tsx`, `takvimim/availability-actions.ts` + `page.tsx`, `lib/badges.ts`,
+`mesajlar/[id]/konusma-detay.tsx` ("Bugün/Dün"), `rezervasyonlarim/page.tsx` (yaklasan/gecmis), `mesajlar/actions.ts`, admin gun/ay anahtarlari
+(`admin/page`, `admin/rapor/route`, `admin/istatistikler`), `min="bugun"` alanlari (`ilanlar/yeni`, `p/[id]/iletisim-button`, `rezervasyon-button`,
+`teklif-topla-formu`), YYYY-MM-DD dogrulamasi (`etkinlik-sihirbazi/actions`, `lib/ai-actions`), sure hesaplari (`admin/actions`, `premium/actions`,
+`teklif-topla/actions`). Cozum yonu: `tarih.ts`'e Istanbul gun anahtari (`gunAnahtari(d)`) ve "bugun" yardimcisi eklenip bu yerler tek tek
+gecirilir; takvim/musaitlik davranisi canli turla dogrulanir.

@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
@@ -70,6 +71,7 @@ const BOS_FORM: FormDurumu = {
 function tarih(v: string | null): string {
   if (!v) return '';
   return new Date(v).toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -96,6 +97,7 @@ export function BasvuruSatiri({ application }: Props) {
               {new Date(
                 (listing as unknown as { event_date: string }).event_date
               ).toLocaleDateString('tr-TR', {
+                timeZone: KASHE_SAAT_DILIMI,
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -139,6 +141,7 @@ export function BasvuruSatiri({ application }: Props) {
       {/* Tarih */}
       <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-3">
         Başvuru: {appDate.toLocaleDateString('tr-TR', {
+          timeZone: KASHE_SAAT_DILIMI,
           day: 'numeric',
           month: 'short',
           hour: '2-digit',

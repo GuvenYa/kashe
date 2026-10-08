@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
@@ -10,6 +11,7 @@ export const metadata = {
 // Helper: tarih formatlama
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

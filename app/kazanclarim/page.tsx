@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
@@ -22,6 +23,7 @@ type BookingRow = {
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     year: 'numeric',

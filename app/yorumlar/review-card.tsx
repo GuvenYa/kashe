@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { ReplyButton } from './reply-button';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
@@ -34,6 +35,7 @@ type Props = {
 function formatReviewDate(isoDate: string): string {
   const date = new Date(isoDate);
   return date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

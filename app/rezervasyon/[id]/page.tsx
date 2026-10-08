@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -97,6 +98,7 @@ function formatEventDate(iso: string | null): string {
   if (!iso) return 'Tarih belirlenmedi';
   const d = new Date(iso);
   return d.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -116,6 +118,7 @@ function formatEventTime(
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

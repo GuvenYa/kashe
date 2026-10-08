@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 /**
  * Kurumsal Ekip (business) sistemi için type'lar, sabitler, helper'lar.
  * 'use server' OLMAYAN dosya — async olmayan export'lar burada.
@@ -163,6 +164,7 @@ export function formatInvitationAge(createdAt: string): string {
   if (diffHour < 24) return `${diffHour} saat önce`;
   if (diffDay < 30) return `${diffDay} gün önce`;
   return date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     year: 'numeric',

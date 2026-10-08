@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { getEventTypeLabel } from '@/app/mesajlar/data';
 import { getCategoryIcon } from '@/app/lib/category-icon';
@@ -53,6 +54,7 @@ function formatEventDate(iso: string | null): string {
   if (!iso) return 'Tarih belirlenmedi';
   const d = new Date(iso);
   return d.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

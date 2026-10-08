@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { findProfileIdsByEmail, getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import Link from 'next/link';
@@ -35,6 +36,7 @@ function formatDate(iso: string | null): string {
   if (!iso) return '—';
   try {
     return new Date(iso).toLocaleDateString('tr-TR', {
+      timeZone: KASHE_SAAT_DILIMI,
       day: '2-digit',
       month: 'short',
       year: 'numeric',

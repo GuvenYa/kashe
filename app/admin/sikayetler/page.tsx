@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
@@ -42,6 +43,7 @@ function formatRelative(iso: string): string {
   if (diffHours < 24) return `${diffHours} sa önce`;
   if (diffDays < 30) return `${diffDays} gün önce`;
   return date.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'short',
     year: 'numeric',

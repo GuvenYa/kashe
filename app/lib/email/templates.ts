@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { SITE_URL } from './resend-client';
 
 // Kashe paleti — inline kullanım için
@@ -32,6 +33,7 @@ function formatEventDate(iso: string | null): string {
   if (!iso) return 'Tarih belirlenmemiş';
   const d = new Date(iso);
   return d.toLocaleDateString('tr-TR', {
+    timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
     month: 'long',
     year: 'numeric',

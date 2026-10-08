@@ -1,3 +1,4 @@
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
@@ -193,6 +194,7 @@ export default async function TakvimimPage() {
                           'Müşteri';
                         const dateLabel = b.event_date
                           ? new Date(b.event_date).toLocaleDateString('tr-TR', {
+                              timeZone: KASHE_SAAT_DILIMI,
                               day: 'numeric',
                               month: 'long',
                             })

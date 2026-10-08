@@ -1,5 +1,6 @@
 'use client';
 
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -735,6 +736,7 @@ function PanoCard({
 
   const eventDateLabel = listing.event_date
     ? new Date(listing.event_date).toLocaleDateString('tr-TR', {
+        timeZone: KASHE_SAAT_DILIMI,
         day: 'numeric',
         month: 'short',
         year: 'numeric',

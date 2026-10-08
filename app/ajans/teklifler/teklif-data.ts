@@ -6,12 +6,8 @@
 // Toplamlar DB'de hesaplanir (`proposal_versions.subtotal/tax_amount/total_amount`,
 // tetikleyici); burada YALNIZ gosterim bicimi var — istemci toplam hesaplamaz.
 
-/**
- * Kashe saati Istanbul: sunucu (Vercel) UTC render ettigi icin dilim ACIKCA
- * verilir, yoksa ayni an sunucuda ve istemcide farkli gorunur (P2 canli turu).
- * Turkiye tek dilim; tarayici dilimi farkli olsa bile gosterim Istanbul saatidir.
- */
-export const KASHE_SAAT_DILIMI = 'Europe/Istanbul';
+// Saat dilimi sabiti ortak modulde (hijyen H6); eski import yollari kirilmasin.
+export { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 
 export const TEKLIF_DURUM_ETIKETLERI: Record<string, string> = {
   draft: 'Taslak',
@@ -136,43 +132,9 @@ export function marjYuzdesi(
   return Math.round(n * 100);
 }
 
-/** "3 Ekim 2026" */
-export function tarihMetni(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: KASHE_SAAT_DILIMI,
-  });
-}
-
-/** "3 Ekim 2026 14:05" */
-export function zamanMetni(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: KASHE_SAAT_DILIMI,
-  });
-}
-
-/** `<input type="date">` degeri (YYYY-MM-DD, Istanbul). */
-export function tarihAlani(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: KASHE_SAAT_DILIMI,
-  }).format(d);
-}
+// Bicimleyiciler ortak modulden gelir (hijyen H6: tek kaynak `app/lib/tarih.ts`).
+// Mevcut cagiranlar bu dosyadan import etmeye devam edebilsin diye re-export.
+export { tarihMetni, zamanMetni, tarihAlani } from '@/app/lib/tarih';
 
 /**
  * FAZ 7c — onayli tekliften acilan rezervasyon (surum basina tek satir).
