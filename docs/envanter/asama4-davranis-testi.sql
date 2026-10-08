@@ -3060,8 +3060,9 @@ BEGIN
   SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
   SELECT id INTO prov_a FROM public.providers WHERE organization_id = org_a AND provider_type = 'organization';
   IF org_k IS NULL OR org_a IS NULL OR prov_a IS NULL THEN RAISE EXCEPTION 'on kosul: org_k=% org_a=% prov_a=%', org_k, org_a, prov_a; END IF;
-  SELECT array_agg(id ORDER BY id) INTO rol FROM (SELECT id FROM public.service_roles WHERE is_active AND slug NOT LIKE 'faz1test-%' ORDER BY id LIMIT 3) s;
-  IF array_length(rol, 1) <> 3 THEN RAISE EXCEPTION 'on kosul: 3 aktif rol gerekir'; END IF;
+  -- rol secimi: is_active'e bakilmaz (dalda/uretimde eski kategorilerden aynalanan deger NULL olabilir); test rolleri haric ilk 3 rol
+  SELECT array_agg(id ORDER BY id) INTO rol FROM (SELECT id FROM public.service_roles WHERE slug NOT LIKE 'faz1test-%' ORDER BY id LIMIT 3) s;
+  IF rol IS NULL OR array_length(rol, 1) <> 3 THEN RAISE EXCEPTION 'on kosul: service_roles''ta en az 3 rol gerekir (bulunan %)', COALESCE(array_length(rol, 1), 0); END IF;
 
   -- kurulum: ikinci ajans (0007) -> kurulus + organization saglayicisi otomatik (FAZ 0 / 2a)
   INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
