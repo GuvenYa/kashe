@@ -38,6 +38,10 @@ type Props = {
   /** 'default' = Keşfet/favoriler/kategori/p[id] (mobil+masaüstü hover paneli, favori kalbi).
    *  'compact' = ana sayfa öne çıkanlar (tek foto-hero, hover paneli/kalp YOK, whole-card link). */
   variant?: 'default' | 'compact';
+  /** Yogun izgara (ana sayfa One cikanlar, 4 sutun): masaustu foto alani
+   *  aspect-[3/4] yerine aspect-[4/5] olur. Hover paneli ve mobil duzen AYNI;
+   *  Kesfet bu prop'u gecmez, davranisi degismez. */
+  yogun?: boolean;
   /** default varyantta favori kalbi için; compact'ta kullanılmaz (opsiyonel). */
   isFavorited?: boolean;
   isLoggedIn?: boolean;
@@ -203,6 +207,7 @@ export function ProfileCard({
   jobsCount = 0,
   quote = null,
   variant = 'default',
+  yogun = false,
   isFavorited = false,
   isLoggedIn = false,
   currentUserRole = null,
@@ -402,7 +407,13 @@ export function ProfileCard({
         </div>
 
         {/* ===================== MASAÜSTÜ (>768px) ===================== */}
-        <div className="hidden md:block relative aspect-[3/4]">
+        <div
+          className={
+            yogun
+              ? 'hidden md:block relative aspect-[4/5]'
+              : 'hidden md:block relative aspect-[3/4]'
+          }
+        >
           <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
 
           <TopChips isAgency={isAgencyCard} categoryName={categoryName} />

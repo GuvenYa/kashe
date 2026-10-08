@@ -1,4 +1,5 @@
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getZiyaretci, type Ziyaretci } from '@/app/lib/ziyaretci';
 
 export const metadata = {
   title: 'Hakkımızda — Kashe',
@@ -80,7 +81,37 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export default function HakkimizdaPage() {
+/**
+ * Girisli kullaniciya "hesap ac" cagrisi gosterilmez; her bolumun CTA'si o
+ * bolumun UYGULAMA yuzeyine doner. Bolum kimligi kullanicinin rolu degil, metnin
+ * hitap ettigi kitledir — sayfa dort kitleyi birden anlatir.
+ */
+function bolumCtalari(s: Section, z: Ziyaretci): Cta[] | undefined {
+  if (!z.girisli) return s.ctas;
+
+  if (s.id === 'kurumsal') {
+    return z.kurumsalPanel
+      ? [{ label: 'RFP Talepleri', href: '/kurumsal/rfp' }]
+      : [{ label: 'Etkinliklerim', href: '/etkinliklerim' }];
+  }
+  if (s.id === 'profesyoneller') {
+    // Ilk CTA (hesap acma) profile doner; "Premium'u incele" aynen kalir.
+    return [
+      { label: 'Profilim', href: '/profil' },
+      ...(s.ctas ?? []).slice(1),
+    ];
+  }
+  if (s.id === 'ajanslar') {
+    return z.ajansPaneli
+      ? [{ label: 'Ajans paneli', href: '/ajans/teklifler' }]
+      : [{ label: 'Ajanslar bölümü', href: '/#ajanslar' }];
+  }
+  return s.ctas;
+}
+
+export default async function HakkimizdaPage() {
+  const ziyaretci = await getZiyaretci();
+
   return (
     <>
       <TopNav />
@@ -106,6 +137,7 @@ export default function HakkimizdaPage() {
           <div className="space-y-12">
             {SECTIONS.map((s) => {
               const paras = Array.isArray(s.body) ? s.body : [s.body];
+              const ctas = bolumCtalari(s, ziyaretci);
               return (
                 <div key={s.title} id={s.id} className="scroll-mt-24">
                   <h2 className="font-display font-semibold text-2xl md:text-3xl text-ink tracking-tight mb-4 text-balance">
@@ -130,9 +162,9 @@ export default function HakkimizdaPage() {
                       </p>
                     ))}
                   </div>
-                  {s.ctas && s.ctas.length > 0 && (
+                  {ctas && ctas.length > 0 && (
                     <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
-                      {s.ctas.map((c) => (
+                      {ctas.map((c) => (
                         <a
                           key={c.label}
                           href={c.href}

@@ -2,6 +2,11 @@ import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Button } from "@/app/components/ui/button";
 import { getCategoryIcon } from "@/app/lib/category-icon";
 import { OrnekRozeti } from "@/app/components/ui/ornek-rozeti";
+import {
+  saticiRol,
+  ZIYARETCI_GIRISSIZ,
+  type Ziyaretci,
+} from "@/app/lib/ziyaretci";
 
 type Promise = {
   number: string;
@@ -30,11 +35,23 @@ const PROMISES: Promise[] = [
   },
 ];
 
-export function ProCtaSection() {
+export function ProCtaSection({
+  ziyaretci = ZIYARETCI_GIRISSIZ,
+}: {
+  ziyaretci?: Ziyaretci;
+}) {
   const fotograf = getCategoryIcon("fotografci");
 
+  // Girisli kullaniciya "profilini ac" demek yanlis cagri: profili zaten var.
+  // Satici rolleri kendi profiline, alici roller kesfete gider.
+  const birincil = !ziyaretci.girisli
+    ? { href: "/uye-ol?rol=profesyonel", label: "Profilini aç →" }
+    : saticiRol(ziyaretci)
+      ? { href: "/profil", label: "Profilini düzenle →" }
+      : { href: "/kesfet", label: "Profesyonel bul →" };
+
   return (
-    <section className="relative overflow-hidden bg-paper-2 border-t border-line">
+    <section id="profesyoneller" className="relative overflow-hidden bg-paper-2 border-t border-line scroll-mt-20">
       {/* Atmosferik glow — Hero/FooterCTA diliyle */}
       <div
         aria-hidden
@@ -93,9 +110,9 @@ export function ProCtaSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="/uye-ol?rol=profesyonel">
+              <a href={birincil.href}>
                 <Button variant="primary" size="lg">
-                  Profilini aç →
+                  {birincil.label}
                 </Button>
               </a>
               <a href="/#nasil-calisir">

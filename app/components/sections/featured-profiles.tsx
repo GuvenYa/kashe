@@ -2,7 +2,12 @@ import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { ProfileCard } from "@/app/kesfet/profile-card";
-import type { CityEmbed, ProviderPublic } from "@/app/lib/types";
+import { getFavoritedIds } from "@/app/favoriler/actions";
+import { getZiyaretci } from "@/app/lib/ziyaretci";
+import {
+  PROVIDER_LISTING_COLUMNS,
+  type ProviderListing,
+} from "@/app/lib/types";
 
 // Üst filtre çıtası için popüler kategoriler (slug'larla)
 const TOP_CATEGORIES = [
@@ -12,24 +17,9 @@ const TOP_CATEGORIES = [
   { slug: "sunucu", label: "Sunucu" },
 ];
 
-type FeaturedProfile = Pick<
-  ProviderPublic,
-  | 'id'
-  | 'full_name'
-  | 'avatar_url'
-  | 'company_name'
-  | 'role'
-  | 'approval_status'
-  | 'premium_tier'
-  | 'premium_until'
-  | 'created_at'
-> & {
-  city: string | null;
-  category: string | null;
-  categorySlug: string | null;
-  rating: number | null;
-  reviewCount: number;
-};
+/** Ana sayfada gösterilen kart sayısı; ilk 8'i her ekranda, 9-12 yalnız lg+. */
+const HOME_LIMIT = 12;
+const MOBIL_LIMIT = 8;
 
 export async function FeaturedProfiles() {
   const supabase = await createClient();
@@ -44,43 +34,27 @@ export async function FeaturedProfiles() {
     slugToId[c.slug] = c.id;
   });
 
-  // Daha geniş havuz çek (premium önceliklendirme için), sonra 6'ya indir
-  // FAZ 2c: one cikanlar saglayici gorunumunden; filtre, siralama ve limit ayni.
+  // Daha geniş havuz çek (premium önceliklendirme için), sonra 12'ye indir.
+  // FAZ 2c: one cikanlar saglayici gorunumunden; filtre ve siralama ayni.
+  // Sutun listesi Kesfet ile AYNI (PROVIDER_LISTING_COLUMNS) — standart kart
+  // tanitim metnini ve etiketlerini bu alanlardan okuyor.
   const { data: profiles } = await supabase
     .from("v_providers_public")
     .select(
       `
-      id, full_name, avatar_url, company_name, role, created_at, premium_tier, premium_until, approval_status,
+      ${PROVIDER_LISTING_COLUMNS},
       turkish_cities(name),
-      service_categories!profiles_primary_category_id_fkey(name_tr, slug)
+      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
     `
     )
     .eq("is_published", true)
     .in("role", ["professional", "agency"])
     .order("updated_at", { ascending: false })
-    .limit(24);
+    .limit(36);
 
-  // Sorgu embed'de emoji SECMIYOR; bu yuzden CategoryEmbed degil dar bir sekil
-  // kullanilir (tip sorguya uyar, sorgu tipe degil).
-  const rawList = (profiles || []) as unknown as Array<
-    Pick<
-      ProviderPublic,
-      | 'id'
-      | 'full_name'
-      | 'avatar_url'
-      | 'company_name'
-      | 'role'
-      | 'created_at'
-      | 'premium_tier'
-      | 'premium_until'
-      | 'approval_status'
-    > &
-      CityEmbed & {
-        service_categories: { name_tr: string; slug: string } | null;
-      }
-  >;
+  const rawList = (profiles || []) as unknown as ProviderListing[];
 
-  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 6'yı göster
+  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 12
   const tierWeight = (tier: string | null, until: string | null): number => {
     if (!tier || tier === "none") return 0;
     if (until && new Date(until).getTime() <= Date.now()) return 0;
@@ -95,7 +69,7 @@ export async function FeaturedProfiles() {
         tierWeight(b.premium_tier, b.premium_until) -
         tierWeight(a.premium_tier, a.premium_until)
     )
-    .slice(0, 6);
+    .slice(0, HOME_LIMIT);
 
   if (list.length === 0) return null; // Boş ise bölüm hiç görünmesin
 
@@ -115,26 +89,16 @@ export async function FeaturedProfiles() {
     };
   });
 
-  // NOT: fiyat (services) sorgusu kaldırıldı — kompakt foto-hero kartında fiyat yok.
-  // Kapak için Keşfet fallback zinciri (avatar → placeholder); portföy fallback'i bu
-  // bölümün sorgusunu ağırlaştırmamak için ATLANDI (ProfileCard cover verilmezse avatar'a düşer).
+  // Favori kalbi yalniz client rolunde dolu gelir (Kesfet ile ayni kalip).
+  const ziyaretci = await getZiyaretci();
+  let favoritedIds = new Set<string>();
+  if (ziyaretci.rol === "client") {
+    favoritedIds = await getFavoritedIds();
+  }
 
-  const featured: FeaturedProfile[] = list.map((p) => ({
-    id: p.id,
-    full_name: p.full_name,
-    avatar_url: p.avatar_url,
-    company_name: p.company_name,
-    role: p.role,
-    approval_status: p.approval_status,
-    premium_tier: p.premium_tier,
-    premium_until: p.premium_until,
-    created_at: p.created_at,
-    city: p.turkish_cities?.name ?? null,
-    category: p.service_categories?.name_tr ?? null,
-    categorySlug: p.service_categories?.slug ?? null,
-    rating: ratingsByProfile[p.id]?.average ?? null,
-    reviewCount: ratingsByProfile[p.id]?.count ?? 0,
-  }));
+  // NOT: kapak zinciri Kesfet'teki portföy fallback'ini KULLANMAZ (ek sorgu
+  // olurdu); avatar yoksa kart placeholder'a düşer. İş sayısı (bookings) da bu
+  // bölümde sorgulanmaz — jobsCount 0.
 
   return (
     <section className="bg-paper border-t border-line">
@@ -183,35 +147,26 @@ export async function FeaturedProfiles() {
           })}
         </div>
 
-        {/* Profil kartları — kompakt foto-hero (Keşfet ile aynı görsel dil); kolon yapısı korundu */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featured.map((p) => (
-            <ProfileCard
+        {/* Profil kartları — Keşfet ile AYNI standart kart: masaüstünde hover
+            paneli (tanıtım + etiketler + Teklif Al), mobilde açık gövde.
+            4 sütun; `yogun` ile foto alanı aspect-[4/5]'e daralır. 9-12. kartlar
+            yalnız lg+ (telefon/tablette 8 kart yeterli). */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {list.map((p, i) => (
+            <div
               key={p.id}
-              variant="compact"
-              profile={{
-                id: p.id,
-                full_name: p.full_name,
-                avatar_url: p.avatar_url,
-                bio: null,
-                company_name: p.company_name,
-                role: p.role,
-                approval_status: p.approval_status,
-                premium_tier: p.premium_tier,
-                premium_until: p.premium_until,
-                created_at: p.created_at,
-                attributes: null,
-                turkish_cities: p.city ? { name: p.city } : null,
-                service_categories: p.category
-                  ? { name_tr: p.category, emoji: null, slug: p.categorySlug ?? '' }
-                  : null,
-              }}
-              rating={
-                p.reviewCount > 0 && p.rating !== null
-                  ? { count: p.reviewCount, average: p.rating }
-                  : null
-              }
-            />
+              className={i >= MOBIL_LIMIT ? "hidden lg:block" : undefined}
+            >
+              <ProfileCard
+                profile={p}
+                yogun
+                cover={p.avatar_url ?? null}
+                rating={ratingsByProfile[p.id] || null}
+                isFavorited={favoritedIds.has(p.id)}
+                isLoggedIn={ziyaretci.girisli}
+                currentUserRole={ziyaretci.rol}
+              />
+            </div>
           ))}
         </div>
       </div>

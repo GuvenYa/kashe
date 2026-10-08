@@ -83,8 +83,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/uye-ol?rol=profesyonel" className="text-paper/80 hover:text-paper transition-colors">
-                  Profesyonel ol
+                <a href="/#profesyoneller" className="text-paper/80 hover:text-paper transition-colors">
+                  Profesyoneller için
                 </a>
               </li>
               <li>

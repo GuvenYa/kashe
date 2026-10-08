@@ -30,12 +30,12 @@ const YETENEKLER: Madde[] = [
   {
     baslik: "Özel yetenek havuzu",
     metin:
-      "Kashe hesabı olmayan profesyonellerinizi ve iç ücretlerini kaydedin. Havuz yalnız size görünür, pazaryerine açılmaz.",
+      "Kashe hesabı olmayan profesyonellerinizi de kaydedin; onlarla anlaştığınız ücretleri not alın. Havuz yalnız size görünür, pazaryerine açılmaz.",
   },
   {
-    baslik: "Teklif, iç maliyet ve marj",
+    baslik: "Teklif, maliyet ve marj",
     metin:
-      "Teklifinizi sürümleyin. İç maliyet ve marjınız yalnız ekibinize görünür; müşteri yalnız teklifi görür.",
+      "Teklifinizi hazırlayın, gerekirse düzenleyip yeniden gönderin; her gönderim kayıt altında kalır. Maliyetiniz ve marjınız yalnız ekibinize görünür, müşteri yalnız teklifi görür.",
   },
   {
     baslik: "Müşteri onayı tek bağlantıyla",
@@ -51,9 +51,12 @@ const YETENEKLER: Madde[] = [
 
 export function AjanslarSection({
   ajansPaneli = false,
+  girisli = false,
 }: {
-  /** `proposals.view` yetkili ajans kurulusu olan girisli kullanici. */
+  /** proposals.view yetkili ajans kurulusu olan girisli kullanici. */
   ajansPaneli?: boolean;
+  /** Girisli HER kullanicida "Giris yapin" satiri gizlenir. */
+  girisli?: boolean;
 }) {
   return (
     <section id="ajanslar" className="bg-paper border-t border-line scroll-mt-20">
@@ -112,7 +115,7 @@ export function AjanslarSection({
               </a>
             </div>
 
-            {!ajansPaneli && (
+            {!girisli && (
               <p className="mt-4 text-sm text-ink-50">
                 Ajans hesabınız var mı?{' '}
                 <a

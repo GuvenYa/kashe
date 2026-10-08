@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { getZiyaretci, saticiRol } from '@/app/lib/ziyaretci';
 
 export const metadata = {
   title: 'Fiyatlandırma — Kashe',
@@ -107,7 +108,13 @@ function Check() {
   );
 }
 
-export default function FiyatlandirmaPage() {
+export default async function FiyatlandirmaPage() {
+  // Girisli kullaniciya "uye ol" gosterilmez. Paketler SATICI tarafina ait:
+  // profesyonel/ajans Premium sayfasina gider, alici rollerde dugme hic cikmaz.
+  const ziyaretci = await getZiyaretci();
+  const satici = saticiRol(ziyaretci);
+  const planDugmesi = !ziyaretci.girisli || satici;
+
   return (
     <>
       <TopNav />
@@ -181,20 +188,28 @@ export default function FiyatlandirmaPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={
-                    plan.key === 'agency'
-                      ? '/uye-ol/ajans'
-                      : '/uye-ol?rol=profesyonel'
-                  }
-                  className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-display font-semibold text-sm transition-all ${
-                    plan.highlight
-                      ? 'bg-brand-ink text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
-                      : 'border border-ink text-ink hover:bg-ink hover:text-paper'
-                  }`}
-                >
-                  {plan.key === 'standard' ? 'Ücretsiz başla' : 'Üye ol'}
-                </Link>
+                {planDugmesi && (
+                  <Link
+                    href={
+                      ziyaretci.girisli
+                        ? '/premium'
+                        : plan.key === 'agency'
+                          ? '/uye-ol/ajans'
+                          : '/uye-ol?rol=profesyonel'
+                    }
+                    className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-display font-semibold text-sm transition-all ${
+                      plan.highlight
+                        ? 'bg-brand-ink text-paper hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)]'
+                        : 'border border-ink text-ink hover:bg-ink hover:text-paper'
+                    }`}
+                  >
+                    {ziyaretci.girisli
+                      ? 'Planı seç'
+                      : plan.key === 'standard'
+                        ? 'Ücretsiz başla'
+                        : 'Üye ol'}
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -259,7 +274,9 @@ export default function FiyatlandirmaPage() {
           </p>
         </section>
 
-        {/* CTA */}
+        {/* CTA — satici cagrisi. Girisli ALICI rolunde (client/business) bu blok
+            hic render edilmez: paketler ona ait degil. */}
+        {planDugmesi && (
         <section className="border-t border-line bg-card">
           <div className="max-w-4xl mx-auto px-6 md:px-12 py-16 text-center">
             <h2 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
@@ -269,15 +286,16 @@ export default function FiyatlandirmaPage() {
               </em>
             </h2>
             <p className="text-ink-72 mt-3 max-w-xl mx-auto">
-              Profilini oluştur, lansman kampanyasıyla premium özellikleri 6 ay
-              ücretsiz dene.
+              {ziyaretci.girisli
+                ? 'Profilini güncel tut, lansman kampanyasıyla premium özellikleri 6 ay ücretsiz dene.'
+                : 'Profilini oluştur, lansman kampanyasıyla premium özellikleri 6 ay ücretsiz dene.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-7">
               <Link
-                href="/uye-ol?rol=profesyonel"
+                href={ziyaretci.girisli ? '/premium' : '/uye-ol?rol=profesyonel'}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
               >
-                Ücretsiz üye ol
+                {ziyaretci.girisli ? 'Premium sayfası →' : 'Ücretsiz üye ol'}
               </Link>
               <Link
                 href="/kesfet"
@@ -288,6 +306,7 @@ export default function FiyatlandirmaPage() {
             </div>
           </div>
         </section>
+        )}
       </main>
     </>
   );

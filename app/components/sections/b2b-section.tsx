@@ -1,5 +1,6 @@
 import { Button } from "@/app/components/ui/button";
 import { OrnekRozeti } from "@/app/components/ui/ornek-rozeti";
+import { ZIYARETCI_GIRISSIZ, type Ziyaretci } from "@/app/lib/ziyaretci";
 
 type Feature = {
   number: string;
@@ -25,7 +26,19 @@ const features: Feature[] = [
   },
 ];
 
-export function B2BSection() {
+export function B2BSection({
+  ziyaretci = ZIYARETCI_GIRISSIZ,
+}: {
+  ziyaretci?: Ziyaretci;
+}) {
+  // Girisli kullaniciyi kurumsal kayda degil, sahip oldugu yuzeye gonder:
+  // RFP yetkisi varsa talep listesine, yoksa etkinlik akisina (tum rollerde var).
+  const cta = !ziyaretci.girisli
+    ? { href: "/uye-ol?rol=kurumsal", label: "Kurumsal hesap aç →" }
+    : ziyaretci.kurumsalPanel
+      ? { href: "/kurumsal/rfp", label: "RFP Talepleri →" }
+      : { href: "/etkinliklerim", label: "Etkinliklerim →" };
+
   return (
     <section
       id="kurumsal"
@@ -79,9 +92,9 @@ export function B2BSection() {
               ))}
             </div>
 
-            <a href="/uye-ol?rol=kurumsal">
+            <a href={cta.href}>
               <Button variant="primary" size="lg">
-                Kurumsal hesap aç →
+                {cta.label}
               </Button>
             </a>
           </div>

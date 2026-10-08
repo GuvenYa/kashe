@@ -16,8 +16,7 @@ import { FooterCTA } from "@/app/components/sections/footer-cta";
 import { Footer } from "@/app/components/sections/footer";
 import { Reveal } from "@/app/components/sections/reveal";
 import { SITE_URL } from "@/app/lib/site";
-import { getCachedUser } from "@/app/lib/auth";
-import { hasProposalAccess } from "@/app/lib/org-context";
+import { getZiyaretci } from "@/app/lib/ziyaretci";
 
 // Canonical YALNIZ burada: layout'a yazilirsa tum alt sayfalar "/" kanonigini
 // miras alirdi. Baslik/aciklama/OG layout'tan gelir.
@@ -45,11 +44,9 @@ const ORGANIZATION_JSONLD = {
 };
 
 export default async function Home() {
-  // Ajanslar bolumunun birincil dugmesi role gore degisir: paneli olan kullaniciyi
-  // kayit sayfasina gondermek yanlis olur. hasProposalAccess = proposals.view
-  // yetkili ajans kurulusu (top-nav ile ayni kaynak).
-  const user = await getCachedUser();
-  const ajansPaneli = !!user && (await hasProposalAccess());
+  // Vitrin CTA'lari role gore degisir: girisli kullaniciya "uye ol / hesap ac"
+  // demek yanlis cagri. Tek kaynak getZiyaretci (render basina bir kez calisir).
+  const ziyaretci = await getZiyaretci();
 
   return (
     <>
@@ -74,13 +71,16 @@ export default async function Home() {
         </Reveal>
         <HowItWorks />
         <Reveal>
-          <B2BSection />
+          <B2BSection ziyaretci={ziyaretci} />
         </Reveal>
         <Reveal>
-          <AjanslarSection ajansPaneli={ajansPaneli} />
+          <AjanslarSection
+            ajansPaneli={ziyaretci.ajansPaneli}
+            girisli={ziyaretci.girisli}
+          />
         </Reveal>
         <Reveal>
-          <ProCtaSection />
+          <ProCtaSection ziyaretci={ziyaretci} />
         </Reveal>
         <Reveal>
           <TrustSection />
@@ -92,7 +92,7 @@ export default async function Home() {
           <FaqSection />
         </Reveal>
         <Reveal>
-          <FooterCTA />
+          <FooterCTA ziyaretci={ziyaretci} />
         </Reveal>
       </main>
       <Footer />

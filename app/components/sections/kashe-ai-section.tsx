@@ -86,10 +86,9 @@ export function KasheAiSection() {
           </h2>
 
           <p className="font-body text-base md:text-lg text-paper-72 leading-[1.6] max-w-xl mb-8">
-            Etkinliğini kendi cümlelerinle anlat: tür, tarih, şehir, katılımcı
-            sayısı. Kashe ihtiyaç duyduğun rolleri çıkarır; eksik bilgiyi
-            uydurmak yerine sorar. Ya da nasıl biri aradığını söyle, sana en
-            uygun profilleri gerekçesiyle bulsun.
+            Etkinliğini bir iki cümleyle anlat, gerisini Kashe&apos;ye bırak:
+            hangi rollere ihtiyacın olduğunu çıkarır, eksik bilgiyi uydurmaz,
+            sorar. Kimi aradığını söyle; en uygun profilleri nedeniyle önersin.
           </p>
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -138,9 +137,11 @@ export function KasheAiSection() {
                   </div>
                 </div>
 
-                <p className="mt-5 text-sm font-medium text-brand-accent group-hover:underline">
+                {/* Kartin TAMAMI zaten baglanti; icine ikinci bir baglanti
+                    etiketi konmaz. Dugme gorunumu span ile verilir. */}
+                <span className="inline-flex w-full sm:w-auto justify-center items-center gap-2 mt-6 rounded-lg bg-paper text-ink font-display font-semibold text-base px-6 py-3 transition-colors group-hover:bg-brand-accent-soft">
                   {k.bag}
-                </p>
+                </span>
               </Link>
             ))}
           </div>
