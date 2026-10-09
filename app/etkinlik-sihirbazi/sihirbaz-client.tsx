@@ -461,6 +461,34 @@ export function SihirbazClient({
     guncelle(yama, { gecmis: 'push' });
   }
 
+  /**
+   * OTOMATIK BASLANGIC (EK-3) — hero'daki Kashe AI aramasindan gelindiginde.
+   *
+   * `otomatik=1` + metin >= 10 karakter + henuz bir adima girilmemisse analiz
+   * kendiliginden baslar. Bayrak tek sefere indirir; `otomatik` anahtari URL'de
+   * kalabilir, ikinci kez tetiklemez. Girissizde `analizEt` zaten giris duvarina
+   * yollar ve donus URL'si (sorguRef'ten turer) `otomatik=1`'i tasir — giris
+   * sonrasi analiz kendiliginden baslar.
+   */
+  const otomatikCalisti = useRef(false);
+  useEffect(() => {
+    if (otomatikCalisti.current) return;
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('otomatik') !== '1') return;
+    if (p.get('adim')) return;
+    if ((p.get('metin') ?? '').trim().length < 10) return;
+    otomatikCalisti.current = true;
+    // Zamanlayici: analizEt senkron olarak setState cagiriyor; efekt govdesinden
+    // dogrudan cagirmak cascading render uyarisi veriyor (react-hooks/set-state-in-effect).
+    // Bir tik beklemek hydration'in oturmasini da garanti eder.
+    const t = setTimeout(() => {
+      void analizEt();
+    }, 0);
+    return () => clearTimeout(t);
+    // Bilerek tek sefer: bagimliliklar her tus vurusunda yeniden tetiklerdi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function onayla() {
     setOnayHatasi(null);
     if (!tur) {

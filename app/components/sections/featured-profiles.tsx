@@ -17,8 +17,9 @@ const TOP_CATEGORIES = [
   { slug: "sunucu", label: "Sunucu" },
 ];
 
-/** Ana sayfada gösterilen kart sayısı; ilk 8'i her ekranda, 9-12 yalnız lg+. */
-const HOME_LIMIT = 12;
+/** Ana sayfada gösterilen kart sayısı (4 sütun x 4 satır); ilk 8'i her
+ *  ekranda, 9-16 yalnız lg+. */
+const HOME_LIMIT = 16;
 const MOBIL_LIMIT = 8;
 
 export async function FeaturedProfiles() {
@@ -34,7 +35,7 @@ export async function FeaturedProfiles() {
     slugToId[c.slug] = c.id;
   });
 
-  // Daha geniş havuz çek (premium önceliklendirme için), sonra 12'ye indir.
+  // Daha geniş havuz çek (premium önceliklendirme için), sonra 16'ya indir.
   // FAZ 2c: one cikanlar saglayici gorunumunden; filtre ve siralama ayni.
   // Sutun listesi Kesfet ile AYNI (PROVIDER_LISTING_COLUMNS) — standart kart
   // tanitim metnini ve etiketlerini bu alanlardan okuyor.
@@ -50,11 +51,11 @@ export async function FeaturedProfiles() {
     .eq("is_published", true)
     .in("role", ["professional", "agency"])
     .order("updated_at", { ascending: false })
-    .limit(36);
+    .limit(48);
 
   const rawList = (profiles || []) as unknown as ProviderListing[];
 
-  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 12
+  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 16
   const tierWeight = (tier: string | null, until: string | null): number => {
     if (!tier || tier === "none") return 0;
     if (until && new Date(until).getTime() <= Date.now()) return 0;
@@ -149,8 +150,8 @@ export async function FeaturedProfiles() {
 
         {/* Profil kartları — Keşfet ile AYNI standart kart: masaüstünde hover
             paneli (tanıtım + etiketler + Teklif Al), mobilde açık gövde.
-            4 sütun; `yogun` ile foto alanı kareye (aspect-square) daralır. 9-12. kartlar
-            yalnız lg+ (telefon/tablette 8 kart yeterli). */}
+            4 sütun x 4 satır; `yogun` ile foto alanı aspect-[4/3]'e daralır.
+            9-16. kartlar yalnız lg+ (telefon/tablette 8 kart yeterli). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {list.map((p, i) => (
             <div

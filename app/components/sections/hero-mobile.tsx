@@ -1,16 +1,14 @@
-import { QuickSearch } from "./quick-search";
+import { HeroAiSearch } from "./hero-ai-search";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
 import { StatCounter } from "./stat-counter";
 
 type Category = { id: number; slug: string; name_tr: string };
-type City = { id: number; name: string };
 type PopularLink = { label: string; slug: string };
 
 export type HeroSayac = { key: string; value: number; label: string };
 
 type Props = {
   categories: Category[];
-  cities: City[];
   popularLinks: PopularLink[];
   sayaclar: HeroSayac[];
 };
@@ -30,7 +28,6 @@ type Props = {
  */
 export function HeroMobile({
   categories,
-  cities,
   popularLinks,
   sayaclar,
 }: Props) {
@@ -115,7 +112,7 @@ export function HeroMobile({
           className="kashe-rise relative z-30 w-full max-w-[480px]"
           style={{ animationDelay: "240ms" }}
         >
-          <QuickSearch categories={categories} cities={cities} />
+          <HeroAiSearch />
         </div>
 
         {/* Popüler linkler */}

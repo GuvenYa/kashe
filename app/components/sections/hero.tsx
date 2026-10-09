@@ -1,6 +1,5 @@
 import { createClient } from "@/app/lib/supabase-server";
-import { orderCities } from "@/app/lib/city-order";
-import { QuickSearch } from "./quick-search";
+import { HeroAiSearch } from "./hero-ai-search";
 import { Hero3DWrapper } from "./hero-3d-wrapper";
 import { HeroMobile, type HeroSayac } from "./hero-mobile";
 import { StatCounter } from "./stat-counter";
@@ -9,7 +8,6 @@ export async function Hero() {
   const supabase = await createClient();
   const [
     { data: categoriesData },
-    { data: citiesData },
     { count: proCount },
     { count: cityCount },
     {
@@ -21,7 +19,6 @@ export async function Hero() {
       .select("id, slug, name_tr")
       .eq("is_active", true)
       .order("sort_order"),
-    supabase.from("turkish_cities").select("id, name").order("name"),
     // FAZ 2c: yayinda saglayici sayaci gorunumden; filtreler ayni.
     supabase
       .from("v_providers_public")
@@ -33,7 +30,6 @@ export async function Hero() {
   ]);
 
   const categories = categoriesData || [];
-  const cities = orderCities(citiesData || []);
 
   const popularLinks = [
     { label: "Düğün fotoğrafçısı", slug: "fotografci" },
@@ -58,7 +54,6 @@ export async function Hero() {
       <div className="lg:hidden">
         <HeroMobile
           categories={categories}
-          cities={cities}
           popularLinks={popularLinks}
           sayaclar={sayaclar}
         />
@@ -107,25 +102,28 @@ export async function Hero() {
               şeffaf fiyatla, tek platformda.
             </p>
 
-            {/* Arama çubuğu */}
+            {/* Arama — birincil yol Kashe AI (serbest metin). Yapisal arama
+                (kategori + sehir) #hizmetler bolumunde. */}
             <div
               className="kashe-rise relative z-30 mb-4"
               style={{ animationDelay: "240ms" }}
             >
-              <QuickSearch categories={categories} cities={cities} />
+              <HeroAiSearch />
             </div>
 
-            {/* Sihirbaz girişi — tek satır, mevcut düzeni bozmaz. */}
+            {/* Yapisal aramaya gecis — tek satir, mevcut duzeni bozmaz. */}
             <div
               className="kashe-rise mb-4 text-sm text-ink-72"
               style={{ animationDelay: "260ms" }}
             >
-              Ne arayacağına karar veremedin mi?{' '}
+              Kimi aradığını biliyor musun?{' '}
+              {/* Hero yalniz ana sayfada render edilir -> sayfa ici capa.
+                  "/#hizmetler" yazmak Next'te rota gezinmesi sayilir. */}
               <a
-                href="/etkinlik-sihirbazi"
+                href="#hizmetler"
                 className="font-display font-semibold text-brand-ink hover:underline"
               >
-                Etkinliğini adım adım kuralım →
+                Kategoriye göre ara →
               </a>
             </div>
 

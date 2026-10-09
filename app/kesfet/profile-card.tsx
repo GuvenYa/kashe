@@ -39,7 +39,7 @@ type Props = {
    *  'compact' = ana sayfa öne çıkanlar (tek foto-hero, hover paneli/kalp YOK, whole-card link). */
   variant?: 'default' | 'compact';
   /** Yogun izgara (ana sayfa One cikanlar, 4 sutun): masaustu foto alani
-   *  aspect-[3/4] yerine aspect-square olur (ana sayfada 4 sutun x 3 satir tek ekrana yakin). Hover paneli ve mobil duzen AYNI;
+   *  aspect-[3/4] yerine aspect-[4/3] olur (ana sayfada 4 sutun x 4 satir). Hover paneli ve mobil duzen AYNI;
    *  Kesfet bu prop'u gecmez, davranisi degismez. */
   yogun?: boolean;
   /** default varyantta favori kalbi için; compact'ta kullanılmaz (opsiyonel). */
@@ -410,7 +410,7 @@ export function ProfileCard({
         <div
           className={
             yogun
-              ? 'hidden md:block relative aspect-square'
+              ? 'hidden md:block relative aspect-[4/3]'
               : 'hidden md:block relative aspect-[3/4]'
           }
         >

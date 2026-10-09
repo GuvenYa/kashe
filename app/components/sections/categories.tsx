@@ -4,6 +4,8 @@ import { createClient } from "@/app/lib/supabase-server";
 import { getCategoryIcon } from "@/app/lib/category-icon";
 import { CategoryIcon } from "@/app/components/ui/category-icon";
 import { KategoriTalepCta } from "@/app/components/kategori-talep-cta";
+import { QuickSearch } from "./quick-search";
+import { orderCities } from "@/app/lib/city-order";
 import type { ProviderPublic } from "@/app/lib/types";
 
 type CategoryRow = {
@@ -35,13 +37,19 @@ export async function Categories() {
   } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
 
-  const { data: categoriesData } = await supabase
-    .from("service_categories")
-    .select("id, slug, name_tr")
-    .eq("is_active", true)
-    .order("sort_order");
+  // Yapisal arama (kategori + sehir) EK-3 ile hero'dan buraya tasindi; sehir
+  // listesi de bu yuzden burada cekiliyor.
+  const [{ data: categoriesData }, { data: citiesData }] = await Promise.all([
+    supabase
+      .from("service_categories")
+      .select("id, slug, name_tr")
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase.from("turkish_cities").select("id, name").order("name"),
+  ]);
 
   const allCategories = (categoriesData || []) as CategoryRow[];
+  const cities = orderCities(citiesData || []);
 
   // Her kategoride kaç yayında profesyonel var (id -> count)
   const profileCountByCat: Record<number, number> = {};
@@ -75,16 +83,31 @@ export async function Categories() {
   const hasMore = allCategories.length > categories.length;
 
   return (
-    <section id="hizmetler" className="bg-paper border-t border-line">
+    <section
+      id="hizmetler"
+      className="bg-paper border-t border-line scroll-mt-20"
+    >
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-24">
         {/* Section header */}
-        <div className="mb-12 md:mb-16 max-w-2xl">
+        <div className="mb-8 md:mb-10 max-w-2xl">
           <Eyebrow variant="inline" className="mb-4">
             Popüler kategoriler
           </Eyebrow>
           <h2 className="font-display font-light text-4xl md:text-5xl lg:text-6xl leading-[1] tracking-[-0.03em] text-ink">
             Hangi <em>yeteneği</em> arıyorsun?
           </h2>
+        </div>
+
+        {/* Yapisal arama — grid'de gizlenen kategoriler de aranabilsin diye
+            allCategories beslenir (grid ilk 12'yi gosterir). */}
+        <div className="relative z-30 max-w-3xl mb-10 md:mb-12">
+          <QuickSearch
+            categories={allCategories.map((c) => ({
+              id: c.id,
+              name_tr: c.name_tr,
+            }))}
+            cities={cities}
+          />
         </div>
 
         {/* Categories grid */}
