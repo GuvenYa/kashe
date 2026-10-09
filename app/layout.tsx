@@ -28,8 +28,9 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-const SITE_BASLIK =
-  "Kashe — Türkiye'nin Yetenek Sahnesi · Etkinlik sektörü için yapay zeka destekli pazaryeri ve operasyon platformu";
+// Baslik kisa tutulur: WhatsApp/iMessage onizlemesi ve sekme basligi tek satir.
+// Uzun aciklama SITE_ACIKLAMA'da (og:description / meta description).
+const SITE_BASLIK = "Kashe — Türkiye'nin Yetenek Sahnesi";
 const SITE_ACIKLAMA =
   "Türkiye'nin etkinlik ve yetenek pazaryeri. Hostes, DJ, fotoğrafçı, sunucu, müzisyen, oyuncu ve organizasyon firmaları — şeffaf fiyatla, tek platformda.";
 
