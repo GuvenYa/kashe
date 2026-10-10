@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
 } from 'react';
 import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { sonucEtiketi } from '@/app/lib/discover-base';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
@@ -87,6 +88,9 @@ const ANLAT_ANAHTARLARI = [
   'surum',
   'tarih_notu',
   'sehir_notu',
+  // EK-4: analizde dolan adimlar atlandiysa '1' olur; "Brief'ten
+  // anladiklarimiz" seridi bu bayrakla gorunur. Yeni analizde sifirlanir.
+  'atlanan',
 ];
 
 /**
@@ -214,6 +218,8 @@ export function SihirbazClient({
   const bitis = params.get('bitis') ?? '';
   const esnek = params.get('esnek') === '1';
   const katilimci = params.get('katilimci') ?? '';
+  /** Analizde dolu adimlar atlandi mi (serit bu bayrakla gorunur). */
+  const atlanan = params.get('atlanan') === '1';
   const butceMin = params.get('butce_min') ?? '';
   const butceMax = params.get('butce_max') ?? '';
   const mekan = params.get('mekan') ?? '';
@@ -361,6 +367,37 @@ export function SihirbazClient({
   const turEtiketi = turler.find((t) => t.key === tur)?.name_tr ?? '';
   const sehirAdi = sehirler.find((c) => String(c.id) === sehir)?.name ?? '';
 
+  /**
+   * "Brief'ten anladiklarimiz" cipleri — yalniz GOSTERILEN ADIMDAN ONCEKI ve
+   * DOLU adimlar. Mevcut turetimler kullanilir; yeni formatlayici yazilmaz.
+   * Cipe tiklamak o adima goturur: cikarim gorunur ve duzeltilebilir kalir.
+   */
+  const anladiklarimiz: { adim: number; etiket: string; deger: string }[] = [];
+  if (atlanan) {
+    if (adim > 1 && tur && turEtiketi) {
+      anladiklarimiz.push({ adim: 1, etiket: 'Tür', deger: turEtiketi });
+    }
+    if (adim > 2 && sehir && sehirAdi) {
+      anladiklarimiz.push({
+        adim: 2,
+        etiket: 'Şehir',
+        deger: [sehirAdi, ilce].filter(Boolean).join(' / '),
+      });
+    }
+    if (adim > 3 && (tarih || esnek) && katilimci) {
+      const parcalar = [
+        [tarih, bitis].filter(Boolean).join(' → '),
+        esnek ? '(esnek)' : '',
+        `${katilimci} kişi`,
+      ].filter(Boolean);
+      anladiklarimiz.push({
+        adim: 3,
+        etiket: 'Tarih',
+        deger: parcalar.join(' · '),
+      });
+    }
+  }
+
   const turGruplari = useMemo(() => {
     const gruplar = new Map<string, EtkinlikTuru[]>();
     for (const t of turler) {
@@ -420,7 +457,8 @@ export function SihirbazClient({
     }
 
     // Onceki analizden kalan degerler temizlenir; yalniz yeni spec yazilir.
-    const yama: Record<string, string | null> = { metin: girdi, adim: '1' };
+    // `adim` asagida hesaplanir (dolu adimlar atlanir).
+    const yama: Record<string, string | null> = { metin: girdi };
     for (const k of ANLAT_ANAHTARLARI) yama[k] = null;
 
     const s = res.spec;
@@ -456,6 +494,17 @@ export function SihirbazClient({
     const ekstra = (s.extra ?? {}) as Record<string, unknown>;
     if (typeof ekstra.date_note === 'string') yama.tarih_notu = ekstra.date_note;
     if (typeof ekstra.city_note === 'string') yama.sehir_notu = ekstra.city_note;
+
+    // DOLU ADIMLARI ATLA (EK-4): kullanici zaten anlattigi seyi tekrar
+    // onaylamasin. Ilk EKSIK adima gidilir; eksik yoksa Ihtiyac adimina.
+    // Atlananlar kaybolmaz: serit cipleriyle gorunur ve duzenlenebilir kalir.
+    const turTamam = !!yama.tur;
+    const sehirTamam = !!yama.sehir;
+    const tarihTamam =
+      (!!yama.tarih || yama.esnek === '1') && !!yama.katilimci;
+    const ilkEksik = !turTamam ? 1 : !sehirTamam ? 2 : !tarihTamam ? 3 : 4;
+    yama.adim = String(ilkEksik);
+    if (ilkEksik > 1) yama.atlanan = '1';
 
     // Adim degisiyor -> gecmis kaydi (geri tusu Anlat adimina donsun).
     guncelle(yama, { gecmis: 'push' });
@@ -581,6 +630,31 @@ export function SihirbazClient({
           />
         </div>
       </div>
+
+      {/* BRIEF'TEN ANLADIKLARIMIZ — atlanan adimlarin degerleri gorunur ve
+          tiklanabilir kalir (yapay zeka cikarimi gizlenmez, duzeltilebilir). */}
+      {anladiklarimiz.length > 0 && (
+        <div className="mb-4 bg-paper-2 border border-line rounded-xl px-4 py-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2">
+            Brief&apos;ten anladıklarımız
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {anladiklarimiz.map((c) => (
+              <button
+                key={c.adim}
+                type="button"
+                onClick={() =>
+                  guncelle({ adim: String(c.adim) }, { gecmis: 'push' })
+                }
+                className="kashe-tap inline-flex items-center gap-1.5 bg-card border border-line rounded-full px-3 py-1 text-sm text-ink hover:border-brand-ink"
+              >
+                {c.etiket}: {c.deger}
+                <Pencil size={12} className="text-ink-50" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
         {/* ADIM 0 — Anlat (isteğe bağlı) */}

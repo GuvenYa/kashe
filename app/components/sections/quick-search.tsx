@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CitySelect } from "./city-select";
 
+// Oneri secimi gezinmez (EK-4): kategori + sehir birlikte secilip Ara ile
+// Kesfet'e gidilir. Kutu hero'dayken hizli yoldu; artik yaninda sehir secimi
+// olan bir arama formu — gezinme yalniz form gonderiminde.
+
 type CategoryOption = {
   id: number;
   name_tr: string;
@@ -39,6 +43,10 @@ export function QuickSearch({
           .slice(0, 5)
       : [];
 
+  // Kategori secildikten sonra girdi o kategorinin adini tasir; liste tek
+  // esleseni tekrar gostermesin diye kapali kalir (metin degisince acilir).
+  const listeAcik = showSuggestions && !categoryId;
+
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (
@@ -52,23 +60,37 @@ export function QuickSearch({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  function goToCategory(catId: number) {
+  /** Oneriye tiklamak kategoriyi SECER; sayfa degismez. */
+  function kategoriSec(cat: CategoryOption) {
+    setCategoryId(String(cat.id));
+    setQuery(cat.name_tr);
     setShowSuggestions(false);
-    const params = new URLSearchParams();
-    params.set("kategori", String(catId));
-    if (cityId) params.set("sehir", cityId);
-    router.push(`/kesfet?${params.toString()}`);
+  }
+
+  function kategoriyiTemizle() {
+    setCategoryId("");
+    setQuery("");
   }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setShowSuggestions(false);
     const params = new URLSearchParams();
-    if (trimmed) params.set("q", trimmed);
+    // Kategori secildiyse girdideki metin kategori ADIDIR; `q` olarak tekrar
+    // gondermek Kesfet'te ayni kisiti iki kez uygular.
     if (categoryId) params.set("kategori", categoryId);
+    else if (trimmed) params.set("q", trimmed);
     if (cityId) params.set("sehir", cityId);
     const qs = params.toString();
     router.push(qs ? `/kesfet?${qs}` : "/kesfet");
+  }
+
+  function girdiTus(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Liste acikken Enter ilk oneriyi SECER (gezinmez); kapaliyken form gider.
+    if (e.key !== "Enter") return;
+    if (!listeAcik || suggestions.length === 0) return;
+    e.preventDefault();
+    kategoriSec(suggestions[0]);
   }
 
   return (
@@ -85,28 +107,44 @@ export function QuickSearch({
           >
             Ne arıyorsun?
           </label>
-          <input
-            id="qs-query"
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            autoComplete="off"
-            placeholder="örn. oyuncu, model"
-            className="w-full bg-transparent text-ink text-base placeholder:text-ink-32 focus:outline-none"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              id="qs-query"
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                // Metin degisince secili kategori duser: yazilan sey artik o
+                // kategoriyle eslesmeyebilir.
+                setCategoryId("");
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={girdiTus}
+              autoComplete="off"
+              placeholder="örn. oyuncu, model"
+              className="w-full bg-transparent text-ink text-base placeholder:text-ink-32 focus:outline-none"
+            />
+            {categoryId && (
+              <button
+                type="button"
+                onClick={kategoriyiTemizle}
+                aria-label="Kategoriyi temizle"
+                className="shrink-0 text-ink-50 hover:text-ink transition-colors leading-none text-lg"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
 
-        {showSuggestions && suggestions.length > 0 && (
+        {listeAcik && suggestions.length > 0 && (
           <ul className="absolute z-50 left-0 right-0 mt-2 bg-card border border-line rounded-xl shadow-lg overflow-hidden">
             {suggestions.map((cat) => (
               <li key={cat.id}>
                 <button
                   type="button"
-                  onClick={() => goToCategory(cat.id)}
+                  onClick={() => kategoriSec(cat)}
                   className="w-full text-left px-4 py-2.5 text-ink hover:bg-brand-ink-08 hover:text-brand-ink transition-colors flex items-center gap-2"
                 >
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-32">
