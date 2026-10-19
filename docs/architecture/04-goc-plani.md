@@ -650,10 +650,19 @@ Madde 34b (RFP) **7b** olarak devam ediyor; acik kalanlar 19 bolum 10.
 Uygulama 7c-P1: editorde "Rezervasyon oluştur", `/rezervasyonlarim` Kurulus bolumu, `/rezervasyon/[id]` teklif sekli, portal bandi.
 Kararlar (Guven): ayri tablo yok; tek rezervasyon/surum (uye basina FAZ 8); kurulus rezervasyonlari `/rezervasyonlarim` icinde.
 
+**FAZ 7b KAPANDI ve FAZ 7 KAPANDI (8-19 Ekim 2026, `docs/envanter/19-faz7-ticari-katman.md` bolum 12):** madde 34b **7b-DB/01** (`rfps`,
+`rfp_items`, `rfp_invites`, 2 enum; kapali RFP, butce ipucu saticiya kapali, INSERT/durum yalniz RPC, 11 RPC; teklif erisimi alici kurulusa
+"en az bir gonderilmis surum" kuraliyla acildi; `notifications.type` + rfp/proposal). Uygulama 7b-P1 (`/kurumsal/rfp` liste + taslak editoru +
+davet + gonder; `/ajans/rfp` gelen davetler + ipucusuz talep + teklif hazirla/reddet; editorde RFP yaniti modu, portal baglantisiz), **7b-P1-ek**
+(FAZ 8 "kurulus atfi" dilimi one alindi: sihirbazda "Bu etkinlik kimin adina?", brief `organization_id`; RFP yalniz kurulus etkinligine
+baglanir), 7b-P2 (alici karsilastirma tablosu, Sec -> `rfp_award`, Revizyon iste, Degerlendirmeye al, secim sonrasi rezervasyon durumu).
+Kararlar (Guven, 8 Ekim): etkinligi olan her kurulus RFP acar; yalniz davetli ajanslar; ipucu gorunmez; davette "secilmedi" isareti.
+Acik kalemler 19 bolum 12 sonunda (e-posta, alici rezervasyon gorunumu, rol degistirme arayuzu, Kashe disi davet, acik RFP FAZ 9).
+
 ### FAZ 8 — Event OS modulleri
 
 37. `crm_leads`, `tasks`, `suppliers`, `activity_logs`.
-38. Buyer Workspace tablolari: `rfps`, `procurement_requests`, `supplier_shortlists`.
+38. Buyer Workspace tablolari: `procurement_requests`, `supplier_shortlists` (`rfps` FAZ 7b ile geldi — madde 34b).
 
 ### FAZ 9 — Zeka katmani
 

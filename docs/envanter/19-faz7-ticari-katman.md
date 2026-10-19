@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** **FAZ 7a KAPANDI (7 Ekim)**, **FAZ 7c KAPANDI (8 Ekim)**, H6 deploy'da. **7b-DB/01 uretimde, 7b-P1 + P1-ek deploy'da ve canli turu
-TAMAM (19 Ekim; bolum 12 kapanis notu)** -> 7b-P2 (`19-claude-code-gorevi-7b-p2.md`: karsilastirma/secim/revizyon) -> FAZ 7b kapanis.
+**Durum:** **FAZ 7 KAPANDI** — 7a (7 Ekim), 7c (8 Ekim), **7b (19 Ekim 2026)**; H6 deploy'da. Acik kalemler bolum 12 sonunda; sirada FAZ 8
+(`04-goc-plani.md` madde 37-38; kurulus atfinin sihirbaz dilimi 7b-P1-ek ile one alindi).
 
 ## 1. Amac ve sinir
 
@@ -391,4 +391,24 @@ tekliften rezervasyon (7c). Acik: e-posta bildirimi; Kashe disi ajans daveti; ac
   denemelerden iki kisisel `matching` etkinlik kaldi (zararsiz). (4) Derleme: `next/font/google` gecici indirme hatasi (Vercel + yerel);
   yeniden derleme ile gecti — Inter'i yerel dosyadan yukleme (`next/font/local`) hijyen kalemi.
 - Acik: uyelik rol degistirme arayuzu (FAZ 8); e-posta bildirimi; Kashe disi ajans daveti; alici tarafinda rezervasyon gorunumu (7c-b).
+
+**7b-P2 KAPANIS ve FAZ 7b KAPANDI (19 Ekim 2026):**
+- **7b-P2 (`19-claude-code-gorevi-7b-p2.md`)**, migration yok: alici `/kurumsal/rfp/[id]` "Gelen teklifler (n)" karsilastirma tablosu
+  (`teklif-karsilastirma.tsx`, sunucu; satirlar talebin kalemleri `role_id` ile eslesir, ayni rol toplanir; sutunlar yanit veren ajanslar —
+  ad `rfp_detail.invites[].seller_name`; son gonderilmis surum `proposal_versions.sent_at` + `version_no` DESC; kalemler RLS; ara toplam/KDV/
+  genel toplam/gecerlilik/not; 2+ yanitta en dusuk toplam vurgusu), `karsilastirma-islemleri.tsx` (Sec -> onay kapisi -> `rfp_award`;
+  Revizyon iste -> not 2-4000 -> `rfp_request_revision`), Degerlendirmeye al (`rfp_close`), `awarded` sonrasi bant + "Secilmedi" + rezervasyon
+  durumu metni (`bookings.proposal_version_id`, baglanti yok); satici `/ajans/rfp/[id]` evaluating/not_selected metinleri. Satici teklif
+  ekranindaki revizyon notu bandi, "Yeni surum" ve "Rezervasyon olustur" (7c) RFP dalinda degismeden calisti.
+- Canli tur (19 Ekim, talep `6e337b47`): Revizyon iste (not) -> satici yeni surum (DJ 3.500) -> Surum 2 / 23.400 TL -> Degerlendirmeye al ->
+  Sec (onay kapisi) -> "Secim yapildi · Sunucu Ajans · 23.400 TL" -> satici "Teklifin secildi" + Rezervasyon olustur -> alici "Rezervasyon
+  olusturuldu". SQL: awarded/responded/approved/v2/23400/onaylayan "Test Pro"/booking confirmed 23400; asama17 K8-K11 0, K12 101, K13 0;
+  asama16 K11 0, K12 +1.
+- Kozmetik: talepte ayni rol iki ayri kalemse (bu turda yanlislikla eklenen ikinci "Sunucu") karsilastirma iki satirda da toplanmis tutari
+  gosteriyor (rol bazli eslesme). Dogru veriyle tekil; istenirse talep satirlari da rolde birlestirilir (kucuk kalem).
+- **FAZ 7 KAPANDI.** Acik kalemler (FAZ 8+ ya da hijyen): (a) e-posta bildirimleri (RFP/teklif/secim) — bugun yalniz uygulama ici bildirim;
+  (b) alici tarafinda rezervasyon sayfasi/baglantisi (7c-b) ve kurulus gelir sayfalari; (c) uyelik rol degistirme arayuzu (bugun SQL);
+  (d) Kashe disi ajans daveti (`rfp_invites.invited_email` ayrilmis) ve acik/davetsiz RFP (FAZ 9); (e) anon `bookings` SELECT eski politikasi
+  (`is_agency_member` 42501); (f) Inter fontunu yerel dosyadan yukleme (derleme determinizmi); (g) ana sayfa bosluklari: H8 (kesfet
+  tamamlanan is sayaci), H9 (gun hesaplayan yerler), 3b ust kategoriler (Inanc).
 
