@@ -412,3 +412,12 @@ tekliften rezervasyon (7c). Acik: e-posta bildirimi; Kashe disi ajans daveti; ac
   (`is_agency_member` 42501); (f) Inter fontunu yerel dosyadan yukleme (derleme determinizmi); (g) ana sayfa bosluklari: H8 (kesfet
   tamamlanan is sayaci), H9 (gun hesaplayan yerler), 3b ust kategoriler (Inanc).
 
+**Tamamlayici 1 KAPANDI (19 Ekim 2026; `hijyen-tamamlayici-1-gorevi.md`):** (a) e-posta — `notifications.email_notified_at`
+(`20261019120000_hijyen_01_bildirim_eposta.sql`, dal + uretim) + `send-message-notification` Edge Function v11: rfp/proposal bildirimlerini
+2 dk sonra e-postalar (service_role ile adres; uygulamaya service_role YOK; yeni cron yok). Canli: davet e-postasi 7 dk'da, yanit ve iptal
+e-postalari geldi; 11/11 isaretli. (b) alici kurulus rezervasyonu gorur — `/rezervasyon/[id]` alici dali (events.view; iptal events.manage;
+tamamlama satici), `/rezervasyonlarim` "Kurulusunuz adina alinan", RFP ve etkinlik sayfasinda rezervasyon baglantisi. Canli: Test Pro
+rezervasyonu gordu, ic maliyet yok. Tur bulgulari → **Tamamlayici 2** (`hijyen-tamamlayici-2-gorevi.md`): gecerlilik tek yerden (tarih
+doluysa gun sorulmaz), tarih kutusu tiklaninca takvim (`showPicker`, 13 girdi), bildirim metinlerinde Turkce karakter
+(`20261019130000_hijyen_02_bildirim_metinleri.sql` — uc fonksiyon birebir, yalniz uc metin).
+
