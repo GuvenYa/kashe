@@ -36,6 +36,9 @@ function rfpHataMesaji(error: RpcHata): string {
   if (kod === 'P0002') {
     if (mesaj.includes('etkinlik yok')) return 'Etkinlik bulunamadı.';
     if (mesaj.includes('saglayici yok')) return 'Ajans bulunamadı.';
+    if (mesaj.includes('teklif talebi yaniti yok')) {
+      return 'Teklif bulunamadı.';
+    }
     return 'Teklif talebi bulunamadı.';
   }
   if (kod === '23503') return 'Bağlı kayıt bulunamadı.';
@@ -67,6 +70,31 @@ function rfpHataMesaji(error: RpcHata): string {
     }
     if (mesaj.includes('bu durumda iptal edilemez')) {
       return 'Bu durumda iptal edilemez.';
+    }
+    // --- P2: degerlendirme / revizyon / secim ---
+    if (mesaj.includes('bu durumda degerlendirmeye alinamaz')) {
+      return 'Bu talep şu an değerlendirmeye alınamaz.';
+    }
+    if (mesaj.includes('revizyon notu gerekir')) {
+      return 'Revizyon notu 2-4000 karakter olmalı.';
+    }
+    if (mesaj.includes('talep bu durumda')) {
+      return 'Talebin durumu değişmiş; sayfayı yenile.';
+    }
+    if (mesaj.includes('teklif bu durumda revize istenemez')) {
+      return 'Bu teklif için şu an revizyon istenemez (durumu değişmiş olabilir).';
+    }
+    if (mesaj.includes('bu durumda secim yapilamaz')) {
+      return 'Bu talepte şu an seçim yapılamaz (durumu değişmiş olabilir).';
+    }
+    if (mesaj.includes('teklif bu talebe ait degil')) {
+      return 'Teklif bu talebe ait değil.';
+    }
+    if (mesaj.includes('teklif bu durumda secilemez')) {
+      return 'Bu teklif şu an seçilemez (durumu değişmiş olabilir).';
+    }
+    if (mesaj.includes('gonderilmis surum yok')) {
+      return 'Bu teklifin gönderilmiş bir sürümü yok.';
     }
     if (mesaj.includes('gonderilmis teklif talebi duzenlenemez')) {
       return 'Gönderilmiş talep düzenlenemez.';
@@ -381,6 +409,91 @@ export async function cancelRfp(rfpId: string): Promise<ActionResult> {
   }
 
   revalidatePath(`/kurumsal/rfp/${rfpId}`);
+  revalidatePath('/kurumsal/rfp');
+  return { success: true };
+}
+
+/**
+ * Talebi degerlendirmeye alir (`sent|collecting` -> `evaluating`).
+ * Yeni yanit alinmaz; mevcut tekliflerle secim yapilir.
+ */
+export async function closeRfp(rfpId: string): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(rfpId)) {
+    return { success: false, error: 'Talep geçersiz.' };
+  }
+
+  const { supabase, user } = await oturum();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { error } = await supabase.rpc('rfp_close', { p_rfp_id: rfpId });
+  if (error) {
+    console.error('[rfp] degerlendirmeye alma', error);
+    return { success: false, error: rfpHataMesaji(error) };
+  }
+
+  revalidatePath(`/kurumsal/rfp/${rfpId}`);
+  revalidatePath('/kurumsal/rfp');
+  return { success: true };
+}
+
+/**
+ * Bir tekliften revizyon ister. Not surumun `client_note` alanina yazilir
+ * (satici teklif ekraninda gorur) ve teklif `revision_requested` olur.
+ */
+export async function requestRfpRevision(input: {
+  rfpId: string;
+  proposalId: string;
+  note: string;
+}): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(input.rfpId) || !UUID_KALIBI.test(input.proposalId)) {
+    return { success: false, error: 'Kayıt geçersiz.' };
+  }
+  const not = metin(input.note, 4000);
+  if (!not || not.length < 2) {
+    return { success: false, error: 'Revizyon notu 2-4000 karakter olmalı.' };
+  }
+
+  const { supabase, user } = await oturum();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { error } = await supabase.rpc('rfp_request_revision', {
+    p_proposal_id: input.proposalId,
+    p_note: not,
+  });
+  if (error) {
+    console.error('[rfp] revizyon istegi', error);
+    return { success: false, error: rfpHataMesaji(error) };
+  }
+
+  revalidatePath(`/kurumsal/rfp/${input.rfpId}`);
+  return { success: true };
+}
+
+/**
+ * Teklifi secer: teklif `approved`, talep `awarded`, diger davetler
+ * `not_selected` olur. Geri alinamaz (RPC tek yon).
+ */
+export async function awardRfp(input: {
+  rfpId: string;
+  proposalId: string;
+}): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(input.rfpId) || !UUID_KALIBI.test(input.proposalId)) {
+    return { success: false, error: 'Kayıt geçersiz.' };
+  }
+
+  const { supabase, user } = await oturum();
+  if (!user) return { success: false, error: 'Giriş yapmalısın.' };
+
+  const { error } = await supabase.rpc('rfp_award', {
+    p_rfp_id: input.rfpId,
+    p_proposal_id: input.proposalId,
+  });
+  if (error) {
+    console.error('[rfp] secim', error);
+    return { success: false, error: rfpHataMesaji(error) };
+  }
+
+  revalidatePath(`/kurumsal/rfp/${input.rfpId}`);
   revalidatePath('/kurumsal/rfp');
   return { success: true };
 }

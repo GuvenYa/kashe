@@ -14,7 +14,7 @@ export const RFP_DURUM_ETIKETLERI: Record<string, string> = {
   draft: 'Taslak',
   sent: 'Gönderildi',
   collecting: 'Yanıt toplanıyor',
-  evaluating: 'Değerlendiriliyor',
+  evaluating: 'Değerlendirmede',
   awarded: 'Seçim yapıldı',
   cancelled: 'İptal',
 };
@@ -112,6 +112,47 @@ export type RfpDetay = {
 };
 
 export type RolSecenegi = { id: number; name_tr: string };
+
+/**
+ * FAZ 7b / P2 — karsilastirma tablosunun bir sutunu (bir ajansin yaniti).
+ *
+ * YALNIZ musteriye donuk degerler: `proposal_items` fiyatlari ve surum
+ * toplamlari. Ic maliyet/marj (`internal.*`) alici yuzeyine HIC girmez —
+ * bu tipte karsiligi da yoktur.
+ */
+export type KarsilastirmaKalemi = {
+  id: string;
+  role_id: number | null;
+  description: string;
+  quantity: number | string;
+  unit_client_price: number | string;
+  total_client_price: number | string;
+  sort_order: number;
+};
+
+export type KarsilastirmaSutunu = {
+  proposalId: string;
+  saticiAdi: string;
+  proposalStatus: string;
+  versionId: string;
+  versionNo: number;
+  subtotal: number | string | null;
+  taxAmount: number | string | null;
+  totalAmount: number | string | null;
+  currency: string;
+  validUntil: string | null;
+  clientNote: string | null;
+  approvedAt: string | null;
+  approvedByName: string | null;
+  kalemler: KarsilastirmaKalemi[];
+};
+
+/** Sayiya cevir (numeric alanlar PostgREST'ten string gelebilir). */
+export function sayiya(v: number | string | null | undefined): number {
+  if (v === null || v === undefined || v === '') return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
 /** Tutar gosterimi — TL, Turkce bicim. */
 export function paraMetni(

@@ -17,6 +17,7 @@ import {
 import {
   addRfpItem,
   cancelRfp,
+  closeRfp,
   deleteRfpItem,
   inviteRfp,
   searchAgencies,
@@ -32,8 +33,9 @@ import {
  * dogrudan yazilir (7a kalem editoru deseni). Butce ipucu YALNIZ bu ekranda
  * gorunur — degerler `rfp_detail` JSON'undan gelir, `rfp_items`'tan okunmaz.
  *
- * P2'de gelecek (Karsilastir / Sec / Revizyon iste / Degerlendirmeye al)
- * dugmeleri BU ISTE YOK.
+ * P2: "Degerlendirmeye al" burada (`rfp_close`); gelen tekliflerin
+ * karsilastirmasi ve Sec / Revizyon iste islemleri ayri bilesende
+ * (`teklif-karsilastirma.tsx`), sayfada bu kartin ALTINDA durur.
  */
 
 const BTN_BIRINCIL =
@@ -47,6 +49,7 @@ type Onay =
   | { tur: 'kalemSil'; id: string }
   | { tur: 'gonder' }
   | { tur: 'iptal' }
+  | { tur: 'degerlendir' }
   | null;
 
 function sayi(v: string): number | null {
@@ -108,6 +111,9 @@ export function RfpEditoru({
     canManage && ['draft', 'sent', 'collecting'].includes(rfp.status);
   const iptalEdilebilir =
     canManage && ['draft', 'sent', 'collecting', 'evaluating'].includes(rfp.status);
+  // Degerlendirmeye alma: RPC yalniz sent|collecting kabul eder.
+  const degerlendirmeyeAlinabilir =
+    canManage && ['sent', 'collecting'].includes(rfp.status);
   const davetler = rfp.invites ?? [];
 
   function mesajlariTemizle() {
@@ -214,6 +220,19 @@ export function RfpEditoru({
         return;
       }
       setBilgi('Teklif talebi gönderildi.');
+      router.refresh();
+    });
+  }
+
+  function degerlendirmeyeAl() {
+    mesajlariTemizle();
+    startTransition(async () => {
+      const res = await closeRfp(rfp.id);
+      if (!res.success) {
+        setHata(res.error);
+        return;
+      }
+      setBilgi('Talep değerlendirmeye alındı.');
       router.refresh();
     });
   }
@@ -675,6 +694,16 @@ export function RfpEditoru({
                 Gönder
               </button>
             )}
+            {degerlendirmeyeAlinabilir && (
+              <button
+                type="button"
+                onClick={() => setOnay({ tur: 'degerlendir' })}
+                disabled={isPending}
+                className={BTN_IKINCIL}
+              >
+                Değerlendirmeye al
+              </button>
+            )}
             {iptalEdilebilir && (
               <button
                 type="button"
@@ -704,6 +733,34 @@ export function RfpEditoru({
                   className={BTN_BIRINCIL}
                 >
                   Gönder
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnay(null)}
+                  className={BTN_IKINCIL}
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
+
+          {onay?.tur === 'degerlendir' && (
+            <div className="mt-3 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-sm text-ink">
+                Yeni yanıt alınmaz; mevcut tekliflerle değerlendirme yapılır.
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    setOnay(null);
+                    degerlendirmeyeAl();
+                  }}
+                  className={BTN_BIRINCIL}
+                >
+                  Değerlendirmeye al
                 </button>
                 <button
                   type="button"
@@ -748,8 +805,6 @@ export function RfpEditoru({
       )}
 
       <p className="text-xs text-ink-50">
-        Gelen tekliflerin kalemlerini karşılaştırma ve seçim ekranı sonraki
-        sürümde.{' '}
         <Link href="/kurumsal/rfp" className="text-brand-ink hover:underline">
           Tüm talepler
         </Link>

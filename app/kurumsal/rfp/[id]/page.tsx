@@ -5,9 +5,15 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
-import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { KASHE_SAAT_DILIMI, tarihMetni } from '@/app/lib/tarih';
 import { RfpEditoru } from './rfp-editoru';
-import type { RfpDetay, RolSecenegi } from '../rfp-data';
+import { TeklifKarsilastirma } from './teklif-karsilastirma';
+import type {
+  KarsilastirmaKalemi,
+  KarsilastirmaSutunu,
+  RfpDetay,
+  RolSecenegi,
+} from '../rfp-data';
 
 export const metadata = {
   title: 'Teklif talebi (RFP) — Kashe',
@@ -76,6 +82,115 @@ export default async function KurumsalRfpDetayPage({
     roller = (rolData ?? []) as unknown as RolSecenegi[];
   }
 
+  // ---- P2: GELEN TEKLIFLER (karsilastirma) --------------------------------
+  // Okuma RLS ile: alici kurulus YALNIZ gonderilmis surumleri ve musteriye
+  // gorunur kalemleri gorur (`proposal_versions_select`, `proposal_items_select`
+  // 7b surumu). `is_visible_to_client` burada AYRICA filtrelenmez — gizli kalemi
+  // politika zaten vermez; filtre eklemek ikinci bir dogruluk kaynagi olurdu.
+  // Satici adi `rfp_detail` davetlerinden gelir (ek sorgu yok).
+  const davetler = rfp.invites ?? [];
+  const teklifIdler = davetler
+    .map((d) => d.proposal_id)
+    .filter((v): v is string => !!v);
+
+  let sutunlar: KarsilastirmaSutunu[] = [];
+  let rezervasyonTarihi: string | null = null;
+
+  if (teklifIdler.length > 0) {
+    const { data: surumData, error: surumHatasi } = await supabase
+      .from('proposal_versions')
+      .select(
+        `id, proposal_id, version_no, subtotal, tax_amount, total_amount,
+         currency, valid_until, client_note, sent_at, approved_at, approved_by_name`
+      )
+      .in('proposal_id', teklifIdler)
+      .not('sent_at', 'is', null)
+      .order('version_no', { ascending: false });
+    if (surumHatasi) console.error('[rfp] surumler', surumHatasi);
+
+    type SurumSatiri = {
+      id: string;
+      proposal_id: string;
+      version_no: number;
+      subtotal: number | string | null;
+      tax_amount: number | string | null;
+      total_amount: number | string | null;
+      currency: string | null;
+      valid_until: string | null;
+      client_note: string | null;
+      sent_at: string | null;
+      approved_at: string | null;
+      approved_by_name: string | null;
+    };
+
+    // Teklif basina EN SON gonderilmis surum (sorgu version_no DESC geliyor).
+    const sonSurum = new Map<string, SurumSatiri>();
+    for (const s of (surumData ?? []) as unknown as SurumSatiri[]) {
+      if (!sonSurum.has(s.proposal_id)) sonSurum.set(s.proposal_id, s);
+    }
+
+    const surumIdler = [...sonSurum.values()].map((s) => s.id);
+    const kalemHaritasi = new Map<string, KarsilastirmaKalemi[]>();
+    if (surumIdler.length > 0) {
+      const { data: kalemData, error: kalemHatasi } = await supabase
+        .from('proposal_items')
+        .select(
+          'id, proposal_version_id, role_id, description, quantity, unit_client_price, total_client_price, sort_order'
+        )
+        .in('proposal_version_id', surumIdler)
+        .order('sort_order');
+      if (kalemHatasi) console.error('[rfp] kalemler', kalemHatasi);
+      for (const k of (kalemData ?? []) as unknown as (KarsilastirmaKalemi & {
+        proposal_version_id: string;
+      })[]) {
+        const liste = kalemHaritasi.get(k.proposal_version_id) ?? [];
+        liste.push(k);
+        kalemHaritasi.set(k.proposal_version_id, liste);
+      }
+    }
+
+    sutunlar = davetler
+      .map((d) => {
+        if (!d.proposal_id) return null;
+        const s = sonSurum.get(d.proposal_id);
+        if (!s) return null;
+        return {
+          proposalId: d.proposal_id,
+          saticiAdi: d.seller_name?.trim() || 'İsimsiz kuruluş',
+          proposalStatus: d.proposal_status ?? 'sent',
+          versionId: s.id,
+          versionNo: s.version_no,
+          subtotal: s.subtotal,
+          taxAmount: s.tax_amount,
+          totalAmount: s.total_amount,
+          currency: s.currency ?? 'TRY',
+          validUntil: s.valid_until,
+          clientNote: s.client_note,
+          approvedAt: s.approved_at,
+          approvedByName: s.approved_by_name,
+          kalemler: kalemHaritasi.get(s.id) ?? [],
+        } satisfies KarsilastirmaSutunu;
+      })
+      .filter((v): v is KarsilastirmaSutunu => v !== null);
+
+    // Secilen surumden rezervasyon acildi mi (alici kurulus `can_access_booking_row`
+    // ile okur). Baglanti YOK — alici rezervasyon sayfasi 7c-b acik kalemi.
+    const secilenSutun = rfp.awarded_proposal_id
+      ? sutunlar.find((s) => s.proposalId === rfp.awarded_proposal_id)
+      : undefined;
+    if (secilenSutun) {
+      const { data: rez } = await supabase
+        .from('bookings')
+        .select('id, created_at')
+        .eq('proposal_version_id', secilenSutun.versionId)
+        .maybeSingle();
+      if (rez) {
+        rezervasyonTarihi =
+          tarihMetni((rez as { created_at: string }).created_at) ?? null;
+      }
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -88,12 +203,19 @@ export default async function KurumsalRfpDetayPage({
             ← Teklif talepleri
           </Link>
 
-          <div className="mt-4">
+          <div className="mt-4 space-y-5">
             <RfpEditoru
               rfp={rfp}
               roller={roller}
               canManage={!!kurulus?.canManageEvents}
               datetimeLocal={datetimeLocal(rfp.deadline)}
+            />
+
+            <TeklifKarsilastirma
+              rfp={rfp}
+              sutunlar={sutunlar}
+              canManage={!!kurulus?.canManageEvents}
+              rezervasyonTarihi={rezervasyonTarihi}
             />
           </div>
 

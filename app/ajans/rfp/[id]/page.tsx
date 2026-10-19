@@ -216,7 +216,7 @@ export default async function AjansRfpDetayPage({
                 <p className="text-sm text-ink-72">Daveti reddettin.</p>
               ) : davet?.status === 'not_selected' ? (
                 <p className="text-sm text-ink-72">
-                  Talep başka bir teklife verildi.
+                  Bu talep başka bir teklife verildi.
                 </p>
               ) : yanitlanabilir && kurulus ? (
                 <RfpSaticiIslemleri
@@ -225,9 +225,11 @@ export default async function AjansRfpDetayPage({
                 />
               ) : (
                 <p className="text-sm text-ink-72">
-                  {gecti
-                    ? 'Talebin son tarihi geçti; teklif gönderilemez.'
-                    : 'Teklif talebi şu an yanıt kabul etmiyor.'}
+                  {rfp.status === 'evaluating'
+                    ? 'Değerlendirmede — yeni yanıt alınmıyor.'
+                    : gecti
+                      ? 'Talebin son tarihi geçti; teklif gönderilemez.'
+                      : 'Teklif talebi şu an yanıt kabul etmiyor.'}
                 </p>
               )}
             </div>
