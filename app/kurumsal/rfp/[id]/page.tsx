@@ -94,7 +94,7 @@ export default async function KurumsalRfpDetayPage({
     .filter((v): v is string => !!v);
 
   let sutunlar: KarsilastirmaSutunu[] = [];
-  let rezervasyonTarihi: string | null = null;
+  let rezervasyon: { id: string; tarih: string } | null = null;
 
   if (teklifIdler.length > 0) {
     const { data: surumData, error: surumHatasi } = await supabase
@@ -185,8 +185,11 @@ export default async function KurumsalRfpDetayPage({
         .eq('proposal_version_id', secilenSutun.versionId)
         .maybeSingle();
       if (rez) {
-        rezervasyonTarihi =
-          tarihMetni((rez as { created_at: string }).created_at) ?? null;
+        const satir = rez as { id: string; created_at: string };
+        rezervasyon = {
+          id: satir.id,
+          tarih: tarihMetni(satir.created_at) ?? '',
+        };
       }
     }
   }
@@ -215,7 +218,7 @@ export default async function KurumsalRfpDetayPage({
               rfp={rfp}
               sutunlar={sutunlar}
               canManage={!!kurulus?.canManageEvents}
-              rezervasyonTarihi={rezervasyonTarihi}
+              rezervasyon={rezervasyon}
             />
           </div>
 

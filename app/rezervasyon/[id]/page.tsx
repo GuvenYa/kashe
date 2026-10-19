@@ -213,16 +213,31 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   // tespiti gosterim ve 404 icin.
   const teklifSekli = !!booking.proposal_version_id;
   const saticiOrgId = booking.surum?.proposal?.seller_organization_id ?? null;
+  const aliciOrgId = booking.buyer_organization_id ?? null;
   let isSellerOrg = false;
   let sellerOrgManage = false;
-  if (teklifSekli && saticiOrgId) {
+  // Tamamlayici 1: ALICI kurulus da gorur (events.view) ve iptal edebilir
+  // (events.manage). Satici-only bloklar (ic maliyet, teklif editoru baglantisi)
+  // bu dalda GIZLI kalir.
+  let isBuyerOrg = false;
+  let buyerOrgManage = false;
+  let aliciKurulusAdi: string | null = null;
+  if (teklifSekli && (saticiOrgId || aliciOrgId)) {
     const { orgs } = await getCrewContext();
-    const org = orgs.find((o) => o.id === saticiOrgId) ?? null;
-    isSellerOrg = !!org?.canViewProposals;
-    sellerOrgManage = !!org?.canManageProposals;
+    if (saticiOrgId) {
+      const org = orgs.find((o) => o.id === saticiOrgId) ?? null;
+      isSellerOrg = !!org?.canViewProposals;
+      sellerOrgManage = !!org?.canManageProposals;
+    }
+    if (aliciOrgId) {
+      const org = orgs.find((o) => o.id === aliciOrgId) ?? null;
+      isBuyerOrg = !!org?.canViewEvents;
+      buyerOrgManage = !!org?.canManageEvents;
+      if (isBuyerOrg) aliciKurulusAdi = org?.name ?? null;
+    }
   }
 
-  if (!isCustomer && !isProfessional && !isSellerOrg) {
+  if (!isCustomer && !isProfessional && !isSellerOrg && !isBuyerOrg) {
     notFound();
   }
 
@@ -318,6 +333,11 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                     <p className="text-sm text-ink-72 mt-1">
                       {teklif?.title ?? 'Teklif'}
                     </p>
+                    {isBuyerOrg && aliciKurulusAdi && (
+                      <p className="text-sm text-ink-72">
+                        Kuruluşunuz adına · {aliciKurulusAdi}
+                      </p>
+                    )}
                     {/* Musteri e-postasi YALNIZ kurulus uyesine */}
                     {isSellerOrg && teklif?.client_email && (
                       <p className="text-sm text-ink-72">
@@ -550,7 +570,9 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               (action tarafinda da dogrulanir, RLS asil kapi). */}
           {booking.status === 'confirmed' &&
             (teklifSekli ? (
-              sellerOrgManage || isCustomer ? (
+              sellerOrgManage || isCustomer || buyerOrgManage ? (
+                // Tamamlama YALNIZ saticida: alici kurulus ve musteri yalniz
+                // iptal eder ('customer' gorunumu tek dugme gosterir).
                 <RezervasyonAksiyonlari
                   bookingId={booking.id}
                   viewer={sellerOrgManage ? 'professional' : 'customer'}

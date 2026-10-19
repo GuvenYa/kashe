@@ -268,6 +268,71 @@ export default async function RezervasyonlarimPage() {
     }
   }
 
+  // ---- Tamamlayici 1 — ALICI kurulus adina alinan rezervasyonlar ----
+  // `events.view` yetkili kurulus (kurum ve ajans). Ayni kurulus hem satici hem
+  // alici olabilir; iki listede de gorunmesi sorun degil (etiket farkli).
+  const aliciKuruluslar = teklifKuruluslari.filter((o) => o.canViewEvents);
+  const aliciRezervasyonlari: KurulusRezervasyonu[] = [];
+  if (aliciKuruluslar.length > 0) {
+    const { data: aliciData, error: aliciHatasi } = await supabase
+      .from('bookings')
+      .select(
+        `
+        id, status, event_date, location, total_amount, currency, created_at,
+        proposal_version_id, buyer_organization_id,
+        surum:proposal_versions!bookings_proposal_version_id_fkey (
+          version_no,
+          proposal:proposals!proposal_versions_proposal_id_fkey (
+            id, title, client_name, seller_organization_id,
+            seller:organizations!proposals_seller_organization_id_fkey (display_name)
+          )
+        )
+      `
+      )
+      .in(
+        'buyer_organization_id',
+        aliciKuruluslar.map((o) => o.id)
+      )
+      .order('event_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (aliciHatasi) console.error('[rezervasyon] alici kurulus listesi', aliciHatasi);
+
+    type AliciBookingRow = {
+      id: string;
+      status: string;
+      event_date: string | null;
+      location: string | null;
+      total_amount: number | string;
+      currency: string;
+      created_at: string;
+      surum: {
+        version_no: number;
+        proposal: {
+          title: string;
+          client_name: string | null;
+          seller: { display_name: string | null } | null;
+        } | null;
+      } | null;
+    };
+
+    for (const r of (aliciData ?? []) as unknown as AliciBookingRow[]) {
+      const teklif = r.surum?.proposal ?? null;
+      aliciRezervasyonlari.push({
+        id: r.id,
+        status: r.status,
+        event_date: r.event_date,
+        location: r.location,
+        total_amount: r.total_amount,
+        currency: r.currency,
+        created_at: r.created_at,
+        teklifBasligi: teklif?.title ?? 'Teklif',
+        musteriAdi: null,
+        kurulusAdi: teklif?.seller?.display_name ?? null,
+        versionNo: r.surum?.version_no ?? null,
+      });
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -286,7 +351,9 @@ export default async function RezervasyonlarimPage() {
             </p>
           </div>
 
-          {bookings.length === 0 && kurulusRezervasyonlari.length === 0 ? (
+          {bookings.length === 0 &&
+          kurulusRezervasyonlari.length === 0 &&
+          aliciRezervasyonlari.length === 0 ? (
             <EmptyState
               icon={Calendar}
               title="Henüz rezervasyon yok"
@@ -320,7 +387,27 @@ export default async function RezervasyonlarimPage() {
                   </p>
                   <div className="space-y-3">
                     {kurulusRezervasyonlari.map((r) => (
-                      <KurulusKarti key={r.id} rez={r} />
+                      <KurulusKarti key={r.id} rez={r} taraf="satici" />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Tamamlayici 1 — alici kurulus adina alinan rezervasyonlar */}
+              {aliciRezervasyonlari.length > 0 && (
+                <section>
+                  <h2 className="font-display font-semibold text-xl md:text-2xl text-ink tracking-tight mb-1">
+                    Kuruluşunuz adına alınan{' '}
+                    <span className="text-ink-50 font-normal text-base">
+                      ({aliciRezervasyonlari.length})
+                    </span>
+                  </h2>
+                  <p className="text-sm text-ink-72 mb-5">
+                    Onayladığınız tekliflerden açılan rezervasyonlar.
+                  </p>
+                  <div className="space-y-3">
+                    {aliciRezervasyonlari.map((r) => (
+                      <KurulusKarti key={r.id} rez={r} taraf="alici" />
                     ))}
                   </div>
                 </section>

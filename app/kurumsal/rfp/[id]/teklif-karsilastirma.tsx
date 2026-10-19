@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { tarihMetni } from '@/app/lib/tarih';
 import { TEKLIF_DURUM_ETIKETLERI } from '@/app/ajans/teklifler/teklif-data';
 import {
@@ -52,14 +53,14 @@ export function TeklifKarsilastirma({
   rfp,
   sutunlar,
   canManage,
-  rezervasyonTarihi,
+  rezervasyon,
 }: {
   rfp: RfpDetay;
   sutunlar: KarsilastirmaSutunu[];
   /** `events.manage` — Sec / Revizyon iste dugmeleri. */
   canManage: boolean;
-  /** Secilen surumden acilmis rezervasyonun tarihi (yoksa null). */
-  rezervasyonTarihi: string | null;
+  /** Secilen surumden acilmis rezervasyon (yoksa null). */
+  rezervasyon: { id: string; tarih: string } | null;
 }) {
   if (sutunlar.length === 0) return null;
 
@@ -117,9 +118,16 @@ export function TeklifKarsilastirma({
             {secilen.approvedAt ? ` · ${tarihMetni(secilen.approvedAt)}` : ''}
           </p>
           <p className="text-xs text-ink-72 mt-1">
-            {rezervasyonTarihi
-              ? `Rezervasyon oluşturuldu · ${rezervasyonTarihi}`
-              : 'Rezervasyonu ajans oluşturur.'}
+            {rezervasyon ? (
+              <Link
+                href={`/rezervasyon/${rezervasyon.id}`}
+                className="kashe-tap text-brand-ink hover:underline"
+              >
+                Rezervasyon oluşturuldu · {rezervasyon.tarih}
+              </Link>
+            ) : (
+              'Rezervasyonu ajans oluşturur.'
+            )}
           </p>
         </div>
       )}

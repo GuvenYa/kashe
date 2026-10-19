@@ -46,7 +46,7 @@ function saticiKurulusId(b: unknown): string | null {
 async function yetkiVarMi(
   supabase: Awaited<ReturnType<typeof createClient>>,
   organizationId: string,
-  izin: 'proposals.manage' | 'proposals.view'
+  izin: 'proposals.manage' | 'proposals.view' | 'events.manage'
 ): Promise<boolean> {
   const { data, error } = await supabase.rpc('has_org_permission', {
     p_org_id: organizationId,
@@ -85,7 +85,7 @@ export async function cancelBooking(
       `
       id, conversation_id, customer_id, professional_id,
       status, total_amount, currency, event_date, event_type,
-      proposal_version_id,
+      proposal_version_id, buyer_organization_id,
       surum:proposal_versions!bookings_proposal_version_id_fkey (
         proposal:proposals!proposal_versions_proposal_id_fkey (seller_organization_id)
       )
@@ -109,7 +109,16 @@ export async function cancelBooking(
     ? await yetkiVarMi(supabase, saticiOrgId, 'proposals.manage')
     : false;
 
-  if (!isCustomer && !isProfessional && !isSellerManage) {
+  // Tamamlayici 1: ALICI kurulus da iptal edebilir (events.manage).
+  // RLS can_access_booking_row zaten izin veriyor; buradaki kontrol mesaj icin.
+  const aliciOrgId = (booking as { buyer_organization_id?: string | null })
+    .buyer_organization_id ?? null;
+  const isBuyerManage =
+    !isSellerManage && booking.proposal_version_id && aliciOrgId
+      ? await yetkiVarMi(supabase, aliciOrgId, 'events.manage')
+      : false;
+
+  if (!isCustomer && !isProfessional && !isSellerManage && !isBuyerManage) {
     return { success: false, error: 'Bu rezervasyonu iptal etme yetkin yok' };
   }
 

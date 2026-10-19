@@ -34,11 +34,26 @@ const DURUM_SINIFLARI: Record<string, string> = {
   cancelled: 'bg-brand-ink/10 border-brand-ink/30 text-brand-ink',
 };
 
-export function KurulusKarti({ rez }: { rez: KurulusRezervasyonu }) {
+export function KurulusKarti({
+  rez,
+  taraf = 'satici',
+}: {
+  rez: KurulusRezervasyonu;
+  /** Satici gorunumunde karsi taraf musteri, alici gorunumunde satici kurulus. */
+  taraf?: 'satici' | 'alici';
+}) {
   const durumSinifi =
     DURUM_SINIFLARI[rez.status] ?? 'bg-paper-2 border-line text-ink-72';
+  const karsiTaraf =
+    taraf === 'alici'
+      ? rez.kurulusAdi
+        ? `Ajans: ${rez.kurulusAdi}`
+        : null
+      : rez.musteriAdi
+        ? `Müşteri: ${rez.musteriAdi}`
+        : rez.kurulusAdi;
   const altSatir = [
-    rez.musteriAdi ? `Müşteri: ${rez.musteriAdi}` : rez.kurulusAdi,
+    karsiTaraf,
     rez.versionNo != null ? `Sürüm ${rez.versionNo}` : null,
   ]
     .filter(Boolean)

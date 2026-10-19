@@ -7,7 +7,11 @@ import { createClient } from '@/app/lib/supabase-server';
 import { STATUS_LABELS as TALEP_DURUMLARI } from '@/app/teklif-taleplerim/page';
 import { LISTING_STATUS_OPTIONS } from '@/app/ilanlar/listings-data';
 import { getCrewContext } from '@/app/lib/org-context';
-import { TEKLIF_DURUM_ETIKETLERI } from '@/app/ajans/teklifler/teklif-data';
+import {
+  REZERVASYON_DURUM_ETIKETLERI,
+  TEKLIF_DURUM_ETIKETLERI,
+  paraMetni,
+} from '@/app/ajans/teklifler/teklif-data';
 import { AdayPaneli } from './aday-paneli';
 import { EkipPaneli } from './ekip-paneli';
 import type {
@@ -191,8 +195,21 @@ export default async function EtkinlikDetayPage({
     last_message_at: string | null;
     profiles: { full_name: string | null; company_name: string | null } | null;
   };
+  // Tamamlayici 1: etkinlige bagli rezervasyon (teklif sekli). RLS suzer —
+  // satici kurulus, alici kurulus ve musteri gorur.
+  type BagliRezervasyon = {
+    id: string;
+    status: string;
+    total_amount: number | string;
+    currency: string;
+    surum: {
+      proposal: {
+        seller: { display_name: string | null } | null;
+      } | null;
+    } | null;
+  };
 
-  const [talepRes, ilanRes, sohbetRes] = await Promise.all([
+  const [talepRes, ilanRes, sohbetRes, rezervasyonRes] = await Promise.all([
     supabase
       .from('quote_requests')
       .select(
@@ -207,13 +224,31 @@ export default async function EtkinlikDetayPage({
         'id, professional_id, last_message_at, profiles!conversations_professional_id_fkey(full_name, company_name)'
       )
       .eq('event_id', id),
+    // Embed ipucu ZORUNLU: proposals <-> proposal_versions iki iliski tasir.
+    supabase
+      .from('bookings')
+      .select(
+        `id, status, total_amount, currency,
+         surum:proposal_versions!bookings_proposal_version_id_fkey (
+           proposal:proposals!proposal_versions_proposal_id_fkey (
+             seller:organizations!proposals_seller_organization_id_fkey (display_name)
+           )
+         )`
+      )
+      .eq('event_id', id)
+      .order('created_at', { ascending: false }),
   ]);
 
   const talepler = (talepRes.data ?? []) as unknown as BagliTalep[];
   const ilanlar = (ilanRes.data ?? []) as unknown as BagliIlan[];
   const sohbetler = (sohbetRes.data ?? []) as unknown as BagliSohbet[];
+  const bagliRezervasyonlar = (rezervasyonRes.data ??
+    []) as unknown as BagliRezervasyon[];
   const bagliVar =
-    talepler.length > 0 || ilanlar.length > 0 || sohbetler.length > 0;
+    talepler.length > 0 ||
+    ilanlar.length > 0 ||
+    sohbetler.length > 0 ||
+    bagliRezervasyonlar.length > 0;
 
   // ---- FAZ 6/P1 — eslestirme kosulari ve adaylar ----
   // Skor/siralama DB'de uretildi; burada YALNIZ okuma + gosterim birlestirmesi var.
@@ -836,6 +871,26 @@ export default async function EtkinlikDetayPage({
               </div>
             ) : (
               <div className="space-y-3">
+                {bagliRezervasyonlar.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/rezervasyon/${r.id}`}
+                    className="block bg-card border border-line rounded-lg p-4 hover:border-brand-ink transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="text-sm text-ink">
+                        Rezervasyon
+                        {r.surum?.proposal?.seller?.display_name
+                          ? ` · ${r.surum.proposal.seller.display_name}`
+                          : ''}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                        {paraMetni(r.total_amount, r.currency) ?? '—'} ·{' '}
+                        {REZERVASYON_DURUM_ETIKETLERI[r.status] ?? r.status}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
                 {talepler.map((t) => (
                   <Link
                     key={t.id}
