@@ -4,8 +4,8 @@
 (`internal.proposal_internal_items`), bolum 9 (portal_access_links, misafir portali), bolum 12 (`bookings` genislemesi);
 `02-guvenlik-modeli.md` bolum 2-3 (ic maliyet uc katman, `internal_api` deseni), bolum 6 (musteri portali ayri yuzey, token_hash);
 `05-arayuz-modeli.md` (portal, ic maliyet gorunurlugu, kritik islemde onay kapisi); `18-faz6` (crews, crew_member_commercials).
-**Durum:** **FAZ 7a KAPANDI (7 Ekim)**, **FAZ 7c KAPANDI (8 Ekim)**, H6 deploy'da. **7b-DB/01 hazir** (`20261009120000_faz7b_01_rfp.sql`; yerelde
-asama4 25/25, asama17 ESIT; bolum 12) -> dal -> uretim -> 7b-P1 (`19-claude-code-gorevi-7b-p1.md`) -> 7b-P2 (karsilastirma/secim).
+**Durum:** **FAZ 7a KAPANDI (7 Ekim)**, **FAZ 7c KAPANDI (8 Ekim)**, H6 deploy'da. **7b-DB/01 uretimde, 7b-P1 + P1-ek deploy'da ve canli turu
+TAMAM (19 Ekim; bolum 12 kapanis notu)** -> 7b-P2 (`19-claude-code-gorevi-7b-p2.md`: karsilastirma/secim/revizyon) -> FAZ 7b kapanis.
 
 ## 1. Amac ve sinir
 
@@ -373,3 +373,22 @@ gonderilmis: davet durumlari, yanit listesi); satici: `/ajans/rfp` (gelen davetl
 baglantisi/musteri alanlari yok); menu; bildirim listesinde `rfp` tipi. **7b-P2** — alici karsilastirma: rol bazinda yan yana kalemler/toplamlar,
 "Revizyon iste", "Seç" (onay kapisi) -> `rfp_award`, "Değerlendirmeye al", "İptal"; satici tarafinda "seçildi / başka teklife verildi"; secilen
 tekliften rezervasyon (7c). Acik: e-posta bildirimi; Kashe disi ajans daveti; acik (davetsiz) RFP (FAZ 9 ile).
+
+**7b-DB/01 + 7b-P1 + P1-ek KAPANIS (19 Ekim 2026):**
+- Dal: asama4 25/25, asama17 ESIT (K12 101 test verisi). Uretim: asama17 ESIT, K12 0 -> tur sonrasi **K12 101, K13 1**.
+- **P1-ek (`19-claude-code-gorevi-7b-p1-ek.md`)**: canli tur, RFP formunun "Etkinlik olustur" baglantisinin kisisel etkinlik urettigini
+  yakaladi (sihirbaz `event_briefs.organization_id` yazmiyordu; RFP yalniz kurulus etkinligi kabul eder). FAZ 8 "kurulus atfi" dilimi one alindi:
+  sihirbaz son adiminda "Bu etkinlik kimin adina?" (Kisisel / `events.manage` kuruluslari), `?kurulus=` on secim, brief'e `organization_id`
+  (acik `has_org_permission` kontrolu; brief baska kurulusa bagliysa acik hata), etkinlik `create_event_from_spec` ile devralir. Migration yok.
+- Canli tur (Test Guven / Sunucu Ajans): kurulus etkinligi sihirbazdan (`events.organization_id` = Test Guven), etkinlik sayfasinda "Teklif
+  talebi ac", talep etkinlige bagli acildi, 4 kalem kopyalandi (+1 elle), ipucu 5.000-8.000, son tarih, davet, gonder -> kilit. Satici
+  (fbguvenfb, yalniz Sunucu Ajans `sales`): alici adresi `/ajans/rfp/...`'ye yonlendi (is_buyer false), ipucu yok, RFP yaniti 5 kalem 24.000 TL
+  KDV dahil, gonderildi, portal baglantisi 0. Alici: Toplaniyor, "Yanitladi · Surum 1 · 24.000 TL", bildirim. SQL: collecting/responded/sent/
+  rfp_response/alici_dogru true/portal 0.
+- Bulgular: (1) `guvenyapicioglu@gmail.com` platform yoneticisi (`is_admin`) oldugu icin alici sayfasini ipucuyla gordu — tasarim geregi
+  (`can_access_rfp_row` / `rfp_detail` admin dali); satici gorunurlugu bu yuzden yonetici olmayan hesapla olculdu. (2) Test verisi:
+  `fbguvenfb@hotmail.com` Sunucu Ajans uyeligi viewer -> **sales** (SQL ile; rol degistirme arayuzu yok — acik kalem). (3) Onceki
+  denemelerden iki kisisel `matching` etkinlik kaldi (zararsiz). (4) Derleme: `next/font/google` gecici indirme hatasi (Vercel + yerel);
+  yeniden derleme ile gecti — Inter'i yerel dosyadan yukleme (`next/font/local`) hijyen kalemi.
+- Acik: uyelik rol degistirme arayuzu (FAZ 8); e-posta bildirimi; Kashe disi ajans daveti; alici tarafinda rezervasyon gorunumu (7c-b).
+
