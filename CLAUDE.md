@@ -99,6 +99,14 @@ sihirbaz son adiminda "Bu etkinlik kimin adina?" (brief `organization_id`, `even
 baglanamaz. Platform yoneticisi (`is_admin`) tum RFP/teklifleri gorur (tasarim geregi). FAZ 7b KAPANDI (19 Ekim 2026) — **FAZ 7 KAPANDI**;
 bkz. `docs/envanter/19-faz7-ticari-katman.md` bolum 12.
 
+**Kurulus uyelik rolu (FAZ 8-U, 20 Ekim 2026).** Uyelik rolu TEK GERCEK `organization_memberships.role` (7 rol: owner, admin, sales,
+project_manager, crew_coordinator, finance, viewer); eski `agency_members` / `business_members.member_role` (owner/manager/member) FAZ 0
+aynasiyla eslenir ve ayna, eski satirdaki alakasiz guncellemelerde ince rolu EZMEZ. Rol degistirme TEK YOL `org_member_set_role(uuid, role)`
+RPC (members.manage; kendi rolu, owner_seed, son sahip korunur; owner/admin yalniz sahip) — uygulamanin `organization_memberships` UPDATE
+yetkisi YOK, eski tabloya dokunmaz. Etiket/ozet tek kaynak `app/lib/org-roles.ts` (ozetler `org_role_permissions`'tan turetilir, elle
+yazilmaz); secim bileseni `app/components/ui/kurulus-rol-secici.tsx`. Davet/cikarma eski akista (FAZ 10 tek tablo). Bkz.
+`docs/envanter/20-faz8-event-os-modulleri.md` bolum 2.
+
 **Derleme dogrulamasi cikis koduyla DEGIL (24 Eylul 2026).** `npm run build` Windows'ta hata verse de exit 0 donebiliyor (`Failed to collect page data for /...` ciktisi gecti, `.next/BUILD_ID` olusmadi). Kanit = cikti sonunda route tablosu + hata satiri yok + `.next/BUILD_ID` var. Ayrica `'use client'` modulunden sunucu bilesenine sabit/veri import edilmez (sayfa verisi toplamayi kirar); ortak veri `'use client'` OLMAYAN bir `*-data.ts` modulunde tutulur (ornek `app/ilanlar/listings-data.ts`).
 
 **Find/Replace All kullanma.** Buyuk dosyalarda toplu degistirme yapiyi bozuyor. Tek tek BUL/DEGISTIR ya da dosyanin tamamini yeniden yazma (Ctrl+A, Delete, yapistir) yontemi kullanilir.

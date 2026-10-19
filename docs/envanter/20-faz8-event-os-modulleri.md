@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** Plan (19 Ekim 2026). Sira: **8-U** (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** **8-U KAPANDI (20 Ekim 2026)**; sirada **8a**. Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -44,6 +44,22 @@ Yonetici, Satis, Proje yoneticisi, Ekip koordinatoru, Finans, Izleyici; yaninda 
 kendi satirinda ve (owner degilse) owner/admin satirlarinda devre disi. Degisiklik -> `org_member_set_role` -> satir yenilenir; hata
 metinleri RPC'den Turkce. Davet/cikarma eski akista kalir (FAZ 10'da tek tabloya iner). Test verisi: fbguvenfb'nin `sales` rolu bu arayuzle
 gorulur.
+
+**8-U KAPANDI (20 Ekim 2026).** DB: `20261020120000_faz8u_01_uyelik_rolu.sql` dal + uretim; dal asama4 26/26 (yeni **T25**),
+asama18 K1-K3 ESIT (dal K4 3 test verisi; uretim K4 1 = fbguvenfb `sales`, K5 0). P1: commit `0cd83d7` — `app/lib/org-roles.ts` (tek kaynak:
+`ORG_ROLES`, `ORG_ROLE_LABELS`, `ORG_ROLE_SUMMARIES`; ozetler `org_role_permissions` dizisinin Turkce karsiligi), `app/lib/org-actions.ts`
+(`setOrgMemberRole` -> `org_member_set_role`; RPC metinleri Turkceye eslenir), ortak `app/components/ui/kurulus-rol-secici.tsx` (7 rol,
+`owner` secimi satir ici onay "Sahip yapilsin mi? Onayla / Vazgec", ayna satiri yoksa 'viewer' + uyari), iki ekip sayfasi uyelik rolunu
+`organization_memberships`'ten okur; eski rol rozeti kalkti; davet formunda "Katildiktan sonra kurulus rolunu uye kartindan inceltebilirsin."
+**Canli tur (yeni yontem: Guven uygulama ici tarayicida giris yapar, Claude turu surer; sifre paylasilmaz):** `/profil/ekibim` (Sunucu Ajans
+sahibi) — fbguvenfb "Satis" ilk kez arayuzde; hotmail Izleyici -> Proje yoneticisi (kaydedildi, yenilemede kaldi; SQL `project_manager` /
+eski rol `member`) -> Sahip secimi onay kutusu -> Vazgec -> Izleyici. `/profil/kurumsal-ekip` (Test Guven sahibi) — hotmail Yonetici ->
+Finans (SQL `finance` / eski rol `manager` -> `member`) -> Yonetici (SQL `admin` / `manager`). `internal.access_audit` 4 satir
+(`member.set_role` from/to). Konsol hatasi yok; mobil duzen tamam. asama18 uretim K1-K3 ESIT, K4 1, K5 0.
+**Kozmetik (bir sonraki Claude Code gorevine eklenir):** (1) `KurulusRolSecici` koku `min-w-[190px]`, ust siniri yok: uzun ozet (Yonetici)
+kutuyu genisletip ad sutununu eziyor (ad "T" kaldi) — kok `min-w-0 flex-1 sm:flex-none sm:w-[280px]`, ad blogu `min-w-0`; (2) kurumsal
+(alici) yuzeyde ozetlerde "havuz" geciyor — alici Talent Pool gormez; `yuzey: 'ajans' | 'kurumsal'` ile havuz ifadesi gizlenir;
+(3) ~800px genislikte iki kartin rol kutusu ayni hizada baslamiyor (1 ile birlikte cozulur). Davet/cikarma eski akista (FAZ 10).
 
 ## 3. 8a — Gorevler + aktivite gecmisi
 

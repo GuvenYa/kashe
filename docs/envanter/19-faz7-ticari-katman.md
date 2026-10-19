@@ -427,3 +427,6 @@ T3 — Inter yerel degisken font (`app/fonts/InterVariable.woff2` 344 KB, OFL; `
 kez dusuren indirme hatasi kapandi), takvim ikonu cift tetik duzeltmesi (`preventDefault` + `showPicker`). Canli: fontlar ayni, Google Fonts
 istegi yok, takvim govde/ikon tek acilis. Hijyen kalemi (f) kapandi.
 
+**Acik kalem (c) KAPANDI (20 Ekim 2026):** uyelik rol degistirme arayuzu FAZ 8-U ile geldi (`org_member_set_role` RPC + ekip sayfalarinda
+"Kurulus rolu" secimi) — bkz. `docs/envanter/20-faz8-event-os-modulleri.md` bolum 2.
+
