@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createRfp } from './rfp-actions';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 /**
  * FAZ 7b / P1 — yeni teklif talebi (RFP) formu.
@@ -171,6 +172,7 @@ export function YeniRfp({
           </label>
           <input
             type="datetime-local"
+            onClick={takvimiAc}
             value={sonTarih}
             onChange={(e) => setSonTarih(e.target.value)}
             className={ALAN}

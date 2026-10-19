@@ -38,6 +38,7 @@ import {
   listProposalInternalItems,
   upsertProposalItemCost,
 } from '../teklif-maliyet-actions';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 /**
  * FAZ 7a / P1 — teklif editoru.
@@ -151,6 +152,9 @@ export function TeklifEditoru({
     tarihAlani(gecerliSurum?.valid_until)
   );
   const [notlar, setNotlar] = useState(gecerliSurum?.notes ?? '');
+
+  /** Ustteki Gecerlilik tarihi dolu mu — gonderim kutusu buna gore degisir. */
+  const gecerlilikTarihiVar = gecerlilik.trim() !== '';
 
   // Gonderim onay ekrani + baglanti kutusu
   const [gonderOnayi, setGonderOnayi] = useState(false);
@@ -343,16 +347,23 @@ export function TeklifEditoru({
   }
 
   function gonder() {
-    const gun = sayi(gecerlilikGun);
-    if (gun === null || gun < 1 || gun > 365) {
-      setHata('Geçerlilik 1-365 gün olmalı.');
-      return;
+    // Gecerlilik TEK YERDEN: ustteki tarih alani doluysa gun sorulmaz.
+    // RPC `valid_until = COALESCE(valid_until, now() + days)` — tarih doluyken
+    // gun zaten YOK SAYILIR; tip zorunlu oldugu icin 14 gonderilir.
+    let gunDegeri = 14;
+    if (!gecerlilikTarihiVar) {
+      const gun = sayi(gecerlilikGun);
+      if (gun === null || gun < 1 || gun > 365) {
+        setHata('Geçerlilik 1-365 gün olmalı.');
+        return;
+      }
+      gunDegeri = Math.trunc(gun);
     }
     mesajlariTemizle();
     startTransition(async () => {
       const res = await sendProposal({
         proposalId: teklif.id,
-        validDays: Math.trunc(gun),
+        validDays: gunDegeri,
       });
       if (!res.success) {
         setHata(res.error);
@@ -857,12 +868,16 @@ export function TeklifEditoru({
                 <label className="text-xs text-ink-72 w-28">Geçerlilik</label>
                 <input
                   type="date"
+                  onClick={takvimiAc}
                   value={gecerlilik}
                   disabled={!duzenlenebilir}
                   onChange={(e) => setGecerlilik(e.target.value)}
                   onBlur={() => surumKaydet('gecerlilik')}
                   className={`${ALAN} w-44`}
                 />
+                <span className="text-xs text-ink-50 w-full sm:w-auto">
+                  Boş bırakılırsa gönderirken gün sayısı sorulur.
+                </span>
               </div>
               <div>
                 <label className="block text-xs text-ink-72 mb-1">
@@ -1037,16 +1052,36 @@ export function TeklifEditoru({
                     : `Alıcı e-posta: ${teklif.client_email || 'yok — bağlantıyı elle iletmen gerekir'}`}
                 </li>
               </ul>
-              <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-xs text-ink-72">Geçerlilik (gün)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={gecerlilikGun}
-                  onChange={(e) => setGecerlilikGun(e.target.value)}
-                  className={`${ALAN} w-20`}
-                />
-              </div>
+              {/* Gecerlilik TEK YERDEN: tarih doluysa gun girdisi gosterilmez
+                  (RPC tarihi kullanir, gunu yok sayar) — iki yerde soru sorulup
+                  biri sessizce yok sayilmasin. */}
+              {gecerlilikTarihiVar ? (
+                <p className="text-sm text-ink-72">
+                  Geçerlilik: {tarihMetni(gecerlilik) ?? gecerlilik} ·{' '}
+                  <span className="text-ink-50">
+                    Üstteki Geçerlilik alanından değiştirilir.
+                  </span>
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="text-xs text-ink-72">
+                      Geçerlilik (gün)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={gecerlilikGun}
+                      onChange={(e) => setGecerlilikGun(e.target.value)}
+                      className={`${ALAN} w-20`}
+                    />
+                  </div>
+                  <p className="text-xs text-ink-50">
+                    Tarih girilmediği için gönderimden itibaren gün sayısı
+                    kullanılır.
+                  </p>
+                </>
+              )}
               <p className="text-xs text-ink-50">
                 {rfpBaglami
                   ? 'Teklif alıcı kuruluşa iletilecek. Gönderdikten sonra bu sürüm kilitlenir; değişiklik için yeni sürüm açman gerekir.'

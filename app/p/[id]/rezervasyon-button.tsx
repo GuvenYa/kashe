@@ -17,6 +17,7 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 type Props = {
   professionalId: string;
@@ -335,6 +336,7 @@ export function RezervasyonButton({
                 <input
                   id="booking-date"
                   type="date"
+                  onClick={takvimiAc}
                   min={todayStr}
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}

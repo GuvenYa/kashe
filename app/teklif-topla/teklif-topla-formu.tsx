@@ -13,6 +13,7 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
@@ -440,6 +441,7 @@ export function TeklifToplaFormu({
                     <input
                       id={`brief-${field.key}`}
                       type="date"
+                      onClick={takvimiAc}
                       min={todayStr}
                       value={value}
                       onChange={(e) => setField(field.key, e.target.value)}

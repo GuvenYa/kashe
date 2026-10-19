@@ -23,6 +23,7 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 type Props = {
   professionalId: string;
@@ -521,6 +522,7 @@ export function IletisimButton({
                           <input
                             id={`brief-${field.key}`}
                             type="date"
+                            onClick={takvimiAc}
                             min={todayStr}
                             value={value}
                             onChange={(e) => setField(field.key, e.target.value)}

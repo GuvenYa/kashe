@@ -15,6 +15,7 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 type Category = {
   id: number;
@@ -660,6 +661,7 @@ export function YeniIlanFormu({
               </label>
               <input
                 type="date"
+                onClick={takvimiAc}
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 min={today}
@@ -725,6 +727,7 @@ export function YeniIlanFormu({
             </label>
             <input
               type="date"
+              onClick={takvimiAc}
               value={applicationDeadline}
               onChange={(e) => setApplicationDeadline(e.target.value)}
               min={today}

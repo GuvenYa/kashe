@@ -14,6 +14,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { sonucEtiketi } from '@/app/lib/discover-base';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 export type SihirbazProfil = {
   kategoriId: number | null;
@@ -824,6 +825,7 @@ export function SihirbazClient({
                 <input
                   id="sihirbaz-tarih"
                   type="date"
+                  onClick={takvimiAc}
                   value={tarih}
                   onChange={(e) => guncelle({ tarih: e.target.value || null })}
                   className={ALAN}
@@ -836,6 +838,7 @@ export function SihirbazClient({
                 <input
                   id="sihirbaz-bitis"
                   type="date"
+                  onClick={takvimiAc}
                   value={bitis}
                   onChange={(e) => guncelle({ bitis: e.target.value || null })}
                   className={ALAN}

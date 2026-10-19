@@ -35,6 +35,7 @@ import {
   listTalentRates,
   upsertTalentRate,
 } from './havuz-rate-actions';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 const ALAN =
   'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
@@ -1301,6 +1302,7 @@ export function HavuzPaneli({
                           </select>
                           <input
                             type="date"
+                            onClick={takvimiAc}
                             value={oranForm.validFrom}
                             onChange={(e) =>
                               setOranForm({

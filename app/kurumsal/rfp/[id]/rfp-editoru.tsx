@@ -25,6 +25,7 @@ import {
   updateRfpFields,
   updateRfpItem,
 } from '../rfp-actions';
+import { takvimiAc } from '@/app/lib/tarih-girdisi';
 
 /**
  * FAZ 7b / P1 — alici tarafi teklif talebi (RFP) ekrani.
@@ -314,6 +315,7 @@ export function RfpEditoru({
             {duzenlenebilir ? (
               <input
                 type="datetime-local"
+                onClick={takvimiAc}
                 value={sonTarih}
                 onChange={(e) => setSonTarih(e.target.value)}
                 onBlur={() => alanKaydet('sonTarih')}
