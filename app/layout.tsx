@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
@@ -21,11 +20,14 @@ const gilroy = localFont({
   display: 'swap',
 });
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
+// Inter yerel: derleme Google Fonts'a cikmaz (next/font/google indirme hatasi
+// 19 Ekim'de uc kez dusurdu); OFL lisansi app/fonts/LICENSE-Inter.txt.
+// Degisken font: tek dosya tum agirliklari tasir (100-900).
+const inter = localFont({
+  src: './fonts/InterVariable.woff2',
+  weight: '100 900',
+  variable: '--font-inter',
+  display: 'swap',
 });
 
 // Baslik kisa tutulur: WhatsApp/iMessage onizlemesi ve sekme basligi tek satir.
