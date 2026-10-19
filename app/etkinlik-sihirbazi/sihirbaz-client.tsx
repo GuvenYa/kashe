@@ -158,12 +158,15 @@ export function SihirbazClient({
   sehirler,
   turler,
   profiller,
+  kuruluslar,
   oturumVar,
 }: {
   kategoriler: Kategori[];
   sehirler: Sehir[];
   turler: EtkinlikTuru[];
   profiller: SihirbazProfil[];
+  /** events.manage yetkili kuruluslar (FAZ 7b/P1-ek). Girissizde bos dizi. */
+  kuruluslar: { id: string; name: string }[];
   oturumVar: boolean;
 }) {
   const router = useRouter();
@@ -220,6 +223,15 @@ export function SihirbazClient({
   const katilimci = params.get('katilimci') ?? '';
   /** Analizde dolu adimlar atlandi mi (serit bu bayrakla gorunur). */
   const atlanan = params.get('atlanan') === '1';
+  /**
+   * Etkinligin atfedildigi kurulus (FAZ 7b/P1-ek). ANLAT_ANAHTARLARI'na GIRMEZ:
+   * yeni analiz secimi sifirlamaz. URL'den gelen deger listede yoksa yok sayilir
+   * (kisisel) — baskasinin kurulus kimligi elle yazilarak secilemez.
+   */
+  const kurulusParam = params.get('kurulus') ?? '';
+  const kurulus = kuruluslar.some((k) => k.id === kurulusParam)
+    ? kurulusParam
+    : '';
   const butceMin = params.get('butce_min') ?? '';
   const butceMax = params.get('butce_max') ?? '';
   const mekan = params.get('mekan') ?? '';
@@ -585,6 +597,7 @@ export function SihirbazClient({
           ? mekan
           : undefined,
       roles: roller,
+      organizationId: kurulus || undefined,
     });
     if (res.success) {
       router.push(`/etkinliklerim/${res.eventId}`);
@@ -998,6 +1011,41 @@ export function SihirbazClient({
               </div>
             )}
 
+            {/* KURULUS ATFI (FAZ 7b/P1-ek) — yalniz events.manage yetkili
+                kurulusu olan kullaniciya gorunur. Kisisel akis varsayilan;
+                secim yapilmazsa etkinlik bugunku gibi kisisel kalir. */}
+            {kuruluslar.length > 0 && (
+              <fieldset className="mt-6">
+                <legend className={ETIKET}>Bu etkinlik kimin adına?</legend>
+                <div className="flex flex-wrap gap-2">
+                  {[{ id: '', name: 'Kişisel' }, ...kuruluslar].map((k) => (
+                    <label
+                      key={k.id || 'kisisel'}
+                      className={
+                        kurulus === k.id
+                          ? `${CIP} ${CIP_AKTIF} cursor-pointer`
+                          : `${CIP} ${CIP_PASIF} cursor-pointer`
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="sihirbaz-kurulus"
+                        value={k.id}
+                        checked={kurulus === k.id}
+                        onChange={() => guncelle({ kurulus: k.id || null })}
+                        className="sr-only"
+                      />
+                      {k.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-ink-72 mt-2">
+                  Kuruluş seçersen etkinlik o kuruluşa ait olur; teklif talebi
+                  (RFP) yalnız kuruluş etkinliklerinde açılabilir.
+                </p>
+              </fieldset>
+            )}
+
             <div className="mt-6">
               <label htmlFor="sihirbaz-baslik" className={ETIKET}>
                 Etkinlik başlığı (isteğe bağlı)
@@ -1031,6 +1079,14 @@ export function SihirbazClient({
                   secilenKategoriler.length > 0
                     ? `${secilenKategoriler.length} ihtiyaç`
                     : 'İhtiyaç seçilmedi',
+                  // Kurulus atfi — secim yalniz kurulusu olan kullanicida var;
+                  // digerlerinde ozete "Kişisel" diye bir oge eklemek gurultu.
+                  ...(kuruluslar.length > 0
+                    ? [
+                        kuruluslar.find((k) => k.id === kurulus)?.name ??
+                          'Kişisel',
+                      ]
+                    : []),
                 ].join(' · ')}
               </p>
             </div>

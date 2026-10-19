@@ -34,6 +34,8 @@ export type ConfirmEventInput = {
   budgetMax?: number;
   venueStatus?: 'confirmed' | 'searching' | 'not_needed';
   roles: WizardRoleInput[];
+  /** FAZ 7b/P1-ek: etkinligin atfedildigi kurulus (bos/undefined = kisisel). */
+  organizationId?: string;
 };
 
 export type ConfirmEventResult =
@@ -64,7 +66,11 @@ function gecerliGun(v: string): boolean {
  *
  * Uygulama `events` / `event_requirements` tablolarina HIC INSERT yapmaz; tek yol RPC.
  * `version_no`, `is_current`, `created_by_user_id` gonderilmez (tetikleyici verir).
- * `organization_id` gonderilmez (kurulus atfi FAZ 8).
+ *
+ * Kurulus atfi: sihirbaz son adiminda secim (7b-P1-ek). `organization_id` BRIEF'e
+ * yazilir; etkinlik onu `create_event_from_spec` ile devralir (RPC'ye dokunulmaz).
+ * DB politikasi (`event_briefs_insert` / `_update`) `events.manage` ister; burada
+ * ayrica ACIK kontrol yapilir ki kullanici RLS hatasi yerine anlasilir mesaj gorsun.
  */
 export async function confirmEventFromWizard(
   input: ConfirmEventInput
@@ -84,6 +90,21 @@ export async function confirmEventFromWizard(
     .single();
   if (profil?.suspended_at) {
     return { success: false, error: 'Hesabin askida, etkinlik olusturamazsin.' };
+  }
+
+  // 1b) Kurulus atfi — yetki RLS'e birakilmaz, acik kontrol (anlasilir mesaj).
+  const orgId = input.organizationId?.trim() || null;
+  const YETKI_HATASI = 'Bu kuruluş adına etkinlik oluşturma yetkin yok.';
+  if (orgId) {
+    const { data: izinVar, error: izinErr } = await supabase.rpc(
+      'has_org_permission',
+      { p_org_id: orgId, p_permission: 'events.manage' }
+    );
+    if (izinErr) {
+      console.error('[eventspec] kurulus yetkisi', izinErr);
+      return { success: false, error: YETKI_HATASI };
+    }
+    if (izinVar !== true) return { success: false, error: YETKI_HATASI };
   }
 
   // 2) Sunucu tarafi dogrulama — RPC'nin kontrolleriyle ayni, mesaji kullaniciya uygun
@@ -262,14 +283,50 @@ export async function confirmEventFromWizard(
         created_by_user_id: user.id,
         source: 'client_web',
         raw_text: `[form] ${ozet}`,
+        organization_id: orgId,
       })
       .select('id')
       .single();
     if (briefErr || !yeniBrief) {
       console.error('[eventspec] brief kaydi', briefErr);
+      // 42501 = RLS: kurulus adina brief acma yetkisi yok.
+      if (briefErr?.code === '42501' && orgId) {
+        return { success: false, error: YETKI_HATASI };
+      }
       return { success: false, error: 'Kayit yapilamadi, tekrar dene.' };
     }
     briefId = (yeniBrief as { id: string }).id;
+  } else if (orgId) {
+    // Brief analizden geldi (kurulussuz acilir) — secilen kurulusa baglanir.
+    // Zaten BASKA bir kurulusa bagliysa sessizce o kurulusa yazilmasin diye
+    // once okunur: etkinlik brief'in kurulusunu devralir, uyusmazlik gizli kalmaz.
+    const { data: briefSatiri, error: briefOkuErr } = await supabase
+      .from('event_briefs')
+      .select('organization_id')
+      .eq('id', briefId)
+      .maybeSingle();
+    if (briefOkuErr || !briefSatiri) {
+      console.error('[eventspec] brief okuma', briefOkuErr);
+      return { success: false, error: 'Analiz bulunamadi, yeniden anlat.' };
+    }
+    const mevcutOrg = (briefSatiri as { organization_id: string | null })
+      .organization_id;
+    if (mevcutOrg === null) {
+      const { error: baglaErr } = await supabase
+        .from('event_briefs')
+        .update({ organization_id: orgId })
+        .eq('id', briefId)
+        .is('organization_id', null);
+      if (baglaErr) {
+        console.error('[eventspec] brief kurulus baglama', baglaErr);
+        return { success: false, error: YETKI_HATASI };
+      }
+    } else if (mevcutOrg !== orgId) {
+      return {
+        success: false,
+        error: 'Bu analiz baska bir kurulusa bagli; yeniden anlat.',
+      };
+    }
   }
 
   // 5) Yeni spec + provenance

@@ -4,6 +4,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { orderCities } from '@/app/lib/city-order';
 import { applyDiscoverBase } from '@/app/lib/discover-base';
 import { getCachedUser } from '@/app/lib/auth';
+import { getCrewContext } from '@/app/lib/org-context';
 import {
   SihirbazClient,
   type EtkinlikTuru,
@@ -38,7 +39,7 @@ export const metadata = {
 export default async function EtkinlikSihirbaziPage() {
   const supabase = await createClient();
 
-  const [categoriesRes, citiesRes, eventTypesRes, profilesRes, user] =
+  const [categoriesRes, citiesRes, eventTypesRes, profilesRes, user, ekip] =
     await Promise.all([
       supabase
         .from('service_categories')
@@ -59,7 +60,14 @@ export default async function EtkinlikSihirbaziPage() {
           .select('primary_category_id, city_id, role, category_attributes')
       ),
       getCachedUser(),
+      // FAZ 7b/P1-ek: etkinligi kurulusa atfetmek icin events.manage yetkili
+      // kuruluslar. Girissizde getCrewContext bos dizi doner.
+      getCrewContext(),
     ]);
+
+  const kuruluslar = ekip.orgs
+    .filter((o) => o.canManageEvents)
+    .map((o) => ({ id: o.id, name: o.name }));
 
   type SayacSatiri = Pick<
     ProviderPublic,
@@ -94,6 +102,7 @@ export default async function EtkinlikSihirbaziPage() {
               sehirler={orderCities((citiesRes.data ?? []) as { id: number; name: string }[])}
               turler={(eventTypesRes.data ?? []) as unknown as EtkinlikTuru[]}
               profiller={profiller}
+              kuruluslar={kuruluslar}
               oturumVar={!!user}
             />
           </Suspense>

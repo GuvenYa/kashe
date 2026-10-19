@@ -91,9 +91,17 @@ export function YeniRfp({
     return (
       <div className="bg-card border border-line rounded-lg p-5">
         <p className="text-sm text-ink-72">
-          Teklif talebi bir etkinliğe bağlanır. Önce bir etkinlik oluştur.
+          Teklif talebi bir etkinliğe bağlanır. Önce kuruluş adına bir etkinlik
+          oluştur.
         </p>
-        <Link href="/etkinlik-sihirbazi" className={`${BTN_BIRINCIL} mt-3 inline-block`}>
+        {/* Sihirbaz kurulus secili acilir (7b-P1-ek): kisisel etkinlik RFP
+            formunda listelenmiyor, kullanici bos listeye geri donmesin. */}
+        <Link
+          href={
+            orgId ? `/etkinlik-sihirbazi?kurulus=${orgId}` : '/etkinlik-sihirbazi'
+          }
+          className={`${BTN_BIRINCIL} mt-3 inline-block`}
+        >
           Etkinlik oluştur
         </Link>
       </div>
