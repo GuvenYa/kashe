@@ -421,3 +421,9 @@ rezervasyonu gordu, ic maliyet yok. Tur bulgulari → **Tamamlayici 2** (`hijyen
 doluysa gun sorulmaz), tarih kutusu tiklaninca takvim (`showPicker`, 13 girdi), bildirim metinlerinde Turkce karakter
 (`20261019130000_hijyen_02_bildirim_metinleri.sql` — uc fonksiyon birebir, yalniz uc metin).
 
+**Tamamlayici 2 ve 3 KAPANDI (19 Ekim 2026):** T2 — teklif gecerliligi tek yerden (tarih doluysa gonder kutusunda gun sorulmaz;
+RPC `COALESCE` davranisi ayni), `takvimiAc` ile 11 tarih kutusu tiklaninca takvim; hijyen_02 dal + uretim ("teklif gönderdi" vb.).
+T3 — Inter yerel degisken font (`app/fonts/InterVariable.woff2` 344 KB, OFL; `next/font/google` kalkti → derleme Google'a cikmaz; bugun uc
+kez dusuren indirme hatasi kapandi), takvim ikonu cift tetik duzeltmesi (`preventDefault` + `showPicker`). Canli: fontlar ayni, Google Fonts
+istegi yok, takvim govde/ikon tek acilis. Hijyen kalemi (f) kapandi.
+
