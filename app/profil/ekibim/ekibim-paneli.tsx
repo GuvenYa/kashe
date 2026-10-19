@@ -13,9 +13,16 @@ type Props = {
   members: AgencyMemberWithProfile[];
   invitations: AgencyInvitation[];
   currentUserId: string;
+  /** FAZ 8-U: uye id -> kurulus rolu (ayna satiri yoksa anahtar yok). */
+  kurulusRolleri: Record<string, string>;
 };
 
-export function EkibimPaneli({ members, invitations, currentUserId }: Props) {
+export function EkibimPaneli({
+  members,
+  invitations,
+  currentUserId,
+  kurulusRolleri,
+}: Props) {
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   const pendingInvitations = invitations.filter(
@@ -68,7 +75,7 @@ export function EkibimPaneli({ members, invitations, currentUserId }: Props) {
           Ekip üyeleri{' '}
           <span className="text-ink-72 text-base">({members.length})</span>
         </h2>
-        <UyeListesi members={members} />
+        <UyeListesi members={members} kurulusRolleri={kurulusRolleri} />
       </section>
 
       {/* Geçmiş davetler */}

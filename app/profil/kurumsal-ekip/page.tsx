@@ -51,6 +51,23 @@ export default async function KurumsalEkipPage() {
   const members = (membersData ??
     []) as unknown as BusinessMemberWithProfile[];
 
+  // FAZ 8-U: kurulus rolleri. organization_memberships.id = eski uye satirinin
+  // id'si (ayna ayni id ile yazar). RLS: organization_memberships_select_member.
+  const kurulusRolleri: Record<string, string> = {};
+  if (members.length > 0) {
+    const { data: uyelikler, error: uyelikHatasi } = await supabase
+      .from('organization_memberships')
+      .select('id, role')
+      .in(
+        'id',
+        members.map((m) => m.id)
+      );
+    if (uyelikHatasi) console.error('[kurumsal-ekip] kurulus rolleri', uyelikHatasi);
+    for (const u of (uyelikler ?? []) as { id: string; role: string }[]) {
+      kurulusRolleri[u.id] = u.role;
+    }
+  }
+
   // Davetler (tümü)
   const { data: invitationsData } = await supabase
     .from('business_invitations')
@@ -91,6 +108,7 @@ export default async function KurumsalEkipPage() {
             members={members}
             invitations={invitations}
             currentUserId={user.id}
+            kurulusRolleri={kurulusRolleri}
           />
         </div>
       </main>

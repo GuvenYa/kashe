@@ -127,6 +127,9 @@ export function KurumsalUyeDavetFormu({ onClose }: Props) {
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
             Yönetici: davet edebilir, üye yönetebilir. Üye: standart yetki.
           </p>
+          <p className="text-[10px] text-ink-72 mt-1 font-mono">
+            Katıldıktan sonra kuruluş rolünü üye kartından inceltebilirsin.
+          </p>
         </div>
 
         <div>

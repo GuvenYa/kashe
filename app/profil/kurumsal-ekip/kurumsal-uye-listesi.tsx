@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/app/components/EmptyState';
 import { Users, Trash2 } from 'lucide-react';
 import { removeTeamMember } from '@/app/kurumsal/business-actions';
-import {
-  getMemberRoleLabel,
-  type BusinessMemberWithProfile,
-} from '@/app/kurumsal/business-data';
+import { KurulusRolSecici } from '@/app/components/ui/kurulus-rol-secici';
+import type { OrgRole } from '@/app/lib/org-roles';
+import type { BusinessMemberWithProfile } from '@/app/kurumsal/business-data';
 
 type Props = {
   members: BusinessMemberWithProfile[];
+  /** FAZ 8-U: uye id -> kurulus rolu (satir yoksa anahtar yok -> viewer). */
+  kurulusRolleri: Record<string, string>;
 };
 
-export function KurumsalUyeListesi({ members }: Props) {
+export function KurumsalUyeListesi({ members, kurulusRolleri }: Props) {
   if (members.length === 0) {
     return (
       <EmptyState
@@ -28,13 +29,23 @@ export function KurumsalUyeListesi({ members }: Props) {
   return (
     <div className="space-y-3">
       {members.map((member) => (
-        <UyeSatiri key={member.id} member={member} />
+        <UyeSatiri
+          key={member.id}
+          member={member}
+          kurulusRolu={kurulusRolleri[member.id]}
+        />
       ))}
     </div>
   );
 }
 
-function UyeSatiri({ member }: { member: BusinessMemberWithProfile }) {
+function UyeSatiri({
+  member,
+  kurulusRolu,
+}: {
+  member: BusinessMemberWithProfile;
+  kurulusRolu: string | undefined;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -81,13 +92,15 @@ function UyeSatiri({ member }: { member: BusinessMemberWithProfile }) {
             <p className="font-display font-semibold text-ink truncate">
               {name}
             </p>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 bg-paper px-2 py-0.5 rounded">
-                {getMemberRoleLabel(member.member_role)}
-              </span>
-            </div>
           </div>
         </div>
+
+        {/* FAZ 8-U: kurulus rolu tek gercek; eski rol rozeti kalkti. */}
+        <KurulusRolSecici
+          membershipId={member.id}
+          rol={(kurulusRolu ?? 'viewer') as OrgRole}
+          aynalanmamis={kurulusRolu === undefined}
+        />
 
         <div className="flex flex-col items-end gap-1">
           <button

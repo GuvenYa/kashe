@@ -13,9 +13,15 @@ type Props = {
   members: BusinessMemberWithProfile[];
   invitations: BusinessInvitation[];
   currentUserId: string;
+  /** FAZ 8-U: uye id -> kurulus rolu (ayna satiri yoksa anahtar yok). */
+  kurulusRolleri: Record<string, string>;
 };
 
-export function KurumsalEkipPaneli({ members, invitations }: Props) {
+export function KurumsalEkipPaneli({
+  members,
+  invitations,
+  kurulusRolleri,
+}: Props) {
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   const pendingInvitations = invitations.filter(
@@ -71,7 +77,7 @@ export function KurumsalEkipPaneli({ members, invitations }: Props) {
           Ekip üyeleri{' '}
           <span className="text-ink-72 text-base">({members.length})</span>
         </h2>
-        <KurumsalUyeListesi members={members} />
+        <KurumsalUyeListesi members={members} kurulusRolleri={kurulusRolleri} />
       </section>
 
       {/* Geçmiş davetler */}
