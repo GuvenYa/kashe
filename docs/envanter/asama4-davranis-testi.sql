@@ -3318,7 +3318,7 @@ BEGIN
   IF st <> 'responded' THEN RAISE EXCEPTION 'kazanan davet % (responded)', st; END IF;
   SELECT status::text INTO st FROM public.proposals WHERE id = prop_b;
   IF st <> 'sent' THEN RAISE EXCEPTION 'secilmeyen teklif durumu degisti (%)', st; END IF;
-  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans2 AND body LIKE 'Teklif talebi baska%';
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans2 AND body LIKE 'Teklif talebi ba_ka bir teklife%';
   IF n <> 1 THEN RAISE EXCEPTION 'secilmedi bildirimi % (1)', n; END IF;
   SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans AND body LIKE 'Teklifin kabul edildi%';
   IF n <> 1 THEN RAISE EXCEPTION 'kabul bildirimi % (1)', n; END IF;
@@ -3385,6 +3385,128 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (24, 'T24 FAZ 7b RFP', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T25) FAZ 8-U uyelik rolu. ON KOSUL: 20261020120000 (faz8u 01) dalda. Test Ajans kurulusu (owner 0004 owner_seed, sales 0001,
+--      crew_coordinator 0002 [agency_members], viewer 0003 [agency_members]) verisine dayanir. Sonda roller eski haline doner.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a   uuid;
+  m_pro1  uuid; m_pro2 uuid; m_owner uuid;
+  st      text;
+  n       integer;
+BEGIN
+  SELECT o.id INTO org_a FROM public.organizations o WHERE o.legacy_profile_id = ajans;
+  SELECT id INTO m_pro1  FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro1;
+  SELECT id INTO m_pro2  FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro2;
+  SELECT id INTO m_owner FROM public.organization_memberships WHERE organization_id = org_a AND user_id = ajans;
+  IF org_a IS NULL OR m_pro1 IS NULL OR m_pro2 IS NULL OR m_owner IS NULL THEN
+    RAISE EXCEPTION 'on kosul: org_a=% m_pro1=% m_pro2=% m_owner=%', org_a, m_pro1, m_pro2, m_owner;
+  END IF;
+  SELECT legacy_source INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'agency_members' THEN RAISE EXCEPTION 'on kosul: pro2 legacy_source % (agency_members)', st; END IF;
+
+  -- 1) owner -> pro2 viewer -> sales (ince rol); eski tablo member kalir
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_set_role(m_pro2, 'sales');
+  EXECUTE 'RESET ROLE';
+  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'sales' THEN RAISE EXCEPTION 'pro2 rol % (sales)', st; END IF;
+  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro2;
+  IF st <> 'member' THEN RAISE EXCEPTION 'pro2 eski rol % (member)', st; END IF;
+
+  -- 2) eski satirda rol disi guncelleme -> ince rol KORUNUR (FAZ 8-U aynasi)
+  UPDATE public.agency_members SET joined_at = joined_at WHERE id = m_pro2;
+  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'sales' THEN RAISE EXCEPTION 'ayna ince rolu ezdi: % (sales)', st; END IF;
+
+  -- 3) eski satirda rol degisimi -> ayna yazar (manager -> admin)
+  UPDATE public.agency_members SET member_role = 'manager' WHERE id = m_pro2;
+  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'admin' THEN RAISE EXCEPTION 'ayna rol degisimini yazmadi: % (admin)', st; END IF;
+
+  -- 4) owner -> pro2 admin -> project_manager; eski tablo member'a doner
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_set_role(m_pro2, 'project_manager');
+  PERFORM public.org_member_set_role(m_pro1, 'admin');
+  EXECUTE 'RESET ROLE';
+  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'project_manager' THEN RAISE EXCEPTION 'pro2 rol % (project_manager)', st; END IF;
+  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro2;
+  IF st <> 'member' THEN RAISE EXCEPTION 'pro2 eski rol % (member, admin sonrasi)', st; END IF;
+  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro1;
+  IF st <> 'manager' THEN RAISE EXCEPTION 'pro1 eski rol % (manager)', st; END IF;
+
+  -- 5) admin (pro1): owner veremez (42501), finance verebilir, kendi rolunu degistiremez (22023), sahibi degistiremez (22023)
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_set_role(m_pro2, 'owner');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'admin owner verdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_set_role(m_pro2, 'finance');
+  EXECUTE 'RESET ROLE';
+  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
+  IF st <> 'finance' THEN RAISE EXCEPTION 'pro2 rol % (finance)', st; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_set_role(m_pro1, 'viewer');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kendi rolunu degistirdi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_set_role(m_owner, 'viewer');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kurulus sahibi degistirildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 6) sales (musteri, members.manage yok) -> 42501; anon -> 42501
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_set_role(m_pro2, 'viewer');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'sales rol degistirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.org_member_set_role(m_pro2, 'viewer');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon rol degistirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 7) denetim kaydi
+  SELECT count(*) INTO n FROM internal.access_audit
+   WHERE target_table = 'organization_memberships' AND detail->>'op' = 'member.set_role' AND organization_id = org_a;
+  IF n < 4 THEN RAISE EXCEPTION 'denetim kaydi % (>=4)', n; END IF;
+
+  -- 8) eski hale don (owner): pro1 crew_coordinator, pro2 viewer
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_set_role(m_pro1, 'crew_coordinator');
+  PERFORM public.org_member_set_role(m_pro2, 'viewer');
+  EXECUTE 'RESET ROLE';
+  SELECT string_agg(role::text, ',' ORDER BY user_id) INTO st
+    FROM public.organization_memberships WHERE id IN (m_pro1, m_pro2);
+  IF st <> 'crew_coordinator,viewer' THEN RAISE EXCEPTION 'geri alma % (crew_coordinator,viewer)', st; END IF;
+
+  INSERT INTO t_sonuc VALUES (25, 'T25 FAZ 8-U uyelik rolu', 'GECTI',
+    'owner ince rol verdi (sales; eski tablo member); eski satirda rol disi guncelleme ince rolu korudu; eski rol degisimi (manager) aynada admin; owner project_manager/admin verdi (eski tablo member/manager); admin owner veremedi 42501, finance verdi, kendi rolu 22023, sahip 22023; sales 42501; anon 42501; denetim >=4; geri alma');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (25, 'T25 FAZ 8-U uyelik rolu', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
