@@ -5,6 +5,9 @@ import type { ReactNode } from 'react';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { formatTL } from '@/app/lib/para';
+import { IletisimButton } from '@/app/p/[id]/iletisim-button';
+import { RezervasyonButton } from '@/app/p/[id]/rezervasyon-button';
+import type { OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 
 /**
  * FIYAT / TAKVIM KARTI (D2) — profilin sag sutunundaki islem karti.
@@ -20,6 +23,13 @@ import { formatTL } from '@/app/lib/para';
  * `lg` ALTI: takvim varsayilan KAPALI bir acilir bolum. Telefonda kart kimlik
  * satirinin altinda tek sutun duruyor; acik bir takvim sayfanin yarisini
  * kaplayip asil icerigi asagi itiyordu.
+ *
+ * CTA'LAR NEDEN BURADA RENDER EDILIYOR: cagiran (`ProfessionalProfile`) bir
+ * SUNUCU bileseni. Sunucudan istemci bilesenine fonksiyon (render-prop)
+ * gecirilemez — ilk surum `cta={(dolgu) => ...}` ile uretimde "Functions
+ * cannot be passed to Client Components" hatasi verdi. Kart bu yuzden
+ * dugmelerin DUZ prop'larini alir ve `IletisimButton` / `RezervasyonButton`'i
+ * kendi icinde kurar; eylemler yine o bilesenlerin icindedir.
  */
 const ALAN =
   'w-full px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:border-brand-ink focus:outline-none';
@@ -40,14 +50,20 @@ export function FiyatTakvimKarti({
   bookedDates: string[];
   varsayilanSehir: string | null;
   /**
-   * CTA'lar — mevcut `IletisimButton` / `RezervasyonButton`. Kart, girilen
-   * degerleri bu dugmelere prop olarak gecirebilmek icin bir FONKSIYON alir.
+   * CTA dugmelerinin prop'lari (serilestirilebilir). Verilmezse kart yalniz
+   * fiyat + takvim gosterir (kendi profiline bakan sahip).
    */
-  cta?: (dolgu: {
-    tarih: string | null;
-    sehir: string | null;
-    kisi: number | null;
-  }) => ReactNode;
+  cta?: {
+    professionalId: string;
+    professionalName: string;
+    categorySlug: string | null;
+    isLoggedIn: boolean;
+    currentUserIsProfessional: boolean;
+    isOwnProfile: boolean;
+    writableBusinesses: OnBehalfBusiness[];
+    /** Favori / paylas / sikayet ikon satiri (istemci elemanlari). */
+    actionBar?: ReactNode;
+  };
   /** Kartin altindaki ek alan (davet / havuz kisa yolu). */
   altAlan?: ReactNode;
 }) {
@@ -179,7 +195,32 @@ export function FiyatTakvimKarti({
       </div>
 
       {/* CTA'lar — mevcut dugmeler, on-doldurma ile */}
-      {cta && <div className="space-y-2">{cta(dolgu)}</div>}
+      {cta && (
+        <div className="space-y-2">
+          <IletisimButton
+            professionalId={cta.professionalId}
+            professionalName={cta.professionalName}
+            categorySlug={cta.categorySlug}
+            isLoggedIn={cta.isLoggedIn}
+            currentUserIsProfessional={cta.currentUserIsProfessional}
+            isOwnProfile={cta.isOwnProfile}
+            writableBusinesses={cta.writableBusinesses}
+            variant="primary-accent"
+            onDolgu={dolgu}
+          />
+          <RezervasyonButton
+            professionalId={cta.professionalId}
+            professionalName={cta.professionalName}
+            isLoggedIn={cta.isLoggedIn}
+            currentUserIsProfessional={cta.currentUserIsProfessional}
+            isOwnProfile={cta.isOwnProfile}
+            writableBusinesses={cta.writableBusinesses}
+            variant="outline-ink"
+            initialDate={dolgu.tarih}
+          />
+          {cta.actionBar}
+        </div>
+      )}
 
       {altAlan}
     </div>

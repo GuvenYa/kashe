@@ -461,32 +461,16 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 varsayilanSehir={cityName ?? null}
                 cta={
                   canTransact
-                    ? (dolgu) => (
-                        <>
-                          <IletisimButton
-                            professionalId={profile.id}
-                            professionalName={displayName}
-                            categorySlug={slug}
-                            isLoggedIn={isLoggedIn}
-                            currentUserIsProfessional={currentUserIsProfessional}
-                            isOwnProfile={isOwnProfile}
-                            writableBusinesses={writableBusinesses}
-                            variant="primary-accent"
-                            onDolgu={dolgu}
-                          />
-                          <RezervasyonButton
-                            professionalId={profile.id}
-                            professionalName={displayName}
-                            isLoggedIn={isLoggedIn}
-                            currentUserIsProfessional={currentUserIsProfessional}
-                            isOwnProfile={isOwnProfile}
-                            writableBusinesses={writableBusinesses}
-                            variant="outline-ink"
-                            initialDate={dolgu.tarih}
-                          />
-                          {actionBar}
-                        </>
-                      )
+                    ? {
+                        professionalId: profile.id,
+                        professionalName: displayName,
+                        categorySlug: slug,
+                        isLoggedIn,
+                        currentUserIsProfessional,
+                        isOwnProfile,
+                        writableBusinesses,
+                        actionBar,
+                      }
                     : undefined
                 }
               />
