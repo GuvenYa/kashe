@@ -107,6 +107,18 @@ yetkisi YOK, eski tabloya dokunmaz. Etiket/ozet tek kaynak `app/lib/org-roles.ts
 yazilmaz); secim bileseni `app/components/ui/kurulus-rol-secici.tsx`. Davet/cikarma eski akista (FAZ 10 tek tablo). Bkz.
 `docs/envanter/20-faz8-event-os-modulleri.md` bolum 2.
 
+**Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,
+INSERT/UPDATE/DELETE `events.manage`. Kurallar DB tetikleyicisinde, uygulama YALNIZ anlasilir Turkce mesaj uretir (`app/lib/gorevler.ts`
+hata eslemesi; metinler `RAISE EXCEPTION` govdeleriyle birebir). Ayni kural iki yerde yazilmaz: "atanan kisi aktif uye mi", "etkinlik/havuz
+kaydi/bagli gorev ayni kurulus mu", "silme yalniz todo/cancelled" kontrolleri uygulama tarafinda TEKRARLANMAZ. `activity_logs` INSERT yalniz
+tetikleyici — uygulamanin yazma yetkisi yok, yuzey salt okunur; `internal.access_audit` (erisim denetimi) ile AYRI kalir. Modul kapisi
+`org_module_enabled(org,'tasks')`: ajansta varsayilan ACIK, kurumda kapali dogar ve `settings.manage` sahibi `/kurumsal/ayarlar`dan
+`org_module_set` RPC'siyle acar (uygulama `organization_modules`'a yazmaz). Bildirim tipi `task` (atama ve `blocked`; tetikleyici yazar,
+`link` `/etkinliklerim/<id>?sekme=gorevler` ya da `/kurulus/gorevler?gorev=<id>`); Edge Function kuyrugu `['rfp','proposal','task']`.
+Gorev listesi `/kurulus/gorevler?kurulus=<orgId>`; etkinlik sayfasi `/etkinliklerim/[id]` SEKMELI (`?sekme=`: genel · adaylar · ekip ·
+gorevler · aktivite) — Adaylar/Ekip yalniz AJANS kurulusu etkinliginde, kisisel etkinlik (organization_id NULL) sekmesiz eski duzende kalir.
+Alici kurulus yuzeyinde havuz ve ic maliyet gorunmez. FAZ 8a-P1 — bkz. `docs/envanter/20-faz8-event-os-modulleri.md` bolum 3.
+
 **Derleme dogrulamasi cikis koduyla DEGIL (24 Eylul 2026).** `npm run build` Windows'ta hata verse de exit 0 donebiliyor (`Failed to collect page data for /...` ciktisi gecti, `.next/BUILD_ID` olusmadi). Kanit = cikti sonunda route tablosu + hata satiri yok + `.next/BUILD_ID` var. Ayrica `'use client'` modulunden sunucu bilesenine sabit/veri import edilmez (sayfa verisi toplamayi kirar); ortak veri `'use client'` OLMAYAN bir `*-data.ts` modulunde tutulur (ornek `app/ilanlar/listings-data.ts`).
 
 **Find/Replace All kullanma.** Buyuk dosyalarda toplu degistirme yapiyi bozuyor. Tek tek BUL/DEGISTIR ya da dosyanin tamamini yeniden yazma (Ctrl+A, Delete, yapistir) yontemi kullanilir.

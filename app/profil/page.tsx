@@ -34,6 +34,8 @@ import {
 import { selamlama } from '@/app/lib/tarih';
 import { panelGunBugun, ayAraligi } from '@/app/lib/panel-gosterge-data';
 import { calcCommission, formatTRY } from '@/app/lib/premium';
+import { banaAtananGorevler } from '@/app/lib/gorev-data';
+import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -422,6 +424,10 @@ export default async function ProfilPage() {
     kpiEtkinlik = (etkinlikSonuc.data ?? []).length;
   }
 
+  // FAZ 8a — bana atanan acik gorevler (TUM kuruluslar; RLS kapsami).
+  // Kurulus uyeligi olmayan kullanicida sorgu bos doner, kart cizilmez.
+  const banaAtanan = orgs.length > 0 ? await banaAtananGorevler(5) : [];
+
   const menu = await panelMenusu();
 
 
@@ -548,6 +554,42 @@ export default async function ProfilPage() {
             href="/etkinliklerim"
           />
         </KpiSatir>
+      )}
+
+      {/* FAZ 8a — bana atanan gorevler. Kurulus bazli degil KISI bazli:
+          kullanici birden cok kurulusta gorev tasiyor olabilir. */}
+      {banaAtanan.length > 0 && (
+        <div className="mb-8">
+          <PanelKart
+            baslik="Bana atanan görevler"
+            tumuHref={`/kurulus/gorevler?kurulus=${banaAtanan[0].organization_id}&bana=1`}
+          >
+            <ul className="divide-y divide-line">
+              {banaAtanan.map((g) => (
+                <li
+                  key={g.id}
+                  className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink truncate">{g.title}</p>
+                    <p className="text-[11px] text-ink-50">
+                      {gorevDurumEtiketi(g.status)}
+                      {g.event?.title ? ` · ${g.event.title}` : ""}
+                    </p>
+                  </div>
+                  {g.event_id && (
+                    <Link
+                      href={`/etkinliklerim/${g.event_id}?sekme=gorevler`}
+                      className="kashe-tap shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
+                    >
+                      Aç →
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </PanelKart>
+        </div>
       )}
 
       {/* KURULUSLARIM — ajans VE kurumsal uyelikler. Rol etiketi uyelik

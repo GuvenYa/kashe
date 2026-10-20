@@ -68,6 +68,30 @@ export function kisaTarihMetni(iso: string | null | undefined): string | null {
   });
 }
 
+/**
+ * Goreli zaman (ornek: iki saat once, uc gun once) — aktivite akisi icin.
+ *
+ * Bir haftadan eskisi tam tarihe doner: kirk yedi gun once demek bir sey anlatmaz.
+ * Tam tarih zaten `title` ozniteliginde duruyor.
+ */
+export function goreliZaman(
+  iso: string | null | undefined,
+  simdi: Date = new Date()
+): string {
+  const d = gecerliTarih(iso);
+  if (!d) return '';
+  const saniye = Math.floor((simdi.getTime() - d.getTime()) / 1000);
+  if (saniye < 60) return 'az önce';
+  const dakika = Math.floor(saniye / 60);
+  if (dakika < 60) return `${dakika} dakika önce`;
+  const saat = Math.floor(dakika / 60);
+  if (saat < 24) return `${saat} saat önce`;
+  const gun = Math.floor(saat / 24);
+  if (gun === 1) return 'dün';
+  if (gun < 7) return `${gun} gün önce`;
+  return tarihMetni(iso) ?? '';
+}
+
 /** Istanbul saat dilimindeki saat (0-23). */
 export function istanbulSaati(simdi: Date = new Date()): number {
   const s = new Intl.DateTimeFormat('en-GB', {

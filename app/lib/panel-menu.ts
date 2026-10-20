@@ -115,6 +115,14 @@ function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
   if (org.canViewCrew) {
     maddeler.push({ href: '/ajans/ekipler', etiket: 'Ekipler', ikon: 'ekip' });
   }
+  // FAZ 8a: gorevler — `events.view` VE modul acik (ajansta varsayilan acik).
+  if (org.tasksEnabled) {
+    maddeler.push({
+      href: `/kurulus/gorevler?kurulus=${org.id}`,
+      etiket: 'Görevler',
+      ikon: 'gorev',
+    });
+  }
   if (kendiAjansi) {
     maddeler.push({
       href: '/profil/ekibim',
@@ -168,7 +176,19 @@ function kurumsalGrubu(org: CrewOrg, kendiKurumu: boolean): PanelMenuMaddesi[] {
       ikon: 'havuz',
     });
   }
+  // FAZ 8a: gorevler — modul kurumda KAPALI dogar, sahip/yonetici acar.
+  if (org.tasksEnabled) {
+    maddeler.push({
+      href: `/kurulus/gorevler?kurulus=${org.id}`,
+      etiket: 'Görevler',
+      ikon: 'gorev',
+    });
+  }
   maddeler.push({ href: '/odemelerim', etiket: 'Ödemeler', ikon: 'odeme' });
+  // FAZ 8a: modul ac/kapat yuzeyi; ajansta karsiligi yok (varsayilan acik).
+  if (org.canManageSettings) {
+    maddeler.push({ href: '/kurumsal/ayarlar', etiket: 'Ayarlar', ikon: 'ayar' });
+  }
   return maddeler;
 }
 

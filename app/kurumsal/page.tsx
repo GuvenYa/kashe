@@ -17,6 +17,8 @@ import { selamlama, tarihMetni, zamanMetni } from '@/app/lib/tarih';
 import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
+import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
+import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
   title: 'Kurumsal panel — Kashe',
@@ -151,6 +153,14 @@ export default async function KurumsalPanelPage() {
   );
   const uyeSayisi = (uyeSonuc.data ?? []).length;
 
+  // FAZ 8a — gorev sayilari (modul kurumda KAPALI dogar).
+  const gorevSayi = kurulus.tasksEnabled
+    ? await gorevSayilari(kurulus.id)
+    : null;
+  const gecikmisler = kurulus.tasksEnabled
+    ? await gecikmisGorevler(kurulus.id, 5)
+    : [];
+
   const rfpSatirlar: VeriSatiri[] = rfpler.slice(0, 5).map((r) => {
     const gelen = (r.proposals ?? []).filter((p) =>
       GELEN_TEKLIF.includes(p.status)
@@ -241,6 +251,45 @@ export default async function KurumsalPanelPage() {
         />
       </KpiSatir>
 
+      {/* FAZ 8a — gorev kutusu ayri satirda (KPI satiri dort kutuluk desen). */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {gorevSayi ? (
+          <>
+            <KpiKutu
+              etiket="Açık görev"
+              deger={gorevSayi.acik}
+              altNot="Tamamlanmamış"
+              vurgu={gorevSayi.acik > 0 ? 'accent' : 'none'}
+              href={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            />
+            <KpiKutu
+              etiket="Gecikmiş görev"
+              deger={gorevSayi.gecikmis}
+              altNot="Son tarihi geçti"
+              vurgu={gorevSayi.gecikmis > 0 ? 'accent' : 'none'}
+              href={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            />
+          </>
+        ) : (
+          <KpiKutu
+            etiket="Görevler"
+            deger="Kapalı"
+            altNot={
+              kurulus.canManageSettings ? (
+                <Link
+                  href="/kurumsal/ayarlar"
+                  className="text-brand-ink hover:underline"
+                >
+                  Ayarlar →
+                </Link>
+              ) : (
+                'Modül kapalı'
+              )
+            }
+          />
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <PanelKart
@@ -301,6 +350,27 @@ export default async function KurumsalPanelPage() {
               </Link>
             </div>
           </PanelKart>
+
+          {gecikmisler.length > 0 && (
+            <PanelKart
+              baslik="Gecikmiş görevler"
+              tumuHref={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            >
+              <ul className="divide-y divide-line">
+                {gecikmisler.map((g) => (
+                  <li key={g.id} className="py-2 first:pt-0 last:pb-0">
+                    <p className="text-sm text-ink truncate">{g.title}</p>
+                    <p className="text-[11px] text-danger">
+                      {gorevDurumEtiketi(g.status)}
+                      {g.assignee?.full_name
+                        ? ` · ${g.assignee.full_name}`
+                        : ''}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </PanelKart>
+          )}
 
           <PanelKart baslik="Ekip">
             <div className="flex items-baseline justify-between gap-3">

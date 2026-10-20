@@ -13,6 +13,14 @@ import {
   paraMetni,
 } from '@/app/ajans/teklifler/teklif-data';
 import { formatPrice } from '@/app/lib/profile-helpers';
+import { panelMenusu } from '@/app/lib/panel-menu';
+import { PanelKabugu } from '@/app/components/panel';
+import { GorevListesi } from '@/app/components/gorevler/gorev-listesi';
+import { GorevModuluKapali } from '@/app/components/gorevler/gorev-modul-kapali';
+import { AktiviteAkisi } from '@/app/components/gorevler/aktivite-akisi';
+import { gorevleriGetir, atanabilirler } from '@/app/lib/gorev-data';
+import { zamanMetni } from '@/app/lib/tarih';
+import { RFP_DURUM_ETIKETLERI } from '@/app/kurumsal/rfp/rfp-data';
 
 /** Butce araligi — ham sayi degil, formatPrice ile Kashe para bicimi. */
 function butceMetni(
@@ -142,10 +150,13 @@ function sorguDizesi(girdiler: [string, string | number | null | undefined][]) {
 
 export default async function EtkinlikDetayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ sekme?: string }>;
 }) {
   const { id } = await params;
+  const { sekme: sekmeParam } = await searchParams;
   const supabase = await createClient();
 
   const user = await getCachedUser();
@@ -663,42 +674,77 @@ export default async function EtkinlikDetayPage({
     });
   }
 
-  return (
+  // ---- FAZ 8a / D1b-1 — sekmeli duzen ----
+  //
+  // Kurulus etkinligi panel kabugunda ve SEKMELI; kisisel etkinlik
+  // (organization_id NULL) bugunku TopNav duzeninde ve sekmesiz kalir. Kisisel
+  // etkinlikte gorev/aktivite YOKTUR (ikisi de kurulus verisi), Adaylar ve Ekip
+  // ise bugun oldugu gibi calismaya devam eder: uretimde kullanicisi olan bir
+  // akis kapatilmaz (CLAUDE.md degismez kural 7).
+  const etkinlikKurulusu = etkinlik.organization_id
+    ? (ekipKuruluslari.find((o) => o.id === etkinlik.organization_id) ?? null)
+    : null;
+  const kurulusEtkinligi = !!etkinlikKurulusu;
+  const ajansEtkinligi = etkinlikKurulusu?.accountType === 'agency';
+
+  // K3 — bu etkinligin teklif talepleri (Genel sekmesi).
+  type EtkinlikRfp = {
+    id: string;
+    title: string;
+    status: string;
+    deadline: string | null;
+    davetler: { id: string; status: string }[] | null;
+  };
+  let etkinlikRfpleri: EtkinlikRfp[] = [];
+  if (kurulusEtkinligi) {
+    const { data: rfpData, error: rfpHatasi } = await supabase
+      .from('rfps')
+      .select('id, title, status, deadline, davetler:rfp_invites(id, status)')
+      .eq('event_id', id)
+      .order('created_at', { ascending: false });
+    if (rfpHatasi) console.error('[etkinlik] rfp', rfpHatasi.code, rfpHatasi.message);
+    etkinlikRfpleri = (rfpData ?? []) as unknown as EtkinlikRfp[];
+  }
+
+  // Gorevler — modul kapisi kurulus basina.
+  const gorevModulAcik = !!etkinlikKurulusu?.tasksEnabled;
+  const gorevler =
+    etkinlikKurulusu && gorevModulAcik
+      ? await gorevleriGetir({ orgId: etkinlikKurulusu.id, eventId: id })
+      : [];
+  const gorevAtananlari =
+    etkinlikKurulusu && gorevModulAcik
+      ? await atanabilirler(
+          etkinlikKurulusu.id,
+          etkinlikKurulusu.canViewTalent && etkinlikKurulusu.talentPoolEnabled
+        )
+      : [];
+
+  // Sekmeler: Adaylar/Ekip yalniz AJANS kurulusunda (K1 — alici kurulus havuzu
+  // ve ic maliyeti gormez).
+  const sekmeler: { anahtar: string; etiket: string; sayi?: number }[] = [
+    { anahtar: 'genel', etiket: 'Genel' },
+  ];
+  if (ajansEtkinligi) {
+    sekmeler.push({ anahtar: 'adaylar', etiket: 'Adaylar' });
+    sekmeler.push({ anahtar: 'ekip', etiket: 'Ekip' });
+  }
+  sekmeler.push({
+    anahtar: 'gorevler',
+    etiket: 'Görevler',
+    sayi: gorevler.length,
+  });
+  sekmeler.push({ anahtar: 'aktivite', etiket: 'Aktivite' });
+
+  const sekme = sekmeler.some((t) => t.anahtar === sekmeParam)
+    ? (sekmeParam as string)
+    : 'genel';
+
+  const menu = kurulusEtkinligi ? await panelMenusu() : [];
+  // Bolum JSX bloklari SABITLERE cikarildi: kisisel ve kurulus dallari ayni
+  // icerigi iki kez YAZMAZ (brief: Ihtiyaclar/Adaylar/Ekip kopyalanmaz).
+  const genelBloklariJsx = (
     <>
-      <TopNav />
-      <div className="bg-paper min-h-screen">
-        <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
-          <Link
-            href="/etkinliklerim"
-            className="kashe-tap text-sm text-brand-ink hover:underline"
-          >
-            ← Etkinliklerim
-          </Link>
-
-          <div className="mt-4 mb-8">
-            <div className="flex items-center gap-2 flex-wrap mb-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
-                {turAdi}
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-                {DURUM_ETIKETLERI[etkinlik.status] ?? etkinlik.status}
-              </span>
-            </div>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              {baslik}
-            </h1>
-            {rfpAcilabilir && (
-              <p className="mt-3">
-                <Link
-                  href={`/kurumsal/rfp?etkinlik=${etkinlik.id}`}
-                  className="kashe-tap text-sm text-brand-ink hover:underline"
-                >
-                  Teklif talebi aç (RFP)
-                </Link>
-              </p>
-            )}
-          </div>
-
           {/* Alanlar */}
           <div className="bg-card border border-line rounded-lg p-6">
             <dl className="space-y-3">
@@ -816,63 +862,6 @@ export default async function EtkinlikDetayPage({
             )}
           </div>
 
-          {/* Adaylar — FAZ 6/P1. Kosu yoksa ve sahip degilse bolum HIC render edilmez. */}
-          {(sonKosu || sahip) && (
-            <div className="mt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Adaylar
-              </p>
-              <AdayPaneli
-                eventId={etkinlik.id}
-                sahip={sahip}
-                durumUygun={durumUygun}
-                sonKosu={sonKosu}
-                oncekiKosular={oncekiKosular}
-                ajansAdaylari={ajansAdaylari}
-                rolGruplari={rolGruplari}
-              />
-            </div>
-          )}
-
-          {/* Ekip — FAZ 6/P2. Ekip yoksa ve sahip degilse bolum HIC render edilmez. */}
-          {(ekip || sahip) && (
-            <div className="mt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Ekip
-              </p>
-              <EkipPaneli
-                eventId={etkinlik.id}
-                sahip={sahip}
-                ekip={ekip}
-                uyeler={ekipUyeleri}
-                kapsam={kapsam}
-                rolBloklari={rolBloklari}
-                rolAdlari={rolSlugAdlari}
-                kurulusSecenekleri={ekipKuruluslari
-                  .filter((o) => o.canManageCrew)
-                  .map((o) => ({ id: o.id, name: o.name }))}
-                yazabilir={sahip || !!ekipKurulusu?.canManageCrew}
-                havuzdanEklenebilir={
-                  !!ekip?.organization_id &&
-                  !!ekipKurulusu?.canViewTalent &&
-                  !!ekipKurulusu?.talentPoolEnabled
-                }
-                maliyetGorulur={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canSeeRates
-                }
-                teklifYazilir={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canManageProposals
-                }
-                mevcutTeklif={mevcutTeklif}
-                rfpAcilabilir={rfpAcilabilir}
-                etkinlikBasligi={baslik}
-                maliyetYazilir={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
-                }
-              />
-            </div>
-          )}
-
           {/* Bagli kayitlar — etkinlikten baslatilan talep / ilan / sohbet */}
           <div className="mt-6">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
@@ -956,13 +945,264 @@ export default async function EtkinlikDetayPage({
             )}
           </div>
 
+          {/* K3 — bu etkinligin teklif talepleri */}
+          {etkinlikRfpleri.length > 0 && (
+            <div className="mt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                Teklif talepleri
+              </p>
+              <div className="space-y-3">
+                {etkinlikRfpleri.map((r) => {
+                  const davet = (r.davetler ?? []).length;
+                  const yanit = (r.davetler ?? []).filter(
+                    (d) => d.status === 'responded'
+                  ).length;
+                  return (
+                    <Link
+                      key={r.id}
+                      href={`/kurumsal/rfp/${r.id}`}
+                      className="block bg-card border border-line rounded-lg p-4 hover:border-brand-ink transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <span className="text-sm text-ink">{r.title}</span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                          {RFP_DURUM_ETIKETLERI[r.status] ?? r.status} ·{' '}
+                          {davet} davet · {yanit} yanıt
+                          {r.deadline
+                            ? ` · ${zamanMetni(r.deadline)}`
+                            : ''}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {etkinlik.event_spec_versions?.version_no != null && (
             <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
               Etkinlik tanımı · sürüm {etkinlik.event_spec_versions.version_no}
             </p>
           )}
-        </div>
-      </div>
     </>
+  );
+
+  const adaylarJsx = (
+    <>
+          {/* Adaylar — FAZ 6/P1. Kosu yoksa ve sahip degilse bolum HIC render edilmez. */}
+          {(sonKosu || sahip) && (
+            <div className="mt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                Adaylar
+              </p>
+              <AdayPaneli
+                eventId={etkinlik.id}
+                sahip={sahip}
+                durumUygun={durumUygun}
+                sonKosu={sonKosu}
+                oncekiKosular={oncekiKosular}
+                ajansAdaylari={ajansAdaylari}
+                rolGruplari={rolGruplari}
+              />
+            </div>
+          )}
+    </>
+  );
+
+  const ekipJsx = (
+    <>
+          {/* Ekip — FAZ 6/P2. Ekip yoksa ve sahip degilse bolum HIC render edilmez. */}
+          {(ekip || sahip) && (
+            <div className="mt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+                Ekip
+              </p>
+              <EkipPaneli
+                eventId={etkinlik.id}
+                sahip={sahip}
+                ekip={ekip}
+                uyeler={ekipUyeleri}
+                kapsam={kapsam}
+                rolBloklari={rolBloklari}
+                rolAdlari={rolSlugAdlari}
+                kurulusSecenekleri={ekipKuruluslari
+                  .filter((o) => o.canManageCrew)
+                  .map((o) => ({ id: o.id, name: o.name }))}
+                yazabilir={sahip || !!ekipKurulusu?.canManageCrew}
+                havuzdanEklenebilir={
+                  !!ekip?.organization_id &&
+                  !!ekipKurulusu?.canViewTalent &&
+                  !!ekipKurulusu?.talentPoolEnabled
+                }
+                maliyetGorulur={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canSeeRates
+                }
+                teklifYazilir={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canManageProposals
+                }
+                mevcutTeklif={mevcutTeklif}
+                rfpAcilabilir={rfpAcilabilir}
+                etkinlikBasligi={baslik}
+                maliyetYazilir={
+                  !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
+                }
+              />
+            </div>
+          )}
+    </>
+  );
+  // ---- Kisisel etkinlik: bugunku duzen, sekme YOK ----
+  if (!kurulusEtkinligi) {
+    return (
+      <>
+        <TopNav />
+        <div className="bg-paper min-h-screen">
+          <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
+            <Link
+              href="/etkinliklerim"
+              className="kashe-tap text-sm text-brand-ink hover:underline"
+            >
+              ← Etkinliklerim
+            </Link>
+
+            <div className="mt-4 mb-8">
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
+                  {turAdi}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+                  {DURUM_ETIKETLERI[etkinlik.status] ?? etkinlik.status}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl text-ink leading-tight">
+                {baslik}
+              </h1>
+            </div>
+
+            {genelBloklariJsx}
+            {adaylarJsx}
+            {ekipJsx}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ---- Kurulus etkinligi: panel kabugu + sekmeler ----
+  return (
+    <PanelKabugu
+      menu={menu}
+      hesap={{
+        ad: etkinlikKurulusu!.name,
+        altSatir: ajansEtkinligi ? 'Ajans hesabı' : 'Kurumsal hesap',
+        rozet: ajansEtkinligi ? 'Ajans' : 'Kurumsal',
+      }}
+      ustBaslik={{
+        eyebrow: 'Etkinlik',
+        baslik: baslik,
+        sagAlan: (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink bg-brand-ink/8 px-2 py-0.5 rounded">
+              {turAdi}
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+              {DURUM_ETIKETLERI[etkinlik.status] ?? etkinlik.status}
+            </span>
+            {/* Alici (kurum) etkinliginde birincil eylem teklif talebi acmaktir;
+                ajans etkinliginde eslestirme akisi Adaylar sekmesinde. */}
+            {rfpAcilabilir &&
+              (ajansEtkinligi ? (
+                <Link
+                  href={`/kurumsal/rfp?etkinlik=${etkinlik.id}`}
+                  className="kashe-tap text-sm text-brand-ink hover:underline"
+                >
+                  Teklif talebi aç (RFP)
+                </Link>
+              ) : (
+                <Link
+                  href={`/kurumsal/rfp?etkinlik=${etkinlik.id}`}
+                  className="px-4 py-2 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+                >
+                  Teklif talebi aç
+                </Link>
+              ))}
+          </div>
+        ),
+      }}
+    >
+      <div className="max-w-4xl">
+        <Link
+          href="/etkinliklerim"
+          className="kashe-tap text-sm text-brand-ink hover:underline"
+        >
+          ← Etkinliklerim
+        </Link>
+
+        {/* Sekme seridi — telefonda yatay kaydirilir */}
+        <div
+          role="tablist"
+          aria-label="Etkinlik bölümleri"
+          className="mt-4 flex items-center gap-1 overflow-x-auto border-b border-line mb-6"
+        >
+          {sekmeler.map((t) => {
+            const secili = t.anahtar === sekme;
+            return (
+              <Link
+                key={t.anahtar}
+                role="tab"
+                aria-selected={secili}
+                href={`/etkinliklerim/${etkinlik.id}?sekme=${t.anahtar}`}
+                className={
+                  secili
+                    ? 'shrink-0 flex items-center gap-1.5 px-3 py-2.5 border-b-2 border-brand-ink font-mono text-[11px] uppercase tracking-[0.14em] text-brand-ink'
+                    : 'shrink-0 flex items-center gap-1.5 px-3 py-2.5 border-b-2 border-transparent font-mono text-[11px] uppercase tracking-[0.14em] text-ink-50 hover:text-ink transition-colors'
+                }
+              >
+                {t.etiket}
+                {!!t.sayi && t.sayi > 0 && (
+                  <span className="font-mono text-[10px] text-ink-72 bg-paper-2 border border-line px-1.5 rounded-full">
+                    {t.sayi}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {sekme === 'genel' && <div>{genelBloklariJsx}</div>}
+        {sekme === 'adaylar' && ajansEtkinligi && <div>{adaylarJsx}</div>}
+        {sekme === 'ekip' && ajansEtkinligi && <div>{ekipJsx}</div>}
+
+        {sekme === 'gorevler' && (
+          <div>
+            {!gorevModulAcik ? (
+              <GorevModuluKapali
+                ayarlarAcilabilir={!!etkinlikKurulusu?.canManageSettings}
+              />
+            ) : (
+              <GorevListesi
+                organizationId={etkinlikKurulusu!.id}
+                gorevler={gorevler}
+                yazabilir={!!etkinlikKurulusu?.canManageEvents}
+                sabitEventId={etkinlik.id}
+                atanabilirler={gorevAtananlari}
+                etkinlikSecenekleri={[]}
+                kullaniciId={user.id}
+              />
+            )}
+          </div>
+        )}
+
+        {sekme === 'aktivite' && (
+          <div>
+            <AktiviteAkisi
+              orgId={etkinlikKurulusu!.id}
+              eventId={etkinlik.id}
+            />
+          </div>
+        )}
+      </div>
+    </PanelKabugu>
   );
 }

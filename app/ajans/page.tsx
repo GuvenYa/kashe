@@ -17,6 +17,8 @@ import { selamlama, tarihMetni, zamanMetni } from '@/app/lib/tarih';
 import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
+import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
+import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
   title: 'Ajans paneli — Kashe',
@@ -40,6 +42,7 @@ type DavetSatiri = {
   id: string;
   status: string;
   proposal_id: string | null;
+  provider_id: string;
   rfp: {
     id: string;
     title: string;
@@ -108,7 +111,7 @@ export default async function AjansPanelPage() {
     supabase
       .from('rfp_invites')
       .select(
-        `id, status, proposal_id,
+        `id, status, proposal_id, provider_id,
          rfp:rfps(
            id, title, status, deadline,
            buyer:organizations!rfps_organization_id_fkey(display_name)
@@ -154,7 +157,14 @@ export default async function AjansPanelPage() {
   if (davetSonuc.error) console.error('[ajans panel] davetler', davetSonuc.error);
   if (teklifSonuc.error) console.error('[ajans panel] teklifler', teklifSonuc.error);
 
-  const davetler = (davetSonuc.data ?? []) as unknown as DavetSatiri[];
+  // D1b notu 2: `rfp_invites` RLS kurulusun saglayicisina gelen davetleri
+  // aciyor ama kullanici birden cok kurulusun uyesi olabilir; sayim BU
+  // kurulusun saglayici kaydiyla (`legacy_profile_id`) suzulur. Kopru alan
+  // yok ise (eski kurulus) suzgec uygulanmaz ve RLS kapsami gecerli kalir.
+  const tumDavetler = (davetSonuc.data ?? []) as unknown as DavetSatiri[];
+  const davetler = kurulus.legacyProfileId
+    ? tumDavetler.filter((d) => d.provider_id === kurulus.legacyProfileId)
+    : tumDavetler;
   const teklifler = (teklifSonuc.data ?? []) as unknown as TeklifSatiri[];
   const ekipler = (ekipSonuc.data ?? []) as { id: string; status: string }[];
   const yaklasan = (yaklasanSonuc.data ?? []) as unknown as EtkinlikSatiri[];
@@ -168,6 +178,14 @@ export default async function AjansPanelPage() {
       .eq('organization_id', kurulus.id);
     havuzSayisi = (havuz ?? []).length;
   }
+
+  // FAZ 8a — gorev sayilari ve gecikmis gorevler (modul acikken).
+  const gorevSayi = kurulus.tasksEnabled
+    ? await gorevSayilari(kurulus.id)
+    : null;
+  const gecikmisler = kurulus.tasksEnabled
+    ? await gecikmisGorevler(kurulus.id, 5)
+    : [];
 
   const acikDavetler = davetler.filter(
     (d) =>
@@ -282,6 +300,46 @@ export default async function AjansPanelPage() {
         />
       </KpiSatir>
 
+      {/* FAZ 8a — gorev kutusu ayri satirda: KPI satiri dort kutuluk bir
+          desen (DESIGN.md bolum 9), besinci kutu duzeni bozardi. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {gorevSayi ? (
+          <>
+            <KpiKutu
+              etiket="Açık görev"
+              deger={gorevSayi.acik}
+              altNot="Tamamlanmamış"
+              vurgu={gorevSayi.acik > 0 ? 'accent' : 'none'}
+              href={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            />
+            <KpiKutu
+              etiket="Gecikmiş görev"
+              deger={gorevSayi.gecikmis}
+              altNot="Son tarihi geçti"
+              vurgu={gorevSayi.gecikmis > 0 ? 'accent' : 'none'}
+              href={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            />
+          </>
+        ) : (
+          <KpiKutu
+            etiket="Görevler"
+            deger="Kapalı"
+            altNot={
+              kurulus.canManageSettings ? (
+                <Link
+                  href="/kurumsal/ayarlar"
+                  className="text-brand-ink hover:underline"
+                >
+                  Ayarlar →
+                </Link>
+              ) : (
+                'Modül kapalı'
+              )
+            }
+          />
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <PanelKart
@@ -354,6 +412,29 @@ export default async function AjansPanelPage() {
               )}
             </div>
           </PanelKart>
+
+          {gecikmisler.length > 0 && (
+            <PanelKart
+              baslik="Gecikmiş görevler"
+              tumuHref={`/kurulus/gorevler?kurulus=${kurulus.id}`}
+            >
+              <ul className="divide-y divide-line">
+                {gecikmisler.map((g) => (
+                  <li key={g.id} className="py-2 first:pt-0 last:pb-0">
+                    <p className="text-sm text-ink truncate">{g.title}</p>
+                    <p className="text-[11px] text-danger">
+                      {gorevDurumEtiketi(g.status)}
+                      {g.assignee?.full_name
+                        ? ` · ${g.assignee.full_name}`
+                        : g.havuz?.name
+                          ? ` · ${g.havuz.name}`
+                          : ''}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </PanelKart>
+          )}
 
           {kurulus.canViewFinance && (
             <PanelKart baslik="Kazançlar">

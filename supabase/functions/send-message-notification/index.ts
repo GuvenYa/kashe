@@ -32,7 +32,7 @@ interface ProfileRow {
 }
 
 /**
- * Hijyen 01 — uygulama ici bildirimler (FAZ 7b: 'rfp' / 'proposal').
+ * Hijyen 01 — uygulama ici bildirimler (FAZ 7b: 'rfp' / 'proposal'; FAZ 8a: 'task').
  * Ayni cron bu tablodaki satirlari da e-postalar; yeni fonksiyon/anahtar yok.
  */
 interface PendingNotification {
@@ -93,7 +93,7 @@ function buildEmailHtml(params: {
 }
 
 /**
- * Bildirim e-postasi (rfp / proposal) — mesaj sablonuyla AYNI kabuk
+ * Bildirim e-postasi (rfp / proposal / task) — mesaj sablonuyla AYNI kabuk
  * (logo, renkler, kart). Govde tek paragraf: `notifications.body`.
  */
 function buildNotificationHtml(params: {
@@ -302,8 +302,8 @@ async function processMessages(): Promise<BlokSonucu> {
 }
 
 /**
- * BILDIRIMLER (Hijyen 01) — `notifications` tablosundaki 'rfp' / 'proposal'
- * satirlari. Mesajdan farklar:
+ * BILDIRIMLER (Hijyen 01) — `notifications` tablosundaki 'rfp' / 'proposal' /
+ * 'task' satirlari. Mesajdan farklar:
  *   - Cevrimici/okundu beklemesi YOK (seyrek ve onemli bildirimler).
  *   - 2 dakika gecikme: ayni islemden dogan birden cok bildirim tek taramada gelsin.
  *   - `read_at` dolu olsa da gonderilir; TEK istisna bayat kayit: okunmus VE
@@ -318,7 +318,7 @@ async function processNotifications(): Promise<BlokSonucu> {
   const { data: pending, error: pendingError } = await supabase
     .from('notifications')
     .select('id, user_id, type, link, body, read_at, created_at')
-    .in('type', ['rfp', 'proposal'])
+    .in('type', ['rfp', 'proposal', 'task'])
     .is('email_notified_at', null)
     .lt('created_at', twoMinAgo)
     .order('created_at', { ascending: true })
@@ -378,7 +378,9 @@ async function processNotifications(): Promise<BlokSonucu> {
       : notif.body;
     const subject = notif.type === 'rfp'
       ? `Teklif talebi · ${ozet}`
-      : `Teklif · ${ozet}`;
+      : notif.type === 'task'
+        ? `Görev · ${ozet}`
+        : `Teklif · ${ozet}`;
     const targetUrl = `${APP_URL}${notif.link}`;
 
     const result = await sendEmail({

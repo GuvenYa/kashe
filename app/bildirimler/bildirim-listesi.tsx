@@ -66,6 +66,8 @@ const TYPE_LABELS: Record<string, string> = {
   // FAZ 7b
   rfp: 'Teklif talebi',
   proposal: 'Teklif',
+  // FAZ 8a
+  task: 'Görev',
 };
 
 /**

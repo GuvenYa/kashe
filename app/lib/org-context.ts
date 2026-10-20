@@ -31,6 +31,7 @@ type UyelikSatiri = {
     id: string;
     display_name: string | null;
     account_type: string;
+    legacy_profile_id: string | null;
   } | null;
 };
 
@@ -47,7 +48,7 @@ export async function getTalentPoolContext(): Promise<{
   const { data, error } = await supabase
     .from('organization_memberships')
     .select(
-      'organization_id, role, status, organizations(id, display_name, account_type)'
+      'organization_id, role, status, organizations(id, display_name, account_type, legacy_profile_id)'
     )
     .eq('user_id', user.id)
     .eq('status', 'active');
@@ -142,6 +143,17 @@ export type CrewOrg = {
   canViewFinance: boolean;
   /** Uyelik rolu (`organization_memberships.role`) — etiket icin; yetki kaynagi DEGIL. */
   role: string;
+  /** FAZ 8a: `tasks` modulu acik mi (ajansta varsayilan acik, kurumda sahip acar). */
+  tasksEnabled: boolean;
+  /** FAZ 8a: `settings.manage` — modul ac/kapat, ayarlar sayfasi. */
+  canManageSettings: boolean;
+  /**
+   * FAZ 8a / D1b notu 2: kurulusun saglayici kaydi (`organizations.legacy_profile_id`).
+   *
+   * `rfp_invites.provider_id` PROFIL kimligini tasiyor; gosterge sayimini
+   * kurulus kimligiyle suzmek mumkun degil, bu alan koprudur.
+   */
+  legacyProfileId: string | null;
 };
 
 /**
@@ -163,7 +175,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   const { data, error } = await supabase
     .from('organization_memberships')
     .select(
-      'organization_id, role, status, organizations(id, display_name, account_type)'
+      'organization_id, role, status, organizations(id, display_name, account_type, legacy_profile_id)'
     )
     .eq('user_id', user.id)
     .eq('status', 'active');
@@ -174,7 +186,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   }
 
   const orgs: CrewOrg[] = [];
-  // Kurulus sayisi kucuk (bugun 1); dokuz yetki + bir modul RPC'si kurulus basina.
+  // Kurulus sayisi kucuk (bugun 1); on bir yetki + iki modul RPC'si kurulus basina.
   for (const uyelik of (data ?? []) as unknown as UyelikSatiri[]) {
     const org = uyelik.organizations;
     if (!org) continue;
@@ -191,6 +203,8 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       etkinlikGorebilir,
       etkinlikYonetir,
       finansGorebilir,
+      ayarYonetir,
+      gorevModulu,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -237,6 +251,14 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
           p_org_id: org.id,
           p_permission: 'finance.view',
         }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'settings.manage',
+        }),
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'tasks',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -265,6 +287,9 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       canManageEvents: etkinlikYonetir.data === true,
       canViewFinance: finansGorebilir.data === true,
       role: uyelik.role,
+      tasksEnabled: gorevModulu.data === true,
+      canManageSettings: ayarYonetir.data === true,
+      legacyProfileId: org.legacy_profile_id ?? null,
     });
   }
 
