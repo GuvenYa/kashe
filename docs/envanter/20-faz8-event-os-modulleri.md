@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** 8-U KAPANDI (20 Ekim); **8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde (21 Ekim)**; sirada 8a-P1. Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; sirada D1b-2 (ticari sayfalar), sonra 8b CRM. Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -109,6 +109,25 @@ atama: uye listesi + ajansta havuz kayitlari; son tarih; kilometre tasi rozeti; 
 (ayni bilesen, etkinlige sabit) ve **Aktivite** akisi (activity_logs: etkinlik + gorevleri), menu "Gorevler" (modul acik + events.view),
 bildirim etiketi `task`, business icin Ayarlar/Moduller karti ("Gorevler" ac/kapat; `settings.manage`). Alici yuzeyinde havuz atamasi hic
 render edilmez. Tarihler Istanbul (`app/lib/tarih.ts`), tarih kutulari `takvimiAc`.
+
+**8a-P1 + D1b-1 KAPANDI (21 Ekim 2026; dal `tasarim/d1b-8a`, onizleme turu Claude):** Gorevler + Aktivite arayuzu plandaki gibi:
+`app/lib/gorevler.ts` (durum/etiket/aktivite cumlesi/hata eslemesi), `gorev-data.ts`, `gorev-actions.ts` (dogrudan tablo, RLS; 0 satir = yetki
+hatasi), `modul-actions.ts` (`org_module_set`), `app/components/gorevler/*` (liste + hizli ekle + filtreler + satir menusu, form, aktivite
+akisi, modul kapali), `/kurulus/gorevler` (KPI: acik · bana atanan · gecikmis · bu hafta biten), `/kurumsal/ayarlar` (Moduller: Gorevler
+ac/kapat, iki yonlu onay), etkinlik sayfasi panel kabugunda sekmeli (ajans: Genel · Adaylar · Ekip · Gorevler · Aktivite; kurum: Genel ·
+Gorevler · Aktivite — Adaylar/Ekip/ic maliyet yok; kisisel etkinlik eski duzen), Genel'de "Teklif talebi ac" birincil dugme + etkinligin
+RFP'leri, gostergelerde Acik/Gecikmis gorev kutulari, `/profil` "Bana atanan", yan menuye Gorevler + Ayarlar, bildirim etiketi GOREV, Edge
+Function `task` tipi. Claude Code sapmalari (10) kabul; Claude duzeltmesi: `zamanCoz` dilimsiz `datetime-local` degerini Istanbul (+03:00)
+sayar (sunucu UTC'de 3 saat kayiyordu). **Tur:** gmail — lansmanda "Sahne kurulumu" (atama Test Pro, 15 Kas 10:00, kilometre tasi),
+Yapilacak → Devam ediyor → Engellendi → Tamamlandi, done silme DB'den "Yalniz yapilacak ya da iptal..." ile red, Aktivite 6 satir,
+`/kurulus/gorevler` KPI 1/0/0/1, `/ajans` lansman artik yaklasan etkinliklerde (DB/02). hotmail — bildirimler "Sana gorev atandi" +
+"Gorev engellendi" (GOREV), baglanti sekmeye dusuyor, izleyici salt okunur. testguven — Adaylar/Ekip yok, "Teklif talebi ac" + RFP listesi,
+Gorevler sekmesi "modul kapali → Ayarlar'dan ac", ayarlardan ac → gorev eklendi → kapat (gorev kaldi). Konsol 0.
+**Kucuk bulgular (D1b-2 gorevine):** (1) bagimlilik yokken satirda bos "↳ 'ten sonra" eki; (2) etkinlik basligi rozet/CTA ile ayni satirda
+sikisip kelime kelime iniyor — rozetler altta; (3) hizli ekle "Kaydediliyor..." 6-8 sn (5 yol revalidate) — iyimser ekleme; (4) aktivite
+"Test Pro'ye atadi" — ek yerine "atanan: Test Pro" kalibi; (5) filtre listesinde uye/havuz kaydi ayni adla (form eki filtreye); (6) `/profil`
+"Bana atanan" karti acik gorev 0 iken gizli — bos durumla gorunsun; (7) yan menude ayni href'li maddeler (Etkinlikler) iki grupta birden
+aktif; (8) cok kurulus uyesinde alt hesap karti o anki kurulusu gosteriyor (kisi adi yok).
 
 ## 4. 8b — CRM (plan; sonra)
 
