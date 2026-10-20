@@ -114,7 +114,7 @@ export default async function AjansPanelPage() {
         `id, status, proposal_id, provider_id,
          rfp:rfps(
            id, title, status, deadline,
-           buyer:organizations!rfps_organization_id_fkey(display_name)
+           buyer:organizations_public!rfps_organization_id_fkey(display_name)
          )`
       )
       .order('created_at', { ascending: false }),
@@ -122,7 +122,7 @@ export default async function AjansPanelPage() {
       .from('proposals')
       .select(
         `id, title, status, created_at, rfp_id, client_name,
-         buyer:organizations!proposals_buyer_organization_id_fkey(display_name),
+         buyer:organizations_public!proposals_buyer_organization_id_fkey(display_name),
          current_version:proposal_versions!proposals_current_version_fkey(total_amount)`
       )
       .eq('seller_organization_id', kurulus.id)

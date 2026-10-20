@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
@@ -35,20 +36,22 @@ export default async function AjansHavuzPage({
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   const { orgs } = await getTalentPoolContext();
 
   if (orgs.length === 0) {
     return (
-      <>
-        <TopNav />
-        <main className="bg-paper min-h-screen px-6 md:px-12 py-16">
-          <div className="max-w-2xl mx-auto text-center">
+      <PanelKabugu {...kabuk}>
+        <div className="max-w-2xl">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
               Erişim yok
             </p>
             <h1 className="font-display text-4xl text-ink mb-3">
               Yetenek havuzu{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 ajans hesapları
               </em>{' '}
               içindir
@@ -64,9 +67,8 @@ export default async function AjansHavuzPage({
               Profile dön
             </Link>
           </div>
-        </main>
-      </>
-    );
+      </PanelKabugu>
+  );
   }
 
   const params = await searchParams;
@@ -167,17 +169,16 @@ export default async function AjansHavuzPage({
     saglayicilar = (sagRes ?? []) as unknown as HavuzSaglayici[];
   }
 
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           <header className="mb-8">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
               {secili.name}
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 Yetenek
               </em>{' '}
               havuzu
@@ -223,7 +224,6 @@ export default async function AjansHavuzPage({
             saglayicilar={saglayicilar}
           />
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

@@ -1,4 +1,5 @@
 'use client';
+import { formatTL } from '@/app/lib/para';
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,7 +25,7 @@ function parsePrice(s: string): number | null {
 }
 
 function formatPrice(price: number): string {
-  return `₺${Math.round(price).toLocaleString('tr-TR')}`;
+  return formatTL(price);
 }
 
 export function AddonManager({ serviceId, addons }: Props) {
@@ -201,7 +202,7 @@ export function AddonManager({ serviceId, addons }: Props) {
               inputMode="decimal"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="Fiyat ₺"
+              placeholder="Fiyat (TL)"
               className="w-28 px-3 py-2 bg-card border border-line rounded text-sm text-ink focus:outline-none focus:border-brand-ink transition"
             />
           </div>

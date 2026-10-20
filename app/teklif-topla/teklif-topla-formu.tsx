@@ -585,7 +585,7 @@ export function TeklifToplaFormu({
                   inputMode="decimal"
                   value={budgetMin}
                   onChange={(e) => setBudgetMin(e.target.value)}
-                  placeholder="Min ₺"
+                  placeholder="Min TL"
                   className={inputClass}
                 />
                 <input
@@ -593,7 +593,7 @@ export function TeklifToplaFormu({
                   inputMode="decimal"
                   value={budgetMax}
                   onChange={(e) => setBudgetMax(e.target.value)}
-                  placeholder="Max ₺"
+                  placeholder="Max TL"
                   className={inputClass}
                 />
               </div>

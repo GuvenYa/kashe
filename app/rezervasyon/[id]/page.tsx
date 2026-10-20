@@ -1,10 +1,12 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { paraBirimliMetin } from '@/app/lib/para';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
-import { getEventTypeLabel } from '@/app/mesajlar/data';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
 import { getCrewContext } from '@/app/lib/org-context';
 
@@ -89,9 +91,10 @@ function pickTone(id: string) {
   return TONES[h % TONES.length];
 }
 
+// Para bicimi TEK KAYNAK: app/lib/para.ts ("12.000 TL"). Yerel sembol
+// eslemesi KALDIRILDI — iki sayfa iki farkli bicim uretiyordu.
 function formatPrice(amount: number, currency: string) {
-  const symbol = currency === 'TRY' ? '₺' : currency + ' ';
-  return `${symbol}${Math.round(amount).toLocaleString('tr-TR')}`;
+  return paraBirimliMetin(amount, currency);
 }
 
 function formatEventDate(iso: string | null): string {
@@ -190,7 +193,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
         version_no, total_amount, approved_by_name, approved_at,
         proposal:proposals!proposal_versions_proposal_id_fkey (
           id, title, client_name, client_email, seller_organization_id,
-          seller:organizations!proposals_seller_organization_id_fkey (display_name)
+          seller:organizations_public!proposals_seller_organization_id_fkey (display_name)
         )
       )
     `
@@ -272,11 +275,13 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   const backLabel =
     teklifSekli || viewer === 'customer' ? 'Rezervasyonlarım' : 'Takvimim';
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-10 md:py-14">
-        <div className="max-w-3xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-3xl">
           {/* Geri linki */}
           <Link
             href={backHref}
@@ -451,7 +456,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                     Tür
                   </dt>
                   <dd className="text-base text-ink">
-                    {getEventTypeLabel(booking.event_type) ?? booking.event_type}
+                    {etkinlikTuruEtiketi(booking.event_type)}
                   </dd>
                 </div>
               )}
@@ -588,7 +593,6 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               />
             ))}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

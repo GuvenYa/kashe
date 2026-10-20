@@ -1,7 +1,9 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { formatTRY } from '@/app/lib/premium';
 
@@ -108,11 +110,13 @@ export default async function OdemelerimPage() {
   const totalPaid = completed.reduce((s, b) => s + (b.total_amount ?? 0), 0);
   const totalUpcoming = upcoming.reduce((s, b) => s + (b.total_amount ?? 0), 0);
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-12 md:py-16">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           {/* Header */}
           <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
@@ -202,7 +206,7 @@ export default async function OdemelerimPage() {
                             </p>
                             {b.event_type && (
                               <p className="text-[12px] text-ink-50">
-                                {b.event_type}
+                                {etkinlikTuruEtiketi(b.event_type)}
                               </p>
                             )}
                           </td>
@@ -224,7 +228,6 @@ export default async function OdemelerimPage() {
             </>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

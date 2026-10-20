@@ -2,7 +2,8 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
@@ -120,11 +121,13 @@ export default async function TakvimimPage() {
     }
   }
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-12 md:py-16">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           <div className="mb-10 md:mb-12">
             <Eyebrow variant="inline" className="mb-3">
               İşin
@@ -278,7 +281,6 @@ export default async function TakvimimPage() {
             </div>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

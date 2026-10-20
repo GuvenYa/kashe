@@ -1,4 +1,5 @@
 'use client';
+import { formatTL } from '@/app/lib/para';
 
 import { useState } from 'react';
 import { formatPriceRange, formatDuration } from '@/app/lib/profile-helpers';
@@ -16,7 +17,7 @@ type Props = {
 };
 
 function formatPrice(price: number): string {
-  return `₺${Math.round(price).toLocaleString('tr-TR')}`;
+  return formatTL(price);
 }
 
 export function HizmetSecici({

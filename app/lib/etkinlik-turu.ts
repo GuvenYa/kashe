@@ -28,6 +28,16 @@ import { CATEGORY_FILTERS } from '@/app/lib/filter-config';
  * icin "Nisan / Kina" ya da "Nisan"); ILK gorulen kazanir, sonrakiler ezilmez
  * — boylece cikti kararlidir.
  */
+/**
+ * Kaynaklarda bulunmayan ya da kategoriye gore farkli yazilan degerlerin
+ * KANONIK karsiligi. `fashion` filter-config icinde "Moda / Model" ve
+ * "Moda / Kampanya" olarak iki kez geciyor; ikisi de cekim turu, arayuzde
+ * tek bir ad gorunmesi gerekiyor.
+ */
+const YEREL_EK: Record<string, string> = {
+  fashion: 'Moda / defile',
+};
+
 let kategoriHaritasi: Map<string, string> | null = null;
 
 function kategoriEtiketleri(): Map<string, string> {
@@ -57,5 +67,10 @@ export function etkinlikTuruEtiketi(
 ): string | null {
   const v = (value ?? '').trim();
   if (!v) return null;
-  return getEventTypeLabel(v) ?? kategoriEtiketleri().get(v) ?? ilkHarfBuyuk(v);
+  return (
+    getEventTypeLabel(v) ??
+    YEREL_EK[v] ??
+    kategoriEtiketleri().get(v) ??
+    ilkHarfBuyuk(v)
+  );
 }

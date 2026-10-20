@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 import { getCachedUser } from '@/app/lib/auth';
 import { BriefEkButonu } from './brief-ek-butonu';
@@ -108,18 +109,20 @@ export default async function TeklifTalepleriPage() {
     (r: any) => r.status === 'sent' || r.status === 'viewed'
   ).length;
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-    <TopNav />
-    <div className="bg-paper min-h-screen">
-      <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-3xl">
         <header className="mb-10">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
             Teklif Talepleri
           </p>
           <h1 className="font-display text-4xl text-ink leading-tight">
             Sana gelen{' '}
-            <em className="text-brand-ink not-italic italic font-medium">
+            <em className="not-italic font-medium text-brand-accent">
               teklif talepleri
             </em>
           </h1>
@@ -236,7 +239,6 @@ export default async function TeklifTalepleriPage() {
           </div>
         )}
       </div>
-    </div>
-    </>
+    </PanelKabugu>
   );
 }

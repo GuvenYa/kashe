@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { EkibimPaneli } from './ekibim-paneli';
 import type {
@@ -79,11 +80,13 @@ export default async function EkibimPage() {
 
   const invitations = (invitationsData ?? []) as AgencyInvitation[];
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-4xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-4xl">
           <Link
             href="/profil"
             className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink mb-8 transition-colors"
@@ -96,7 +99,7 @@ export default async function EkibimPage() {
               Yönetim
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 Ekibim
               </em>
             </h1>
@@ -123,7 +126,6 @@ export default async function EkibimPage() {
             kurulusRolleri={kurulusRolleri}
           />
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

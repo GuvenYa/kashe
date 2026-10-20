@@ -205,9 +205,11 @@ export function GorevListesi({
           className={SECIM}
         >
           <option value="">Tüm atananlar</option>
+          {/* Etiket FORMDAKIYLE AYNI ("Test Pro — Izleyici"): ayni kisi iki
+              listede iki farkli yazilirsa kullanici ayni kaydi iki sani. */}
           {atanabilirler.map((a) => (
             <option key={`${a.tur}:${a.id}`} value={`${a.tur}:${a.id}`}>
-              {a.ad}
+              {a.ad} — {a.altNot}
             </option>
           ))}
         </select>

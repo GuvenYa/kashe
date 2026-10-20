@@ -172,7 +172,9 @@ export function aktiviteMetni(
     const yeniUye = ad(uye?.to);
     const yeniHavuz = ad(havuz?.to);
     const hedef = yeniUye ?? yeniHavuz;
-    if (hedef) return `${aktorAdi} görevi ${hedef}'ye atadı`;
+    // EK ALMAYAN KALIP: "Test Pro'ye" / "Guven'e" gibi ekler ada gore
+    // degisiyor ve kod bunu bilemiyor; ok isaretiyle ek gereksiz kalir.
+    if (hedef) return `${aktorAdi} görevin atananını değiştirdi → ${hedef}`;
     // Atama KALDIRILDI (to boş, from dolu)
     if (uye?.to == null && havuz?.to == null) {
       return `${aktorAdi} görevin atamasını kaldırdı`;
@@ -191,7 +193,7 @@ export function aktiviteMetni(
   if (sonTarih) {
     const yeni = tarihKisa(sonTarih.to);
     return yeni
-      ? `${aktorAdi} son tarihi ${yeni} yaptı`
+      ? `${aktorAdi} son tarihi değiştirdi → ${yeni}`
       : `${aktorAdi} son tarihi kaldırdı`;
   }
   const kilometre = cift(log.diff.is_milestone);

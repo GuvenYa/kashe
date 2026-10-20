@@ -299,7 +299,7 @@ export default async function KurumsalPanelPage() {
             <VeriTablosu
               sutunlar={[
                 { anahtar: 'baslik', baslik: 'Talep', kartEtiketiGizle: true },
-                { anahtar: 'etkinlik', baslik: 'Etkinlik' },
+                { anahtar: 'etkinlik', baslik: 'Etkinlik', dar: true },
                 { anahtar: 'teklif', baslik: 'Teklif', sayisal: true },
                 { anahtar: 'tarih', baslik: 'Son tarih' },
                 { anahtar: 'durum', baslik: 'Durum' },

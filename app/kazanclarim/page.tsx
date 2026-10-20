@@ -1,7 +1,8 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { calcCommission, formatTRY, COMMISSION_RATE } from '@/app/lib/premium';
 import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
@@ -107,11 +108,13 @@ export default async function KazanclarimPage() {
     0
   );
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-12 md:py-16">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           {/* Header */}
           <div className="mb-8">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
@@ -319,7 +322,6 @@ export default async function KazanclarimPage() {
             </>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

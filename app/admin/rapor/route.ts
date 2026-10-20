@@ -41,7 +41,7 @@ function monthKey(iso: string | null | undefined): string | null {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 function tl(n: number): string {
-  return `${Math.round(n).toLocaleString('tr-TR')} ₺`;
+  return `${Math.round(n).toLocaleString('tr-TR')} TL`;
 }
 
 // email / phone admin_profile_contacts RPC'sinden birlesir (profiles'ta kapali).

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
@@ -98,7 +99,7 @@ export default async function AjansRfpPage() {
       `id, status, rfp_id, proposal_id, created_at,
        rfp:rfps(
          id, title, status, deadline, organization_id, awarded_proposal_id,
-         buyer:organizations!rfps_organization_id_fkey(display_name),
+         buyer:organizations_public!rfps_organization_id_fkey(display_name),
          event:events(title, start_date)
        )`
     )
@@ -107,18 +108,20 @@ export default async function AjansRfpPage() {
 
   const davetler = (davetData ?? []) as unknown as DavetSatiri[];
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps(gorulebilir[0]?.id);
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           <header className="mb-8">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
               {gorulebilir.map((o) => o.name).join(' · ')}
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
               Gelen{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 RFP&apos;ler
               </em>
             </h1>
@@ -158,7 +161,12 @@ export default async function AjansRfpPage() {
                         <p className="text-sm text-ink-72 mt-0.5">
                           {[
                             rfp.buyer?.display_name?.trim() || 'Kuruluş',
-                            rfp.event?.title?.trim() || null,
+                            // Etkinlik adi RFP basligiyla AYNI ise tekrar
+                            // yazilmaz (kurumsal tarafta ayni kural).
+                            rfp.event?.title?.trim() &&
+                            rfp.event.title.trim() !== rfp.title.trim()
+                              ? rfp.event.title.trim()
+                              : null,
                             rfp.event?.start_date
                               ? tarihMetni(rfp.event.start_date)
                               : null,
@@ -196,7 +204,6 @@ export default async function AjansRfpPage() {
             </div>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

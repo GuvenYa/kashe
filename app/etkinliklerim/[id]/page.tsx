@@ -254,7 +254,7 @@ export default async function EtkinlikDetayPage({
         `id, status, total_amount, currency,
          surum:proposal_versions!bookings_proposal_version_id_fkey (
            proposal:proposals!proposal_versions_proposal_id_fkey (
-             seller:organizations!proposals_seller_organization_id_fkey (display_name)
+             seller:organizations_public!proposals_seller_organization_id_fkey (display_name)
            )
          )`
       )

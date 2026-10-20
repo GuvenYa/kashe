@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
@@ -106,7 +107,7 @@ export default async function TeklifDetayPage({
     const { data: rfpData, error: rfpHatasi } = await supabase
       .from('rfps')
       .select(
-        'id, title, status, deadline, buyer:organizations!rfps_organization_id_fkey(display_name)'
+        'id, title, status, deadline, buyer:organizations_public!rfps_organization_id_fkey(display_name)'
       )
       .eq('id', teklif.rfp_id)
       .maybeSingle();
@@ -154,11 +155,13 @@ export default async function TeklifDetayPage({
     etkinlikErisimi = !!ev;
   }
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps(kurulus?.id);
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-4xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-4xl">
           <Link
             href="/ajans/teklifler"
             className="kashe-tap text-sm text-brand-ink hover:underline"
@@ -199,7 +202,6 @@ export default async function TeklifDetayPage({
             </p>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

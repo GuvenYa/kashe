@@ -140,8 +140,8 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   if (priceable.length > 0) {
     const min = Math.min(...priceable.map((s) => s.price_min as number));
     const max = Math.max(...priceable.map((s) => (s.price_max ?? s.price_min) as number));
-    // C4 — para birimi SONDA (formatPriceRange tek kaynak). Tek fiyat noktası → "X ₺'den başlar";
-    // gerçek aralık → "min – max ₺". (min===max'ta leading-₺ formatPrice'tan kaçınılır.)
+    // C4 — para birimi SONDA (formatPriceRange tek kaynak). Tek fiyat noktasi
+    // "X TL'den baslar"; gercek aralik "min - max TL". Bicim app/lib/para.ts.
     priceRange =
       min === max
         ? formatPriceRange(min, min, false, 'total', true)

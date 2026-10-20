@@ -8,11 +8,11 @@ import { KategoriTalepCta } from '@/app/components/kategori-talep-cta';
 import { EVENT_TYPES } from '@/app/mesajlar/data';
 
 const PRICE_OPTIONS = [
-  { value: '5000', label: "5.000 ₺'ye kadar" },
-  { value: '15000', label: "15.000 ₺'ye kadar" },
-  { value: '30000', label: "30.000 ₺'ye kadar" },
-  { value: '60000', label: "60.000 ₺'ye kadar" },
-  { value: '100000', label: "100.000 ₺'ye kadar" },
+  { value: '5000', label: "5.000 TL'ye kadar" },
+  { value: '15000', label: "15.000 TL'ye kadar" },
+  { value: '30000', label: "30.000 TL'ye kadar" },
+  { value: '60000', label: "60.000 TL'ye kadar" },
+  { value: '100000', label: "100.000 TL'ye kadar" },
 ];
 
 const RATING_OPTIONS = [

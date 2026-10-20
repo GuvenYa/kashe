@@ -1004,12 +1004,12 @@ export default function IstatistiklerPage() {
               />
               <StatTile
                 label="GMV (geçerli)"
-                value={`${num(bookingSummary?.gmv).toLocaleString('tr-TR')} ₺`}
+                value={`${num(bookingSummary?.gmv).toLocaleString('tr-TR')} TL`}
                 accent={C.moss}
               />
               <StatTile
                 label="Ort. değer"
-                value={`${Math.round(num(bookingSummary?.avg_value)).toLocaleString('tr-TR')} ₺`}
+                value={`${Math.round(num(bookingSummary?.avg_value)).toLocaleString('tr-TR')} TL`}
                 accent={C.brandAccent}
               />
               <StatTile
@@ -1048,7 +1048,7 @@ export default function IstatistiklerPage() {
                         contentStyle={tooltipStyle}
                         labelFormatter={fmtDate}
                         formatter={(v: any, name: any) =>
-                          name === 'GMV' ? [`${num(v).toLocaleString('tr-TR')} ₺`, 'GMV'] : [v, name]
+                          name === 'GMV' ? [`${num(v).toLocaleString('tr-TR')} TL`, 'GMV'] : [v, name]
                         }
                       />
                       <Area type="monotone" dataKey="GMV" stroke={C.moss} fill="url(#gmvGrad)" strokeWidth={2} />
@@ -1081,7 +1081,7 @@ export default function IstatistiklerPage() {
                 <p className="mt-2 text-xs text-ink-50">
                   İptal edilen rezervasyonların toplam değeri:{' '}
                   <strong style={{ color: C.brandInkDeep }}>
-                    {num(bookingSummary?.cancelled_value).toLocaleString('tr-TR')} ₺
+                    {num(bookingSummary?.cancelled_value).toLocaleString('tr-TR')} TL
                   </strong>
                 </p>
               </Card>

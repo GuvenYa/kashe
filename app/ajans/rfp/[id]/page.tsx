@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
@@ -72,7 +73,11 @@ export default async function AjansRfpDetayPage({
 
   const etkinlikSatiri = rfp.event
     ? [
-        rfp.event.title?.trim() || null,
+        // Etkinlik adi RFP basligiyla AYNI ise tekrar yazilmaz.
+        rfp.event.title?.trim() &&
+        rfp.event.title.trim() !== rfp.title.trim()
+          ? rfp.event.title.trim()
+          : null,
         etkinlikTuruEtiketi(rfp.event.event_type),
         tarihMetni(rfp.event.start_date),
         [rfp.event.city, rfp.event.district].filter(Boolean).join(' / ') || null,
@@ -89,11 +94,13 @@ export default async function AjansRfpDetayPage({
     !!davet?.proposal_id &&
     davet.proposal_id === rfp.awarded_proposal_id;
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps(kurulus?.id);
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-4xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-4xl">
           <Link
             href="/ajans/rfp"
             className="kashe-tap text-sm text-brand-ink hover:underline"
@@ -271,7 +278,6 @@ export default async function AjansRfpDetayPage({
             </div>
           </div>
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

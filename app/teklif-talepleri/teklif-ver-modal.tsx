@@ -145,7 +145,7 @@ export function TeklifVerModal({
             {overBudgetWarning && (
               <p className="mt-2 text-xs text-brand-accent bg-brand-accent/8 border border-brand-accent/25 rounded-lg px-3 py-2">
                 Bu tutar müşterinin belirttiği bütçeyi (
-                {new Intl.NumberFormat('tr-TR').format(budgetMax as number)} ₺)
+                {new Intl.NumberFormat('tr-TR').format(budgetMax as number)} TL)
                 aşıyor. Yine de gönderebilirsiniz.
               </p>
             )}

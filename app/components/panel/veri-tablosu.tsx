@@ -18,6 +18,13 @@ export type VeriSutunu = {
   sayisal?: boolean;
   /** Kart modunda etiket gizlenir (ornek: baslik sutunu kendi basina anlasilir). */
   kartEtiketiGizle?: boolean;
+  /**
+   * `lg` ALTINDA gizlenir (tabloda; kart modunda yine gorunur).
+   *
+   * Bes sutunlu bir tablo 1024 px altinda sikisip okunmaz hale geliyor; ikincil
+   * sutun once dusurulur, satirin kimligi (baslik) ve sayilari kalir.
+   */
+  dar?: boolean;
 };
 
 export type VeriSatiri = {
@@ -100,11 +107,12 @@ export function VeriTablosu({
               {sutunlar.map((sutun) => (
                 <th
                   key={sutun.anahtar}
-                  className={
-                    sutun.sayisal
-                      ? 'py-2 pl-3 font-normal text-right'
-                      : 'py-2 pr-3 font-normal'
-                  }
+                  className={[
+                    sutun.sayisal ? 'py-2 pl-3 font-normal text-right' : 'py-2 pr-3 font-normal',
+                    sutun.dar ? 'hidden lg:table-cell' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   {sutun.baslik}
                 </th>
@@ -125,11 +133,14 @@ export function VeriTablosu({
                 {sutunlar.map((sutun) => (
                   <td
                     key={sutun.anahtar}
-                    className={
+                    className={[
                       sutun.sayisal
                         ? 'py-3 pl-3 text-right text-ink tabular-nums whitespace-nowrap'
-                        : 'py-3 pr-3 text-ink-72'
-                    }
+                        : 'py-3 pr-3 text-ink-72',
+                      sutun.dar ? 'hidden lg:table-cell' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                   >
                     {satir.hucreler[sutun.anahtar] ?? '—'}
                   </td>

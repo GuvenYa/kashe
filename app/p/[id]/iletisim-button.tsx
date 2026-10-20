@@ -1,4 +1,5 @@
 'use client';
+import { formatTL } from '@/app/lib/para';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { createPortal } from 'react-dom';
@@ -82,9 +83,6 @@ export function IletisimButton({
     setBriefValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  function formatTL(n: number): string {
-    return `₺${Math.round(n).toLocaleString('tr-TR')}`;
-  }
 
   // Paket veya hizmet+ekstra için iletişim: modalı açarken mesajı ön-doldur
   function openForPackage() {

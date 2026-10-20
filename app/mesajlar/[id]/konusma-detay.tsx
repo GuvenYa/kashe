@@ -1,4 +1,5 @@
 'use client';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useRef, useEffect, useMemo, useTransition } from 'react';
@@ -12,7 +13,7 @@ import {
   assignConversation,
   unassignConversation,
 } from '../actions';
-import { getEventTypeLabel, getBudgetRangeLabel } from '../data';
+import { getBudgetRangeLabel } from '../data';
 import type { Quote } from '../quotes-data';
 import { QuoteModal } from './quote-modal';
 import { QuoteCard, SystemMessage } from './quote-message';
@@ -463,7 +464,7 @@ export function KonusmaDetay({
   if (eventType) {
     briefBits.push({
       label: 'Tür',
-      value: getEventTypeLabel(eventType) ?? eventType,
+      value: etkinlikTuruEtiketi(eventType) ?? 'Belirtilmedi',
     });
   }
   if (eventDate) {
@@ -902,7 +903,7 @@ export function KonusmaDetay({
               title="Teklif oluştur"
               className="kashe-tap shrink-0 h-11 md:h-12 px-3 md:px-4 rounded-xl border border-brand-accent/30 bg-brand-accent/8 text-brand-accent hover:bg-brand-accent/15 hover:border-brand-accent/50 transition flex items-center gap-1.5 font-display font-semibold text-xs md:text-sm whitespace-nowrap"
             >
-              <span className="text-base leading-none" aria-hidden="true">₺</span>
+              <span className="font-mono text-[11px] leading-none" aria-hidden="true">TL</span>
               <span>
                 Teklif<span className="hidden sm:inline"> oluştur</span>
               </span>

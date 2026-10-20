@@ -1,4 +1,5 @@
 import type { PremiumTier } from './badges';
+import { formatTL } from './para';
 
 export type PremiumPlan = {
   tier: Exclude<PremiumTier, 'none'>;
@@ -92,11 +93,10 @@ export function calcCommission(gross: number): {
   };
 }
 
-/** TL formatı (₺1.500) */
+/**
+ * TL formati — "1.500 TL". Bicim TEK KAYNAK app/lib/para.ts.
+ * Ad korunuyor: kazanclarim ve premium ekranlari bu adi cagiriyor.
+ */
 export function formatTRY(amount: number): string {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return formatTL(amount);
 }

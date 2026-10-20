@@ -558,12 +558,19 @@ export default async function ProfilPage() {
 
       {/* FAZ 8a — bana atanan gorevler. Kurulus bazli degil KISI bazli:
           kullanici birden cok kurulusta gorev tasiyor olabilir. */}
-      {banaAtanan.length > 0 && (
+      {/* Kart acik gorev 0 iken de durur: kullanici "bana bir sey atanmis
+          mi" sorusunun yanitini her ziyarette ayni yerde bulur. */}
+      {orgs.length > 0 && (
         <div className="mb-8">
           <PanelKart
             baslik="Bana atanan görevler"
-            tumuHref={`/kurulus/gorevler?kurulus=${banaAtanan[0].organization_id}&bana=1`}
+            tumuHref={`/kurulus/gorevler?kurulus=${banaAtanan[0]?.organization_id ?? orgs[0].id}&bana=1`}
           >
+            {banaAtanan.length === 0 && (
+              <p className="text-sm text-ink-72">
+                Sana atanmış açık görev yok.
+              </p>
+            )}
             <ul className="divide-y divide-line">
               {banaAtanan.map((g) => (
                 <li

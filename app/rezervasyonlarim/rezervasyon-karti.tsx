@@ -1,6 +1,7 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { paraBirimliMetin } from '@/app/lib/para';
 import Link from 'next/link';
-import { getEventTypeLabel } from '@/app/mesajlar/data';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 
 type Booking = {
@@ -45,9 +46,10 @@ function pickTone(id: string) {
   return TONES[h % TONES.length];
 }
 
+// Para bicimi TEK KAYNAK: app/lib/para.ts ("12.000 TL"). Yerel sembol
+// eslemesi KALDIRILDI — iki sayfa iki farkli bicim uretiyordu.
 function formatPrice(amount: number, currency: string) {
-  const symbol = currency === 'TRY' ? '₺' : currency + ' ';
-  return `${symbol}${Math.round(amount).toLocaleString('tr-TR')}`;
+  return paraBirimliMetin(amount, currency);
 }
 
 function formatEventDate(iso: string | null): string {
@@ -186,7 +188,7 @@ export function RezervasyonKarti({
               </span>
             )}
             {b.event_type && (
-              <span>{getEventTypeLabel(b.event_type) ?? b.event_type}</span>
+              <span>{etkinlikTuruEtiketi(b.event_type)}</span>
             )}
             {b.location && (
               <span className="truncate max-w-[200px]">{b.location}</span>

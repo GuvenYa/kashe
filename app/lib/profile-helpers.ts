@@ -1,4 +1,5 @@
 import type { Profile, Service, PriceUnit } from './types';
+import { formatTL, formatTLAralik } from './para';
 
 /** §11 — Birim ÖNEKİ (total → boş). Tek kaynak. */
 const PRICE_UNIT_PREFIX: Record<PriceUnit, string> = {
@@ -132,25 +133,24 @@ export function getCompletenessPercent(
 }
 
 /**
- * Fiyat formatlama: 5000 → "5.000 ₺"
+ * Fiyat formatlama: 5000 -> "5.000 TL".
+ *
+ * Bicim TEK KAYNAK `app/lib/para.ts`. Bu sarmalayici kaldi cunku 40+ dosya
+ * `formatPrice` cagiriyor; ad degismeden cikti bir yerden degisti.
  */
 export function formatPrice(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return '';
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return formatTL(amount);
 }
 
 /**
  * §11 fiyat gösterimi: [birim öneki] + fiyat + [başlangıç soneki].
  *   onRequest         → "Fiyat görüşülür"
- *   total + range     → "5.000 – 15.000 ₺"      (BUGÜNKÜ çıktı, birebir)
- *   hourly            → "Saatlik 1.500 ₺"
- *   full_day          → "Tam gün 15.000 ₺"
- *   total + starting  → "4.000 ₺'den başlar"     (tek değer = min)
- * Geriye uyumlu: unit/starting default'ları (total/false) bugünkü davranışı korur.
+ *   total + range     -> "5.000 - 15.000 TL"
+ *   hourly            -> "Saatlik 1.500 TL"
+ *   full_day          -> "Tam gun 15.000 TL"
+ *   total + starting  -> "4.000 TL'den baslar"   (tek deger = min)
+ * Geriye uyumlu: unit/starting varsayilanlari (total/false) davranisi korur.
+ * Para bicimi TEK KAYNAK `app/lib/para.ts` — burada sayi bicimlenmez.
  */
 export function formatPriceRange(
   min: number | null | undefined,
@@ -164,23 +164,17 @@ export function formatPriceRange(
     return '';
   }
 
-  // "₺ arkada" tek-fiyat (yeni modlar: birim/başlangıç) — "1.500 ₺"
-  const trailingSingle = (v: number) =>
-    `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(v)} ₺`;
-
-  // Fiyat gövdesi:
-  //  - starting veya birimli (unit≠total) → tek değer (min), "₺ arkada"
-  //  - total + tek (min===max)           → BUGÜNKÜ "₺5.000" (formatPrice, ₺ önde)
-  //  - total + aralık                     → BUGÜNKÜ "5.000 – 15.000 ₺"
+  // Fiyat govdesi — uc dal da birim SONDA ("... TL"), tek kaynaktan:
+  //  - starting veya birimli (unit total DEGILSE) -> tek deger (min)
+  //  - total + tek (min===max)                   -> tek deger
+  //  - total + aralik                            -> "min - max TL" (birim bir kez)
   let priceBody: string;
   if (starting || unit !== 'total') {
-    priceBody = trailingSingle(min);
+    priceBody = formatTL(min);
   } else if (min === max) {
-    priceBody = formatPrice(min);
+    priceBody = formatTL(min);
   } else {
-    const minFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(min);
-    const maxFmt = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(max);
-    priceBody = `${minFmt} – ${maxFmt} ₺`;
+    priceBody = formatTLAralik(min, max);
   }
 
   const prefix = PRICE_UNIT_PREFIX[unit];

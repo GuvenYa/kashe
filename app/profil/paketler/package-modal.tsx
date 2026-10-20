@@ -334,7 +334,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
           {priceMode === 'fixed' && (
             <div>
               <label htmlFor="pkg-price-fixed" className={labelClass}>
-                Fiyat (₺) <span className="text-danger">*</span>
+                Fiyat (TL) <span className="text-danger">*</span>
               </label>
               <input
                 id="pkg-price-fixed"
@@ -356,7 +356,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="pkg-price-min" className={labelClass}>
-                  Min fiyat (₺) <span className="text-danger">*</span>
+                  Min fiyat (TL) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="pkg-price-min"
@@ -371,7 +371,7 @@ export function PackageModal({ open, onClose, pkg }: Props) {
               </div>
               <div>
                 <label htmlFor="pkg-price-max" className={labelClass}>
-                  Max fiyat (₺) <span className="text-danger">*</span>
+                  Max fiyat (TL) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="pkg-price-max"

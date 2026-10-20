@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
@@ -129,18 +130,20 @@ export default async function KurumsalRfpPage({
   const varsayilanEtkinlik =
     params.etkinlik && UUID.test(params.etkinlik) ? params.etkinlik : null;
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="bg-paper min-h-screen px-6 md:px-12 py-12">
-        <div className="max-w-5xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
           <header className="mb-8">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
               {gorulebilir.map((o) => o.name).join(' · ')}
             </p>
             <h1 className="font-display text-4xl text-ink leading-tight">
               Teklif{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 talepleri
               </em>
             </h1>
@@ -236,7 +239,6 @@ export default async function KurumsalRfpPage({
             </div>
           )}
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

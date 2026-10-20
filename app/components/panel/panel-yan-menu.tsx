@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import {
   ArrowLeft,
@@ -101,16 +101,26 @@ export type PanelHesap = {
 };
 
 /**
- * Aktif madde: pathname'i KAPSAYAN en uzun href kazanir.
+ * Aktif madde: pathname'i KAPSAYAN en uzun yol kazanir.
  *
  * Boylece `/profil` ile `/profil/duzenle` ayni anda aktif gorunmez ve madde
  * basina "tam eslesme mi" bayragi tasimak gerekmez.
+ *
+ * SORGU DIZESI AYRI TUTULUR: menudeki href `?kurulus=<id>` tasiyabiliyor;
+ * eslesme yol uzerinden yapilir, sorgu ise AYNI YOLU paylasan maddeleri ayirt
+ * etmek icin kullanilir (bkz. `aktifAnahtar`).
  */
+function yolu(href: string): string {
+  const i = href.indexOf('?');
+  return i < 0 ? href : href.slice(0, i);
+}
+
 function aktifHref(pathname: string, hrefler: string[]): string | null {
   let kazanan: string | null = null;
   for (const h of hrefler) {
-    if (pathname !== h && !pathname.startsWith(h + '/')) continue;
-    if (!kazanan || h.length > kazanan.length) kazanan = h;
+    const y = yolu(h);
+    if (pathname !== y && !pathname.startsWith(y + '/')) continue;
+    if (!kazanan || y.length > yolu(kazanan).length) kazanan = y;
   }
   return kazanan;
 }
@@ -125,11 +135,32 @@ export function PanelYanMenu({
   yonetici?: boolean;
 }) {
   const pathname = usePathname();
+  const arama = useSearchParams();
   const router = useRouter();
   const [acik, setAcik] = useState(false);
 
   const tumHrefler = menu.flatMap((g) => g.maddeler.map((m) => m.href));
   const aktif = aktifHref(pathname, tumHrefler);
+
+  // AYNI YOL BIRDEN COK GRUPTA olabilir (ornek: iki kurulusun grubunda da
+  // "Etkinlikler"). `aria-current` TEK olmali: adresteki `?kurulus=` ile
+  // eslesen madde kazanir, yoksa ilk grupta geceni.
+  const kurulusParam = arama.get('kurulus');
+  const aktifAnahtar = (() => {
+    if (!aktif) return null;
+    const adaylar: { grup: string; href: string }[] = [];
+    for (const g of menu) {
+      for (const m of g.maddeler) {
+        if (yolu(m.href) === aktif) adaylar.push({ grup: g.baslik, href: m.href });
+      }
+    }
+    if (adaylar.length === 0) return null;
+    if (kurulusParam) {
+      const eslesen = adaylar.find((a) => a.href.includes(kurulusParam));
+      if (eslesen) return eslesen.grup + String.fromCharCode(0) + eslesen.href;
+    }
+    return adaylar[0].grup + String.fromCharCode(0) + adaylar[0].href;
+  })();
 
   const basHarfler = hesap.ad
     .split(' ')
@@ -182,7 +213,9 @@ export function PanelYanMenu({
             </p>
             {grup.maddeler.map((madde) => {
               const Ikon = IKONLAR[madde.ikon];
-              const seciliMi = madde.href === aktif;
+              const seciliMi =
+                aktifAnahtar ===
+                grup.baslik + String.fromCharCode(0) + madde.href;
               return (
                 <Link
                   key={madde.href}

@@ -187,7 +187,7 @@ export function ProCtaSection({
                     <span className="text-xs text-ink-50">(24)</span>
                   </div>
                   <span className="font-display font-semibold text-sm text-ink">
-                    ₺4.200<span className="text-ink-50 font-normal">'den</span>
+                    4.200 TL<span className="text-ink-50 font-normal">'den</span>
                   </span>
                 </div>
               </div>

@@ -1,0 +1,311 @@
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { paraBirimliMetin } from '@/app/lib/para';
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+
+/**
+ * TEKLIF BELGESI — musteriye gorunen sunum. TEK BILESEN (D1b-2 / madde 3).
+ *
+ * Iki yerde kullanilir:
+ *   1. `/portal/teklif/[token]` — misafir portali (anon RPC verisi)
+ *   2. teklif editorundeki "Musteri gorunumu" anahtari (mevcut surum verisi)
+ *
+ * IC MALIYET VE MARJ BU BILESENE HIC GIRMEZ — prop'u bile yok. Boylece
+ * "alici yuzeyinde ic maliyet gorunmez" kurali bir kosula degil TIPE baglanir:
+ * buraya ic maliyet gecirmek derleme hatasi olur.
+ *
+ * 'use client' YOKTUR: iki cagiran da sunucuda render eder.
+ *
+ * Para bicimi ve tarih bicimi tek kaynaktan (`app/lib/para.ts`,
+ * `KASHE_SAAT_DILIMI`); bilesen kendi icinde sayi bicimlemez.
+ */
+/**
+ * Postgres `numeric` PostgREST uzerinden STRING olarak gelir (kesinlik
+ * kaybini onlemek icin). Belge iki cagiranin tipini de kabul eder ve
+ * bicimlemeden ONCE sayiya cevirir — cagiranlar donusturmek zorunda kalmaz.
+ */
+export type BelgeSayisi = number | string | null;
+
+export type TeklifBelgesiKalemi = {
+  description: string;
+  role?: string | null;
+  quantity: BelgeSayisi;
+  unit_client_price: BelgeSayisi;
+  total_client_price: BelgeSayisi;
+};
+
+export type TeklifBelgesiEtkinligi = {
+  title: string | null;
+  event_type: string | null;
+  start_date: string | null;
+  city: string | null;
+  participant_count: BelgeSayisi;
+};
+
+export type TeklifBelgesiVerisi = {
+  /** Satici kurulus adi (belgenin basligi). */
+  seller_name: string | null;
+  /** Aliciya hitap (varsa). */
+  client_name: string | null;
+  title: string;
+  version_no: BelgeSayisi;
+  sent_at: string | null;
+  status: string;
+  durumEtiketi: string;
+  durumSinifi: string;
+  event: TeklifBelgesiEtkinligi | null;
+  /** YALNIZ musteriye gorunur kalemler — suzme CAGIRANIN isi. */
+  items: TeklifBelgesiKalemi[];
+  subtotal: BelgeSayisi;
+  tax_rate: BelgeSayisi;
+  tax_amount: BelgeSayisi;
+  total_amount: BelgeSayisi;
+  currency: string | null;
+  valid_until: string | null;
+  notes: string | null;
+};
+
+const EYEBROW =
+  'font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink';
+const KART = 'bg-card border border-line rounded-2xl p-6 md:p-8';
+
+/** String ya da sayi -> sayi; cozulemezse null. */
+function sayi(v: BelgeSayisi): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === 'string' ? Number(v) : v;
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Yuzde: 0.20 -> 20 (DB oran tasiyor, arayuz yuzde gosterir). */
+function kdvYuzdesi(oran: BelgeSayisi): number {
+  return Math.round((sayi(oran) ?? 0) * 100);
+}
+
+function gunMetni(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: KASHE_SAAT_DILIMI,
+  });
+}
+
+function anMetni(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: KASHE_SAAT_DILIMI,
+  });
+}
+
+/** Etkinlik ozeti satiri — yalniz dolu alanlar cizilir. */
+function OzetSatiri({
+  etiket,
+  deger,
+}: {
+  etiket: string;
+  deger: string | null;
+}) {
+  if (!deger) return null;
+  return (
+    <div className="flex items-start justify-between gap-4 flex-wrap">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
+        {etiket}
+      </dt>
+      <dd className="text-sm text-ink text-right">{deger}</dd>
+    </div>
+  );
+}
+
+export function TeklifBelgesi({ teklif }: { teklif: TeklifBelgesiVerisi }) {
+  const para = (v: BelgeSayisi) =>
+    paraBirimliMetin(sayi(v), teklif.currency) || '—';
+  const gecerlilikMetni = gunMetni(teklif.valid_until);
+  const gecerlilikGecti =
+    !!teklif.valid_until && new Date(teklif.valid_until) < new Date();
+
+  return (
+    <article className={KART}>
+      {/* Kart ustu: satici + durum rozeti */}
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <p className={EYEBROW}>Teklif</p>
+          <h1 className="mt-2 font-display text-2xl md:text-3xl text-ink leading-tight">
+            {teklif.seller_name?.trim() || 'Kashe kuruluşu'}
+          </h1>
+        </div>
+        <span
+          className={`font-mono text-[10px] uppercase tracking-[0.14em] border px-2.5 py-1 rounded-full shrink-0 ${teklif.durumSinifi}`}
+        >
+          {teklif.durumEtiketi}
+        </span>
+      </header>
+
+      <div className="mt-5 pt-5 border-t border-line">
+        {teklif.client_name && (
+          <p className="text-sm text-ink-72">Sayın {teklif.client_name},</p>
+        )}
+        <p className="mt-1 font-display text-lg md:text-xl text-ink leading-snug">
+          {teklif.title}
+        </p>
+        <p className="mt-1.5 text-xs text-ink-72">
+          Sürüm {teklif.version_no}
+          {teklif.sent_at ? ` · gönderim ${anMetni(teklif.sent_at)}` : ''}
+        </p>
+      </div>
+
+      {/* Etkinlik ozeti */}
+      {teklif.event && (
+        <div className="mt-6 bg-paper border border-line rounded-xl p-4 md:p-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-3">
+            Etkinlik
+          </p>
+          <dl className="space-y-2">
+            <OzetSatiri etiket="Etkinlik" deger={teklif.event.title} />
+            <OzetSatiri
+              etiket="Tür"
+              deger={etkinlikTuruEtiketi(teklif.event.event_type)}
+            />
+            <OzetSatiri etiket="Tarih" deger={gunMetni(teklif.event.start_date)} />
+            <OzetSatiri etiket="Şehir" deger={teklif.event.city} />
+            <OzetSatiri
+              etiket="Katılımcı"
+              deger={
+                sayi(teklif.event.participant_count)
+                  ? `${sayi(teklif.event.participant_count)} kişi`
+                  : null
+              }
+            />
+          </dl>
+        </div>
+      )}
+
+      {/* KALEMLER */}
+      <div className="mt-6">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-3">
+          Kalemler
+        </p>
+
+        {teklif.items.length === 0 ? (
+          <p className="text-sm text-ink-72">Teklifte kalem yok.</p>
+        ) : (
+          <>
+            {/* Masaustu: tablo */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 border-b border-line-strong">
+                    <th className="py-2 pr-3 font-normal">Kalem</th>
+                    <th className="py-2 pr-3 font-normal">Adet</th>
+                    <th className="py-2 pr-3 font-normal">Birim fiyat</th>
+                    <th className="py-2 text-right font-normal">Toplam</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teklif.items.map((k, i) => (
+                    <tr key={i} className="border-b border-line">
+                      <td className="py-3 pr-3 text-ink">
+                        {k.description}
+                        {k.role && k.role !== k.description && (
+                          <span className="text-ink-72"> · {k.role}</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-3 text-ink-72">{k.quantity}</td>
+                      <td className="py-3 pr-3 text-ink-72">
+                        {para(k.unit_client_price)}
+                      </td>
+                      <td className="py-3 text-right text-ink tabular-nums">
+                        {para(k.total_client_price)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobil: her kalem bir kutu */}
+            <div className="sm:hidden space-y-2">
+              {teklif.items.map((k, i) => (
+                <div
+                  key={i}
+                  className="border border-line rounded-lg p-3 flex items-start justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink">{k.description}</p>
+                    {k.role && k.role !== k.description && (
+                      <p className="text-xs text-ink-72 mt-0.5">{k.role}</p>
+                    )}
+                    <p className="text-xs text-ink-72 mt-1">
+                      {k.quantity} adet · birim {para(k.unit_client_price)}
+                    </p>
+                  </div>
+                  <p className="text-sm text-ink shrink-0 tabular-nums">
+                    {para(k.total_client_price)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* TOPLAMLAR — DB'de hesaplandi, burada YALNIZ yazilir */}
+      <div className="mt-6 pt-5 border-t border-line">
+        <div className="sm:ml-auto sm:max-w-xs space-y-1.5 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-ink-72">Ara toplam</span>
+            <span className="text-ink tabular-nums">{para(teklif.subtotal)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-ink-72">
+              KDV ({kdvYuzdesi(teklif.tax_rate)}%)
+            </span>
+            <span className="text-ink tabular-nums">
+              {para(teklif.tax_amount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-2 border-t border-line">
+            <span className="font-display font-semibold text-ink">
+              Genel toplam
+            </span>
+            <span className="font-display font-semibold text-lg text-ink tabular-nums">
+              {para(teklif.total_amount)}
+            </span>
+          </div>
+
+          {gecerlilikMetni && (
+            <p
+              className={
+                gecerlilikGecti
+                  ? 'pt-2 text-xs text-danger'
+                  : 'pt-2 text-xs text-ink-72'
+              }
+            >
+              {gecerlilikGecti
+                ? `Geçerlilik: ${gecerlilikMetni} — süresi doldu`
+                : `Geçerlilik: ${gecerlilikMetni}`}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Satici notu */}
+      {teklif.notes && (
+        <div className="mt-6 bg-paper border border-line rounded-xl p-4 md:p-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-2">
+            Not
+          </p>
+          <p className="text-sm text-ink whitespace-pre-wrap">{teklif.notes}</p>
+        </div>
+      )}
+    </article>
+  );
+}

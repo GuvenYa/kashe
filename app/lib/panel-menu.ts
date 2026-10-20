@@ -71,7 +71,7 @@ function musteriGrubu(): PanelMenuMaddesi[] {
     { href: '/ilanlarim', etiket: 'İlanlarım', ikon: 'ilan' },
     {
       href: '/teklif-taleplerim',
-      etiket: 'Profesyonel teklifleri',
+      etiket: 'Pro teklifleri',
       ikon: 'teklif',
     },
     { href: '/rezervasyonlarim', etiket: 'Rezervasyonlar', ikon: 'rezervasyon' },
@@ -166,7 +166,7 @@ function kurumsalGrubu(org: CrewOrg, kendiKurumu: boolean): PanelMenuMaddesi[] {
   maddeler.push({ href: '/ilanlarim', etiket: 'İlanlarım', ikon: 'ilan' });
   maddeler.push({
     href: '/teklif-taleplerim',
-    etiket: 'Profesyonel teklifleri',
+    etiket: 'Pro teklifleri',
     ikon: 'teklif',
   });
   if (kendiKurumu) {

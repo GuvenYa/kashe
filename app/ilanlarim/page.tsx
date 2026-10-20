@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { IlanlarimListesi } from './ilanlarim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { getTeamContext } from '@/app/lib/business-write';
 import type { ListingWithRelations } from '../ilanlar/listings-data';
@@ -137,11 +138,13 @@ export default async function IlanlarimPage({
     };
   });
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-    <TopNav />
-    <div className="bg-paper min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 md:px-12 py-12">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-5xl">
         {/* Hero */}
         <div className="flex items-start justify-between gap-4 mb-10 flex-wrap">
           <div>
@@ -149,7 +152,7 @@ export default async function IlanlarimPage({
               Yönetim
             </p>
             <h1 className="font-display font-semibold text-4xl text-ink leading-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 İlanlarım
               </em>
             </h1>
@@ -182,7 +185,6 @@ export default async function IlanlarimPage({
           activeStatus={params.durum ?? null}
         />
       </div>
-    </div>
-    </>
+    </PanelKabugu>
   );
 }

@@ -205,9 +205,12 @@ export function GorevSatiri({
                 {gorev.event.title?.trim() || 'Etkinlik'}
               </Link>
             )}
-            {gorev.bagli && (
+            {/* Bagimlilik: `bagli` embed satiri bos nesne de dondurebiliyor
+                (silinen gorev); id YOKSA satir hic cizilmez. Turkce ek almayan
+                kalip secildi: ad sesli/sessiz bitse de dogru okunur. */}
+            {gorev.bagli?.id && (
               <span className="text-ink-50">
-                ↳ {gorev.bagli.title}&apos;ten sonra
+                ↳ önce: {gorev.bagli.title}
               </span>
             )}
           </div>

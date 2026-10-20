@@ -1,6 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
 import { getCachedUser } from '@/app/lib/auth';
@@ -211,18 +212,20 @@ export default async function MesajlarPage() {
     })
     .filter((c): c is ConversationItem => c !== null);
 
+  // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
+  // yerden (app/lib/panel-kabuk.ts).
+  const kabuk = await panelKabukProps();
+
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-        <div className="max-w-3xl mx-auto">
+    <PanelKabugu {...kabuk}>
+      <div className="max-w-3xl">
           <div className="mb-10">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
               Mesajlar
             </p>
             <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
               Tüm{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 konuşmaların
               </em>
               .
@@ -234,7 +237,6 @@ export default async function MesajlarPage() {
             initialConversations={conversations}
           />
         </div>
-      </main>
-    </>
+    </PanelKabugu>
   );
 }

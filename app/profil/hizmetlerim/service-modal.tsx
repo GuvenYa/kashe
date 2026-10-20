@@ -339,7 +339,7 @@ export function ServiceModal({
               /* Tek-fiyat modu (birim≠total VEYA başlangıç): tek alan → min'e yazılır */
               <div>
                 <label htmlFor="modal-price-single" className={labelClass}>
-                  Fiyat (₺) <span className="text-danger">*</span>
+                  Fiyat (TL) <span className="text-danger">*</span>
                 </label>
                 <input
                   id="modal-price-single"
@@ -362,7 +362,7 @@ export function ServiceModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="modal-price-min" className={labelClass}>
-                    Min fiyat (₺) <span className="text-danger">*</span>
+                    Min fiyat (TL) <span className="text-danger">*</span>
                   </label>
                   <input
                     id="modal-price-min"
@@ -377,7 +377,7 @@ export function ServiceModal({
                 </div>
                 <div>
                   <label htmlFor="modal-price-max" className={labelClass}>
-                    Max fiyat (₺) <span className="text-danger">*</span>
+                    Max fiyat (TL) <span className="text-danger">*</span>
                   </label>
                   <input
                     id="modal-price-max"

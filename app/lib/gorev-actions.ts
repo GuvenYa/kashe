@@ -29,12 +29,16 @@ function uuidMi(v: unknown): v is string {
   return typeof v === 'string' && UUID.test(v);
 }
 
-/** Etkilenen yuzeyleri tazeler. */
+/**
+ * Etkilenen yuzeyleri tazeler.
+ *
+ * YALNIZ gorev listeleri: gosterge sayilari (`/ajans`, `/kurumsal`,
+ * `/profil`) bir sonraki ziyarette kendiliginden tazelenir. Her gorev
+ * tiklamasinda dort agir gosterge sayfasini yeniden uretmek, listedeki
+ * etkilesimi gorunur bicimde yavaslatiyordu.
+ */
 function tazele(eventId?: string | null) {
   revalidatePath('/kurulus/gorevler');
-  revalidatePath('/ajans');
-  revalidatePath('/kurumsal');
-  revalidatePath('/profil');
   if (eventId) revalidatePath(`/etkinliklerim/${eventId}`);
 }
 
