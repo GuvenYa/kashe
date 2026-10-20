@@ -285,7 +285,10 @@ export function AvailabilityCalendar({
         })}
       </div>
 
-      {/* Açıklama (legend) */}
+      {/* Açıklama (legend) — secim modunda (musteri karti) CIZILMEZ: "Dolu (sen)"
+          sahibe hitap eder ve kart kendi aciklamasini (Musait/Dolu/Secilen) verir;
+          iki aciklama alt alta geliyordu. */}
+      {!onSelect && (
       <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-line">
         <span className="flex items-center gap-1.5 text-xs text-ink-72">
           <span className="w-3 h-3 rounded bg-brand-ink/12 border border-brand-ink/30" />
@@ -300,6 +303,7 @@ export function AvailabilityCalendar({
           Müsait
         </span>
       </div>
+      )}
 
       {editable && (
         <p className="text-xs text-ink-72 mt-3">
