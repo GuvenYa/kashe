@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim); D1b-1 (8a-P1 ile) ve D1b-2 KAPANDI (21 Ekim); sirada D1b-3 (teklif yuzeyi), D1b-4 (duzen kalanlari), sonra D2. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim); D1b-1 (8a-P1 ile), D1b-2 ve D1b-3 KAPANDI (21 Ekim); sirada D1b-4 (duzen kalanlari; `26-claude-code-gorevi-d1b-4-duzen-kalanlari.md`), sonra D2. Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -90,6 +90,30 @@ tekrar yok; konsol 0. Portal "Tur" kontrolu uretimde e-postadaki baglantiyla (je
 `PanelBaslik` donusumu, `/rezervasyon/[id]` ve `/rezervasyonlarim` kart icerikleri, `/odemelerim` kurulus rezervasyonlari (K12),
 karsilastirma `OzetSerit`, ekip uyesi satir dugmeleri, iyimser hizli ekle → **D1b-4**. Yeni bulgu: `/ajans/teklifler/[id]` baslik kartinda
 baslik kirpiliyor ("Ankara'da 250 ki…") — D1b-3 baslik karti ile cozulur; `/rezervasyon/[id]` baslik metin sutunu dar — D1b-4.
+
+### D1b-3 KAPANDI (21 Ekim 2026) — onizleme turu
+
+Dal `tasarim/d1b-3` (3 commit). Yapilan: `/ajans/teklifler/[id]` teklif yuzeyi — baslik karti (`teklif-baslik.tsx` 248 satir: eyebrow
+"TEKLIF · SURUM N", baslik kirpmasiz, alt satir alici/talep/son tarih, durum rozeti, "Musteri gorunumu" anahtari `aria-pressed`, "PDF indir"
+devre disi, birincil "Teklifi gonder →"), kalem tablosu (`teklif-kalem-tablosu.tsx` 576: KALEM · ADET · BIRIM FIYAT · TOPLAM · MUSTERIYE GORUNUR
+· [`maliyetGorulur`] IC MALIYET · MARJ; ic maliyet sutun basligindaki "Yukle" ile tembel, hucreden `upsertProposalItemCost`; `md` alti kart),
+uc ozet kutu (`teklif-ozet.tsx` 118: IC MALIYET · MARJ · hero MUSTERIYE TEKLIF, toplamlar DB'den), Musteri gorunumu = `TeklifBelgesi`,
+`OzetSerit` (`md` alti). Editor 1379 → 1034 satir. Eski "Ic maliyet ve marj" karti kalkti.
+**Tur (gmail):** onayli RFP yaniti: baslik tam, "Yukle" → sutunlar + "Ic maliyet —/Marj —", hero "23.400 TL · KDV %20 dahil"; Musteri
+gorunumu → belge, ic maliyet/marj DOM'da yok; taslak 28.800 TL: Adet 1→2 alandan cikinca 9.000 TL / 34.200 TL (geri alindi), ic maliyet
+3.000 TL → marj 1.500 TL %33 (sifirlandi), "Teklifi gonder →" onay ekrani → Vazgec; 375 px serit "Genel toplam 28.800 TL · Teklifi gonder →",
+kart modu, yatay tasma 0. **hotmail (izleyici):** ic maliyet/marj/Yukle DOM'da yok, tum alanlar salt okunur, gonder yok. Konsol 0.
+**Turdan cikan ve dalda duzeltilen 6 bulgu (Claude, 2 commit):** (1) KOK NEDEN — panel sol sutunu `md`'de (768) acilinca icerik 768-1023 px
+arasinda 528-783 px kaliyor, sayfalarin `md:` yerlesimleri sikisiyordu (baslik kirpma, tablo); sol sutun artik **`lg`'de (1024)**, altinda
+hamburger (`panel-kabugu.tsx`, `panel-yan-menu.tsx`); (2) baslik karti sol sutun `basis-80` (sag grup yer kalmayinca sarar; `flex-1` sifira
+kadar daraliyordu); (3) kalem tablosu girdilerine en kucuk genislik (KALEM `min-w-48`, aciklama 10 rem, adet 3.5, birim fiyat 6, ic maliyet 6,
+not 7 rem; yer yetmezse kart icinde yatay kayar — birim fiyat 50 px'e dusup "450" gorunuyordu); (4) ozet marj yuzdesi ic maliyet uzerinden
+hesaplaniyordu (%700) — DB `margin_rate` gibi **ara toplam uzerinden** (`teklif-ozet.tsx`); (5) basliktaki "Teklifi gonder →" onay ekranini
+1.700 px asagida aciyordu — acilinca `scrollIntoView` (`teklif-editoru.tsx`); (6) `tsc` temiz.
+**D1b-4'e kalan:** musteri gorunumunde satici adi "Kashe kurulusu" (editor `seller_name: null` → kurulus adi); bos ic maliyet 0 TL satir
+yaziyor (bos → upsert cagrilmamali); taslakta baslik girdisi telefonda tek satir; `/etkinliklerim/[id]` ve `/rezervasyon/[id]` baslik
+kartlari ayni `basis-80` desenine. Kabul edilen sapma: ekip uyesi satirinda "…" menusu yerine durum secimi + Kilitle/Not dugmeleri kalir.
+**Kural (DESIGN.md 9'a D1b-4 ile):** panel sayfalari `md:` yerlesimlerini viewport'a gore kullanabilir; icerik alani `lg`'de en az 784 px.
 
 ## 5. Kabul olcutleri (D1a)
 
