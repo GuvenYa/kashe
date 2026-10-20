@@ -43,6 +43,18 @@ type Props = {
   variant?: 'default' | 'package' | 'inline' | 'primary-accent';
   /** FAZ 4c/P3: etkinlikten gelindiyse events.id — sohbet o etkinlige baglanir. */
   etkinlikId?: string | null;
+  /**
+   * D2 — fiyat/takvim kartindan gelen on-doldurma.
+   *
+   * Kategori brief formunda KARSILIGI OLAN alan varsa (ornek `event_date`)
+   * o alan doldurulur; karsiligi olmayan bilgi mesaj metninin basina tek
+   * satir olarak yazilir. Form alanlari ve gonderim action'i DEGISMEZ.
+   */
+  onDolgu?: {
+    tarih?: string | null;
+    sehir?: string | null;
+    kisi?: number | null;
+  } | null;
 };
 
 export function IletisimButton({
@@ -57,6 +69,7 @@ export function IletisimButton({
   serviceContext = null,
   variant = 'default',
   etkinlikId = null,
+  onDolgu = null,
 }: Props) {
   const router = useRouter();
   // Pro-as-buyer: her ziyaretçi (professional dahil) kendi adına — customer koltuğu — teklif isteyebilir.
@@ -83,6 +96,59 @@ export function IletisimButton({
     setBriefValues((prev) => ({ ...prev, [key]: value }));
   }
 
+
+  /**
+   * D2 — kartta girilen tarih/sehir/kisi bilgisini modala tasir.
+   *
+   * Brief formunda ayni anlamda bir alan varsa ONU doldurur (kullanici ayni
+   * seyi iki kez yazmasin); yoksa mesajin basina tek satir koyar.
+   */
+  function dolguyuUygula() {
+    if (!onDolgu) return;
+    const { tarih, sehir, kisi } = onDolgu;
+    if (!tarih && !sehir && kisi == null) return;
+
+    const yama: Record<string, string> = {};
+    const mesajParcalari: string[] = [];
+
+    const alanVar = (anahtar: string) =>
+      briefFields.some((f) => f.key === anahtar);
+
+    if (tarih) {
+      if (alanVar('event_date')) yama.event_date = tarih;
+      else {
+        // ISO degil okunur tarih: "Tarih: 14 Mayis 2027".
+        const d = new Date(`${tarih}T12:00:00`);
+        mesajParcalari.push(
+          `Tarih: ${
+            isNaN(d.getTime())
+              ? tarih
+              : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+          }`
+        );
+      }
+    }
+    if (sehir) {
+      if (alanVar('city')) yama.city = sehir;
+      else mesajParcalari.push(`Şehir: ${sehir}`);
+    }
+    if (kisi != null) {
+      if (alanVar('guest_count')) yama.guest_count = String(kisi);
+      else mesajParcalari.push(`${kisi} kişi`);
+    }
+
+    if (Object.keys(yama).length > 0) {
+      setBriefValues((onceki) => ({ ...onceki, ...yama }));
+    }
+    if (mesajParcalari.length > 0) {
+      const satir = mesajParcalari.join(" · ");
+      setMessage((onceki) =>
+        onceki.startsWith(satir) ? onceki : `${satir}
+
+${onceki}`
+      );
+    }
+  }
 
   // Paket veya hizmet+ekstra için iletişim: modalı açarken mesajı ön-doldur
   function openForPackage() {
@@ -115,6 +181,7 @@ export function IletisimButton({
         );
       }
     }
+    dolguyuUygula();
     setModalOpen(true);
   }
 
@@ -388,7 +455,10 @@ export function IletisimButton({
       ) : variant === 'primary-accent' ? (
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            dolguyuUygula();
+            setModalOpen(true);
+          }}
           className="w-full py-3.5 bg-brand-accent text-white rounded-xl font-display font-semibold text-[15px] hover:bg-[#D50880] transition-colors text-center"
         >
           Teklif Al
@@ -396,7 +466,10 @@ export function IletisimButton({
       ) : variant === 'inline' ? (
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            dolguyuUygula();
+            setModalOpen(true);
+          }}
           className="flex-1 px-5 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all text-center"
         >
           Teklif Al
@@ -409,7 +482,10 @@ export function IletisimButton({
           </p>
           <button
             type="button"
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              dolguyuUygula();
+              setModalOpen(true);
+            }}
             className="px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all"
           >
             Talep gönder

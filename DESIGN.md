@@ -476,6 +476,37 @@ Desen: `app/ajans/teklifler/[id]/teklif-baslik.tsx`.
 
 ---
 
+### Pazaryeri desenleri (D2)
+
+**Keşfet kartı.** Masaüstünde foto alanı **`aspect-[4/3]`** (tek oran; eskiden
+keşfet 3:4, ana sayfa 4:3 kullanıyordu ve aynı kart iki ürün gibi görünüyordu).
+Izgara `sm:2 · lg:3 · xl:4 · 2xl:5`, `gap-4`. Alt şeritte **alt rozet**:
+profesyonelde `"72.000 TL'den"` (yayındaki, talep-üzerine olmayan hizmetlerin en
+düşük `price_min`), ajansta `"Kurumsal profil"`. **Fiyat yoksa rozet çizilmez** —
+"fiyat görüşülür" gibi bir dolgu rozeti konmaz. Kategori çipindeki nokta **cyan**
+(`sky`): kategori bir bilgi etiketi, pembe ise eylem/vurgu rengi.
+
+**Güven çipleri** (`app/components/guven-cipleri.tsx`). Her çip **bir veriye**
+dayanır: kimlik doğrulandı, profil onaylı, N tamamlanmış iş, ortalama yanıt,
+tekrar tercih, premium. Sinyal yoksa çip çizilmez. Bileşen metin değil **sinyal**
+alır — çağıran cümle uyduramaz. "Portföy incelendi", "Komisyon dahil" gibi
+doğrulanamayan ifadeler bu dile girmez.
+
+**Fiyat / takvim kartı** (`app/components/fiyat-takvim-karti.tsx`). Profilin
+işlem kartı: en düşük fiyat + müsaitlik takvimi + tarih/şehir/kişi alanları.
+Fiyat **hesaplamaz** (sunucuda bulunur), takvimi **değiştirmez**
+(`editable={false}`; dolu günler tıklanamaz), mesaj/rezervasyon **göndermez** —
+CTA'lar mevcut `IletisimButton` / `RezervasyonButton`'dır, kart yalnız onlara
+ön-doldurma verir. `lg` altında takvim varsayılan **kapalı** açılır bölüm; alt
+sabit CTA çubuğu aynen kalır.
+
+**Takvimde seçim.** `AvailabilityCalendar` `editable={false}` + `onSelect`
+verildiğinde boş günler tıklanabilir olur; seçilen gün **pembe**
+(`brand-accent`) — seçim bir karardır, müsaitlik durumu değil. Dolu ve geçmiş
+günler tıklanamaz kalır.
+
+---
+
 ## Kasıtlı palet istisnaları
 
 Aşağıdaki dosyalar **bilerek** eski palet hex'lerini taşır. Sonraki palet

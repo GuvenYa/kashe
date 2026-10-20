@@ -239,6 +239,8 @@ export default async function KesfetPage({
   }
 
   const profileIds = profiles.map((p) => p.id);
+  // D2: bu toplu okuma kartin alt rozetindeki "... TL'den" fiyatini da besler
+  // (profil basina en dusuk `price_min`); ek sorgu eklenmedi.
   const servicesByProfile: Record<string, ServicePriceInfo[]> = {};
 
   if (profileIds.length > 0) {
@@ -562,19 +564,36 @@ export default async function KesfetPage({
       <TopNav />
       <main className="min-h-screen bg-paper px-6 md:px-12 py-12">
         <div className="max-w-[100rem] mx-auto">
-          <div className="mb-8">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
+          {/* Eyebrow: kisa pembe cizgi + etiket (vitrin dili; panel eyebrow'u
+              degil). Blok `mb-6` — sonuclar daha erken basliyor. */}
+          <div className="mb-6">
+            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
+              <span className="w-5 h-px bg-brand-accent" aria-hidden="true" />
               Keşfet
             </p>
             <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
-              Profesyonelleri{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
-                keşfet
-              </em>
-              .
+              {typeFilter === 'ajans' ? (
+                <>
+                  Ajans ve organizasyon firmalarını{' '}
+                  <em className="text-brand-ink not-italic italic font-medium">
+                    keşfet
+                  </em>
+                  .
+                </>
+              ) : (
+                <>
+                  Profesyonelleri{' '}
+                  <em className="text-brand-ink not-italic italic font-medium">
+                    keşfet
+                  </em>
+                  .
+                </>
+              )}
             </h1>
             <p className="text-ink-72 text-lg mt-4 max-w-2xl">
-              Etkinliğin için doğru profesyoneli burada bulacaksın.
+              {typeFilter === 'ajans'
+                ? 'Etkinliğini uçtan uca kuracak kuruluşları burada bulacaksın.'
+                : 'Etkinliğin için doğru profesyoneli burada bulacaksın.'}
             </p>
           </div>
 
@@ -633,11 +652,13 @@ export default async function KesfetPage({
                       TÜM yapışkanlık sınıfları lg: önekli — mobil görünüm birebir korunur. */}
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-4 lg:mb-1 lg:py-3 lg:bg-paper lg:sticky lg:top-16 lg:z-20">
                     <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-                      {profiles.length} sonuç
+                      {profiles.length}{' '}
+                      {typeFilter === 'ajans' ? 'kurumsal profil' : 'sonuç'}
                     </p>
                     <SortDropdown currentSort={sortBy} />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 xl:gap-6">
+                  {/* 4:3 kartlar daha genis; `2xl` de bes sutun sigiyor. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                     {profiles.map((profile) => (
                       <ProfileCard
                         key={profile.id}
@@ -655,6 +676,7 @@ export default async function KesfetPage({
                         currentUserRole={currentUserRole}
                         etkinlikId={etkinlikIdParam}
                         isBusy={busyByProfile[profile.id] ?? false}
+                        services={servicesByProfile[profile.id]}
                         havuz={
                           havuzOrgId && havuzDurumu[profile.id]
                             ? { orgId: havuzOrgId, durum: havuzDurumu[profile.id] }

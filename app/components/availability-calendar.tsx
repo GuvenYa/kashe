@@ -11,6 +11,16 @@ type Props = {
   bookedDates: string[];
   /** true → profesyonel yönetir (tıkla-blokla); false → salt görüntüleme (müşteri) */
   editable: boolean;
+  /**
+   * D2 — SECILEBILIR GUN modu. `editable={false}` iken bos gunler
+   * tiklanabilir olur ve secilen gun cagirana bildirilir (fiyat/takvim
+   * kartinda "Tarih" alanini doldurur). Dolu ve gecmis gunler yine
+   * tiklanamaz. Verilmezse takvim bugunku gibi SALT OKUNUR kalir —
+   * `/takvimim` ve profil musaitlik gorunumu degismez.
+   */
+  onSelect?: (iso: string) => void;
+  /** Secili gun (ISO) — pembe isaretlenir. */
+  selectedDate?: string | null;
 };
 
 const MONTHS_TR = [
@@ -31,6 +41,8 @@ export function AvailabilityCalendar({
   blockedDates,
   bookedDates,
   editable,
+  onSelect,
+  selectedDate = null,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -220,17 +232,31 @@ export function AvailabilityCalendar({
           } else {
             cls += ' text-ink';
             if (editable) cls += ' hover:bg-moss/10 cursor-pointer';
+            else if (onSelect) cls += ' hover:bg-brand-accent/15 cursor-pointer';
+          }
+          // Secili gun — pembe (secim bir KARAR, musaitlik durumu degil).
+          if (selectedDate === dateStr && !isFull && !isPast) {
+            cls += ' bg-brand-accent text-paper font-semibold';
           }
           if (rangeStart === dateStr) cls += ' ring-2 ring-inset ring-brand-ink bg-brand-ink/8';
           else if (isToday) cls += ' ring-1 ring-inset ring-ink-72/40';
 
-          const clickable = editable && !isBooked && !isPast;
+          const secilebilir = !!onSelect && !editable && !isFull && !isPast;
+          const clickable = (editable && !isBooked && !isPast) || secilebilir;
 
           return (
             <button
               key={dateStr}
               type="button"
-              onClick={() => handleDayClick(dateStr, isBooked, isPast)}
+              onClick={() => {
+                // Secim modu DUZENLEME DEGIL: `onSelect` varsa gun bloklanmaz,
+                // yalniz cagirana bildirilir.
+                if (onSelect && !editable) {
+                  onSelect(dateStr);
+                  return;
+                }
+                handleDayClick(dateStr, isBooked, isPast);
+              }}
               disabled={!clickable}
               className={cls}
               title={
@@ -240,7 +266,9 @@ export function AvailabilityCalendar({
                     ? 'Dolu (işaretledin)'
                     : editable && !isPast
                       ? 'Müsait — dolu işaretlemek için tıkla'
-                      : undefined
+                      : secilebilir
+                        ? 'Müsait — tarih seçmek için tıkla'
+                        : undefined
               }
             >
               {date.getDate()}

@@ -27,6 +27,11 @@ type Props = {
   isOwnProfile: boolean;
   writableBusinesses?: OnBehalfBusiness[];
   variant?: 'default' | 'outline-ink';
+  /**
+   * D2 — fiyat/takvim kartindan gelen tarih. Modalin KENDI alanini
+   * doldurur; form alanlari ve action DEGISMEZ, yalniz baslangic degeri.
+   */
+  initialDate?: string | null;
 };
 
 export function RezervasyonButton({
@@ -37,6 +42,7 @@ export function RezervasyonButton({
   isOwnProfile,
   writableBusinesses = [],
   variant = 'default',
+  initialDate = null,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,7 +56,7 @@ export function RezervasyonButton({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [eventDate, setEventDate] = useState('');
+  const [eventDate, setEventDate] = useState(initialDate ?? '');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
@@ -275,7 +281,12 @@ export function RezervasyonButton({
     <>
       <button
         type="button"
-        onClick={() => setModalOpen(true)}
+        onClick={() => {
+          // Kart tarihi MODAL ACILIRKEN uygulanir: useState baslangic degeri
+          // yalniz ilk montajda okunur, kartta sonradan secilen gun oraya ulasmazdi.
+          if (initialDate && !eventDate) setEventDate(initialDate);
+          setModalOpen(true);
+        }}
         className={
           variant === 'outline-ink'
             ? 'w-full py-3 bg-transparent border-[1.5px] border-brand-ink text-brand-ink rounded-xl font-display font-semibold text-[15px] hover:bg-brand-ink/5 transition-colors text-center'

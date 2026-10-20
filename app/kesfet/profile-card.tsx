@@ -6,6 +6,7 @@ import {
   readFilterFieldValues,
 } from '@/app/lib/filter-config';
 import { isVerified, isPremiumActive } from '@/app/lib/badges';
+import { formatTL } from '@/app/lib/para';
 import { CoverMedia } from './cover-media';
 import { HavuzKisaYol } from './havuz-kisa-yol';
 
@@ -38,9 +39,12 @@ type Props = {
   /** 'default' = Keşfet/favoriler/kategori/p[id] (mobil+masaüstü hover paneli, favori kalbi).
    *  'compact' = ana sayfa öne çıkanlar (tek foto-hero, hover paneli/kalp YOK, whole-card link). */
   variant?: 'default' | 'compact';
-  /** Yogun izgara (ana sayfa One cikanlar, 4 sutun): masaustu foto alani
-   *  aspect-[3/4] yerine aspect-[4/3] olur (ana sayfada 4 sutun x 4 satir). Hover paneli ve mobil duzen AYNI;
-   *  Kesfet bu prop'u gecmez, davranisi degismez. */
+  /**
+   * ARTIK ETKISIZ (D2): masaustu foto alani `default` varyantta HER ZAMAN
+   * `aspect-[4/3]`. Eskiden kesfet 3:4 (dikey), ana sayfa 4:3 kullaniyordu;
+   * iki farkli oran ayni karti iki ayri urun gibi gosteriyordu. Prop, mevcut
+   * cagiranlari kirmamak icin duruyor.
+   */
   yogun?: boolean;
   /** default varyantta favori kalbi için; compact'ta kullanılmaz (opsiyonel). */
   isFavorited?: boolean;
@@ -48,8 +52,9 @@ type Props = {
   currentUserRole?: string | null;
   /** FAZ 4c/P3: etkinlikten gelen kesfet — profil linki `?etkinlik=` ile tasinir. */
   etkinlikId?: string | null;
-  /** Geriye dönük uyum: eski çağıranlar (favoriler/kategori/benzer profiller) fiyat için
-   *  geçiyordu; kartta ARTIK kullanılmıyor (fiyat karttan kalktı). */
+  /** Kartin alt rozetindeki "... TL'den" fiyati buradan turetilir (D2): yayinda
+   *  olan ve talep-uzerine OLMAYAN hizmetlerin en dusuk `price_min`. Fiyat yoksa
+   *  rozet CIZILMEZ — uydurma "fiyat gorusulur" rozeti konmaz. */
   services?: {
     price_min: number | null;
     price_max: number | null;
@@ -173,8 +178,10 @@ function TopChips({
       )}
       {categoryName && (
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 shrink-0 shadow-sm">
+          {/* Nokta CYAN (`sky`): kategori bir BILGI etiketi, pembe aksan ise
+              eylem/vurgu rengi. Ikisi ayni kartta karismasin. */}
           <span
-            className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0"
+            className="w-1.5 h-1.5 rounded-full bg-sky shrink-0"
             aria-hidden="true"
           />
           <span className="truncate max-w-[130px]">{categoryName}</span>
@@ -207,11 +214,11 @@ export function ProfileCard({
   jobsCount = 0,
   quote = null,
   variant = 'default',
-  yogun = false,
   isFavorited = false,
   isLoggedIn = false,
   currentUserRole = null,
   etkinlikId = null,
+  services,
   havuz,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
@@ -272,6 +279,23 @@ export function ProfileCard({
     badgeInput.premiumTier,
     badgeInput.premiumUntil
   );
+
+  // ALT ROZET (D2): profesyonelde en dusuk baslangic fiyati, ajansta kurumsal
+  // etiketi. Fiyat yalniz GERCEK veriden: talep-uzerine hizmetler ve bos
+  // `price_min` degerleri atlanir; hicbiri yoksa rozet cizilmez.
+  const enDusukFiyat = (() => {
+    if (isAgencyCard) return null;
+    const adaylar = (services ?? [])
+      .filter((h) => !h.price_on_request && h.price_min != null)
+      .map((h) => Number(h.price_min))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return adaylar.length > 0 ? Math.min(...adaylar) : null;
+  })();
+  const altRozet = isAgencyCard
+    ? 'Kurumsal profil'
+    : enDusukFiyat !== null
+      ? `${formatTL(enDusukFiyat)}'den`
+      : null;
 
   const showFavoriteButton =
     profile.role === 'professional' || profile.role === 'agency';
@@ -370,6 +394,11 @@ export function ProfileCard({
               jobsCount={jobsCount}
               cityName={cityName}
             />
+            {altRozet && (
+              <span className="inline-block w-fit font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 bg-paper-2 border border-line px-2 py-0.5 rounded-md">
+                {altRozet}
+              </span>
+            )}
             {profile.bio && (
               <p className="text-sm text-ink-72 leading-relaxed line-clamp-1">
                 {profile.bio}
@@ -407,13 +436,7 @@ export function ProfileCard({
         </div>
 
         {/* ===================== MASAÜSTÜ (>768px) ===================== */}
-        <div
-          className={
-            yogun
-              ? 'hidden md:block relative aspect-[4/3]'
-              : 'hidden md:block relative aspect-[3/4]'
-          }
-        >
+        <div className="hidden md:block relative aspect-[4/3]">
           <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
 
           <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
@@ -433,6 +456,11 @@ export function ProfileCard({
                 cityName={cityName}
               />
             </div>
+            {altRozet && (
+              <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-white bg-white/15 border border-white/25 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                {altRozet}
+              </span>
+            )}
           </div>
 
           {/* Hover paneli — alttan yukarı kayar (z-20: kart linkinin üstünde).

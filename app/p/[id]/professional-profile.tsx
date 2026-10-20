@@ -2,6 +2,8 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { IletisimButton } from './iletisim-button';
+import { GuvenCipleri } from '@/app/components/guven-cipleri';
+import { FiyatTakvimKarti } from '@/app/components/fiyat-takvim-karti';
 import { RezervasyonButton } from './rezervasyon-button';
 import { DavetButton } from './davet-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
@@ -11,7 +13,6 @@ import { ShareButton } from './share-button';
 import { type OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 import { ProfileMediaHero, type HeroMedia } from './profile-media-hero';
 import { formatPriceRange } from '@/app/lib/profile-helpers';
-import type { BadgeCard } from '@/app/lib/badges';
 import {
   getCategoryFields,
   getModuleTitle,
@@ -48,8 +49,24 @@ export type ProfessionalProfileProps = {
   cityName: string | undefined;
   averageRating: number;
   reviewCount: number;
-  badgeCards: BadgeCard[];
   isBusyNow: boolean;
+  /** D2 — guven cipleri ve fiyat/takvim karti icin gercek sinyaller. */
+  guvenSinyalleri: {
+    dogrulanmis: boolean;
+    profilOnayli: boolean;
+    tamamlanmisIs: number;
+    ortalamaYanitSaati: number | null;
+    tekrarTercih: boolean;
+    premium: boolean;
+    yuksekPuanli?: boolean;
+    cokTercihEdilen?: boolean;
+  };
+  /** Musaitlik takvimi (profesyonelin isaretledigi dolu gunler). */
+  blockedDates: string[];
+  /** Onayli rezervasyon gunleri (otomatik dolu). */
+  bookedDates: string[];
+  /** Yayindaki en dusuk paket/hizmet fiyati; yoksa null. */
+  enDusukFiyat: number | null;
   services: ServiceWithCategory[];
   packages: ServicePackage[];
   portfolioItems: PortfolioItem[];
@@ -101,7 +118,8 @@ function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
 export function ProfessionalProfile(props: ProfessionalProfileProps) {
   const {
     profile, displayName, initials, categorySubtitle, cityName,
-    averageRating, reviewCount, badgeCards, isBusyNow, services, packages,
+    averageRating, reviewCount, isBusyNow, services, packages,
+    guvenSinyalleri, blockedDates, bookedDates, enDusukFiyat,
     portfolioItems, experiences, representingAgency, recentReviews,
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
@@ -321,12 +339,30 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
       />
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-8 md:py-10">
-        <Link
-          href="/kesfet"
-          className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-6"
+        {/* EKMEK KIRINTISI (D2) — "Kesfet'e don" yerine konum satiri:
+            kullanici hangi kategoride oldugunu gorur ve iki ustteki yuzeye de
+            donebilir. */}
+        <nav
+          aria-label="Konum"
+          className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 flex items-center gap-1.5 flex-wrap mb-6"
         >
-          ← Keşfet&apos;e dön
-        </Link>
+          <Link href="/kesfet" className="hover:text-brand-ink transition-colors">
+            Keşfet
+          </Link>
+          {slug && profile.service_categories?.name_tr && (
+            <>
+              <span aria-hidden="true">·</span>
+              <Link
+                href={`/kategori/${slug}`}
+                className="hover:text-brand-ink transition-colors"
+              >
+                {profile.service_categories.name_tr}
+              </Link>
+            </>
+          )}
+          <span aria-hidden="true">·</span>
+          <span className="text-ink">{displayName}</span>
+        </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-7">
           {/* ═══════════ SOL RAIL ═══════════ */}
@@ -377,35 +413,9 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               </div>
             </div>
 
-            {/* Rozet kartları (max 2) — mobil: yatay kaydırma (snap + peek); masaüstü: dikey yığın */}
-            {badgeCards.length > 0 && (
-              <div
-                className={`flex gap-2 lg:flex-col ${
-                  badgeCards.length > 1
-                    ? 'overflow-x-auto lg:overflow-visible snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
-                    : ''
-                }`}
-              >
-                {badgeCards.map((b) => (
-                  <div
-                    key={b.key}
-                    className={`flex gap-3 px-3.5 py-3 bg-brand-ink/5 border border-brand-ink/15 rounded-xl snap-start ${
-                      badgeCards.length > 1 ? 'shrink-0 w-[80%] lg:w-auto' : 'w-full'
-                    }`}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden="true">
-                      <path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" />
-                      <polyline points="9 12 11 14 15 10" />
-                    </svg>
-                    <div>
-                      <div className="font-display text-[13.5px] font-semibold text-ink">{b.label}</div>
-                      <div className="text-xs text-ink-72 leading-snug">{b.description}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
+            {/* GUVEN CIPLERI (D2) — eski iki rozet KARTI bu satira dondu.
+                Her cip bir veriye dayanir; sinyal yoksa cip cizilmez. */}
+            <GuvenCipleri {...guvenSinyalleri} />
             {/* MEDYA HERO — mobilde badge'lerden hemen sonra (ajans kartından önce) */}
             {mediaHeroEl && <div className="lg:hidden">{mediaHeroEl}</div>}
 
@@ -438,9 +448,52 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               </div>
             )}
 
-            {/* CTA — masaüstü tam blok; mobilde primer'ler alt sabit bara taşınır,
-                ikon satırı (favori/paylaş/şikayet) rail sonunda (ajanstan sonra) kalır. */}
-            <div className="hidden lg:block">{ctaBlock}</div>
+            {/* FIYAT / TAKVIM KARTI (D2) — fiyat, musaitlik ve on-doldurma.
+                CTA'lar AYNI dugmeler (`IletisimButton` / `RezervasyonButton`);
+                kart yalniz tarih/sehir/kisi bilgisini onlara tasir. Eylemler ve
+                form alanlari degismedi. Mobilde primer dugmeler alt sabit barda
+                kaldigi icin kart `lg`+ gosterilir. */}
+            <div className="hidden lg:block">
+              <FiyatTakvimKarti
+                enDusukFiyat={enDusukFiyat}
+                blockedDates={blockedDates}
+                bookedDates={bookedDates}
+                varsayilanSehir={cityName ?? null}
+                cta={
+                  canTransact
+                    ? (dolgu) => (
+                        <>
+                          <IletisimButton
+                            professionalId={profile.id}
+                            professionalName={displayName}
+                            categorySlug={slug}
+                            isLoggedIn={isLoggedIn}
+                            currentUserIsProfessional={currentUserIsProfessional}
+                            isOwnProfile={isOwnProfile}
+                            writableBusinesses={writableBusinesses}
+                            variant="primary-accent"
+                            onDolgu={dolgu}
+                          />
+                          <RezervasyonButton
+                            professionalId={profile.id}
+                            professionalName={displayName}
+                            isLoggedIn={isLoggedIn}
+                            currentUserIsProfessional={currentUserIsProfessional}
+                            isOwnProfile={isOwnProfile}
+                            writableBusinesses={writableBusinesses}
+                            variant="outline-ink"
+                            initialDate={dolgu.tarih}
+                          />
+                          {actionBar}
+                        </>
+                      )
+                    : undefined
+                }
+              />
+              {/* Kendi profiline bakan sahip: kart yalniz fiyat + takvim; eski
+                  "Profili duzenle" blogu altta durur. */}
+              {!canTransact && <div className="mt-3">{ctaBlock}</div>}
+            </div>
 
             {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
             {havuzSlot}

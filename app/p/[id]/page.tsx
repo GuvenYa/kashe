@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { GuvenCipleri } from '@/app/components/guven-cipleri';
 import { createClient } from '@/app/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -35,7 +36,7 @@ import {
   getFilterSource,
   readFilterFieldValues,
 } from '@/app/lib/filter-config';
-import { getBadges, isVerified, BADGE_TONE_CLASS, getBadgeCards, isPremiumActive, isBusy } from '@/app/lib/badges';
+import { getBadges, isVerified, getBadgeCards, isPremiumActive, isBusy } from '@/app/lib/badges';
 import type { PremiumTier } from '@/app/lib/badges';
 import { ProfessionalProfile } from './professional-profile';
 import { HavuzaEkle } from './havuza-ekle';
@@ -365,8 +366,10 @@ export default async function PublicProfilePage({
     createdAt: profile.created_at,
     rating: { count: reviewCount, average: averageRating },
   };
-  const profileBadges = getBadges(badgeInput);
   const profileVerified = isVerified(badgeInput);
+  // Puan rozetleri (`getBadges`): guven ciplerine 'Yuksek puanli' /
+  // 'Cok tercih ediliyor' olarak girer (eski rozet listesinin karsiligi).
+  const puanRozetleri = new Set(getBadges(badgeInput).map((b) => b.key));
 
   // Müşteri profilleri + yanıtları toplu çek
   type CustomerMini = {
@@ -494,6 +497,41 @@ export default async function PublicProfilePage({
     });
 
     const isBusyNow = isBusy(new Set(blockedDates));
+
+    // D2 — guven cipleri: HEPSI mevcut veriden. `dealRows` yukarida tekrar
+    // tercih sinyali icin okundu; tamamlanmis is SAYISI ayni satirlardan
+    // gelir, EK SORGU YOK. Ortalama yanit suresi bugun hesaplanmiyor
+    // (`getBadgeCards` responseTime: null, FAZ 2) — o yuzden null gecer ve
+    // cip cizilmez; sayi UYDURULMAZ.
+    const tamamlanmisIsSayisi = (dealRows ?? []).length;
+    const guvenSinyalleri = {
+      dogrulanmis: profileVerified,
+      profilOnayli: profile.approval_status === 'approved',
+      tamamlanmisIs: tamamlanmisIsSayisi,
+      ortalamaYanitSaati: null as number | null,
+      tekrarTercih: badgeCards.some((b) => b.key === 'repeatChoice'),
+      yuksekPuanli: puanRozetleri.has('topRated'),
+      cokTercihEdilen: puanRozetleri.has('popular'),
+      premium: isPremiumActive(
+        profile.premium_tier as PremiumTier | null,
+        profile.premium_until
+      ),
+    };
+
+    // En dusuk baslangic fiyati: paketler ve talep-uzerine OLMAYAN hizmetler.
+    // Fiyat yoksa null -> kart "Fiyat teklifle" der (uydurma fiyat yok).
+    const fiyatAdaylari = [
+      ...packages
+        .filter((p) => !p.price_on_request && p.price_min != null)
+        .map((p) => Number(p.price_min))
+        .filter((n) => Number.isFinite(n) && n > 0),
+      ...services
+        .filter((h) => !h.price_on_request && h.price_min != null)
+        .map((h) => Number(h.price_min))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    ];
+    const enDusukFiyat =
+      fiyatAdaylari.length > 0 ? Math.min(...fiyatAdaylari) : null;
 
     // "Onaylı yorum" — gösterilen yorumların müşterilerinden GERÇEK anlaşması olanlar.
     // Deal = SIRA1 tanımı (bookings confirmed/completed; kabul edilmiş teklif trigger ile
@@ -633,10 +671,13 @@ export default async function PublicProfilePage({
           cityName={cityName}
           averageRating={averageRating}
           reviewCount={reviewCount}
-          badgeCards={badgeCards}
           isBusyNow={isBusyNow}
           services={services}
           packages={packages}
+          guvenSinyalleri={guvenSinyalleri}
+          blockedDates={blockedDates}
+          bookedDates={[]}
+          enDusukFiyat={enDusukFiyat}
           portfolioItems={portfolioItems}
           experiences={experiences}
           representingAgency={representingAgency}
@@ -768,12 +809,29 @@ export default async function PublicProfilePage({
       {previewBand}
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
-          <Link
-            href="/kesfet"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 hover:text-brand-ink transition-colors inline-flex items-center gap-1.5 mb-6"
+          {/* EKMEK KIRINTISI (D2) — "geri don" yerine konum: kullanici nerede
+              oldugunu ve nereye donebilecegini ayni satirda gorur. */}
+          <nav
+            aria-label="Konum"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 flex items-center gap-1.5 flex-wrap mb-6"
           >
-            ← Keşfet&apos;e dön
-          </Link>
+            <Link href="/kesfet" className="hover:text-brand-ink transition-colors">
+              Keşfet
+            </Link>
+            {profile.service_categories?.slug && (
+              <>
+                <span aria-hidden="true">·</span>
+                <Link
+                  href={`/kategori/${profile.service_categories.slug}`}
+                  className="hover:text-brand-ink transition-colors"
+                >
+                  {profile.service_categories.name_tr}
+                </Link>
+              </>
+            )}
+            <span aria-hidden="true">·</span>
+            <span className="text-ink">{displayName}</span>
+          </nav>
 
           {/* HEADER */}
           <div className="bg-card border border-line rounded-2xl p-8 mb-6">
@@ -832,18 +890,23 @@ export default async function PublicProfilePage({
                 {categoryLabel && (
                   <p className="text-ink-72 mt-1.5">{categoryLabel}</p>
                 )}
-                {profileBadges.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {profileBadges.map((b) => (
-                      <span
-                        key={b.key}
-                        className={`font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border ${BADGE_TONE_CLASS[b.tone]}`}
-                      >
-                        {b.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {/* GUVEN CIPLERI (D2) — profesyonel profiliyle AYNI bilesen.
+                    Premium/onay gibi mevcut rozetler burada tek dille gorunur. */}
+                <div className="mt-2.5">
+                  <GuvenCipleri
+                    dogrulanmis={profileVerified}
+                    profilOnayli={profile.approval_status === 'approved'}
+                    tamamlanmisIs={0}
+                    ortalamaYanitSaati={null}
+                    tekrarTercih={false}
+                    yuksekPuanli={puanRozetleri.has('topRated')}
+                    cokTercihEdilen={puanRozetleri.has('popular')}
+                    premium={isPremiumActive(
+                      profile.premium_tier as PremiumTier | null,
+                      profile.premium_until
+                    )}
+                  />
+                </div>
                 {cityName && (
                   <p className="text-sm text-ink-72 mt-2 flex items-center gap-1.5">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
