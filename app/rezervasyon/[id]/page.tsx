@@ -389,14 +389,9 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                           Teklif talebine git →
                         </Link>
                       )}
-                      {isSellerOrg && teklif?.id && (
-                        <Link
-                          href={`/ajans/teklifler/${teklif.id}`}
-                          className="kashe-tap text-brand-ink hover:underline"
-                        >
-                          Teklife git →
-                        </Link>
-                      )}
+                      {/* Satici dalinda ayrica baglanti YOK: asagidaki
+                          "Teklife git" karti (kalemler, surumler, ic maliyet)
+                          zaten ayni yere goturuyor; ikisi birden tekrardi. */}
                     </div>
                   </>
                 )}

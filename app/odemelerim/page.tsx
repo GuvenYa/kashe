@@ -33,7 +33,7 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('tr-TR', {
     timeZone: KASHE_SAAT_DILIMI,
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   });
 }
@@ -247,7 +247,7 @@ export default async function OdemelerimPage() {
       <div className="max-w-5xl">
           {/* Header */}
           <PanelBaslik
-            eyebrow="Ödeme Geçmişi"
+            eyebrow="Hesap"
             altNot="Rezervasyonların ve ödeme durumları. Tutarlar profesyonelle anlaştığın toplam bedeli gösterir."
           >
             Ödeme Geçmişi

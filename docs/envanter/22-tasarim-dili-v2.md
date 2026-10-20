@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim); D1b-1 (8a-P1 ile), D1b-2 ve D1b-3 KAPANDI (21 Ekim); sirada D1b-4 (duzen kalanlari; `26-claude-code-gorevi-d1b-4-duzen-kalanlari.md`), sonra D2. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (D1a 20 Ekim; D1b-1..4 21 Ekim); sirada D2 (pazaryeri), sonra D3 (Kashe AI), D4 (vitrin). Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -114,6 +114,31 @@ hesaplaniyordu (%700) — DB `margin_rate` gibi **ara toplam uzerinden** (`tekli
 yaziyor (bos → upsert cagrilmamali); taslakta baslik girdisi telefonda tek satir; `/etkinliklerim/[id]` ve `/rezervasyon/[id]` baslik
 kartlari ayni `basis-80` desenine. Kabul edilen sapma: ekip uyesi satirinda "…" menusu yerine durum secimi + Kilitle/Not dugmeleri kalir.
 **Kural (DESIGN.md 9'a D1b-4 ile):** panel sayfalari `md:` yerlesimlerini viewport'a gore kullanabilir; icerik alani `lg`'de en az 784 px.
+
+### D1b-4 KAPANDI (21 Ekim 2026) — onizleme turu; D1 (calisma yuzeyleri) KAPANDI
+
+Dal `tasarim/d1b-4` (`26-claude-code-gorevi-d1b-4-duzen-kalanlari.md`). Yapilan: `PanelBaslik` 18 sayfada (6 zaten `ustBaslik`; 4 kart
+sayfasi kapsam disi), bilesen `flex-wrap` + sol sutun `basis-80` + `break-words` (`eyebrow` ReactNode, `altNot` `ustBaslik`'a eklendi; baslik
+boyutlari `text-3xl md:text-4xl`'e normallesti); `/etkinliklerim/[id]` ve `/rezervasyon/[id]` baslik kartlari ayni desen; `/rezervasyon/[id]`
+alici dali: `account_type` rozeti, "Teklif surumu N · Onaylayan: <ad> · <tarih>", "Teklif talebine git →" (`rfp_id`); `/rezervasyonlarim`
+kurulus karti ilk satir karsi taraf; `/odemelerim` K12: `events.manage`/`finance.view` uyeliklerin `buyer_organization_id` rezervasyonlari
+KPI + `VeriTablosu` ("kurulus adina" isareti); `/kurumsal/rfp/[id]` karsilastirma: secili sutun `brand-accent-soft` + "Secili" rozeti,
+`md` alti kart modu, `OzetSerit` (secim yoksa en dusuk teklif + "Sec" → mevcut onay kapisi; secim varsa bilgi); teklif: musteri gorunumunde
+satici adi kurulus adi (`kurulusAdi` prop), bos ic maliyet → RPC yok, baslik `textarea` (Enter engelli); `DESIGN.md` 9: kirilma noktalari +
+baslik karti kurali. Sapmalar kabul: karsilastirma `VeriTablosu` BILESENI degil DILI (pivot tablo), ekip uyesi satiri oldugu gibi.
+**Diff incelemesinde duzeltilen (Claude):** `/kurumsal/rfp` ve `/ajans/teklifler` "Yeni talep/teklif" formlari `sagAlan`'dan basligin altina
+(form acikken `shrink-0` dar ekranda tasardi); `/odemelerim` ayni rezervasyon kisisel + kurulus satiri olarak iki kez gelebiliyordu
+(`customer_id` + `buyer_organization_id` ikisi de dolu) → `id` ile tekil; serit secim yokken "Secili" yerine "En dusuk teklif"; baslik
+`textarea rows={1}` + `field-sizing-content`; `/odemelerim` eyebrow "Hesap" (baslikla ayniydi), tarih uzun ay; satici dalinda tekrar eden
+"Teklife git →" baglantisi kaldirildi (kart zaten var).
+**Tur (673 px pane; gmail, testguven):** basliklar `PanelBaslik`, "Yeni teklif" basligin altinda; lansman basligi tam; musteri gorunumu
+"Sunucu Ajans"; baslik textarea tek satir, icerige gore buyur; bos ic maliyet → istek yok; `/rezervasyonlarim` kurulus kartlari;
+`/rezervasyon/1c277043` satici: "Teklif surumu 2 · Onaylayan: Test Pro · 19 Ekim 2026 14:45"; alici: "Sunucu Ajans [AJANS] · Kurulusunuz
+adina · Test Guven · Teklif talebine git →"; `/kurumsal/rfp/6e337b47` kart modu pembe secili kart + serit "SECILI Sunucu Ajans · 23.400 TL ·
+Secim yapildi", 1200 px'te tablo secili sutun pembe + rozet, serit yok; `/odemelerim` "Sunucu Ajans · KURULUS ADINA · 23.400 TL · YAKLASAN"
++ kisisel satir. Konsol 0, yatay tasma 0. hotmail turu bu dalda atlandi: `maliyetGorulur` render kosulu degismedi (D1b-3'te dogrulandi).
+**Sonraya:** karsilastirma kartinda ayni rol iki kez istenmisse iki satir ayni toplami gosteriyor (tablo da oyle; FAZ 7b veri modeli);
+bildirimler anonim dalinda `PanelBaslik` vitrin icinde (pembe vurgu zaten vardi).
 
 ## 5. Kabul olcutleri (D1a)
 
