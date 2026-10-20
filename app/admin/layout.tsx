@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
-import { AdminNav } from './admin-nav';
+import { PanelKabugu } from '@/app/components/panel';
+import type { PanelMenuGrubu } from '@/app/lib/panel-menu-tipler';
 
 export const metadata = {
   title: 'Admin — Kashe',
@@ -18,7 +18,43 @@ export const metadata = {
  * Sadece is_admin=true olan kullanıcılar erişebilir.
  * Diğerleri /'a yönlendirilir (404 yerine sessiz yönlendirme —
  * admin sayfasının varlığını dışarıya sızdırmamak için).
+ *
+ * D1a: yerlesim artik ortak `PanelKabugu` (eski `AdminNav` bu kabuga dondu).
+ * Menu SABIT: admin yuzeyinde rol/izin dallanmasi yok, maddeler ve siralari
+ * aynen korundu — degisen yalniz kabuk.
  */
+const ADMIN_MENU: PanelMenuGrubu[] = [
+  {
+    baslik: 'Yönetim',
+    maddeler: [
+      { href: '/admin', etiket: 'Dashboard', ikon: 'gosterge' },
+      { href: '/admin/profiller', etiket: 'Profiller', ikon: 'profil' },
+      { href: '/admin/ilanlar', etiket: 'İlanlar', ikon: 'ilan' },
+      { href: '/admin/kullanicilar', etiket: 'Kullanıcılar', ikon: 'havuz' },
+      {
+        href: '/admin/kategori-talepleri',
+        etiket: 'Kategori Talepleri',
+        ikon: 'kategori',
+      },
+    ],
+  },
+  {
+    baslik: 'Denetim',
+    maddeler: [
+      { href: '/admin/yorumlar', etiket: 'Yorumlar', ikon: 'mesaj' },
+      { href: '/admin/sikayetler', etiket: 'Şikayetler', ikon: 'sikayet' },
+      { href: '/admin/istatistikler', etiket: 'İstatistikler', ikon: 'istatistik' },
+    ],
+  },
+  {
+    baslik: 'İçerik',
+    maddeler: [
+      { href: '/admin/blog', etiket: 'Blog', ikon: 'blog' },
+      { href: '/admin/gorusler', etiket: 'Görüşler', ikon: 'gorus' },
+    ],
+  },
+];
+
 export default async function AdminLayout({
   children,
 }: {
@@ -47,11 +83,16 @@ export default async function AdminLayout({
   const adminName = profile.full_name || user.email || 'Admin';
 
   return (
-    <div className="min-h-screen bg-paper">
-      <AdminNav adminName={adminName} avatarUrl={profile.avatar_url ?? null} />
-      <main className="md:ml-60 px-6 md:px-12 py-8 md:py-10">
-        <div className="max-w-7xl mx-auto">{children}</div>
-      </main>
-    </div>
+    <PanelKabugu
+      menu={ADMIN_MENU}
+      hesap={{
+        ad: adminName,
+        altSatir: 'Platform yöneticisi',
+        avatarUrl: profile.avatar_url ?? null,
+        rozet: 'Admin',
+      }}
+    >
+      {children}
+    </PanelKabugu>
   );
 }

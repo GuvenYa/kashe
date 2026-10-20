@@ -1,7 +1,6 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TopNav } from '@/app/components/sections/top-nav';
 import { PublishToggle } from './publish-toggle';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { getUserFavorites } from '@/app/favoriler/actions';
@@ -23,6 +22,18 @@ import type { Profile, ServiceWithCategory, PortfolioItem } from '@/app/lib/type
 import { getCachedUser } from '@/app/lib/auth';
 import { fetchOwnProfile } from '@/app/lib/own-profile';
 import { HavuzBandi, type HavuzBandiSatiri } from './havuz-bandi';
+import { getCrewContext } from '@/app/lib/org-context';
+import { panelMenusu } from '@/app/lib/panel-menu';
+import { orgRolEtiketi } from '@/app/lib/org-roles';
+import {
+  PanelKabugu,
+  PanelKart,
+  KpiKutu,
+  KpiSatir,
+} from '@/app/components/panel';
+import { selamlama } from '@/app/lib/tarih';
+import { panelGunBugun, ayAraligi } from '@/app/lib/panel-gosterge-data';
+import { calcCommission, formatTRY } from '@/app/lib/premium';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -64,6 +75,22 @@ export default async function ProfilPage() {
   const isClientUser = isClient(profile);
   const isBusinessUser = isBusiness(profile);
   const isAgencyUser = isAgency(profile);
+
+  // D1a — kurulus baglami: hem yonlendirme hem "Kuruluslarim" karti icin.
+  const { orgs } = await getCrewContext();
+  const ajansKurulusu =
+    orgs.find((o) => o.accountType === 'agency' && o.canViewProposals) ?? null;
+  const kurumKurulusu =
+    orgs.find((o) => o.accountType === 'business' && o.canViewEvents) ?? null;
+
+  // Kendi hesabi ajans/kurum olan kullanicinin MERKEZI panelidir: /profil onu
+  // oraya gonderir (profil icerigi duzenlemesi /profil/duzenle'de kalir).
+  //
+  // Kapi ROLE de bakar, yalniz izne DEGIL: baska bir kurulusun izleyicisi olan
+  // bir profesyonelin `events.view` izni var ama onun merkezi /profil'dir —
+  // yalnizca izne bakmak onu kurumsal panele atardi.
+  if (isAgencyUser && ajansKurulusu) redirect('/ajans');
+  if (isBusinessUser && kurumKurulusu) redirect('/kurumsal');
 
   // FAZ 5/P2 — "seni havuzuna ekledi" bandi. RPC yalniz e-postasi eslesen ve henuz
   // bagli olmayan kayitlari doner. Musteri hesabinda CAGRILMAZ: satir donse de
@@ -299,13 +326,104 @@ export default async function ProfilPage() {
     return Array.isArray(raw) && raw.length > 0;
   })();
 
-  const initials = (profile.full_name || '')
-    .split(' ')
-    .map((s: string) => s[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  // D1a — merkez KPI'lari. Hepsi RLS'in zaten gosterdigi satirlardan sayilir;
+  // yeni yetki ya da yazma yolu yok. Rakamlar SUNUCUDA hesaplanir.
+  const bugunGun = panelGunBugun();
+  const { ilk: ayIlk, son: aySon } = ayAraligi();
+
+  let kpiBekleyenTalep = 0;
+  let kpiYaklasanRezervasyon = 0;
+  let kpiAyKazanc = 0;
+  let kpiAcikIlan = 0;
+  let kpiGelenTeklif = 0;
+  let kpiEtkinlik = 0;
+
+  if (isPro || isAgencyUser) {
+    const [talepSonuc, rezervasyonSonuc] = await Promise.all([
+      supabase
+        .from('quote_request_recipients')
+        .select('id, status')
+        .eq('professional_id', user.id)
+        .in('status', ['sent', 'viewed']),
+      supabase
+        .from('bookings')
+        .select('id, status, event_date, total_amount, completed_at')
+        .eq('professional_id', user.id),
+    ]);
+    kpiBekleyenTalep = (talepSonuc.data ?? []).length;
+    const rezervasyonlar = (rezervasyonSonuc.data ?? []) as {
+      status: string;
+      event_date: string | null;
+      total_amount: number | null;
+    }[];
+    kpiYaklasanRezervasyon = rezervasyonlar.filter(
+      (b) =>
+        b.status === 'confirmed' &&
+        !!b.event_date &&
+        b.event_date.slice(0, 10) >= bugunGun
+    ).length;
+    // "Bu ay kazanc" = TAMAMLANMIS islerin NET'i (komisyon dusulmus).
+    // Olcut etkinlik gunu: kazancin hangi aya yazildigi is yapilan gundur.
+    const ayBrut = rezervasyonlar
+      .filter(
+        (b) =>
+          b.status === 'completed' &&
+          !!b.event_date &&
+          b.event_date.slice(0, 10) >= ayIlk &&
+          b.event_date.slice(0, 10) <= aySon
+      )
+      .reduce((toplam, b) => toplam + (b.total_amount ?? 0), 0);
+    kpiAyKazanc = calcCommission(ayBrut).net;
+  }
+
+  if (isClientUser) {
+    const [ilanSonuc, talepSonuc, rezervasyonSonuc, etkinlikSonuc] =
+      await Promise.all([
+        supabase
+          .from('listings')
+          .select('id')
+          .eq('creator_id', user.id)
+          .eq('status', 'published'),
+        supabase
+          .from('quote_requests')
+          .select('id, quote_request_recipients(id, status)')
+          .eq('customer_id', user.id),
+        supabase
+          .from('bookings')
+          .select('id, status, event_date')
+          .eq('customer_id', user.id),
+        supabase.from('events').select('id').eq('owner_user_id', user.id),
+      ]);
+    kpiAcikIlan = (ilanSonuc.data ?? []).length;
+    // Gelen teklif = taleplerine YANIT vermis profesyonel sayisi.
+    kpiGelenTeklif = (
+      (talepSonuc.data ?? []) as unknown as {
+        quote_request_recipients: { status: string }[] | null;
+      }[]
+    ).reduce(
+      (toplam, t) =>
+        toplam +
+        (t.quote_request_recipients ?? []).filter(
+          (r) => r.status === 'responded'
+        ).length,
+      0
+    );
+    kpiYaklasanRezervasyon = (
+      (rezervasyonSonuc.data ?? []) as {
+        status: string;
+        event_date: string | null;
+      }[]
+    ).filter(
+      (b) =>
+        b.status === 'confirmed' &&
+        !!b.event_date &&
+        b.event_date.slice(0, 10) >= bugunGun
+    ).length;
+    kpiEtkinlik = (etkinlikSonuc.data ?? []).length;
+  }
+
+  const menu = await panelMenusu();
+
 
   const displayName =
     isBusinessUser && profile.company_name
@@ -313,80 +431,169 @@ export default async function ProfilPage() {
       : profile.full_name || 'Kullanıcı';
 
   return (
-    <>
-      <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-        <div className="max-w-3xl mx-auto">
-          {havuzDavetleri.length > 0 && (
-            <HavuzBandi satirlar={havuzDavetleri} />
-          )}
-
-          {/* HEADER */}
-          <div className="flex items-start justify-between mb-12 gap-4">
-            <div className="flex items-center gap-5 min-w-0">
-              {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt={displayName}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-line shrink-0"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold text-2xl shrink-0">
-                  {initials || '?'}
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-                    {getRoleLabel(profile.role)}
-                  </p>
-                  {/* Yayın durumu ROZETİ — bilgi amaçlı (buton değil); aksiyon dipteki
-                      banttadır. Yalnız yayın kavramı olan roller (pro/business). */}
-                  {(isPro || isBusinessUser) && (
-                    <span
-                      className={`font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border ${
-                        profile.is_published
-                          ? 'bg-moss/10 text-moss border-moss/40'
-                          : 'bg-ink-72/10 text-ink-72 border-ink-72/25'
-                      }`}
-                    >
-                      {profile.is_published ? 'Yayında' : 'Yayında değil'}
-                    </span>
-                  )}
-                </div>
-                <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight break-words">
-                  {displayName}
-                </h1>
-                {isBusinessUser && profile.company_name && profile.full_name && (
-                  <p className="text-ink-72 text-sm mt-1">
-                    İletişim: {profile.full_name}
-                  </p>
-                )}
-                {isPro && categoryLabel && (
-                  <p className="text-ink-72 text-sm mt-1">{categoryLabel}</p>
-                )}
-              </div>
-            </div>
+    <PanelKabugu
+      menu={menu}
+      yonetici={!!profile.is_admin}
+      hesap={{
+        ad: displayName,
+        altSatir: categoryLabel
+          ? getRoleLabel(profile.role) + ' · ' + categoryLabel
+          : getRoleLabel(profile.role),
+        avatarUrl: profile.avatar_url ?? null,
+      }}
+      ustBaslik={{
+        eyebrow: isPro ? 'Profesyonel · Merkez' : 'Hesabım · Merkez',
+        baslik: (
+          <>
+            {selamlama()},{' '}
+            <em className="not-italic text-brand-accent">{displayName}</em>
+          </>
+        ),
+        sagAlan: (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {/* Yayın durumu ROZETİ — bilgi amaçlı (buton değil); aksiyon dipteki
+                banttadır. Yalnız yayın kavramı olan roller (pro/business). */}
+            {(isPro || isBusinessUser) && (
+              <span
+                className={
+                  profile.is_published
+                    ? 'font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border bg-moss/10 text-moss border-moss/40'
+                    : 'font-mono text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border bg-ink-72/10 text-ink-72 border-ink-72/25'
+                }
+              >
+                {profile.is_published ? 'Yayında' : 'Yayında değil'}
+              </span>
+            )}
+            {isPro && (
+              <Link
+                href={`/p/${user.id}`}
+                className="kashe-tap font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
+              >
+                Profilimi görüntüle →
+              </Link>
+            )}
             <Link
               href="/profil/duzenle"
-              className="shrink-0 whitespace-nowrap px-5 py-2.5 border border-ink text-ink rounded-lg font-display font-medium hover:bg-ink hover:text-paper transition-colors"
+              className="shrink-0 whitespace-nowrap px-4 py-2 border border-ink text-ink rounded-lg font-display font-medium text-sm hover:bg-ink hover:text-paper transition-colors"
             >
               Düzenle
             </Link>
           </div>
+        ),
+      }}
+    >
+      {havuzDavetleri.length > 0 && <HavuzBandi satirlar={havuzDavetleri} />}
 
-          {/* D2 — kendi public profilini görüntüle (professional; normal link) */}
-          {isPro && (
-            <div className="-mt-8 mb-10">
-              <Link
-                href={`/p/${user.id}`}
-                className="inline-flex items-center gap-1.5 font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
-              >
-                Profilimi görüntüle →
-              </Link>
-            </div>
-          )}
+      {/* KPI — profesyonel/ajans ve musteri icin ayri dort kutu */}
+      {(isPro || isAgencyUser) && (
+        <KpiSatir>
+          <KpiKutu
+            etiket="Bekleyen teklif talebi"
+            deger={kpiBekleyenTalep}
+            altNot="Yanıt bekliyor"
+            vurgu={kpiBekleyenTalep > 0 ? 'accent' : 'none'}
+            href="/teklif-talepleri"
+          />
+          <KpiKutu
+            etiket="Yaklaşan rezervasyon"
+            deger={kpiYaklasanRezervasyon}
+            altNot="Onaylı, tarihi gelmemiş"
+            href="/rezervasyonlarim"
+          />
+          <KpiKutu
+            etiket="Bu ay kazanç"
+            deger={formatTRY(kpiAyKazanc)}
+            altNot="Tamamlanan işler, net"
+            vurgu={kpiAyKazanc > 0 ? 'moss' : 'none'}
+            href="/kazanclarim"
+          />
+          <KpiKutu
+            etiket="Profil tamlığı"
+            deger={`%${completeness}`}
+            altNot={
+              completeness < 100
+                ? `${missingFields.length} madde eksik`
+                : 'Tamamlandı'
+            }
+            href={completeness < 100 ? '/profil/duzenle' : undefined}
+          />
+        </KpiSatir>
+      )}
+
+      {isClientUser && (
+        <KpiSatir>
+          <KpiKutu
+            etiket="Açık ilan"
+            deger={kpiAcikIlan}
+            altNot="Yayında"
+            href="/ilanlarim"
+          />
+          <KpiKutu
+            etiket="Gelen teklif"
+            deger={kpiGelenTeklif}
+            altNot="Taleplerine yanıt"
+            vurgu={kpiGelenTeklif > 0 ? 'accent' : 'none'}
+            href="/teklif-taleplerim"
+          />
+          <KpiKutu
+            etiket="Yaklaşan rezervasyon"
+            deger={kpiYaklasanRezervasyon}
+            altNot="Onaylı, tarihi gelmemiş"
+            href="/rezervasyonlarim"
+          />
+          <KpiKutu
+            etiket="Etkinlik"
+            deger={kpiEtkinlik}
+            altNot="Tanımladığın"
+            href="/etkinliklerim"
+          />
+        </KpiSatir>
+      )}
+
+      {/* KURULUSLARIM — ajans VE kurumsal uyelikler. Rol etiketi uyelik
+          rolunden (`ORG_ROLE_LABELS`); "Panele git" yalniz ilgili izin varsa. */}
+      {orgs.length > 0 && (
+        <div className="mb-8">
+          <PanelKart baslik="Kuruluşlarım">
+            <ul className="divide-y divide-line">
+              {orgs.map((org) => {
+                const paneliVar =
+                  org.accountType === 'agency'
+                    ? org.canViewProposals
+                    : org.canViewEvents;
+                const panelHref =
+                  org.accountType === 'agency' ? '/ajans' : '/kurumsal';
+                return (
+                  <li
+                    key={org.id}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink font-medium truncate">
+                        {org.name}
+                      </p>
+                      <p className="text-[11px] text-ink-50">
+                        {org.accountType === 'agency' ? 'Ajans' : 'Kurumsal'} ·{' '}
+                        {orgRolEtiketi(org.role)}
+                      </p>
+                    </div>
+                    {paneliVar && (
+                      <Link
+                        href={panelHref}
+                        className="kashe-tap shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink hover:underline"
+                      >
+                        Panele git →
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </PanelKart>
+        </div>
+      )}
+
+      <div className="max-w-3xl">
 
           {/* ONAY DURUMU GÖSTERGESİ — client hariç */}
           {!isClientUser && profile.approval_status !== 'approved' && (
@@ -443,6 +650,24 @@ export default async function ProfilPage() {
               )}
             </div>
           )}
+
+          {/* D1a — bugunku yonetim kartlari IKI SUTUNA toplandi: solda yapilacaklar
+              (gorunurluk uyarilari + tamlik eksikleri), sagda profil icerigi.
+              Iki sutun yalniz profesyonelde acilir; diger rollerde sag sutunun
+              icerigi olmadigi icin tek sutun kalir (bos yariyi gostermemek icin). */}
+          <div
+            className={
+              isPro
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8 items-start'
+                : 'mb-8'
+            }
+          >
+            <div className="space-y-5">
+              {isPro && (
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
+                  Yapılacaklar
+                </p>
+              )}
 
           {/* ANA KATEGORİ ÇAĞRISI — kategori seçmemiş profesyonele.
               Seçici /profil/duzenle formunun ortasında gömülü kaldığı için burada
@@ -559,43 +784,18 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* INFO CARD — D1/D3: brand-ink eyebrow bölüm başı + normal-case alan etiketleri */}
-          <div className="bg-card border border-line rounded-xl p-6 space-y-4">
-            <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
-              Hesap Bilgileri
-            </p>
-            <div>
-              <p className="text-xs text-ink-72 mb-1">E-posta</p>
-              <p className="text-ink text-sm">{user.email}</p>
             </div>
 
-            {profile.phone && (
-              <div className="border-t border-line pt-4">
-                <p className="text-xs text-ink-72 mb-1">Telefon</p>
-                <p className="text-ink text-sm">{profile.phone}</p>
-              </div>
-            )}
-
-            {cityName && (
-              <div className="border-t border-line pt-4">
-                <p className="text-xs text-ink-72 mb-1">Şehir</p>
-                <p className="text-ink text-sm">{cityName}</p>
-              </div>
-            )}
-
-            {profile.bio && (
-              <div className="border-t border-line pt-4">
-                <p className="text-xs text-ink-72 mb-1">Hakkımda</p>
-                <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
-                  {profile.bio}
+            {/* Sag sutun — profil icerigi (yalniz profesyonel) */}
+            {isPro && (
+              <div className="space-y-5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
+                  Profil içeriği
                 </p>
-              </div>
-            )}
-          </div>
 
           {/* D1 — YENİ YÖNETİM KARTLARI: Deneyim & Eğitim + Kategori bilgileri (professional) */}
           {isPro && (
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-5">
               {/* Deneyim & Eğitim */}
               <div className="bg-card border border-line rounded-xl p-6 flex flex-col">
                 <p className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink">
@@ -668,6 +868,48 @@ export default async function ProfilPage() {
               </div>
             </div>
           )}
+
+                {/* Portfoy + Hizmetler/Paketler TEK kartta: ayrintili listeler
+                    asagida tam genislikte duruyor, burada yalniz durum ve giris. */}
+                <div className="bg-card border border-line rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-display font-semibold text-base text-ink">
+                        Portföy
+                      </p>
+                      <p className="text-ink-72 text-sm">
+                        {portfolioItems.length > 0
+                          ? `${portfolioItems.length} görsel yüklü`
+                          : 'Henüz görsel yok'}
+                      </p>
+                    </div>
+                    <Link
+                      href="/profil/portfoy"
+                      className="kashe-tap shrink-0 font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
+                    >
+                      {portfolioItems.length > 0 ? 'Düzenle →' : 'Ekle →'}
+                    </Link>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+                    <div className="min-w-0">
+                      <p className="font-display font-semibold text-base text-ink">
+                        Hizmetler ve paketler
+                      </p>
+                      <p className="text-ink-72 text-sm">
+                        {services.length} hizmet · {packageCount} paket
+                      </p>
+                    </div>
+                    <Link
+                      href="/profil/hizmetlerim"
+                      className="kashe-tap shrink-0 font-display font-semibold text-sm text-brand-ink hover:text-brand-ink-deep transition-colors"
+                    >
+                      Düzenle →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* PROFESYONEL: Portföy */}
           {isPro && (
@@ -1185,17 +1427,46 @@ export default async function ProfilPage() {
             </div>
           )}
 
-          {/* USER ID */}
+          {/* HESAP BILGILERI + KULLANICI ID — en altta, kucuk. Merkezin ustu
+              aksiyona ayrildi; bu blok basvuru degil referans bilgisi. */}
           <div className="mt-12 pt-8 border-t border-line">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72/60 mb-1">
-              Kullanıcı ID
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50 mb-3">
+              Hesap bilgileri
             </p>
-            <p className="text-ink-72/60 text-xs font-mono break-all">
-              {profile.id}
-            </p>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              <div>
+                <dt className="text-xs text-ink-72 mb-0.5">E-posta</dt>
+                <dd className="text-ink text-sm break-all">{user.email}</dd>
+              </div>
+              {profile.phone && (
+                <div>
+                  <dt className="text-xs text-ink-72 mb-0.5">Telefon</dt>
+                  <dd className="text-ink text-sm">{profile.phone}</dd>
+                </div>
+              )}
+              {cityName && (
+                <div>
+                  <dt className="text-xs text-ink-72 mb-0.5">Şehir</dt>
+                  <dd className="text-ink text-sm">{cityName}</dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-xs text-ink-72 mb-0.5">Kullanıcı ID</dt>
+                <dd className="text-ink-72/60 text-xs font-mono break-all">
+                  {profile.id}
+                </dd>
+              </div>
+            </dl>
+            {profile.bio && (
+              <div className="mt-4 pt-4 border-t border-line">
+                <p className="text-xs text-ink-72 mb-1">Hakkımda</p>
+                <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">
+                  {profile.bio}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      </main>
-    </>
+      </div>
+    </PanelKabugu>
   );
 }

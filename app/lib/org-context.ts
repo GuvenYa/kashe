@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createClient } from '@/app/lib/supabase-server';
 
 /**
@@ -137,9 +138,21 @@ export type CrewOrg = {
   canViewEvents: boolean;
   /** FAZ 7b: `events.manage` — RFP acar, duzenler, gonderir. */
   canManageEvents: boolean;
+  /** D1a: `finance.view` — panel menusunde "Kazanclar" maddesinin kapisi. */
+  canViewFinance: boolean;
+  /** Uyelik rolu (`organization_memberships.role`) — etiket icin; yetki kaynagi DEGIL. */
+  role: string;
 };
 
-export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
+/**
+ * `cache()`: ayni render gecisinde (tek HTTP istegi) BIR KEZ calisir.
+ *
+ * NEDEN (D1a): fonksiyon kurulus basina on yetki + bir modul RPC'si atiyor ve
+ * artik hem sayfa hem panel menusu (dolayisiyla ust bar) cagiriyor —
+ * memoize edilmeseydi ayni sayfada iki tam tur donerdi. On uc sayfa bu
+ * fonksiyonu cagiriyor; hepsi ayni turu paylasir.
+ */
+export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   const supabase = await createClient();
 
   const {
@@ -161,7 +174,7 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
   }
 
   const orgs: CrewOrg[] = [];
-  // Kurulus sayisi kucuk (bugun 1); bes yetki + bir modul RPC'si kurulus basina.
+  // Kurulus sayisi kucuk (bugun 1); dokuz yetki + bir modul RPC'si kurulus basina.
   for (const uyelik of (data ?? []) as unknown as UyelikSatiri[]) {
     const org = uyelik.organizations;
     if (!org) continue;
@@ -177,6 +190,7 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       teklifYonetir,
       etkinlikGorebilir,
       etkinlikYonetir,
+      finansGorebilir,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -219,6 +233,10 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
           p_org_id: org.id,
           p_permission: 'events.manage',
         }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'finance.view',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -245,11 +263,13 @@ export async function getCrewContext(): Promise<{ orgs: CrewOrg[] }> {
       // suzgeci YOK; teklif saticiligi ise yalniz ajans — yukaridaki iki alan).
       canViewEvents: etkinlikGorebilir.data === true,
       canManageEvents: etkinlikYonetir.data === true,
+      canViewFinance: finansGorebilir.data === true,
+      role: uyelik.role,
     });
   }
 
   return { orgs };
-}
+});
 
 /**
  * TopNav icin ucuz kontrol: menude ilgili baglanti gorunsun mu.
@@ -300,10 +320,10 @@ async function tekIzinVarMi(
   return sonuclar.some((r) => r.data === true);
 }
 
-/** Menude "Ekipler" (FAZ 6/P2). */
-export async function hasCrewAccess(): Promise<boolean> {
-  return tekIzinVarMi('crew.view', 'ekip');
-}
+// `hasCrewAccess` KALDIRILDI (D1a): tek cagirani ust bardaki elle kurulan menu
+// listesiydi; o liste artik `app/lib/panel-menu.ts`'ten uretiliyor ve "Ekipler"
+// maddesinin kapisi `CrewOrg.canViewCrew`. Cagirilmayan bir yetki yardimcisi
+// birakmak, olu bir mimari bag birakmaktir (CLAUDE.md commit disiplini notu).
 
 /** Menude "RFP Talepleri" (FAZ 7b/P1) — `events.view` yetkili kurulus (kurum ve ajans). */
 export async function hasRfpBuyerAccess(): Promise<boolean> {

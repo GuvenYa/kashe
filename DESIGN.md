@@ -429,6 +429,42 @@ bağımsız üretilir; bitişik yazım onlarda çalışır ama okunurluk için y
 
 ---
 
+## 9. Desenler (v2, 20 Ekim 2026)
+
+**Çalışma yüzeyi** (panel) ile **vitrin** ayrı iki dildir. Vitrin bölüm 0-8'de
+anlatıldığı gibi kalır; aşağıdakiler yalnız panel içindir. Bileşenler
+`app/components/panel/` altında, dışa aktarım `index.ts`.
+
+| Bileşen | Ne yapar | Kullanım |
+|---|---|---|
+| `PanelKabugu` | Lacivert sol sütun (240px) + içerik alanı | `/ajans`, `/kurumsal`, `/profil`, `/admin` |
+| `PanelBaslik` | Eyebrow + h1 + sağda serbest alan | Kabuğun `ustBaslik` prop'u |
+| `KpiKutu` / `KpiSatir` | Tek sayısal kutu / dört kutuluk satır | Gösterge panelleri |
+| `OzetKutuSatiri` | 2-3 kutu, biri `hero` (lacivert zemin) | Tek sayının ekranı taşıdığı yerler |
+| `VeriTablosu` | Liste tablosu; `md` altında kart modu | Gösterge listeleri |
+| `PanelKart` | Başlık + "Tümü →" taşıyan kart kabı | Gösterge bölümleri |
+
+**Yan menü.** Zemin `ink` (lacivert), metin `paper` kademeleri. Aktif madde
+`bg-paper/10 text-paper`, pasif `text-paper/55`. Etiketler Inter mono eyebrow
+(`font-mono text-[11px] uppercase tracking-[0.14em]`), yanında 16px lucide ikon.
+Grup başlığı `text-paper/40`. Dipte hesap kartı, "Siteye dön" ve "Çıkış yap".
+
+> Aktif madde neden `bg-paper/10`, `bg-brand-ink` değil: `brand-ink` ile `ink`
+> **aynı hex**. Lacivert zemin üstünde lacivert bir seçili arka plan görünmez.
+
+**Vurgu kelimesi.** Çalışma yüzeyi başlıklarında vurgulanan kelime
+`brand-accent` (pembe): `<em className="not-italic text-brand-accent">`.
+Vitrinde vurgu lacivert kalır (`text-brand-ink`) — iki dil burada ayrışır.
+
+**Üst nav.** `PanelKabugu` kullanan sayfa `TopNav` render **etmez**; gezinti yan
+menüdedir. Panel dışı sayfalarda bugünkü `TopNav` kalır.
+
+**Rakam üretmez.** KPI ve özet kutuları aldıkları değeri yazar; para/oran
+biçimlemesi çağıranın işidir (`formatPrice`, `formatTRY`). Tahmini gelir, marj
+veya doluluk gibi türetilmiş rakamlar bu bileşenlere girmez.
+
+---
+
 ## Kasıtlı palet istisnaları
 
 Aşağıdaki dosyalar **bilerek** eski palet hex'lerini taşır. Sonraki palet

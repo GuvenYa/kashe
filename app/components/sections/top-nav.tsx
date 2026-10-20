@@ -8,12 +8,8 @@ import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
-import {
-  hasCrewAccess,
-  hasProposalAccess,
-  hasRfpBuyerAccess,
-} from "@/app/lib/org-context";
 import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
+import { panelMenusu, menuyuDuzlestir } from "@/app/lib/panel-menu";
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -58,69 +54,19 @@ export async function TopNav() {
     .join("")
     .toUpperCase();
 
-  // Avatar menüsüne giden kişisel linkler (role göre)
-  const menuLinks: { href: string; label: string }[] = [
-    { href: "/profil", label: "Profilim" },
-  ];
-  // MENÜ SADELEŞTİRME: /profil'de bölümü/giriş-linki OLAN sayfalar menüde TEKRAR
-  // ETMEZ; karşılığı OLMAYANLAR kalır. (Yetki/sayfa değişmez — yalnız menü içeriği.)
-
-  // Profesyonel/ajans → Rezervasyonlarım (satıcı koltuğu: "Verdiğin hizmetler";
-  // pro-alıcıysa "Aldığın hizmetler" de aynı listede) + Takvimim + Kazançlarım.
-  if (isProfessional || isAgency) {
-    menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
-    menuLinks.push({ href: "/takvimim", label: "Takvimim" });
-    menuLinks.push({ href: "/kazanclarim", label: "Kazançlarım" });
-  }
-  // Müşteri/işletme → İlanlarım (bilinçli korunur — asıl çalışma alanı) + profilde
-  // karşılığı olmayan Rezervasyonlarım/Ödeme/Teklif Taleplerim.
-  if (isClient || isBusiness) {
-    menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
-    menuLinks.push({ href: "/rezervasyonlarim", label: "Rezervasyonlarım" });
-    menuLinks.push({ href: "/odemelerim", label: "Ödeme Geçmişi" });
-    menuLinks.push({ href: "/teklif-taleplerim", label: "Teklif Taleplerim" });
-  }
-  // Kurum manager+ üyesi (client/business değilse) → İlanlarım (profilde karşılığı YOK,
-  // tek erişim menü). Üyelik-farkındalıklı görünürlük korunur.
-  if (isBusinessManager && !isClient && !isBusiness) {
-    menuLinks.push({ href: "/ilanlarim", label: "İlanlarım" });
-  }
-  // Ajans → Başvurularım: ajans /profil'inde Başvurularım bölümü YOK ({isPro && ...} pro'ya
-  // özel) → menüde kalır. Pro'da bölüm olduğundan pro'nun menüsünden çıkarıldı.
-  if (isAgency) {
-    menuLinks.push({ href: "/basvurularim", label: "Başvurularım" });
-    // FAZ 5: yetenek havuzu — yalniz ajans (modul kapisi sayfada da kontrol edilir)
-    menuLinks.push({ href: "/ajans/havuz", label: "Yetenek Havuzu" });
-    // FAZ 6/P2: ekipler — `crew.view` yetkili kurulusu olan ajans kullanicisi.
-    // Ucuz kontrol (uyelik + crew.view); sayfa yine yetkisizi /profil'e yollar.
-    if (await hasCrewAccess()) {
-      menuLinks.push({ href: "/ajans/ekipler", label: "Ekipler" });
-    }
-    // FAZ 7a/P1: teklifler — `proposals.view` yetkili kurulusu olan ajans kullanicisi.
-    if (await hasProposalAccess()) {
-      menuLinks.push({ href: "/ajans/teklifler", label: "Teklifler" });
-      // FAZ 7b/P1: ajansa gelen teklif talepleri (RFP).
-      menuLinks.push({ href: "/ajans/rfp", label: "Gelen RFP'ler" });
-    }
-  }
-  // Profesyonel/ajans → Teklif Talepleri (profilde bölüm yok → kalır)
-  if (isProfessional || isAgency) {
-    menuLinks.push({ href: "/teklif-talepleri", label: "Teklif Talepleri" });
-  }
-  // ÇIKARILDI (profilde bölüm/link var): pro'da Hizmetlerim (/profil/hizmetlerim),
-  // Portföyüm (/profil/portfoy), Paketlerim (/profil/paketler), Başvurularım; client'ta
-  // Favoriler; ayrıca TÜM rollerde Davetlerim (profildeki "Davetlerim →" + bildirimler
-  // yeterli). business'ta Kurumsal Ekip zaten menüde link olarak yoktu.
-  if (isProfessional || isAgency) {
-    menuLinks.push({ href: "/premium", label: "Premium" });
-  }
-  // FAZ 4c/P2: etkinlik akisi tum girisli rollerde (profilde bolum yok, tek erisim menu)
-  menuLinks.push({ href: "/etkinliklerim", label: "Etkinliklerim" });
-  // FAZ 7b/P1: RFP alici tarafi — `events.view` yetkili kurulusu olan (kurum ve ajans).
-  if (await hasRfpBuyerAccess()) {
-    menuLinks.push({ href: "/kurumsal/rfp", label: "RFP Talepleri" });
-  }
-  menuLinks.push({ href: "/bildirimler", label: "Bildirimler" });
+  // ISLERIM listesi — TEK KAYNAK `app/lib/panel-menu.ts`.
+  //
+  // Eskiden burada 13 maddelik bir dizi elle kuruluyordu ve rol/izin kurallari
+  // bu dosyaya gomuluydu; ayni kurallar yan menude bir kez daha yazilmak
+  // zorunda kalirdi. Artik iki yuzey ayni modeli okur.
+  //
+  // `/mesajlar` DISARIDA: ust bar ve hamburger onu okunmamis rozetiyle
+  // kendi render ediyor; listeye koymak ayni satiri iki kez gosterirdi.
+  const panelGruplari = user ? await panelMenusu() : [];
+  const { isler, hesap } = menuyuDuzlestir(panelGruplari);
+  const menuLinks: { href: string; label: string }[] = [...isler, ...hesap]
+    .filter((m) => m.href !== '/mesajlar')
+    .map((m) => ({ href: m.href, label: m.etiket }));
 
   const navLinkClass =
     "font-body text-xs uppercase tracking-[0.16em] text-ink-50 hover:text-ink transition-colors duration-200 whitespace-nowrap";

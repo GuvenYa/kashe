@@ -68,6 +68,36 @@ export function kisaTarihMetni(iso: string | null | undefined): string | null {
   });
 }
 
+/** Istanbul saat dilimindeki saat (0-23). */
+export function istanbulSaati(simdi: Date = new Date()): number {
+  const s = new Intl.DateTimeFormat('en-GB', {
+    timeZone: KASHE_SAAT_DILIMI,
+    hour: '2-digit',
+    hour12: false,
+  }).format(simdi);
+  return Number(s);
+}
+
+/**
+ * Panel basliklarinin selamlamasi — Istanbul saatine gore.
+ *
+ * Sunucuda render edilir; dilim ACIKCA verildigi icin Vercel'in UTC saati
+ * "Gunaydin"i aksama kaydirmaz (bkz. dosya basindaki not).
+ */
+export function selamlama(simdi: Date = new Date()): string {
+  const saat = istanbulSaati(simdi);
+  if (saat < 12) return 'Günaydın';
+  if (saat < 18) return 'İyi günler';
+  return 'İyi akşamlar';
+}
+
+/** Istanbul gunu: "YYYY-MM-DD" (bugunle karsilastirmalar icin). */
+export function istanbulGunu(simdi: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: KASHE_SAAT_DILIMI,
+  }).format(simdi);
+}
+
 /** `<input type="date">` degeri: "YYYY-MM-DD" (Istanbul gunu). */
 export function tarihAlani(iso: string | null | undefined): string {
   const d = gecerliTarih(iso);
