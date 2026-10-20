@@ -292,12 +292,12 @@ export function PanelYanMenu({
   return (
     <>
       {/* Masaustu — sabit sol sutun */}
-      <aside className="hidden md:flex md:flex-col fixed top-0 left-0 h-screen w-60 bg-ink border-r border-paper/10 z-40">
+      <aside className="hidden lg:flex lg:flex-col fixed top-0 left-0 h-screen w-60 bg-ink border-r border-paper/10 z-40">
         {govde}
       </aside>
 
       {/* Mobil — ust cubuk */}
-      <div className="md:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
+      <div className="lg:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <KasheMark variant="dark" className="w-7 h-7 shrink-0" title="" />
           <span className="font-display font-semibold text-xl text-paper tracking-tight">
@@ -332,11 +332,11 @@ export function PanelYanMenu({
       {acik && (
         <>
           <div
-            className="md:hidden fixed inset-0 bg-ink/50 z-40"
+            className="lg:hidden fixed inset-0 bg-ink/50 z-40"
             onClick={() => setAcik(false)}
             aria-hidden="true"
           />
-          <aside className="md:hidden fixed top-0 left-0 h-screen w-64 bg-ink z-50 flex flex-col">
+          <aside className="lg:hidden fixed top-0 left-0 h-screen w-64 bg-ink z-50 flex flex-col">
             {govde}
           </aside>
         </>

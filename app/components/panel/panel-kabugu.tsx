@@ -7,7 +7,12 @@ import type { PanelMenuGrubu } from '@/app/lib/panel-menu-tipler';
  * PANEL KABUGU — calisma yuzeylerinin tek kabugu.
  *
  * Kaynak: `app/admin/admin-nav.tsx` + `app/admin/layout.tsx` yerlesimi
- * genellestirildi (lacivert sol sutun 240 px, icerik `md:ml-60`, `max-w-7xl`).
+ * genellestirildi (lacivert sol sutun 240 px, icerik `lg:ml-60`, `max-w-7xl`).
+ *
+ * KIRILMA NOKTASI `lg` (1024 px): sol sutun `md`'de (768) acilsaydi icerik
+ * alani 768-1023 px arasinda 528-783 px kalir, sayfalarin `md:` yerlesimleri
+ * (tablo sutunlari, baslik satiri) sutunun arkasinda sikisirdi. `lg`'de sutun
+ * acildiginda icerik en az 784 px'tir; `md:` yerlesimleri rahat sigar.
  * `/ajans`, `/kurumsal`, `/profil` ve `/admin` ayni bilesene bakar.
  *
  * UST NAV YOKTUR: bu kabugu kullanan sayfa `TopNav` render ETMEZ (admin'de de
@@ -36,7 +41,7 @@ export function PanelKabugu({
   return (
     <div className="min-h-screen bg-paper">
       <PanelYanMenu menu={menu} hesap={hesap} yonetici={yonetici} />
-      <main className="md:ml-60 px-6 md:px-12 py-8 md:py-10">
+      <main className="lg:ml-60 px-6 md:px-12 py-8 md:py-10">
         <div className="max-w-7xl mx-auto">
           {ustBaslik && (
             <PanelBaslik

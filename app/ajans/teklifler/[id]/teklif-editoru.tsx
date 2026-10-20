@@ -177,6 +177,14 @@ export function TeklifEditoru({
 
   // Gonderim onay ekrani + baglanti kutusu
   const [gonderOnayi, setGonderOnayi] = useState(false);
+  // Baslik kartindaki dugme onay ekranini sayfanin altinda acar; kullanici
+  // bir sey olmadigini sanmasin diye acilinca gorunur alana kaydirilir.
+  const gonderOnayiRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (gonderOnayi) {
+      gonderOnayiRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [gonderOnayi]);
   const [gecerlilikGun, setGecerlilikGun] = useState('14');
   const [baglantiKutusu, setBaglantiKutusu] = useState<string | null>(null);
   const [mailNotu, setMailNotu] = useState<string | null>(null);
@@ -780,7 +788,10 @@ export function TeklifEditoru({
 
           {/* Gonderim onay ekrani — tek tikla gecilmez (05) */}
           {gonderOnayi && (
-            <div className="mt-3 px-4 py-4 bg-paper border border-line-strong rounded-lg space-y-3">
+            <div
+              ref={gonderOnayiRef}
+              className="mt-3 px-4 py-4 bg-paper border border-line-strong rounded-lg space-y-3"
+            >
               <p className="font-display font-semibold text-ink">
                 Teklifi gönder
               </p>

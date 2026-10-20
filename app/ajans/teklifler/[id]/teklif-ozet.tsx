@@ -84,9 +84,11 @@ export function TeklifOzet({
     icToplam !== null && Number.isFinite(musteriAraToplam)
       ? musteriAraToplam - icToplam
       : null;
+  // Yuzde tabani musteri ara toplami: DB'deki satir `margin_rate` ile ayni
+  // tanim ((fiyat - maliyet) / fiyat); satir ve ozet ayni dili konusur.
   const marjYuzde =
-    marjTutari !== null && icToplam !== null && icToplam > 0
-      ? Math.round((marjTutari / icToplam) * 100)
+    marjTutari !== null && Number.isFinite(musteriAraToplam) && musteriAraToplam > 0
+      ? Math.round((marjTutari / musteriAraToplam) * 100)
       : null;
 
   return (

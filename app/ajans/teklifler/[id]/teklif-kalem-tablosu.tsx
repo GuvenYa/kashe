@@ -366,7 +366,10 @@ export function TeklifKalemTablosu({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left border-b border-line-strong">
-                  <th className={BASLIK_HUCRE}>Kalem</th>
+                  {/* `min-w-48`: sabit genislikli 6 sutun (784 px) yer birakmayinca
+                      kalem adi girdisi sifira kadar daraliyordu; dar ekranda tablo
+                      yatay kaydirilir (overflow-x-auto), girdi okunur kalir. */}
+                  <th className={`${BASLIK_HUCRE} min-w-48`}>Kalem</th>
                   <th className={`${BASLIK_HUCRE} w-20`}>Adet</th>
                   <th className={`${BASLIK_HUCRE} w-32`}>Birim fiyat</th>
                   <th className={`${BASLIK_HUCRE} w-32 text-right`}>Toplam</th>

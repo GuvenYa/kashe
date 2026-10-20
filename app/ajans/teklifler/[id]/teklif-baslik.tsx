@@ -98,7 +98,9 @@ export function TeklifBaslik({
   return (
     <div className="bg-card border border-line rounded-lg p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0 flex-1">
+        {/* `basis-80`: sol sutun 20 rem'in altina inmez; yer kalmayinca sag grup
+            ikinci satira sarar (flex-1 tek basina sifira kadar daralirdi). */}
+        <div className="min-w-0 flex-1 basis-80">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink">
             Teklif
             {gecerliSurum ? ` · Sürüm ${gecerliSurum.version_no}` : ''}
