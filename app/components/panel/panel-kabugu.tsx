@@ -32,9 +32,10 @@ export function PanelKabugu({
   /** Platform yoneticisi — yan menunun dibinde "Admin paneli" cikar. */
   yonetici?: boolean;
   ustBaslik?: {
-    eyebrow: string;
+    eyebrow: ReactNode;
     baslik: ReactNode;
     sagAlan?: ReactNode;
+    altNot?: ReactNode;
   };
   children: ReactNode;
 }) {
@@ -47,6 +48,7 @@ export function PanelKabugu({
             <PanelBaslik
               eyebrow={ustBaslik.eyebrow}
               sagAlan={ustBaslik.sagAlan}
+              altNot={ustBaslik.altNot}
             >
               {ustBaslik.baslik}
             </PanelBaslik>

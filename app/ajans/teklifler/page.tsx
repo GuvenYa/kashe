@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
@@ -127,26 +127,23 @@ export default async function AjansTekliflerPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-          <header className="mb-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              {gorulebilir.map((o) => o.name).join(' · ')}
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="not-italic font-medium text-brand-accent">
-                Teklifler
-              </em>
-            </h1>
-            <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Kuruluşunun müşterilerine gönderdiği teklifler. Teklif ekipten ya
-              da buradan açılır; müşteri bağlantıyla görüntüler.
-            </p>
+          <PanelBaslik
+            eyebrow={gorulebilir.map((o) => o.name).join(' · ')}
+            altNot="Kuruluşunun müşterilerine gönderdiği teklifler. Teklif ekipten ya da buradan açılır; müşteri bağlantıyla görüntüler."
+          >
+            <em className="not-italic font-medium text-brand-accent">
+              Teklifler
+            </em>
+          </PanelBaslik>
 
-            {kurulusSecenekleri.length > 0 && (
-              <div className="mt-5">
-                <YeniTeklif kuruluslar={kurulusSecenekleri} />
-              </div>
-            )}
-          </header>
+          {/* Yeni teklif formu basligin ALTINDA, sag alanda degil: `YeniTeklif`
+              acilinca iki sutunlu bir karta donusuyor; `sagAlan` `shrink-0`
+              oldugu icin dar ekranda yatay tasardi. */}
+          {kurulusSecenekleri.length > 0 && (
+            <div className="-mt-3 mb-8">
+              <YeniTeklif kuruluslar={kurulusSecenekleri} />
+            </div>
+          )}
 
           {teklifler.length === 0 ? (
             <div className="bg-card border border-line rounded-lg p-6 text-sm text-ink-72">

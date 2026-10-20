@@ -1,6 +1,6 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
@@ -219,18 +219,15 @@ export default async function MesajlarPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-3xl">
-          <div className="mb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-              Mesajlar
-            </p>
-            <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight">
-              Tüm{' '}
-              <em className="not-italic font-medium text-brand-accent">
-                konuşmaların
-              </em>
-              .
-            </h1>
-          </div>
+          <PanelBaslik
+            eyebrow="Mesajlar"
+          >
+            Tüm{' '}
+            <em className="not-italic font-medium text-brand-accent">
+            konuşmaların
+            </em>
+            .
+          </PanelBaslik>
 
           <MesajListesi
             currentUserId={user.id}

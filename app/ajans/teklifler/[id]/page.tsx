@@ -206,6 +206,7 @@ export default async function TeklifDetayPage({
               maliyetYazilir={!!kurulus?.canManageRates}
               rfpBaglami={rfpBaglami}
               etkinlikOzeti={etkinlikOzeti}
+              kurulusAdi={kurulus?.name ?? null}
               rezervasyon={rezervasyon}
               silinebilir={
                 !!kurulus?.canManageProposals &&

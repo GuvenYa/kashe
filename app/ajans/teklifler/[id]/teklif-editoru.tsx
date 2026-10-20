@@ -89,6 +89,7 @@ export function TeklifEditoru({
   rezervasyon,
   rfpBaglami,
   etkinlikOzeti,
+  kurulusAdi,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -117,6 +118,12 @@ export function TeklifEditoru({
     city: string | null;
     participant_count: number | null;
   } | null;
+  /**
+   * D1b-4: satici kurulusun gorunen adi — musteri gorunumu belgesinin
+   * basligi. Sayfa kurulusu `getCrewContext` ile zaten biliyor; belge
+   * "Kashe kurulusu" yazmasin diye prop olarak gelir.
+   */
+  kurulusAdi: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -556,7 +563,7 @@ export function TeklifEditoru({
           </div>
           <TeklifBelgesi
             teklif={{
-              seller_name: null,
+              seller_name: kurulusAdi,
               client_name: rfpBaglami
                 ? (rfpBaglami.buyerName ?? teklif.client_name)
                 : teklif.client_name,

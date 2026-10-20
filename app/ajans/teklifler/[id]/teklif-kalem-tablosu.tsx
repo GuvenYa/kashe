@@ -215,7 +215,17 @@ export function TeklifKalemTablosu({
             defaultValue={ic?.internal_cost != null ? String(ic.internal_cost) : ''}
             aria-label="Birim iç maliyet"
             placeholder="Birim"
+            title="Silmek için 0 gir"
             onBlur={(e) => {
+              // BOS birakma SILME DEGILDIR: eskiden bos deger 0 olarak
+              // okunuyor ve "0 TL maliyet" satiri yaziliyordu. DB tarafinda
+              // silme RPC si yok, bu yuzden bos girdi eski degere doner ve
+              // RPC HIC cagrilmaz.
+              if (e.target.value.trim() === '') {
+                e.target.value =
+                  ic?.internal_cost != null ? String(ic.internal_cost) : '';
+                return;
+              }
               const n = sayi(e.target.value);
               if (n === null) return;
               if (ic?.internal_cost != null && n === Number(ic.internal_cost)) {

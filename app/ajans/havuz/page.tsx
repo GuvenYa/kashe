@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
@@ -173,21 +173,17 @@ export default async function AjansHavuzPage({
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-          <header className="mb-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              {secili.name}
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="not-italic font-medium text-brand-accent">
-                Yetenek
-              </em>{' '}
-              havuzu
-            </h1>
-            <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Ekibin, Kashe üyeleri ve Kashe hesabı olmayan harici kişiler tek
-              listede. Roller ve ilişki türü kişi başına tutulur.
-            </p>
+          <PanelBaslik
+            eyebrow={<>{secili.name}</>}
+            altNot="Ekibin, Kashe üyeleri ve Kashe hesabı olmayan harici kişiler tek listede. Roller ve ilişki türü kişi başına tutulur."
+          >
+            <em className="not-italic font-medium text-brand-accent">
+              Yetenek
+            </em>{' '}
+            havuzu
+          </PanelBaslik>
 
+          <div className="mb-8">
             {eklenenSayisi > 0 && (
               <p className="mt-4 px-4 py-2.5 bg-brand-ink-08 border border-brand-ink/25 rounded-lg text-sm text-ink">
                 {eklenenSayisi} Ekibim üyesi havuza eklendi.
@@ -211,7 +207,7 @@ export default async function AjansHavuzPage({
                 ))}
               </div>
             )}
-          </header>
+          </div>
 
           <HavuzPaneli
             organizationId={secili.id}

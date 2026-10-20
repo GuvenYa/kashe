@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 import { getCachedUser } from '@/app/lib/auth';
@@ -116,22 +116,21 @@ export default async function TeklifTalepleriPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-3xl">
-        <header className="mb-10">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Teklif Talepleri
-          </p>
-          <h1 className="font-display text-4xl text-ink leading-tight">
-            Sana gelen{' '}
-            <em className="not-italic font-medium text-brand-accent">
-              teklif talepleri
-            </em>
-          </h1>
-          <p className="mt-3 text-ink-72 text-base">
-            {pendingCount > 0
+        <PanelBaslik
+          eyebrow="Teklif Talepleri"
+          altNot={
+            <>
+              {pendingCount > 0
               ? `${pendingCount} talep yanıtını bekliyor. Teklif ver, müşteriyle mesajlaşma açılsın.`
               : 'Müşterilerin sana özel gönderdiği talepler burada görünür.'}
-          </p>
-        </header>
+            </>
+          }
+        >
+          Sana gelen{' '}
+          <em className="not-italic font-medium text-brand-accent">
+          teklif talepleri
+          </em>
+        </PanelBaslik>
 
         {list.length === 0 ? (
           <div className="bg-card border border-line rounded-lg p-12 text-center">

@@ -2,7 +2,13 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { PanelKabugu } from '@/app/components/panel';
+import {
+  PanelKabugu,
+  PanelBaslik,
+  VeriTablosu,
+  type VeriSatiri,
+} from '@/app/components/panel';
+import { getCrewContext } from '@/app/lib/org-context';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { formatTRY } from '@/app/lib/premium';
@@ -104,11 +110,133 @@ export default async function OdemelerimPage() {
     });
   }
 
-  const completed = bookings.filter((b) => b.status === 'completed');
-  const upcoming = bookings.filter((b) => b.status === 'confirmed');
+  // K12 — KURULUS REZERVASYONLARI.
+  //
+  // Kullanicinin uyesi oldugu kuruluslar adina alinan rezervasyonlar da bu
+  // sayfaya girer: alici kurulus uyesi "ne odedik" sorusunu burada soruyor ve
+  // eskiden hic yanit bulamiyordu. Kapi `events.manage` ya da `finance.view`
+  // (ticari gorunurluk); RLS zaten `can_access_booking_row` ile siniri koyuyor,
+  // bu suzgec KAPSAM daraltmasidir. Yeni RPC YOK.
+  const { orgs } = await getCrewContext();
+  const kurulusIdleri = orgs
+    .filter((o) => o.canManageEvents || o.canViewFinance)
+    .map((o) => o.id);
+
+  type KurulusRezervasyonu = {
+    id: string;
+    event_type: string | null;
+    event_date: string | null;
+    total_amount: number | null;
+    status: string;
+    surum: {
+      version_no: number;
+      proposal: {
+        title: string;
+        seller: { display_name: string | null } | null;
+      } | null;
+    } | null;
+  };
+  let kurulusRezervasyonlari: KurulusRezervasyonu[] = [];
+  if (kurulusIdleri.length > 0) {
+    const { data: kurumData, error: kurumHatasi } = await supabase
+      .from('bookings')
+      .select(
+        `id, event_type, event_date, total_amount, status,
+         surum:proposal_versions!bookings_proposal_version_id_fkey (
+           version_no,
+           proposal:proposals!proposal_versions_proposal_id_fkey (
+             title,
+             seller:organizations_public!proposals_seller_organization_id_fkey (
+               display_name
+             )
+           )
+         )`
+      )
+      .in('buyer_organization_id', kurulusIdleri)
+      .order('event_date', { ascending: false });
+    if (kurumHatasi) {
+      console.error('[odeme] kurulus rezervasyonlari', kurumHatasi.code, kurumHatasi.message);
+    }
+    kurulusRezervasyonlari = (kurumData ?? []) as unknown as KurulusRezervasyonu[];
+  }
+
+  // Kisisel ve kurulus satirlari AYNI tabloda: kullanici icin ikisi de
+  // "odedigim is"; ayirt edici bilgi karsi tarafin adi.
+  type OdemeSatiri = {
+    id: string;
+    karsiTaraf: string;
+    etkinlik: string | null;
+    event_date: string | null;
+    total_amount: number | null;
+    status: string;
+    kurulusAdina: boolean;
+  };
+
+  const tekilSatirlar = [
+    ...bookings.map((b) => ({
+      id: b.id,
+      karsiTaraf: proMap.get(b.professional_id) ?? 'Profesyonel',
+      etkinlik: etkinlikTuruEtiketi(b.event_type),
+      event_date: b.event_date,
+      total_amount: b.total_amount,
+      status: b.status,
+      kurulusAdina: false,
+    })),
+    ...kurulusRezervasyonlari.map((r) => ({
+      id: r.id,
+      karsiTaraf:
+        r.surum?.proposal?.seller?.display_name?.trim() || 'Kuruluş',
+      etkinlik:
+        r.surum?.proposal?.title?.trim() ||
+        etkinlikTuruEtiketi(r.event_type),
+      event_date: r.event_date,
+      total_amount: r.total_amount,
+      status: r.status,
+      kurulusAdina: true,
+    })),
+  ]
+    // Ayni rezervasyon iki yoldan gelebilir: teklif kaynakli kayitta
+    // `customer_id` teklifin `buyer_user_id`si, `buyer_organization_id` de
+    // dolu (FAZ 7c). Kurulus satiri kazanir (karsi taraf adi daha dogru).
+    .reduce<Map<string, OdemeSatiri>>((m, s) => {
+      const onceki = m.get(s.id);
+      if (!onceki || s.kurulusAdina) m.set(s.id, s);
+      return m;
+    }, new Map());
+  const satirlar: OdemeSatiri[] = [...tekilSatirlar.values()].sort((a, b) =>
+    (a.event_date ?? '') < (b.event_date ?? '') ? 1 : -1
+  );
+
+  const completed = satirlar.filter((b) => b.status === 'completed');
+  const upcoming = satirlar.filter((b) => b.status === 'confirmed');
 
   const totalPaid = completed.reduce((s, b) => s + (b.total_amount ?? 0), 0);
   const totalUpcoming = upcoming.reduce((s, b) => s + (b.total_amount ?? 0), 0);
+
+  const tabloSatirlari: VeriSatiri[] = satirlar.map((b) => ({
+    anahtar: b.id,
+    href: `/rezervasyon/${b.id}`,
+    hucreler: {
+      taraf: (
+        <span className="block">
+          <span className="block text-sm text-ink font-medium">
+            {b.karsiTaraf}
+          </span>
+          {b.etkinlik && (
+            <span className="block text-[12px] text-ink-50">{b.etkinlik}</span>
+          )}
+          {b.kurulusAdina && (
+            <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-ink-50">
+              kuruluş adına
+            </span>
+          )}
+        </span>
+      ),
+      tarih: formatDate(b.event_date),
+      tutar: formatTRY(b.total_amount ?? 0),
+      durum: <StatusPill status={b.status} />,
+    },
+  }));
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
@@ -118,18 +246,12 @@ export default async function OdemelerimPage() {
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
           {/* Header */}
-          <div className="mb-8">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
-              Ödeme Geçmişi
-            </p>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-              Ödeme Geçmişi
-            </h1>
-            <p className="text-ink-72 text-lg mt-4 max-w-2xl leading-relaxed">
-              Rezervasyonların ve ödeme durumları. Tutarlar profesyonelle
-              anlaştığın toplam bedeli gösterir.
-            </p>
-          </div>
+          <PanelBaslik
+            eyebrow="Ödeme Geçmişi"
+            altNot="Rezervasyonların ve ödeme durumları. Tutarlar profesyonelle anlaştığın toplam bedeli gösterir."
+          >
+            Ödeme Geçmişi
+          </PanelBaslik>
 
           {/* Bilgi notu */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
@@ -140,7 +262,7 @@ export default async function OdemelerimPage() {
             </p>
           </div>
 
-          {bookings.length === 0 ? (
+          {satirlar.length === 0 ? (
             <div className="bg-card border border-line rounded-2xl p-10 text-center">
               <p className="font-display font-medium text-lg text-ink mb-1">
                 Henüz rezervasyonun yok.
@@ -177,53 +299,22 @@ export default async function OdemelerimPage() {
                 </div>
               </div>
 
-              {/* Tüm rezervasyonlar tablosu */}
-              <div className="bg-card border border-line rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-paper-2/50 border-b border-line">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-                          Profesyonel / Etkinlik
-                        </th>
-                        <th className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 whitespace-nowrap">
-                          Tarih
-                        </th>
-                        <th className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-                          Durum
-                        </th>
-                        <th className="text-right px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-                          Tutar
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {bookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-paper-2/30">
-                          <td className="px-4 py-3">
-                            <p className="text-sm text-ink font-medium">
-                              {proMap.get(b.professional_id) ?? 'Profesyonel'}
-                            </p>
-                            {b.event_type && (
-                              <p className="text-[12px] text-ink-50">
-                                {etkinlikTuruEtiketi(b.event_type)}
-                              </p>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-[12px] text-ink-72 font-mono whitespace-nowrap">
-                            {formatDate(b.event_date)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusPill status={b.status} />
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm text-ink tabular-nums whitespace-nowrap">
-                            {formatTRY(b.total_amount ?? 0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              {/* Tum rezervasyonlar — kisisel ve kurulus ayni tabloda */}
+              <div className="bg-card border border-line rounded-2xl p-5">
+                <VeriTablosu
+                  sutunlar={[
+                    {
+                      anahtar: 'taraf',
+                      baslik: 'Ajans / Etkinlik',
+                      kartEtiketiGizle: true,
+                    },
+                    { anahtar: 'tarih', baslik: 'Tarih' },
+                    { anahtar: 'tutar', baslik: 'Tutar', sayisal: true },
+                    { anahtar: 'durum', baslik: 'Durum' },
+                  ]}
+                  satirlar={tabloSatirlari}
+                  bosMetin="Kayıt yok."
+                />
               </div>
             </>
           )}

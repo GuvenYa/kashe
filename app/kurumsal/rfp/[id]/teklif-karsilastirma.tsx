@@ -7,6 +7,7 @@ import {
   type KarsilastirmaSutunu,
   type RfpDetay,
 } from '../rfp-data';
+import { OzetSerit } from '@/app/components/panel';
 import { KarsilastirmaIslemleri } from './karsilastirma-islemleri';
 
 /**
@@ -100,15 +101,28 @@ export function TeklifKarsilastirma({
     s.kalemler.some((k) => k.role_id === null || !talepRolleri.has(k.role_id))
   );
 
+  // SECILI sutun pembe zemin (`brand-accent-soft`): secim bir KARAR, basari
+  // degil — yesil (moss) "tamamlandi" anlamini tasiyor ve secimden sonra
+  // rezervasyon henuz acilmamis oluyor. En ucuz sutun ise yalniz bir IPUCU,
+  // o nedenle daha soluk kalir.
   const sutunSinifi = (s: KarsilastirmaSutunu) => {
     if (secilen && s.proposalId === secilen.proposalId) {
-      return 'align-top p-3 border-l border-moss bg-moss/5';
+      return 'align-top p-3 border-l border-brand-accent/40 bg-brand-accent-soft';
     }
     if (!secilen && s.proposalId === enUcuzId) {
       return 'align-top p-3 border-l border-line bg-moss/5';
     }
     return 'align-top p-3 border-l border-line';
   };
+
+  /** Seritte gosterilecek sutun: secim varsa o, yoksa en ucuz (ipucu). */
+  const seritSutunu =
+    secilen ?? sutunlar.find((x) => x.proposalId === enUcuzId) ?? sutunlar[0];
+  const seritIslemVar =
+    canManage &&
+    !secilen &&
+    talepAcik &&
+    ['sent', 'viewed'].includes(seritSutunu.proposalStatus);
 
   return (
     <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
@@ -143,7 +157,100 @@ export function TeklifKarsilastirma({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* md ALTI: her teklif bir KART. Pivot tablo (satir = rol, sutun =
+          teklif) telefonda yatay kaydirmayi zorunlu kiliyordu; kartta
+          karsilastirma dikey okunur. */}
+      <div className="md:hidden space-y-3">
+        {sutunlar.map((s) => {
+          const buSecildi = secilen?.proposalId === s.proposalId;
+          const islemVar =
+            canManage &&
+            !secilen &&
+            talepAcik &&
+            ['sent', 'viewed'].includes(s.proposalStatus);
+          return (
+            <div
+              key={s.proposalId}
+              className={
+                buSecildi
+                  ? 'border border-brand-accent/40 bg-brand-accent-soft rounded-lg p-4'
+                  : 'border border-line rounded-lg p-4'
+              }
+            >
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="font-display font-semibold text-ink break-words">
+                    {s.saticiAdi}
+                  </p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72 mt-0.5">
+                    {durumEtiketi(s.proposalStatus)}
+                    {' · '}Sürüm {s.versionNo}
+                  </p>
+                </div>
+                <p className="font-display font-semibold text-ink tabular-nums shrink-0">
+                  {paraMetni(s.totalAmount, s.currency) ?? '—'}
+                </p>
+              </div>
+
+              <dl className="mt-3 space-y-1 text-xs">
+                {kalemler.map((k) => (
+                  <div key={k.id} className="flex justify-between gap-3">
+                    <dt className="text-ink-50 min-w-0">{k.role}</dt>
+                    <dd className="text-ink-72 tabular-nums shrink-0">
+                      {hucreMetinleri(s, k.role_id).kisa}
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex justify-between gap-3 pt-1 border-t border-line">
+                  <dt className="text-ink-50">Ara toplam</dt>
+                  <dd className="text-ink-72 tabular-nums">
+                    {paraMetni(s.subtotal, s.currency) ?? '—'}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-50">KDV</dt>
+                  <dd className="text-ink-72 tabular-nums">
+                    {paraMetni(s.taxAmount, s.currency) ?? '—'}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-50">Geçerlilik</dt>
+                  <dd className="text-ink-72">
+                    {tarihMetni(s.validUntil) ?? '—'}
+                  </dd>
+                </div>
+              </dl>
+
+              {s.clientNote && (
+                <p className="mt-2 text-xs text-ink-72">{s.clientNote}</p>
+              )}
+
+              {secilen ? (
+                <p
+                  className={
+                    buSecildi
+                      ? 'mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-brand-accent'
+                      : 'mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50'
+                  }
+                >
+                  {buSecildi ? 'Seçili' : 'Seçilmedi'}
+                </p>
+              ) : islemVar ? (
+                <KarsilastirmaIslemleri
+                  rfpId={rfp.id}
+                  proposalId={s.proposalId}
+                  saticiAdi={s.saticiAdi}
+                  toplamMetni={
+                    paraMetni(s.totalAmount, s.currency) ?? '—'
+                  }
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="text-left align-bottom">
@@ -155,13 +262,18 @@ export function TeklifKarsilastirma({
                   key={s.proposalId}
                   className={`${sutunSinifi(s)} sm:min-w-[190px]`}
                 >
-                  <p className="font-display font-semibold text-ink leading-tight">
+                  <p className="font-display font-semibold text-ink leading-tight break-words">
                     {s.saticiAdi}
                   </p>
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72 mt-1">
                     {durumEtiketi(s.proposalStatus)}
                     {' · '}Sürüm {s.versionNo}
                   </p>
+                  {secilen?.proposalId === s.proposalId && (
+                    <span className="mt-1 inline-block font-mono text-[9px] uppercase tracking-[0.14em] text-brand-accent bg-card border border-brand-accent/40 px-1.5 py-0.5 rounded-full">
+                      Seçili
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -246,7 +358,7 @@ export function TeklifKarsilastirma({
               </td>
               {sutunlar.map((s) => (
                 <td key={s.proposalId} className={sutunSinifi(s)}>
-                  <span className="font-display font-semibold text-ink">
+                  <span className="font-display font-semibold text-ink tabular-nums">
                     {paraMetni(s.totalAmount, s.currency) ?? '—'}
                   </span>
                 </td>
@@ -324,6 +436,37 @@ export function TeklifKarsilastirma({
           </tbody>
         </table>
       </div>
+
+      {/* Yapiskan serit — YALNIZ `md` alti. Masaustunde ayni dugme tablonun
+          icinde duruyor. Dugme MEVCUT onay kapisina girer: secim tek tikla
+          olmaz (`KarsilastirmaIslemleri` kendi onayini sorar). */}
+      {seritIslemVar ? (
+        <OzetSerit
+          etiket="En düşük teklif"
+          deger={`${seritSutunu.saticiAdi} · ${
+            paraMetni(seritSutunu.totalAmount, seritSutunu.currency) ?? '—'
+          }`}
+          altNot="Henüz seçim yapılmadı"
+          aksiyon={
+            <KarsilastirmaIslemleri
+              rfpId={rfp.id}
+              proposalId={seritSutunu.proposalId}
+              saticiAdi={seritSutunu.saticiAdi}
+              toplamMetni={
+                paraMetni(seritSutunu.totalAmount, seritSutunu.currency) ?? '—'
+              }
+            />
+          }
+        />
+      ) : secilen ? (
+        <OzetSerit
+          etiket="Seçili"
+          deger={`${secilen.saticiAdi} · ${
+            paraMetni(secilen.totalAmount, secilen.currency) ?? '—'
+          }`}
+          altNot="Seçim yapıldı"
+        />
+      ) : null}
     </div>
   );
 }

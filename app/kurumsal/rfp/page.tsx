@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
@@ -137,35 +137,33 @@ export default async function KurumsalRfpPage({
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-          <header className="mb-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              {gorulebilir.map((o) => o.name).join(' · ')}
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              Teklif{' '}
-              <em className="not-italic font-medium text-brand-accent">
-                talepleri
-              </em>
-            </h1>
-            <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Etkinliğin için ajanslardan teklif topla. Talebi ajanslara
-              gönderirsin, gelen teklifleri burada görürsün.
-            </p>
+          <PanelBaslik
+            eyebrow={gorulebilir.map((o) => o.name).join(' · ')}
+            altNot="Etkinliğin için ajanslardan teklif topla. Talebi ajanslara gönderirsin, gelen teklifleri burada görürsün."
+          >
+            Teklif{' '}
+            <em className="not-italic font-medium text-brand-accent">
+              talepleri
+            </em>
+          </PanelBaslik>
 
-            {yonetilebilir.length > 0 && (
-              <div className="mt-5">
-                <YeniRfp
-                  kuruluslar={yonetilebilir.map((o) => ({
-                    id: o.id,
-                    name: o.name,
-                  }))}
-                  etkinlikler={etkinlikler}
-                  varsayilanEtkinlikId={varsayilanEtkinlik}
-                  varsayilanSonTarih={yediGunSonra()}
-                />
-              </div>
-            )}
-          </header>
+          {/* Yeni talep formu basligin ALTINDA, sag alanda degil: `YeniRfp`
+              acikken (ornegin etkinlik sayfasindan `?etkinlik=` ile gelince)
+              iki sutunlu bir karta donusuyor; `sagAlan` `shrink-0` oldugu icin
+              dar ekranda yatay tasardi. */}
+          {yonetilebilir.length > 0 && (
+            <div className="-mt-3 mb-8">
+              <YeniRfp
+                kuruluslar={yonetilebilir.map((o) => ({
+                  id: o.id,
+                  name: o.name,
+                }))}
+                etkinlikler={etkinlikler}
+                varsayilanEtkinlikId={varsayilanEtkinlik}
+                varsayilanSonTarih={yediGunSonra()}
+              />
+            </div>
+          )}
 
           {talepler.length === 0 ? (
             <div className="bg-card border border-line rounded-lg p-6 text-sm text-ink-72">

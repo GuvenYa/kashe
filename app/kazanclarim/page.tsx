@@ -1,7 +1,7 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { calcCommission, formatTRY, COMMISSION_RATE } from '@/app/lib/premium';
@@ -116,18 +116,17 @@ export default async function KazanclarimPage() {
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
           {/* Header */}
-          <div className="mb-8">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
-              Kazançlarım
-            </p>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-              Kazançlarım
-            </h1>
-            <p className="text-ink-72 text-lg mt-4 max-w-2xl leading-relaxed">
-              Tamamlanan rezervasyonlardan elde ettiğin gelir. Platform
-              komisyonu %{Math.round(COMMISSION_RATE * 100)} olarak hesaplanır.
-            </p>
-          </div>
+          <PanelBaslik
+            eyebrow="Kazançlarım"
+            altNot={
+              <>
+                Tamamlanan rezervasyonlardan elde ettiğin gelir. Platform
+                komisyonu %{Math.round(COMMISSION_RATE * 100)} olarak hesaplanır.
+              </>
+            }
+          >
+            Kazançlarım
+          </PanelBaslik>
 
           {!isProvider ? (
             <div className="bg-card border border-line rounded-2xl p-8 text-center">

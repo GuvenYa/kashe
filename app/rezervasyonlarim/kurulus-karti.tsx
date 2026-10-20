@@ -44,39 +44,38 @@ export function KurulusKarti({
 }) {
   const durumSinifi =
     DURUM_SINIFLARI[rez.status] ?? 'bg-paper-2 border-line text-ink-72';
-  const karsiTaraf =
+
+  // D1b-4: ILK SATIR KARSI TARAF. Alici kurulus "kimden aldim" sorusunu
+  // soruyor, teklifin basligini degil; satici tarafta ayni sekilde "kime
+  // sattim". Teklif basligi ikinci satira iner.
+  const ustSatir =
     taraf === 'alici'
-      ? rez.kurulusAdi
-        ? `Ajans: ${rez.kurulusAdi}`
-        : null
-      : rez.musteriAdi
-        ? `Müşteri: ${rez.musteriAdi}`
-        : rez.kurulusAdi;
-  const altSatir = [
-    karsiTaraf,
-    rez.versionNo != null ? `Sürüm ${rez.versionNo}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+      ? (rez.kurulusAdi ?? 'Kuruluş')
+      : (rez.musteriAdi ?? rez.kurulusAdi ?? 'Müşteri');
+
   const etkinlikSatiri = [tarihMetni(rez.event_date), rez.location]
     .filter(Boolean)
     .join(' · ');
-
   return (
     <Link
       href={`/rezervasyon/${rez.id}`}
       className="block bg-card border border-line rounded-2xl p-5 hover:border-brand-ink transition-colors"
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
-          <p className="font-display font-semibold text-ink">
+        <div className="min-w-0 flex-1 basis-80">
+          <p className="font-display font-semibold text-ink break-words">
+            {ustSatir}
+          </p>
+          <p className="text-sm text-ink-72 mt-0.5 break-words">
             {rez.teklifBasligi}
           </p>
-          {altSatir && (
-            <p className="text-sm text-ink-72 mt-0.5">{altSatir}</p>
-          )}
           {etkinlikSatiri && (
             <p className="text-sm text-ink-72 mt-0.5">{etkinlikSatiri}</p>
+          )}
+          {rez.versionNo != null && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50 mt-1">
+              Teklif sürümü {rez.versionNo}
+            </p>
           )}
         </div>
         <div className="text-right shrink-0">

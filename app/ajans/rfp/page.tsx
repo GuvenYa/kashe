@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
@@ -115,21 +115,15 @@ export default async function AjansRfpPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-          <header className="mb-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              {gorulebilir.map((o) => o.name).join(' · ')}
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              Gelen{' '}
-              <em className="not-italic font-medium text-brand-accent">
-                RFP&apos;ler
-              </em>
-            </h1>
-            <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Kurumların ve ajansların kuruluşuna gönderdiği teklif talepleri.
-              Talebi açıp teklif hazırlayabilirsin.
-            </p>
-          </header>
+          <PanelBaslik
+            eyebrow={<>{gorulebilir.map((o) => o.name).join(' · ')}</>}
+            altNot="Kurumların ve ajansların kuruluşuna gönderdiği teklif talepleri. Talebi açıp teklif hazırlayabilirsin."
+          >
+            Gelen{' '}
+            <em className="not-italic font-medium text-brand-accent">
+            RFP&apos;ler
+            </em>
+          </PanelBaslik>
 
           {davetler.length === 0 ? (
             <div className="bg-card border border-line rounded-lg p-6 text-sm text-ink-72">

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { BasvurularimListesi } from './basvurularim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import type { ApplicationWithRelations } from '../ilanlar/listings-data';
@@ -66,20 +66,14 @@ export default async function BasvurularimPage({
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-        <div className="mb-10">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Takip
-          </p>
-          <h1 className="font-display text-4xl text-ink leading-tight">
-            <em className="not-italic font-medium text-brand-accent">
-              Başvurularım
-            </em>
-          </h1>
-          <p className="mt-2 text-ink-72 text-sm">
-            İlan tahtasından gönderdiğin başvuruların durumunu buradan takip
-            et.
-          </p>
-        </div>
+        <PanelBaslik
+          eyebrow="Takip"
+          altNot="İlan tahtasından gönderdiğin başvuruların durumunu buradan takip et."
+        >
+          <em className="not-italic font-medium text-brand-accent">
+          Başvurularım
+          </em>
+        </PanelBaslik>
 
         <BasvurularimListesi
           applications={applications}

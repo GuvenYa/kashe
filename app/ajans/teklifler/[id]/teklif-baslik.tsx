@@ -106,14 +106,26 @@ export function TeklifBaslik({
             {gecerliSurum ? ` · Sürüm ${gecerliSurum.version_no}` : ''}
           </p>
 
+          {/* Baslik girdisi TEXTAREA: tek satirlik `input` telefonda uzun
+              teklif adlarini goruntunun disina kaydiriyordu (metin duruyor ama
+              gorunmuyordu). `field-sizing-content` ile icerige gore buyur (destek
+              yoksa tek satir kalir), Enter ENGELLENIR — alan
+              tek satirlik bir baslik, satir sonu tasimaz. Kaydetme AYNI
+              (`onBlur` -> `basligiKaydet`). */}
           {canManage ? (
-            <input
-              type="text"
+            <textarea
               value={baslik}
+              rows={1}
               onChange={(e) => setBaslik(e.target.value.slice(0, 200))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
               onBlur={basligiKaydet}
               aria-label="Teklif başlığı"
-              className="mt-2 w-full font-display text-2xl text-ink bg-transparent border-b border-transparent hover:border-line focus:border-brand-ink focus:outline-none"
+              className="mt-2 w-full resize-none field-sizing-content font-display text-2xl text-ink leading-tight bg-transparent border-b border-transparent hover:border-line focus:border-brand-ink focus:outline-none"
             />
           ) : (
             <h1 className="mt-2 font-display text-2xl text-ink break-words">

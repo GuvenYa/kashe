@@ -2,9 +2,8 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
-import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
 import { getCachedUser } from '@/app/lib/auth';
@@ -128,17 +127,12 @@ export default async function TakvimimPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
-          <div className="mb-10 md:mb-12">
-            <Eyebrow variant="inline" className="mb-3">
-              İşin
-            </Eyebrow>
-            <h1 className="font-display font-light text-4xl md:text-5xl text-ink tracking-[-0.03em] leading-[1.05]">
-              <em>Takvimim</em>.
-            </h1>
-            <p className="text-base text-ink-72 mt-3 max-w-xl leading-relaxed">
-              Müsaitliğini yönet, onaylanan rezervasyonlarını ve geçmiş işlerini gör.
-            </p>
-          </div>
+          <PanelBaslik
+            eyebrow="İşin"
+            altNot="Müsaitliğini yönet, onaylanan rezervasyonlarını ve geçmiş işlerini gör."
+          >
+            <em className="not-italic font-medium text-brand-accent">Takvimim</em>.
+          </PanelBaslik>
 
           {/* MÜSAİTLİK TAKVİMİ */}
           <section className="mb-12">

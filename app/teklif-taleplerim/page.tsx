@@ -2,7 +2,7 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
@@ -168,29 +168,26 @@ export default async function TeklifTaleplerimPage() {
   return (
     <PanelKabugu {...kabuk}>
       <div className="max-w-3xl">
-        <div className="flex items-start justify-between gap-4 mb-10 flex-wrap">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Teklif Taleplerim
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="not-italic font-medium text-brand-accent">
-                Topladığın
-              </em>{' '}
-              teklifler
-            </h1>
-            <p className="mt-2 text-ink-72 text-sm">
-              Oluşturduğun teklif talepleri ve gelen teklifler.
-            </p>
-          </div>
-          <Link
-            href="/teklif-topla"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
-          >
-            <span className="text-base leading-none">+</span>
-            Yeni talep
-          </Link>
-        </div>
+        <PanelBaslik
+          eyebrow="Teklif Taleplerim"
+          altNot="Oluşturduğun teklif talepleri ve gelen teklifler."
+          sagAlan={
+            <>
+              <Link
+              href="/teklif-topla"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"
+              >
+              <span className="text-base leading-none">+</span>
+              Yeni talep
+              </Link>
+            </>
+          }
+        >
+          <em className="not-italic font-medium text-brand-accent">
+          Topladığın
+          </em>{' '}
+          teklifler
+        </PanelBaslik>
 
         {list.length === 0 ? (
           <div className="bg-card border border-line rounded-lg p-12 text-center">

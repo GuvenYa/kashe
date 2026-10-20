@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { KurumsalEkipPaneli } from './kurumsal-ekip-paneli';
@@ -92,20 +92,14 @@ export default async function KurumsalEkipPage() {
             <span>←</span> Profile dön
           </Link>
 
-          <header className="mb-10">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Yönetim
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="not-italic font-medium text-brand-accent">
-                Kurumsal Ekip
-              </em>
-            </h1>
-            <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Kurum hesabını birlikte yönetecek ekip üyelerini davet et, davet
-              durumlarını takip et, rolleri ayarla.
-            </p>
-          </header>
+          <PanelBaslik
+            eyebrow="Yönetim"
+            altNot="Kurum hesabını birlikte yönetecek ekip üyelerini davet et, davet durumlarını takip et, rolleri ayarla."
+          >
+            <em className="not-italic font-medium text-brand-accent">
+            Kurumsal Ekip
+            </em>
+          </PanelBaslik>
 
           <KurumsalEkipPaneli
             members={members}

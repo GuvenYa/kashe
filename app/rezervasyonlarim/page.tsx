@@ -1,8 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
-import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from './rezervasyon-karti';
 import { Calendar } from 'lucide-react';
@@ -342,17 +341,12 @@ export default async function RezervasyonlarimPage() {
     <PanelKabugu {...kabuk}>
       <div className="max-w-5xl">
           {/* Header */}
-          <div className="mb-10 md:mb-12">
-            <Eyebrow variant="inline" className="mb-3">
-              Sahnen
-            </Eyebrow>
-            <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-[-0.03em] leading-[1.05]">
-              <em>Rezervasyonlarım</em>.
-            </h1>
-            <p className="text-base text-ink-72 mt-3 max-w-xl leading-relaxed">
-              Aldığın ve verdiğin hizmetler, yaklaşan ve geçmişiyle burada.
-            </p>
-          </div>
+          <PanelBaslik
+            eyebrow="Sahnen"
+            altNot="Aldığın ve verdiğin hizmetler, yaklaşan ve geçmişiyle burada."
+          >
+            <em className="not-italic font-medium text-brand-accent">Rezervasyonlarım</em>.
+          </PanelBaslik>
 
           {bookings.length === 0 &&
           kurulusRezervasyonlari.length === 0 &&

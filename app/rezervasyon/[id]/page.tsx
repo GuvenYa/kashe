@@ -71,8 +71,12 @@ type BookingDetay = {
       title: string;
       client_name: string | null;
       client_email: string | null;
+      rfp_id: string | null;
       seller_organization_id: string;
-      seller: { display_name: string | null } | null;
+      seller: {
+        display_name: string | null;
+        account_type: string | null;
+      } | null;
     } | null;
   } | null;
 };
@@ -192,8 +196,10 @@ export default async function RezervasyonDetayPage({ params }: Props) {
       surum:proposal_versions!bookings_proposal_version_id_fkey (
         version_no, total_amount, approved_by_name, approved_at,
         proposal:proposals!proposal_versions_proposal_id_fkey (
-          id, title, client_name, client_email, seller_organization_id,
-          seller:organizations_public!proposals_seller_organization_id_fkey (display_name)
+          id, title, client_name, client_email, rfp_id, seller_organization_id,
+          seller:organizations_public!proposals_seller_organization_id_fkey (
+            display_name, account_type
+          )
         )
       )
     `
@@ -294,7 +300,10 @@ export default async function RezervasyonDetayPage({ params }: Props) {
           {/* HEADER */}
           <div className="bg-card border border-line rounded-2xl p-6 md:p-8 mb-6">
             {/* Telefonda dikey: avatar+ad ustte, rozet altinda; sm+ yan yana. */}
-            <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5">
+            {/* D1b-4: D1b-3 baslik karti deseni — sol sutun 20 rem altina
+                inmez, yer kalmayinca durum rozeti ikinci satira sarar. */}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3 sm:gap-5 min-w-0 flex-1 basis-80">
               <div className="shrink-0">
                 {otherParty?.avatar_url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -323,9 +332,20 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                       : 'Müşteri'}
                 </Eyebrow>
                 {teklifSekli ? (
-                  <p className="font-display font-semibold text-2xl text-ink">
-                    {otherName}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-display font-semibold text-2xl text-ink break-words">
+                      {otherName}
+                    </p>
+                    {/* Hesap turu: alici, karsisindakinin ajans mi kurum mu
+                        oldugunu adindan anlamiyordu. */}
+                    {!isSellerOrg && teklif?.seller?.account_type && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-72 bg-paper-2 border border-line px-2 py-0.5 rounded-full">
+                        {teklif.seller.account_type === 'agency'
+                          ? 'Ajans'
+                          : 'Kurumsal'}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <Link
                     href={viewer === 'customer' ? `/p/${otherParty?.id}` : '#'}
@@ -352,12 +372,32 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                     )}
                     {booking.surum && (
                       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-72 mt-1">
-                        Sürüm {booking.surum.version_no}
+                        Teklif sürümü {booking.surum.version_no}
                         {booking.surum.approved_at
-                          ? ` · Onaylandı · ${booking.surum.approved_by_name ?? 'Müşteri'} · ${formatDateTime(booking.surum.approved_at)}`
+                          ? ` · Onaylayan: ${booking.surum.approved_by_name ?? 'Müşteri'} · ${formatDateTime(booking.surum.approved_at)}`
                           : ''}
                       </p>
                     )}
+
+                    {/* Kaynaga donus baglantilari — yalniz erisimi olana. */}
+                    <div className="mt-2 flex items-center gap-3 flex-wrap text-sm">
+                      {isBuyerOrg && teklif?.rfp_id && (
+                        <Link
+                          href={`/kurumsal/rfp/${teklif.rfp_id}`}
+                          className="kashe-tap text-brand-ink hover:underline"
+                        >
+                          Teklif talebine git →
+                        </Link>
+                      )}
+                      {isSellerOrg && teklif?.id && (
+                        <Link
+                          href={`/ajans/teklifler/${teklif.id}`}
+                          className="kashe-tap text-brand-ink hover:underline"
+                        >
+                          Teklife git →
+                        </Link>
+                      )}
+                    </div>
                   </>
                 )}
                 {viewer === 'customer' &&
@@ -366,9 +406,10 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                       {booking.professional.service_categories.name_tr}
                     </p>
                   )}
+                </div>
               </div>
               <span
-                className={`self-start shrink-0 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-[0.14em] border ${statusStyle.classes}`}
+                className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-[0.14em] border ${statusStyle.classes}`}
               >
                 {statusStyle.label}
               </span>

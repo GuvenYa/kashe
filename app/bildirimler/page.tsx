@@ -2,7 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
-import { PanelKabugu } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { EmptyState } from '@/app/components/EmptyState';
@@ -32,18 +32,15 @@ export default async function BildirimlerPage() {
         <TopNav />
         <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-10">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Bildirimler
-              </p>
-              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
-                Önce{' '}
-                <em className="not-italic font-medium text-brand-accent">
-                  giriş yap
-                </em>
-                .
-              </h1>
-            </div>
+            <PanelBaslik
+              eyebrow="Bildirimler"
+            >
+              Önce{' '}
+              <em className="not-italic font-medium text-brand-accent">
+              giriş yap
+              </em>
+              .
+            </PanelBaslik>
             <div className="bg-card border border-line rounded-lg p-12 text-center">
               <p className="font-display text-xl text-ink mb-3">
                 Bildirimleri görmek için giriş yapmalısın.

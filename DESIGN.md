@@ -463,6 +463,17 @@ menüdedir. Panel dışı sayfalarda bugünkü `TopNav` kalır.
 biçimlemesi çağıranın işidir (`formatPrice`, `formatTRY`). Tahmini gelir, marj
 veya doluluk gibi türetilmiş rakamlar bu bileşenlere girmez.
 
+**Kırılma noktaları (D1b-4).** Panel kabuğunda sol sütun `lg`'de (1024px)
+açılır; altında hamburger. Panel sayfaları `md:` yerleşimlerini viewport'a göre
+kullanabilir — içerik alanı `lg`'de en az 784px kalır, yani `md:` bir ızgara
+sol sütunla birlikte de sığar.
+
+**Başlık kartları.** Sol sütun `min-w-0 flex-1 basis-80` (20rem'in altına
+inmez), sağ grup `flex-wrap` ile sarar; rozetler ve CTA'lar başlığın altında ya
+da sağında durur. Başlık metni **`truncate` ALMAZ**, `break-words` alır: uzun
+teklif/etkinlik adları üç noktayla kesildiğinde birbirinden ayırt edilemiyordu.
+Desen: `app/ajans/teklifler/[id]/teklif-baslik.tsx`.
+
 ---
 
 ## Kasıtlı palet istisnaları
