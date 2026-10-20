@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** **8-U KAPANDI (20 Ekim 2026)**; sirada **8a**. Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** 8-U KAPANDI (20 Ekim); **8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde (21 Ekim)**; sirada 8a-P1. Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -89,6 +89,20 @@ kutuyu genisletip ad sutununu eziyor (ad "T" kaldi) — kok `min-w-0 flex-1 sm:f
   activity_logs 3+ satir diff'li, viewer yazamaz (42501), baska kurulusun etkinligine baglayamaz (22023), done gorev silinemez (22023), modul
   kapali business'ta INSERT 22023, modul acilinca gecer; anon 42501. asama18 K5-K10 (tablo/enum/politika/yetki/tutarsizlik: tamamlanmis
   gorevde completed_at bos (0), atanan uye kurulus disi (0)).
+
+**8a-DB/01 + hijyen_03 + 8a-DB/02 KAPANDI (21 Ekim 2026):** `20261021120000_faz8a_01_gorevler.sql` plandaki gibi (enum, `tasks`,
+`activity_logs`, kural/silme/aktivite tetikleyicileri, RLS events.view/manage, ajansta `tasks` modulu dolum + `fn_faz5_default_modules`
+genisledi, `notifications_type_check` + e-posta indeksi `task`) ve plana ek: **`org_module_set(org, key, enabled)`** RPC (settings.manage;
+yalniz tasks/crm/suppliers; `internal.log_access` `module.set`) — kurumsal sahibin modulu acabilmesi icin yazma yolu yoktu; kademeli silme
+(kurulus/etkinlik silinirken RI) `pg_trigger_depth() > 1` ile serbest, aktivite yazilmaz; bildirim baglantisi etkinlikli gorevde
+`/etkinliklerim/<id>?sekme=gorevler`, genelde `/kurulus/gorevler?gorev=<id>`; engellendi bildirimi olusturana + atanana (islemi yapan haric).
+`20261021110000_hijyen_03_kurulus_karsi_taraf.sql`: `organizations_public` gorunumu (id/slug/ad/tur; security_invoker=false; authenticated)
+— alici/satici karsi tarafin adini okur (21-tarama P6); eski ASCII bildirim metinleri duzeltildi (K14). `20261021130000_faz8a_02`:
+Guven karari (21 Ekim) — kurulus sahiplerinin kurulussuz eski etkinlikleri kurulusa atfedildi (gosterge/gorev/RFP gorsun; uyeler gorur).
+Yerel 2x idempotan; asama4 **28/28** (T26 gorevler: kurallar 22023/23514, done silinmez, atama/engellendi bildirimi, crew_coordinator okur
+yazamaz, viewer/anon 42501, aktivite yalniz tetikleyici, business modul kapisi + org_module_set, etkinlik silinince event_id NULL; T27
+organizations_public); asama18 K6-K15 ESIT dal + uretim, K16 0, K18 0. Siradaki: 8a-P1 (`23-claude-code-gorevi-8a-p1-gorevler.md`, dal
+`tasarim/d1b-8a`, D1b-1 etkinlik sayfasi sekmeli ile birlikte).
 
 **8a-P1 (Claude Code):** `/kurulus/gorevler` (kurulus genel liste; filtre: etkinlik, durum, atanan, "bana atanan"; hizli ekle; durum degistir;
 atama: uye listesi + ajansta havuz kayitlari; son tarih; kilometre tasi rozeti; bagimlilik secimi), etkinlik sayfasinda **Gorevler** bolumu
