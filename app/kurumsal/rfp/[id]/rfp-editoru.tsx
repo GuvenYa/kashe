@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import {
   DAVET_DURUM_ETIKETLERI,
   RFP_DURUM_ETIKETLERI,
@@ -251,10 +252,12 @@ export function RfpEditoru({
     });
   }
 
+  // Etkinlik adi talep basligiyla AYNIYSA alt satirda tekrar edilmez.
+  const etkinlikAdi = rfp.event?.title?.trim() || null;
   const etkinlikSatiri = rfp.event
     ? [
-        rfp.event.title?.trim() || null,
-        rfp.event.event_type,
+        etkinlikAdi && etkinlikAdi !== rfp.title.trim() ? etkinlikAdi : null,
+        etkinlikTuruEtiketi(rfp.event.event_type),
         tarihMetni(rfp.event.start_date),
         [rfp.event.city, rfp.event.district].filter(Boolean).join(' / ') || null,
         rfp.event.participant_count ? `${rfp.event.participant_count} kişi` : null,
@@ -267,8 +270,9 @@ export function RfpEditoru({
     <div className="space-y-5">
       {/* Ust blok */}
       <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0 flex-1">
+        {/* Telefonda durum rozeti basligin USTUNDE (order-first); sm+ sagda. */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1 order-2 sm:order-1">
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-brand-ink">
               Teklif talebi (RFP)
             </p>
@@ -292,7 +296,7 @@ export function RfpEditoru({
             )}
           </div>
 
-          <div className="text-right shrink-0">
+          <div className="order-1 sm:order-2 text-left sm:text-right shrink-0">
             <span
               className={`font-mono text-[10px] uppercase tracking-[0.14em] border px-2.5 py-1 rounded-full ${RFP_DURUM_SINIFLARI[rfp.status] ?? 'bg-paper-2 border-line text-ink-72'}`}
             >
@@ -431,7 +435,10 @@ export function RfpEditoru({
                         className={`${ALAN} w-full`}
                       />
                     ) : (
-                      <p className="text-sm text-ink-72">{k.quantity}</p>
+                      <p className="text-sm text-ink-72">
+                        <span className="sm:hidden text-ink-50">Adet: </span>
+                        {k.quantity}
+                      </p>
                     )}
                   </div>
                   <div className="sm:col-span-2">
@@ -472,6 +479,9 @@ export function RfpEditoru({
                       </div>
                     ) : (
                       <p className="text-sm text-ink-72">
+                        <span className="sm:hidden text-ink-50">
+                          Bütçe ipucu:{' '}
+                        </span>
                         {ipucuMetni(k.budget_hint_min, k.budget_hint_max) ?? '—'}
                       </p>
                     )}
@@ -491,7 +501,10 @@ export function RfpEditoru({
                         className={`${ALAN} w-full`}
                       />
                     ) : (
-                      <p className="text-sm text-ink-72">{k.notes ?? '—'}</p>
+                      <p className="text-sm text-ink-72">
+                        <span className="sm:hidden text-ink-50">Not: </span>
+                        {k.notes ?? '—'}
+                      </p>
                     )}
                   </div>
                   <div className="sm:col-span-2 flex items-center justify-end gap-2">

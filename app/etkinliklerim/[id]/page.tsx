@@ -12,6 +12,18 @@ import {
   TEKLIF_DURUM_ETIKETLERI,
   paraMetni,
 } from '@/app/ajans/teklifler/teklif-data';
+import { formatPrice } from '@/app/lib/profile-helpers';
+
+/** Butce araligi — ham sayi degil, formatPrice ile Kashe para bicimi. */
+function butceMetni(
+  min: number | null,
+  max: number | null
+): string {
+  const a = min != null ? formatPrice(min) : '';
+  const b = max != null ? formatPrice(max) : '';
+  if (a && b) return a === b ? a : `${a} – ${b}`;
+  return a || b || 'Belirtilmedi';
+}
 import { AdayPaneli } from './aday-paneli';
 import { EkipPaneli } from './ekip-paneli';
 import type {
@@ -634,7 +646,7 @@ export default async function EtkinlikDetayPage({
       etiket: 'Bütçe',
       deger:
         etkinlik.budget_min != null || etkinlik.budget_max != null
-          ? `${etkinlik.budget_min ?? '?'} – ${etkinlik.budget_max ?? '?'} TL`
+          ? butceMetni(etkinlik.budget_min, etkinlik.budget_max)
           : 'Belirtilmedi',
     },
     {
@@ -852,6 +864,7 @@ export default async function EtkinlikDetayPage({
                   !!ekip?.organization_id && !!ekipKurulusu?.canManageProposals
                 }
                 mevcutTeklif={mevcutTeklif}
+                rfpAcilabilir={rfpAcilabilir}
                 etkinlikBasligi={baslik}
                 maliyetYazilir={
                   !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
@@ -945,7 +958,7 @@ export default async function EtkinlikDetayPage({
 
           {etkinlik.event_spec_versions?.version_no != null && (
             <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
-              EventSpec sürümü: v{etkinlik.event_spec_versions.version_no}
+              Etkinlik tanımı · sürüm {etkinlik.event_spec_versions.version_no}
             </p>
           )}
         </div>

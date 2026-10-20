@@ -75,6 +75,7 @@ export function EkipPaneli({
   teklifYazilir,
   mevcutTeklif,
   etkinlikBasligi,
+  rfpAcilabilir = false,
 }: {
   eventId: string;
   /** `events.owner_user_id === user.id` — ekip kurma yalniz sahipte. */
@@ -98,6 +99,8 @@ export function EkipPaneli({
   mevcutTeklif: { id: string; title: string; durum: string } | null;
   /** Teklif basligi icin etkinlik basligi. */
   etkinlikBasligi: string;
+  /** Alici/kurulus etkinligi + events.manage — "Teklif talebi ac" baglantisi. */
+  rfpAcilabilir?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -796,9 +799,19 @@ export function EkipPaneli({
               )}
             </div>
           ))}
-          <p className="text-xs text-ink-50">
-            Ajans adayları ekibe eklenmez; ajansla tam hizmet teklifi FAZ 7.
-          </p>
+          {/* Ajans adaylari ekibe eklenmez (ekip = tekil profesyoneller).
+              Ajansla calismanin yolu teklif talebi; faz adi arayuzde gecmez. */}
+          {rfpAcilabilir && (
+            <p className="text-xs text-ink-50">
+              Ajansla çalışmak için:{' '}
+              <Link
+                href={`/kurumsal/rfp?etkinlik=${eventId}`}
+                className="text-brand-ink hover:underline"
+              >
+                Teklif talebi aç →
+              </Link>
+            </p>
+          )}
         </div>
       )}
 

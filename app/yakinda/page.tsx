@@ -5,6 +5,12 @@ import Image from 'next/image'
  * Urun kapali kalir; buraya bakan bir dogrulayici Kashe'nin ne oldugunu,
  * nerede oldugunu ve nasil ulasacagini gorebilir. Onizleme cerezi ve
  * BAKIM_ANAHTARI mantigina dokunulmaz.
+ *
+ * BAKIM KAPALIYKEN sayfa artik yoktur: adres dogrudan acilirsa (eski baglanti,
+ * arama sonucu) proxy.ts onu kalici olarak (308) ana sayfaya gonderir. Guard
+ * burada DEGIL proxy.ts'te: bu sayfa bir loading (Suspense) sinirinin altinda
+ * render ediliyor, akis basladigi icin buradaki bir redirect() 308 basligi
+ * yerine meta refresh uretiyordu.
  */
 const OZET_EN =
   'Kashe is an AI-powered marketplace and operations platform for the event and creative-services industry. Based in Istanbul, Turkiye. Founded 2026.'

@@ -6,6 +6,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { RfpSaticiIslemleri } from './rfp-satici-islemleri';
 import { markRfpViewed } from '../rfp-satici-actions';
 import {
@@ -72,7 +73,7 @@ export default async function AjansRfpDetayPage({
   const etkinlikSatiri = rfp.event
     ? [
         rfp.event.title?.trim() || null,
-        rfp.event.event_type,
+        etkinlikTuruEtiketi(rfp.event.event_type),
         tarihMetni(rfp.event.start_date),
         [rfp.event.city, rfp.event.district].filter(Boolean).join(' / ') || null,
         rfp.event.participant_count
@@ -159,30 +160,65 @@ export default async function AjansRfpDetayPage({
               {rfp.items.length === 0 ? (
                 <p className="text-sm text-ink-72">Talepte kalem yok.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 border-b border-line-strong">
-                        <th className="py-2 pr-3 font-normal">Rol</th>
-                        <th className="py-2 pr-3 font-normal">Adet</th>
-                        <th className="py-2 pr-3 font-normal">Zorunlu</th>
-                        <th className="py-2 font-normal">Not</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rfp.items.map((k) => (
-                        <tr key={k.id} className="border-b border-line">
-                          <td className="py-3 pr-3 text-ink">{k.role}</td>
-                          <td className="py-3 pr-3 text-ink-72">{k.quantity}</td>
-                          <td className="py-3 pr-3 text-ink-72">
-                            {k.is_required ? 'Zorunlu' : 'İsteğe bağlı'}
-                          </td>
-                          <td className="py-3 text-ink-72">{k.notes ?? '—'}</td>
+                <>
+                  {/* Telefon: kart modu — dar ekranda dort sutunlu tablo
+                      okunmuyordu, her alan kendi etiketiyle alt alta. */}
+                  <div className="space-y-2 sm:hidden">
+                    {rfp.items.map((k) => (
+                      <div
+                        key={k.id}
+                        className="border border-line rounded-lg p-3"
+                      >
+                        <p className="text-sm text-ink">{k.role}</p>
+                        <dl className="mt-1.5 space-y-0.5 text-xs text-ink-72">
+                          <div className="flex gap-1.5">
+                            <dt className="text-ink-50">Adet:</dt>
+                            <dd>{k.quantity}</dd>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <dt className="text-ink-50">Zorunlu:</dt>
+                            <dd>
+                              {k.is_required ? 'Zorunlu' : 'İsteğe bağlı'}
+                            </dd>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <dt className="text-ink-50">Not:</dt>
+                            <dd>{k.notes ?? '—'}</dd>
+                          </div>
+                        </dl>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 border-b border-line-strong">
+                          <th className="py-2 pr-3 font-normal">Rol</th>
+                          <th className="py-2 pr-3 font-normal">Adet</th>
+                          <th className="py-2 pr-3 font-normal">Zorunlu</th>
+                          <th className="py-2 font-normal">Not</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {rfp.items.map((k) => (
+                          <tr key={k.id} className="border-b border-line">
+                            <td className="py-3 pr-3 text-ink">{k.role}</td>
+                            <td className="py-3 pr-3 text-ink-72">
+                              {k.quantity}
+                            </td>
+                            <td className="py-3 pr-3 text-ink-72">
+                              {k.is_required ? 'Zorunlu' : 'İsteğe bağlı'}
+                            </td>
+                            <td className="py-3 text-ink-72">
+                              {k.notes ?? '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
 

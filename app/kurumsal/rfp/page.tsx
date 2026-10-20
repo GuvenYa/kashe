@@ -6,6 +6,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { tarihMetni, zamanMetni, KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { YeniRfp, type RfpEtkinlik } from './yeni-rfp';
 import {
   RFP_DURUM_ETIKETLERI,
@@ -116,7 +117,9 @@ export default async function KurumsalRfpPage({
       organizationId: e.organization_id ?? '',
       baslik:
         e.title?.trim() ||
-        [e.event_type, tarihMetni(e.start_date)].filter(Boolean).join(' · ') ||
+        [etkinlikTuruEtiketi(e.event_type), tarihMetni(e.start_date)]
+          .filter(Boolean)
+          .join(' · ') ||
         'Etkinlik',
     }));
   }
@@ -181,16 +184,25 @@ export default async function KurumsalRfpPage({
                         <p className="font-display font-semibold text-ink">
                           {t.title}
                         </p>
-                        <p className="text-sm text-ink-72 mt-0.5">
-                          {[
-                            t.event?.title?.trim() || 'Etkinlik',
+                        {/* Etkinlik adi talebin basligiyla AYNIYSA tekrar
+                            edilmez (talep basligi varsayilan olarak etkinlik
+                            adindan geliyor). */}
+                        {(() => {
+                          const etkinlikAdi = t.event?.title?.trim() || null;
+                          const alt = [
+                            etkinlikAdi && etkinlikAdi !== t.title.trim()
+                              ? etkinlikAdi
+                              : null,
                             t.event?.start_date
                               ? tarihMetni(t.event.start_date)
                               : null,
                           ]
                             .filter(Boolean)
-                            .join(' · ')}
-                        </p>
+                            .join(' · ');
+                          return alt ? (
+                            <p className="text-sm text-ink-72 mt-0.5">{alt}</p>
+                          ) : null;
+                        })()}
                         <p className="text-sm text-ink-72 mt-0.5">
                           {sayi.toplam} davet · {sayi.yanit} yanıt
                         </p>

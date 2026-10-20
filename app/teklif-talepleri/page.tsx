@@ -5,10 +5,62 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 import { getCachedUser } from '@/app/lib/auth';
 import { BriefEkButonu } from './brief-ek-butonu';
+import { getBriefFields } from '@/app/lib/brief-config';
+import { tarihMetni } from '@/app/lib/tarih';
+import { formatPrice } from '@/app/lib/profile-helpers';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 
 export const metadata = {
   title: 'Teklif Talepleri — Kashe',
 };
+
+type BriefSatiri = { key: string; label: string; value: string };
+
+/**
+ * Ham `brief_data`'yi kategorinin brief tanimiyla eslestirir.
+ *
+ * Eskiden `Object.entries` ile YALNIZ deger basiliyordu ("birthday", "2027-06-15",
+ * "fashion") — kullanici neye baktigini anlamiyordu. Artik anahtar alan ETIKETINE,
+ * deger de secenek etiketine cevrilir. Tanimda olmayan anahtar ATLANIR; tarih ve
+ * sayi alanlari Kashe bicimine girer.
+ */
+function briefSatirlari(
+  brief: Record<string, string>,
+  categorySlug: string | null
+): BriefSatiri[] {
+  const alanlar = getBriefFields(categorySlug);
+  const satirlar: BriefSatiri[] = [];
+
+  for (const alan of alanlar) {
+    const ham = brief[alan.key];
+    if (ham === undefined || ham === null || String(ham).trim() === '') continue;
+    const metin = String(ham);
+
+    let deger = metin;
+    if (alan.options?.length) {
+      const esles = alan.options.find((o) => o.value === metin)?.label;
+      // Secenek listesinde yoksa etkinlik turu sozlugune bak: kategori
+      // tanimlari zaman icinde ayrisabiliyor ('birthday' bir kategoride var,
+      // otekinde yok) — ham ingilizce anahtar arayuze dusmesin.
+      deger = esles ?? etkinlikTuruEtiketi(metin) ?? metin;
+    } else if (alan.type === 'date') {
+      deger = tarihMetni(metin) ?? metin;
+    }
+    satirlar.push({ key: alan.key, label: alan.label, value: deger });
+  }
+  return satirlar;
+}
+
+/** Butce araligi formatPrice ile; tek sinir varsa tek deger yazilir. */
+function butceMetni(
+  min: number | null | undefined,
+  max: number | null | undefined
+): string | null {
+  const a = min != null ? formatPrice(min) : '';
+  const b = max != null ? formatPrice(max) : '';
+  if (a && b) return a === b ? a : `${a} – ${b}`;
+  return a || b || null;
+}
 
 export default async function TeklifTalepleriPage() {
   const supabase = await createClient();
@@ -40,7 +92,7 @@ export default async function TeklifTalepleriPage() {
         id, brief_data, event_date, event_type, budget_min, budget_max,
         share_budget, response_deadline, status,
         attachment_path, attachment_name, attachment_type,
-        service_categories (name_tr),
+        service_categories (name_tr, slug),
         turkish_cities (name),
         customer:profiles!quote_requests_customer_id_fkey (full_name, company_name, role)
       )
@@ -96,12 +148,18 @@ export default async function TeklifTalepleriPage() {
                 customer?.company_name || customer?.full_name || 'Müşteri';
               const categoryName = req.service_categories?.name_tr;
               const cityName = req.turkish_cities?.name;
+              // Brief alanlari kategorinin tanimindan okunur: anahtar -> etiket,
+              // deger -> secenek etiketi. Tanimda olmayan anahtar atlanir (ham
+              // "event_type: birthday" gibi satirlar arayuze dusmesin).
               const brief = (req.brief_data || {}) as Record<string, string>;
-              const briefEntries = Object.entries(brief).slice(0, 4);
+              const briefEntries = briefSatirlari(
+                brief,
+                req.service_categories?.slug ?? null
+              ).slice(0, 4);
 
               const budget =
                 req.share_budget && (req.budget_min || req.budget_max)
-                  ? `${req.budget_min ?? '?'} - ${req.budget_max ?? '?'} TL`
+                  ? butceMetni(req.budget_min, req.budget_max)
                   : null;
 
               return (
@@ -142,9 +200,9 @@ export default async function TeklifTalepleriPage() {
                   {/* Brief özeti */}
                   {briefEntries.length > 0 && (
                     <div className="bg-paper rounded-lg p-3 mb-3 space-y-1">
-                      {briefEntries.map(([k, v]) => (
-                        <p key={k} className="text-sm text-ink-72">
-                          <span className="text-ink">{v}</span>
+                      {briefEntries.map((satir) => (
+                        <p key={satir.key} className="text-sm text-ink-72">
+                          {satir.label}: <span className="text-ink">{satir.value}</span>
                         </p>
                       ))}
                     </div>

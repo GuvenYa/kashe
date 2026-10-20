@@ -61,6 +61,29 @@ export const ORG_ROLE_SUMMARIES: Record<OrgRole, string> = {
   viewer: 'Yalnız görür: etkinlikler ve ekip.',
 };
 
+/**
+ * Kurumsal yuzeyin ozetleri — yetenek havuzu ifadesi CIKARILIR.
+ *
+ * Havuz (`talent_pool`) modulu YALNIZ ajans kuruluslarinda acik; kurum
+ * kullanicisina "havuzu gorur" demek olmayan bir ekrani tarif ederdi. Yetkiler
+ * ayni (matris ortak), yalniz anlatim sadelesir.
+ */
+export const ORG_ROLE_SUMMARIES_KURUMSAL: Record<OrgRole, string> = {
+  owner:
+    'Her şeyi yönetir: etkinlik, ekip, teklif, iç maliyet, finans, ayarlar, üyeler ve faturalama.',
+  admin:
+    'Faturalama dışında her şeyi yönetir: etkinlik, ekip, teklif, iç maliyet, finans, ayarlar ve üyeler.',
+  sales:
+    'Etkinlikleri yönetir, ekibi görür, teklif açar ve gönderir. İç maliyeti görmez.',
+  project_manager:
+    'Etkinlikleri ve ekibi yönetir, teklifleri görür. İç maliyeti görmez.',
+  crew_coordinator:
+    'Etkinlikleri görür; ekibi yönetir. Teklif ve iç maliyet yetkisi yoktur.',
+  finance:
+    'Etkinlik ve ekibi görür; teklifleri görür; iç maliyet ve finansı yönetir.',
+  viewer: 'Yalnız görür: etkinlikler ve ekip.',
+};
+
 /** Bilinmeyen/eksik deger icin guvenli okuma (ayna gecikmesi vb.). */
 export function orgRolEtiketi(role: string | null | undefined): string {
   return ORG_ROLE_LABELS[(role ?? '') as OrgRole] ?? 'İzleyici';

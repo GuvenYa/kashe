@@ -4,7 +4,21 @@ import { updateSession } from '@/app/lib/supabase-middleware';
 const CEREZ_ADI = 'kashe_onizleme';
 
 function bakimKontrolu(request: NextRequest): NextResponse | null {
-  if (process.env.NEXT_PUBLIC_BAKIM_MODU !== 'true') return null;
+  if (process.env.NEXT_PUBLIC_BAKIM_MODU !== 'true') {
+    // Bakim kapaliyken vitrin sayfasinin gosterecegi bir sey yok: eski
+    // baglanti ya da arama sonucu buraya gelirse KALICI olarak (308) ana
+    // sayfaya gider. Yonlendirme burada; sayfanin kendi icinde DEGIL:
+    // /yakinda bir loading (Suspense) sinirinin altinda render ediliyor,
+    // akis basladigi icin sayfa icindeki redirect() 308 basligi yerine
+    // meta refresh uretiyordu (kalici yonlendirme sayilmaz). next.config
+    // yerine burada: bakim ACIKKEN asagidaki rewrite ayni yola gidiyor,
+    // config seviyesindeki bir redirect o rewrite ile donguye girerdi; bu
+    // dal yalniz bakim kapaliyken calistigi icin dongu olusamaz.
+    if (request.nextUrl.pathname.startsWith('/yakinda')) {
+      return NextResponse.redirect(new URL('/', request.url), 308);
+    }
+    return null;
+  }
 
   const { pathname, searchParams } = request.nextUrl;
 

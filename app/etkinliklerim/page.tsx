@@ -47,7 +47,11 @@ function tarihMetni(satir: EtkinlikSatiri): string {
       timeZone: 'UTC',
     });
   const bas = bicim(satir.start_date);
-  const son = satir.end_date ? ` → ${bicim(satir.end_date)}` : '';
+  // Ayni gune denk gelen aralik tek tarih gosterilir ("27 Eylul 2026 -> 27 Eylul 2026" degil).
+  const son =
+    satir.end_date && satir.end_date !== satir.start_date
+      ? ` → ${bicim(satir.end_date)}`
+      : '';
   return bas + son;
 }
 

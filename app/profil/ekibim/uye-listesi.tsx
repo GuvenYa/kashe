@@ -93,7 +93,7 @@ function UyeSatiri({
               {name.charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-display font-semibold text-ink group-hover:text-brand-ink transition-colors truncate">
               {name}
             </p>

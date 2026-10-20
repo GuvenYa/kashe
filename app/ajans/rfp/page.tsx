@@ -6,12 +6,9 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
-import {
-  DAVET_DURUM_ETIKETLERI,
-  RFP_DURUM_ETIKETLERI,
-  RFP_DURUM_SINIFLARI,
-  sonTarihGecti,
-} from '@/app/kurumsal/rfp/rfp-data';
+// Alici tarafi durum etiketleri BURADA kullanilmaz: ajans kendi sonucunu
+// gorur (saticiSonucu), talebin ic durumunu degil.
+import { sonTarihGecti } from '@/app/kurumsal/rfp/rfp-data';
 
 export const metadata = {
   title: "Gelen RFP'ler — Kashe",
@@ -33,10 +30,49 @@ type DavetSatiri = {
     status: string;
     deadline: string | null;
     organization_id: string;
+    awarded_proposal_id: string | null;
     buyer: { display_name: string | null } | null;
     event: { title: string | null; start_date: string | null } | null;
   } | null;
 };
+
+const ROZET_MOSS = 'bg-moss/10 border-moss/40 text-ink';
+const ROZET_ACIK = 'bg-brand-ink-08 border-brand-ink/25 text-brand-ink';
+const ROZET_NOTR = 'bg-paper-2 border-line text-ink-72';
+
+/**
+ * Ajansin KENDI sonucu — tek rozet.
+ *
+ * Sira onemli: iptal her seyin onunde (iptalde "secilmedi" demek yanlis olur),
+ * sonra kendi reddi, sonra secim sonucu, en sonda acik talep durumlari.
+ */
+function saticiSonucu(
+  rfpStatus: string,
+  davetStatus: string,
+  proposalId: string | null,
+  awardedProposalId: string | null
+): { metin: string; sinif: string; sonTarihGoster: boolean } {
+  if (rfpStatus === 'cancelled') {
+    return { metin: 'İptal edildi', sinif: ROZET_NOTR, sonTarihGoster: false };
+  }
+  if (davetStatus === 'declined') {
+    return {
+      metin: 'Daveti reddettin',
+      sinif: ROZET_NOTR,
+      sonTarihGoster: false,
+    };
+  }
+  if (rfpStatus === 'awarded') {
+    const benim = !!proposalId && proposalId === awardedProposalId;
+    return benim
+      ? { metin: 'Teklifin seçildi', sinif: ROZET_MOSS, sonTarihGoster: false }
+      : { metin: 'Seçilmedi', sinif: ROZET_NOTR, sonTarihGoster: false };
+  }
+  if (davetStatus === 'responded') {
+    return { metin: 'Yanıtladın', sinif: ROZET_ACIK, sonTarihGoster: false };
+  }
+  return { metin: 'Yanıt bekliyor', sinif: ROZET_ACIK, sonTarihGoster: true };
+}
 
 export default async function AjansRfpPage() {
   const supabase = await createClient();
@@ -61,7 +97,7 @@ export default async function AjansRfpPage() {
     .select(
       `id, status, rfp_id, proposal_id, created_at,
        rfp:rfps(
-         id, title, status, deadline, organization_id,
+         id, title, status, deadline, organization_id, awarded_proposal_id,
          buyer:organizations!rfps_organization_id_fkey(display_name),
          event:events(title, start_date)
        )`
@@ -102,6 +138,12 @@ export default async function AjansRfpPage() {
                 const rfp = d.rfp;
                 if (!rfp) return null;
                 const gecti = sonTarihGecti(rfp.deadline);
+                const sonuc = saticiSonucu(
+                  rfp.status,
+                  d.status,
+                  d.proposal_id,
+                  rfp.awarded_proposal_id
+                );
                 return (
                   <Link
                     key={d.id}
@@ -124,27 +166,22 @@ export default async function AjansRfpPage() {
                             .filter(Boolean)
                             .join(' · ')}
                         </p>
-                        {d.status === 'responded' && d.proposal_id && (
-                          <p className="text-sm text-moss mt-0.5">
-                            Teklifin gönderildi
-                          </p>
-                        )}
                       </div>
                       <div className="text-right shrink-0">
+                        {/* TEK sonuc rozeti: eskiden talep durumu + davet durumu
+                            + "Teklifin gonderildi" satiri yan yana duruyordu ve
+                            ajans kendi sonucunu okuyamiyordu. */}
                         <span
-                          className={`font-mono text-[10px] uppercase tracking-[0.14em] border px-2.5 py-1 rounded-full ${RFP_DURUM_SINIFLARI[rfp.status] ?? 'bg-paper-2 border-line text-ink-72'}`}
+                          className={`font-mono text-[10px] uppercase tracking-[0.14em] border px-2.5 py-1 rounded-full ${sonuc.sinif}`}
                         >
-                          {RFP_DURUM_ETIKETLERI[rfp.status] ?? rfp.status}
+                          {sonuc.metin}
                         </span>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72 mt-2">
-                          {DAVET_DURUM_ETIKETLERI[d.status] ?? d.status}
-                        </p>
-                        {rfp.deadline && (
+                        {sonuc.sonTarihGoster && rfp.deadline && (
                           <p
                             className={
                               gecti
-                                ? 'text-xs text-danger mt-1'
-                                : 'text-xs text-ink-72 mt-1'
+                                ? 'text-xs text-danger mt-2'
+                                : 'text-xs text-ink-72 mt-2'
                             }
                           >
                             Son tarih: {zamanMetni(rfp.deadline)}

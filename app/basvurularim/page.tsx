@@ -8,6 +8,10 @@ import type { ApplicationWithRelations } from '../ilanlar/listings-data';
 
 type SearchParams = Promise<{ durum?: string }>;
 
+export const metadata = {
+  title: 'Başvurularım — Kashe',
+};
+
 export default async function BasvurularimPage({
   searchParams,
 }: {

@@ -29,6 +29,10 @@ type SearchParams = Promise<{
   sirala?: string; // yeni | deadline | butce
 }>;
 
+export const metadata = {
+  title: 'İlanlar — Kashe',
+};
+
 export default async function IlanlarPage({
   searchParams,
 }: {

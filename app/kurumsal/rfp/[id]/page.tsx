@@ -194,6 +194,18 @@ export default async function KurumsalRfpDetayPage({
     }
   }
 
+  // Etkinlige gercekten erisim var mi (RLS suzer): satir donuyorsa baglanti
+  // calisir, donmuyorsa satir hic gosterilmez.
+  let etkinlikErisimi = false;
+  if (rfp.event?.id) {
+    const { data: ev } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', rfp.event.id)
+      .maybeSingle();
+    etkinlikErisimi = !!ev;
+  }
+
   return (
     <>
       <TopNav />
@@ -222,16 +234,15 @@ export default async function KurumsalRfpDetayPage({
             />
           </div>
 
-          {rfp.event?.id && (
+          {/* Erisim YOKSA satir hic basilmaz (calismayan baglanti gosterilmez). */}
+          {etkinlikErisimi && rfp.event?.id && (
             <p className="mt-6 text-sm text-ink-72">
-              Bu talep bir etkinliğe bağlı.{' '}
               <Link
                 href={`/etkinliklerim/${rfp.event.id}`}
                 className="text-brand-ink hover:underline"
               >
-                Etkinliğe git
+                Etkinliğe git →
               </Link>
-              {' '}(etkinliğin sahibi değilsen görünmez).
             </p>
           )}
         </div>

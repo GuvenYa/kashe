@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { calcCommission, formatTRY, COMMISSION_RATE } from '@/app/lib/premium';
+import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 
 export const metadata = {
   title: 'Kazançlarım — Kashe',
@@ -65,7 +66,16 @@ export default async function KazanclarimPage() {
   const bookings = (bookingsData ?? []) as BookingRow[];
 
   const completed = bookings.filter((b) => b.status === 'completed');
-  const upcoming = bookings.filter((b) => b.status === 'confirmed');
+  const onayli = bookings.filter((b) => b.status === 'confirmed');
+  // Tarihi gecmis ama tamamlanmamis kayitlar "Yaklasan" basligi altinda yaniltiyordu.
+  // Olcut etkinlik gunu: bugunden ONCEyse gecmis kumesine gider (tarihsizler yaklasanda).
+  const bugunGun = new Intl.DateTimeFormat('en-CA', {
+    timeZone: KASHE_SAAT_DILIMI,
+  }).format(new Date());
+  const gecmisKalan = onayli.filter(
+    (b) => !!b.event_date && b.event_date.slice(0, 10) < bugunGun
+  );
+  const upcoming = onayli.filter((b) => !gecmisKalan.includes(b));
 
   // Müşteri isimleri (toplu çek)
   const customerIds = Array.from(new Set(bookings.map((b) => b.customer_id)));
@@ -208,7 +218,7 @@ export default async function KazanclarimPage() {
                                   </p>
                                   {b.event_type && (
                                     <p className="text-[12px] text-ink-50">
-                                      {b.event_type}
+                                      {etkinlikTuruEtiketi(b.event_type)}
                                     </p>
                                   )}
                                 </td>
@@ -234,6 +244,41 @@ export default async function KazanclarimPage() {
                 )}
               </div>
 
+              {/* Tarihi gecmis ama tamamlanmamis (confirmed) */}
+              {gecmisKalan.length > 0 && (
+                <div>
+                  <h2 className="font-display font-medium text-xl text-ink mb-1">
+                    Tarihi geçmiş, tamamlanmamış ({gecmisKalan.length})
+                  </h2>
+                  <p className="text-sm text-ink-72 mb-4">
+                    Rezervasyon sayfasından tamamla.
+                  </p>
+                  <div className="bg-card border border-line rounded-2xl overflow-hidden">
+                    <div className="divide-y divide-line">
+                      {gecmisKalan.map((b) => (
+                        <div
+                          key={b.id}
+                          className="flex items-center justify-between gap-3 px-4 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-ink font-medium truncate">
+                              {customerMap.get(b.customer_id) ?? 'Müşteri'}
+                            </p>
+                            <p className="text-[12px] text-ink-50">
+                              {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}
+                              {formatDate(b.event_date)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-ink tabular-nums whitespace-nowrap shrink-0">
+                            {formatTRY(b.total_amount ?? 0)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Yaklaşan (confirmed) */}
               {upcoming.length > 0 && (
                 <div>
@@ -258,7 +303,7 @@ export default async function KazanclarimPage() {
                               {customerMap.get(b.customer_id) ?? 'Müşteri'}
                             </p>
                             <p className="text-[12px] text-ink-50">
-                              {b.event_type || 'Etkinlik'} ·{' '}
+                              {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}
                               {formatDate(b.event_date)}
                             </p>
                           </div>

@@ -142,6 +142,18 @@ export default async function TeklifDetayPage({
 
   const baglantilar = (baglantiData ?? []) as unknown as PortalBaglantisi[];
 
+  // Etkinlige erisim (RLS): satici kurulus cogu zaman gormez — o durumda
+  // "Etkinlige git" satiri hic basilmaz.
+  let etkinlikErisimi = false;
+  if (teklif.event_id) {
+    const { data: ev } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', teklif.event_id)
+      .maybeSingle();
+    etkinlikErisimi = !!ev;
+  }
+
   return (
     <>
       <TopNav />
@@ -174,16 +186,16 @@ export default async function TeklifDetayPage({
             />
           </div>
 
-          {teklif.event_id && (
+          {/* Etkinlige erisim YOKSA satir hic basilmaz: "gorunmez" uyarisi
+             yerine calismayan bir baglanti gostermek daha kotuydu. */}
+          {etkinlikErisimi && teklif.event_id && (
             <p className="mt-6 text-sm text-ink-72">
-              Bu teklif bir etkinliğe bağlı.{' '}
               <Link
                 href={`/etkinliklerim/${teklif.event_id}`}
                 className="text-brand-ink hover:underline"
               >
-                Etkinliğe git
+                Etkinliğe git →
               </Link>
-              {' '}(etkinliğin sahibi değilsen görünmez).
             </p>
           )}
         </div>

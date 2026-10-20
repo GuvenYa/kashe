@@ -288,7 +288,8 @@ export default async function RezervasyonDetayPage({ params }: Props) {
 
           {/* HEADER */}
           <div className="bg-card border border-line rounded-2xl p-6 md:p-8 mb-6">
-            <div className="flex items-start gap-5">
+            {/* Telefonda dikey: avatar+ad ustte, rozet altinda; sm+ yan yana. */}
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5">
               <div className="shrink-0">
                 {otherParty?.avatar_url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -362,7 +363,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                   )}
               </div>
               <span
-                className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-[0.14em] border ${statusStyle.classes}`}
+                className={`self-start shrink-0 px-3 py-1 rounded-full text-[11px] font-mono uppercase tracking-[0.14em] border ${statusStyle.classes}`}
               >
                 {statusStyle.label}
               </span>

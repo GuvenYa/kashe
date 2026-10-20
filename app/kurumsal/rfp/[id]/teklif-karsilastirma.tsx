@@ -31,10 +31,18 @@ function durumEtiketi(status: string): string {
   return TEKLIF_DURUM_ETIKETLERI[status] ?? status;
 }
 
-/** Bir sutunun bir rol icin hucre metni (ayni rolde birden cok kalem toplanir). */
-function hucreMetni(sutun: KarsilastirmaSutunu, roleId: number): string {
+/**
+ * Bir sutunun bir rol icin hucre metni (ayni rolde birden cok kalem toplanir).
+ *
+ * Iki bicim doner: telefonda YALNIZ toplam, sm+ de ayrinti (adet, birim fiyat
+ * ve toplam birlikte). Dar ekranda uzun bicim sutunlari tasiriyordu.
+ */
+function hucreMetinleri(
+  sutun: KarsilastirmaSutunu,
+  roleId: number
+): { kisa: string; uzun: string } {
   const esl = sutun.kalemler.filter((k) => k.role_id === roleId);
-  if (esl.length === 0) return '—';
+  if (esl.length === 0) return { kisa: '—', uzun: '—' };
 
   const adet = esl.reduce((t, k) => t + sayiya(k.quantity), 0);
   const toplam = esl.reduce((t, k) => t + sayiya(k.total_client_price), 0);
@@ -43,10 +51,13 @@ function hucreMetni(sutun: KarsilastirmaSutunu, roleId: number): string {
   const toplamMetni = paraMetni(toplam, sutun.currency) ?? '—';
   if (birimler.size === 1) {
     const birim = paraMetni([...birimler][0], sutun.currency) ?? '—';
-    return `${adet} × ${birim} = ${toplamMetni}`;
+    return { kisa: toplamMetni, uzun: `${adet} × ${birim} = ${toplamMetni}` };
   }
   // Birim fiyatlar farkli: tek bir "adet × birim" yazmak yaniltici olurdu.
-  return `${esl.length} kalem · ${toplamMetni}`;
+  return {
+    kisa: toplamMetni,
+    uzun: `${esl.length} kalem · ${toplamMetni}`,
+  };
 }
 
 export function TeklifKarsilastirma({
@@ -142,7 +153,7 @@ export function TeklifKarsilastirma({
               {sutunlar.map((s) => (
                 <th
                   key={s.proposalId}
-                  className={`${sutunSinifi(s)} min-w-[190px]`}
+                  className={`${sutunSinifi(s)} sm:min-w-[190px]`}
                 >
                   <p className="font-display font-semibold text-ink leading-tight">
                     {s.saticiAdi}
@@ -169,7 +180,12 @@ export function TeklifKarsilastirma({
                 {sutunlar.map((s) => (
                   <td key={s.proposalId} className={sutunSinifi(s)}>
                     <span className="text-ink-72">
-                      {hucreMetni(s, k.role_id)}
+                      <span className="sm:hidden">
+                        {hucreMetinleri(s, k.role_id).kisa}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {hucreMetinleri(s, k.role_id).uzun}
+                      </span>
                     </span>
                   </td>
                 ))}

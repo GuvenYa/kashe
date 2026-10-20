@@ -88,7 +88,7 @@ function UyeSatiri({
               {name.charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-display font-semibold text-ink truncate">
               {name}
             </p>
@@ -100,6 +100,7 @@ function UyeSatiri({
           membershipId={member.id}
           rol={(kurulusRolu ?? 'viewer') as OrgRole}
           aynalanmamis={kurulusRolu === undefined}
+          yuzey="kurumsal"
         />
 
         <div className="flex flex-col items-end gap-1">

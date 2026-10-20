@@ -18,6 +18,10 @@ const BILDIRIM_MESAJLARI: Record<string, string> = {
     'İlan taslak olarak kaydedildi. Düzenleyip yayınlayabilirsin.',
 };
 
+export const metadata = {
+  title: 'İlanlarım — Kashe',
+};
+
 export default async function IlanlarimPage({
   searchParams,
 }: {

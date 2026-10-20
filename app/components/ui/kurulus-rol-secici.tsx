@@ -7,6 +7,7 @@ import {
   ORG_ROLES,
   ORG_ROLE_LABELS,
   ORG_ROLE_SUMMARIES,
+  ORG_ROLE_SUMMARIES_KURUMSAL,
   type OrgRole,
 } from '@/app/lib/org-roles';
 
@@ -24,6 +25,7 @@ export function KurulusRolSecici({
   membershipId,
   rol,
   aynalanmamis = false,
+  yuzey = 'ajans',
 }: {
   /** `organization_memberships.id` = eski uye satirinin id'si (ayna ayni id ile yazar). */
   membershipId: string;
@@ -31,12 +33,16 @@ export function KurulusRolSecici({
   rol: OrgRole;
   /** Ayna satiri bulunamadi — deger varsayilan, uyari `title`'da. */
   aynalanmamis?: boolean;
+  /** Kurumsal yuzeyde ozetlerde yetenek havuzu gecmez (o modul ajansa ozel). */
+  yuzey?: 'ajans' | 'kurumsal';
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [secilen, setSecilen] = useState<OrgRole>(rol);
   const [ownerOnayi, setOwnerOnayi] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
+  const ozetler =
+    yuzey === 'kurumsal' ? ORG_ROLE_SUMMARIES_KURUMSAL : ORG_ROLE_SUMMARIES;
 
   function kaydet(yeni: OrgRole) {
     setHata(null);
@@ -66,7 +72,7 @@ export function KurulusRolSecici({
   }
 
   return (
-    <div className="min-w-[190px]">
+    <div className="min-w-0 w-full sm:w-[280px] sm:shrink-0">
       <label className="block text-[10px] font-mono uppercase tracking-[0.1em] text-ink-72 mb-1">
         Kuruluş rolü
       </label>
@@ -77,19 +83,19 @@ export function KurulusRolSecici({
         title={
           aynalanmamis
             ? 'Bu üye için kuruluş üyeliği henüz aynalanmamış; varsayılan gösteriliyor.'
-            : ORG_ROLE_SUMMARIES[secilen]
+            : ozetler[secilen]
         }
         className="w-full px-3 py-1.5 bg-paper border border-line rounded-lg text-sm text-ink focus:border-brand-ink focus:outline-none disabled:opacity-50"
       >
         {ORG_ROLES.map((r) => (
-          <option key={r} value={r} title={ORG_ROLE_SUMMARIES[r]}>
+          <option key={r} value={r} title={ozetler[r]}>
             {ORG_ROLE_LABELS[r]}
           </option>
         ))}
       </select>
 
       <p className="text-[11px] text-ink-50 leading-snug mt-1">
-        {ORG_ROLE_SUMMARIES[secilen]}
+        {ozetler[secilen]}
       </p>
 
       {aynalanmamis && (
