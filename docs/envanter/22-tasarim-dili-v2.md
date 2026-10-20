@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim, bolum 4); sirada D1b + 8a. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim); D1b-1 (8a-P1 ile) ve D1b-2 KAPANDI (21 Ekim); sirada D1b-3 (teklif yuzeyi), D1b-4 (duzen kalanlari), sonra D2. Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -75,6 +75,21 @@ tek kural; (9) eyebrow "PROFESYONEL · MERKEZ" 807 px'te iki satir; (10) `/ajans
 (11) `etkinlikTuruEtiketi('fashion')` → "Fashion" (sozluge "Moda / defile"); (12) musteri portali "Tur" satiri ham `event_type`
 (`app/portal/teklif/[token]/page.tsx:189`) — alici goruyor, D1b'de ilk madde; (13) para bicimi `formatPrice` ₺ onek, baska yerlerde "TL"
 sonek — tek bicim karari.
+
+### D1b-2 KAPANDI (21 Ekim 2026) — onizleme turu
+
+Dal `tasarim/d1b-2`. Yapilan: 22 calisma sayfasi `PanelKabugu` icinde (`app/lib/panel-kabuk.ts` tek yerden menu + hesap karti), para bicimi
+TEK KAYNAK `app/lib/para.ts` ("12.000 TL", aralik, `paraBirimliMetin`; `₺` 0), `organizations_public` 8 embed (K9/K10 kok nedeni kapandi:
+alici rezervasyon sayfasinda "Sunucu Ajans"), `TeklifBelgesi` (portal tuketiyor; "Tur" etiketli), RFP alt satir kurali ajans tarafinda,
+8a turu bulgulari (bagimlilik `bagli?.id`, aktivite ek almayan kalip, revalidate daraltildi, filtre etiketleri, "Bana atanan" bos durum,
+`aria-current` tekil, `VeriTablosu` `dar` sutun, "Pro teklifleri", 5 ham `event_type`, `fashion`). Lint'in yakaladigi gercek hata:
+`p/[id]/iletisim-button.tsx` yerel `formatTL` kendini cagiriyordu (sonsuz dongu) — kaldirildi. Tur: testguven `/rezervasyonlarim` karti
+"Ajans: Sunucu Ajans", `/rezervasyon/[id]` baslik "Sunucu Ajans", panelde, TL; gmail `/ajans/teklifler/[id]` panelde, `/ajans/rfp` alt satir
+tekrar yok; konsol 0. Portal "Tur" kontrolu uretimde e-postadaki baglantiyla (jeton sayfada gosterilmez — tasarim geregi).
+**Yapilmayan (Claude Code karari, kabul):** teklif editoru yeniden kurgusu → **D1b-3** (`25-claude-code-gorevi-d1b-3-teklif-yuzeyi.md`);
+`PanelBaslik` donusumu, `/rezervasyon/[id]` ve `/rezervasyonlarim` kart icerikleri, `/odemelerim` kurulus rezervasyonlari (K12),
+karsilastirma `OzetSerit`, ekip uyesi satir dugmeleri, iyimser hizli ekle → **D1b-4**. Yeni bulgu: `/ajans/teklifler/[id]` baslik kartinda
+baslik kirpiliyor ("Ankara'da 250 ki…") — D1b-3 baslik karti ile cozulur; `/rezervasyon/[id]` baslik metin sutunu dar — D1b-4.
 
 ## 5. Kabul olcutleri (D1a)
 
