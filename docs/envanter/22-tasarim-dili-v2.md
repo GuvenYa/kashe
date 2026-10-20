@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1a KAPANDI (20 Ekim, bolum 4); sirada D1b + 8a. Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -51,7 +51,32 @@ Hibrit), uyum skoru halkasi, alt ozet serit (desen 5). Veri: FAZ 6 match + FAZ 7
 Her dilim: Claude Code gorevi (dal `tasarim/d1a` vb.) → Vercel onizleme → Claude turu (807 + 375; 1280 Guven Chrome) → main → kapanis
 notu bu dosyaya. `DESIGN.md`'ye "Desenler (v2)" bolumu D1a ile eklenir; bilesenler `app/components/panel/` altinda.
 
-## 4. Kabul olcutleri (D1a)
+## 4. D1a KAPANDI (20 Ekim 2026) — onizleme turu
+
+Dal `tasarim/d1a` (commit `1dede2f`, ustunde hijyen tarama 1 `174b19d`); Vercel onizlemesinde tur (Claude; gmail/testguven/hotmail oturumlari
+Guven'den; 807 + 375 px). **Gorulen:** `/ajans` gosterge (lacivert yan menu, "Gunaydin, Sunucu Ajans", KPI 0/0/0/1, hesap karti "Ajans
+hesabi · 3 kisilik ekip", Admin paneli baglantisi), `/kurumsal` (KPI 0/1/0/1 · ₺23.400, Teklif talepleri + Yaklasan etkinlikler tablolari),
+`/profil` profesyonel merkezi (KPI 1/0/₺0/%100, Kuruluslarim: Sunucu Ajans · Izleyici, Test Guven · Yonetici · Panele git; yan menude
+Profesyonel + Sunucu Ajans + Test Guven + Profil icerigi + Pazaryeri + Hesap gruplari), `/admin` ayni bilesen (Yonetim/Denetim/Icerik),
+telefonda cekmece, hamburger listesi modelden. Konsol hatasi 0, tasma 0. Hijyen tarama 1 maddeleri de dogrulandi: Gelen RFP'lerde
+"Teklifin secildi"/"Iptal edildi", etkinlik sayfasinda "FAZ 7" yok + "Etkinlik tanimi · surum 2" + butce bicimli, RFP sayfasi telefonda
+rozet ustte + etiketli rol kartlari + tasmasiz karsilastirma + "Etkinlige git →", rezervasyon sayfasi telefonda dikey kart, gelen teklif
+taleplerinde etiketli alanlar + Turkce tarih + bicimli butce, Kazanclarim'da Lansman/Nisan/Dugun + "Tarihi gecmis, tamamlanmamis (3)".
+Not: D1a raporunda Claude Code hijyen isini main'e commit'ledi (174b19d; "Commit ATMA" sapmasi — temiz agac icin, kabul).
+
+**D1b'ye tasinan notlar (turdan):** (1) ajans gostergesi etkinlik sayimi yalniz `organization_id = kurulus`; sahibin FAZ 8 oncesi kisisel
+etkinlikleri (lansman 20 Kasim) gorunmuyor — sahipse kisisel etkinlikler de sayilir; (2) "Acik RFP" sayimi `rfp_invites.provider_id =
+kurulusun legacy_profile_id` ile suzulmeli (platform yoneticisinde tum davetler sayiliyor); (3) karsi taraf adi `organizations` uzerinden —
+P6 `organizations_public` (DB hijyen_03); (4) kurumsal gosterge tablosu 807 px'te 5 sutun sikisiyor, ETKINLIK sutunu basligi tekrar ediyor —
+`lg` altinda ikincil sutunlar gizlenir; (5) yan menu "PROFESYONEL TEKLIFLERI" kesiliyor → "Pro teklifleri"; (6) `/profil`'de eski Portfoy
+galerisi ve Hizmetlerim listesi, "Profil icerigi" ozet kartlariyla tekrar — eski bloklar kalkar; (7) kurulus grubunda "Takvim" kisinin kendi
+grubuyla tekrar; (8) Kuruluslarim kartinda "Panele git" yalniz Test Guven'de, Sunucu Ajans (izleyici) icin yok ama yan menude Gosterge var —
+tek kural; (9) eyebrow "PROFESYONEL · MERKEZ" 807 px'te iki satir; (10) `/ajans/rfp` listesinde alt satir basligi tekrar ediyor (K5 kurali);
+(11) `etkinlikTuruEtiketi('fashion')` → "Fashion" (sozluge "Moda / defile"); (12) musteri portali "Tur" satiri ham `event_type`
+(`app/portal/teklif/[token]/page.tsx:189`) — alici goruyor, D1b'de ilk madde; (13) para bicimi `formatPrice` ₺ onek, baska yerlerde "TL"
+sonek — tek bicim karari.
+
+## 5. Kabul olcutleri (D1a)
 
 - `/ajans`, `/kurumsal`, `/profil` ve `/admin` ayni `PanelKabugu` ile; md alti cekmece; yan menu gruplari rol/uyelige gore (sahip/yonetici tum
   gruplar; `events.view` olmayan uye etkinlik grubunu gormez; business'ta Havuz/Ic maliyet YOK).
