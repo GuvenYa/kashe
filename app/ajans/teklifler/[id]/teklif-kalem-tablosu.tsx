@@ -131,7 +131,7 @@ export function TeklifKalemTablosu({
           const v = e.target.value.trim();
           if (v && v !== k.description) kalemGuncelle(k.id, { description: v });
         }}
-        className={`${ALAN} w-full`}
+        className={`${ALAN} w-full min-w-40`}
       />
     );
   }
@@ -152,7 +152,7 @@ export function TeklifKalemTablosu({
             kalemGuncelle(k.id, { quantity: n });
           }
         }}
-        className={`${ALAN} w-full`}
+        className={`${ALAN} w-full min-w-14`}
       />
     );
   }
@@ -181,7 +181,7 @@ export function TeklifKalemTablosu({
             kalemGuncelle(k.id, { unitPrice: n });
           }
         }}
-        className={`${ALAN} w-full`}
+        className={`${ALAN} w-full min-w-24`}
       />
     );
   }
@@ -227,7 +227,7 @@ export function TeklifKalemTablosu({
                 note: ic?.private_note ?? null,
               });
             }}
-            className={`${ALAN} w-full`}
+            className={`${ALAN} w-full min-w-24`}
           />
         ) : (
           <p className="text-sm text-ink tabular-nums">
@@ -263,7 +263,7 @@ export function TeklifKalemTablosu({
                 note: v || null,
               });
             }}
-            className={`${ALAN} w-full text-xs`}
+            className={`${ALAN} w-full min-w-28 text-xs`}
           />
         ) : (
           ic?.private_note && (
