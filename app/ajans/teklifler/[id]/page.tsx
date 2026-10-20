@@ -146,13 +146,38 @@ export default async function TeklifDetayPage({
   // Etkinlige erisim (RLS): satici kurulus cogu zaman gormez — o durumda
   // "Etkinlige git" satiri hic basilmaz.
   let etkinlikErisimi = false;
+  let etkinlikOzeti: {
+    title: string | null;
+    event_type: string | null;
+    start_date: string | null;
+    city: string | null;
+    participant_count: number | null;
+  } | null = null;
   if (teklif.event_id) {
     const { data: ev } = await supabase
       .from('events')
-      .select('id')
+      .select(
+        'id, title, event_type, start_date, participant_count, turkish_cities(name)'
+      )
       .eq('id', teklif.event_id)
       .maybeSingle();
     etkinlikErisimi = !!ev;
+    const e = ev as unknown as {
+      title: string | null;
+      event_type: string | null;
+      start_date: string | null;
+      participant_count: number | null;
+      turkish_cities: { name: string } | null;
+    } | null;
+    if (e) {
+      etkinlikOzeti = {
+        title: e.title,
+        event_type: e.event_type,
+        start_date: e.start_date,
+        city: e.turkish_cities?.name ?? null,
+        participant_count: e.participant_count,
+      };
+    }
   }
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
@@ -180,6 +205,7 @@ export default async function TeklifDetayPage({
               maliyetGorulur={!!kurulus?.canSeeRates}
               maliyetYazilir={!!kurulus?.canManageRates}
               rfpBaglami={rfpBaglami}
+              etkinlikOzeti={etkinlikOzeti}
               rezervasyon={rezervasyon}
               silinebilir={
                 !!kurulus?.canManageProposals &&

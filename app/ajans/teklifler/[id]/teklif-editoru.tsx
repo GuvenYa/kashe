@@ -4,11 +4,8 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  IC_KALEM_KAYNAK_ETIKETLERI,
-  REZERVASYON_DURUM_ETIKETLERI,
   TEKLIF_DURUM_ETIKETLERI,
   kdvYuzdesi,
-  marjYuzdesi,
   paraMetni,
   tarihAlani,
   tarihMetni,
@@ -39,6 +36,14 @@ import {
   upsertProposalItemCost,
 } from '../teklif-maliyet-actions';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { OzetSerit } from '@/app/components/panel';
+import { TeklifBelgesi } from '@/app/components/teklif/teklif-belgesi';
+import { TeklifBaslik } from './teklif-baslik';
+import {
+  TeklifKalemTablosu,
+  type IcMaliyetYazma,
+} from './teklif-kalem-tablosu';
+import { TeklifOzet } from './teklif-ozet';
 
 /**
  * FAZ 7a / P1 — teklif editoru.
@@ -83,6 +88,7 @@ export function TeklifEditoru({
   silinebilir,
   rezervasyon,
   rfpBaglami,
+  etkinlikOzeti,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -98,6 +104,19 @@ export function TeklifEditoru({
   rezervasyon: TeklifRezervasyonu | null;
   /** FAZ 7b: RFP yaniti baglami; null ise dogrudan teklif (portal akisi). */
   rfpBaglami: RfpBaglami | null;
+  /**
+   * D1b-3: "Musteri gorunumu" belgesindeki etkinlik ozeti.
+   *
+   * Sayfa bunu YALNIZ erisim varsa doldurur (ayni RLS sorgusu); yoksa null
+   * gecer ve belgede etkinlik bolumu hic cizilmez. Yeni bir okuma yolu YOK.
+   */
+  etkinlikOzeti: {
+    title: string | null;
+    event_type: string | null;
+    start_date: string | null;
+    city: string | null;
+    participant_count: number | null;
+  } | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -163,15 +182,14 @@ export function TeklifEditoru({
   const [mailNotu, setMailNotu] = useState<string | null>(null);
   const [kopyalandi, setKopyalandi] = useState(false);
 
-  // Ic maliyet karti (tembel)
-  const [maliyetAcik, setMaliyetAcik] = useState(false);
+  // Ic maliyet — TEMBEL: tablo sutunu "Yukle" ile doldurulur, RPC o ana
+  // kadar hic cagrilmaz (akordeon kalkti, davranis ayni).
   const [icKalemler, setIcKalemler] = useState<IcKalemSatiri[] | null>(null);
+  const [maliyetYukleniyor, setMaliyetYukleniyor] = useState(false);
   const [maliyetHatasi, setMaliyetHatasi] = useState<string | null>(null);
-  const [maliyetForm, setMaliyetForm] = useState<{
-    itemId: string;
-    cost: string;
-    note: string;
-  } | null>(null);
+
+  // Musteri gorunumu: editor govdesi yerine portalin gordugu belge.
+  const [musteriGorunumu, setMusteriGorunumu] = useState(false);
 
   const dondurulmus = !!gecerliSurum?.sent_at;
   const duzenlenebilir = canManage && !!gecerliSurum && !dondurulmus;
@@ -383,19 +401,17 @@ export function TeklifEditoru({
     });
   }
 
-  function maliyetKartiAc() {
+  /** Ic maliyet sutunlarini doldurur (tek seferlik; tembel). */
+  function maliyetYukle() {
     if (!gecerliSurum) return;
     setMaliyetHatasi(null);
-    if (maliyetAcik) {
-      setMaliyetAcik(false);
-      return;
-    }
-    setMaliyetAcik(true);
+    setMaliyetYukleniyor(true);
     startTransition(async () => {
       const res = await listProposalInternalItems({
         versionId: gecerliSurum.id,
         organizationId: teklif.seller_organization_id,
       });
+      setMaliyetYukleniyor(false);
       if (res.success) setIcKalemler(res.data ?? []);
       else setMaliyetHatasi(res.error);
     });
@@ -410,514 +426,246 @@ export function TeklifEditoru({
     if (res.success) setIcKalemler(res.data ?? []);
   }
 
-  function maliyetKaydet() {
-    if (!maliyetForm) return;
-    const n = sayi(maliyetForm.cost);
-    if (n === null || n < 0) {
+  /**
+   * Hucreden gelen ic maliyet yazimi. Ayni action, ayni argumanlar
+   * (`upsertProposalItemCost` -> `internal_proposal_item_upsert`); degisen
+   * yalniz girdinin karttan hucreye tasinmasi.
+   */
+  function maliyetYaz(girdi: IcMaliyetYazma) {
+    if (girdi.internalCost < 0) {
       setMaliyetHatasi('Maliyet 0 veya daha büyük olmalı.');
       return;
     }
     setMaliyetHatasi(null);
-    const girdi = maliyetForm;
     startTransition(async () => {
       const res = await upsertProposalItemCost({
         itemId: girdi.itemId,
         proposalId: teklif.id,
         organizationId: teklif.seller_organization_id,
-        internalCost: n,
+        internalCost: girdi.internalCost,
         note: girdi.note,
       });
       if (!res.success) {
         setMaliyetHatasi(res.error);
         return;
       }
-      setMaliyetForm(null);
       await maliyetTazele();
     });
   }
 
-  const icToplamMaliyet = (icKalemler ?? []).reduce((acc, k) => {
-    const m = Number(k.internal_cost);
-    const adet = Number(k.quantity);
-    return acc + (Number.isFinite(m) && Number.isFinite(adet) ? m * adet : 0);
-  }, 0);
-  const icToplamMarkup = (icKalemler ?? []).reduce((acc, k) => {
-    const m = Number(k.markup_amount);
-    return acc + (Number.isFinite(m) ? m : 0);
-  }, 0);
+  // Maliyet/marj TOPLAMLARI `TeklifOzet` icinde turetilir (yalniz gosterim).
+  const gonderilebilir =
+    canManage && teklif.status === 'draft' && !dondurulmus && !!gecerliSurum;
 
   return (
     <div className="space-y-5">
-      {/* FAZ 7b — RFP yaniti bandi */}
-      {rfpBaglami && (
-        <div className="px-4 py-3 bg-brand-ink-08 border border-brand-ink/25 rounded-lg flex items-center justify-between gap-3 flex-wrap">
+      <TeklifBaslik
+        teklif={teklif}
+        gecerliSurum={gecerliSurum}
+        rfpBaglami={rfpBaglami}
+        rezervasyon={rezervasyon}
+        canManage={canManage}
+        baslik={baslik}
+        setBaslik={setBaslik}
+        basligiKaydet={basligiKaydet}
+        musteriAdi={musteriAdi}
+        setMusteriAdi={setMusteriAdi}
+        musteriEposta={musteriEposta}
+        setMusteriEposta={setMusteriEposta}
+        musteriKaydet={musteriKaydet}
+        kaydediliyor={kaydediliyor}
+        kaydedildi={kaydedildi}
+        gonderilebilir={gonderilebilir}
+        onGonder={() => setGonderOnayi(true)}
+        rezervasyonIstenebilir={canManage && teklif.status === 'approved'}
+        onRezervasyonIste={() => setOnay({ tur: 'rezervasyon' })}
+        musteriGorunumu={musteriGorunumu}
+        setMusteriGorunumu={setMusteriGorunumu}
+        isPending={isPending}
+      />
+
+      {/* Rezervasyon onayi — kritik islem, tek tikla gecilmez */}
+      {onay?.tur === 'rezervasyon' && gecerliSurum && (
+        <div className="px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm text-ink">
-            Teklif talebine yanıt: <strong>{rfpBaglami.title}</strong>
-            {rfpBaglami.buyerName ? ` · ${rfpBaglami.buyerName}` : ''}
-            {rfpBaglami.deadline
-              ? ` · son tarih ${zamanMetni(rfpBaglami.deadline)}`
-              : ''}
+            {teklif.title} için{' '}
+            {paraMetni(gecerliSurum.total_amount, gecerliSurum.currency) ?? '—'}{' '}
+            tutarında rezervasyon oluşturulacak. Emin misin?
           </p>
-          <Link
-            href={`/ajans/rfp/${rfpBaglami.id}`}
-            className="kashe-tap text-sm text-brand-ink hover:underline"
-          >
-            Talebi gör
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => {
+                setOnay(null);
+                rezervasyonOlustur();
+              }}
+              className={BTN_BIRINCIL}
+            >
+              Oluştur
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnay(null)}
+              className={BTN_IKINCIL}
+            >
+              Vazgeç
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Baslik satiri */}
-      <div className="bg-card border border-line rounded-lg p-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0 flex-1">
-            {canManage ? (
-              <input
-                type="text"
-                value={baslik}
-                onChange={(e) => setBaslik(e.target.value.slice(0, 200))}
-                onBlur={basligiKaydet}
-                className="w-full font-display text-2xl text-ink bg-transparent border-b border-transparent hover:border-line focus:border-brand-ink focus:outline-none"
-              />
-            ) : (
-              <p className="font-display text-2xl text-ink">{teklif.title}</p>
-            )}
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl">
-              {canManage && !rfpBaglami ? (
-                <>
-                  <input
-                    type="text"
-                    value={musteriAdi}
-                    onChange={(e) => setMusteriAdi(e.target.value.slice(0, 200))}
-                    onBlur={musteriKaydet}
-                    placeholder="Müşteri adı"
-                    className={ALAN}
-                  />
-                  <input
-                    type="email"
-                    value={musteriEposta}
-                    onChange={(e) =>
-                      setMusteriEposta(e.target.value.slice(0, 200))
-                    }
-                    onBlur={musteriKaydet}
-                    placeholder="Müşteri e-postası"
-                    className={ALAN}
-                  />
-                </>
-              ) : (
-                <p className="text-sm text-ink-72">
-                  {rfpBaglami
-                    ? `Alıcı kuruluş: ${rfpBaglami.buyerName ?? teklif.client_name ?? 'Kuruluş'}`
-                    : teklif.client_name ||
-                      teklif.client_email ||
-                      'Müşteri girilmedi'}
-                </p>
-              )}
-            </div>
-          </div>
+      {hata && <p className="text-sm text-danger">{hata}</p>}
+      {bilgi && <p className="text-sm text-moss">{bilgi}</p>}
 
-          <div className="text-right shrink-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-              {TEKLIF_DURUM_ETIKETLERI[teklif.status] ?? teklif.status}
-            </p>
-            {kaydediliyor === 'ust' ? (
-              <p className="text-xs text-ink-50 mt-1">Kaydediliyor…</p>
-            ) : kaydedildi === 'ust' ? (
-              <p className="text-xs text-moss mt-1">Kaydedildi</p>
-            ) : null}
-            {gecerliSurum && (
-              <p className="font-display font-semibold text-ink mt-1">
-                Sürüm {gecerliSurum.version_no}
-              </p>
-            )}
-            {teklif.status === 'approved' && gecerliSurum?.approved_at && (
-              <p className="text-xs text-moss mt-1">
-                Onaylandı · {gecerliSurum.approved_by_name ?? 'Müşteri'} ·{' '}
-                {zamanMetni(gecerliSurum.approved_at)}
-              </p>
-            )}
-
-            {/* FAZ 7c — rezervasyon: varsa rozet + baglanti, yoksa olusturma */}
-            {rezervasyon ? (
-              <div className="mt-2">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72">
-                  Rezervasyon:{' '}
-                  {REZERVASYON_DURUM_ETIKETLERI[rezervasyon.status] ??
-                    rezervasyon.status}
-                </p>
-                <Link
-                  href={`/rezervasyon/${rezervasyon.id}`}
-                  className="kashe-tap text-sm text-brand-ink hover:underline"
-                >
-                  Rezervasyona git
-                </Link>
-              </div>
-            ) : (
-              canManage &&
-              teklif.status === 'approved' && (
-                <button
-                  type="button"
-                  onClick={() => setOnay({ tur: 'rezervasyon' })}
-                  disabled={isPending}
-                  className={`${BTN_IKINCIL} mt-2`}
-                >
-                  Rezervasyon oluştur
-                </button>
-              )
-            )}
-          </div>
+      {teklif.status === 'revision_requested' && gecerliSurum?.client_note && (
+        <div className="px-4 py-3 bg-amber-500/10 border border-amber-500/40 rounded-lg">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-1">
+            Müşterinin revizyon notu
+          </p>
+          <p className="text-sm text-ink whitespace-pre-wrap">
+            {gecerliSurum.client_note}
+          </p>
         </div>
+      )}
 
-        {/* Rezervasyon onayi — kritik islem, tek tikla gecilmez */}
-        {onay?.tur === 'rezervasyon' && gecerliSurum && (
-          <div className="mt-3 px-4 py-3 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-4 flex-wrap">
+      {/* MUSTERI GORUNUMU — editor govdesi yerine portalin gordugu belge.
+          Ic maliyet bu yola HIC girmez: `TeklifBelgesi` prop tipinde boyle bir
+          alan yok, yani yanlislik derleme hatasi olur. */}
+      {musteriGorunumu && gecerliSurum ? (
+        <>
+          <div className="px-4 py-3 bg-brand-ink-08 border border-brand-ink/25 rounded-lg flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm text-ink">
-              {teklif.title} için{' '}
-              {paraMetni(gecerliSurum.total_amount, gecerliSurum.currency) ??
-                '—'}{' '}
-              tutarında rezervasyon oluşturulacak. Emin misin?
+              Müşterinin göreceği görünüm — düzenlemek için anahtarı kapat.
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => {
-                  setOnay(null);
-                  rezervasyonOlustur();
-                }}
-                className={BTN_BIRINCIL}
-              >
-                Oluştur
-              </button>
-              <button
-                type="button"
-                onClick={() => setOnay(null)}
-                className={BTN_IKINCIL}
-              >
-                Vazgeç
-              </button>
-            </div>
-          </div>
-        )}
-
-        {hata && <p className="text-sm text-danger mt-3">{hata}</p>}
-        {bilgi && <p className="text-sm text-moss mt-3">{bilgi}</p>}
-
-        {teklif.status === 'revision_requested' && gecerliSurum?.client_note && (
-          <div className="mt-3 px-4 py-3 bg-amber-500/10 border border-amber-500/40 rounded-lg">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-1">
-              Müşterinin revizyon notu
-            </p>
-            <p className="text-sm text-ink whitespace-pre-wrap">
-              {gecerliSurum.client_note}
-            </p>
-          </div>
-        )}
-
-        {surumler.length > 1 && (
-          <details className="mt-4">
-            <summary className="kashe-tap text-sm text-brand-ink cursor-pointer">
-              Eski sürümler ({surumler.length - 1})
-            </summary>
-            <ul className="mt-2 space-y-1 text-sm text-ink-72">
-              {surumler
-                .filter((s) => s.id !== gecerliSurum?.id)
-                .map((s) => (
-                  <li key={s.id}>
-                    Sürüm {s.version_no} · {tarihMetni(s.created_at)} ·{' '}
-                    {paraMetni(s.total_amount, s.currency) ?? '—'} ·{' '}
-                    {s.sent_at
-                      ? `gönderildi ${tarihMetni(s.sent_at)}`
-                      : 'gönderilmedi'}
-                    {s.approved_by_name ? ` · onay: ${s.approved_by_name}` : ''}
-                  </li>
-                ))}
-            </ul>
-          </details>
-        )}
-      </div>
-
-      {/* Kalemler */}
-      {gecerliSurum && (
-        <div className="bg-card border border-line rounded-lg p-5">
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-            <p className="font-display font-semibold text-ink">Kalemler</p>
-            {dondurulmus && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-72">
-                Gönderildi — kilitli
-              </span>
-            )}
-          </div>
-          {/* Kaydet dugmesi yok: alandan cikinca kaydedilir (P2-ek bulgusu) */}
-          {duzenlenebilir && (
-            <p className="text-xs text-ink-50 mb-3">
-              Değişiklikler alandan çıkınca kaydedilir.
-            </p>
-          )}
-          {!duzenlenebilir && <div className="mb-3" />}
-
-          {kalemler.length === 0 ? (
-            <p className="text-sm text-ink-72">Henüz kalem yok.</p>
-          ) : (
-            <div className="space-y-2">
-              {/* Sutun basliklari — mobilde her girdinin ustunde kendi etiketi var */}
-              <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
-                <span className="sm:col-span-5">Açıklama</span>
-                <span className="sm:col-span-2">Adet</span>
-                <span className="sm:col-span-2">Birim fiyat (TL)</span>
-                <span className="sm:col-span-2 text-right">Toplam</span>
-                <span className="sm:col-span-1" />
-              </div>
-              {kalemler.map((k) => (
-                <div
-                  key={k.id}
-                  className={
-                    k.is_visible_to_client
-                      ? 'border border-line rounded-lg p-3'
-                      : 'border border-line rounded-lg p-3 opacity-60'
-                  }
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                    <div className="sm:col-span-5">
-                      {duzenlenebilir ? (
-                        <>
-                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
-                            Açıklama
-                          </label>
-                        <input
-                          ref={(el) => {
-                            aciklamaRefleri.current[k.id] = el;
-                          }}
-                          type="text"
-                          defaultValue={k.description}
-                          onBlur={(e) => {
-                            const v = e.target.value.trim();
-                            if (v && v !== k.description) {
-                              kalemGuncelle(k.id, { description: v });
-                            }
-                          }}
-                          className={`${ALAN} w-full`}
-                        />
-                        </>
-                      ) : (
-                        <p className="text-sm text-ink">{k.description}</p>
-                      )}
-                    </div>
-                    <div className="sm:col-span-2">
-                      {duzenlenebilir ? (
-                        <>
-                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
-                            Adet
-                          </label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          defaultValue={String(k.quantity)}
-                          onBlur={(e) => {
-                            const n = sayi(e.target.value);
-                            if (n !== null && n !== Number(k.quantity)) {
-                              kalemGuncelle(k.id, { quantity: n });
-                            }
-                          }}
-                          placeholder="Adet"
-                          className={`${ALAN} w-full`}
-                        />
-                        </>
-                      ) : (
-                        <p className="text-sm text-ink-72">{k.quantity} adet</p>
-                      )}
-                    </div>
-                    <div className="sm:col-span-2">
-                      {duzenlenebilir ? (
-                        <>
-                          <label className="sm:hidden block text-[10px] uppercase tracking-[0.14em] font-mono text-ink-72 mb-1">
-                            Birim fiyat (TL)
-                          </label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          /* 0 ise bos gelir ki placeholder gorunsun; bos birakilirsa 0 kalir */
-                          defaultValue={
-                            Number(k.unit_client_price) === 0
-                              ? ''
-                              : String(k.unit_client_price)
-                          }
-                          onBlur={(e) => {
-                            const n = sayi(e.target.value);
-                            if (n !== null && n !== Number(k.unit_client_price)) {
-                              kalemGuncelle(k.id, { unitPrice: n });
-                            }
-                          }}
-                          placeholder="Birim fiyat (TL)"
-                          className={`${ALAN} w-full`}
-                        />
-                        </>
-                      ) : (
-                        <p className="text-sm text-ink-72">
-                          {paraMetni(k.unit_client_price) ?? '—'}
-                        </p>
-                      )}
-                    </div>
-                    <div className="sm:col-span-2 sm:text-right">
-                      <p className="text-sm font-display font-semibold text-ink">
-                        <span className="sm:hidden font-body font-normal text-ink-72">
-                          Toplam:{' '}
-                        </span>
-                        {paraMetni(k.total_client_price) ?? '—'}
-                      </p>
-                    </div>
-                    <div className="sm:col-span-1 flex items-center justify-end gap-1">
-                      {duzenlenebilir && (
-                        <button
-                          type="button"
-                          onClick={() => setOnay({ tur: 'kalemSil', id: k.id })}
-                          disabled={isPending}
-                          className={BTN_IKINCIL}
-                        >
-                          Sil
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between gap-3 flex-wrap">
-                    <label className="inline-flex items-center gap-2 text-xs text-ink-72">
-                      <input
-                        type="checkbox"
-                        checked={k.is_visible_to_client}
-                        disabled={!duzenlenebilir || isPending}
-                        onChange={(e) =>
-                          kalemGuncelle(k.id, { isVisible: e.target.checked })
-                        }
-                      />
-                      Müşteriye görünür
-                    </label>
-                    <span className="inline-flex items-center gap-3">
-                      {!k.is_visible_to_client && (
-                        <span className="text-xs text-ink-50">
-                          Gizli kalem — toplama girmez
-                        </span>
-                      )}
-                      {kaydediliyor === k.id ? (
-                        <span className="text-xs text-ink-50">Kaydediliyor…</span>
-                      ) : kaydedildi === k.id ? (
-                        <span className="text-xs text-moss">Kaydedildi</span>
-                      ) : null}
-                    </span>
-                  </div>
-
-                  {onay?.tur === 'kalemSil' && onay.id === k.id && (
-                    <div className="mt-2 px-3 py-2 bg-paper border border-line-strong rounded-lg flex items-center justify-between gap-3 flex-wrap">
-                      <p className="text-sm text-ink">
-                        Bu kalem silinecek. Emin misin?
-                      </p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => {
-                            setOnay(null);
-                            kalemSil(k.id);
-                          }}
-                          className={BTN_BIRINCIL}
-                        >
-                          Sil
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setOnay(null)}
-                          className={BTN_IKINCIL}
-                        >
-                          Vazgeç
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {duzenlenebilir && (
             <button
               type="button"
-              onClick={kalemEkle}
-              disabled={isPending}
-              className={`${BTN_IKINCIL} mt-3`}
+              onClick={() => setMusteriGorunumu(false)}
+              className={BTN_IKINCIL}
             >
-              Kalem ekle
+              Düzenlemeye dön
             </button>
-          )}
-
-          {/* Surum alanlari + toplamlar (toplamlar DB'den) */}
-          <div className="mt-5 pt-5 border-t border-line grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-xs text-ink-72 w-28">KDV oranı (%)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={kdv}
-                  disabled={!duzenlenebilir}
-                  onChange={(e) => setKdv(e.target.value)}
-                  onBlur={() => surumKaydet('kdv')}
-                  className={`${ALAN} w-24`}
-                />
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-xs text-ink-72 w-28">Geçerlilik</label>
-                <input
-                  type="date"
-                  onClick={takvimiAc}
-                  value={gecerlilik}
-                  disabled={!duzenlenebilir}
-                  onChange={(e) => setGecerlilik(e.target.value)}
-                  onBlur={() => surumKaydet('gecerlilik')}
-                  className={`${ALAN} w-44`}
-                />
-                <span className="text-xs text-ink-50 w-full sm:w-auto">
-                  Boş bırakılırsa gönderirken gün sayısı sorulur.
-                </span>
-              </div>
-              <div>
-                <label className="block text-xs text-ink-72 mb-1">
-                  Müşteri notu
-                </label>
-                <textarea
-                  value={notlar}
-                  disabled={!duzenlenebilir}
-                  rows={3}
-                  onChange={(e) => setNotlar(e.target.value.slice(0, 4000))}
-                  onBlur={() => surumKaydet('notlar')}
-                  className={`${ALAN} w-full`}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5 text-sm lg:text-right">
-              <p className="text-ink-72">
-                Ara toplam:{' '}
-                <span className="text-ink">
-                  {paraMetni(gecerliSurum.subtotal, gecerliSurum.currency) ?? '—'}
-                </span>
-              </p>
-              <p className="text-ink-72">
-                KDV ({kdvYuzdesi(gecerliSurum.tax_rate)}%):{' '}
-                <span className="text-ink">
-                  {paraMetni(gecerliSurum.tax_amount, gecerliSurum.currency) ??
-                    '—'}
-                </span>
-              </p>
-              <p className="font-display font-semibold text-lg text-ink">
-                Genel toplam:{' '}
-                {paraMetni(gecerliSurum.total_amount, gecerliSurum.currency) ??
-                  '—'}
-              </p>
-              <p className="text-xs text-ink-50">
-                Toplamlar sunucuda hesaplanır; gizli kalemler toplama girmez.
-              </p>
-            </div>
           </div>
+          <TeklifBelgesi
+            teklif={{
+              seller_name: null,
+              client_name: rfpBaglami
+                ? (rfpBaglami.buyerName ?? teklif.client_name)
+                : teklif.client_name,
+              title: teklif.title,
+              version_no: gecerliSurum.version_no,
+              sent_at: gecerliSurum.sent_at,
+              status: teklif.status,
+              durumEtiketi:
+                TEKLIF_DURUM_ETIKETLERI[teklif.status] ?? teklif.status,
+              durumSinifi: 'bg-paper-2 border-line text-ink-72',
+              event: etkinlikOzeti,
+              items: kalemler
+                .filter((k) => k.is_visible_to_client)
+                .map((k) => ({
+                  description: k.description,
+                  role: null,
+                  quantity: k.quantity,
+                  unit_client_price: k.unit_client_price,
+                  total_client_price: k.total_client_price,
+                })),
+              subtotal: gecerliSurum.subtotal,
+              tax_rate: gecerliSurum.tax_rate,
+              tax_amount: gecerliSurum.tax_amount,
+              total_amount: gecerliSurum.total_amount,
+              currency: gecerliSurum.currency,
+              valid_until: gecerliSurum.valid_until,
+              notes: gecerliSurum.notes,
+            }}
+          />
+        </>
+      ) : (
+        <>
+
+      {/* Kalemler — tablo + surum alanlari + ozet kutular */}
+      {gecerliSurum && (
+        <TeklifKalemTablosu
+          kalemler={kalemler}
+          icKalemler={icKalemler}
+          duzenlenebilir={duzenlenebilir}
+          dondurulmus={dondurulmus}
+          maliyetGorulur={maliyetGorulur}
+          maliyetYazilir={maliyetYazilir}
+          maliyetYukleniyor={maliyetYukleniyor}
+          maliyetHatasi={maliyetHatasi}
+          onMaliyetYukle={maliyetYukle}
+          onMaliyetYaz={maliyetYaz}
+          kalemGuncelle={kalemGuncelle}
+          kalemEkle={kalemEkle}
+          silmeIstegi={(id) => setOnay({ tur: 'kalemSil', id })}
+          silOnayi={onay?.tur === 'kalemSil' ? onay.id : null}
+          silOnayla={(id) => {
+            setOnay(null);
+            kalemSil(id);
+          }}
+          silVazgec={() => setOnay(null)}
+          aciklamaRefleri={aciklamaRefleri}
+          kaydediliyor={kaydediliyor}
+          kaydedildi={kaydedildi}
+          isPending={isPending}
+        />
+      )}
+
+      {/* Ozet kutular — toplamlar DB surum alanlarindan */}
+      {gecerliSurum && (
+        <TeklifOzet
+          gecerliSurum={gecerliSurum}
+          icKalemler={icKalemler}
+          maliyetGorulur={maliyetGorulur}
+        />
+      )}
+
+      {/* Surum alanlari — KDV, gecerlilik, musteri notu */}
+      {gecerliSurum && (
+        <div className="bg-card border border-line rounded-lg p-5 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-xs text-ink-72 w-28">KDV oranı (%)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={kdv}
+              disabled={!duzenlenebilir}
+              onChange={(e) => setKdv(e.target.value)}
+              onBlur={() => surumKaydet('kdv')}
+              className={`${ALAN} w-24`}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-xs text-ink-72 w-28">Geçerlilik</label>
+            <input
+              type="date"
+              onClick={takvimiAc}
+              value={gecerlilik}
+              disabled={!duzenlenebilir}
+              onChange={(e) => setGecerlilik(e.target.value)}
+              onBlur={() => surumKaydet('gecerlilik')}
+              className={`${ALAN} w-44`}
+            />
+            <span className="text-xs text-ink-50 w-full sm:w-auto">
+              Boş bırakılırsa gönderirken gün sayısı sorulur.
+            </span>
+          </div>
+          <div>
+            <label className="block text-xs text-ink-72 mb-1">
+              Müşteri notu
+            </label>
+            <textarea
+              value={notlar}
+              disabled={!duzenlenebilir}
+              rows={3}
+              onChange={(e) => setNotlar(e.target.value.slice(0, 4000))}
+              onBlur={() => surumKaydet('notlar')}
+              className={`${ALAN} w-full`}
+            />
+          </div>
+          <p className="text-xs text-ink-50">
+            Toplamlar sunucuda hesaplanır; gizli kalemler toplama girmez.
+          </p>
         </div>
       )}
 
@@ -1215,164 +963,71 @@ export function TeklifEditoru({
         </div>
       )}
 
-      {/* Gizli ic maliyet ve marj */}
-      {maliyetGorulur && gecerliSurum && (
-        <div className="bg-card border border-line rounded-lg p-5">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="font-display font-semibold text-ink">
-              İç maliyet ve marj
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 bg-paper-2 border border-line px-2 py-0.5 rounded">
-                Gizli — yalnız ticari yetkililer görür
-              </span>
+      {/* Eski gizli maliyet KARTI KALDIRILDI (D1b-3): ayni kalemler
+          iki listede iki kez duruyordu. Veri ayni RPC yoluyla, artik kalem
+          tablosunun son iki sutununda. */}
+
+      {/* Eski surumler */}
+      {surumler.length > 1 && (
+        <details>
+          <summary className="kashe-tap text-sm text-brand-ink cursor-pointer">
+            Eski sürümler ({surumler.length - 1})
+          </summary>
+          <ul className="mt-2 space-y-1 text-sm text-ink-72">
+            {surumler
+              .filter((s) => s.id !== gecerliSurum?.id)
+              .map((s) => (
+                <li key={s.id}>
+                  Sürüm {s.version_no} · {tarihMetni(s.created_at)} ·{' '}
+                  {paraMetni(s.total_amount, s.currency) ?? '—'} ·{' '}
+                  {s.sent_at
+                    ? `gönderildi ${tarihMetni(s.sent_at)}`
+                    : 'gönderilmedi'}
+                  {s.approved_by_name ? ` · onay: ${s.approved_by_name}` : ''}
+                </li>
+              ))}
+          </ul>
+        </details>
+      )}
+        </>
+      )}
+
+      {/* Telefonda yapiskan serit — masaustunde baslik kartindaki dugmeler
+          ayni isi yapiyor, serit orada YOK. Dugme ayni akislara girer. */}
+      {gecerliSurum && !musteriGorunumu && (
+        <OzetSerit
+          etiket="Genel toplam"
+          deger={paraMetni(gecerliSurum.total_amount, gecerliSurum.currency) ?? '—'}
+          altNot={`KDV %${kdvYuzdesi(gecerliSurum.tax_rate)} dahil`}
+          aksiyon={
+            gonderilebilir ? (
               <button
                 type="button"
-                onClick={maliyetKartiAc}
-                className={BTN_IKINCIL}
+                onClick={() => setGonderOnayi(true)}
+                disabled={isPending}
+                className="kashe-tap px-4 py-2 bg-brand-accent text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {maliyetAcik ? 'Kapat' : 'Aç'}
+                Teklifi gönder →
               </button>
-            </div>
-          </div>
-
-          {maliyetAcik && (
-            <div className="mt-4 space-y-3">
-              {maliyetHatasi && (
-                <p className="text-sm text-danger">{maliyetHatasi}</p>
-              )}
-              {icKalemler === null ? (
-                <p className="text-sm text-ink-72">Yükleniyor…</p>
-              ) : icKalemler.length === 0 ? (
-                <p className="text-sm text-ink-72">Kalem yok.</p>
-              ) : (
-                <>
-                  {icKalemler.map((k) => {
-                    const marj = marjYuzdesi(k.margin_rate);
-                    return (
-                      <div
-                        key={k.item_id}
-                        className="border border-line rounded-lg p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-sm text-ink">
-                              {k.description}
-                              {!k.is_visible_to_client && (
-                                <span className="ml-2 text-xs text-ink-50">
-                                  (gizli kalem)
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-sm text-ink-72 mt-0.5">
-                              Müşteri: {paraMetni(k.total_client_price) ?? '—'}
-                              {k.internal_cost != null
-                                ? ` · iç maliyet ${paraMetni(k.internal_cost)} (birim)`
-                                : ' · iç maliyet girilmedi'}
-                              {k.markup_amount != null
-                                ? ` · markup ${paraMetni(k.markup_amount)}`
-                                : ''}
-                              {marj !== null ? ` · marj %${marj}` : ''}
-                              {k.source
-                                ? ` · ${IC_KALEM_KAYNAK_ETIKETLERI[k.source] ?? k.source}`
-                                : ''}
-                            </p>
-                            {k.private_note && (
-                              <p className="text-sm text-ink-72 mt-1">
-                                Not: {k.private_note}
-                              </p>
-                            )}
-                          </div>
-                          {maliyetYazilir && !dondurulmus && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setMaliyetForm({
-                                  itemId: k.item_id,
-                                  cost:
-                                    k.internal_cost != null
-                                      ? String(k.internal_cost)
-                                      : '',
-                                  note: k.private_note ?? '',
-                                })
-                              }
-                              className={BTN_IKINCIL}
-                            >
-                              Maliyeti düzenle
-                            </button>
-                          )}
-                        </div>
-
-                        {maliyetForm?.itemId === k.item_id && (
-                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              value={maliyetForm.cost}
-                              onChange={(e) =>
-                                setMaliyetForm({
-                                  ...maliyetForm,
-                                  cost: e.target.value,
-                                })
-                              }
-                              placeholder="Birim iç maliyet (TL)"
-                              className={ALAN}
-                            />
-                            <input
-                              type="text"
-                              value={maliyetForm.note}
-                              onChange={(e) =>
-                                setMaliyetForm({
-                                  ...maliyetForm,
-                                  note: e.target.value,
-                                })
-                              }
-                              placeholder="Not (isteğe bağlı)"
-                              className={ALAN}
-                            />
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={maliyetKaydet}
-                                disabled={isPending}
-                                className={BTN_BIRINCIL}
-                              >
-                                Kaydet
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setMaliyetForm(null)}
-                                className={BTN_IKINCIL}
-                              >
-                                Vazgeç
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  <div className="pt-3 border-t border-line text-sm text-ink-72">
-                    Toplam iç maliyet:{' '}
-                    <span className="text-ink">
-                      {paraMetni(icToplamMaliyet) ?? '—'}
-                    </span>{' '}
-                    · toplam marj:{' '}
-                    <span className="text-ink">
-                      {paraMetni(icToplamMarkup) ?? '—'}
-                    </span>
-                  </div>
-                </>
-              )}
-              {dondurulmus && (
-                <p className="text-xs text-ink-50">
-                  Sürüm gönderildi; iç maliyet salt okunur.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+            ) : canManage && ['sent', 'viewed', 'revision_requested', 'expired'].includes(teklif.status) ? (
+              <button
+                type="button"
+                onClick={yeniSurum}
+                disabled={isPending}
+                className={BTN_BIRINCIL}
+              >
+                Yeni sürüm
+              </button>
+            ) : rezervasyon ? (
+              <Link
+                href={`/rezervasyon/${rezervasyon.id}`}
+                className={BTN_BIRINCIL}
+              >
+                Rezervasyona git
+              </Link>
+            ) : undefined
+          }
+        />
       )}
     </div>
   );
