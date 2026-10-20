@@ -122,6 +122,13 @@ BEGIN
   END IF;
   UPDATE public.profiles SET primary_category_id = NULL
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T26 gorevler/aktivite (done gorev dogrudan silinmez: once iptal)
+  IF to_regclass('public.tasks') IS NOT NULL THEN
+    UPDATE public.tasks SET status = 'cancelled'
+     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids)) AND status NOT IN ('todo', 'cancelled');
+    DELETE FROM public.tasks WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.activity_logs WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T21 teklifler (kalemler service_roles'a RESTRICT: test rolleri silinmeden ONCE; surum/kalem/ic kalem/baglanti cascade)
   IF to_regclass('public.proposals') IS NOT NULL THEN
     -- T23 teklif rezervasyonlari (bookings.proposal_version_id RESTRICT): tekliflerden ONCE
@@ -3507,6 +3514,245 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (25, 'T25 FAZ 8-U uyelik rolu', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T26) FAZ 8a gorevler + aktivite. ON KOSUL: 20261021120000 (faz8a 01) dalda. Test Ajans (org_a: owner 0004, sales 0001 [events.manage],
+--      crew_coordinator 0002 [events.view], viewer 0003; havuz kaydi 'Test Pro Iki B' = 0003) ve Test Kurum AS (org_k: owner 0005; tasks
+--      modulu KAPALI) verisine dayanir. Sonda gorevler/aktivite silinir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  ajans2  uuid := 'a0000000-0000-4000-8000-000000000007';
+  org_a uuid; org_k uuid; org_b uuid;
+  ev_a uuid; ev_k uuid;
+  rec_a uuid; rec_b uuid;
+  t_a uuid; t_b uuid; t_c uuid; t_k uuid;
+  n integer; st text; ts timestamptz;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  SELECT id INTO org_b FROM public.organizations WHERE legacy_profile_id = ajans2;
+  SELECT id INTO ev_k FROM public.events WHERE organization_id = org_k LIMIT 1;
+  SELECT id INTO rec_a FROM public.organization_talent_records WHERE organization_id = org_a AND talent_id = pro2;
+  IF org_a IS NULL OR org_k IS NULL OR org_b IS NULL OR ev_k IS NULL OR rec_a IS NULL THEN
+    RAISE EXCEPTION 'on kosul: org_a=% org_k=% org_b=% ev_k=% rec_a=%', org_a, org_k, org_b, ev_k, rec_a;
+  END IF;
+  IF NOT public.org_module_enabled(org_a, 'tasks') THEN RAISE EXCEPTION 'on kosul: ajansta tasks modulu acik olmali (dolum)'; END IF;
+  IF public.org_module_enabled(org_k, 'tasks') THEN RAISE EXCEPTION 'on kosul: kurumda tasks modulu kapali olmali'; END IF;
+  -- temizlik (tekrar kosu)
+  UPDATE public.tasks SET status = 'cancelled' WHERE organization_id IN (org_a, org_k) AND status NOT IN ('todo', 'cancelled');
+  DELETE FROM public.tasks WHERE organization_id IN (org_a, org_k);
+  DELETE FROM public.activity_logs WHERE organization_id IN (org_a, org_k);
+  DELETE FROM public.notifications WHERE type = 'task' AND user_id IN (musteri, pro1, pro2, ajans, kurum);
+  DELETE FROM public.events WHERE organization_id = org_a AND title = 'T26 ajans etkinligi';
+  INSERT INTO public.organization_talent_records (organization_id, name) VALUES (org_b, 'T26 yabanci kayit') RETURNING id INTO rec_b;
+
+  -- 1) owner: kurulus etkinligi + etkinlige bagli gorev A + genel gorev B
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date)
+  VALUES (org_a, ajans, 'T26 ajans etkinligi', 'wedding', current_date + 30, current_date + 30) RETURNING id INTO ev_a;
+  INSERT INTO public.tasks (organization_id, event_id, title, due_at, is_milestone)
+  VALUES (org_a, ev_a, 'T26 gorev A', now() + interval '10 days', true) RETURNING id INTO t_a;
+  INSERT INTO public.tasks (organization_id, title, description)
+  VALUES (org_a, 'T26 gorev B', 'kurulus geneli') RETURNING id INTO t_b;
+  EXECUTE 'RESET ROLE';
+  SELECT created_by::text INTO st FROM public.tasks WHERE id = t_a;
+  IF st <> ajans::text THEN RAISE EXCEPTION 'created_by % (ajans)', st; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a AND entity_type = 'task' AND action = 'created';
+  IF n <> 2 THEN RAISE EXCEPTION 'created aktivite % (2)', n; END IF;
+
+  -- 2) owner: A'yi uyeye (pro1) ata -> bildirim + 'assigned'; B'yi havuz kaydina ata
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.tasks SET assignee_user_id = pro1 WHERE id = t_a;
+  UPDATE public.tasks SET assignee_talent_record_id = rec_a WHERE id = t_b;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = pro1 AND type = 'task' AND body = 'Sana görev atandı: T26 gorev A';
+  IF n <> 1 THEN RAISE EXCEPTION 'atama bildirimi % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = t_a AND action = 'assigned';
+  IF n <> 1 THEN RAISE EXCEPTION 'assigned aktivite % (1)', n; END IF;
+
+  -- 3) kurallar (22023): uye olmayan kisi, yabanci havuz kaydi, baska kurulusun etkinligi, kurulus degisimi
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.tasks SET assignee_user_id = kurum WHERE id = t_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'uye olmayan kisi atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.tasks SET assignee_talent_record_id = rec_b WHERE id = t_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'yabanci havuz kaydi atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.tasks SET event_id = ev_k WHERE id = t_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'baska kurulusun etkinligine baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.tasks SET organization_id = org_b WHERE id = t_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kurulus degisti';
+  EXCEPTION WHEN invalid_parameter_value OR insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.tasks SET depends_on_task_id = t_b WHERE id = t_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kendine bagimlilik gecti';
+  EXCEPTION WHEN check_violation THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 4) durum: A in_progress -> done (completed_at dolar) -> silinemez (22023); bagimlilik ayni kurulus gecer
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.tasks SET status = 'in_progress' WHERE id = t_a;
+  UPDATE public.tasks SET status = 'done' WHERE id = t_a;
+  UPDATE public.tasks SET depends_on_task_id = t_a WHERE id = t_b;
+  EXECUTE 'RESET ROLE';
+  SELECT completed_at INTO ts FROM public.tasks WHERE id = t_a;
+  IF ts IS NULL THEN RAISE EXCEPTION 'done: completed_at bos'; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = t_a AND action = 'status_changed';
+  IF n <> 2 THEN RAISE EXCEPTION 'status_changed aktivite % (2)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    DELETE FROM public.tasks WHERE id = t_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'done gorev silindi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM public.tasks WHERE id = t_a;
+  IF n <> 1 THEN RAISE EXCEPTION 'done gorev kayboldu'; END IF;
+
+  -- 5) sales (musteri, events.manage): gorev C acar; atanan musteri; owner olusturdu degil -> blocked bildirimi olusturana
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.tasks (organization_id, title, assignee_user_id) VALUES (org_a, 'T26 gorev C', musteri) RETURNING id INTO t_c;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.tasks SET status = 'blocked' WHERE id = t_c;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = ajans AND type = 'task' AND body = 'Görev engellendi: T26 gorev C';
+  IF n <> 1 THEN RAISE EXCEPTION 'engellendi bildirimi (olusturan) % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'task';
+  IF n <> 1 THEN RAISE EXCEPTION 'musteri bildirim % (1: atama; engellendi kendi islemi)', n; END IF;
+
+  -- 6) crew_coordinator (pro1, events.view): okur, yazamaz (0 satir); viewer (pro2) INSERT 42501; anon SELECT 42501
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.tasks WHERE organization_id = org_a;
+  IF n <> 3 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'crew_coordinator % gorev gordu (3)', n; END IF;
+  UPDATE public.tasks SET title = 'T26 gorev B x' WHERE id = t_b;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'crew_coordinator yazdi (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.tasks (organization_id, title) VALUES (org_a, 'T26 viewer');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'viewer gorev acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.tasks;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon gorev okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 7) aktivite: viewer okur (events.view), authenticated INSERT 42501
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a;
+  EXECUTE 'RESET ROLE';
+  IF n < 6 THEN RAISE EXCEPTION 'viewer aktivite % (>=6)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.activity_logs (organization_id, entity_type, entity_id, action) VALUES (org_a, 'task', t_b, 'updated');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated aktivite yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 8) business: modul kapali -> 22023; sahip org_module_set ile acar -> gecer; uye (settings.manage yok) acamaz 42501
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.tasks (organization_id, title) VALUES (org_k, 'T26 kurum gorev');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'modul kapaliyken gorev acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_module_set(org_k, 'tasks', true);
+  INSERT INTO public.tasks (organization_id, event_id, title) VALUES (org_k, ev_k, 'T26 kurum gorev') RETURNING id INTO t_k;
+  PERFORM public.org_module_set(org_k, 'tasks', false);
+  EXECUTE 'RESET ROLE';
+  IF public.org_module_enabled(org_k, 'tasks') THEN RAISE EXCEPTION 'modul kapanmadi'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_module_set(org_a, 'tasks', false);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'viewer modul kapatti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_k AND detail->>'op' = 'module.set';
+  IF n <> 2 THEN RAISE EXCEPTION 'modul denetim % (2)', n; END IF;
+
+  -- 9) bildirim tipi ve e-posta kuyrugu indeksi
+  SELECT count(*) INTO n FROM pg_indexes WHERE indexname = 'notifications_email_pending_idx' AND indexdef LIKE '%task%';
+  IF n <> 1 THEN RAISE EXCEPTION 'e-posta kuyrugu indeksi task icermiyor'; END IF;
+
+  -- 10) temizlik (etkinlik silinince gorev event_id NULL; kalanlar iptal + sil)
+  DELETE FROM public.events WHERE id = ev_a;
+  SELECT event_id::text INTO st FROM public.tasks WHERE id = t_a;
+  IF st IS NOT NULL THEN RAISE EXCEPTION 'etkinlik silinince event_id NULL olmadi'; END IF;
+  UPDATE public.tasks SET status = 'cancelled' WHERE organization_id IN (org_a, org_k) AND status NOT IN ('todo', 'cancelled');
+  DELETE FROM public.tasks WHERE organization_id IN (org_a, org_k);
+  DELETE FROM public.organization_talent_records WHERE id = rec_b;
+  SELECT count(*) INTO n FROM public.tasks WHERE organization_id IN (org_a, org_k);
+  IF n <> 0 THEN RAISE EXCEPTION 'temizlik: % gorev kaldi', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (26, 'T26 FAZ 8a gorevler + aktivite', 'GECTI',
+    'owner etkinlikli + genel gorev acti (created_by, 2 created); uyeye atama bildirim + assigned; havuz kaydina atama; uye olmayan/yabanci kayit/baska kurulus etkinligi/kurulus degisimi 22023, kendine bagimlilik 23514; done completed_at + 2 status_changed, done silinemez; sales acti, blocked -> olusturana bildirim; crew_coordinator okur 3 yazamaz 0; viewer INSERT 42501; anon 42501; aktivite viewer okur >=6, authenticated INSERT 42501; business modul kapali 22023 -> org_module_set ac/kapat (denetim 2), viewer 42501; indeks task; etkinlik silinince event_id NULL; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (26, 'T26 FAZ 8a gorevler + aktivite', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T27) Hijyen 03 organizations_public. ON KOSUL: 20261021110000 (hijyen_03) dalda. musteri (0001) yalniz Test Ajans uyesi;
+--      Test Kurum AS'in adini gorunumden okur, tablodan okuyamaz; gorunumde abonelik sutunu yok; anon 42501.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  org_k uuid; n integer; st text;
+BEGIN
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  IF org_k IS NULL THEN RAISE EXCEPTION 'on kosul: org_k yok'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT display_name INTO st FROM public.organizations_public WHERE id = org_k;
+  SELECT count(*) INTO n FROM public.organizations WHERE id = org_k;
+  EXECUTE 'RESET ROLE';
+  IF st IS NULL THEN RAISE EXCEPTION 'gorunumden karsi taraf adi okunamadi'; END IF;
+  IF n <> 0 THEN RAISE EXCEPTION 'tablo RLS: uye olmadigi kurulus satiri goruldu (%)', n; END IF;
+  SELECT count(*) INTO n FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'organizations_public' AND column_name IN ('subscription_tier', 'settings', 'seat_limit', 'legal_name');
+  IF n <> 0 THEN RAISE EXCEPTION 'gorunumde kapali sutun var (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.organizations_public;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon gorunumu okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM public.notifications WHERE type IN ('rfp', 'proposal')
+   AND (body LIKE '% teklif gonderdi: %' OR body LIKE 'Teklifin icin revizyon%' OR body LIKE 'Teklif talebi baska%');
+  IF n <> 0 THEN RAISE EXCEPTION 'ASCII bildirim metni kaldi (%)', n; END IF;
+  INSERT INTO t_sonuc VALUES (27, 'T27 hijyen_03 organizations_public', 'GECTI',
+    'uye olmadigi kurulusun adi gorunumden okundu (' || st || '), tablodan 0 satir; kapali sutun yok; anon 42501; ASCII bildirim 0');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (27, 'T27 hijyen_03 organizations_public', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
