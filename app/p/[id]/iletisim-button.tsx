@@ -129,7 +129,10 @@ export function IletisimButton({
       }
     }
     if (sehir) {
-      if (alanVar('city')) yama.city = sehir;
+      // Brief formlarinda sehir alani `location` ("Sehir / mekan"); eski
+      // kategorilerde `city` olabilir — ikisine de bakilir.
+      const sehirAnahtari = ['location', 'city'].find(alanVar);
+      if (sehirAnahtari) yama[sehirAnahtari] = sehir;
       else mesajParcalari.push(`Şehir: ${sehir}`);
     }
     if (kisi != null) {

@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (D1a 20 Ekim; D1b-1..4 21 Ekim); sirada D2 (pazaryeri), sonra D3 (Kashe AI), D4 (vitrin). Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (20-21 Ekim); D2 KAPANDI (21 Ekim; profil yerlesiminin tersine cevrilmesi D2-ek'e kaldi); sirada D2-ek (profil yerlesimi), D3 (Kashe AI), D4 (vitrin). Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -139,6 +139,35 @@ Secim yapildi", 1200 px'te tablo secili sutun pembe + rozet, serit yok; `/odemel
 + kisisel satir. Konsol 0, yatay tasma 0. hotmail turu bu dalda atlandi: `maliyetGorulur` render kosulu degismedi (D1b-3'te dogrulandi).
 **Sonraya:** karsilastirma kartinda ayni rol iki kez istenmisse iki satir ayni toplami gosteriyor (tablo da oyle; FAZ 7b veri modeli);
 bildirimler anonim dalinda `PanelBaslik` vitrin icinde (pembe vurgu zaten vardi).
+
+## 6. D2 KAPANDI (21 Ekim 2026) — pazaryeri; onizleme turu
+
+Dal `tasarim/d2` (`27-claude-code-gorevi-d2-pazaryeri.md`). Yapilan: **kesfet** — eyebrow kisa pembe cizgi + "KESFET", `tip=ajans`
+basligi "Ajans ve organizasyon firmalarini kesfet." + "N KURUMSAL PROFIL", izgara `sm:2 lg:3 xl:4 2xl:5 gap-4`, kart masaustunde
+`aspect-[4/3]` (tek oran; `yogun` prop'u etkisiz, cagiranlar icin duruyor), alt rozet "… TL'den" (yayindaki, talep-uzerine olmayan
+hizmetlerin en dusuk `price_min`; `servicesByProfile` zaten okunuyordu, ek sorgu yok) / "Kurumsal profil", kategori noktasi cyan;
+**profil** — ekmek kirintisi "KESFET · <Kategori> · <Ad>" (`← Kesfet'e don` kalkti), `GuvenCipleri` (`app/components/guven-cipleri.tsx`:
+yalniz gercek sinyal — Kimlik dogrulandi, Profil onayli, N tamamlanmis is (`dealRows`), Ortalama yanit (bugun `responseTime` null → cip
+yok), Tekrar tercih, Yuksek puanli, Cok tercih ediliyor, Premium; eski iki rozet karti ve ajans rozet listesi buna dondu),
+`FiyatTakvimKarti` (`app/components/fiyat-takvim-karti.tsx`: en dusuk paket/hizmet fiyati "… TL'den · Paketlerden baslayan fiyat" ya da
+"Fiyat teklifle"; `AvailabilityCalendar` secim modu `onSelect`/`selectedDate` — bos gun pembe, dolu/gecmis tiklanamaz; Tarih/Sehir/Kisi;
+CTA'lar mevcut `IletisimButton` (`onDolgu`: brief formunda `event_date`/`location|city`/`guest_count` varsa alan, yoksa mesaj basina
+satir) ve `RezervasyonButton` (`initialDate`, `initialLocation`); `lg` alti kart yok, alt sabit cubuk aynen); ajans dalinda ekmek
+kirintisi + cipler; `DESIGN.md` 9 "Pazaryeri desenleri (D2)".
+**Diff incelemesi + turda duzeltilen (Claude, 4 commit):** (1) URETIM HATASI — `ProfessionalProfile` sunucu bileseni karta
+`cta={(dolgu) => …}` fonksiyonu geciriyordu → "Functions cannot be passed to Client Components", profil sayfasi 500; kart artik
+dugmelerin duz prop'larini alip `IletisimButton`/`RezervasyonButton`'i kendi icinde kuruyor (Claude Code'un lokal duman testi bu
+dala denk gelmemisti); (2) `RezervasyonButton` tarihi `useState` baslangicinda aliyordu, sonradan secilen gun ulasmiyordu → modal
+acilirken uygulanir; (3) mesajdaki tarih ISO → "14 Mayis 2027"; (4) sehir `city` degil `location` anahtariyla formda → alan dolar;
+(5) secim modunda takvimin kendi aciklamasi ("Dolu (sen)") gizli — kart kendi aciklamasini verir; (6) puan rozetleri ciplere.
+**Tur:** anonim `/kesfet` (34 sonuc, 1280 px'te 4 sutun 4:3, rozetler "2.000 TL'den … / KURUMSAL PROFIL"), `/kesfet?tip=ajans`;
+`/p/Test Pro`, `/p/Test Pro2`: kirinti, cipler "Kimlik dogrulandi · Profil onayli (· 1 tamamlanmis is)", kart "2.000 / 5.000 TL'den",
+25-26 Ekim secimi pembe + Tarih doldu; testguven: "Teklif Al" → modalda Tarih 2026-10-26 ve Katilimci 150 dolu (gonderilmedi),
+"Rezervasyon Talebi" → tarih dolu (gonderilmedi); 375 px: kart yok, alt cubuk "Teklif Al · Rezervasyon Talebi", tasma 0. Konsol 0.
+**D2-ek'e kalan (Claude Code karari, kabul):** profil yerlesimi tersine (icerik SOL: hero tam genislik, kimlik satiri 72 px avatar +
+`text-3xl` ad + etkinlik turleri, Paketler kimligin altinda; kart SAG sticky; meta satirlari kartin altinda), kart `lg` altinda da
+(alt cubukla cakismadan), ajans profili iki sutun; CTA etiketleri "Teklif al" / "Paketi dogrudan rezerve et" (bugun "Teklif Al" /
+"Rezervasyon Talebi"); kendi profiline bakanda kart altinda "Profili duzenle". Ajans dalinda tamamlanmis is sayisi okunmuyor (cip yok).
 
 ## 5. Kabul olcutleri (D1a)
 

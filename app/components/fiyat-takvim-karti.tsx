@@ -217,6 +217,7 @@ export function FiyatTakvimKarti({
             writableBusinesses={cta.writableBusinesses}
             variant="outline-ink"
             initialDate={dolgu.tarih}
+            initialLocation={dolgu.sehir}
           />
           {cta.actionBar}
         </div>

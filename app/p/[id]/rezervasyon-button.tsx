@@ -32,6 +32,8 @@ type Props = {
    * doldurur; form alanlari ve action DEGISMEZ, yalniz baslangic degeri.
    */
   initialDate?: string | null;
+  /** D2 — karttaki sehir; modalin "Konum" alanini bos ise doldurur. */
+  initialLocation?: string | null;
 };
 
 export function RezervasyonButton({
@@ -43,6 +45,7 @@ export function RezervasyonButton({
   writableBusinesses = [],
   variant = 'default',
   initialDate = null,
+  initialLocation = null,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -285,6 +288,7 @@ export function RezervasyonButton({
           // Kart tarihi MODAL ACILIRKEN uygulanir: useState baslangic degeri
           // yalniz ilk montajda okunur, kartta sonradan secilen gun oraya ulasmazdi.
           if (initialDate && !eventDate) setEventDate(initialDate);
+          if (initialLocation && !location) setLocation(initialLocation);
           setModalOpen(true);
         }}
         className={
