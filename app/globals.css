@@ -87,11 +87,19 @@ body {
 
 /* === Vurgu sistemi
    <em> = brand-ink renk, kalın (eski: mor-pembe gradyan — "Claude kokusu" nedeniyle terk edildi).
-   Hukuki/teknik italik için <i> ayrı tutuldu. */
-em {
-  font-style: normal;
-  font-weight: 600;
-  color: var(--color-brand-ink); /* brand-ink vurgu */
+   Hukuki/teknik italik için <i> ayrı tutuldu.
+
+   @layer base ICINDE (D4 duzeltmesi): kural katmansiz dururken Tailwind v4'un
+   katmanli utility'lerini (`text-brand-accent`) her zaman eziyordu — calisma
+   yuzeylerindeki pembe vurgu (`<em class="text-brand-accent">`, DESIGN.md 9)
+   hic uygulanmiyor, koyu zeminde vurgu kelimesi gorunmez kaliyordu.
+   Base katmaninda varsayilan kalir, sinif verilince sinif kazanir. */
+@layer base {
+  em {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--color-brand-ink); /* brand-ink vurgu */
+  }
 }
 
 i {
