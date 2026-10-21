@@ -227,6 +227,9 @@ değerleri ayrı bir token seti olarak tanımlanacak. Şimdilik aydınlık tema
 ### Renk yasakları (anti-slop)
 - ❌ Mor/pembe gradyanlar (eski Kashe kimliği — terk edildi, "AI slop" işareti).
 - ❌ Çok sayıda gradyan, glow/parıltı efektleri, glassmorphism.
+  **Tek sınırlı istisna:** `KoyuBolum` iki radyal ışıma taşır (bkz. bölüm 9
+  "Koyu kapanış") — sayfa başına en fazla bir bölümde, `--glow-accent` /
+  `--glow-sky` değişkenleriyle. Bunun dışında glow yoktur.
 - ❌ Rastgele/çok renk. Renk her zaman amaçlı: marka, aksan, kategori, durum.
 
 ---
@@ -557,6 +560,50 @@ izlenimi verir.
 karşılığı yok; gösterilmezler. Eşleşme kartındaki ✓ satırları da yalnız
 gerçekleşmiş işi yazar: etkinlikte tarih yoksa "müsaitlik kontrol edildi"
 satırı çizilmez (`run_event_match` o kontrolü gerçekten atlar).
+
+---
+
+### Koyu kapanış (desen 8, D4)
+
+**`KoyuBolum`** (`app/components/koyu-bolum.tsx`, sunucu bileşeni). Lacivert
+(`bg-ink`) kapanış yüzeyi: üstte ince `bg-gradient-brand` şerit (`h-[3px]`),
+iki radyal ışıma, ortalı `max-w-3xl` içerik — isteğe bağlı beyaz Kashe işareti
+(56 px), pembe mono eyebrow, h1/h2 başlık, `paper-72` alt metin, CTA alanı ve
+altta mono `text-sky` bağlantı.
+
+| Prop | Ne yapar |
+|---|---|
+| `yogunluk` | `tam` kenardan kenara bölüm · `kart` `max-w-7xl` içinde `rounded-3xl` |
+| `basliketiketi` | `h2` (varsayılan) ya da `h1` — sayfanın tek h1'i bu bloktaysa |
+| `isaret` | Üstte beyaz işaret (`KasheMark variant="dark"`) |
+| `baglanti` | Altta mono küçük bağlantı (videodaki "KASHE.NET" gibi) |
+
+**Gradyan düz zemin olarak kullanılmaz.** Eski `FooterCTA` tüm zemini
+`--gradient-brand` ile boyuyordu; gradyanın **hiçbir** noktasında beyaz gövde
+metni 4,5:1 geçmiyordu (T7 bulgusu, kodda notu vardı). Düz `ink` zeminde
+`paper-72` gövde metni 9,5:1, `paper-50` küçük etiket 5,1:1 verir. Gradyan bu
+yüzeyde yalnız **3 px şerit** olarak yaşar; marka işareti onu ayrıca taşır.
+
+**Işıma değişkenleri** `globals.css`'te: `--glow-accent` (sağ alt, pembe %35)
+ve `--glow-sky` (sol üst, cyan %22). İkisi de `brand-accent` ve `sky`
+token'larının **alfa türevleri** — yeni renk değil. Bileşen dosyasında hex
+YAZILMAZ (`grep "#[0-9A-Fa-f]{6}" koyu-bolum.tsx` → 0); değerler tek
+yerde durur. Katmanlar `pointer-events-none` ve `aria-hidden`.
+
+**Ölçülü: sayfa başına en fazla bir.** Ana sayfada `KasheAiSection` ve
+`AjanslarSection` zaten koyu; bu yüzden orada yalnız kapanış CTA'sı
+`KoyuBolum`'a geçti. Bugünkü üç kullanım: ana sayfa `FooterCTA` (`kart`),
+`/premium` üst başlık (`tam`, `h1`), `/hakkimizda` kapanış (`tam`).
+
+**Koyu zeminde `em` kullanma.** Globalde `em { color: brand-ink }` ve
+`brand-ink` ile `ink` **aynı hex** — lacivert üstünde lacivert vurgu görünmez.
+Ya `<span className="text-brand-accent">` ya da `<em className="not-italic
+text-brand-accent">` yazılır.
+
+**Düğmeler.** Birincil beyaz zemin + `text-ink` (19,3:1): `KOYU_BTN_BIRINCIL`.
+İkincil kenarlıklı, saydam zemin, `hover:border-brand-accent`:
+`KOYU_BTN_IKINCIL`. İkisi de bileşenden dışa aktarılır — çağıran sınıf dizisi
+kopyalamaz.
 
 ---
 

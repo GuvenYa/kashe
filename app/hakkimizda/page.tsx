@@ -1,5 +1,10 @@
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getZiyaretci, type Ziyaretci } from '@/app/lib/ziyaretci';
+import {
+  KoyuBolum,
+  KOYU_BTN_BIRINCIL,
+  KOYU_BTN_IKINCIL,
+} from '@/app/components/koyu-bolum';
 
 export const metadata = {
   title: 'Hakkımızda — Kashe',
@@ -180,6 +185,31 @@ export default async function HakkimizdaPage() {
             })}
           </div>
         </section>
+
+        {/* D4 — kapanis (desen 8). Sayfadaki TEK koyu bolum. Baglanti YOK:
+            sitenin kendi adresine baglanti anlamsiz. */}
+        <KoyuBolum
+          yogunluk="tam"
+          eyebrow="Kashe"
+          isaret
+          baslik={
+            <>
+              Türkiye&apos;nin{' '}
+              <em className="not-italic text-brand-accent">yetenek</em>{' '}
+              sahnesi.
+            </>
+          }
+          altMetin="Etkinliğini anlat; Kashe AI ekibini kursun ya da işi doğru firmaya versin."
+        >
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="/kesfet" className={KOYU_BTN_BIRINCIL}>
+              Keşfet →
+            </a>
+            <a href="/etkinlik-sihirbazi" className={KOYU_BTN_IKINCIL}>
+              Etkinlik sihirbazı
+            </a>
+          </div>
+        </KoyuBolum>
       </main>
     </>
   );

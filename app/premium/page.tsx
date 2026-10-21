@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { PlanSecici } from './plan-secici';
+import { KoyuBolum } from '@/app/components/koyu-bolum';
 import { getCachedUser } from '@/app/lib/auth';
 import { isPremiumActive, type PremiumTier } from '@/app/lib/badges';
 
@@ -36,27 +37,36 @@ export default async function PremiumPage() {
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-brand-ink mb-3">
-              Premium
-            </p>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-              Öne çık, <em>daha çok iş al</em>
-            </h1>
-            <p className="text-ink-72 text-lg mt-4 max-w-2xl leading-relaxed">
-              Premium üyelikle Keşfet listelerinde üst sıralarda yer al, profil
-              rozetinle güven kazan, daha fazla müşteriye ulaş.
-            </p>
-          </div>
+      <main className="min-h-screen bg-paper">
+        {/* D4 — sayfanin ust basligi koyu bolum. Sayfanin TEK h1'i burada
+            oldugu icin `basliketiketi="h1"`; metinler AYNEN. `em` koyu
+            zeminde gorunsun diye `not-italic text-brand-accent` ile ezilir
+            (globalde `em` = brand-ink). */}
+        <KoyuBolum
+          yogunluk="tam"
+          basliketiketi="h1"
+          eyebrow="Premium"
+          isaret
+          baslik={
+            <>
+              Öne çık,{' '}
+              <em className="not-italic text-brand-accent">
+                daha çok iş al
+              </em>
+            </>
+          }
+          altMetin="Premium üyelikle Keşfet listelerinde üst sıralarda yer al, profil rozetinle güven kazan, daha fazla müşteriye ulaş."
+        />
 
-          <PlanSecici
-            userRole={role}
-            currentTier={tier}
-            premiumActive={premiumActive}
-            premiumUntil={premiumUntil}
-          />
+        <div className="px-6 md:px-12 py-16">
+          <div className="max-w-5xl mx-auto">
+            <PlanSecici
+              userRole={role}
+              currentTier={tier}
+              premiumActive={premiumActive}
+              premiumUntil={premiumUntil}
+            />
+          </div>
         </div>
       </main>
     </>

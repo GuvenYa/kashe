@@ -104,6 +104,27 @@ i {
   color: #FFFFFF;
 }
 
+/* === Koyu kapanis isimalari (D4, desen 8) ===
+   `brand-accent` (#FA0B96) ve `sky` (#00ACE2) token'larinin ALFA
+   turevleri. Yeni renk DEGIL: ayni iki uc, saydamlikla. `@theme` yerine
+   burada tanimli, cunku `@theme` kullanilmayan anahtarlari budayabiliyor;
+   bu degiskenler yalniz `var()` ile okunuyor, utility uretmiyor.
+
+   `KoyuBolum` bu degiskenleri okur — bilesen dosyasinda hex YAZILMAZ
+   (DESIGN.md bolum 1 KURAL: hex yalniz renk tablolarinda ve burada yasar). */
+:root {
+  --glow-accent: radial-gradient(
+    circle at 85% 90%,
+    rgba(250, 11, 150, 0.35),
+    transparent 55%
+  );
+  --glow-sky: radial-gradient(
+    circle at 10% 10%,
+    rgba(0, 172, 226, 0.22),
+    transparent 50%
+  );
+}
+
 /* === Dark section helper === */
 .dark-section {
   background: var(--color-ink);
