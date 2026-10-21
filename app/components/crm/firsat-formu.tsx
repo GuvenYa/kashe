@@ -8,6 +8,7 @@ import {
   type FirsatAsamasi,
 } from '@/app/lib/crm';
 import { firsatOlustur } from '@/app/lib/crm-actions';
+import type { UyeSecenegi } from '@/app/lib/crm-data';
 
 /**
  * FAZ 8b — yeni firsat formu (8a `gorev-formu.tsx` kalibi).
@@ -50,7 +51,7 @@ export function FirsatFormu({
 }: {
   organizationId: string;
   kisiler: KisiSecenegi[];
-  uyeler: { id: string; ad: string; altNot: string }[];
+  uyeler: UyeSecenegi[];
   etkinlikler: SecimSecenegi[];
   teklifler: SecimSecenegi[];
   kullaniciId: string;
@@ -259,8 +260,9 @@ export function FirsatFormu({
           >
             <option value="">Sahipsiz</option>
             {uyeler.map((u) => (
-              <option key={u.id} value={u.id}>
+              <option key={u.id} value={u.id} disabled={!u.crmGorur}>
                 {u.ad} · {u.altNot}
+                {u.crmGorur ? '' : ' · CRM yetkisi yok'}
               </option>
             ))}
           </select>

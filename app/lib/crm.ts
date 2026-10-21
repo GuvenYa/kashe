@@ -67,6 +67,20 @@ export function asamaSinifi(asama: string): string {
 // Kisi turu
 // -----------------------------------------------------------------------------
 
+/**
+ * `crm.view` yetkisi olan roller — DB `org_role_permissions` ile AYNI
+ * (20261022120000_faz8b_01_crm.sql bolum 2). Firsat sahibi secimi bu rollerle
+ * sinirlidir: CRM'i goremeyen bir uye sahip yapilirsa bildirimi alir ama
+ * sayfayi acamaz (403). Matris degisirse once o fonksiyon, sonra burasi.
+ */
+export const CRM_GOREN_ROLLER = [
+  'owner',
+  'admin',
+  'sales',
+  'project_manager',
+  'finance',
+] as const;
+
 export const KISI_TURLERI = ['person', 'company'] as const;
 export type KisiTuru = (typeof KISI_TURLERI)[number];
 

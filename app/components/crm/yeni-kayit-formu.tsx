@@ -7,6 +7,7 @@ import {
   type KisiSecenegi,
   type SecimSecenegi,
 } from './firsat-formu';
+import type { UyeSecenegi } from '@/app/lib/crm-data';
 
 /**
  * FAZ 8b — "Yeni kisi" / "Yeni firsat" formunun kabi.
@@ -27,7 +28,7 @@ export function YeniKayitFormu({
 }: {
   organizationId: string;
   kisiler: KisiSecenegi[];
-  uyeler: { id: string; ad: string; altNot: string }[];
+  uyeler: UyeSecenegi[];
   etkinlikler: SecimSecenegi[];
   teklifler: SecimSecenegi[];
   kullaniciId: string;

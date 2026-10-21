@@ -13,7 +13,7 @@ import {
 import { firsatGuncelle, firsatSil } from '@/app/lib/crm-actions';
 import { formatTL } from '@/app/lib/para';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
-import type { Firsat } from '@/app/lib/crm-data';
+import type { Firsat, UyeSecenegi } from '@/app/lib/crm-data';
 import type { SecimSecenegi } from './firsat-formu';
 
 /**
@@ -147,7 +147,7 @@ export function FirsatPanosu({
   yazabilir,
 }: {
   firsatlar: Firsat[];
-  uyeler: { id: string; ad: string; altNot: string }[];
+  uyeler: UyeSecenegi[];
   etkinlikler: SecimSecenegi[];
   teklifler: SecimSecenegi[];
   yazabilir: boolean;
@@ -254,7 +254,7 @@ function FirsatPaneli({
   onKapat,
 }: {
   firsat: Firsat;
-  uyeler: { id: string; ad: string; altNot: string }[];
+  uyeler: UyeSecenegi[];
   etkinlikler: SecimSecenegi[];
   teklifler: SecimSecenegi[];
   yazabilir: boolean;
@@ -486,8 +486,9 @@ function FirsatPaneli({
             >
               <option value="">Sahipsiz</option>
               {uyeler.map((u) => (
-                <option key={u.id} value={u.id}>
+                <option key={u.id} value={u.id} disabled={!u.crmGorur}>
                   {u.ad} · {u.altNot}
+                  {u.crmGorur ? '' : ' · CRM yetkisi yok'}
                 </option>
               ))}
             </select>

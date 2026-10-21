@@ -1,5 +1,10 @@
 import { createClient } from '@/app/lib/supabase-server';
-import { ACIK_ASAMALAR, type FirsatAsamasi, type KisiTuru } from '@/app/lib/crm';
+import {
+  ACIK_ASAMALAR,
+  CRM_GOREN_ROLLER,
+  type FirsatAsamasi,
+  type KisiTuru,
+} from '@/app/lib/crm';
 import { ORG_ROLE_LABELS, type OrgRole } from '@/app/lib/org-roles';
 
 /**
@@ -64,7 +69,13 @@ export type Firsat = {
   teklifDurumu: string | null;
 };
 
-export type UyeSecenegi = { id: string; ad: string; altNot: string };
+/** `crmGorur`: rolunde `crm.view` var mi — yoksa sahip secilemez (secenek kapali). */
+export type UyeSecenegi = {
+  id: string;
+  ad: string;
+  altNot: string;
+  crmGorur: boolean;
+};
 
 export type TeklifOnerisi = {
   proposalId: string;
@@ -448,6 +459,7 @@ export async function uyeSecenekleri(orgId: string): Promise<UyeSecenegi[]> {
     id: u.user_id,
     ad: u.profiles?.full_name?.trim() || 'Kuruluş üyesi',
     altNot: ORG_ROLE_LABELS[u.role as OrgRole] ?? 'Üye',
+    crmGorur: (CRM_GOREN_ROLLER as readonly string[]).includes(u.role),
   }));
 }
 
