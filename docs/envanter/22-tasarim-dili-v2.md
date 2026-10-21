@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1, D2, D2-ek, D3 KAPANDI (20-21 Ekim); sirada D4 (vitrin koyu kapanis), sonra 8b CRM. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** TASARIM DILI v2 KAPANDI (D1, D2, D2-ek, D3, D4 — 20-21 Ekim 2026). Sirada FAZ 8b CRM (`20-faz8-event-os-modulleri.md` §4). Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -216,6 +216,34 @@ serit "4 rol · 2 secili · ~10.000 TL · butce 150.000 TL (%7)" (sol 240 px hiz
 ic maliyet / havuz / teklif yok; 375 px: tek sutun, serit butcesiz, tasma 0. Konsol 0. Test etkinligi duruyor (Guven karari).
 **Sonraya:** "Taranan profil" / "Sure" sayaclari icin `match_runs`'a sayac/sure yazimi (FAZ 6 algoritma surumuyle); Ekip kapsami yalniz
 onayli uyeleri sayiyor ("DJ 0/1" — uyeler "Onerildi"); ajans dalinda tamamlanmis is sayisi.
+
+## 8. D4 KAPANDI (21 Ekim 2026) — vitrin koyu kapanis; TASARIM DILI v2 KAPANDI
+
+Dal `tasarim/d4` (`30-claude-code-gorevi-d4-vitrin-koyu-kapanis.md`; dali Claude Code main'den acti — kabul). Yapilan: `KoyuBolum`
+(`app/components/koyu-bolum.tsx`: `bg-ink`, ust 3 px `bg-gradient-brand` serit, iki radyal isima `--glow-accent` / `--glow-sky` —
+`globals.css` `:root` degiskenleri, `brand-accent` %35 ve `sky` %22 alfa turevleri, bilesende hex yok; pembe mono eyebrow, h1/h2 secimi,
+`paper-72` govde, `KOYU_BTN_BIRINCIL/IKINCIL`, `yogunluk` tam/kart, istege bagli beyaz isaret ve mono baglanti); `FooterCTA` gradyan
+zeminden koyu karta (metin/CTA/girisli dallanma aynen; T7 kontrast kokten bitti: govde 9,5:1), `/premium` ust blok (h1), `/hakkimizda`
+kapanisi ("Turkiye'nin <em>yetenek</em> sahnesi." + Kesfet / Etkinlik sihirbazi); `DESIGN.md` 9 "Koyu kapanis" + glow yasagina sinirli
+istisna notu (iki katman, tek bolum, sayfa basina bir).
+**KOK NEDEN BULGUSU (tur):** `/hakkimizda` basliginda "yetenek" pembe degil LACIVERT cikti — `globals.css`'teki `em { color: brand-ink }`
+kurali katmansizdi; Tailwind v4'un katmanli utility'si (`text-brand-accent`) onu hic ezemiyordu. Yani D1'den beri panel basliklarindaki
+29 pembe vurgu (`Teklifler`, `Planladigin`, `anladim`, `ekibini kur`…) fiilen lacivert kalmisti. Duzeltme: `em` kurali `@layer base`
+icine (varsayilan ayni, sinif verilince sinif kazanir). Dogrulandi: `/hakkimizda` "yetenek" `rgb(250,11,150)`, `/kurumsal/rfp` h1
+"talepleri" pembe.
+**Tur:** anonim `/` kapanis karti (lacivert, isimalar, serit, "HEMEN BASLA", "Profilini <pembe>ac</pembe>", beyaz + kenarlikli dugmeler,
+guven satiri), `/hakkimizda` kapanisi (beyaz isaret, pembe "yetenek", iki dugme; sayfada tek koyu bolum); testguven `/premium` koyu ust
+blok h1 "One cik, <pembe>daha cok is al</pembe>" + planlar. Konsol 0, tasma 0.
+
+### Tasarim dili v2 — toplam
+
+Panel kabugu (D1a) · 22 calisma sayfasi + para bicimi + `organizations_public` (D1b-2) · teklif yuzeyi (D1b-3) · `PanelBaslik` 18 sayfa,
+rezervasyon/odeme kartlari, RFP karsilastirma, K12 (D1b-4) · kesfet kartlari + guven cipleri + fiyat/takvim karti (D2) · profil yerlesimi +
+mobil baglam (D2-ek) · Kashe AI ozet + "Uc yol" + "Ekibi olustur" (D3) · koyu kapanis + em katman duzeltmesi (D4). Yeni bilesenler:
+`app/components/panel/*` (PanelKabugu, PanelBaslik, KpiKutu, OzetKutuSatiri, VeriTablosu, PanelKart, OzetSerit, UyumHalkasi),
+`guven-cipleri`, `fiyat-takvim-karti`, `koyu-bolum`, `teklif-belgesi`, `anladim-ozeti`, `profil-islem-baglami`, `mobil-cta-cubugu`.
+Kurallar `DESIGN.md` 9. Acik kalanlar: "Taranan profil"/"Sure" sayaclari (FAZ 6 algoritma), ajans profili kimlik satiri, ajans dalinda
+tamamlanmis is sayisi, `/bildirimler` anonim dalinda `PanelBaslik` vitrin icinde.
 
 ## 5. Kabul olcutleri (D1a)
 
