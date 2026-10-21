@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { GuvenCipleri } from '@/app/components/guven-cipleri';
+import { FiyatTakvimKarti } from '@/app/components/fiyat-takvim-karti';
+import { ProfilIslemSaglayici } from './profil-islem-baglami';
 import { createClient } from '@/app/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
-import { RezervasyonButton } from './rezervasyon-button';
 import { getWritableBusinesses } from '@/app/lib/business-write';
 import { HizmetSecici } from './hizmet-secici';
 import { DavetButton } from './davet-button';
@@ -43,7 +44,6 @@ import { HavuzaEkle } from './havuza-ekle';
 import { getTalentPoolContext } from '@/app/lib/org-context';
 import type { ProfileExperience } from '@/app/lib/category-fields';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
-import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { incrementProfileViews } from './profile-views-actions';
 
 // FAZ 2c: detay sayfasi v_providers_public gorunumunden okunur.
@@ -455,6 +455,19 @@ export default async function PublicProfilePage({
   }
 
   // ═══════════════ PROFESYONEL REDESIGN DALI (Adım 2) ═══════════════
+  // D2-ek — ajans islem kartinin fiyati: paketler ve talep-uzerine OLMAYAN
+  // hizmetlerin en dusugu. Fiyat yoksa kart "Fiyat teklifle" der.
+  const ajansFiyatAdaylari = [
+    ...packages
+      .filter((p) => !p.price_on_request && p.price_min != null)
+      .map((p) => Number(p.price_min)),
+    ...services
+      .filter((h) => !h.price_on_request && h.price_min != null)
+      .map((h) => Number(h.price_min)),
+  ].filter((n) => Number.isFinite(n) && n > 0);
+  const ajansEnDusukFiyat =
+    ajansFiyatAdaylari.length > 0 ? Math.min(...ajansFiyatAdaylari) : null;
+
   // Ajans/kurumsal MEVCUT render'ı aynen korur; yalnız professional yeni 2-kolon
   // düzene geçer. Erken return — benzer-profil sorguları professional'da hiç koşmaz.
   if (profile.role === 'professional') {
@@ -804,11 +817,13 @@ export default async function PublicProfilePage({
   }
 
   return (
-    <>
+    // Fiyat/takvim karti Tarih/Sehir/Kisi degerlerini BAGLAMDAN okur; ajans
+    // dalinda da saglayici gerekir (sunucu yalniz `children` gecer).
+    <ProfilIslemSaglayici varsayilanSehir={cityName ?? null}>
       <TopNav />
       {previewBand}
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* EKMEK KIRINTISI (D2) — "geri don" yerine konum: kullanici nerede
               oldugunu ve nereye donebilecegini ayni satirda gorur. */}
           <nav
@@ -832,6 +847,12 @@ export default async function PublicProfilePage({
             <span aria-hidden="true">·</span>
             <span className="text-ink">{displayName}</span>
           </nav>
+
+          {/* IKI SUTUN (D2-ek): profesyonel profiliyle AYNI izgara. Ajans
+              sayfasi tek sutun `max-w-3xl` idi; islem kartina yer yoktu ve
+              CTA bloğu sayfanin en dibinde kaliyordu. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-7">
+            <div className="min-w-0">
 
           {/* HEADER */}
           <div className="bg-card border border-line rounded-2xl p-8 mb-6">
@@ -1171,21 +1192,6 @@ export default async function PublicProfilePage({
               </div>
             </div>
           )}
-{/* MÜSAİTLİK (varsa) — salt görüntüleme */}
-          {blockedDates.length > 0 && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
-              <h2 className="font-display text-2xl text-ink mb-1">Müsaitlik</h2>
-              <p className="text-sm text-ink-72 mb-6">
-                İşaretli günler dolu. Diğer günler için iletişime geçebilirsin.
-              </p>
-              <AvailabilityCalendar
-                blockedDates={blockedDates}
-                bookedDates={[]}
-                editable={false}
-              />
-            </div>
-          )}
-
           {/* YORUMLAR (varsa) */}
           {recentReviews.length > 0 && (
             <div className="bg-card border border-line rounded-lg p-8 mb-6">
@@ -1222,45 +1228,38 @@ export default async function PublicProfilePage({
             </div>
           )}
 
-          {/* İLETİŞİM & YORUM BUTONLARI */}
-          <div className="flex flex-col gap-3">
-            {/* Buton bölgesi: pro-as-buyer — kendi profili DEĞİL her ziyaretçi (professional dahil)
-                alıcı koltuğuna oturur → Teklif Al / Rezervasyon. "Davet" aşağıda ayrı gate'te
-                MEVCUT davranışında kalır. */}
-            {!isOwnProfile ? (
-              <div className="bg-brand-ink/8 border border-brand-ink/20 rounded-lg p-6 md:p-8">
-                <h2 className="font-display text-xl text-ink mb-2">
-                  Bu profesyonelle çalış
-                </h2>
-                <p className="text-ink-72 text-sm mb-4">
-                  İhtiyacına göre teklif al, doğrudan rezervasyon iste ya da
-                  açık ilanına davet et.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Teklif Al: müşteri kendi adına; manager+ kurum üyesi kurum adına
-                      (IletisimButton içeride writableBusinesses'e göre gate + selector). */}
-                  <IletisimButton
-                    professionalId={profile.id}
-                    professionalName={displayName}
-                    categorySlug={profile.service_categories?.slug ?? null}
-                    isLoggedIn={isLoggedIn}
-                    currentUserIsProfessional={currentUserIsProfessional}
-                    isOwnProfile={isOwnProfile}
-                    etkinlikId={etkinlikId}
-                    writableBusinesses={writableBusinesses}
-                    variant="inline"
-                  />
-                  <RezervasyonButton
-                    professionalId={profile.id}
-                    professionalName={displayName}
-                    isLoggedIn={isLoggedIn}
-                    currentUserIsProfessional={currentUserIsProfessional}
-                    isOwnProfile={isOwnProfile}
-                    writableBusinesses={writableBusinesses}
-                  />
-                  {/* Davet MEVCUT davranışında: plain professional'da gösterilmez */}
-                  {(!currentUserIsProfessional ||
-                    writableBusinesses.length > 0) && (
+            </div>
+
+            {/* ═══════════ SAG SUTUN — islem karti ═══════════ */}
+            <aside className="lg:sticky lg:top-24 lg:self-start flex flex-col gap-4 order-last">
+              {/* Takvim ancak dolu gun verisi varsa anlamli; yoksa kart
+                  takvimsiz calisir (fiyat + alanlar). */}
+              {/* CTA'lar KARTIN ICINDE (D2-ek): Teklif Al / Rezervasyon Talebi
+                  karttaki Tarih/Sehir/Kisi degerlerini on-doldurma olarak alir.
+                  Ayri bir "Bu profesyonelle calis" kutusunda dursalardi bu
+                  degerler onlara ulasmazdi (sunucu bileseni arada). Davet
+                  MEVCUT kapisiyla kartin altinda. */}
+              <FiyatTakvimKarti
+                enDusukFiyat={ajansEnDusukFiyat}
+                blockedDates={blockedDates}
+                bookedDates={[]}
+                cta={
+                  !isOwnProfile
+                    ? {
+                        professionalId: profile.id,
+                        professionalName: displayName,
+                        categorySlug: profile.service_categories?.slug ?? null,
+                        isLoggedIn,
+                        currentUserIsProfessional,
+                        isOwnProfile,
+                        writableBusinesses,
+                        etkinlikId,
+                      }
+                    : undefined
+                }
+                altAlan={
+                  !isOwnProfile &&
+                  (!currentUserIsProfessional || writableBusinesses.length > 0) ? (
                     <DavetButton
                       professionalId={profile.id}
                       professionalName={displayName}
@@ -1269,10 +1268,13 @@ export default async function PublicProfilePage({
                       isOwnProfile={isOwnProfile}
                       writableBusinesses={writableBusinesses}
                     />
-                  )}
-                </div>
-              </div>
-            ) : (
+                  ) : null
+                }
+              />
+
+          {/* İLETİŞİM & YORUM BUTONLARI */}
+          <div className="flex flex-col gap-3">
+            {!isOwnProfile ? null : (
               /* Kendi profili / profesyonel: mevcut IletisimButton bilgi kutusunu göster */
               <IletisimButton
                 professionalId={profile.id}
@@ -1291,6 +1293,8 @@ export default async function PublicProfilePage({
               existingReview={existingReview}
               enabled={canReview}
             />
+          </div>
+            </aside>
           </div>
 
           {/* Profili şikayet et — sahibi olmayan herkese */}
@@ -1339,6 +1343,6 @@ export default async function PublicProfilePage({
           </section>
         )}
       </main>
-    </>
+    </ProfilIslemSaglayici>
   );
 }

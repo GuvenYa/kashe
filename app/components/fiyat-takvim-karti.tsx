@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { formatTL } from '@/app/lib/para';
+import { useProfilIslem } from '@/app/p/[id]/profil-islem-baglami';
 import { IletisimButton } from '@/app/p/[id]/iletisim-button';
 import { RezervasyonButton } from '@/app/p/[id]/rezervasyon-button';
 import type { OnBehalfBusiness } from '@/app/components/on-behalf-selector';
@@ -26,7 +27,7 @@ import type { OnBehalfBusiness } from '@/app/components/on-behalf-selector';
  *
  * CTA'LAR NEDEN BURADA RENDER EDILIYOR: cagiran (`ProfessionalProfile`) bir
  * SUNUCU bileseni. Sunucudan istemci bilesenine fonksiyon (render-prop)
- * gecirilemez — ilk surum `cta={(dolgu) => ...}` ile uretimde "Functions
+ * gecirilemez — ilk surum `cta prop'u bir render fonksiyonu` ile uretimde "Functions
  * cannot be passed to Client Components" hatasi verdi. Kart bu yuzden
  * dugmelerin DUZ prop'larini alir ve `IletisimButton` / `RezervasyonButton`'i
  * kendi icinde kurar; eylemler yine o bilesenlerin icindedir.
@@ -40,7 +41,6 @@ export function FiyatTakvimKarti({
   enDusukFiyat,
   blockedDates,
   bookedDates,
-  varsayilanSehir,
   cta,
   altAlan,
 }: {
@@ -48,7 +48,6 @@ export function FiyatTakvimKarti({
   enDusukFiyat: number | null;
   blockedDates: string[];
   bookedDates: string[];
-  varsayilanSehir: string | null;
   /**
    * CTA dugmelerinin prop'lari (serilestirilebilir). Verilmezse kart yalniz
    * fiyat + takvim gosterir (kendi profiline bakan sahip).
@@ -61,27 +60,31 @@ export function FiyatTakvimKarti({
     currentUserIsProfessional: boolean;
     isOwnProfile: boolean;
     writableBusinesses: OnBehalfBusiness[];
+    /** Etkinlikten gelindiyse (`?etkinlik=`) sohbet o etkinlige baglanir. */
+    etkinlikId?: string | null;
     /** Favori / paylas / sikayet ikon satiri (istemci elemanlari). */
     actionBar?: ReactNode;
   };
   /** Kartin altindaki ek alan (davet / havuz kisa yolu). */
   altAlan?: ReactNode;
 }) {
-  const [tarih, setTarih] = useState('');
-  const [sehir, setSehir] = useState(varsayilanSehir ?? '');
-  const [kisi, setKisi] = useState('');
+  // Degerler BAGLAMDAN: mobil alt CTA cubugu ayni durumu okuyor (D2-ek).
+  // Kart kendi state ini tutsaydi, cubuktaki dugmeler kartta girilen tarihi
+  // goremezdi (aralarinda sunucu bileseni var).
+  const {
+    tarih,
+    sehir,
+    kisi,
+    tarihAta,
+    sehirAta,
+    kisiAta,
+    hamTarih,
+    hamSehir,
+    hamKisi,
+  } = useProfilIslem();
   const [takvimAcik, setTakvimAcik] = useState(false);
 
-  const kisiSayisi = (() => {
-    const n = Number(kisi);
-    return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
-  })();
-
-  const dolgu = {
-    tarih: tarih.trim() || null,
-    sehir: sehir.trim() || null,
-    kisi: kisiSayisi,
-  };
+  const dolgu = { tarih, sehir, kisi };
 
   const takvim = (
     <>
@@ -89,8 +92,8 @@ export function FiyatTakvimKarti({
         blockedDates={blockedDates}
         bookedDates={bookedDates}
         editable={false}
-        selectedDate={tarih || null}
-        onSelect={(iso) => setTarih(iso)}
+        selectedDate={hamTarih || null}
+        onSelect={(iso) => tarihAta(iso)}
       />
       <div className="mt-2 flex items-center gap-3 flex-wrap text-[11px] text-ink-72">
         <span className="inline-flex items-center gap-1.5">
@@ -158,9 +161,9 @@ export function FiyatTakvimKarti({
           <input
             id="fiyat-karti-tarih"
             type="date"
-            value={tarih}
+            value={hamTarih}
             onClick={takvimiAc}
-            onChange={(e) => setTarih(e.target.value)}
+            onChange={(e) => tarihAta(e.target.value)}
             className={ALAN}
           />
         </div>
@@ -172,8 +175,8 @@ export function FiyatTakvimKarti({
             <input
               id="fiyat-karti-sehir"
               type="text"
-              value={sehir}
-              onChange={(e) => setSehir(e.target.value.slice(0, 80))}
+              value={hamSehir}
+              onChange={(e) => sehirAta(e.target.value.slice(0, 80))}
               className={ALAN}
             />
           </div>
@@ -186,8 +189,8 @@ export function FiyatTakvimKarti({
               type="number"
               min={1}
               inputMode="numeric"
-              value={kisi}
-              onChange={(e) => setKisi(e.target.value)}
+              value={hamKisi}
+              onChange={(e) => kisiAta(e.target.value)}
               className={ALAN}
             />
           </div>
@@ -206,6 +209,7 @@ export function FiyatTakvimKarti({
             isOwnProfile={cta.isOwnProfile}
             writableBusinesses={cta.writableBusinesses}
             variant="primary-accent"
+            etkinlikId={cta.etkinlikId ?? null}
             onDolgu={dolgu}
           />
           <RezervasyonButton

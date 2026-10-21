@@ -24,6 +24,8 @@ import {
   type ProfileExperience,
 } from '@/app/lib/category-fields';
 import { getEventTypeLabel } from '@/app/mesajlar/data';
+import { ProfilIslemSaglayici } from './profil-islem-baglami';
+import { MobilCtaCubugu } from './mobil-cta-cubugu';
 import type {
   ServiceWithCategory,
   ServicePackage,
@@ -249,6 +251,25 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   // ── Aksiyon çubuğu: Davet / Favori / Paylaş / Şikayet — tek tutarlı dizi, eşit ağırlık
   //    (flex-1 hücreler + ayırıcı). Her bileşen kendi 'bare' varyantını render eder →
   //    hücrenin TAMAMI (ikon + etiket) tıklanabilir tetik. Sarmalayıcı hack / !important YOK.
+  // KIMLIK ALT SATIRI — yalniz DOLU parcalar. Etkinlik turleri en cok uc
+  // etiket (tamami sag sutundaki "Etkinlik turleri" blogunda).
+  const kimlikAltSatiri = [
+    categorySubtitle,
+    cityName ?? null,
+    reviewCount > 0
+      ? `★ ${averageRating} (${reviewCount} değerlendirme)`
+      : 'Yeni',
+    eventTypes.length > 0
+      ? eventTypes
+          .slice(0, 3)
+          .map((k) => getEventTypeLabel(k))
+          .filter(Boolean)
+          .join(', ') || null
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   const actionBar = !isOwnProfile ? (
     <div className="flex items-stretch rounded-xl border border-line overflow-hidden bg-card divide-x divide-line">
       {canInvite && (
@@ -317,7 +338,11 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
   );
 
   return (
-    <div className="bg-paper min-h-screen pb-24 lg:pb-12">
+    // ProfilIslemSaglayici: fiyat/takvim karti ile mobil CTA cubugu ayni
+    // Tarih/Sehir/Kisi durumunu paylasir. Sunucu govdesi `children` olarak
+    // gecer; FONKSIYON prop gecirilmez.
+    <ProfilIslemSaglayici varsayilanSehir={cityName ?? null}>
+      <div className="bg-paper min-h-screen pb-24 lg:pb-12">
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -364,184 +389,105 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
           <span className="text-ink">{displayName}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-7">
-          {/* ═══════════ SOL RAIL ═══════════ */}
-          <aside className="lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
-            {/* ── KİMLİK — mobil: küçük portre solda + isim/kategori/yıldız sağda ── */}
-            <div className="flex items-center gap-4 lg:hidden">
-              {profile.avatar_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={profile.avatar_url} alt={displayName} className="w-20 h-20 rounded-2xl object-cover border border-line shrink-0" />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-2xl shrink-0">
-                  {initials}
-                </div>
-              )}
-              <div className="min-w-0">
-                <h1 className="font-display text-[21px] font-bold tracking-tight leading-tight text-ink">{displayName}</h1>
-                <p className="text-[13px] text-ink-72 mt-0.5 truncate">{categorySubtitle}</p>
-                {reviewCount > 0 && (
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <Stars rating={averageRating} size={13} />
-                    <span className="text-[13px] font-semibold text-ink">{averageRating}</span>
-                    <span className="text-[13px] text-ink-72">({reviewCount})</span>
+        {/* IZGARA TERSINE (D2-ek): icerik SOLDA, islem karti SAGDA.
+            Eskiden 360 px sol ray kimligi ve kunyeyi tasiyordu; asil icerik
+            (hero, paketler, hakkimda) sagda kaliyor ve ekranin solu dolu
+            gorunurken icerik dar kaliyordu. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-7">
+          {/* ═══════════ SOL — ICERIK ═══════════ */}
+          <main className="min-w-0 flex flex-col gap-7">
+            {/* MEDYA HERO — TEK render (eski `lg:hidden` kopyasi kalkti). */}
+            {mediaHeroEl}
+
+            {/* KIMLIK SATIRI (D2-ek) — avatar 72 px, ad, sagda ikon satiri.
+                Eskiden iki ayri kimlik blogu vardi (mobil kucuk portre +
+                masaustu dikey buyuk portre); ikisi ayni bilgiyi iki kez
+                tasiyordu ve masaustu portresi sol rayin yarisini kapliyordu. */}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-4 min-w-0 flex-1 basis-80">
+                {profile.avatar_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    className="w-[72px] h-[72px] rounded-2xl object-cover border border-line shrink-0"
+                  />
+                ) : (
+                  <div className="w-[72px] h-[72px] rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-2xl shrink-0">
+                    {initials}
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* ── KİMLİK — masaüstü: büyük dikey portre + isim bloğu ── */}
-            <div className="hidden lg:block">
-              {profile.avatar_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={profile.avatar_url} alt={displayName} className="w-full aspect-[4/5] object-cover rounded-2xl border border-line" />
-              ) : (
-                <div className="w-full aspect-[4/5] rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-6xl">
-                  {initials}
+                <div className="min-w-0">
+                  <h1 className="font-display text-3xl font-bold tracking-tight leading-tight text-ink flex items-center gap-2 flex-wrap break-words">
+                    <span>{displayName}</span>
+                    {guvenSinyalleri.dogrulanmis && (
+                      <span
+                        title="Doğrulanmış"
+                        aria-label="Doğrulanmış"
+                        className="shrink-0 inline-flex"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path
+                            d="M12 2l2.4 1.8 3 -.2 .9 2.9 2.4 1.8 -1 2.9 1 2.9 -2.4 1.8 -.9 2.9 -3 -.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.3 15.7l1-2.9-1-2.9 2.4-1.8.9-2.9 3 .2z"
+                            fill="var(--color-moss)"
+                          />
+                          <path d="M8.5 12l2.2 2.2 4.3-4.4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    )}
+                  </h1>
+                  {/* Alt satir: kategori · sehir · puan · etkinlik turleri (en cok 3).
+                      Puan yoksa "Yeni" — uydurma sayi yok. */}
+                  <p className="text-sm text-ink-72 mt-1.5 break-words">
+                    {kimlikAltSatiri}
+                  </p>
                 </div>
-              )}
-              <div className="mt-4">
-                <h1 className="font-display text-[27px] font-bold tracking-tight leading-tight text-ink">{displayName}</h1>
-                <p className="text-sm text-ink-72 mt-1">{categorySubtitle}</p>
-                {reviewCount > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Stars rating={averageRating} />
-                    <span className="text-sm font-semibold text-ink">{averageRating}</span>
-                    <span className="text-sm text-ink-72">({reviewCount} yorum)</span>
-                  </div>
-                )}
               </div>
+              {actionBar && (
+                <div className="shrink-0 flex flex-wrap">{actionBar}</div>
+              )}
             </div>
 
-            {/* GUVEN CIPLERI (D2) — eski iki rozet KARTI bu satira dondu.
-                Her cip bir veriye dayanir; sinyal yoksa cip cizilmez. */}
+            {/* GUVEN CIPLERI — her cip bir veriye dayanir (D2 kurali). */}
             <GuvenCipleri {...guvenSinyalleri} />
-            {/* MEDYA HERO — mobilde badge'lerden hemen sonra (ajans kartından önce) */}
-            {mediaHeroEl && <div className="lg:hidden">{mediaHeroEl}</div>}
 
-            {/* Meta kart */}
-            <div className="bg-card border border-line rounded-2xl px-4 py-1.5">
-              <MetaRow label="Şehir" value={cityName} />
-              <MetaRow label="Hizmet bölgesi" value={serviceRegion} />
-              <MetaRow label="Çalışma şekli" value={calismaSekli} />
-              <MetaRow label="Fiyat aralığı" value={priceRange} />
-              <MetaRow label="Deneyim" value={experienceLabel} />
-              <MetaRow
-                label="Müsaitlik"
-                value={`Önümüzdeki 7 gün: ${isBusyNow ? 'yoğun' : 'müsait'}`}
-                dot={isBusyNow ? 'amber' : 'green'}
-                last
-              />
-            </div>
-
-            {/* Lojistik */}
-            {logisticsRows.length > 0 && (
-              <div className="flex flex-col gap-1.5 px-0.5">
-                {logisticsRows.map((c) => (
-                  <div key={c.key} className="flex items-center gap-2 text-[13px] text-ink-72">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
-                      <polyline points="4 12.5 9.5 18 20 6.5" />
-                    </svg>
-                    {c.label} — {c.description}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* FIYAT / TAKVIM KARTI (D2) — fiyat, musaitlik ve on-doldurma.
-                CTA'lar AYNI dugmeler (`IletisimButton` / `RezervasyonButton`);
-                kart yalniz tarih/sehir/kisi bilgisini onlara tasir. Eylemler ve
-                form alanlari degismedi. Mobilde primer dugmeler alt sabit barda
-                kaldigi icin kart `lg`+ gosterilir. */}
-            <div className="hidden lg:block">
+            {/* KART — `lg` ALTI kopyasi: kimligin hemen altinda, CTA'SIZ (dugmeler
+                alt sabit cubukta). Degerler baglamdan: iki kopya ayni durumu
+                paylasir, masaustu kopyasi sag sutunda (`hidden lg:block`). */}
+            <div className="lg:hidden">
               <FiyatTakvimKarti
                 enDusukFiyat={enDusukFiyat}
                 blockedDates={blockedDates}
                 bookedDates={bookedDates}
-                varsayilanSehir={cityName ?? null}
-                cta={
-                  canTransact
-                    ? {
-                        professionalId: profile.id,
-                        professionalName: displayName,
-                        categorySlug: slug,
-                        isLoggedIn,
-                        currentUserIsProfessional,
-                        isOwnProfile,
-                        writableBusinesses,
-                        actionBar,
-                      }
-                    : undefined
-                }
               />
-              {/* Kendi profiline bakan sahip: kart yalniz fiyat + takvim; eski
-                  "Profili duzenle" blogu altta durur. */}
-              {!canTransact && <div className="mt-3">{ctaBlock}</div>}
             </div>
 
-            {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
-            {havuzSlot}
-
-            {/* Yetenekler */}
-            {skills.length > 0 && (
-              <div>
-                <div className={`${EYEBROW} mb-2.5`}>Yetenekler</div>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((s, i) => (
-                    <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
-                      {s.name}
-                      {s.level > 0 && (
-                        <span className="inline-flex gap-[3px]" aria-label={`Seviye ${Math.min(3, s.level)}/3`}>
-                          {Array.from({ length: Math.min(3, s.level) }).map((_, j) => (
-                            <span key={j} className="w-[5px] h-[5px] rounded-full bg-brand-accent" />
-                          ))}
-                        </span>
-                      )}
-                    </span>
+            {/* 4. Hizmetler & Paketler */}
+            {(services.length > 0 || packages.length > 0) && (
+              <section>
+                <div className={EYEBROW}>Hizmetler &amp; Paketler</div>
+                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">{servicesTitle}</h2>
+                <div className="flex flex-col gap-3">
+                  {packages.map((pkg) => (
+                    <OfferRow
+                      key={`pkg-${pkg.id}`}
+                      title={pkg.title}
+                      description={pkg.description}
+                      price={formatPriceRange(pkg.price_min, pkg.price_max, pkg.price_on_request, 'total', pkg.price_starting)}
+                    />
+                  ))}
+                  {services.map((s) => (
+                    <OfferRow
+                      key={`svc-${s.id}`}
+                      title={s.title}
+                      description={s.description}
+                      price={formatPriceRange(s.price_min, s.price_max, s.price_on_request, s.price_unit ?? 'total', s.price_starting)}
+                    />
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Etkinlik türleri — ORTAK alan (dolu ise). Giriş tek yerde (kategori-bilgileri Genel). */}
-            {eventTypes.length > 0 && (
-              <div>
-                <div className={`${EYEBROW} mb-2.5`}>Etkinlik türleri</div>
-                <div className="flex flex-wrap gap-2">
-                  {eventTypes.map((k) => {
-                    const label = getEventTypeLabel(k);
-                    if (!label) return null;
-                    return (
-                      <span key={k} className="inline-flex items-center px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
-                        {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Ajans mini */}
-            {representingAgency && (
-              <Link href={`/p/${representingAgency.id}`} className="flex items-center gap-3 bg-card border border-line rounded-2xl px-4 py-3 hover:border-brand-ink transition-colors">
-                <span className="w-9 h-9 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
-                  {representingAgency.initials}
-                </span>
-                <div>
-                  <div className="text-[11.5px] text-ink-72">Üye olduğu ajans</div>
-                  <div className="text-[13.5px] font-semibold text-ink">{representingAgency.name}</div>
-                </div>
-              </Link>
-            )}
-
-            {/* Mobil ikon satırı — rail sonunda (favori/paylaş/şikayet); masaüstünde CTA bloğunda */}
-            {actionBar && <div className="lg:hidden">{actionBar}</div>}
-          </aside>
-
-          {/* ═══════════ SAĞ İÇERİK ═══════════ */}
-          <main className="min-w-0 flex flex-col gap-7">
-            {/* 1. Medya hero — masaüstünde main üstünde (mobilde rail'e taşındı) */}
-            {mediaHeroEl && <div className="hidden lg:block">{mediaHeroEl}</div>}
             {/* uzmanlik özet bandı */}
             {archetype === 'uzmanlik' && !preset?.portfolioGrid && summary?.body && (
               <div className="bg-brand-ink text-paper rounded-2xl p-7">
@@ -599,32 +545,6 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 labelOverrides={preset?.labelOverrides}
               />
             ))}
-
-            {/* 4. Hizmetler & Paketler */}
-            {(services.length > 0 || packages.length > 0) && (
-              <section>
-                <div className={EYEBROW}>Hizmetler &amp; Paketler</div>
-                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">{servicesTitle}</h2>
-                <div className="flex flex-col gap-3">
-                  {packages.map((pkg) => (
-                    <OfferRow
-                      key={`pkg-${pkg.id}`}
-                      title={pkg.title}
-                      description={pkg.description}
-                      price={formatPriceRange(pkg.price_min, pkg.price_max, pkg.price_on_request, 'total', pkg.price_starting)}
-                    />
-                  ))}
-                  {services.map((s) => (
-                    <OfferRow
-                      key={`svc-${s.id}`}
-                      title={s.title}
-                      description={s.description}
-                      price={formatPriceRange(s.price_min, s.price_max, s.price_on_request, s.price_unit ?? 'total', s.price_starting)}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
 
             {/* 5. Deneyim (work) — çizilebilir gruplar; eşleşmeyenler "Diğer" altında; 0 satırda yok */}
             {totalWorkRows > 0 && (
@@ -742,40 +662,144 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               enabled={canReview}
             />
           </main>
+
+          {/* ═══════════ SAG SUTUN — islem karti ve kunye ═══════════ */}
+          <aside className="lg:sticky lg:top-24 lg:self-start flex flex-col gap-4 order-last">
+            {/* FIYAT / TAKVIM KARTI (D2) — fiyat, musaitlik ve on-doldurma.
+                CTA'lar AYNI dugmeler (`IletisimButton` / `RezervasyonButton`);
+                kart yalniz tarih/sehir/kisi bilgisini onlara tasir. Eylemler ve
+                form alanlari degismedi. Mobilde primer dugmeler alt sabit barda
+                kaldigi icin kart `lg`+ gosterilir. */}
+            <div className="hidden lg:block">
+              {/* Masaustu kopyasi (CTA'li). `lg` altinda kart kimligin altinda
+                  CTA'siz; dugmeler alt sabit cubukta ve ayni degerleri BAGLAMDAN
+                  okur — kart ile cubuk tek durum paylasir. */}
+              <FiyatTakvimKarti
+                enDusukFiyat={enDusukFiyat}
+                blockedDates={blockedDates}
+                bookedDates={bookedDates}
+                cta={
+                  canTransact
+                    ? {
+                        professionalId: profile.id,
+                        professionalName: displayName,
+                        categorySlug: slug,
+                        isLoggedIn,
+                        currentUserIsProfessional,
+                        isOwnProfile,
+                        writableBusinesses,
+                      }
+                    : undefined
+                }
+              />
+              {/* Kendi profiline bakan sahip: kart yalniz fiyat + takvim; eski
+                  "Profili duzenle" blogu altta durur. */}
+              {!canTransact && <div className="mt-3">{ctaBlock}</div>}
+            </div>
+
+            {/* Meta kart */}
+            <div className="bg-card border border-line rounded-2xl px-4 py-1.5">
+              <MetaRow label="Şehir" value={cityName} />
+              <MetaRow label="Hizmet bölgesi" value={serviceRegion} />
+              <MetaRow label="Çalışma şekli" value={calismaSekli} />
+              <MetaRow label="Fiyat aralığı" value={priceRange} />
+              <MetaRow label="Deneyim" value={experienceLabel} />
+              <MetaRow
+                label="Müsaitlik"
+                value={`Önümüzdeki 7 gün: ${isBusyNow ? 'yoğun' : 'müsait'}`}
+                dot={isBusyNow ? 'amber' : 'green'}
+                last
+              />
+            </div>
+
+            {/* Lojistik */}
+            {logisticsRows.length > 0 && (
+              <div className="flex flex-col gap-1.5 px-0.5">
+                {logisticsRows.map((c) => (
+                  <div key={c.key} className="flex items-center gap-2 text-[13px] text-ink-72">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                      <polyline points="4 12.5 9.5 18 20 6.5" />
+                    </svg>
+                    {c.label} — {c.description}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Yetenekler */}
+            {skills.length > 0 && (
+              <div>
+                <div className={`${EYEBROW} mb-2.5`}>Yetenekler</div>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((s, i) => (
+                    <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
+                      {s.name}
+                      {s.level > 0 && (
+                        <span className="inline-flex gap-[3px]" aria-label={`Seviye ${Math.min(3, s.level)}/3`}>
+                          {Array.from({ length: Math.min(3, s.level) }).map((_, j) => (
+                            <span key={j} className="w-[5px] h-[5px] rounded-full bg-brand-accent" />
+                          ))}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Etkinlik türleri — ORTAK alan (dolu ise). Giriş tek yerde (kategori-bilgileri Genel). */}
+            {eventTypes.length > 0 && (
+              <div>
+                <div className={`${EYEBROW} mb-2.5`}>Etkinlik türleri</div>
+                <div className="flex flex-wrap gap-2">
+                  {eventTypes.map((k) => {
+                    const label = getEventTypeLabel(k);
+                    if (!label) return null;
+                    return (
+                      <span key={k} className="inline-flex items-center px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Ajans mini */}
+            {representingAgency && (
+              <Link href={`/p/${representingAgency.id}`} className="flex items-center gap-3 bg-card border border-line rounded-2xl px-4 py-3 hover:border-brand-ink transition-colors">
+                <span className="w-9 h-9 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
+                  {representingAgency.initials}
+                </span>
+                <div>
+                  <div className="text-[11.5px] text-ink-72">Üye olduğu ajans</div>
+                  <div className="text-[13.5px] font-semibold text-ink">{representingAgency.name}</div>
+                </div>
+              </Link>
+            )}
+
+            {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
+            {havuzSlot}
+          </aside>
         </div>
       </div>
 
-      {/* MOBİL — alta sabit CTA çubuğu (yalnız işlem yetkisi varsa) */}
+      {/* MOBIL — alta sabit CTA cubugu (yalniz islem yetkisi varsa).
+          Istemci bileseni: karttaki Tarih/Sehir/Kisi degerlerini baglamdan
+          okuyup dugmelere on-doldurma verir. */}
       {canTransact && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-line px-4 py-3">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <IletisimButton
-                professionalId={profile.id}
-                professionalName={displayName}
-                categorySlug={slug}
-                isLoggedIn={isLoggedIn}
-                currentUserIsProfessional={currentUserIsProfessional}
-                isOwnProfile={isOwnProfile}
-                writableBusinesses={writableBusinesses}
-                variant="primary-accent"
-              />
-            </div>
-            <div className="flex-1">
-              <RezervasyonButton
-                professionalId={profile.id}
-                professionalName={displayName}
-                isLoggedIn={isLoggedIn}
-                currentUserIsProfessional={currentUserIsProfessional}
-                isOwnProfile={isOwnProfile}
-                writableBusinesses={writableBusinesses}
-                variant="outline-ink"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        <MobilCtaCubugu
+          professionalId={profile.id}
+          professionalName={displayName}
+          categorySlug={slug}
+          isLoggedIn={isLoggedIn}
+          currentUserIsProfessional={currentUserIsProfessional}
+          isOwnProfile={isOwnProfile}
+          writableBusinesses={writableBusinesses}
+        />
+        )}
+      </div>
+    </ProfilIslemSaglayici>
   );
 }
 
