@@ -32,7 +32,8 @@ interface ProfileRow {
 }
 
 /**
- * Hijyen 01 — uygulama ici bildirimler (FAZ 7b: 'rfp' / 'proposal'; FAZ 8a: 'task').
+ * Hijyen 01 — uygulama ici bildirimler (FAZ 7b: 'rfp' / 'proposal'; FAZ 8a: 'task';
+ * FAZ 8b: 'crm' — firsat atamasi).
  * Ayni cron bu tablodaki satirlari da e-postalar; yeni fonksiyon/anahtar yok.
  */
 interface PendingNotification {
@@ -303,7 +304,7 @@ async function processMessages(): Promise<BlokSonucu> {
 
 /**
  * BILDIRIMLER (Hijyen 01) — `notifications` tablosundaki 'rfp' / 'proposal' /
- * 'task' satirlari. Mesajdan farklar:
+ * 'task' / 'crm' satirlari. Mesajdan farklar:
  *   - Cevrimici/okundu beklemesi YOK (seyrek ve onemli bildirimler).
  *   - 2 dakika gecikme: ayni islemden dogan birden cok bildirim tek taramada gelsin.
  *   - `read_at` dolu olsa da gonderilir; TEK istisna bayat kayit: okunmus VE
@@ -318,7 +319,7 @@ async function processNotifications(): Promise<BlokSonucu> {
   const { data: pending, error: pendingError } = await supabase
     .from('notifications')
     .select('id, user_id, type, link, body, read_at, created_at')
-    .in('type', ['rfp', 'proposal', 'task'])
+    .in('type', ['rfp', 'proposal', 'task', 'crm'])
     .is('email_notified_at', null)
     .lt('created_at', twoMinAgo)
     .order('created_at', { ascending: true })
@@ -380,7 +381,9 @@ async function processNotifications(): Promise<BlokSonucu> {
       ? `Teklif talebi · ${ozet}`
       : notif.type === 'task'
         ? `Görev · ${ozet}`
-        : `Teklif · ${ozet}`;
+        : notif.type === 'crm'
+          ? `Fırsat · ${ozet}`
+          : `Teklif · ${ozet}`;
     const targetUrl = `${APP_URL}${notif.link}`;
 
     const result = await sendEmail({

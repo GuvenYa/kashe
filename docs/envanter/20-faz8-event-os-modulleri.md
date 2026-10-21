@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); sirada **8b CRM** (§4). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); **8b-DB/01 + 8b-P1 KAPANDI (21 Ekim) — FAZ 8b KAPANDI** (§4); sirada **8c** (§5). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -152,11 +152,30 @@ e-posta kuyrugu indeksi crm dahil; RLS SELECT crm.view (admin dahil), INSERT/UPD
 PII diff, sales/finance/crew_coordinator/viewer/anon yetkileri, ince ayar, business modul, silme/RESTRICT/SET NULL) — 29/29; asama18
 **K19-K23** ESIT, K24 bilgi; dalda ve uretimde beklendigi gibi (Guven).
 
-### 8b-P1 — arayuz (`31-claude-code-gorevi-8b-p1-crm.md`)
+### 8b-P1 KAPANDI (21 Ekim 2026; dal `faz8b/p1`, onizleme turu Claude) — `31-claude-code-gorevi-8b-p1-crm.md`
 
-`/ajans/musteriler` (KPI satiri, firsat panosu 5 sutun + firsat paneli `?firsat=`, kisiler tablosu + arama, teklif onerileri seridi),
-`/ajans/musteriler/[id]` kisi sayfasi (firsatlar, teklifler, aktivite), formlar, menu maddesi (crmEnabled && crm.view), rol ozetleri,
-bildirim tipi crm, teklif basliginda kisi baglantisi, `/ajans` KPI. Durum: dalda `faz8b/p1`.
+CRM arayuzu plandaki gibi: `app/lib/crm.ts` (asama/tur etiketleri, hata eslemesi, `CRM_GOREN_ROLLER`), `crm-data.ts`, `crm-actions.ts`
+(dogrudan tablo, RLS; kural kopyalamaz), `app/components/crm/*` (kisi formu/duzenleme, firsat formu, firsat panosu 5 sutun + panel
+`?firsat=` — alandan cikinca kaydet, kisi arama, oneri seridi, modul kapali), `/ajans/musteriler` (KPI: acik firsat · beklenen tutar · bu ay
+kazanilan · kisi; sekmeler Firsatlar/Kisiler; formlar `?yeni=kisi|firsat`), `/ajans/musteriler/[id]` (firsatlar, teklifler, aktivite, bilgiler,
+silme korumasi), yan menu "Musteriler" (`crmEnabled && crm.view`), rol ozetleri, bildirim etiketi FIRSAT, teklif basliginda "Kisi: … →" +
+"Kisi olarak ekle", `/ajans` "Acik firsat" KPI, org-context `crmEnabled/canViewCrm/canManageCrm`. Edge Function `send-message-notification`
+tip listesine `crm` eklendi (konu "Firsat · …") — yeniden dagitim gerekir.
+**Claude duzeltmeleri (tur sirasinda):** (1) panelde "Adim tarihi" duzenlenemiyordu (yalniz metin) — `datetime-local` alani (+03:00 cevirisi
+`yerelGirdi`), gecikmisse "Gecikti · …"; (2) `KpiKutu` uzun metin degerler ("45.000 TL") 375 px'te iki satira boluyordu — `sm` altinda `text-2xl`;
+(3) oneri seridi gecersiz e-postali teklifi listeliyor, tiklayinca "Teklifte gecerli bir e-posta yok" — sorguya `.like('client_email','%@%')`;
+(4) CRM'i goremeyen uye (izleyici) firsat sahibi secilebiliyordu — bildirimi aliyor ama baglanti 403'e dusuyordu; sahip secenegi
+`crm.view` olmayan roller icin kapali + "· CRM yetkisi yok" (mevcut sahip gorunur kalir). DB tetikleyicisine ayni kural 8b-P2'de.
+**Tur:** gmail (Sunucu Ajans) — Yeni kisi (Deneme Musteri, firma, e-posta, telefon, not) → Kisiler 1; Yeni firsat (kisi secimi, 45.000 TL,
+20 Kas, sahip Test Pro, sonraki adim + adim tarihi, etkinlik bagi) → pano "Yeni"; panelde asama → Iletisimde (sutun degisti, aktivite satiri);
+adim tarihi 28 Eki 14:30 kaydedildi; oneri "Kisi olarak ekle" → kisi olustu, teklif `buyer_contact_id` doldu, teklif basliginda "Kisi: Deneme
+Musteri →"; kisi sayfasi (firsat karti, teklif, 3 aktivite, silme korumasi "once firsatlari sil"); `/ajans` KPI 1; 375 px panel tam ekran,
+tasma 0. hotmail (izleyici) — menude Musteriler yok, `/ajans/musteriler?kurulus=…` "Bu sayfayi gormek icin yetkin yok", bildirim "Sana firsat
+atandi: Lansman sahne ekibi · FIRSAT". Firsat sil → KPI 0; iki deneme kisisi silindi (teklif `buyer_contact_id` SET NULL). Konsol 0.
+**Kucuk bulgular (8b-P2'ye):** (1) teklif secim listesinde ayni baslikli iki teklif ayirt edilemiyor (etikete tarih/durum); (2) sahip
+`crm.view` kurali DB tetikleyicisine (`fn_faz8b_lead_validate`); (3) panelde alt kosedeki asama rozeti (dialog sonu) islevsiz — kaldirilabilir;
+(4) hotmail'deki "Sana firsat atandi" bildirimi firsat silinince kaliyor (baglanti artik olmayan kayda gider) — kayit silinince bildirimi
+temizleme (genel kalem; gorev/teklif bildirimleri icin de dusunulur).
 
 ## 5. 8c — Tedarikciler + Buyer Workspace (plan; sonra)
 
