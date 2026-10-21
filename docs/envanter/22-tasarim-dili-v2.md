@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (20-21 Ekim); D2 KAPANDI (21 Ekim; profil yerlesiminin tersine cevrilmesi D2-ek'e kaldi); sirada D2-ek (profil yerlesimi), D3 (Kashe AI), D4 (vitrin). Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (20-21 Ekim); D2 ve D2-ek KAPANDI (21 Ekim); sirada D3 (Kashe AI), D4 (vitrin), sonra 8b CRM. Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -168,6 +168,27 @@ acilirken uygulanir; (3) mesajdaki tarih ISO → "14 Mayis 2027"; (4) sehir `cit
 `text-3xl` ad + etkinlik turleri, Paketler kimligin altinda; kart SAG sticky; meta satirlari kartin altinda), kart `lg` altinda da
 (alt cubukla cakismadan), ajans profili iki sutun; CTA etiketleri "Teklif al" / "Paketi dogrudan rezerve et" (bugun "Teklif Al" /
 "Rezervasyon Talebi"); kendi profiline bakanda kart altinda "Profili duzenle". Ajans dalinda tamamlanmis is sayisi okunmuyor (cip yok).
+
+### D2-ek KAPANDI (21 Ekim 2026) — profil yerlesimi; onizleme turu
+
+Dal `tasarim/d2-ek` (`28-claude-code-gorevi-d2-ek-profil-yerlesimi.md`). Yapilan: `ProfessionalProfile` ve ajans dali
+`lg:grid-cols-[minmax(0,1fr)_360px]` — SOL: medya hero (tek render) → kimlik satiri (72 px `rounded-2xl` avatar, `text-3xl` ad ✓, alt
+satir "Kategori · Sehir · ★ 5 (1 degerlendirme) · en cok 3 etkinlik turu"; puan yoksa "Yeni"; ikon seridi sagda) → guven cipleri →
+Hizmetler & Paketler → Hakkimda, moduller, deneyim, portfoy, yorumlar; SAG sticky: `FiyatTakvimKarti` (CTA'li) → meta → lojistik →
+yetenekler/etkinlik turleri → temsil eden ajans → havuz. **Baglam:** `app/p/[id]/profil-islem-baglami.tsx` (`ProfilIslemSaglayici` +
+`useProfilIslem`) — kart ile `app/p/[id]/mobil-cta-cubugu.tsx` (istemci alt cubuk) ayni Tarih/Sehir/Kisi durumunu paylasir; sunucu
+yalniz `children` gecer (fonksiyon prop yok). Ajans: `max-w-6xl`, ayni izgara, bagimsiz "Musaitlik" bolumu kalkti (takvim kartta),
+`ajansEnDusukFiyat`. Sapmalar kabul: ajans kimlik satiri eski blok; sag sutunda yetenekler/etkinlik turleri tam liste.
+**Diff incelemesinde duzeltilen (Claude):** (1) sag sutun `order-last` oldugu icin telefonda kart sayfa sonuna iniyor ve icindeki
+CTA'lar alt cubukla IKIYE KATLANIYORDU → `lg` alti kart kimligin altinda CTA'SIZ kopya, masaustu kopyasi sag sutunda (`hidden lg:block`),
+ikisi ayni baglam; (2) ajans dalinda CTA'lar ayri kutudaydi, karttaki degerler ulasmiyordu → Teklif Al / Rezervasyon kartta (on-dolu),
+Davet kartin altinda, `etkinlikId` korunur, kullanilmayan import kalkti; (3) karta `etkinlikId` gecisi; (4) ikon seridi hucreleri
+`min-w-16` (telefonda etiketler ust uste biniyordu).
+**Tur:** anonim 1280 px `/p/Test Pro2`: icerik 668 px solda, sag 360 px sticky kart ("5.000 TL'den", takvim, alanlar, Teklif Al /
+Rezervasyon Talebi), kimlik "DJ · Istanbul · ★ 5 (1 degerlendirme) · Diger, Kurumsal, Baby shower"; `/p/Sunucu Ajans` ayni izgara
+("Fiyat teklifle" + CTA'lar); 375 px `/p/Test Pro`: hero → kimlik → cipler → kart (CTA'siz, takvim kapali) → Paketler, alt cubuk, cift
+dugme yok; testguven 375 px: kartta 25 Ekim + 80 kisi → alt cubuk "Teklif Al" modalinda Tarih 2026-10-25, Sehir Istanbul, Katilimci 80
+(gonderilmedi). Konsol 0, tasma 0.
 
 ## 5. Kabul olcutleri (D1a)
 
