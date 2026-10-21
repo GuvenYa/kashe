@@ -21,7 +21,15 @@
 --   K16 bilgi: ASCII kalan eski bildirim metni (gonderdi/icin/baska) — hijyen_03 sonrasi 0 beklenir
 --   K17 bilgi: gorev sayisi (eski) ve aktivite satiri (yeni)
 --   K18 bilgi: sahibi bir kurulusun sahibi olan ama kurulussuz (organization_id NULL) etkinlik — 8a-DB/02 dolumu oncesi/sonrasi
--- Beklenen: K1-K3, K6-K15 ESIT; K4-K5, K16-K18 BILGI.
+-- Bolum C (8b CRM):
+--   K19 nesneler: contacts + crm_leads tablolari + crm_contact_suggestions gorunumu + crm_lead_stage enum 5 deger (8)
+--   K20 yetki matrisi: owner/admin/sales crm.manage, project_manager/finance crm.view, crew_coordinator/viewer crm yok (7)
+--   K21 politikalar + tetikleyiciler: contacts 4 + crm_leads 4 politika; contacts 2 + crm_leads 2 + proposals 1 tetikleyici (13)
+--   K22 tutarsizlik: firsatin kisisi/etkinligi/teklifi baska kurulusta; sahip aktif uye degil; won/lost zaman damgasi asamayla
+--       uyumsuz; teklifin buyer_contact_id kisisi satici kurulusta degil (0)
+--   K23 modul + bildirim: crm modulu KAPALI ajans (0) + notifications_type_check 'crm' + e-posta kuyrugu indeksi 'crm' (2) -> (2)
+--   K24 bilgi: kisi / firsat sayisi
+-- Beklenen: K1-K3, K6-K15, K19-K23 ESIT; K4-K5, K16-K18, K24 BILGI.
 -- =============================================================================
 
 WITH
@@ -139,13 +147,64 @@ k18 AS (
            WHERE e.organization_id IS NULL AND EXISTS (SELECT 1 FROM public.organizations o WHERE o.owner_user_id = e.owner_user_id))::bigint,
          0::bigint
 ),
+k19 AS (
+  SELECT 'K19 CRM nesneleri (8)' AS kontrol,
+         ((to_regclass('public.contacts') IS NOT NULL)::int
+          + (to_regclass('public.crm_leads') IS NOT NULL)::int
+          + (to_regclass('public.crm_contact_suggestions') IS NOT NULL)::int
+          + (SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'crm_lead_stage'))::bigint,
+         8::bigint
+),
+k20 AS (
+  SELECT 'K20 crm yetki matrisi (7)' AS kontrol,
+         (('crm.manage' = ANY (public.org_role_permissions('owner')))::int
+          + ('crm.manage' = ANY (public.org_role_permissions('admin')))::int
+          + ('crm.manage' = ANY (public.org_role_permissions('sales')))::int
+          + ('crm.view' = ANY (public.org_role_permissions('project_manager')) AND NOT 'crm.manage' = ANY (public.org_role_permissions('project_manager')))::int
+          + ('crm.view' = ANY (public.org_role_permissions('finance')) AND NOT 'crm.manage' = ANY (public.org_role_permissions('finance')))::int
+          + (NOT 'crm.view' = ANY (public.org_role_permissions('crew_coordinator')))::int
+          + (NOT 'crm.view' = ANY (public.org_role_permissions('viewer')))::int)::bigint,
+         7::bigint
+),
+k21 AS (
+  SELECT 'K21 crm politika + tetikleyici (13)' AS kontrol,
+         ((SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename IN ('contacts', 'crm_leads'))
+          + (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+              WHERE NOT t.tgisinternal AND c.relname IN ('contacts', 'crm_leads', 'proposals') AND t.tgname LIKE 'trg_faz8b_%'))::bigint,
+         13::bigint
+),
+k22 AS (
+  SELECT 'K22 crm tutarsizlik (0)' AS kontrol,
+         ((SELECT count(*) FROM public.crm_leads l JOIN public.contacts c ON c.id = l.contact_id WHERE c.organization_id <> l.organization_id)
+          + (SELECT count(*) FROM public.crm_leads l JOIN public.events e ON e.id = l.event_id WHERE e.organization_id IS DISTINCT FROM l.organization_id)
+          + (SELECT count(*) FROM public.crm_leads l JOIN public.proposals p ON p.id = l.proposal_id WHERE p.seller_organization_id <> l.organization_id)
+          + (SELECT count(*) FROM public.crm_leads l WHERE l.owner_user_id IS NOT NULL AND NOT EXISTS (
+               SELECT 1 FROM public.organization_memberships om WHERE om.organization_id = l.organization_id AND om.user_id = l.owner_user_id AND om.status = 'active'))
+          + (SELECT count(*) FROM public.crm_leads WHERE (stage = 'won') <> (won_at IS NOT NULL) OR (stage = 'lost') <> (lost_at IS NOT NULL))
+          + (SELECT count(*) FROM public.proposals p JOIN public.contacts c ON c.id = p.buyer_contact_id WHERE c.organization_id <> p.seller_organization_id))::bigint,
+         0::bigint
+),
+k23 AS (
+  SELECT 'K23 crm modul (ajans kapali 0) + bildirim tipi/indeks (2)' AS kontrol,
+         ((SELECT count(*) FROM public.organizations o WHERE o.account_type = 'agency' AND NOT public.org_module_enabled(o.id, 'crm'))
+          + (SELECT count(*) FROM pg_constraint WHERE conname = 'notifications_type_check' AND pg_get_constraintdef(oid) LIKE '%''crm''%')
+          + (SELECT count(*) FROM pg_indexes WHERE indexname = 'notifications_email_pending_idx' AND indexdef LIKE '%crm%'))::bigint,
+         2::bigint
+),
+k24 AS (
+  SELECT 'K24 kisi (eski) / firsat (yeni) sayisi (bilgi)' AS kontrol,
+         (SELECT count(*) FROM public.contacts)::bigint,
+         (SELECT count(*) FROM public.crm_leads)::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k9 UNION ALL SELECT * FROM k10
   UNION ALL SELECT * FROM k11 UNION ALL SELECT * FROM k12 UNION ALL SELECT * FROM k13 UNION ALL SELECT * FROM k14 UNION ALL SELECT * FROM k15
   UNION ALL SELECT * FROM k16 UNION ALL SELECT * FROM k17 UNION ALL SELECT * FROM k18
+  UNION ALL SELECT * FROM k19 UNION ALL SELECT * FROM k20 UNION ALL SELECT * FROM k21 UNION ALL SELECT * FROM k22 UNION ALL SELECT * FROM k23
+  UNION ALL SELECT * FROM k24
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
-       CASE WHEN kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %' OR kontrol LIKE 'K16 %' OR kontrol LIKE 'K17 %' OR kontrol LIKE 'K18 %' THEN 'BILGI'
+       CASE WHEN kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %' OR kontrol LIKE 'K16 %' OR kontrol LIKE 'K17 %' OR kontrol LIKE 'K18 %' OR kontrol LIKE 'K24 %' THEN 'BILGI'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

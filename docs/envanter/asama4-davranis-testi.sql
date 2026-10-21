@@ -122,6 +122,11 @@ BEGIN
   END IF;
   UPDATE public.profiles SET primary_category_id = NULL
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T28 CRM (firsat -> kisi; teklif bagi SET NULL)
+  IF to_regclass('public.crm_leads') IS NOT NULL THEN
+    DELETE FROM public.crm_leads WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.contacts  WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T26 gorevler/aktivite (done gorev dogrudan silinmez: once iptal)
   IF to_regclass('public.tasks') IS NOT NULL THEN
     UPDATE public.tasks SET status = 'cancelled'
@@ -3753,6 +3758,264 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (27, 'T27 hijyen_03 organizations_public', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T28) FAZ 8b CRM. ON KOSUL: 20261022120000 (faz8b 01) dalda. Test Ajans (org_a: owner 0004, sales 0001 [crm.manage],
+--      crew_coordinator 0002 [crm yok], finance 0006 [crm.view], viewer 0003), Test Kurum AS (org_k: owner 0005; crm modulu KAPALI),
+--      Test Ajans Iki (org_b: 0007) ve T21 teklifleri (Test Ajans satici; client_email dolu) verisine dayanir. Sonda kisi/firsat silinir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  finans  uuid := 'a0000000-0000-4000-8000-000000000006';
+  ajans2  uuid := 'a0000000-0000-4000-8000-000000000007';
+  org_a uuid; org_k uuid; org_b uuid;
+  ev_a uuid; ev_k uuid; tk_a uuid; tk_b uuid;
+  c_a uuid; c_b uuid; c_yab uuid;
+  l_a uuid; l_b uuid;
+  n integer; st text; ts timestamptz;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  SELECT id INTO org_b FROM public.organizations WHERE legacy_profile_id = ajans2;
+  SELECT id INTO ev_k FROM public.events WHERE organization_id = org_k LIMIT 1;
+  SELECT id INTO tk_a FROM public.proposals WHERE seller_organization_id = org_a AND client_email = 'faz1test+musteri@kashe.net' LIMIT 1;
+  SELECT id INTO tk_b FROM public.proposals WHERE seller_organization_id = org_b LIMIT 1;
+  IF org_a IS NULL OR org_k IS NULL OR org_b IS NULL OR ev_k IS NULL OR tk_a IS NULL OR tk_b IS NULL THEN
+    RAISE EXCEPTION 'on kosul: org_a=% org_k=% org_b=% ev_k=% tk_a=% tk_b=%', org_a, org_k, org_b, ev_k, tk_a, tk_b;
+  END IF;
+  IF NOT public.org_module_enabled(org_a, 'crm') THEN RAISE EXCEPTION 'on kosul: ajansta crm modulu acik olmali (dolum)'; END IF;
+  IF public.org_module_enabled(org_k, 'crm') THEN RAISE EXCEPTION 'on kosul: kurumda crm modulu kapali olmali'; END IF;
+  IF NOT ('crm.manage' = ANY (public.org_role_permissions('sales'))) THEN RAISE EXCEPTION 'on kosul: sales crm.manage'; END IF;
+  IF 'crm.view' = ANY (public.org_role_permissions('crew_coordinator')) THEN RAISE EXCEPTION 'on kosul: crew_coordinator crm.view almamali'; END IF;
+  -- temizlik (tekrar kosu)
+  DELETE FROM public.crm_leads WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.contacts  WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.activity_logs WHERE organization_id IN (org_a, org_k, org_b) AND entity_type IN ('contact', 'lead');
+  DELETE FROM public.notifications WHERE type = 'crm' AND user_id IN (musteri, pro1, pro2, ajans, kurum, finans);
+  UPDATE public.proposals SET buyer_contact_id = NULL WHERE seller_organization_id IN (org_a, org_b);
+  DELETE FROM public.events WHERE organization_id = org_a AND title = 'T28 ajans etkinligi';
+  INSERT INTO public.contacts (organization_id, full_name, email) VALUES (org_b, 'T28 yabanci kisi', 'yabanci@kashe.net') RETURNING id INTO c_yab;
+
+  -- 1) oneri gorunumu: owner, teklif musterisi icin kisi yok -> oneri satiri var
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.crm_contact_suggestions WHERE organization_id = org_a AND client_email = 'faz1test+musteri@kashe.net';
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'oneri satiri % (1)', n; END IF;
+
+  -- 2) owner: kisi A (e-posta BUYUK harf -> normalize), kisi B (firma); tekrar e-posta 23505; created_by; aktivite created 2
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.contacts (organization_id, full_name, email, phone)
+  VALUES (org_a, '  T28 Kisi A ', ' Faz1test+Musteri@kashe.net ', '0532 000 00 00') RETURNING id INTO c_a;
+  INSERT INTO public.contacts (organization_id, kind, full_name, company_name)
+  VALUES (org_a, 'company', 'T28 Firma B', 'Firma B AS') RETURNING id INTO c_b;
+  EXECUTE 'RESET ROLE';
+  SELECT email || '|' || full_name || '|' || created_by::text INTO st FROM public.contacts WHERE id = c_a;
+  IF st <> 'faz1test+musteri@kashe.net|T28 Kisi A|' || ajans::text THEN RAISE EXCEPTION 'normalizasyon/created_by: %', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.contacts (organization_id, full_name, email) VALUES (org_a, 'T28 Kopya', 'FAZ1TEST+MUSTERI@kashe.net');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'ayni e-posta ikinci kez girdi';
+  EXCEPTION WHEN unique_violation THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a AND entity_type = 'contact' AND action = 'created';
+  IF n <> 2 THEN RAISE EXCEPTION 'contact created aktivite % (2)', n; END IF;
+  -- oneri artik yok (kisi var)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.crm_contact_suggestions WHERE organization_id = org_a AND client_email = 'faz1test+musteri@kashe.net';
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'kisi acildiktan sonra oneri kaldi (%)', n; END IF;
+
+  -- 3) owner: firsat A (sahip sales=musteri -> bildirim + assigned yok (INSERT: created)); etkinlige bagla; teklife bagla -> buyer_contact_id dolar
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date)
+  VALUES (org_a, ajans, 'T28 ajans etkinligi', 'corporate', current_date + 40, current_date + 40) RETURNING id INTO ev_a;
+  INSERT INTO public.crm_leads (organization_id, contact_id, title, estimated_value, expected_date, owner_user_id, event_id)
+  VALUES (org_a, c_a, 'T28 firsat A', 120000, current_date + 30, musteri, ev_a) RETURNING id INTO l_a;
+  UPDATE public.crm_leads SET proposal_id = tk_a WHERE id = l_a;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'crm' AND body = 'Sana fırsat atandı: T28 firsat A';
+  IF n <> 1 THEN RAISE EXCEPTION 'sahip bildirimi % (1)', n; END IF;
+  SELECT buyer_contact_id::text INTO st FROM public.proposals WHERE id = tk_a;
+  IF st IS DISTINCT FROM c_a::text THEN RAISE EXCEPTION 'teklif buyer_contact_id dolmadi (%)', st; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = l_a AND entity_type = 'lead';
+  IF n <> 2 THEN RAISE EXCEPTION 'lead aktivite % (2: created, updated)', n; END IF;
+
+  -- 4) kurallar (22023): yabanci kisi, baska kurulusun etkinligi, baska kurulusun teklifi, uye olmayan sahip, kurulus degisimi,
+  --    kisi kendi kurulusuna baglanamaz, teklife yabanci kisi
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.crm_leads SET contact_id = c_yab WHERE id = l_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'yabanci kisi baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.crm_leads SET event_id = ev_k WHERE id = l_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'baska kurulusun etkinligi baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.crm_leads SET proposal_id = tk_b WHERE id = l_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'baska kurulusun teklifi baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.crm_leads SET owner_user_id = kurum WHERE id = l_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'uye olmayan sahip atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.crm_leads SET organization_id = org_b WHERE id = l_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kurulus degisti';
+  EXCEPTION WHEN invalid_parameter_value OR insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.contacts SET linked_organization_id = org_a WHERE id = c_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kisi kendi kurulusuna baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.proposals SET buyer_contact_id = c_yab WHERE id = tk_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'teklife yabanci kisi baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 5) asama: contacted -> proposal_sent -> won (won_at dolar) -> contacted (won_at bosalir) -> lost (lost_at + neden); status_changed 5
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.crm_leads SET stage = 'contacted' WHERE id = l_a;
+  UPDATE public.crm_leads SET stage = 'proposal_sent' WHERE id = l_a;
+  UPDATE public.crm_leads SET stage = 'won' WHERE id = l_a;
+  EXECUTE 'RESET ROLE';
+  SELECT won_at INTO ts FROM public.crm_leads WHERE id = l_a;
+  IF ts IS NULL THEN RAISE EXCEPTION 'won: won_at bos'; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.crm_leads SET stage = 'contacted' WHERE id = l_a;
+  UPDATE public.crm_leads SET stage = 'lost', lost_reason = 'Butce' WHERE id = l_a;
+  EXECUTE 'RESET ROLE';
+  SELECT won_at INTO ts FROM public.crm_leads WHERE id = l_a;
+  IF ts IS NOT NULL THEN RAISE EXCEPTION 'geri alinca won_at bosalmadi'; END IF;
+  SELECT lost_at INTO ts FROM public.crm_leads WHERE id = l_a;
+  IF ts IS NULL THEN RAISE EXCEPTION 'lost: lost_at bos'; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = l_a AND action = 'status_changed';
+  IF n <> 5 THEN RAISE EXCEPTION 'status_changed aktivite % (5)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = l_a AND action = 'status_changed' AND diff->>'lost_reason' = 'Butce';
+  IF n <> 1 THEN RAISE EXCEPTION 'lost_reason diff % (1)', n; END IF;
+
+  -- 6) PII diff'e yazilmaz: owner e-posta/telefon degistirir -> diff {email:true, phone:true}, deger yok
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.contacts SET email = 'yeni+t28@kashe.net', phone = '0533 111 11 11' WHERE id = c_a;
+  EXECUTE 'RESET ROLE';
+  SELECT diff::text INTO st FROM public.activity_logs WHERE entity_id = c_a AND action = 'updated' ORDER BY id DESC LIMIT 1;
+  IF st NOT LIKE '%"email": true%' OR st LIKE '%kashe.net%' OR st LIKE '%0533%' THEN RAISE EXCEPTION 'PII diff: %', st; END IF;
+
+  -- 7) sales (musteri, crm.manage): kisi B'ye firsat B acar, sahip kendisi -> kendine bildirim YOK; sahibi owner'a verir -> owner'a bildirim
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.crm_leads (organization_id, contact_id, title, owner_user_id) VALUES (org_a, c_b, 'T28 firsat B', musteri) RETURNING id INTO l_b;
+  UPDATE public.crm_leads SET owner_user_id = ajans, next_step = 'Aramak', next_step_at = now() + interval '2 days' WHERE id = l_b;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'crm' AND body LIKE '%T28 firsat B';
+  IF n <> 0 THEN RAISE EXCEPTION 'kendine atama bildirimi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = ajans AND type = 'crm' AND body = 'Sana fırsat atandı: T28 firsat B';
+  IF n <> 1 THEN RAISE EXCEPTION 'owner bildirimi % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = l_b AND action = 'assigned';
+  IF n <> 1 THEN RAISE EXCEPTION 'assigned aktivite % (1)', n; END IF;
+
+  -- 8) finance (finans, crm.view): okur (2 kisi, 2 firsat), yazamaz (0 satir); crew_coordinator (pro1) hic gormez; viewer INSERT 42501; anon 42501
+  PERFORM set_config('request.jwt.claim.sub', finans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.contacts WHERE organization_id = org_a;
+  IF n <> 2 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'finance % kisi gordu (2)', n; END IF;
+  SELECT count(*) INTO n FROM public.crm_leads WHERE organization_id = org_a;
+  IF n <> 2 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'finance % firsat gordu (2)', n; END IF;
+  UPDATE public.crm_leads SET title = 'T28 firsat B x' WHERE id = l_b;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'finance yazdi (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.contacts WHERE organization_id = org_a;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'crew_coordinator % kisi gordu (0)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.contacts (organization_id, full_name) VALUES (org_a, 'T28 viewer');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'viewer kisi acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.contacts;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon kisi okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  -- ince ayar: owner, finance'a {"crm.manage": true} verir -> finance yazar; geri alinir
+  UPDATE public.organization_memberships SET permissions = permissions || '{"crm.manage": true}'::jsonb WHERE organization_id = org_a AND user_id = finans;
+  PERFORM set_config('request.jwt.claim.sub', finans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.crm_leads SET next_step = 'Teklif hazirla' WHERE id = l_b;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  UPDATE public.organization_memberships SET permissions = permissions - 'crm.manage' WHERE organization_id = org_a AND user_id = finans;
+  IF n <> 1 THEN RAISE EXCEPTION 'ince ayar crm.manage ile finance yazamadi (%)', n; END IF;
+
+  -- 9) business: modul kapali -> 22023; org_module_set ile acilir -> kisi girer; kapatilir
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.contacts (organization_id, full_name) VALUES (org_k, 'T28 kurum kisi');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'modul kapaliyken kisi acildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_module_set(org_k, 'crm', true);
+  INSERT INTO public.contacts (organization_id, full_name) VALUES (org_k, 'T28 kurum kisi');
+  PERFORM public.org_module_set(org_k, 'crm', false);
+  EXECUTE 'RESET ROLE';
+  IF public.org_module_enabled(org_k, 'crm') THEN RAISE EXCEPTION 'modul kapanmadi'; END IF;
+
+  -- 10) silme: kisi A firsatliyken silinemez (23503 RESTRICT); firsat silinince kisi silinir; teklif bagi SET NULL
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    DELETE FROM public.contacts WHERE id = c_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'firsatli kisi silindi';
+  EXCEPTION WHEN foreign_key_violation THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.crm_leads WHERE id = l_a;
+  DELETE FROM public.contacts WHERE id = c_a;
+  EXECUTE 'RESET ROLE';
+  SELECT buyer_contact_id::text INTO st FROM public.proposals WHERE id = tk_a;
+  IF st IS NOT NULL THEN RAISE EXCEPTION 'kisi silinince teklif buyer_contact_id NULL olmadi'; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a AND entity_type IN ('contact', 'lead') AND action = 'deleted';
+  IF n <> 2 THEN RAISE EXCEPTION 'deleted aktivite % (2)', n; END IF;
+
+  -- 11) bildirim tipi + e-posta kuyrugu indeksi
+  SELECT count(*) INTO n FROM pg_indexes WHERE indexname = 'notifications_email_pending_idx' AND indexdef LIKE '%crm%';
+  IF n <> 1 THEN RAISE EXCEPTION 'e-posta kuyrugu indeksi crm icermiyor'; END IF;
+
+  -- 12) temizlik
+  DELETE FROM public.crm_leads WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.contacts  WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.events WHERE id = ev_a;
+  SELECT count(*) INTO n FROM public.contacts WHERE organization_id IN (org_a, org_k, org_b);
+  IF n <> 0 THEN RAISE EXCEPTION 'temizlik: % kisi kaldi', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (28, 'T28 FAZ 8b CRM', 'GECTI',
+    'oneri gorunumu 1 -> kisi acilinca 0; e-posta normalize + kurulus ici tekil (23505); created_by; firsat sahibe bildirim; teklif bagi buyer_contact_id dolar; yabanci kisi/etkinlik/teklif/uye olmayan sahip/kurulus degisimi/kendine baglanma/teklife yabanci kisi 22023; asama won_at/lost_at + 5 status_changed + lost_reason; PII diff yok; sales acti, kendine bildirim yok, owner''a bildirim + assigned; finance okur 2/2 yazamaz 0, crew_coordinator 0, viewer 42501, anon 42501; ince ayar crm.manage ile finance yazdi; business modul kapali 22023 -> ac/kapat; firsatli kisi 23503, silince teklif SET NULL, deleted 2; indeks crm; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (28, 'T28 FAZ 8b CRM', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
