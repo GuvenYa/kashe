@@ -394,6 +394,9 @@ export async function teklifOnerileri(
     .from('crm_contact_suggestions')
     .select('proposal_id, proposal_title, client_name, client_email, created_at')
     .eq('organization_id', orgId)
+    // `contacts.email` CHECK'i '@' ister; gecersiz e-postali teklif onerilmez
+    // (yoksa "Kisi olarak ekle" her seferinde hata verir).
+    .like('client_email', '%@%')
     .order('created_at', { ascending: false })
     .limit(50);
 

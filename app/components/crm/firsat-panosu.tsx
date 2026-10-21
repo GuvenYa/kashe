@@ -60,6 +60,18 @@ function gecikmisMi(iso: string | null): boolean {
   return !isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
+/**
+ * ISO (UTC) -> `datetime-local` girdisi, Turkiye saati (+03:00). Sunucu tarafi
+ * (`zamanCoz`) dilimsiz girdiyi +03:00 sayar; burada tersi yapilir ki alanda
+ * gorunen saat kaydedilenle ayni olsun.
+ */
+function yerelGirdi(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return new Date(d.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
 function FirsatKarti({
   firsat,
   secili,
@@ -260,6 +272,7 @@ function FirsatPaneli({
   );
   const [beklenen, setBeklenen] = useState(firsat.expectedDate ?? '');
   const [adim, setAdim] = useState(firsat.nextStep ?? '');
+  const [adimZamani, setAdimZamani] = useState(yerelGirdi(firsat.nextStepAt));
   const [neden, setNeden] = useState(firsat.lostReason ?? '');
 
 
@@ -498,6 +511,26 @@ function FirsatPaneli({
               maxLength={500}
               className={ALAN}
             />
+          </div>
+
+          <div>
+            <label className={ETIKET} htmlFor="panel-adim-zamani">
+              Adım tarihi
+            </label>
+            <input
+              id="panel-adim-zamani"
+              type="datetime-local"
+              value={adimZamani}
+              onChange={(e) => setAdimZamani(e.target.value)}
+              onBlur={() =>
+                alandanCik(adimZamani, yerelGirdi(firsat.nextStepAt), (v) => ({
+                  id: firsat.id,
+                  nextStepAt: v,
+                }))
+              }
+              disabled={!yazabilir || isPending}
+              className={ALAN}
+            />
             {firsat.nextStepAt && (
               <p
                 className={
@@ -506,6 +539,7 @@ function FirsatPaneli({
                     : 'text-[11px] text-ink-50 mt-1'
                 }
               >
+                {gecikmisMi(firsat.nextStepAt) ? 'Gecikti · ' : ''}
                 {zamanMetni(firsat.nextStepAt)}
               </p>
             )}

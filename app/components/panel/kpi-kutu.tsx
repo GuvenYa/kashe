@@ -48,7 +48,15 @@ export function KpiKutu({
       >
         {etiket}
       </p>
-      <p className="font-display text-3xl text-ink tabular-nums leading-none">
+      {/* Uzun metin degerler (ornegin "45.000 TL") 375 px'te iki kolonlu
+          satirda tasmasin diye `sm` altinda bir boy kucuk. */}
+      <p
+        className={`font-display text-ink tabular-nums ${
+          typeof deger === 'string' && deger.length > 6
+            ? 'text-2xl sm:text-3xl leading-tight'
+            : 'text-3xl leading-none'
+        }`}
+      >
         {typeof deger === 'number' ? deger.toLocaleString('tr-TR') : deger}
       </p>
       {altNot && <p className="text-[11px] text-ink-72 mt-2">{altNot}</p>}
