@@ -271,7 +271,9 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     .join(' · ');
 
   const actionBar = !isOwnProfile ? (
-    <div className="flex items-stretch rounded-xl border border-line overflow-hidden bg-card divide-x divide-line">
+    // Hucreler en az 4 rem: kimlik satirinin sag grubunda (`shrink-0`) icerik
+    // genisligine dusup etiketler ("Sikayet") ust uste biniyordu.
+    <div className="flex items-stretch rounded-xl border border-line overflow-hidden bg-card divide-x divide-line [&>*]:min-w-16">
       {canInvite && (
         <DavetButton
           professionalId={profile.id}
