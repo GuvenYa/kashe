@@ -15,6 +15,8 @@ import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { AnladimOzeti } from './anladim-ozeti';
+import { tarihMetni } from '@/app/lib/tarih';
+import { formatTLAralik } from '@/app/lib/para';
 
 export type SihirbazProfil = {
   kategoriId: number | null;
@@ -1049,12 +1051,17 @@ export function SihirbazClient({
                 {[
                   turEtiketi || 'Tür seçilmedi',
                   [sehirAdi || 'Tüm şehirler', ilce].filter(Boolean).join(' / '),
-                  [tarih || 'Tarih belirtilmedi', bitis]
+                  // Tarih ve butce ozet panelindeki (AnladimOzeti) bicimle ayni:
+                  // "12 Mart 2027", "150.000 TL" — ham ISO / sayi yazilmaz.
+                  [tarihMetni(tarih) ?? 'Tarih belirtilmedi', tarihMetni(bitis)]
                     .filter(Boolean)
                     .join(' → ') + (esnek ? ' (esnek)' : ''),
                   katilimci ? `${katilimci} kişi` : 'Katılımcı belirtilmedi',
                   butceMin || butceMax
-                    ? `${butceMin || '?'}–${butceMax || '?'} TL`
+                    ? formatTLAralik(
+                        butceMin ? Number(butceMin) : null,
+                        butceMax ? Number(butceMax) : null
+                      )
                     : 'Bütçe belirtilmedi',
                   MEKAN_ETIKETLERI.find((m) => m.value === mekan)?.label ??
                     'Belirtilmedi',

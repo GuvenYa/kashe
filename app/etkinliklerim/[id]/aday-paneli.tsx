@@ -738,7 +738,7 @@ export function AdayPaneli({
             <div
               role="tablist"
               aria-label="Eşleşme yolu"
-              className="shrink-0 inline-flex items-center gap-1 bg-paper-2 border border-line rounded-xl p-1 flex-wrap"
+              className="max-w-full inline-flex items-center gap-1 bg-paper-2 border border-line rounded-xl p-1 flex-wrap"
             >
               {SEGMENTLER.map((s) => {
                 const etkin = segment === s.anahtar;

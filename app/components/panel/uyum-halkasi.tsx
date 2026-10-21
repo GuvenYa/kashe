@@ -39,7 +39,7 @@ export function UyumHalkasi({
     <span
       className="relative inline-flex items-center justify-center shrink-0"
       style={{ width: boyut, height: boyut }}
-      title={`Uyum puani %${deger}`}
+      title={`Uyum puanı %${deger}`}
     >
       <svg
         width={boyut}
@@ -73,7 +73,7 @@ export function UyumHalkasi({
       >
         %{deger}
       </span>
-      <span className="sr-only">Uyum puani yuzde {deger}</span>
+      <span className="sr-only">Uyum puanı yüzde {deger}</span>
     </span>
   );
 }
