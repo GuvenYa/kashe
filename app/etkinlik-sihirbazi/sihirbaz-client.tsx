@@ -9,12 +9,12 @@ import {
   type ChangeEvent,
 } from 'react';
 import Link from 'next/link';
-import { Pencil } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { sonucEtiketi } from '@/app/lib/discover-base';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { AnladimOzeti } from './anladim-ozeti';
 
 export type SihirbazProfil = {
   kategoriId: number | null;
@@ -381,35 +381,17 @@ export function SihirbazClient({
   const sehirAdi = sehirler.find((c) => String(c.id) === sehir)?.name ?? '';
 
   /**
-   * "Brief'ten anladiklarimiz" cipleri — yalniz GOSTERILEN ADIMDAN ONCEKI ve
-   * DOLU adimlar. Mevcut turetimler kullanilir; yeni formatlayici yazilmaz.
-   * Cipe tiklamak o adima goturur: cikarim gorunur ve duzeltilebilir kalir.
+   * OZET PANELI (D3) — eski "Brief'ten anladiklarimiz" cip seridinin yerine.
+   *
+   * Gorunurluk: analiz dolu adimlari atladiysa (`atlanan`) YA DA kullanici
+   * ilk adimi gectiyse. Adim 0'da panel yok: henuz cikarilacak bir sey yok.
    */
-  const anladiklarimiz: { adim: number; etiket: string; deger: string }[] = [];
-  if (atlanan) {
-    if (adim > 1 && tur && turEtiketi) {
-      anladiklarimiz.push({ adim: 1, etiket: 'Tür', deger: turEtiketi });
-    }
-    if (adim > 2 && sehir && sehirAdi) {
-      anladiklarimiz.push({
-        adim: 2,
-        etiket: 'Şehir',
-        deger: [sehirAdi, ilce].filter(Boolean).join(' / '),
-      });
-    }
-    if (adim > 3 && (tarih || esnek) && katilimci) {
-      const parcalar = [
-        [tarih, bitis].filter(Boolean).join(' → '),
-        esnek ? '(esnek)' : '',
-        `${katilimci} kişi`,
-      ].filter(Boolean);
-      anladiklarimiz.push({
-        adim: 3,
-        etiket: 'Tarih',
-        deger: parcalar.join(' · '),
-      });
-    }
-  }
+  const ozetGorunur = atlanan || adim >= 1;
+
+  /** Ozetin "Roller" kutusu — secilen kategorilerin adlari, secim sirasinda. */
+  const secilenRolAdlari = secilenKategoriler
+    .map((id) => kategoriler.find((k) => k.id === id)?.name_tr ?? null)
+    .filter((v): v is string => !!v);
 
   const turGruplari = useMemo(() => {
     const gruplar = new Map<string, EtkinlikTuru[]>();
@@ -601,7 +583,11 @@ export function SihirbazClient({
       organizationId: kurulus || undefined,
     });
     if (res.success) {
-      router.push(`/etkinliklerim/${res.eventId}`);
+      // D3: onaydan sonra dogrudan Adaylar sekmesi; `eslestir=1` paneli
+      // ilk kosuyu kendisi baslatsin diye (sahip + onayli + kosu yok sarti).
+      router.push(
+        `/etkinliklerim/${res.eventId}?sekme=adaylar&eslestir=1`
+      );
       return;
     }
     setOnayYukleniyor(false);
@@ -645,29 +631,22 @@ export function SihirbazClient({
         </div>
       </div>
 
-      {/* BRIEF'TEN ANLADIKLARIMIZ — atlanan adimlarin degerleri gorunur ve
-          tiklanabilir kalir (yapay zeka cikarimi gizlenmez, duzeltilebilir). */}
-      {anladiklarimiz.length > 0 && (
-        <div className="mb-4 bg-paper-2 border border-line rounded-xl px-4 py-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Brief&apos;ten anladıklarımız
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {anladiklarimiz.map((c) => (
-              <button
-                key={c.adim}
-                type="button"
-                onClick={() =>
-                  guncelle({ adim: String(c.adim) }, { gecmis: 'push' })
-                }
-                className="kashe-tap inline-flex items-center gap-1.5 bg-card border border-line rounded-full px-3 py-1 text-sm text-ink hover:border-brand-ink"
-              >
-                {c.etiket}: {c.deger}
-                <Pencil size={12} className="text-ink-50" aria-hidden="true" />
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* OZET PANELI — cikarilan kisitlar; kutuya basmak ilgili adima goturur
+          (cikarim gizlenmez, duzeltilebilir kalir). */}
+      {ozetGorunur && (
+        <AnladimOzeti
+          turEtiketi={turEtiketi}
+          sehirAdi={sehirAdi}
+          ilce={ilce}
+          tarih={tarih}
+          bitis={bitis}
+          esnek={esnek}
+          katilimci={katilimci}
+          butceMin={butceMin}
+          butceMax={butceMax}
+          rolAdlari={secilenRolAdlari}
+          onAdim={(a) => guncelle({ adim: String(a) }, { gecmis: 'push' })}
+        />
       )}
 
       <div className="bg-card border border-line rounded-2xl p-6 md:p-8">

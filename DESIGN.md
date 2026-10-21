@@ -507,6 +507,59 @@ günler tıklanamaz kalır.
 
 ---
 
+### Kashe AI desenleri (D3)
+
+**Çalışma yüzeyi başlığı pembe vurgulu.** Sihirbaz ve eşleşme sonucu birer
+**çalışma yüzeyidir**: vurgulanan kelime `brand-accent`
+(`<em className="not-italic text-brand-accent">`) — "Etkinliğini **anladım**.",
+"Üç yol: **ekibini kur**, …". Vitrindeki sihirbaz h1'i (`Etkinliğini **kur**`)
+lacivert kalır; iki dil burada ayrışır. Eyebrow deseni: kısa pembe çizgi
+(`h-0.5 w-6 rounded-full bg-brand-accent`) + `font-mono` etiket.
+
+**Özet paneli** (`app/etkinlik-sihirbazi/anladim-ozeti.tsx`). Altı kutu
+`grid grid-cols-2 md:grid-cols-3 gap-3`, `KpiKutu` dili (eyebrow + değer) ama
+değer **metin boyunda** (sayı değil, "Bayi lansmanı" gibi). Eksik değer kutuyu
+silmez: kesikli kenar + soluk "— · ekle" ve tıklanınca ilgili adıma gider.
+**Eksik olanı göstermek kuralın kendisi** — yalnız dolu alanları listeleyen
+çip şeridi kullanıcıya neyi atladığını göstermiyordu.
+
+**Uyum halkası** (`app/components/panel/uyum-halkasi.tsx`). SVG halka, `r=14`,
+`stroke-dasharray` ile dolum; ortada `%<puan>`. Renk YALNIZ okunurluk için:
+`≥ 80` moss · `60-79` brand-ink · altı ink-50. **Rakam üretmez** — puan
+`match_candidates.match_score` sütunundan gelir; bileşen eşik hesaplamaz,
+ölçeklendirmez. Renkler `var(--color-*)` ile verilir (SVG `stroke` için
+Tailwind utility üretilmez).
+
+**Segment kontrol.** `role="tablist"` + `aria-selected`; kap
+`bg-paper-2 border border-line rounded-xl p-1`, etkin düğme
+`bg-card border-line-strong text-ink`, pasif `text-ink-72`. Segment **yalnız
+görünümü süzer**: yeni sorgu/koşu açmaz (`run_event_match` çağrılmaz).
+
+**`OzetSerit` `koyu` / `herGenislik`.** Varsayılan şerit `md` altında ve açık
+zeminde kalır (mevcut üç çağıran değişmez). `koyu` lacivert zemin
+(`bg-ink border-paper-14`, metin `paper` kademeleri), `herGenislik` şeridi her
+genişlikte gösterir — aday seçimi masaüstünde de **devam eden** bir karardır.
+`orta` slotu serbest alan (bütçe çubuğu); `md` altında gizlenir, şerit dar
+ekranda üç bloğu taşımaz.
+
+**Seçilebilir kart.** Kartın tamamına yayılan örtü düğmesi
+(`absolute inset-0 z-0`) + içerik `relative z-10 pointer-events-none`; kart
+içindeki bağlantı `pointer-events-auto relative z-20`. İç içe
+`<button>`/`<a>` geçersiz olurdu. Seçili kart `ring-2 ring-brand-ink`,
+`final_rank === 1` kartı `border-brand-accent/60` + "ÖNERİLEN" eyebrow.
+
+**Bütçe çubuğu.** `bg-gradient-brand`, `%100` üstünde `bg-danger`. Toplam
+YALNIZ seçili adayların **hepsinde** başlangıç fiyatı varsa gösterilir; biri
+eksikse blok hiç çizilmez — yarım toplam yanlış bir "bütçeye sığıyor"
+izlenimi verir.
+
+**Uydurma sayaç yok.** Videodaki "Taranan profil" ve "Süre" sayaçlarının DB'de
+karşılığı yok; gösterilmezler. Eşleşme kartındaki ✓ satırları da yalnız
+gerçekleşmiş işi yazar: etkinlikte tarih yoksa "müsaitlik kontrol edildi"
+satırı çizilmez (`run_event_match` o kontrolü gerçekten atlar).
+
+---
+
 ## Kasıtlı palet istisnaları
 
 Aşağıdaki dosyalar **bilerek** eski palet hex'lerini taşır. Sonraki palet

@@ -41,9 +41,12 @@ import type {
   KapsamSatiri,
   UyeKarti,
 } from './ekip-data';
+import { getWritableBusinesses } from '@/app/lib/business-write';
 import {
+  baslangicFiyati,
   gerekceEtiketleri,
   kapsamYuzdesi,
+  kisaGunEtiketi,
   uyumYuzdesi,
   type AdayKarti,
   type AdayKosu,
@@ -153,18 +156,20 @@ export default async function EtkinlikDetayPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ sekme?: string }>;
+  searchParams: Promise<{ sekme?: string; eslestir?: string }>;
 }) {
   const { id } = await params;
-  const { sekme: sekmeParam } = await searchParams;
+  const { sekme: sekmeParam, eslestir: eslestirParam } = await searchParams;
   const supabase = await createClient();
 
   const user = await getCachedUser();
   if (!user) redirect(`/giris?redirect=/etkinliklerim/${id}`);
 
+  // `role` D3 ile eklendi: ajans adayindaki "Teklif Al" dugmesi
+  // `currentUserIsProfessional` bekliyor. Yeni sorgu acilmadi.
   const { data: suspensionCheck } = await supabase
     .from('profiles')
-    .select('suspended_at')
+    .select('suspended_at, role')
     .eq('id', user.id)
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
@@ -314,7 +319,7 @@ export default async function EtkinlikDetayPage({
       const { data: sagData, error: sagHatasi } = await supabase
         .from('v_providers_public')
         .select(
-          'id, display_name, provider_slug, city_id, avatar_url, provider_type, headline'
+          'id, display_name, provider_slug, city_id, avatar_url, provider_type, headline, primary_category_id'
         )
         .in('id', saglayiciIdleri);
       if (sagHatasi) console.error('[match] saglayici bilgisi', sagHatasi);
@@ -340,6 +345,55 @@ export default async function EtkinlikDetayPage({
       }
     }
 
+    // D3 — baslangic fiyati: kesfet kartiyla AYNI kural (yayindaki,
+    // talep-uzerine olmayan hizmetlerin en dusuk `price_min`i). TEK toplu
+    // okuma; kart basina sorgu YOK.
+    type HizmetFiyati = {
+      price_min: number | string | null;
+      price_on_request: boolean | null;
+    };
+    const hizmetMap = new Map<string, HizmetFiyati[]>();
+    if (saglayiciIdleri.length > 0) {
+      const { data: hizmetData, error: hizmetHatasi } = await supabase
+        .from('services')
+        .select('profile_id, price_min, price_on_request')
+        .eq('is_active', true)
+        .in('profile_id', saglayiciIdleri);
+      if (hizmetHatasi) console.error('[match] hizmet fiyati', hizmetHatasi);
+      for (const h of (hizmetData ?? []) as unknown as ({
+        profile_id: string;
+      } & HizmetFiyati)[]) {
+        const liste = hizmetMap.get(h.profile_id) ?? [];
+        liste.push({
+          price_min: h.price_min,
+          price_on_request: h.price_on_request,
+        });
+        hizmetMap.set(h.profile_id, liste);
+      }
+    }
+
+    // Ajans kartindaki "Teklif Al" brief formunu kategori belirler.
+    const kategoriIdleri = [
+      ...new Set(
+        saglayicilar
+          .map((sg) => sg.primary_category_id)
+          .filter((v): v is number => typeof v === 'number')
+      ),
+    ];
+    const kategoriSlugMap = new Map<number, string>();
+    if (kategoriIdleri.length > 0) {
+      const { data: katData } = await supabase
+        .from('service_categories')
+        .select('id, slug')
+        .in('id', kategoriIdleri);
+      for (const k of (katData ?? []) as { id: number; slug: string }[]) {
+        kategoriSlugMap.set(k.id, k.slug);
+      }
+    }
+
+    // "14 MAYIS" — rozet etiketi SUNUCUDA bicimlenir (kart tarih hesaplamaz).
+    const gunEtiketi = kisaGunEtiketi(etkinlik.start_date);
+
     const kart = (a: AdaySatiri): AdayKarti => {
       const s = saglayiciMap.get(a.provider_id);
       return {
@@ -353,6 +407,19 @@ export default async function EtkinlikDetayPage({
         tamHizmet: a.full_service_eligible,
         gerekceler: gerekceEtiketleri(a.reason_codes),
         wasShown: a.was_shown,
+        baslangicFiyati: baslangicFiyati(hizmetMap.get(a.provider_id) ?? []),
+        avatarUrl: s?.avatar_url ?? null,
+        kategoriSlug:
+          s?.primary_category_id != null
+            ? (kategoriSlugMap.get(s.primary_category_id) ?? null)
+            : null,
+        // Rozet yalniz GERCEK sinyalden: `date_available` kodu yoksa yazilmaz
+        // (kod ancak etkinlik tarihi biliniyorsa ve aday musaitlik elemesini
+        // gectiyse uretilir — bkz. faz6_01 migration).
+        musaitlikEtiketi: (a.reason_codes ?? []).includes('date_available')
+          ? gunEtiketi
+          : null,
+        onerilen: a.final_rank === 1,
       };
     };
 
@@ -613,6 +680,31 @@ export default async function EtkinlikDetayPage({
     ekipKuruluslari.some(
       (o) => o.id === etkinlik.organization_id && o.canManageEvents
     );
+
+  // ---- D3 — Adaylar paneli baglami ----
+  //
+  // Ekip kurulacak kurulus: ONCE etkinligin kendi kurulusu (kullanici orada
+  // `crew.manage` ise), yoksa yetkili ilk kurulus. EkipPaneli'nin "ilk
+  // yetkili kurulus" varsayilani, Adaylar sekmesinde yanlis kurulusa ekip
+  // acabilirdi — etkinligin kendi kurulusu once gelir.
+  const ekipKurmaKurulusu =
+    (etkinlik.organization_id
+      ? (ekipKuruluslari.find(
+          (o) => o.id === etkinlik.organization_id && o.canManageCrew
+        )?.id ?? null)
+      : null) ??
+    (ekipKuruluslari.find((o) => o.canManageCrew)?.id ?? null);
+
+  const adayEkipYazilir = ekip
+    ? sahip || !!ekipKurulusu?.canManageCrew
+    : sahip || ekipKurmaKurulusu !== null;
+
+  // "Teklif Al" (IletisimButton) yalniz RFP yolu YOKKEN cizilir; "kimin
+  // adina" listesi de yalniz o durumda okunur (gereksiz sorgu acilmaz).
+  const adayIletisimGerekli = ajansAdaylari.length > 0 && !rfpAcilabilir;
+  const yazilabilirIsletmeler = adayIletisimGerekli
+    ? await getWritableBusinesses()
+    : [];
 
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
@@ -1004,6 +1096,31 @@ export default async function EtkinlikDetayPage({
                 oncekiKosular={oncekiKosular}
                 ajansAdaylari={ajansAdaylari}
                 rolGruplari={rolGruplari}
+                eslestirIstegi={eslestirParam === '1'}
+                kisitlar={{
+                  tarihEtiketi: etkinlik.start_date
+                    ? gunMetni(etkinlik.start_date)
+                    : null,
+                  sehirVar: etkinlik.city_id != null,
+                  butceMin: etkinlik.budget_min,
+                  butceMax: etkinlik.budget_max,
+                }}
+                mevcutEkipId={ekip?.id ?? null}
+                ekipKurulusId={ekipKurmaKurulusu}
+                ekipYazilir={adayEkipYazilir}
+                rfpYolu={
+                  rfpAcilabilir
+                    ? `/kurumsal/rfp?etkinlik=${etkinlik.id}`
+                    : null
+                }
+                teklifBaglami={{
+                  girisYapildi: true,
+                  kullaniciProfesyonel:
+                    suspensionCheck?.role === 'professional',
+                  kullaniciId: user.id,
+                  yazilabilirIsletmeler,
+                }}
+                panelKabugunda={kurulusEtkinligi}
               />
             </div>
           )}

@@ -464,13 +464,17 @@ export function ProfileCard({
           </div>
 
           {/* Hover paneli — alttan yukarı kayar (z-20: kart linkinin üstünde).
-              Dar 4-kolon kartlarda taşmasın diye kompakt boşluk/font. */}
-          <div className="absolute inset-x-0 bottom-0 z-20 bg-paper rounded-t-2xl p-3.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out shadow-[0_-10px_28px_-14px_rgba(20,61,49,0.35)]">
-            <h3 className="font-display text-base text-ink font-semibold leading-tight flex items-center gap-1.5">
+              KARTIN TAMAMINI kaplar (`inset-0`, dikey flex): 4:3 kartta (D2) panel
+              icerigi karttan uzundu, ustu kesiliyordu (Test Pro: bio + 3 etiket +
+              alinti). Simdi ad/meta ustte ve dugme altta SABIT, ortadaki bio /
+              etiket / alinti blogu kalan yere sigar; sigmayan alttan kirpilir
+              (alinti en sonda, ilk o kirpilir). Profil sayfasinda hepsi var. */}
+          <div className="absolute inset-0 z-20 flex flex-col bg-paper rounded-2xl p-3.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out shadow-[0_-10px_28px_-14px_rgba(20,61,49,0.35)]">
+            <h3 className="font-display text-base text-ink font-semibold leading-tight flex items-center gap-1.5 shrink-0">
               <span className="truncate">{displayName}</span>
               {verified && <VerifiedIcon size={14} />}
             </h3>
-            <div className="mt-1">
+            <div className="mt-1 shrink-0">
               <MetaRow
                 light={false}
                 rating={rating}
@@ -478,36 +482,38 @@ export function ProfileCard({
                 cityName={cityName}
               />
             </div>
-            {profile.bio && (
-              <p className="text-sm text-ink-72 leading-relaxed line-clamp-1 mt-1.5">
-                {profile.bio}
-              </p>
-            )}
-            {tags.length > 0 && (
-              <div className="mt-2">
-                <ServiceChips tags={tags} />
-              </div>
-            )}
-            {quoteText && (
-              <div className="mt-2 rounded-lg bg-paper-2/60 border border-line px-3 py-1.5">
-                <p className="text-xs text-ink-72 italic leading-snug line-clamp-2">
-                  “{quoteText}”{' '}
-                  <span className="not-italic font-medium text-ink">
-                    — {quote!.author}
-                  </span>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {profile.bio && (
+                <p className="text-sm text-ink-72 leading-relaxed line-clamp-1 mt-1.5">
+                  {profile.bio}
                 </p>
-              </div>
-            )}
-            {/* Teklif Al — brand-ink (mobil ile tutarlı), tam genişlik */}
+              )}
+              {tags.length > 0 && (
+                <div className="mt-2 h-6 overflow-hidden">
+                  <ServiceChips tags={tags} />
+                </div>
+              )}
+              {quoteText && (
+                <div className="mt-2 rounded-lg bg-paper-2/60 border border-line px-3 py-1.5">
+                  <p className="text-xs text-ink-72 italic leading-snug line-clamp-2">
+                    “{quoteText}”{' '}
+                    <span className="not-italic font-medium text-ink">
+                      — {quote!.author}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* Teklif Al — brand-ink (mobil ile tutarlı), tam genişlik; panelin dibinde */}
             <Link
               href={profileHref}
               prefetch={false}
-              className="mt-2.5 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+              className="mt-2 shrink-0 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
             >
               Teklif Al
             </Link>
             {havuz && (
-              <div className="mt-2">
+              <div className="mt-2 shrink-0">
                 <HavuzKisaYol
                   providerId={profile.id}
                   orgId={havuz.orgId}

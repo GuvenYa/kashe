@@ -40,6 +40,8 @@ export type AdaySaglayici = {
   avatar_url: string | null;
   provider_type: string;
   headline: string | null;
+  /** D3: ajans kartindaki "Teklif Al" brief formu icin kategori slug'i. */
+  primary_category_id: number | null;
 };
 
 /** Panelin gosterdigi kart — sunucuda kurulur (istemci birlestirme yapmaz). */
@@ -58,6 +60,23 @@ export type AdayKarti = {
   tamHizmet: boolean | null;
   gerekceler: string[];
   wasShown: boolean;
+  /**
+   * D3 — yayindaki, talep-uzerine OLMAYAN hizmetlerin en dusuk `price_min`i.
+   * Kart "... TL'den" yazar. Fiyat yoksa null ve alan BOS kalir: "fiyat
+   * gorusulur" gibi bir dolgu metni konmaz (D2 kurali).
+   */
+  baslangicFiyati: number | null;
+  /** Kompakt kartin 40 px gorseli; yoksa bas harfler cizilir. */
+  avatarUrl: string | null;
+  /** Ajans kartindaki "Teklif Al" brief formu icin (profesyonelde kullanilmaz). */
+  kategoriSlug: string | null;
+  /**
+   * `date_available` gerekcesi varsa etkinlik gununun kisa etiketi
+   * ("14 MAYIS"); yoksa null. SUNUCUDA bicimlenir — kart tarih hesaplamaz.
+   */
+  musaitlikEtiketi: string | null;
+  /** `final_rank === 1` — rolun en yuksek puanli adayi ("ONERILEN"). */
+  onerilen: boolean;
 };
 
 export type AdayRolGrubu = {
@@ -120,6 +139,38 @@ export function kosuZamani(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+/**
+ * Saglayicinin baslangic fiyati — kesfet kartiyla AYNI kural: yayindaki
+ * (`is_active`), talep-uzerine OLMAYAN hizmetlerin en dusuk `price_min`i.
+ * Hicbiri yoksa null (uydurma fiyat yok).
+ *
+ * `numeric` sutunlar PostgREST'ten METIN gelebilir; Number() ile cevrilir.
+ */
+export function baslangicFiyati(
+  hizmetler: { price_min: number | string | null; price_on_request: boolean | null }[]
+): number | null {
+  const sayilar = hizmetler
+    .filter((h) => !h.price_on_request && h.price_min !== null)
+    .map((h) => Number(h.price_min))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (sayilar.length === 0) return null;
+  return Math.min(...sayilar);
+}
+
+/** Etkinlik gunu -> "14 MAYIS" (musaitlik rozeti). Gecersiz tarihte null. */
+export function kisaGunEtiketi(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d
+    .toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      timeZone: KASHE_SAAT_DILIMI,
+    })
+    .toLocaleUpperCase('tr-TR');
 }
 
 /** KVKK itiraz notundaki adres — footer ile ayni. */
