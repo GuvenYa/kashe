@@ -466,6 +466,10 @@ export default async function EtkinlikDetayPage({
   const ekipKurulusu = ekip?.organization_id
     ? (ekipKuruluslari.find((o) => o.id === ekip.organization_id) ?? null)
     : null;
+  // Havuz / ic maliyet / teklif yazimi yalniz AJANS ekibinde: alici kurulus
+  // (business) ekip kurabilir ama ajansin ic yuzeylerini gormez (K1).
+  const ekipKurulusAjans =
+    !!ekip?.organization_id && ekipKurulusu?.accountType === 'agency';
 
   if (ekip) {
     const { data: uyeData, error: uyeHatasi } = await supabase
@@ -812,12 +816,14 @@ export default async function EtkinlikDetayPage({
         )
       : [];
 
-  // Sekmeler: Adaylar/Ekip yalniz AJANS kurulusunda (K1 — alici kurulus havuzu
-  // ve ic maliyeti gormez).
+  // Sekmeler: Adaylar/Ekip HER kurulus etkinliginde (D3 karari, Guven 21 Ekim):
+  // alici kurulus da "Uc yol"u gorur — tekil ekip kurar ya da RFP acar. K1'in
+  // ozu korunur: havuz ve ic maliyet UI'i yalniz AJANS kurulusunda (asagida
+  // `ekipKurulusAjans` kapisi).
   const sekmeler: { anahtar: string; etiket: string; sayi?: number }[] = [
     { anahtar: 'genel', etiket: 'Genel' },
   ];
-  if (ajansEtkinligi) {
+  if (kurulusEtkinligi) {
     sekmeler.push({ anahtar: 'adaylar', etiket: 'Adaylar' });
     sekmeler.push({ anahtar: 'ekip', etiket: 'Ekip' });
   }
@@ -1148,21 +1154,19 @@ export default async function EtkinlikDetayPage({
                   .map((o) => ({ id: o.id, name: o.name }))}
                 yazabilir={sahip || !!ekipKurulusu?.canManageCrew}
                 havuzdanEklenebilir={
-                  !!ekip?.organization_id &&
+                  ekipKurulusAjans &&
                   !!ekipKurulusu?.canViewTalent &&
                   !!ekipKurulusu?.talentPoolEnabled
                 }
-                maliyetGorulur={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canSeeRates
-                }
+                maliyetGorulur={ekipKurulusAjans && !!ekipKurulusu?.canSeeRates}
                 teklifYazilir={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canManageProposals
+                  ekipKurulusAjans && !!ekipKurulusu?.canManageProposals
                 }
                 mevcutTeklif={mevcutTeklif}
                 rfpAcilabilir={rfpAcilabilir}
                 etkinlikBasligi={baslik}
                 maliyetYazilir={
-                  !!ekip?.organization_id && !!ekipKurulusu?.canManageRates
+                  ekipKurulusAjans && !!ekipKurulusu?.canManageRates
                 }
               />
             </div>
@@ -1288,8 +1292,8 @@ export default async function EtkinlikDetayPage({
         </div>
 
         {sekme === 'genel' && <div>{genelBloklariJsx}</div>}
-        {sekme === 'adaylar' && ajansEtkinligi && <div>{adaylarJsx}</div>}
-        {sekme === 'ekip' && ajansEtkinligi && <div>{ekipJsx}</div>}
+        {sekme === 'adaylar' && kurulusEtkinligi && <div>{adaylarJsx}</div>}
+        {sekme === 'ekip' && kurulusEtkinligi && <div>{ekipJsx}</div>}
 
         {sekme === 'gorevler' && (
           <div>
