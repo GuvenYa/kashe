@@ -2,7 +2,7 @@
 
 **Kaynak:** `Kashe sunum video/` — `kashe_eventai_v4.mp4` (22 sn), `kashe_eventos_v1.mp4` (18 sn), `kashe_marketplace_v1.mp4` (14 sn);
 "Kashe_Ekip Tubitak basvuru" konusmasinda uretildi. 20 Ekim 2026'da kare kare incelendi (2 sn'de bir kare). `DESIGN.md` (tasarim sistemi),
-`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1 KAPANDI (20-21 Ekim); D2 ve D2-ek KAPANDI (21 Ekim); sirada D3 (Kashe AI), D4 (vitrin), sonra 8b CRM. Arayuz isleri dalda +
+`21-canli-tarama-1.md` (bulgular). **Karar (Guven, 20 Ekim):** D1 once, 8a-P1 bu kabugun icinde; D2-D4 sonra. **Durum:** D1, D2, D2-ek, D3 KAPANDI (20-21 Ekim); sirada D4 (vitrin koyu kapanis), sonra 8b CRM. Arayuz isleri dalda +
 Vercel onizlemesinde tur, sonra main.
 
 ## 1. Tespit: renk/yazi ayni, fark yerlesim ve yogunluk
@@ -189,6 +189,33 @@ Rezervasyon Talebi), kimlik "DJ · Istanbul · ★ 5 (1 degerlendirme) · Diger,
 ("Fiyat teklifle" + CTA'lar); 375 px `/p/Test Pro`: hero → kimlik → cipler → kart (CTA'siz, takvim kapali) → Paketler, alt cubuk, cift
 dugme yok; testguven 375 px: kartta 25 Ekim + 80 kisi → alt cubuk "Teklif Al" modalinda Tarih 2026-10-25, Sehir Istanbul, Katilimci 80
 (gonderilmedi). Konsol 0, tasma 0.
+
+## 7. D3 KAPANDI (21 Ekim 2026) — Kashe AI ekranlari; onizleme turu
+
+Dal `tasarim/d3` (`29-claude-code-gorevi-d3-kashe-ai.md`). Yapilan: **sihirbaz** — cip seridi yerine `AnladimOzeti`
+(`app/etkinlik-sihirbazi/anladim-ozeti.tsx`: eyebrow pembe cizgi + "KASHE AI · ETKINLIK PLANLAMA ASISTANI", "Etkinligini
+<em>anladim</em>." (h2), 6 kutu — tur · sehir · tarih (`tarihMetni`; esnek "Esnek · <ay>") · katilimci · butce (pembe, `formatTLAralik`) ·
+roller; eksik kutu kesikli kenar "— · ekle", kutu → adim); onay sonrasi `?sekme=adaylar&eslestir=1`. **Adaylar** (`aday-paneli.tsx` 306 → 905):
+otomatik ilk kosu (dort kapi: istek + sahip + onayli + kosu yok; `ref` + `history.replaceState`), "● Eslesme hazir" karti (gradyan cubuk,
+✓ satirlar YALNIZ gecerli kisitlar — tarih yoksa musaitlik satiri yok; ROL / UYGUN ADAY / AJANS; kosu surerken "Profesyoneller taraniyor"),
+"Uc yol: <em>ekibini kur</em>, isi firmaya ver ya da birlestir." + segment (`role=tablist`; tekil / ajans / hibrit — yalniz gorunumu suzer, yeni
+kosu YOK), rol sutunlari `1/2/4`, kompakt kart (40 px avatar, `UyumHalkasi` `app/components/panel/uyum-halkasi.tsx`, "… TL'den" tek toplu
+`services` okumasindan, ONERILEN pembe cerceve = `final_rank 1`, "<GUN AY> MUSAIT" yalniz `date_available` kodunda), secim kart ortusuyle
+(rol basina `ihtiyac` tavani; onerilenler acilista secili), ajans karti (kapsam, tam hizmet, halka; "Teklif talebi ac →" ya da `IletisimButton`
+`etkinlikId` ile), `OzetSerit` `koyu` + `herGenislik` + `orta` + `panelKabugunda` (`lg:left-60`): "ONERILEN EKIP · N TEKIL PROFESYONEL / N rol ·
+M secili", butce cubugu yalniz etkinlik butcesi ve TUM secililerde baslangic fiyati varsa (md alti gizli), "Ekibi olustur →" = `createCrew`
+(ad "Ekip", action varsayilani) + sirali `addCrewMemberFromCandidate` (hata olursa durur) → `?sekme=ekip`. `DESIGN.md` 9: desen 3 (sihirbaz
+calisma yuzeyi, vurgu pembe), uyum halkasi, segment, serit varyantlari. **Karar (Guven, 21 Ekim):** Adaylar + Ekip sekmeleri HER kurulus
+etkinliginde (kurumsal alici da "Uc yol"u gorur); havuz / ic maliyet / teklif yazimi yalniz AJANS ekibinde (`ekipKurulusAjans`; K1'in ozu).
+**Diff + turda duzeltilen (Claude):** kurumsal sekmeler (yukarida); kesfet hover paneli karti kaplar (D2'de 4:3 kartta tasiyordu — Guven
+bulgusu); segment telefonda `max-w-full` + sarma (sayfa 425 px'e tasiyordu); uyum halkasi sr metni Turkce; sihirbaz "Ozet" satiri bicimli.
+**Tur (testguven):** sihirbaz "Ankara'da 120 kisilik bayi lansmani, 12 Mart 2027, DJ ve fotografci, butce 150 bin" → analiz → 6 kutu dolu →
+sehir kutusu → adim 2 → Istanbul → Test Guven adina onay → `/etkinliklerim/e4c5685d…?sekme=adaylar&eslestir=1` → otomatik kosu → "Eslesme
+hazir" (4 ✓, ROL 4 · UYGUN ADAY 7 · AJANS 1) → "Uc yol", 1280 px'te 4 sutun, ONERILEN Ahmet Yilmaz %90 · 8.000 TL'den · 12 MART MUSAIT,
+serit "4 rol · 2 secili · ~10.000 TL · butce 150.000 TL (%7)" (sol 240 px hizali) → "Ekibi olustur" → Ekip sekmesi: Ahmet Yilmaz + Test Pro,
+ic maliyet / havuz / teklif yok; 375 px: tek sutun, serit butcesiz, tasma 0. Konsol 0. Test etkinligi duruyor (Guven karari).
+**Sonraya:** "Taranan profil" / "Sure" sayaclari icin `match_runs`'a sayac/sure yazimi (FAZ 6 algoritma surumuyle); Ekip kapsami yalniz
+onayli uyeleri sayiyor ("DJ 0/1" — uyeler "Onerildi"); ajans dalinda tamamlanmis is sayisi.
 
 ## 5. Kabul olcutleri (D1a)
 
