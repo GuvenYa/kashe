@@ -17,16 +17,26 @@ const ILK_GOSTERILEN = 12;
 export async function AktiviteAkisi({
   orgId,
   eventId,
+  entityIds,
+  bosMetin,
 }: {
   orgId: string;
   eventId?: string;
+  /** FAZ 8b: kisi sayfasi kendi kimliklerini verir (kisi + firsatlari). */
+  entityIds?: string[];
+  bosMetin?: string;
 }) {
-  const { satirlar } = await aktiviteGetir({ orgId, eventId, limit: 50 });
+  const { satirlar } = await aktiviteGetir({
+    orgId,
+    eventId,
+    entityIds,
+    limit: 50,
+  });
   if (satirlar.length === 0) {
     return (
       <p className="text-sm text-ink-72">
-        Henüz aktivite yok. Görev oluşturma, atama ve durum değişiklikleri burada
-        görünür.
+        {bosMetin ??
+          'Henüz aktivite yok. Görev oluşturma, atama ve durum değişiklikleri burada görünür.'}
       </p>
     );
   }

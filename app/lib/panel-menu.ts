@@ -115,6 +115,15 @@ function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
   if (org.canViewCrew) {
     maddeler.push({ href: '/ajans/ekipler', etiket: 'Ekipler', ikon: 'ekip' });
   }
+  // FAZ 8b: musteriler (CRM) — modul acik VE `crm.view`. Kurumsal grupta YOK:
+  // CRM ajansa ozel (karar, 21 Ekim); `crmEnabled` hesap turunu de kontrol eder.
+  if (org.crmEnabled && org.canViewCrm) {
+    maddeler.push({
+      href: `/ajans/musteriler?kurulus=${org.id}`,
+      etiket: 'Müşteriler',
+      ikon: 'musteri',
+    });
+  }
   // FAZ 8a: gorevler — `events.view` VE modul acik (ajansta varsayilan acik).
   if (org.tasksEnabled) {
     maddeler.push({

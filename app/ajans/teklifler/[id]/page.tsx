@@ -7,6 +7,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { TeklifEditoru } from './teklif-editoru';
+import type { KisiBagi } from './teklif-baslik';
 import type {
   KalemSatiri,
   RfpBaglami,
@@ -43,13 +44,19 @@ export default async function TeklifDetayPage({
     .from('proposals')
     .select(
       `id, title, client_name, client_email, status, current_version_id,
-       event_id, crew_id, rfp_id, seller_organization_id, created_at, updated_at`
+       event_id, crew_id, rfp_id, seller_organization_id, buyer_contact_id,
+       created_at, updated_at,
+       contacts(full_name)`
     )
     .eq('id', id)
     .maybeSingle();
 
   if (!teklifData) notFound();
   const teklif = teklifData as unknown as TeklifSatiri;
+  // Embed yalniz ad icin okundu; `TeklifSatiri` tipine girmiyor.
+  const kisiAdi =
+    (teklifData as unknown as { contacts: { full_name: string } | null })
+      .contacts?.full_name ?? null;
 
   const { orgs } = await getCrewContext();
   const kurulus =
@@ -182,6 +189,26 @@ export default async function TeklifDetayPage({
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
+  /**
+   * FAZ 8b — alici satirindaki CRM kisi bagi.
+   *
+   * RFP YANITINDA GOSTERILMEZ: orada alici bir KURULUSTUR (adi talepten
+   * gelir), CRM kisisi degil; "kisi olarak ekle" orada anlamsiz olurdu.
+   * Modul kapali ya da `crm.view` yoksa da hic cizilmez.
+   */
+  const kisiBagi: KisiBagi =
+    teklif.rfp_id || !kurulus?.crmEnabled || !kurulus?.canViewCrm
+      ? null
+      : teklif.buyer_contact_id
+        ? {
+            tur: 'bagli',
+            kisiId: teklif.buyer_contact_id,
+            ad: kisiAdi ?? 'Kişi',
+          }
+        : teklif.client_email && kurulus.canManageCrm
+          ? { tur: 'eklenebilir', organizationId: kurulus.id }
+          : null;
+
   const kabuk = await panelKabukProps(kurulus?.id);
 
   return (
@@ -207,6 +234,7 @@ export default async function TeklifDetayPage({
               rfpBaglami={rfpBaglami}
               etkinlikOzeti={etkinlikOzeti}
               kurulusAdi={kurulus?.name ?? null}
+              kisiBagi={kisiBagi}
               rezervasyon={rezervasyon}
               silinebilir={
                 !!kurulus?.canManageProposals &&

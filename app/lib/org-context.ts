@@ -147,6 +147,12 @@ export type CrewOrg = {
   tasksEnabled: boolean;
   /** FAZ 8a: `settings.manage` — modul ac/kapat, ayarlar sayfasi. */
   canManageSettings: boolean;
+  /** FAZ 8b: `crm` modulu acik mi (yalniz ajansta varsayilan acik). */
+  crmEnabled: boolean;
+  /** FAZ 8b: `crm.view` — kisi ve firsatlari gorur. */
+  canViewCrm: boolean;
+  /** FAZ 8b: `crm.manage` — kisi/firsat acar, duzenler, siler. */
+  canManageCrm: boolean;
   /**
    * FAZ 8a / D1b notu 2: kurulusun saglayici kaydi (`organizations.legacy_profile_id`).
    *
@@ -186,7 +192,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   }
 
   const orgs: CrewOrg[] = [];
-  // Kurulus sayisi kucuk (bugun 1); on bir yetki + iki modul RPC'si kurulus basina.
+  // Kurulus sayisi kucuk (bugun 1); on uc yetki + uc modul RPC'si kurulus basina.
   for (const uyelik of (data ?? []) as unknown as UyelikSatiri[]) {
     const org = uyelik.organizations;
     if (!org) continue;
@@ -205,6 +211,9 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       finansGorebilir,
       ayarYonetir,
       gorevModulu,
+      crmModulu,
+      crmGorebilir,
+      crmYonetir,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -259,6 +268,18 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
           p_org_id: org.id,
           p_module_key: 'tasks',
         }),
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'crm',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'crm.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'crm.manage',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -289,6 +310,13 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       role: uyelik.role,
       tasksEnabled: gorevModulu.data === true,
       canManageSettings: ayarYonetir.data === true,
+      // FAZ 8b: CRM AJANSA OZEL (karar, 21 Ekim). Modul business'ta kapali
+      // dogsa da sahip teorik olarak acabilir; yuzeyi hesap turuyle de
+      // kesiyoruz ki kurumsal menude "Musteriler" hic cikmasin.
+      crmEnabled:
+        crmModulu.data === true && org.account_type === 'agency',
+      canViewCrm: crmGorebilir.data === true,
+      canManageCrm: crmYonetir.data === true,
       legacyProfileId: org.legacy_profile_id ?? null,
     });
   }

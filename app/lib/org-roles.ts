@@ -39,24 +39,24 @@ export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
 };
 
 export const ORG_ROLE_SUMMARIES: Record<OrgRole, string> = {
-  // 15 izin: tum yetkiler + billing.manage
+  // 17 izin: tum yetkiler + billing.manage + crm.view/manage
   owner:
-    'Her şeyi yönetir: etkinlik, ekip, havuz, teklif, iç maliyet, finans, ayarlar, üyeler ve faturalama.',
-  // 14 izin: owner eksi billing.manage
+    'Her şeyi yönetir: etkinlik, ekip, havuz, teklif, müşteriler, iç maliyet, finans, ayarlar, üyeler ve faturalama.',
+  // 16 izin: owner eksi billing.manage
   admin:
-    'Faturalama dışında her şeyi yönetir: etkinlik, ekip, havuz, teklif, iç maliyet, finans, ayarlar ve üyeler.',
-  // events.view/manage, crew.view, talent.view, proposals.view/manage
+    'Faturalama dışında her şeyi yönetir: etkinlik, ekip, havuz, teklif, müşteriler, iç maliyet, finans, ayarlar ve üyeler.',
+  // events.view/manage, crew.view, talent.view, proposals.view/manage, crm.view/manage
   sales:
-    'Etkinlikleri yönetir, ekibi ve havuzu görür, teklif açar ve gönderir. İç maliyeti görmez.',
-  // events.view/manage, crew.view/manage, talent.view/manage, proposals.view
+    'Etkinlikleri yönetir, ekibi ve havuzu görür, teklif açar ve gönderir, müşteri ve fırsatları yönetir. İç maliyeti görmez.',
+  // events.view/manage, crew.view/manage, talent.view/manage, proposals.view, crm.view
   project_manager:
-    'Etkinlikleri ve ekibi yönetir, havuzu düzenler, teklifleri görür. İç maliyeti görmez.',
+    'Etkinlikleri ve ekibi yönetir, havuzu düzenler, teklifleri ve müşterileri görür. İç maliyeti görmez.',
   // events.view, crew.view/manage, talent.view/manage
   crew_coordinator:
-    'Etkinlikleri görür; ekibi ve havuzu yönetir. Teklif ve iç maliyet yetkisi yoktur.',
-  // events.view, crew.view, talent.view, commercial.view/manage, proposals.view, finance.view/manage
+    'Etkinlikleri görür; ekibi ve havuzu yönetir. Teklif, müşteri ve iç maliyet yetkisi yoktur.',
+  // events.view, crew.view, talent.view, commercial.view/manage, proposals.view, finance.view/manage, crm.view
   finance:
-    'Etkinlik, ekip ve havuzu görür; teklifleri görür; iç maliyet ve finansı yönetir.',
+    'Etkinlik, ekip ve havuzu görür; teklifleri ve müşterileri görür; iç maliyet ve finansı yönetir.',
   // events.view, crew.view
   viewer: 'Yalnız görür: etkinlikler ve ekip.',
 };

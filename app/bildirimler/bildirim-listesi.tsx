@@ -68,6 +68,9 @@ const TYPE_LABELS: Record<string, string> = {
   proposal: 'Teklif',
   // FAZ 8a
   task: 'Görev',
+  // FAZ 8b — firsat sahibine atama ("Sana firsat atandi: ...");
+  // baglanti /ajans/musteriler?firsat=<id> paneli acar.
+  crm: 'Fırsat',
 };
 
 /**

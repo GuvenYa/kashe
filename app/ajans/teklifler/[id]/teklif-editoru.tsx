@@ -38,7 +38,7 @@ import {
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { OzetSerit } from '@/app/components/panel';
 import { TeklifBelgesi } from '@/app/components/teklif/teklif-belgesi';
-import { TeklifBaslik } from './teklif-baslik';
+import { TeklifBaslik, type KisiBagi } from './teklif-baslik';
 import {
   TeklifKalemTablosu,
   type IcMaliyetYazma,
@@ -90,6 +90,7 @@ export function TeklifEditoru({
   rfpBaglami,
   etkinlikOzeti,
   kurulusAdi,
+  kisiBagi,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -124,6 +125,8 @@ export function TeklifEditoru({
    * "Kashe kurulusu" yazmasin diye prop olarak gelir.
    */
   kurulusAdi: string | null;
+  /** FAZ 8b: alici satirindaki CRM kisi bagi (RFP yanitinda null). */
+  kisiBagi: KisiBagi;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -480,6 +483,7 @@ export function TeklifEditoru({
         rfpBaglami={rfpBaglami}
         rezervasyon={rezervasyon}
         canManage={canManage}
+        kisiBagi={kisiBagi}
         baslik={baslik}
         setBaslik={setBaslik}
         basligiKaydet={basligiKaydet}

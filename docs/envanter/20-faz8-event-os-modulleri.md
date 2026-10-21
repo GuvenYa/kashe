@@ -129,11 +129,34 @@ sikisip kelime kelime iniyor — rozetler altta; (3) hizli ekle "Kaydediliyor...
 "Bana atanan" karti acik gorev 0 iken gizli — bos durumla gorunsun; (7) yan menude ayni href'li maddeler (Etkinlikler) iki grupta birden
 aktif; (8) cok kurulus uyesinde alt hesap karti o anki kurulusu gosteriyor (kisi adi yok).
 
-## 4. 8b — CRM (plan; sonra)
+## 4. 8b — CRM
 
-`contacts` (person/company; kurulus bazli; e-posta/telefon kurulus ici — PII kurali: baska kurulus okuyamaz) + `crm_leads` (asama, tahmini
-deger, beklenen tarih, sahip, sonraki adim). Baglar: lead -> brief/event -> proposal (`proposals.client_name/email` ile eslesme onerisi). Ajansa
-ozel (`crm` modulu). Sayfa `/ajans/musteriler`. Detay dilim acilinca.
+**Kararlar (Guven, 21 Ekim 2026):** 5 asama (new · contacted · proposal_sent · won · lost); yeni yetki anahtarlari `crm.view` / `crm.manage`
+(sahip/yonetici/satis yazar; proje yoneticisi/finans okur; ekip koordinatoru/izleyici gormez; `permissions` jsonb ince ayari calisir); modul
+`crm` yalniz ajansta, varsayilan ACIK (business'ta kapali; sahip `org_module_set` ile acabilir ama UI yok).
+
+### 8b-DB/01 KAPANDI (21 Ekim 2026) — `20261022120000_faz8b_01_crm.sql` (dal + uretim)
+
+Nesneler: enum `crm_lead_stage`; `org_role_permissions` + crm.*; `contacts` (kind person/company, full_name 2-200, company_name,
+email (kucuk harf + kirpma, kurulus icinde tekil — `contacts_org_email_uidx`), phone, notes ≤4000, linked_user_id, linked_organization_id
+(kendi kurulusu olamaz), created_by, timestamps); `crm_leads` (contact_id RESTRICT, title 2-200, stage, estimated_value ≥0, currency TRY,
+expected_date, owner_user_id (aktif uye), next_step ≤500 + next_step_at, event_id / proposal_id (ayni kurulus / satici kurulus; SET NULL),
+lost_reason, won_at / lost_at asamayla); `proposals.buyer_contact_id` FK contacts (SET NULL) + satici kurulus kurali (`trg_faz8b_proposal_contact_validate`),
+`GRANT UPDATE (buyer_contact_id)`; firsat teklife baglaninca teklifin bos `buyer_contact_id`'si kisiyle dolar; gorunum `crm_contact_suggestions`
+(security_invoker; seller kurulusun client_email'li, kisisiz teklifleri); tetikleyiciler `fn_faz8b_contact_validate/activity`,
+`fn_faz8b_lead_validate/activity` (modul kapisi 22023 'crm modulu bu kurulusta kapali', kurulus sabit, kisi/etkinlik/teklif/sahip ayni kurulus
+22023, aktivite entity `contact`/`lead` — e-posta/telefon diff'e YAZILMAZ (yalniz `true`), sahibe atama bildirimi tip `crm` →
+`/ajans/musteriler?firsat=<id>` 'Sana fırsat atandı: …'); `activity_logs_entity_type_check` + contact/lead; `notifications_type_check` + crm;
+e-posta kuyrugu indeksi crm dahil; RLS SELECT crm.view (admin dahil), INSERT/UPDATE/DELETE crm.manage; modul dolumu + `fn_faz5_default_modules`
+(talent_pool, tasks, crm). asama4 **T28** (oneri gorunumu, normalizasyon/tekillik, bildirim, teklif bagi, 7 kural 22023, asama zaman damgalari,
+PII diff, sales/finance/crew_coordinator/viewer/anon yetkileri, ince ayar, business modul, silme/RESTRICT/SET NULL) — 29/29; asama18
+**K19-K23** ESIT, K24 bilgi; dalda ve uretimde beklendigi gibi (Guven).
+
+### 8b-P1 — arayuz (`31-claude-code-gorevi-8b-p1-crm.md`)
+
+`/ajans/musteriler` (KPI satiri, firsat panosu 5 sutun + firsat paneli `?firsat=`, kisiler tablosu + arama, teklif onerileri seridi),
+`/ajans/musteriler/[id]` kisi sayfasi (firsatlar, teklifler, aktivite), formlar, menu maddesi (crmEnabled && crm.view), rol ozetleri,
+bildirim tipi crm, teklif basliginda kisi baglantisi, `/ajans` KPI. Durum: dalda `faz8b/p1`.
 
 ## 5. 8c — Tedarikciler + Buyer Workspace (plan; sonra)
 

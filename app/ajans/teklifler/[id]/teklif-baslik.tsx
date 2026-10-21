@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { teklifMusterisiniKisiYap } from '@/app/lib/crm-actions';
 import {
   REZERVASYON_DURUM_ETIKETLERI,
   TEKLIF_DURUM_ETIKETLERI,
@@ -25,10 +28,67 @@ import {
  * callback'ler yapar; onay kapilari (gonderim ekrani, rezervasyon onayi) editorde
  * kaldi. Bu bilesen yalniz yerlesim ve sunum.
  */
+/**
+ * FAZ 8b — alici satirindaki CRM kisi bagi.
+ *
+ * `bagli`: teklif bir kisiye bagli, adi ve baglantisi yazilir.
+ * `eklenebilir`: kisi yok ama `client_email` dolu ve kullanici `crm.manage`
+ * yetkili — tek dokunusla kisi acilir (ayni action oneri seridindekiyle).
+ * `null`: RFP yaniti, modul kapali ya da yetki yok -> satir hic cizilmez.
+ */
+export type KisiBagi =
+  | { tur: 'bagli'; kisiId: string; ad: string }
+  | { tur: 'eklenebilir'; organizationId: string }
+  | null;
+
 const BTN_IKINCIL =
   'kashe-tap px-3 py-1.5 border border-line-strong text-ink rounded-lg font-display font-semibold text-xs hover:border-brand-ink hover:text-brand-ink transition-colors disabled:opacity-50';
 const ALAN =
   'px-3 py-2 bg-paper border border-line rounded-lg text-sm text-ink focus:border-brand-ink focus:outline-none';
+
+/**
+ * "Kisi olarak ekle" — oneri seridiyle AYNI action.
+ *
+ * Ayri bir bilesen, cunku kendi bekleme ve hata durumunu tasiyor; baslik
+ * bileseninin durumuna karismaz.
+ */
+function KisiOlarakEkle({
+  organizationId,
+  proposalId,
+}: {
+  organizationId: string;
+  proposalId: string;
+}) {
+  const router = useRouter();
+  const [bekliyor, basla] = useTransition();
+  const [hata, setHata] = useState<string | null>(null);
+
+  function ekle() {
+    setHata(null);
+    basla(async () => {
+      const res = await teklifMusterisiniKisiYap(organizationId, proposalId);
+      if (!res.ok) {
+        setHata(res.hata);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={ekle}
+        disabled={bekliyor}
+        className="kashe-tap text-brand-ink hover:underline disabled:opacity-50"
+      >
+        {bekliyor ? 'Ekleniyor…' : 'Kişi olarak ekle'}
+      </button>
+      {hata && <span className="text-danger"> · {hata}</span>}
+    </>
+  );
+}
 
 export function TeklifBaslik({
   teklif,
@@ -53,6 +113,7 @@ export function TeklifBaslik({
   musteriGorunumu,
   setMusteriGorunumu,
   isPending,
+  kisiBagi,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -77,6 +138,8 @@ export function TeklifBaslik({
   musteriGorunumu: boolean;
   setMusteriGorunumu: (v: boolean) => void;
   isPending: boolean;
+  /** FAZ 8b: CRM kisi bagi; null ise satir cizilmez. */
+  kisiBagi: KisiBagi;
 }) {
   // Alt satir: alici · etkinlik · son tarih — yalniz dolu parcalar.
   const aliciMetni = rfpBaglami
@@ -169,6 +232,25 @@ export function TeklifBaslik({
                 className={ALAN}
               />
             </div>
+          )}
+
+          {/* FAZ 8b — CRM kisi bagi. RFP yanitinda `kisiBagi` null gelir. */}
+          {kisiBagi && (
+            <p className="mt-3 text-sm text-ink-72">
+              {kisiBagi.tur === 'bagli' ? (
+                <>
+                  Kişi:{' '}
+                  <Link
+                    href={`/ajans/musteriler/${kisiBagi.kisiId}`}
+                    className="kashe-tap text-brand-ink hover:underline"
+                  >
+                    {kisiBagi.ad} →
+                  </Link>
+                </>
+              ) : (
+                <KisiOlarakEkle organizationId={kisiBagi.organizationId} proposalId={teklif.id} />
+              )}
+            </p>
           )}
         </div>
 

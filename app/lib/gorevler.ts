@@ -9,6 +9,9 @@
  * yeni bir KURAL yazilmaz; tetikleyici metni degisirse esleme guncellenir.
  */
 
+// FAZ 8b: firsat asamasi etiketi saf `crm.ts` modulunden (DB erisimi yok).
+import { asamaEtiketi } from '@/app/lib/crm';
+
 /** `public.task_status` enum sirasi — liste ve secim kutulari bu sirayi izler. */
 export const GOREV_DURUMLARI = [
   'todo',
@@ -117,8 +120,139 @@ export function aktiviteMetni(
   const baslik = metinOlarak(log.diff.title);
   const baslikCift = cift(log.diff.title);
 
+  // FAZ 8b — kisi (contact) cumleleri. PII diff'e YAZILMAZ: tetikleyici
+  // e-posta/telefon/not icin yalniz `true` koyuyor, deger kaydedilmiyor.
+  // Cumle de bu yuzden degeri DEGIL "guncelledi" bilgisini tasir.
+  if (log.entity_type === 'contact') {
+    const kisiAdi = metinOlarak(log.diff.full_name);
+    const adCift = cift(log.diff.full_name);
+
+    if (log.action === 'created') {
+      return kisiAdi
+        ? `${aktorAdi} '${kisiAdi}' kişisini oluşturdu`
+        : `${aktorAdi} bir kişi oluşturdu`;
+    }
+    if (log.action === 'deleted') {
+      return kisiAdi
+        ? `${aktorAdi} '${kisiAdi}' kişisini sildi`
+        : `${aktorAdi} kişiyi sildi`;
+    }
+    if (adCift) {
+      const yeni = metinOlarak(adCift.to);
+      return yeni
+        ? `${aktorAdi} kişinin adını '${yeni}' yaptı`
+        : `${aktorAdi} kişinin adını değiştirdi`;
+    }
+    const firmaCift = cift(log.diff.company_name);
+    if (firmaCift) {
+      const yeni = metinOlarak(firmaCift.to);
+      return yeni
+        ? `${aktorAdi} firmayı '${yeni}' yaptı`
+        : `${aktorAdi} firma bilgisini kaldırdı`;
+    }
+    const turCift = cift(log.diff.kind);
+    if (turCift) {
+      const yeni = metinOlarak(turCift.to);
+      return yeni === 'company'
+        ? `${aktorAdi} kaydı firma yaptı`
+        : `${aktorAdi} kaydı kişi yaptı`;
+    }
+    if (log.diff.email === true) return `${aktorAdi} e-postayı güncelledi`;
+    if (log.diff.phone === true) return `${aktorAdi} telefonu güncelledi`;
+    if (log.diff.notes === true) return `${aktorAdi} notu güncelledi`;
+    if (log.diff.linked === true) {
+      return `${aktorAdi} kişinin Kashe bağlantısını güncelledi`;
+    }
+    return `${aktorAdi} kişiyi güncelledi`;
+  }
+
+  // FAZ 8b — firsat (lead) cumleleri.
+  if (log.entity_type === 'lead') {
+    const firsatAdi = metinOlarak(log.diff.title);
+    const firsatCift = cift(log.diff.title);
+
+    if (log.action === 'created') {
+      return firsatAdi
+        ? `${aktorAdi} '${firsatAdi}' fırsatını oluşturdu`
+        : `${aktorAdi} bir fırsat oluşturdu`;
+    }
+    if (log.action === 'deleted') {
+      return firsatAdi
+        ? `${aktorAdi} '${firsatAdi}' fırsatını sildi`
+        : `${aktorAdi} fırsatı sildi`;
+    }
+    // Asama degisimi ve sahip degisimi AYNI kayitta olabilir (tetikleyici
+    // action'i status_changed yapip owner diff'ini de yaziyor); asama once
+    // anlatilir, cunku panoda gorunen sutunu o belirler.
+    const asamaCift = cift(log.diff.stage);
+    if (asamaCift) {
+      const yeni = metinOlarak(asamaCift.to);
+      const neden = metinOlarak(log.diff.lost_reason);
+      if (yeni) {
+        const temel = `${aktorAdi} fırsatın aşamasını değiştirdi → ${asamaEtiketi(yeni)}`;
+        return neden ? `${temel} (${neden})` : temel;
+      }
+      return `${aktorAdi} fırsatın aşamasını değiştirdi`;
+    }
+    const sahipCift = cift(log.diff.owner_user_id);
+    if (sahipCift) {
+      const yeni = ad(sahipCift.to);
+      // EK ALMAYAN KALIP: ok isaretiyle ad cekimi gerekmez (8a dersi).
+      if (yeni) return `${aktorAdi} fırsatın sahibini değiştirdi → ${yeni}`;
+      if (sahipCift.to == null) {
+        return `${aktorAdi} fırsatın sahibini kaldırdı`;
+      }
+      return `${aktorAdi} fırsatın sahibini değiştirdi`;
+    }
+    if (firsatCift) {
+      const yeni = metinOlarak(firsatCift.to);
+      return yeni
+        ? `${aktorAdi} fırsatın başlığını '${yeni}' yaptı`
+        : `${aktorAdi} fırsatın başlığını değiştirdi`;
+    }
+    const degerCift = cift(log.diff.estimated_value);
+    if (degerCift) {
+      // Tutar BICIMLENMEZ: para bicimi `para.ts`'in isi ve bu modul saf
+      // metin uretiyor; cumle degerin degistigini soyler, rakami kart yazar.
+      return degerCift.to == null
+        ? `${aktorAdi} tahmini değeri kaldırdı`
+        : `${aktorAdi} tahmini değeri güncelledi`;
+    }
+    const beklenenCift = cift(log.diff.expected_date);
+    if (beklenenCift) {
+      const yeni = tarihKisa(beklenenCift.to);
+      return yeni
+        ? `${aktorAdi} beklenen tarihi değiştirdi → ${yeni}`
+        : `${aktorAdi} beklenen tarihi kaldırdı`;
+    }
+    const adimCift = cift(log.diff.next_step);
+    if (adimCift) {
+      const yeni = metinOlarak(adimCift.to);
+      return yeni
+        ? `${aktorAdi} sonraki adımı '${yeni}' yaptı`
+        : `${aktorAdi} sonraki adımı kaldırdı`;
+    }
+    const teklifCift = cift(log.diff.proposal_id);
+    if (teklifCift) {
+      return teklifCift.to
+        ? `${aktorAdi} fırsatı bir teklife bağladı`
+        : `${aktorAdi} fırsatı teklifden ayırdı`;
+    }
+    const firsatEtkinlik = cift(log.diff.event_id);
+    if (firsatEtkinlik) {
+      return firsatEtkinlik.to
+        ? `${aktorAdi} fırsatı bir etkinliğe bağladı`
+        : `${aktorAdi} fırsatı etkinlikten ayırdı`;
+    }
+    const kisiDegisti = cift(log.diff.contact_id);
+    if (kisiDegisti) {
+      return `${aktorAdi} fırsatın kişisini değiştirdi`;
+    }
+    return `${aktorAdi} fırsatı güncelledi`;
+  }
+
   if (log.entity_type !== 'task') {
-    // Bugun yalniz gorev tetikleyicisi log yaziyor; diger varliklar FAZ 8b+.
+    // Gorev, kisi ve firsat disindaki varliklar icin genel cumle.
     const varlik =
       log.entity_type === 'event'
         ? 'etkinlik'

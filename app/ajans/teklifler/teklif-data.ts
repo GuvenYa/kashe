@@ -36,6 +36,8 @@ export type TeklifSatiri = {
   crew_id: string | null;
   /** FAZ 7b: RFP yaniti ise talep kimligi. */
   rfp_id: string | null;
+  /** FAZ 8b: teklifin bagli oldugu CRM kisisi (yoksa null). */
+  buyer_contact_id: string | null;
   seller_organization_id: string;
   created_at: string;
   updated_at: string;

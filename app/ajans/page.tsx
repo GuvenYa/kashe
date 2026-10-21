@@ -18,6 +18,7 @@ import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
 import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
+import { acikFirsatSayisi } from '@/app/lib/crm-data';
 import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
@@ -187,6 +188,12 @@ export default async function AjansPanelPage() {
     ? await gecikmisGorevler(kurulus.id, 5)
     : [];
 
+  // FAZ 8b — acik firsat sayisi (modul acik VE `crm.view` iken; tek `count`).
+  const acikFirsat =
+    kurulus.crmEnabled && kurulus.canViewCrm
+      ? await acikFirsatSayisi(kurulus.id)
+      : null;
+
   const acikDavetler = davetler.filter(
     (d) =>
       !!d.rfp &&
@@ -336,6 +343,19 @@ export default async function AjansPanelPage() {
                 'Modül kapalı'
               )
             }
+          />
+        )}
+
+        {/* FAZ 8b — acik firsat. Modul kapali ya da yetki yoksa kutu HIC
+            cizilmez: "Kapalı" yazmak CRM olmayan bir kurulusta kafa
+            karistirirdi (gorev modulu kurumda acilabilir, CRM ajansa ozel). */}
+        {acikFirsat !== null && (
+          <KpiKutu
+            etiket="Açık fırsat"
+            deger={acikFirsat}
+            altNot="Kapanmamış"
+            vurgu={acikFirsat > 0 ? 'accent' : 'none'}
+            href={`/ajans/musteriler?kurulus=${kurulus.id}`}
           />
         )}
       </div>

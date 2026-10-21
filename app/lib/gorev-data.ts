@@ -276,6 +276,11 @@ export type AktiviteSatiri = AktiviteKaydi & {
 export async function aktiviteGetir(opts: {
   orgId: string;
   eventId?: string;
+  /**
+   * FAZ 8b — dogrudan varlik kimligi suzgeci (kisi sayfasi: kisi + firsatlari).
+   * `eventId` ile BIRLIKTE kullanilmaz; verilirse o suzgec onceliklidir.
+   */
+  entityIds?: string[];
   limit?: number;
 }): Promise<{ satirlar: AktiviteSatiri[]; dahaVar: boolean }> {
   const supabase = await createClient();
@@ -288,7 +293,12 @@ export async function aktiviteGetir(opts: {
     .order('created_at', { ascending: false })
     .limit(limit + 1);
 
-  if (opts.eventId) {
+  if (opts.entityIds) {
+    // Bos dizi = gosterilecek kayit yok; `in()` bos listeyle her satiri
+    // getirecegi icin erken donulur.
+    if (opts.entityIds.length === 0) return { satirlar: [], dahaVar: false };
+    sorgu = sorgu.in('entity_id', opts.entityIds);
+  } else if (opts.eventId) {
     const { data: gorevler } = await supabase
       .from('tasks')
       .select('id')
@@ -372,6 +382,10 @@ export async function aktiviteAdlari(
     topla(l.diff.assignee_user_id);
     topla(l.diff.assignee_talent_record_id);
     topla(l.diff.depends_on_task_id);
+    // FAZ 8b: firsatin sahibi — cumle adi yazar, kimligi degil.
+    topla(l.diff.owner_user_id);
+    const sahip = l.diff.owner_user_id;
+    if (typeof sahip === "string" && sahip.length === 36) uuidler.add(sahip);
     const atanan = l.diff.assignee_user_id;
     if (typeof atanan === 'string' && atanan.length === 36) uuidler.add(atanan);
     const havuz = l.diff.assignee_talent_record_id;
