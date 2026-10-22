@@ -17,8 +17,11 @@ export type ModulSonucu = { ok: true; acik: boolean } | { ok: false; hata: strin
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Arayuzden acilabilen moduller — RPC ayni listeyi DB tarafinda zorluyor. */
-const ACILABILIR = ['tasks', 'crm', 'suppliers'] as const;
+/**
+ * Arayuzden acilabilen moduller — RPC (`org_module_set`) ayni listeyi DB
+ * tarafinda zorluyor. FAZ 8c: 'supplier_search' (alici kisa listesi) eklendi.
+ */
+const ACILABILIR = ['tasks', 'crm', 'suppliers', 'supplier_search'] as const;
 
 export async function modulAyarla(
   orgId: string,
@@ -46,6 +49,7 @@ export async function modulAyarla(
 
   revalidatePath('/kurumsal/ayarlar');
   revalidatePath('/kurulus/gorevler');
+  revalidatePath('/kurumsal/kisa-liste');
   revalidatePath('/kurumsal');
   revalidatePath('/ajans');
   return { ok: true, acik };
