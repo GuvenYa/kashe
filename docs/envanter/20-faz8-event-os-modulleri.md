@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); **8b-DB/01 + 8b-P1 KAPANDI (21 Ekim) — FAZ 8b KAPANDI** (§4); **8c-DB/01 KAPANDI (22 Ekim; dal + uretim)**; sirada 8c-P1 (`32-claude-code-gorevi-8c-p1-tedarikciler.md`). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); **8b-DB/01 + 8b-P1 KAPANDI (21 Ekim) — FAZ 8b KAPANDI** (§4); **8c-DB/01 + 8c-P1 KAPANDI (22 Ekim) — FAZ 8c KAPANDI; FAZ 8 EVENT OS KAPANDI** (§5, §7). Sirada FAZ 9 (zeka katmani) plani + acik kalemler (§7). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -203,16 +203,50 @@ event_id) / `shortlist` (kalem ekle/cikar `item_added` / `item_removed`; cascade
 'sahibin crm yetkisi yok'). Bildirim yok. asama4 **T29** (yerelde ve dalda 30/30 GECTI), asama18 **K25-K29** ESIT dal + uretim, K30 0/0, K31 0 (Guven).
 Not: `pg_trigger_depth()` cascade silmede 1 kalir — kalem/atama aktivitesi "ust kayit var mi" kontroluyle susturulur.
 
-### 8c-P1 — arayuz (`32-claude-code-gorevi-8c-p1-tedarikciler.md`)
+### 8c-P1 KAPANDI (22 Ekim 2026; dal `faz8c/p1`, onizleme turu Claude) — `32-claude-code-gorevi-8c-p1-tedarikciler.md`
 
-`/ajans/tedarikciler` (KPI, arama/kategori/arsiv, tablo, form, Kashe saglayici bagi), `/ajans/tedarikciler/[id]`, etkinlik sayfasinda
-"Tedarikciler" sekmesi (yalniz ajans etkinligi; hizmet/durum satir ici; tutar sutunu `canSeeRates`, giris `canManageRates` — iki RPC),
-aktivite cumleleri, `/ajans` baglanti satiri; alici: `/kurumsal/kisa-liste` (listeler + kalemler), Kesfet karti "Kisa listeye ekle",
-`/p/[id]` kisa liste, RFP davetinde "Kisa listeden sec", Ayarlar'da Kisa liste modulu. Durum: gorev yazildi, dal `faz8c/p1` bekliyor.
+Tedarikci ve kisa liste arayuzu plandaki gibi: `app/lib/tedarikci.ts` (kategori/durum etiketleri, hata eslemesi), `tedarikci-data.ts`
+(tek modul: tedarikci tablolarina erisim yalniz burada; `aktiviteGetir`/`aktiviteAdlari` buradaki yardimcilari cagirir), `tedarikci-actions.ts`
+(dogrudan tablo; tutar yalniz iki RPC, 42501 -> `null` -> sutun gizli), `app/components/tedarikci/*` (form + kap, duzenleme, filtreler,
+etkinlik tedarikcileri, kisa liste yonetimi, modul kapali, yetkin yok), `/ajans/tedarikciler` (KPI: tedarikci · kategori · aktif atama · arsiv;
+arama/kategori/arsiv URL'de; tablo + kart modu; `?yeni=tedarikci`), `/ajans/tedarikciler/[id]` (etkinlikler, aktivite, bilgiler, arsivle /
+sil korumasi), etkinlik sayfasinda **Tedarikciler** sekmesi (yalniz ajans etkinligi; hizmet/durum satir ici; tutar sutunu `canSeeRates`,
+giris `canManageRates`; toplam satiri iptal haric; "Defterde yok -> Yeni tedarikci"), aktivite cumleleri (`supplier` / `event_supplier` /
+`shortlist`), `/ajans` ozet satiri; alici: `/kurumsal/kisa-liste` (liste seridi, kalemler PRO/AJANS rozeti + sehir + not, saglayici arama),
+Kesfet karti "Kisa listeye ekle" (`kisa-liste-kisa-yol.tsx`; tek kurulus kurali; havuz oncelikli; "Genel" listesi kendiliginden), RFP
+davet kutusunda "Kisa listeden sec" (yalniz ajans kalemleri, yalniz taslak), `/kurumsal/ayarlar` "Kisa liste" modul satiri; menu
+"Tedarikciler" (ajans) / "Kisa liste" (kurumsal), rol ozetleri, org-context 4 alan. Claude Code sapmalari (7) kabul; **Claude duzeltmesi:**
+`modul-actions.ts` izin listesi `supplier_search`'u icermiyordu (Ayarlar karti "Bu modul buradan acilamaz") — eklendi.
+**Tur:** gmail (Sunucu Ajans) — menu + gosterge ozet satiri; Yeni tedarikci (ses ve isik, yetkili, telefon, e-posta, puan 4) -> defter;
+lansman etkinligi Tedarikciler sekmesi -> defterden ekle (hizmet) -> Onaylandi -> tutar 12.000 -> toplam 12.000 TL; Aktivite sekmesinde iki
+satir; tedarikci sayfasi (etkinlik karti, 3 aktivite, "1 etkinlige atanmis; silinemez — arsivle"); arsivle -> sekmede "Atanabilir tedarikci
+yok"; 375 px kart modu. hotmail (izleyici) — menude yok, sayfa "yetkin yok", etkinlikte sekme yok. testguven (kurum sahibi) — menude
+Kisa liste; Kesfet'te "Kisa listeye ekle" -> rozet "Kisa listede" + "Genel" listesi; `/kurumsal/kisa-liste` 2 kalem (arama ile Sunucu
+Ajans); RFP taslaginda "Kisa listeden sec -> Davet et" -> davetli; Ayarlar Kapat -> KAPALI + menu kalkti -> Ac. Deneme kayitlari silindi
+(atama + tutar cascade, tedarikci, kisa liste, RFP iptal). Konsol 0.
+**Acik kalemler (8c-P2 / sonraki):** (1) `/p/[id]` profilinde "Kisa listeye ekle" (ProfilIslemBaglami yerlesimi — sapma 5); (2) tedarikci
+maliyetinin teklif kalemine aktarimi (Finance/butce ile); (3) kisa liste -> RFP davetinde profesyonel kalemler (acik RFP FAZ 9); (4) Kesfet'te
+`?rol=agency` suzgeci uygulanmiyor (eski; ayri bakilacak); (5) 8b-P2 kalemleri (teklif secim etiketi, panel sonu rozeti, silinen kaydin
+bildirimi).
 
-## 6. Acik sorular (dilim acilirken)
+## 6. FAZ 8 — toplam (22 Ekim 2026)
+
+Dort dilim, dort gunde (19-22 Ekim): **8-U** uyelik rolleri (7 rol, `org_member_set_role`, ekip sayfasinda rol secimi), **8a** gorevler +
+aktivite gecmisi (+ hijyen_03 kurulus adlari, 8a-DB/02 etkinlik kurulus dolumu, D1b-1 sekmeli etkinlik sayfasi), **8b** CRM (kisiler,
+firsat panosu, teklif onerileri, bildirim), **8c** tedarikciler (defter, etkinlik atamasi, ic maliyet RPC) + alici kisa listesi (Kesfet,
+RFP daveti). Ortak desen: yazma dogrudan tabloya + kurallar tetikleyicide + `activity_logs` tetikleyiciden; ic maliyet yalniz `internal` +
+RPC; modul kapisi `org_module_enabled` + `org_module_set` (tasks/crm/suppliers/supplier_search); yetki anahtarlari `org_role_permissions`
+(19 anahtar, 7 rol). Testler: asama4 T25-T29 (30/30), asama18 K1-K31. Ayni gunlerde tasarim dili v2 (D1-D4) tum siteye uygulandi
+(`22-tasarim-dili-v2.md`). Dokunulmayan plan kalemleri: `procurement_requests` (madde 38; FAZ 9+ butce/onay ile), `run_of_show`,
+`finance`, `reporting` modulleri (Event OS ikinci halka), Buyer Workspace'in Butce/Onaylar/Sozlesmeler/Raporlama menuleri.
+
+## 7. Acik sorular ve kalemler (FAZ 9 oncesi)
 
 - Gorevlerin musaitlik/takvimle (`/takvimim`) iliskisi: 8a'da yok; "ekip uyesi basina rezervasyon" FAZ 8 gorevlendirme kalemiyle birlikte.
 - Insan onayli operasyon asistani (TUBITAK): gorev onerisi ureten yapay zeka katmani 8a'nin ustune gelir (FAZ 9 ile); 8a veri modelini
   buna gore acik tutar (`tasks.source` sutunu 8a'da YOK — gerekince eklenir; `activity_logs` zaten "kim/ne/ne zaman").
 - Eski `agency_members`/`business_members` tek tabloya inisi FAZ 10 (madde 44); 8-U bunu one almaz.
+- Kucuk kalemler (kapanis notlarindan): 8a D1b-2 listesi (bolum 3), 8b-P2 (bolum 4: teklif secim etiketi, panel sonu rozeti, silinen
+  kaydin bildirimi), 8c-P2 (bolum 5: `/p/[id]` kisa liste, maliyet -> teklif kalemi, Kesfet `?rol=` suzgeci). Tasarim dili acik kalemleri
+  `22-tasarim-dili-v2.md` (Taranan profil / Sure sayaclari, ajans kimlik satiri, anon bookings politikasi).
+- Edge Function `send-message-notification` tip listesi `['rfp','proposal','task','crm']` — 8b kapanisinda dagitildi (22 Ekim).
