@@ -153,6 +153,18 @@ export type CrewOrg = {
   canViewCrm: boolean;
   /** FAZ 8b: `crm.manage` — kisi/firsat acar, duzenler, siler. */
   canManageCrm: boolean;
+  /** FAZ 8c: `suppliers` modulu acik mi (defter AJANSA ozel). */
+  suppliersEnabled: boolean;
+  /** FAZ 8c: `suppliers.view` — tedarikci defterini gorur. */
+  canViewSuppliers: boolean;
+  /** FAZ 8c: `suppliers.manage` — tedarikci ve atama yazar. */
+  canManageSuppliers: boolean;
+  /**
+   * FAZ 8c: `supplier_search` modulu — ALICI kisa listesi.
+   * Hesap turu suzgeci YOK: business'ta varsayilan acik, ajans da
+   * `org_module_set` ile acabilir (ajans da baska ajansa is verebilir).
+   */
+  shortlistEnabled: boolean;
   /**
    * FAZ 8a / D1b notu 2: kurulusun saglayici kaydi (`organizations.legacy_profile_id`).
    *
@@ -192,7 +204,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   }
 
   const orgs: CrewOrg[] = [];
-  // Kurulus sayisi kucuk (bugun 1); on uc yetki + uc modul RPC'si kurulus basina.
+  // Kurulus sayisi kucuk (bugun 1); on bes yetki + bes modul RPC'si kurulus basina.
   for (const uyelik of (data ?? []) as unknown as UyelikSatiri[]) {
     const org = uyelik.organizations;
     if (!org) continue;
@@ -214,6 +226,10 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       crmModulu,
       crmGorebilir,
       crmYonetir,
+      tedarikciModulu,
+      tedarikciGorebilir,
+      tedarikciYonetir,
+      kisaListeModulu,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -280,6 +296,22 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
           p_org_id: org.id,
           p_permission: 'crm.manage',
         }),
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'suppliers',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'suppliers.view',
+        }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'suppliers.manage',
+        }),
+        supabase.rpc('org_module_enabled', {
+          p_org_id: org.id,
+          p_module_key: 'supplier_search',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -317,6 +349,15 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
         crmModulu.data === true && org.account_type === 'agency',
       canViewCrm: crmGorebilir.data === true,
       canManageCrm: crmYonetir.data === true,
+      // FAZ 8c: tedarikci defteri AJANSA OZEL. Modul business'ta kapali
+      // dogsa da sahip teorik olarak acabilir; yuzeyi hesap turuyle de
+      // kesiyoruz ki kurumsal menude "Tedarikciler" hic cikmasin.
+      suppliersEnabled:
+        tedarikciModulu.data === true && org.account_type === 'agency',
+      canViewSuppliers: tedarikciGorebilir.data === true,
+      canManageSuppliers: tedarikciYonetir.data === true,
+      // Kisa liste hesap turu suzmez (ajans da alici olabilir).
+      shortlistEnabled: kisaListeModulu.data === true,
       legacyProfileId: org.legacy_profile_id ?? null,
     });
   }

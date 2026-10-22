@@ -19,6 +19,7 @@ import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
 import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
 import { acikFirsatSayisi } from '@/app/lib/crm-data';
+import { tedarikciOzeti } from '@/app/lib/tedarikci-data';
 import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
@@ -192,6 +193,12 @@ export default async function AjansPanelPage() {
   const acikFirsat =
     kurulus.crmEnabled && kurulus.canViewCrm
       ? await acikFirsatSayisi(kurulus.id)
+      : null;
+
+  // FAZ 8c — tedarikci ozeti (modul acik VE `suppliers.view` iken).
+  const tedarikciOzetSatiri =
+    kurulus.suppliersEnabled && kurulus.canViewSuppliers
+      ? await tedarikciOzeti(kurulus.id)
       : null;
 
   const acikDavetler = davetler.filter(
@@ -377,6 +384,21 @@ export default async function AjansPanelPage() {
               satirlar={acikIsler}
               bosMetin="Açık iş yok. Gelen talepler ve gönderilmiş teklifler burada görünür."
             />
+            {/* FAZ 8c — tedarikci ozeti. KPI satirina kutu EKLENMEDI: satir dort
+                kutuluk bir desen (DESIGN.md bolum 9), besincisi duzeni bozardi;
+                bilgi burada tek satir olarak duruyor. */}
+            {tedarikciOzetSatiri && (
+              <p className="mt-4 pt-4 border-t border-line text-sm text-ink-72">
+                Tedarikçiler: {tedarikciOzetSatiri.aktif} kayıt ·{' '}
+                {tedarikciOzetSatiri.aktifAtama} atama{' '}
+                <Link
+                  href={`/ajans/tedarikciler?kurulus=${kurulus.id}`}
+                  className="text-brand-ink hover:underline"
+                >
+                  →
+                </Link>
+              </p>
+            )}
           </PanelKart>
 
           <PanelKart

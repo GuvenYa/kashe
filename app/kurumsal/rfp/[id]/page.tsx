@@ -6,6 +6,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
+import { kisaListedekiAjanslar } from '@/app/lib/tedarikci-data';
 import { KASHE_SAAT_DILIMI, tarihMetni } from '@/app/lib/tarih';
 import { RfpEditoru } from './rfp-editoru';
 import { TeklifKarsilastirma } from './teklif-karsilastirma';
@@ -70,6 +71,18 @@ export default async function KurumsalRfpDetayPage({
 
   const { orgs } = await getCrewContext();
   const kurulus = orgs.find((o) => o.id === rfp.organization_id) ?? null;
+
+  /**
+   * FAZ 8c — davet kutusunun "Kisa listeden sec" blogu.
+   *
+   * YALNIZ taslakta ve yazma yetkisiyle okunur (davet ancak orada eklenebilir);
+   * modul kapaliysa bos dizi gider ve blok hic cizilmez. Sorgu AJANS
+   * saglayicilarini suzer: RFP yalniz ajansa gider (FAZ 7b karari).
+   */
+  const kisaListeAjanslari =
+    rfp.status === 'draft' && kurulus?.canManageEvents && kurulus.shortlistEnabled
+      ? await kisaListedekiAjanslar(kurulus.id)
+      : [];
 
   // Taslakta rol secimi icin aktif roller.
   let roller: RolSecenegi[] = [];
@@ -227,6 +240,7 @@ export default async function KurumsalRfpDetayPage({
               roller={roller}
               canManage={!!kurulus?.canManageEvents}
               datetimeLocal={datetimeLocal(rfp.deadline)}
+              kisaListeAjanslari={kisaListeAjanslari}
             />
 
             <TeklifKarsilastirma

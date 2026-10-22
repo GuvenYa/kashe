@@ -66,6 +66,7 @@ export function RfpEditoru({
   roller,
   canManage,
   datetimeLocal,
+  kisaListeAjanslari,
 }: {
   rfp: RfpDetay;
   roller: RolSecenegi[];
@@ -73,6 +74,11 @@ export function RfpEditoru({
   canManage: boolean;
   /** Son tarihin `<input type="datetime-local">` degeri (sunucuda Istanbul'a cevrildi). */
   datetimeLocal: string;
+  /**
+   * FAZ 8c: kurulusun kisa listelerindeki AJANS saglayicilari.
+   * Sunucu TEK sorguyla doldurur; bos dizi ise blok hic cizilmez.
+   */
+  kisaListeAjanslari: { providerId: string; ad: string; listeAdi: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -633,6 +639,50 @@ export function RfpEditoru({
               </li>
             ))}
           </ul>
+        )}
+
+        {/* FAZ 8c — kisa listeden secim. Kurulusun kisa listelerindeki
+            AJANS saglayicilari; profesyonel kalemler BURADA GOSTERILMEZ
+            (RFP yalniz ajansa gider — FAZ 7b karari). Liste bossa blok
+            hic cizilmez. */}
+        {davetEklenebilir && kisaListeAjanslari.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-line">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mb-2">
+              Kısa listeden seç
+            </p>
+            <ul className="divide-y divide-line border border-line rounded-lg">
+              {kisaListeAjanslari.map((a) => {
+                const davetli = davetler.some(
+                  (d) => d.provider_id === a.providerId
+                );
+                return (
+                  <li
+                    key={a.providerId}
+                    className="flex items-center justify-between gap-3 px-3 py-2 flex-wrap"
+                  >
+                    <span className="text-sm text-ink min-w-0 break-words">
+                      {a.ad}
+                      <span className="text-ink-72"> · {a.listeAdi}</span>
+                    </span>
+                    {davetli ? (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50 shrink-0">
+                        Davetli
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => davetEt(a.providerId)}
+                        disabled={isPending}
+                        className={BTN_IKINCIL}
+                      >
+                        Davet et
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
 
         {davetEklenebilir && (

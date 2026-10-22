@@ -69,10 +69,19 @@ export default async function KurumsalAyarlarPage() {
               aciklama="Etkinliklere ve kuruluş geneline görev ekle, ekibe ata, son tarih takibi yap."
               acik={kurulus.tasksEnabled}
             />
+            {/* FAZ 8c: alici kisa listesi. Ajansta ayar yuzeyi YOK
+                (`suppliers` varsayilan acik; 8b ile ayni karar). */}
+            <ModulSatiri
+              orgId={kurulus.id}
+              modulAnahtari="supplier_search"
+              baslik="Kısa liste"
+              aciklama="Keşfet'te beğendiğin ajans ve profesyonelleri listeye al, teklif talebine oradan davet et."
+              acik={kurulus.shortlistEnabled}
+            />
           </div>
           <p className="mt-4 pt-4 border-t border-line text-[12px] text-ink-50">
-            Modül kapatıldığında mevcut görevler silinmez; yalnız yeni görev
-            eklenmesi ve görev yüzeyi kapanır.
+            Modül kapatıldığında mevcut kayıtlar silinmez; yalnız yeni kayıt
+            eklenmesi ve ilgili yüzey kapanır.
           </p>
         </PanelKart>
       </div>

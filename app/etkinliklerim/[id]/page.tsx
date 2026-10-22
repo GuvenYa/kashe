@@ -17,6 +17,13 @@ import { panelMenusu } from '@/app/lib/panel-menu';
 import { PanelKabugu } from '@/app/components/panel';
 import { GorevListesi } from '@/app/components/gorevler/gorev-listesi';
 import { GorevModuluKapali } from '@/app/components/gorevler/gorev-modul-kapali';
+import { EtkinlikTedarikcileri } from '@/app/components/tedarikci/etkinlik-tedarikcileri';
+import {
+  etkinlikTedarikcileri,
+  tedarikciSecenekleri,
+} from '@/app/lib/tedarikci-data';
+import { tedarikciMaliyetListele } from '@/app/lib/tedarikci-actions';
+import { AKTIF_DURUMLAR } from '@/app/lib/tedarikci';
 import { AktiviteAkisi } from '@/app/components/gorevler/aktivite-akisi';
 import { gorevleriGetir, atanabilirler } from '@/app/lib/gorev-data';
 import { zamanMetni } from '@/app/lib/tarih';
@@ -816,6 +823,42 @@ export default async function EtkinlikDetayPage({
         )
       : [];
 
+  /**
+   * FAZ 8c — tedarikci sekmesi.
+   *
+   * Sekme YALNIZ ajans kurulusunun etkinliginde ve modul + `suppliers.view`
+   * varken cizilir: defter ajansa ozel (business etkinliginde yok).
+   *
+   * TUTAR: `tedarikciMaliyetListele` RPC cagirir ve yetki yoksa `null`
+   * doner — sutun hic cizilmez. `internal` semasina dogrudan sorgu YOK.
+   */
+  const tedarikciSekmesi =
+    !!etkinlikKurulusu &&
+    etkinlikKurulusu.accountType === 'agency' &&
+    etkinlikKurulusu.suppliersEnabled &&
+    etkinlikKurulusu.canViewSuppliers;
+
+  const [etkinlikTedarikcileriListesi, tedarikciSecenekListesi] =
+    tedarikciSekmesi && etkinlikKurulusu
+      ? await Promise.all([
+          etkinlikTedarikcileri(etkinlikKurulusu.id, id),
+          etkinlikKurulusu.canManageSuppliers
+            ? tedarikciSecenekleri(etkinlikKurulusu.id)
+            : Promise.resolve([]),
+        ])
+      : [[], []];
+
+  // Tutarlar yalniz `commercial.view` varken istenir; aksi halde RPC hic
+  // cagrilmaz (gereksiz 42501 ve denetim kaydi olusmasin).
+  const tedarikciMaliyetleri =
+    tedarikciSekmesi && etkinlikKurulusu?.canSeeRates
+      ? await tedarikciMaliyetListele(id)
+      : null;
+
+  const aktifTedarikciAtamasi = etkinlikTedarikcileriListesi.filter((a) =>
+    AKTIF_DURUMLAR.includes(a.status)
+  ).length;
+
   // Sekmeler: Adaylar/Ekip HER kurulus etkinliginde (D3 karari, Guven 21 Ekim):
   // alici kurulus da "Uc yol"u gorur — tekil ekip kurar ya da RFP acar. K1'in
   // ozu korunur: havuz ve ic maliyet UI'i yalniz AJANS kurulusunda (asagida
@@ -826,6 +869,13 @@ export default async function EtkinlikDetayPage({
   if (kurulusEtkinligi) {
     sekmeler.push({ anahtar: 'adaylar', etiket: 'Adaylar' });
     sekmeler.push({ anahtar: 'ekip', etiket: 'Ekip' });
+  }
+  if (tedarikciSekmesi) {
+    sekmeler.push({
+      anahtar: 'tedarikciler',
+      etiket: 'Tedarikçiler',
+      sayi: aktifTedarikciAtamasi,
+    });
   }
   sekmeler.push({
     anahtar: 'gorevler',
@@ -1294,6 +1344,20 @@ export default async function EtkinlikDetayPage({
         {sekme === 'genel' && <div>{genelBloklariJsx}</div>}
         {sekme === 'adaylar' && kurulusEtkinligi && <div>{adaylarJsx}</div>}
         {sekme === 'ekip' && kurulusEtkinligi && <div>{ekipJsx}</div>}
+
+        {sekme === 'tedarikciler' && tedarikciSekmesi && etkinlikKurulusu && (
+          <div className="mt-6">
+            <EtkinlikTedarikcileri
+              organizationId={etkinlikKurulusu.id}
+              eventId={etkinlik.id}
+              atamalar={etkinlikTedarikcileriListesi}
+              secenekler={tedarikciSecenekListesi}
+              maliyetler={tedarikciMaliyetleri}
+              yazabilir={etkinlikKurulusu.canManageSuppliers}
+              maliyetYazilir={etkinlikKurulusu.canManageRates}
+            />
+          </div>
+        )}
 
         {sekme === 'gorevler' && (
           <div>

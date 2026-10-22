@@ -21,7 +21,8 @@ import {
   type TurkishCity,
 } from '@/app/lib/types';
 import { getCachedUser } from '@/app/lib/auth';
-import { getTalentPoolContext } from '@/app/lib/org-context';
+import { getTalentPoolContext, getCrewContext } from '@/app/lib/org-context';
+import { kisaListeDurumu } from '@/app/lib/tedarikci-data';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
 export const metadata = {
@@ -559,6 +560,32 @@ export default async function KesfetPage({
     }
   }
 
+  // ---- FAZ 8c — kisa liste kisa yolu (kesfet sorgusu/siralamasi DEGISMEZ) ----
+  // Ayni kural: kart bu bilgiyi yalniz TEK yonetilebilir kurulus varsa alir.
+  // Kullanicinin KENDI profili disarida; kendi kurulusunun kaydini DB de
+  // reddeder (22023), burada ayrica gosterilmez.
+  let kisaListeOrgId: string | null = null;
+  const kisaListeDurumlari: Record<string, 'listede' | 'eklenebilir'> = {};
+  if (user && profiles.length > 0) {
+    const { orgs } = await getCrewContext();
+    const yonetilen = orgs.filter(
+      (o) => o.shortlistEnabled && o.canManageEvents
+    );
+    if (yonetilen.length === 1) {
+      const orgId = yonetilen[0].id;
+      const kimlikler = profiles
+        .map((p) => p.id)
+        .filter((pid) => pid !== user.id);
+      const listedekiler = await kisaListeDurumu(orgId, kimlikler);
+      kisaListeOrgId = orgId;
+      for (const pid of kimlikler) {
+        kisaListeDurumlari[pid] = listedekiler.has(pid)
+          ? 'listede'
+          : 'eklenebilir';
+      }
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -677,6 +704,14 @@ export default async function KesfetPage({
                         etkinlikId={etkinlikIdParam}
                         isBusy={busyByProfile[profile.id] ?? false}
                         services={servicesByProfile[profile.id]}
+                        kisaListe={
+                          kisaListeOrgId && kisaListeDurumlari[profile.id]
+                            ? {
+                                orgId: kisaListeOrgId,
+                                durum: kisaListeDurumlari[profile.id],
+                              }
+                            : undefined
+                        }
                         havuz={
                           havuzOrgId && havuzDurumu[profile.id]
                             ? { orgId: havuzOrgId, durum: havuzDurumu[profile.id] }

@@ -11,6 +11,8 @@
 
 // FAZ 8b: firsat asamasi etiketi saf `crm.ts` modulunden (DB erisimi yok).
 import { asamaEtiketi } from '@/app/lib/crm';
+// FAZ 8c: tedarikci kategorisi ve atama durumu etiketleri (saf modul).
+import { durumEtiketi, kategoriEtiketi } from '@/app/lib/tedarikci';
 
 /** `public.task_status` enum sirasi — liste ve secim kutulari bu sirayi izler. */
 export const GOREV_DURUMLARI = [
@@ -251,6 +253,142 @@ export function aktiviteMetni(
     return `${aktorAdi} fırsatı güncelledi`;
   }
 
+  // FAZ 8c — tedarikci (supplier) cumleleri. PII diff'e YAZILMAZ:
+  // tetikleyici e-posta/telefon/yetkili/web/not icin yalniz `true` koyuyor.
+  if (log.entity_type === 'supplier') {
+    const tedAdi = metinOlarak(log.diff.name);
+    const adCift = cift(log.diff.name);
+
+    if (log.action === 'created') {
+      return tedAdi
+        ? `${aktorAdi} '${tedAdi}' tedarikçisini ekledi`
+        : `${aktorAdi} bir tedarikçi ekledi`;
+    }
+    if (log.action === 'deleted') {
+      return tedAdi
+        ? `${aktorAdi} '${tedAdi}' tedarikçisini sildi`
+        : `${aktorAdi} tedarikçiyi sildi`;
+    }
+    // Arsivleme ayri bir eylem gibi anlatilir: listeden dusmesinin sebebi.
+    const arsiv = cift(log.diff.is_active);
+    if (arsiv) {
+      return arsiv.to === false
+        ? `${aktorAdi} tedarikçiyi arşivledi`
+        : `${aktorAdi} tedarikçiyi arşivden çıkardı`;
+    }
+    if (adCift) {
+      const yeni = metinOlarak(adCift.to);
+      return yeni
+        ? `${aktorAdi} tedarikçinin adını '${yeni}' yaptı`
+        : `${aktorAdi} tedarikçinin adını değiştirdi`;
+    }
+    const katCift = cift(log.diff.category);
+    if (katCift) {
+      const yeni = metinOlarak(katCift.to);
+      return yeni
+        ? `${aktorAdi} kategoriyi değiştirdi → ${kategoriEtiketi(yeni)}`
+        : `${aktorAdi} kategoriyi değiştirdi`;
+    }
+    const puanCift = cift(log.diff.rating);
+    if (puanCift) {
+      const yeni = metinOlarak(puanCift.to);
+      return yeni
+        ? `${aktorAdi} puanı ${yeni} yaptı`
+        : `${aktorAdi} puanı kaldırdı`;
+    }
+    if (cift(log.diff.city_id)) return `${aktorAdi} şehri güncelledi`;
+    // Iletisim alanlarinin DEGERI loglanmiyor; cumle de yazmaz.
+    if (
+      log.diff.email === true ||
+      log.diff.phone === true ||
+      log.diff.contact_name === true ||
+      log.diff.website === true
+    ) {
+      return `${aktorAdi} iletişim bilgisini güncelledi`;
+    }
+    if (log.diff.notes === true) return `${aktorAdi} notu güncelledi`;
+    if (log.diff.linked === true) {
+      return `${aktorAdi} Kashe bağlantısını güncelledi`;
+    }
+    return `${aktorAdi} tedarikçiyi güncelledi`;
+  }
+
+  // FAZ 8c — etkinlige tedarikci atamasi (event_supplier).
+  if (log.entity_type === 'event_supplier') {
+    // Tedarikci adi diff'te KIMLIK olarak duruyor; adi `adlar` cozer.
+    const tedAdi = ad(log.diff.supplier_id) ?? ad(cift(log.diff.supplier_id)?.to);
+
+    if (log.action === 'created') {
+      return tedAdi
+        ? `${aktorAdi} etkinliğe '${tedAdi}' tedarikçisini ekledi`
+        : `${aktorAdi} etkinliğe tedarikçi ekledi`;
+    }
+    if (log.action === 'deleted') {
+      return tedAdi
+        ? `${aktorAdi} '${tedAdi}' tedarikçisini kaldırdı`
+        : `${aktorAdi} tedarikçiyi kaldırdı`;
+    }
+    const durumCift = cift(log.diff.status);
+    if (durumCift) {
+      const yeni = metinOlarak(durumCift.to);
+      return yeni
+        ? `${aktorAdi} tedarikçi durumunu değiştirdi → ${durumEtiketi(yeni)}`
+        : `${aktorAdi} tedarikçi durumunu değiştirdi`;
+    }
+    const hizmetCift = cift(log.diff.service);
+    if (hizmetCift) {
+      const yeni = metinOlarak(hizmetCift.to);
+      return yeni
+        ? `${aktorAdi} hizmeti '${yeni}' yaptı`
+        : `${aktorAdi} hizmet bilgisini kaldırdı`;
+    }
+    if (cift(log.diff.supplier_id)) {
+      return tedAdi
+        ? `${aktorAdi} atamayı '${tedAdi}' tedarikçisine taşıdı`
+        : `${aktorAdi} atamanın tedarikçisini değiştirdi`;
+    }
+    if (log.diff.notes === true) return `${aktorAdi} atama notunu güncelledi`;
+    return `${aktorAdi} tedarikçi atamasını güncelledi`;
+  }
+
+  // FAZ 8c — alici kisa listesi (shortlist). Kalem ekleme/cikarma da bu
+  // varligin altinda loglanir (entity_id = LISTE kimligi).
+  if (log.entity_type === 'shortlist') {
+    const listeAdi = metinOlarak(log.diff.name);
+    const eklenen = ad(log.diff.item_added);
+    const cikarilan = ad(log.diff.item_removed);
+
+    if (log.diff.item_added !== undefined) {
+      return eklenen
+        ? `${aktorAdi} kısa listeye '${eklenen}' ekledi`
+        : `${aktorAdi} kısa listeye sağlayıcı ekledi`;
+    }
+    if (log.diff.item_removed !== undefined) {
+      // EK ALMAYAN KALIP: "'<ad>'yi" gibi ekler ada gore degisiyor ve kod bunu
+      // bilemiyor; ok isaretiyle ek gereksiz kalir (8a dersi).
+      return cikarilan
+        ? `${aktorAdi} kısa listeden çıkardı → ${cikarilan}`
+        : `${aktorAdi} kısa listeden sağlayıcı çıkardı`;
+    }
+    if (log.action === 'created') {
+      return listeAdi
+        ? `${aktorAdi} '${listeAdi}' kısa listesini oluşturdu`
+        : `${aktorAdi} bir kısa liste oluşturdu`;
+    }
+    if (log.action === 'deleted') {
+      return listeAdi
+        ? `${aktorAdi} '${listeAdi}' kısa listesini sildi`
+        : `${aktorAdi} kısa listeyi sildi`;
+    }
+    const listeAdCift = cift(log.diff.name);
+    if (listeAdCift) {
+      const yeni = metinOlarak(listeAdCift.to);
+      return yeni
+        ? `${aktorAdi} liste adını '${yeni}' yaptı`
+        : `${aktorAdi} liste adını değiştirdi`;
+    }
+    return `${aktorAdi} kısa listeyi güncelledi`;
+  }
   if (log.entity_type !== 'task') {
     // Gorev, kisi ve firsat disindaki varliklar icin genel cumle.
     const varlik =

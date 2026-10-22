@@ -2,6 +2,12 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { ORG_ROLE_LABELS, type OrgRole } from '@/app/lib/org-roles';
 import { ACIK_DURUMLAR, type AktiviteKaydi } from '@/app/lib/gorevler';
+// FAZ 8c: tedarikci tablolarina erisim TEK modulde (defter sahibi o modul);
+// bu dosya yalniz yardimcilari cagirir, tablo adi yazmaz.
+import {
+  etkinlikAtamaKimlikleri,
+  tedarikciVeSaglayiciAdlari,
+} from '@/app/lib/tedarikci-data';
 
 /**
  * FAZ 8a — gorev okuma katmani (SUNUCU).
@@ -306,10 +312,13 @@ export async function aktiviteGetir(opts: {
       .eq('event_id', opts.eventId)
       .limit(500);
     const gorevIdleri = ((gorevler ?? []) as { id: string }[]).map((g) => g.id);
+    // FAZ 8c: o etkinligin tedarikci ATAMALARI da akisa girer (ayni kalip:
+    // once kimlik listesi, cunku log atamanin kimligini tasiyor).
+    const atamaIdleri = await etkinlikAtamaKimlikleri(opts.orgId, opts.eventId);
     // Silinen gorevin logu kalir ama `tasks` satiri gitmistir; o kayitlar bu
     // suzgece girmez (kabul: etkinlik sekmesi YASAYAN gorevlerin gecmisini
     // gosterir, kurulus genel akisi hepsini).
-    const kimlikler = [...gorevIdleri, opts.eventId];
+    const kimlikler = [...gorevIdleri, ...atamaIdleri, opts.eventId];
     sorgu = sorgu.in('entity_id', kimlikler);
   }
 
@@ -386,6 +395,16 @@ export async function aktiviteAdlari(
     topla(l.diff.owner_user_id);
     const sahip = l.diff.owner_user_id;
     if (typeof sahip === "string" && sahip.length === 36) uuidler.add(sahip);
+    // FAZ 8c: atamanin tedarikcisi ve kisa liste kalemi (saglayici).
+    topla(l.diff.supplier_id);
+    for (const anahtar of [
+      'supplier_id',
+      'item_added',
+      'item_removed',
+    ]) {
+      const v = l.diff[anahtar];
+      if (typeof v === "string" && v.length === 36) uuidler.add(v);
+    }
     const atanan = l.diff.assignee_user_id;
     if (typeof atanan === 'string' && atanan.length === 36) uuidler.add(atanan);
     const havuz = l.diff.assignee_talent_record_id;
@@ -394,10 +413,15 @@ export async function aktiviteAdlari(
   if (uuidler.size === 0) return harita;
 
   const liste = Array.from(uuidler);
-  const [profiller, havuzlar, gorevler] = await Promise.all([
+  const [profiller, havuzlar, gorevler, tedarikciAdlari] = await Promise.all([
     supabase.from('profiles').select('id, full_name').in('id', liste),
-    supabase.from('organization_talent_records').select('id, name').in('id', liste),
+    supabase
+      .from('organization_talent_records')
+      .select('id, name')
+      .in('id', liste),
     supabase.from('tasks').select('id, title').in('id', liste),
+    // FAZ 8c: tedarikci (defter) ve saglayici (kisa liste) adlari.
+    tedarikciVeSaglayiciAdlari(liste),
   ]);
 
   for (const p of (profiller.data ?? []) as {
@@ -412,6 +436,7 @@ export async function aktiviteAdlari(
   for (const g of (gorevler.data ?? []) as { id: string; title: string }[]) {
     harita.set(g.id, g.title);
   }
+  for (const [kimlik, ad] of tedarikciAdlari) harita.set(kimlik, ad);
   return harita;
 }
 

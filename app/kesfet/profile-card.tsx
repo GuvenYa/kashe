@@ -9,6 +9,7 @@ import { isVerified, isPremiumActive } from '@/app/lib/badges';
 import { formatTL } from '@/app/lib/para';
 import { CoverMedia } from './cover-media';
 import { HavuzKisaYol } from './havuz-kisa-yol';
+import { KisaListeKisaYol } from './kisa-liste-kisa-yol';
 
 type Props = {
   profile: {
@@ -63,6 +64,8 @@ type Props = {
   isBusy?: boolean;
   /** FAZ 5/P3: havuz kisa yolu. Yetki/kurulus yoksa sunucu bu prop'u HIC gondermez. */
   havuz?: { orgId: string; durum: 'havuzda' | 'eklenebilir' };
+  /** FAZ 8c: kisa liste kisa yolu. Ayni kural: yoksa prop hic gelmez. */
+  kisaListe?: { orgId: string; durum: 'listede' | 'eklenebilir' };
 };
 
 const QUOTE_MAX = 90;
@@ -220,6 +223,7 @@ export function ProfileCard({
   etkinlikId = null,
   services,
   havuz,
+  kisaListe,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
@@ -432,6 +436,18 @@ export function ProfileCard({
                 />
               </div>
             )}
+            {/* FAZ 8c: kisa liste kisa yolu. HAVUZ ONCELIKLI — ikisi yan yana
+                sigmadigi icin havuz varsa kisa liste kartta cizilmez,
+                `/p/[id]` panelinde kalir. */}
+            {!havuz && kisaListe && (
+              <div className="relative z-20">
+                <KisaListeKisaYol
+                  providerId={profile.id}
+                  orgId={kisaListe.orgId}
+                  durum={kisaListe.durum}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -518,6 +534,15 @@ export function ProfileCard({
                   providerId={profile.id}
                   orgId={havuz.orgId}
                   durum={havuz.durum}
+                />
+              </div>
+            )}
+            {!havuz && kisaListe && (
+              <div className="mt-2 shrink-0">
+                <KisaListeKisaYol
+                  providerId={profile.id}
+                  orgId={kisaListe.orgId}
+                  durum={kisaListe.durum}
                 />
               </div>
             )}

@@ -124,6 +124,15 @@ function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
       ikon: 'musteri',
     });
   }
+  // FAZ 8c: tedarikci defteri — modul acik VE `suppliers.view`. Kurumsal
+  // grupta YOK: defter ajansa ozel (`suppliersEnabled` hesap turunu de bakar).
+  if (org.suppliersEnabled && org.canViewSuppliers) {
+    maddeler.push({
+      href: `/ajans/tedarikciler?kurulus=${org.id}`,
+      etiket: 'Tedarikçiler',
+      ikon: 'tedarikci',
+    });
+  }
   // FAZ 8a: gorevler — `events.view` VE modul acik (ajansta varsayilan acik).
   if (org.tasksEnabled) {
     maddeler.push({
@@ -166,6 +175,15 @@ function kurumsalGrubu(org: CrewOrg, kendiKurumu: boolean): PanelMenuMaddesi[] {
       etiket: 'Teklif talepleri',
       ikon: 'rfp',
     });
+    // FAZ 8c: alici kisa listesi — `supplier_search` modulu + `events.view`.
+    // Ayri bir yetki anahtari YOK: kisa liste bir etkinlik hazirligi aracidir.
+    if (org.shortlistEnabled) {
+      maddeler.push({
+        href: `/kurumsal/kisa-liste?kurulus=${org.id}`,
+        etiket: 'Kısa liste',
+        ikon: 'kisaliste',
+      });
+    }
   }
   maddeler.push({
     href: '/rezervasyonlarim',
