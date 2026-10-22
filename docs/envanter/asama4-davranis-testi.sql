@@ -4368,4 +4368,74 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO t_sonuc VALUES (29, 'T29 FAZ 8c tedarikciler + kisa liste', 'HATA', SQLERRM);
 END $$;
 
+-- -----------------------------------------------------------------------------
+-- T30) Hijyen 04 bildirim temizligi. ON KOSUL: 20261024120000 (hijyen_04) dalda. Test Ajans (org_a: owner 0004, sales 0001)
+--      verisine dayanir. Firsat silinince crm bildirimi, genel gorev silinince task bildirimi silinir; etkinlige bagli gorevin
+--      bildirimi (etkinlik sekmesi baglantisi) KALIR.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; ev_a uuid; c_t uuid; l_t uuid; g_genel uuid; g_etk uuid;
+  n integer;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  IF org_a IS NULL THEN RAISE EXCEPTION 'on kosul: org_a'; END IF;
+  IF to_regprocedure('public.fn_hijyen04_lead_notif_cleanup()') IS NULL THEN RAISE EXCEPTION 'on kosul: hijyen_04 uygulanmamis'; END IF;
+  -- temizlik
+  DELETE FROM public.crm_leads WHERE organization_id = org_a AND title LIKE 'T30%';
+  DELETE FROM public.contacts  WHERE organization_id = org_a AND full_name LIKE 'T30%';
+  UPDATE public.tasks SET status = 'cancelled' WHERE organization_id = org_a AND title LIKE 'T30%' AND status NOT IN ('todo', 'cancelled');
+  DELETE FROM public.tasks WHERE organization_id = org_a AND title LIKE 'T30%';
+  DELETE FROM public.notifications WHERE user_id = musteri AND body LIKE '%T30%';
+  DELETE FROM public.events WHERE organization_id = org_a AND title = 'T30 etkinlik';
+
+  -- 1) owner: kisi + firsat (sahip sales) -> bildirim 1; firsat silinince 0
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.contacts (organization_id, full_name) VALUES (org_a, 'T30 kisi') RETURNING id INTO c_t;
+  INSERT INTO public.crm_leads (organization_id, contact_id, title, owner_user_id) VALUES (org_a, c_t, 'T30 firsat', musteri) RETURNING id INTO l_t;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'crm' AND link = '/ajans/musteriler?firsat=' || l_t::text;
+  IF n <> 1 THEN RAISE EXCEPTION 'firsat bildirimi % (1)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.crm_leads WHERE id = l_t;
+  DELETE FROM public.contacts WHERE id = c_t;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'crm' AND link = '/ajans/musteriler?firsat=' || l_t::text;
+  IF n <> 0 THEN RAISE EXCEPTION 'firsat silinince bildirim kaldi (%)', n; END IF;
+
+  -- 2) owner: genel gorev (sales'e atanir) -> bildirim 1; silinince 0. Etkinlige bagli gorev -> bildirim 1; silinince KALIR (1)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.tasks (organization_id, title, assignee_user_id) VALUES (org_a, 'T30 genel gorev', musteri) RETURNING id INTO g_genel;
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date)
+  VALUES (org_a, ajans, 'T30 etkinlik', 'corporate', current_date + 50, current_date + 50) RETURNING id INTO ev_a;
+  INSERT INTO public.tasks (organization_id, event_id, title, assignee_user_id) VALUES (org_a, ev_a, 'T30 etkinlik gorevi', musteri) RETURNING id INTO g_etk;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'task' AND link = '/kurulus/gorevler?gorev=' || g_genel::text;
+  IF n <> 1 THEN RAISE EXCEPTION 'genel gorev bildirimi % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'task' AND body = 'Sana görev atandı: T30 etkinlik gorevi';
+  IF n <> 1 THEN RAISE EXCEPTION 'etkinlik gorevi bildirimi % (1)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.tasks WHERE id = g_genel;
+  DELETE FROM public.tasks WHERE id = g_etk;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'task' AND link = '/kurulus/gorevler?gorev=' || g_genel::text;
+  IF n <> 0 THEN RAISE EXCEPTION 'genel gorev silinince bildirim kaldi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = musteri AND type = 'task' AND body = 'Sana görev atandı: T30 etkinlik gorevi';
+  IF n <> 1 THEN RAISE EXCEPTION 'etkinlik gorevi bildirimi silindi (% ; 1 kalmali)', n; END IF;
+
+  -- 3) temizlik
+  DELETE FROM public.notifications WHERE user_id = musteri AND body LIKE '%T30%';
+  DELETE FROM public.events WHERE id = ev_a;
+
+  INSERT INTO t_sonuc VALUES (30, 'T30 hijyen_04 bildirim temizligi', 'GECTI',
+    'firsat bildirimi 1 -> silinince 0; genel gorev bildirimi 1 -> silinince 0; etkinlige bagli gorev bildirimi silinince kalir (1); temizlik');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (30, 'T30 hijyen_04 bildirim temizligi', 'HATA', SQLERRM);
+END $$;
+
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

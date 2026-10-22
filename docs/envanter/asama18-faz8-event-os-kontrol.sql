@@ -41,7 +41,10 @@
 --       anon yok (4) -> (4)
 --   K30 bilgi: tedarikci / kisa liste sayisi
 --   K31 bilgi: crm.view tasimayan sahibi olan acik firsat (8c kurali oncesi kayitlar; 0 beklenir)
--- Beklenen: K1-K3, K6-K15, K19-K23, K25-K29 ESIT; K4-K5, K16-K18, K24, K30-K31 BILGI.
+-- Bolum E (hijyen_04 bildirim temizligi):
+--   K32 nesneler: fn_hijyen04_lead/task_notif_cleanup + crm_leads/tasks uzerinde 2 tetikleyici (4)
+--   K33 tutarsizlik: hedefi olmayan crm (firsat=) / task (gorev=) bildirimi (0)
+-- Beklenen: K1-K3, K6-K15, K19-K23, K25-K29, K32-K33 ESIT; K4-K5, K16-K18, K24, K30-K31 BILGI.
 -- =============================================================================
 
 WITH
@@ -275,6 +278,22 @@ k31 AS (
             AND NOT public.user_has_org_permission(l.owner_user_id, l.organization_id, 'crm.view'))::bigint,
          0::bigint
 ),
+k32 AS (
+  SELECT 'K32 hijyen_04 nesneleri (4)' AS kontrol,
+         ((to_regprocedure('public.fn_hijyen04_lead_notif_cleanup()') IS NOT NULL)::int
+          + (to_regprocedure('public.fn_hijyen04_task_notif_cleanup()') IS NOT NULL)::int
+          + (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+              WHERE NOT t.tgisinternal AND c.relname IN ('crm_leads', 'tasks') AND t.tgname LIKE 'trg_hijyen04_%'))::bigint,
+         4::bigint
+),
+k33 AS (
+  SELECT 'K33 hedefsiz firsat/gorev bildirimi (0)' AS kontrol,
+         ((SELECT count(*) FROM public.notifications n WHERE n.type = 'crm' AND n.link LIKE '/ajans/musteriler?firsat=%'
+            AND NOT EXISTS (SELECT 1 FROM public.crm_leads l WHERE '/ajans/musteriler?firsat=' || l.id::text = n.link))
+          + (SELECT count(*) FROM public.notifications n WHERE n.type = 'task' AND n.link LIKE '/kurulus/gorevler?gorev=%'
+              AND NOT EXISTS (SELECT 1 FROM public.tasks t WHERE '/kurulus/gorevler?gorev=' || t.id::text = n.link)))::bigint,
+         0::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k9 UNION ALL SELECT * FROM k10
@@ -283,7 +302,7 @@ hepsi AS (
   UNION ALL SELECT * FROM k19 UNION ALL SELECT * FROM k20 UNION ALL SELECT * FROM k21 UNION ALL SELECT * FROM k22 UNION ALL SELECT * FROM k23
   UNION ALL SELECT * FROM k24
   UNION ALL SELECT * FROM k25 UNION ALL SELECT * FROM k26 UNION ALL SELECT * FROM k27 UNION ALL SELECT * FROM k28 UNION ALL SELECT * FROM k29
-  UNION ALL SELECT * FROM k30 UNION ALL SELECT * FROM k31
+  UNION ALL SELECT * FROM k30 UNION ALL SELECT * FROM k31 UNION ALL SELECT * FROM k32 UNION ALL SELECT * FROM k33
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %' OR kontrol LIKE 'K16 %' OR kontrol LIKE 'K17 %' OR kontrol LIKE 'K18 %' OR kontrol LIKE 'K24 %' OR kontrol LIKE 'K30 %' OR kontrol LIKE 'K31 %' THEN 'BILGI'

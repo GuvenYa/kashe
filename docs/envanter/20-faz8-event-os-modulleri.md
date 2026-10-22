@@ -225,9 +225,9 @@ Kisa liste; Kesfet'te "Kisa listeye ekle" -> rozet "Kisa listede" + "Genel" list
 Ajans); RFP taslaginda "Kisa listeden sec -> Davet et" -> davetli; Ayarlar Kapat -> KAPALI + menu kalkti -> Ac. Deneme kayitlari silindi
 (atama + tutar cascade, tedarikci, kisa liste, RFP iptal). Konsol 0.
 **Acik kalemler (8c-P2 / sonraki):** (1) `/p/[id]` profilinde "Kisa listeye ekle" (ProfilIslemBaglami yerlesimi — sapma 5); (2) tedarikci
-maliyetinin teklif kalemine aktarimi (Finance/butce ile); (3) kisa liste -> RFP davetinde profesyonel kalemler (acik RFP FAZ 9); (4) Kesfet'te
-`?rol=agency` suzgeci uygulanmiyor (eski; ayri bakilacak); (5) 8b-P2 kalemleri (teklif secim etiketi, panel sonu rozeti, silinen kaydin
-bildirimi).
+maliyetinin teklif kalemine aktarimi (Finance/butce ile); (3) kisa liste -> RFP davetinde profesyonel kalemler (acik RFP FAZ 9); (4) 8b-P2 kalemleri
+(teklif secim etiketi, panel sonu rozeti, silinen kaydin bildirimi). (Turdaki "Kesfet `?rol=agency` uygulanmiyor" notu yanlis alarm:
+suzgec parametresi `?tip=ajans`.)
 
 ## 6. FAZ 8 — toplam (22 Ekim 2026)
 
@@ -246,7 +246,11 @@ RPC; modul kapisi `org_module_enabled` + `org_module_set` (tasks/crm/suppliers/s
 - Insan onayli operasyon asistani (TUBITAK): gorev onerisi ureten yapay zeka katmani 8a'nin ustune gelir (FAZ 9 ile); 8a veri modelini
   buna gore acik tutar (`tasks.source` sutunu 8a'da YOK — gerekince eklenir; `activity_logs` zaten "kim/ne/ne zaman").
 - Eski `agency_members`/`business_members` tek tabloya inisi FAZ 10 (madde 44); 8-U bunu one almaz.
-- Kucuk kalemler (kapanis notlarindan): 8a D1b-2 listesi (bolum 3), 8b-P2 (bolum 4: teklif secim etiketi, panel sonu rozeti, silinen
-  kaydin bildirimi), 8c-P2 (bolum 5: `/p/[id]` kisa liste, maliyet -> teklif kalemi, Kesfet `?rol=` suzgeci). Tasarim dili acik kalemleri
-  `22-tasarim-dili-v2.md` (Taranan profil / Sure sayaclari, ajans kimlik satiri, anon bookings politikasi).
+- **Hijyen 04 (22 Ekim; `33-claude-code-gorevi-hijyen-04.md`):** biriken kucuk kalemler tek dilimde — DB:
+  `20261024120000_hijyen_04_bildirim_temizligi.sql` (firsat / genel gorev silinince ona isaret eden bildirim silinir; AYRI AFTER DELETE
+  tetikleyicileri `trg_hijyen04_*`, mevcut aktivite fonksiyonlarina dokunulmadi; dolum; asama4 T30, asama18 K32-K33). UI (10 madde):
+  gorev hizli ekle iyimser, cok kurulus hesap karti (kisi adi), secim etiketleri (`secim-etiketi.ts`: baslik · tarih · durum), CRM panel sonu
+  rozeti, `/p/[id]` kisa liste banti, ajans kimlik satiri, ajans tamamlanmis is cipi, "Sure" kutusu (`latency_ms`), ekip kapsaminda
+  onerilenler, `/bildirimler` anonim -> giris. Yapilmayan: "Taranan profil" (FAZ 9, `run_event_match`), maliyet -> teklif kalemi (Finance),
+  anon `bookings` eski politikasi (FAZ 10).
 - Edge Function `send-message-notification` tip listesi `['rfp','proposal','task','crm']` — 8b kapanisinda dagitildi (22 Ekim).
