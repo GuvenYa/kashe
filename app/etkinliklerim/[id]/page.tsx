@@ -14,6 +14,7 @@ import {
 } from '@/app/ajans/teklifler/teklif-data';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { panelMenusu } from '@/app/lib/panel-menu';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { PanelKabugu } from '@/app/components/panel';
 import { GorevListesi } from '@/app/components/gorevler/gorev-listesi';
 import { GorevModuluKapali } from '@/app/components/gorevler/gorev-modul-kapali';
@@ -894,6 +895,10 @@ export default async function EtkinlikDetayPage({
     : 'genel';
 
   const menu = kurulusEtkinligi ? await panelMenusu() : [];
+  // Hesap karti TEK KAYNAK (hijyen 04): kisi adi ustte, kurulus alt satirda.
+  const kurulusHesabi = kurulusEtkinligi
+    ? (await panelKabukProps(etkinlikKurulusu!.id)).hesap
+    : { ad: '', altSatir: '' };
   // Bolum JSX bloklari SABITLERE cikarildi: kisisel ve kurulus dallari ayni
   // icerigi iki kez YAZMAZ (brief: Ihtiyaclar/Adaylar/Ekip kopyalanmaz).
   const genelBloklariJsx = (
@@ -1269,11 +1274,7 @@ export default async function EtkinlikDetayPage({
   return (
     <PanelKabugu
       menu={menu}
-      hesap={{
-        ad: etkinlikKurulusu!.name,
-        altSatir: ajansEtkinligi ? 'Ajans hesabı' : 'Kurumsal hesap',
-        rozet: ajansEtkinligi ? 'Ajans' : 'Kurumsal',
-      }}
+      hesap={kurulusHesabi}
       ustBaslik={{
         eyebrow: 'Etkinlik',
         baslik: baslik,

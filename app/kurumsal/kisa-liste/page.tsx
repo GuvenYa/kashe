@@ -5,6 +5,7 @@ import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCrewContext } from '@/app/lib/org-context';
 import { panelMenusu } from '@/app/lib/panel-menu';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { PanelKabugu } from '@/app/components/panel';
 import { ModulKapali } from '@/app/components/tedarikci/modul-kapali';
 import { YetkinYok } from '@/app/components/tedarikci/yetkin-yok';
@@ -63,16 +64,12 @@ export default async function KisaListePage({
     orgs[0];
 
   const menu = await panelMenusu();
+  // Hesap karti TEK KAYNAK (hijyen 04): kisi adi ustte, kurulus alt satirda.
+  const { hesap } = await panelKabukProps(kurulus.id);
   const kabukProps = {
     menu,
     yonetici: !!profil?.is_admin,
-    hesap: {
-      ad: kurulus.name,
-      altSatir:
-        kurulus.accountType === 'agency' ? 'Ajans hesabı' : 'Kurumsal hesap',
-      avatarUrl: profil?.avatar_url ?? null,
-      rozet: kurulus.accountType === 'agency' ? 'Ajans' : 'Kurumsal',
-    },
+    hesap,
     ustBaslik: {
       eyebrow: `${kurulus.name} · Kısa liste`,
       baslik: (

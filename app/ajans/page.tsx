@@ -5,6 +5,7 @@ import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCrewContext } from '@/app/lib/org-context';
 import { panelMenusu } from '@/app/lib/panel-menu';
+import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import {
   PanelKabugu,
   PanelKart,
@@ -257,16 +258,16 @@ export default async function AjansPanelPage() {
   }));
 
   const menu = await panelMenusu();
+  // Hesap karti TEK KAYNAK (hijyen 04); ekip sayisi gostergeye ozgu ek.
+  const { hesap: kurulusHesabi } = await panelKabukProps(kurulus.id);
 
   return (
     <PanelKabugu
       menu={menu}
       yonetici={!!profil?.is_admin}
       hesap={{
-        ad: kurulus.name,
-        altSatir: `Ajans hesabı · ${uyeSayisi} kişilik ekip`,
-        avatarUrl: profil?.avatar_url ?? null,
-        rozet: 'Ajans',
+        ...kurulusHesabi,
+        altSatir: `${kurulusHesabi.altSatir} · ${uyeSayisi} kişilik ekip`,
       }}
       ustBaslik={{
         eyebrow: 'Ajans paneli · Gösterge',
