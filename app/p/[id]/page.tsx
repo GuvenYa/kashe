@@ -41,7 +41,12 @@ import { getBadges, isVerified, getBadgeCards, isPremiumActive, isBusy } from '@
 import type { PremiumTier } from '@/app/lib/badges';
 import { ProfessionalProfile } from './professional-profile';
 import { HavuzaEkle } from './havuza-ekle';
-import { getTalentPoolContext } from '@/app/lib/org-context';
+import { KisaListeyeEkle } from './kisa-listeye-ekle';
+import {
+  getTalentPoolContext,
+  getCrewContext,
+} from '@/app/lib/org-context';
+import { kisaListedekiKuruluslar } from '@/app/lib/tedarikci-data';
 import type { ProfileExperience } from '@/app/lib/category-fields';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { incrementProfileViews } from './profile-views-actions';
@@ -468,6 +473,83 @@ export default async function PublicProfilePage({
   const ajansEnDusukFiyat =
     ajansFiyatAdaylari.length > 0 ? Math.min(...ajansFiyatAdaylari) : null;
 
+  /**
+   * "KISA LISTEYE EKLE" BANDI (hijyen 04, madde 5).
+   *
+   * HER IKI DALDA da gorunur (ajans ve profesyonel profili), bu yuzden erken
+   * return'den ONCE kurulur. Bant yalniz `supplier_search` modulu acik ve
+   * `events.manage` yetkili kurulusu olan kullaniciya cizilir; yoksa slot NULL
+   * kalir ve DOM'da hicbir sey olmaz.
+   *
+   * Kullanicinin KENDI profili disarida; kendi kurulusunun saglayici kaydini
+   * DB de reddediyor (22023) — burada o kurulus listeden dusurulur ki kullanici
+   * calismayacak bir dugme gormesin.
+   */
+  let kisaListeSlot: ReactNode = null;
+  if (isLoggedIn && !isOwnProfile) {
+    const { orgs } = await getCrewContext();
+    const uygun = orgs.filter(
+      (o) =>
+        o.shortlistEnabled &&
+        o.canManageEvents &&
+        // Kurulusun kendi saglayici kaydi listeye eklenemez.
+        o.legacyProfileId !== profile.id
+    );
+    if (uygun.length > 0) {
+      const listedekiler = await kisaListedekiKuruluslar(
+        uygun.map((o) => o.id),
+        profile.id
+      );
+      kisaListeSlot = (
+        <KisaListeyeEkle
+          providerId={profile.id}
+          kuruluslar={uygun.map((o) => ({
+            id: o.id,
+            name: o.name,
+            durum: listedekiler.has(o.id)
+              ? ('listede' as const)
+              : ('eklenebilir' as const),
+          }))}
+        />
+      );
+    }
+  }
+
+  /**
+   * AJANS TAMAMLANMIS IS SAYISI (hijyen 04).
+   *
+   * Profesyonel dalinda bu sayi `bookings.professional_id` uzerinden geliyor;
+   * ajansin rezervasyonlari FAZ 7c ile `seller_provider_id` sutununa yaziliyor
+   * (teklif sekli). Ikisi birden sayilir: eski akista bir ajans profili
+   * `professional_id` ile de rezervasyon almis olabilir.
+   *
+   * `providers.id = profiles.id` oldugu icin profil kimligi dogrudan kullanilir.
+   * Cip 0 iken CIZILMEZ (mevcut kural) — sifir "veri yok" demek degil, "is yok".
+   */
+  let ajansTamamlanmisIs = 0;
+  let ajansTekrarTercih = false;
+  if (isAgencyProfile) {
+    const { data: ajansDealRows, error: ajansDealHatasi } = await supabase
+      .from('bookings')
+      .select('customer_id')
+      .or(
+        `seller_provider_id.eq.${profile.id},professional_id.eq.${profile.id}`
+      )
+      .eq('status', 'completed');
+    if (ajansDealHatasi) {
+      console.error('[profil] ajans tamamlanmis is', ajansDealHatasi.message);
+    }
+    const satirlar = (ajansDealRows ?? []) as { customer_id: string | null }[];
+    ajansTamamlanmisIs = satirlar.length;
+    // Tekrar tercih AYNI veriden: ayni musteri birden fazla kez calistiysa.
+    const sayim = new Map<string, number>();
+    for (const d of satirlar) {
+      if (!d.customer_id) continue;
+      sayim.set(d.customer_id, (sayim.get(d.customer_id) ?? 0) + 1);
+    }
+    ajansTekrarTercih = [...sayim.values()].some((n) => n > 1);
+  }
+
   // Ajans/kurumsal MEVCUT render'ı aynen korur; yalnız professional yeni 2-kolon
   // düzene geçer. Erken return — benzer-profil sorguları professional'da hiç koşmaz.
   if (profile.role === 'professional') {
@@ -710,6 +792,7 @@ export default async function PublicProfilePage({
           hasCompletedBooking={hasCompletedBooking}
           existingReview={existingReview}
           havuzSlot={havuzSlot}
+          kisaListeSlot={kisaListeSlot}
         />
       </>
     );
@@ -917,9 +1000,9 @@ export default async function PublicProfilePage({
                   <GuvenCipleri
                     dogrulanmis={profileVerified}
                     profilOnayli={profile.approval_status === 'approved'}
-                    tamamlanmisIs={0}
+                    tamamlanmisIs={ajansTamamlanmisIs}
                     ortalamaYanitSaati={null}
-                    tekrarTercih={false}
+                    tekrarTercih={ajansTekrarTercih}
                     yuksekPuanli={puanRozetleri.has('topRated')}
                     cokTercihEdilen={puanRozetleri.has('popular')}
                     premium={isPremiumActive(
@@ -989,6 +1072,11 @@ export default async function PublicProfilePage({
                 {profile.bio}
               </p>
             )}
+
+            {/* hijyen 04 — "Kisa listeye ekle" banti. Profesyonel dalinda sag
+                sutunda duruyor; ajans dalinda sag sutun yok, bu yuzden kimlik
+                blogunun altinda ayri bir bant olarak cizilir. */}
+            {kisaListeSlot && <div className="mt-6">{kisaListeSlot}</div>}
             </div>
           </div>
 

@@ -677,6 +677,33 @@ export async function kisaListeDurumu(
 }
 
 /**
+ * Bir saglayici, verilen kuruluslarin HANGISININ kisa listesinde?
+ *
+ * `/p/[id]` bandi icin: kullanicinin birden cok kurulusu olabilir ve bant her
+ * biri icin durum gosterir. TEK sorgu; kurulus basina sorgu YOK.
+ */
+export async function kisaListedekiKuruluslar(
+  orgIds: string[],
+  providerId: string
+): Promise<Set<string>> {
+  if (orgIds.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('supplier_shortlist_items')
+    .select('organization_id')
+    .eq('provider_id', providerId)
+    .in('organization_id', orgIds);
+
+  if (error) {
+    console.error('[kisa liste] kurulus durumu', error.code, error.message);
+    return new Set();
+  }
+  return new Set(
+    ((data ?? []) as { organization_id: string }[]).map((k) => k.organization_id)
+  );
+}
+
+/**
  * RFP davet kutusunun "Kisa listeden sec" blogu: kurulusun kisa
  * listelerindeki AJANS (organization) saglayicilari.
  *

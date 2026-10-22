@@ -106,6 +106,15 @@ export type KapsamSatiri = {
   rolAdi: string;
   gereken: number;
   onaylanan: number;
+  /**
+   * Durumu `proposed` olan uye sayisi (hijyen 04).
+   *
+   * Kapsam satiri yalniz ONAYLI uyeleri sayiyordu; ekibe uye eklenmis ama
+   * henuz onaylanmamisken satir 0/1 gorunuyor ve kullanici eklemenin
+   * islediginden emin olamiyordu. Zorunlu rol karari DEGISMEZ: DB yalniz
+   * `confirmed` sayar.
+   */
+  onerilen: number;
   zorunlu: boolean;
 };
 

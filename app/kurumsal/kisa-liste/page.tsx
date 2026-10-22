@@ -16,7 +16,7 @@ import {
   kisaListeDetay,
   kisaListeleriListele,
 } from '@/app/lib/tedarikci-data';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etkinlikEtiketi } from '@/app/lib/secim-etiketi';
 
 export const metadata = {
   title: 'Kısa liste — Kashe',
@@ -114,7 +114,7 @@ export default async function KisaListePage({
     seciliId ? kisaListeDetay(kurulus.id, seciliId) : Promise.resolve(null),
     supabase
       .from('events')
-      .select('id, title, event_type')
+      .select('id, title, event_type, start_date')
       .eq('organization_id', kurulus.id)
       .order('start_date', { ascending: false })
       .limit(100),
@@ -137,7 +137,7 @@ export default async function KisaListePage({
     }[]
   ).map((e) => ({
     id: e.id,
-    ad: e.title?.trim() || etkinlikTuruEtiketi(e.event_type) || 'Etkinlik',
+    ad: etkinlikEtiketi(e),
   }));
 
   const hamSaglayicilar = (saglayiciSonuc.data ?? []) as {

@@ -13,6 +13,11 @@ export type AdayKosu = {
   strategy: string;
   algorithm_version: string;
   candidate_count: number;
+  /**
+   * Kosunun surdugu sure (ms) — `run_event_match` yaziyor (hijyen 04).
+   * Eski kosularda NULL olabilir; o zaman sayac GOSTERILMEZ.
+   */
+  latency_ms: number | null;
   created_at: string;
 };
 
@@ -171,6 +176,26 @@ export function kisaGunEtiketi(iso: string | null | undefined): string | null {
       timeZone: KASHE_SAAT_DILIMI,
     })
     .toLocaleUpperCase('tr-TR');
+}
+
+/**
+ * Kosu suresi — "0,8 sn" / "1,4 sn" (hijyen 04).
+ *
+ * UYDURMA DEGIL: deger `match_runs.latency_ms` sutunundan gelir. Sutun bos
+ * ise null doner ve kutu cizilmez; sure tahmin EDILMEZ.
+ */
+export function sureMetni(ms: number | null | undefined): string | null {
+  if (ms === null || ms === undefined) return null;
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return null;
+  const saniye = n / 1000;
+  return (
+    saniye.toLocaleString('tr-TR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }) +
+    ' sn'
+  );
 }
 
 /** KVKK itiraz notundaki adres — footer ile ayni. */

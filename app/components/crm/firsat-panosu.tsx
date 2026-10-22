@@ -335,10 +335,16 @@ function FirsatPaneli({
       >
         <div className="px-5 py-4 border-b border-line flex items-start justify-between gap-3 sticky top-0 bg-paper">
           <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
-              Fırsat
-            </p>
-            <p className="font-display font-semibold text-ink break-words">
+            {/* Asama rozeti eyebrow satirinda (hijyen 04): eskiden panelin EN
+                ALTINDA tek basina duruyordu ve kullanici asamayi gormek icin
+                dialogu sonuna kadar kaydirmak zorundaydi. */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50">
+                Fırsat
+              </p>
+              <AsamaRozeti asama={firsat.stage} />
+            </div>
+            <p className="font-display font-semibold text-ink break-words mt-0.5">
               {firsat.title}
             </p>
           </div>
@@ -657,8 +663,6 @@ function FirsatPaneli({
               )}
             </div>
           )}
-
-          <AsamaRozeti asama={firsat.stage} />
         </div>
       </aside>
     </>

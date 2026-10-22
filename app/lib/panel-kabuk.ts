@@ -32,16 +32,21 @@ export type PanelKabukProps = {
  */
 function hesapKarti(
   ad: string,
+  kisiAdi: string,
   avatarUrl: string | null,
   rol: string | null,
   orgs: CrewOrg[],
   secili: CrewOrg | null
 ): PanelHesap {
   if (secili) {
+    // KISI ADI USTTE (hijyen 04): kart eskiden yalniz kurulusu yaziyordu
+    // ("Sunucu Ajans · Ajans hesabi") ve cok kurulus uyesi kendi adini hicbir
+    // yerde gormuyordu. Kurulus alt satira iner, rozet aynen kalir.
     return {
-      ad: secili.name,
-      altSatir:
-        secili.accountType === 'agency' ? 'Ajans hesabı' : 'Kurumsal hesap',
+      ad: kisiAdi,
+      altSatir: `${secili.name} · ${
+        secili.accountType === 'agency' ? 'Ajans' : 'Kurumsal'
+      }`,
       avatarUrl,
       rozet: secili.accountType === 'agency' ? 'Ajans' : 'Kurumsal',
     };
@@ -99,11 +104,22 @@ export const panelKabukProps = cache(
       p?.full_name?.trim() ||
       'Kullanıcı';
 
+    // Kurulus secili dalinda KISI adi gosterilir; `ad` ise rol bazli
+    // (ajans/kurum rolunde firma adi) ve kurulussuz dallarda kullanilir.
+    const kisiAdi = p?.full_name?.trim() || ad;
+
     const secili = orgId ? (orgs.find((o) => o.id === orgId) ?? null) : null;
 
     return {
       menu,
-      hesap: hesapKarti(ad, p?.avatar_url ?? null, p?.role ?? null, orgs, secili),
+      hesap: hesapKarti(
+        ad,
+        kisiAdi,
+        p?.avatar_url ?? null,
+        p?.role ?? null,
+        orgs,
+        secili
+      ),
       yonetici: !!p?.is_admin,
     };
   }

@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import {
   DESTEK_EPOSTA,
   kosuZamani,
+  sureMetni,
   type AdayKarti,
   type AdayKosu,
   type AdayRolGrubu,
@@ -560,6 +561,8 @@ export function AdayPaneli({
 
   // ---- Gorunum ----
   const eslestirmeSuruyor = isPending && !sonKosu;
+  // Sure YALNIZ sutun doluysa; eski kosularda kutu hic cizilmez.
+  const sureKutusu = sureMetni(sonKosu?.latency_ms);
   const rolSutunlariGorunur = segment === 'tekil' || segment === 'hibrit';
   const ajansGorunur = segment === 'ajans' || segment === 'hibrit';
   const toplamAday =
@@ -626,7 +629,15 @@ export function AdayPaneli({
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 min-w-0 flex-1 basis-72">
+            {/* Sayac sayisi SURE kutusuna gore degisir: sutun bos olan eski
+                kosularda uc kutu kalir (uydurma sure yazilmaz). */}
+            <div
+              className={
+                sureKutusu
+                  ? 'grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-0 flex-1 basis-72'
+                  : 'grid grid-cols-3 gap-3 min-w-0 flex-1 basis-72'
+              }
+            >
               <KpiKutu
                 etiket="Rol"
                 deger={eslestirmeSuruyor ? '—' : rolGruplari.length}
@@ -641,6 +652,12 @@ export function AdayPaneli({
                 etiket="Ajans"
                 deger={eslestirmeSuruyor ? '—' : ajansAdaylari.length}
               />
+              {sureKutusu && (
+                <KpiKutu
+                  etiket="Süre"
+                  deger={eslestirmeSuruyor ? '—' : sureKutusu}
+                />
+              )}
             </div>
           </div>
 

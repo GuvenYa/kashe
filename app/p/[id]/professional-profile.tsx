@@ -93,6 +93,8 @@ export type ProfessionalProfileProps = {
   existingReview: { id: string; rating: number; body: string | null } | null;
   /** FAZ 5/P3: ajans uyesine "Havuza ekle" karti; yetki yoksa sunucu HIC gondermez. */
   havuzSlot?: ReactNode;
+  /** hijyen 04: "Kisa listeye ekle" bandi (alici kurulus uyesinde dolu). */
+  kisaListeSlot?: ReactNode;
 };
 
 const EYEBROW =
@@ -126,7 +128,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
     showFavoriteButton, initialFavorited, canReview, hasCompletedBooking,
-    existingReview, havuzSlot,
+    existingReview, havuzSlot, kisaListeSlot,
   } = props;
 
   const slug = profile.service_categories?.slug ?? null;
@@ -782,6 +784,10 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
 
             {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
             {havuzSlot}
+
+            {/* hijyen 04 — kisa liste banti (havuz bandiyla ayni yerde, AYRI
+                bant: biri ajansin yetenek havuzu, oteki alicinin secki listesi). */}
+            {kisaListeSlot}
           </aside>
         </div>
       </div>

@@ -535,6 +535,11 @@ export function EkipPaneli({
                   <span className="text-ink">
                     {k.rolAdi} {k.onaylanan}/{k.gereken}
                   </span>
+                  {k.onerilen > 0 && (
+                    <span className="text-ink-72">
+                      · {k.onerilen} önerildi
+                    </span>
+                  )}
                   {k.onaylanan >= k.gereken && (
                     <span className="text-moss" aria-hidden="true">
                       ✓
@@ -547,7 +552,11 @@ export function EkipPaneli({
                 İsteğe bağlı:{' '}
                 {kapsam
                   .filter((k) => !k.zorunlu)
-                  .map((k) => `${k.rolAdi} ${k.onaylanan}/${k.gereken}`)
+                  .map((k) =>
+                    k.onerilen > 0
+                      ? `${k.rolAdi} ${k.onaylanan}/${k.gereken} (${k.onerilen} önerildi)`
+                      : `${k.rolAdi} ${k.onaylanan}/${k.gereken}`
+                  )
                   .join(', ')}
               </li>
             )}

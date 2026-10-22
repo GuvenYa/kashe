@@ -294,7 +294,9 @@ export default async function EtkinlikDetayPage({
 
   const { data: kosuData, error: kosuHatasi } = await supabase
     .from('match_runs')
-    .select('id, strategy, algorithm_version, candidate_count, created_at')
+    .select(
+      'id, strategy, algorithm_version, candidate_count, latency_ms, created_at'
+    )
     .eq('event_id', id)
     .order('created_at', { ascending: false });
   if (kosuHatasi) console.error('[match] kosu listesi', kosuHatasi);
@@ -599,6 +601,9 @@ export default async function EtkinlikDetayPage({
         gereken: g.quantity,
         onaylanan: uyeSatirlari.filter(
           (u) => u.role_id === g.service_roles!.id && u.status === 'confirmed'
+        ).length,
+        onerilen: uyeSatirlari.filter(
+          (u) => u.role_id === g.service_roles!.id && u.status === 'proposed'
         ).length,
         zorunlu: g.is_required,
       }));

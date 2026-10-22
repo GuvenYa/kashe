@@ -30,7 +30,10 @@ import {
 import { kisiTuruEtiketi } from '@/app/lib/crm';
 import { formatTL } from '@/app/lib/para';
 import { goreliZaman, tarihMetni } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import {
+  etkinlikEtiketi,
+  teklifEtiketi,
+} from '@/app/lib/secim-etiketi';
 
 export const metadata = {
   title: 'Müşteriler — Kashe',
@@ -161,32 +164,37 @@ export default async function MusterilerPage({
     kurulus.canManageCrm ? teklifOnerileri(kurulus.id) : Promise.resolve([]),
     supabase
       .from('events')
-      .select('id, title, event_type')
+      .select('id, title, event_type, start_date')
       .eq('organization_id', kurulus.id)
       .order('start_date', { ascending: false })
       .limit(100),
     supabase
       .from('proposals')
-      .select('id, title')
+      .select('id, title, status, created_at')
       .eq('seller_organization_id', kurulus.id)
       .order('created_at', { ascending: false })
       .limit(100),
   ]);
 
+  // Etiketler ortak yardimciyla (hijyen 04): ayni baslikli iki kayit secim
+  // kutusunda birbirinin aynisi gorunmesin.
   const etkinlikSecenekleri = (
     (etkinlikSonuc.data ?? []) as {
       id: string;
       title: string | null;
       event_type: string;
+      start_date: string | null;
     }[]
-  ).map((e) => ({
-    id: e.id,
-    ad: e.title?.trim() || etkinlikTuruEtiketi(e.event_type) || 'Etkinlik',
-  }));
+  ).map((e) => ({ id: e.id, ad: etkinlikEtiketi(e) }));
 
   const teklifSecenekleri = (
-    (teklifSonuc.data ?? []) as { id: string; title: string | null }[]
-  ).map((t) => ({ id: t.id, ad: t.title?.trim() || 'Teklif' }));
+    (teklifSonuc.data ?? []) as {
+      id: string;
+      title: string | null;
+      status: string;
+      created_at: string;
+    }[]
+  ).map((t) => ({ id: t.id, ad: teklifEtiketi(t) }));
 
   // Form icin kisi listesi — ARAMADAN BAGIMSIZ olmali: kullanici tabloda
   // arama yaparken yeni firsat formundaki kisi listesi daralmasin.

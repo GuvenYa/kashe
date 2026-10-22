@@ -1,9 +1,7 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { Bell } from 'lucide-react';
-import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
-import { TopNav } from '@/app/components/sections/top-nav';
+import { PanelKabugu } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getNotifications } from './actions';
@@ -21,53 +19,10 @@ export default async function BildirimlerPage() {
 
   const user = await getCachedUser();
 
-  // Durum 1: Giriş yapmamış
-  //
-  // Bu dal PANEL KABUGUNA GIRMEZ: kabuk yan menuyu girisli kullanicinin
-  // rol ve kurulus baglamindan uretiyor, oturum yokken gosterecek bir menu
-  // yok. Girissiz ziyaretci vitrin duzeninde (TopNav) kalir.
-  if (!user) {
-    return (
-      <>
-        <TopNav />
-        <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
-          <div className="max-w-3xl mx-auto">
-            <PanelBaslik
-              eyebrow="Bildirimler"
-            >
-              Önce{' '}
-              <em className="not-italic font-medium text-brand-accent">
-              giriş yap
-              </em>
-              .
-            </PanelBaslik>
-            <div className="bg-card border border-line rounded-lg p-12 text-center">
-              <p className="font-display text-xl text-ink mb-3">
-                Bildirimleri görmek için giriş yapmalısın.
-              </p>
-              <p className="text-ink-72 max-w-md mx-auto mb-6">
-                Mesajların, yorumların ve etkileşimlerin tek yerde.
-              </p>
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Link
-                  href="/giris"
-                  className="inline-block px-6 py-3 bg-brand-ink text-paper font-mono text-xs uppercase tracking-[0.16em] rounded hover:bg-brand-ink/90 transition-colors"
-                >
-                  Giriş yap
-                </Link>
-                <Link
-                  href="/uye-ol"
-                  className="inline-block px-6 py-3 border border-line text-ink font-mono text-xs uppercase tracking-[0.16em] rounded hover:border-brand-ink hover:text-brand-ink transition-colors"
-                >
-                  Kayıt ol
-                </Link>
-              </div>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Girissiz ziyaretci: diger panel sayfalariyla AYNI davranis (hijyen 04).
+  // Eskiden vitrin duzeninde bir `PanelBaslik` karti ciziliyordu; panel
+  // bileseni vitrinde kullanilmaz ve ayni bilgi iki dilde iki kez duruyordu.
+  if (!user) redirect('/giris?redirect=/bildirimler');
 
   // Suspension kontrolü — askıdaki kullanıcı bildirim göremez
   const { data: suspensionCheck } = await supabase

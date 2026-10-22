@@ -69,6 +69,35 @@ export function kisaTarihMetni(iso: string | null | undefined): string | null {
 }
 
 /**
+ * "20 Kas 2026" — secim kutusu etiketleri gibi dar alanlar icin.
+ *
+ * `tarihMetni` (uzun ay adiyla) bir `<option>` icinde baslikla birlikte cok
+ * yer kapliyor; sayisal `kisaTarihMetni` ("20.11.2026") ise okunurken ayirt
+ * etmeyi zorlastiriyor. Kisaltilmis ay ikisinin arasi.
+ */
+export function kisaAyliTarih(iso: string | null | undefined): string | null {
+  const d = gecerliTarih(iso);
+  if (!d) return null;
+  return d.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: KASHE_SAAT_DILIMI,
+  });
+}
+
+/** "3 Eki" — yil YOK; ayni yil icindeki kayitlari ayirt etmeye yeter. */
+export function gunAyMetni(iso: string | null | undefined): string | null {
+  const d = gecerliTarih(iso);
+  if (!d) return null;
+  return d.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: KASHE_SAAT_DILIMI,
+  });
+}
+
+/**
  * Goreli zaman (ornek: iki saat once, uc gun once) — aktivite akisi icin.
  *
  * Bir haftadan eskisi tam tarihe doner: kirk yedi gun once demek bir sey anlatmaz.

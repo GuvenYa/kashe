@@ -17,7 +17,7 @@ import {
   gorevSayilari,
   atanabilirler,
 } from '@/app/lib/gorev-data';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etkinlikEtiketi } from '@/app/lib/secim-etiketi';
 
 export const metadata = {
   title: 'Görevler — Kashe',
@@ -116,7 +116,7 @@ export default async function KurulusGorevlerPage({
     }[]
   ).map((e) => ({
     id: e.id,
-    ad: e.title?.trim() || etkinlikTuruEtiketi(e.event_type) || 'Etkinlik',
+    ad: etkinlikEtiketi(e),
   }));
 
   return (

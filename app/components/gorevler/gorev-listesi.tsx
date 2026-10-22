@@ -54,7 +54,23 @@ export function GorevListesi({
   const [duzenlenen, setDuzenlenen] = useState<Gorev | null>(null);
   const [hizliBaslik, setHizliBaslik] = useState('');
   const [hizliHata, setHizliHata] = useState<string | null>(null);
-  const [bekliyor, basla] = useTransition();
+  // Bekleme gostergesi artik `bekleyenler` satirlari; transition bayragi
+  // kullanilmiyor (iyimser satir zaten "kaydediliyor" diyor).
+  const [, basla] = useTransition();
+
+  /**
+   * IYIMSER HIZLI EKLE (hijyen 04): Enter tusuna basilinca satir HEMEN listede
+   * gorunur, sunucu yanitini beklemez. Eskiden kullanici alti sekiz saniye bos
+   * bir alana bakiyor ve gorevin eklendigini anlamiyordu.
+   *
+   * `useOptimistic` DEGIL yerel state: iyimser satirin kaynagi bir action
+   * donusu degil, kullanicinin yazdigi basliktir. Sunucu tazelenince satir
+   * KALDIRILIR ve gercek kayit `gorevler` listesinden gelir. Hata olursa satir
+   * kalkar ve mesaj yazilir; sessiz kayip olmaz.
+   */
+  const [bekleyenler, setBekleyenler] = useState<
+    { gecici: string; baslik: string }[]
+  >([]);
 
   const etkinlikSutunu = !sabitEventId;
 
@@ -99,14 +115,27 @@ export function GorevListesi({
       return;
     }
     setHizliHata(null);
+
+    // Satir ve bos girdi ANINDA: kullanici bir sonrakini yazmaya baslayabilir.
+    const gecici =
+      'bekleyen-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    setBekleyenler((o) => [...o, { gecici, baslik }]);
+    setHizliBaslik('');
+
     basla(async () => {
       const sonuc = await gorevOlustur({
         organizationId,
         title: baslik,
         eventId: sabitEventId ?? null,
       });
-      if (sonuc.ok) setHizliBaslik('');
-      else setHizliHata(sonuc.hata);
+      // Basaride de satir KALDIRILIR: `revalidatePath` gercek kaydi
+      // `gorevler` listesine getiriyor, iki satir gorunmesin.
+      setBekleyenler((o) => o.filter((b) => b.gecici !== gecici));
+      if (!sonuc.ok) {
+        setHizliHata(sonuc.hata);
+        // Yazilan baslik kaybolmasin: girdi bossa geri konur.
+        setHizliBaslik((mevcut) => mevcut || baslik);
+      }
     });
   }
 
@@ -254,8 +283,28 @@ export function GorevListesi({
         </label>
       </div>
 
+      {/* Bekleyen (iyimser) satirlar — listenin USTUNDE, soluk ve rozetli.
+          `GorevSatiri` ile cizilmez: o bilesen gercek bir kayit bekliyor
+          (durum, atanan, eylemler); yarim bir nesne uydurmak yerine hafif bir
+          satir cizilir. */}
+      {bekleyenler.length > 0 && (
+        <div className="bg-card border border-line rounded-xl px-4">
+          {bekleyenler.map((b) => (
+            <div
+              key={b.gecici}
+              className="flex items-center justify-between gap-3 py-3 border-b border-line last:border-b-0 opacity-60"
+            >
+              <p className="text-sm text-ink min-w-0 break-words">{b.baslik}</p>
+              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50 bg-paper border border-line px-2 py-0.5 rounded">
+                Kaydediliyor
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Liste */}
-      {suzulmus.length === 0 ? (
+      {suzulmus.length === 0 && bekleyenler.length === 0 ? (
         <p className="text-sm text-ink-72 py-4">
           {gorevler.length === 0
             ? yazabilir
@@ -283,7 +332,7 @@ export function GorevListesi({
 
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
         {suzulmus.length} / {gorevler.length} görev · {acikSayisi} açık
-        {bekliyor ? ' · kaydediliyor…' : ''}
+        {bekleyenler.length > 0 ? ` · ${bekleyenler.length} kaydediliyor` : ''}
       </p>
     </div>
   );
