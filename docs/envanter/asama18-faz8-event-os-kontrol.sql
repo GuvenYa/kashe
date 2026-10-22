@@ -29,7 +29,19 @@
 --       uyumsuz; teklifin buyer_contact_id kisisi satici kurulusta degil (0)
 --   K23 modul + bildirim: crm modulu KAPALI ajans (0) + notifications_type_check 'crm' + e-posta kuyrugu indeksi 'crm' (2) -> (2)
 --   K24 bilgi: kisi / firsat sayisi
--- Beklenen: K1-K3, K6-K15, K19-K23 ESIT; K4-K5, K16-K18, K24 BILGI.
+-- Bolum D (8c tedarikciler + kisa liste):
+--   K25 nesneler: suppliers, event_suppliers, supplier_shortlists, supplier_shortlist_items, internal.event_supplier_costs,
+--       RPC internal_event_supplier_costs_list / internal_event_supplier_cost_set, user_has_org_permission (8)
+--   K26 yetki matrisi: owner/admin/project_manager/crew_coordinator suppliers.manage, sales/finance yalniz view, viewer yok (7)
+--   K27 politikalar + tetikleyiciler: 4 tablo x 4 politika (16) + trg_faz8c_% tetikleyici (public 8 + internal 1) (25)
+--   K28 tutarsizlik: atamanin etkinligi/tedarikcisi baska kurulusta; confirmed_at durumla uyumsuz; arsivdeki tedarikci acik
+--       atamada (planned/confirmed); kisa listenin etkinligi baska kurulusta; kalem kurulusu listeden farkli; kalem kendi
+--       saglayicisi; tedarikci kendi saglayicisina bagli; ic maliyet kurulusu atamadan farkli (0)
+--   K29 modul + RPC yetkisi: suppliers KAPALI ajans (0) + supplier_search KAPALI business (0) + 2 RPC authenticated var,
+--       anon yok (4) -> (4)
+--   K30 bilgi: tedarikci / kisa liste sayisi
+--   K31 bilgi: crm.view tasimayan sahibi olan acik firsat (8c kurali oncesi kayitlar; 0 beklenir)
+-- Beklenen: K1-K3, K6-K15, K19-K23, K25-K29 ESIT; K4-K5, K16-K18, K24, K30-K31 BILGI.
 -- =============================================================================
 
 WITH
@@ -196,6 +208,73 @@ k24 AS (
          (SELECT count(*) FROM public.contacts)::bigint,
          (SELECT count(*) FROM public.crm_leads)::bigint
 ),
+k25 AS (
+  SELECT 'K25 tedarikci nesneleri (8)' AS kontrol,
+         ((to_regclass('public.suppliers') IS NOT NULL)::int
+          + (to_regclass('public.event_suppliers') IS NOT NULL)::int
+          + (to_regclass('public.supplier_shortlists') IS NOT NULL)::int
+          + (to_regclass('public.supplier_shortlist_items') IS NOT NULL)::int
+          + (to_regclass('internal.event_supplier_costs') IS NOT NULL)::int
+          + (to_regprocedure('public.internal_event_supplier_costs_list(uuid)') IS NOT NULL)::int
+          + (to_regprocedure('public.internal_event_supplier_cost_set(uuid, numeric, text)') IS NOT NULL)::int
+          + (to_regprocedure('public.user_has_org_permission(uuid, uuid, text)') IS NOT NULL)::int)::bigint,
+         8::bigint
+),
+k26 AS (
+  SELECT 'K26 suppliers yetki matrisi (7)' AS kontrol,
+         (('suppliers.manage' = ANY (public.org_role_permissions('owner')))::int
+          + ('suppliers.manage' = ANY (public.org_role_permissions('admin')))::int
+          + ('suppliers.manage' = ANY (public.org_role_permissions('project_manager')))::int
+          + ('suppliers.manage' = ANY (public.org_role_permissions('crew_coordinator')))::int
+          + ('suppliers.view' = ANY (public.org_role_permissions('sales')) AND NOT 'suppliers.manage' = ANY (public.org_role_permissions('sales')))::int
+          + ('suppliers.view' = ANY (public.org_role_permissions('finance')) AND NOT 'suppliers.manage' = ANY (public.org_role_permissions('finance')))::int
+          + (NOT 'suppliers.view' = ANY (public.org_role_permissions('viewer')))::int)::bigint,
+         7::bigint
+),
+k27 AS (
+  SELECT 'K27 tedarikci politika + tetikleyici (25)' AS kontrol,
+         ((SELECT count(*) FROM pg_policies WHERE schemaname = 'public'
+            AND tablename IN ('suppliers', 'event_suppliers', 'supplier_shortlists', 'supplier_shortlist_items'))
+          + (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE NOT t.tgisinternal AND t.tgname LIKE 'trg_faz8c_%'
+                AND ((n.nspname = 'public' AND c.relname IN ('suppliers', 'event_suppliers', 'supplier_shortlists', 'supplier_shortlist_items'))
+                     OR (n.nspname = 'internal' AND c.relname = 'event_supplier_costs'))))::bigint,
+         25::bigint
+),
+k28 AS (
+  SELECT 'K28 tedarikci tutarsizlik (0)' AS kontrol,
+         ((SELECT count(*) FROM public.event_suppliers es JOIN public.events e ON e.id = es.event_id WHERE e.organization_id IS DISTINCT FROM es.organization_id)
+          + (SELECT count(*) FROM public.event_suppliers es JOIN public.suppliers s ON s.id = es.supplier_id WHERE s.organization_id <> es.organization_id)
+          + (SELECT count(*) FROM public.event_suppliers WHERE (status = 'confirmed') <> (confirmed_at IS NOT NULL))
+          + (SELECT count(*) FROM public.event_suppliers es JOIN public.suppliers s ON s.id = es.supplier_id WHERE NOT s.is_active AND es.status <> 'cancelled')
+          + (SELECT count(*) FROM public.supplier_shortlists l JOIN public.events e ON e.id = l.event_id WHERE e.organization_id IS DISTINCT FROM l.organization_id)
+          + (SELECT count(*) FROM public.supplier_shortlist_items i JOIN public.supplier_shortlists l ON l.id = i.shortlist_id WHERE l.organization_id <> i.organization_id)
+          + (SELECT count(*) FROM public.supplier_shortlist_items i JOIN public.providers p ON p.id = i.provider_id WHERE p.organization_id = i.organization_id)
+          + (SELECT count(*) FROM public.suppliers s JOIN public.providers p ON p.id = s.linked_provider_id WHERE p.organization_id = s.organization_id)
+          + (SELECT count(*) FROM internal.event_supplier_costs x JOIN public.event_suppliers es ON es.id = x.event_supplier_id WHERE es.organization_id <> x.organization_id))::bigint,
+         0::bigint
+),
+k29 AS (
+  SELECT 'K29 modul (ajans suppliers / business supplier_search kapali 0) + RPC yetkisi (4)' AS kontrol,
+         ((SELECT count(*) FROM public.organizations o WHERE o.account_type = 'agency' AND NOT public.org_module_enabled(o.id, 'suppliers'))
+          + (SELECT count(*) FROM public.organizations o WHERE o.account_type = 'business' AND NOT public.org_module_enabled(o.id, 'supplier_search'))
+          + (has_function_privilege('authenticated', 'public.internal_event_supplier_costs_list(uuid)', 'EXECUTE'))::int
+          + (has_function_privilege('authenticated', 'public.internal_event_supplier_cost_set(uuid, numeric, text)', 'EXECUTE'))::int
+          + (NOT has_function_privilege('anon', 'public.internal_event_supplier_costs_list(uuid)', 'EXECUTE'))::int
+          + (NOT has_function_privilege('anon', 'public.internal_event_supplier_cost_set(uuid, numeric, text)', 'EXECUTE'))::int)::bigint,
+         4::bigint
+),
+k30 AS (
+  SELECT 'K30 tedarikci (eski) / kisa liste (yeni) sayisi (bilgi)' AS kontrol,
+         (SELECT count(*) FROM public.suppliers)::bigint,
+         (SELECT count(*) FROM public.supplier_shortlists)::bigint
+),
+k31 AS (
+  SELECT 'K31 crm.view tasimayan sahipli acik firsat (bilgi; 0 beklenir)' AS kontrol,
+         (SELECT count(*) FROM public.crm_leads l WHERE l.owner_user_id IS NOT NULL AND l.stage NOT IN ('won', 'lost')
+            AND NOT public.user_has_org_permission(l.owner_user_id, l.organization_id, 'crm.view'))::bigint,
+         0::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k9 UNION ALL SELECT * FROM k10
@@ -203,8 +282,10 @@ hepsi AS (
   UNION ALL SELECT * FROM k16 UNION ALL SELECT * FROM k17 UNION ALL SELECT * FROM k18
   UNION ALL SELECT * FROM k19 UNION ALL SELECT * FROM k20 UNION ALL SELECT * FROM k21 UNION ALL SELECT * FROM k22 UNION ALL SELECT * FROM k23
   UNION ALL SELECT * FROM k24
+  UNION ALL SELECT * FROM k25 UNION ALL SELECT * FROM k26 UNION ALL SELECT * FROM k27 UNION ALL SELECT * FROM k28 UNION ALL SELECT * FROM k29
+  UNION ALL SELECT * FROM k30 UNION ALL SELECT * FROM k31
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
-       CASE WHEN kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %' OR kontrol LIKE 'K16 %' OR kontrol LIKE 'K17 %' OR kontrol LIKE 'K18 %' OR kontrol LIKE 'K24 %' THEN 'BILGI'
+       CASE WHEN kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %' OR kontrol LIKE 'K16 %' OR kontrol LIKE 'K17 %' OR kontrol LIKE 'K18 %' OR kontrol LIKE 'K24 %' OR kontrol LIKE 'K30 %' OR kontrol LIKE 'K31 %' THEN 'BILGI'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

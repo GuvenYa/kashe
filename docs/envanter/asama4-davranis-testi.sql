@@ -122,6 +122,12 @@ BEGIN
   END IF;
   UPDATE public.profiles SET primary_category_id = NULL
    WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T29 tedarikciler / kisa liste (etkinlik atamasi -> tedarikci; kalemler listeyle cascade)
+  IF to_regclass('public.event_suppliers') IS NOT NULL THEN
+    DELETE FROM public.event_suppliers     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.suppliers           WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.supplier_shortlists WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T28 CRM (firsat -> kisi; teklif bagi SET NULL)
   IF to_regclass('public.crm_leads') IS NOT NULL THEN
     DELETE FROM public.crm_leads WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
@@ -4016,6 +4022,350 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (28, 'T28 FAZ 8b CRM', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T29) FAZ 8c tedarikciler + kisa liste. ON KOSUL: 20261023120000 (faz8c 01) dalda. Test Ajans (org_a: owner 0004,
+--      sales 0001 [suppliers.view], crew_coordinator 0002 [suppliers.manage, commercial yok], finance 0006 [suppliers.view +
+--      commercial.manage], viewer 0003), Test Kurum AS (org_k: owner 0005; supplier_search ACIK, suppliers KAPALI), Test Ajans Iki
+--      (org_b: 0007; providers 0007), saglayicilar 0002/0003 (pro) ve 0004 (Test Ajans'in kendi saglayicisi). Sonda silinir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  finans  uuid := 'a0000000-0000-4000-8000-000000000006';
+  ajans2  uuid := 'a0000000-0000-4000-8000-000000000007';
+  org_a uuid; org_k uuid; org_b uuid;
+  ev_a uuid; ev_k uuid;
+  s_a uuid; s_b uuid; s_yab uuid; es_a uuid;
+  sl_k uuid; sl_a uuid; c_t uuid; l_t uuid;
+  n integer; st text; ts timestamptz; amt numeric;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  SELECT id INTO org_b FROM public.organizations WHERE legacy_profile_id = ajans2;
+  SELECT id INTO ev_k FROM public.events WHERE organization_id = org_k LIMIT 1;
+  IF org_a IS NULL OR org_k IS NULL OR org_b IS NULL OR ev_k IS NULL THEN
+    RAISE EXCEPTION 'on kosul: org_a=% org_k=% org_b=% ev_k=%', org_a, org_k, org_b, ev_k;
+  END IF;
+  IF NOT public.org_module_enabled(org_a, 'suppliers') THEN RAISE EXCEPTION 'on kosul: ajansta suppliers acik olmali (dolum)'; END IF;
+  IF NOT public.org_module_enabled(org_k, 'supplier_search') THEN RAISE EXCEPTION 'on kosul: kurumda supplier_search acik olmali (dolum)'; END IF;
+  IF public.org_module_enabled(org_a, 'supplier_search') THEN RAISE EXCEPTION 'on kosul: ajansta supplier_search kapali olmali'; END IF;
+  IF NOT ('suppliers.manage' = ANY (public.org_role_permissions('crew_coordinator'))) THEN RAISE EXCEPTION 'on kosul: crew_coordinator suppliers.manage'; END IF;
+  IF 'suppliers.manage' = ANY (public.org_role_permissions('sales')) THEN RAISE EXCEPTION 'on kosul: sales suppliers.manage almamali'; END IF;
+  IF 'suppliers.view' = ANY (public.org_role_permissions('viewer')) THEN RAISE EXCEPTION 'on kosul: viewer suppliers.view almamali'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.providers WHERE id = ajans2) OR NOT EXISTS (SELECT 1 FROM public.providers WHERE id = ajans AND organization_id = org_a) THEN
+    RAISE EXCEPTION 'on kosul: providers 0007 ve 0004 (org_a) olmali';
+  END IF;
+  -- temizlik (tekrar kosu)
+  DELETE FROM public.crm_leads WHERE organization_id = org_a AND title LIKE 'T29%';
+  DELETE FROM public.contacts  WHERE organization_id = org_a AND full_name LIKE 'T29%';
+  DELETE FROM public.event_suppliers WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.suppliers WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.supplier_shortlists WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.activity_logs WHERE organization_id IN (org_a, org_k, org_b) AND entity_type IN ('supplier', 'event_supplier', 'shortlist');
+  DELETE FROM public.events WHERE organization_id = org_a AND title = 'T29 ajans etkinligi';
+  INSERT INTO public.suppliers (organization_id, name) VALUES (org_b, 'T29 yabanci tedarikci') RETURNING id INTO s_yab;
+
+  -- 1) owner: tedarikci A (ad kirpilir, e-posta kucuk harf, saglayici bagi 0007), B (catering); created_by; created 2;
+  --    kendi saglayicisi 22023; ayni saglayici ikinci kez 23505; puan 6 ve gecersiz kategori 23514
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.suppliers (organization_id, name, category, email, phone, rating, linked_provider_id)
+  VALUES (org_a, '  T29 Ses Isik Ltd ', 'sound_light', ' Ses@Firma.com ', '0212 000 00 00', 5, ajans2) RETURNING id INTO s_a;
+  INSERT INTO public.suppliers (organization_id, name, category) VALUES (org_a, 'T29 Catering AS', 'catering') RETURNING id INTO s_b;
+  EXECUTE 'RESET ROLE';
+  SELECT name || '|' || email || '|' || created_by::text INTO st FROM public.suppliers WHERE id = s_a;
+  IF st <> 'T29 Ses Isik Ltd|ses@firma.com|' || ajans::text THEN RAISE EXCEPTION 'normalizasyon/created_by: %', st; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a AND entity_type = 'supplier' AND action = 'created';
+  IF n <> 2 THEN RAISE EXCEPTION 'supplier created aktivite % (2)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.suppliers (organization_id, name, linked_provider_id) VALUES (org_a, 'T29 kendi', ajans);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kendi saglayicisi tedarikci oldu';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.suppliers (organization_id, name, linked_provider_id) VALUES (org_a, 'T29 kopya bag', ajans2);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'ayni saglayici ikinci kez baglandi';
+  EXCEPTION WHEN unique_violation THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.suppliers SET rating = 6 WHERE id = s_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'puan 6 girdi';
+  EXCEPTION WHEN check_violation THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.suppliers SET category = 'uzay' WHERE id = s_b;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'gecersiz kategori girdi';
+  EXCEPTION WHEN check_violation THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 2) owner etkinlik acar; crew_coordinator (pro1, suppliers.manage) A'yi atar; confirmed -> confirmed_at; planned -> bos;
+  --    created + status_changed 2; ayni tedarikci ikinci kez 23505; yabanci tedarikci / baska kurulusun etkinligi 22023;
+  --    B arsive -> B atanamaz 22023
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date)
+  VALUES (org_a, ajans, 'T29 ajans etkinligi', 'corporate', current_date + 45, current_date + 45) RETURNING id INTO ev_a;
+  UPDATE public.suppliers SET is_active = false WHERE id = s_b;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_suppliers (organization_id, event_id, supplier_id, service)
+  VALUES (org_a, ev_a, s_a, ' Ses sistemi ') RETURNING id INTO es_a;
+  UPDATE public.event_suppliers SET status = 'confirmed' WHERE id = es_a;
+  EXECUTE 'RESET ROLE';
+  SELECT confirmed_at INTO ts FROM public.event_suppliers WHERE id = es_a;
+  IF ts IS NULL THEN RAISE EXCEPTION 'confirmed: confirmed_at bos'; END IF;
+  SELECT service INTO st FROM public.event_suppliers WHERE id = es_a;
+  IF st <> 'Ses sistemi' THEN RAISE EXCEPTION 'service kirpilmadi: [%]', st; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.event_suppliers SET status = 'planned' WHERE id = es_a;
+  EXECUTE 'RESET ROLE';
+  SELECT confirmed_at INTO ts FROM public.event_suppliers WHERE id = es_a;
+  IF ts IS NOT NULL THEN RAISE EXCEPTION 'planned: confirmed_at bosalmadi'; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = es_a AND entity_type = 'event_supplier' AND action = 'status_changed';
+  IF n <> 2 THEN RAISE EXCEPTION 'event_supplier status_changed % (2)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = es_a AND action = 'created' AND diff->>'event_id' = ev_a::text;
+  IF n <> 1 THEN RAISE EXCEPTION 'event_supplier created diff event_id yok'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.event_suppliers (organization_id, event_id, supplier_id) VALUES (org_a, ev_a, s_a);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'ayni tedarikci ikinci kez atandi';
+  EXCEPTION WHEN unique_violation THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.event_suppliers (organization_id, event_id, supplier_id) VALUES (org_a, ev_a, s_yab);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'yabanci tedarikci atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.event_suppliers (organization_id, event_id, supplier_id) VALUES (org_a, ev_k, s_a);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'baska kurulusun etkinligine atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.event_suppliers (organization_id, event_id, supplier_id) VALUES (org_a, ev_a, s_b);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'arsivdeki tedarikci atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 3) ic maliyet: pro1 (commercial yok) set/list 42501; finance set 15000 + not -> list 1 satir; negatif 22023;
+  --    NULL -> satir silinir (list 0); access_audit >= 3
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.internal_event_supplier_cost_set(es_a, 1000);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'commercial.manage olmadan tutar yazildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM * FROM public.internal_event_supplier_costs_list(ev_a);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'commercial.view olmadan tutar okundu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', finans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.internal_event_supplier_cost_set(es_a, 15000, ' Nakit ');
+  SELECT count(*), max(agreed_amount) INTO n, amt FROM public.internal_event_supplier_costs_list(ev_a);
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 OR amt <> 15000 THEN RAISE EXCEPTION 'tutar list % / % (1 / 15000)', n, amt; END IF;
+  SELECT private_note || '|' || organization_id::text INTO st FROM internal.event_supplier_costs WHERE event_supplier_id = es_a;
+  IF st <> 'Nakit|' || org_a::text THEN RAISE EXCEPTION 'ic maliyet not/kurulus: %', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', finans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.internal_event_supplier_cost_set(es_a, -5);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'negatif tutar girdi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.internal_event_supplier_cost_set(es_a, NULL);
+  SELECT count(*) INTO n FROM public.internal_event_supplier_costs_list(ev_a);
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'NULL ile tutar silinmedi (%)', n; END IF;
+  SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND target_table = 'event_supplier_costs';
+  IF n < 3 THEN RAISE EXCEPTION 'access_audit % (>=3)', n; END IF;
+  -- dogrudan tablo: authenticated erisemez (42501)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM count(*) FROM internal.event_supplier_costs;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'internal tabloya dogrudan erisildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 4) RLS: sales (musteri) okur 2 tedarikci / 1 atama, yazamaz (0); viewer (pro2) 0 + INSERT 42501; anon 42501;
+  --    ince ayar: sales'e {"suppliers.manage": true} -> puan yazar; geri alinir
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.suppliers WHERE organization_id = org_a;
+  IF n <> 2 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'sales % tedarikci gordu (2)', n; END IF;
+  SELECT count(*) INTO n FROM public.event_suppliers WHERE organization_id = org_a;
+  IF n <> 1 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'sales % atama gordu (1)', n; END IF;
+  UPDATE public.suppliers SET rating = 3 WHERE id = s_a;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'sales yazdi (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.suppliers WHERE organization_id = org_a;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'viewer % tedarikci gordu (0)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.suppliers (organization_id, name) VALUES (org_a, 'T29 viewer');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'viewer tedarikci acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.suppliers;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon tedarikci okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.supplier_shortlists;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon kisa liste okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  UPDATE public.organization_memberships SET permissions = permissions || '{"suppliers.manage": true}'::jsonb WHERE organization_id = org_a AND user_id = musteri;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.suppliers SET rating = 3 WHERE id = s_a;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  UPDATE public.organization_memberships SET permissions = permissions - 'suppliers.manage' WHERE organization_id = org_a AND user_id = musteri;
+  IF n <> 1 THEN RAISE EXCEPTION 'ince ayar suppliers.manage ile sales yazamadi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = s_a AND action = 'updated' AND diff->'rating'->>'to' = '3';
+  IF n <> 1 THEN RAISE EXCEPTION 'rating diff % (1)', n; END IF;
+
+  -- 5) kisa liste: kurum (org_k, owner) liste + 2 kalem (pro1, pro2); kalem organization_id listeden kopyalanir;
+  --    ayni saglayici ikinci kez 23505; baska kurulusun etkinligi 22023; aktivite created 1 + updated 2 (item_added);
+  --    kalem cikar -> item_removed 1; liste silinince kalemler cascade, ek aktivite yok, deleted 1
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.supplier_shortlists (organization_id, name, event_id) VALUES (org_k, ' T29 kisa liste ', ev_k) RETURNING id INTO sl_k;
+  INSERT INTO public.supplier_shortlist_items (shortlist_id, organization_id, provider_id, note) VALUES (sl_k, org_a, pro1, ' iyi ');
+  INSERT INTO public.supplier_shortlist_items (shortlist_id, organization_id, provider_id) VALUES (sl_k, org_k, pro2);
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.supplier_shortlist_items WHERE shortlist_id = sl_k AND organization_id = org_k;
+  IF n <> 2 THEN RAISE EXCEPTION 'kalem organization_id kopyasi % (2)', n; END IF;
+  SELECT name INTO st FROM public.supplier_shortlists WHERE id = sl_k;
+  IF st <> 'T29 kisa liste' THEN RAISE EXCEPTION 'liste adi kirpilmadi: [%]', st; END IF;
+  SELECT note INTO st FROM public.supplier_shortlist_items WHERE shortlist_id = sl_k AND provider_id = pro1;
+  IF st <> 'iyi' THEN RAISE EXCEPTION 'kalem notu kirpilmadi: [%]', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.supplier_shortlist_items (shortlist_id, organization_id, provider_id) VALUES (sl_k, org_k, pro1);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'ayni saglayici ikinci kez eklendi';
+  EXCEPTION WHEN unique_violation THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.supplier_shortlists SET event_id = ev_a WHERE id = sl_k;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'baska kurulusun etkinligi baglandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = sl_k AND entity_type = 'shortlist' AND action = 'created';
+  IF n <> 1 THEN RAISE EXCEPTION 'shortlist created % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = sl_k AND action = 'updated' AND diff ? 'item_added';
+  IF n <> 2 THEN RAISE EXCEPTION 'item_added % (2)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.supplier_shortlist_items WHERE shortlist_id = sl_k AND provider_id = pro2;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = sl_k AND action = 'updated' AND diff ? 'item_removed';
+  IF n <> 1 THEN RAISE EXCEPTION 'item_removed % (1)', n; END IF;
+  -- kurum tedarikci defteri acamaz (suppliers modulu kapali) 22023
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.suppliers (organization_id, name) VALUES (org_k, 'T29 kurum tedarikci');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kurum modul kapaliyken tedarikci acti';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  -- ajans: supplier_search kapali -> 22023; org_module_set ile acilir; kendi saglayicisi (0004) 22023; 0007 eklenir; kapatilir
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.supplier_shortlists (organization_id, name) VALUES (org_a, 'T29 ajans listesi');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'modul kapaliyken ajans liste acti';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_module_set(org_a, 'supplier_search', true);
+  INSERT INTO public.supplier_shortlists (organization_id, name) VALUES (org_a, 'T29 ajans listesi') RETURNING id INTO sl_a;
+  EXECUTE 'RESET ROLE';
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.supplier_shortlist_items (shortlist_id, organization_id, provider_id) VALUES (sl_a, org_a, ajans);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kendi saglayicisi kisa listeye girdi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.supplier_shortlist_items (shortlist_id, organization_id, provider_id) VALUES (sl_a, org_a, ajans2);
+  PERFORM public.org_module_set(org_a, 'supplier_search', false);
+  DELETE FROM public.supplier_shortlists WHERE id = sl_a;
+  EXECUTE 'RESET ROLE';
+  IF public.org_module_enabled(org_a, 'supplier_search') THEN RAISE EXCEPTION 'ajans supplier_search kapanmadi'; END IF;
+  SELECT count(*) INTO n FROM public.supplier_shortlist_items WHERE shortlist_id = sl_a;
+  IF n <> 0 THEN RAISE EXCEPTION 'liste silinince kalem kaldi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = sl_a AND action = 'updated' AND diff ? 'item_removed';
+  IF n <> 0 THEN RAISE EXCEPTION 'cascade silmede item_removed yazildi (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.activity_logs WHERE entity_id = sl_a AND action = 'deleted';
+  IF n <> 1 THEN RAISE EXCEPTION 'shortlist deleted % (1)', n; END IF;
+  -- baska kurulus (ajans2, admin degil) kurumun listesini gormez; admin (ajans 0004) gorur
+  PERFORM set_config('request.jwt.claim.sub', ajans2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.supplier_shortlists WHERE id = sl_k;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'ajans2 kurumun listesini gordu (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.supplier_shortlists WHERE id = sl_k;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'admin kurumun listesini gormedi (%)', n; END IF;
+
+  -- 6) 8b-P2 kurali: firsat sahibi crm.view tasimali — viewer (pro2) sahip 22023; sales (musteri) sahip olur
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.contacts (organization_id, full_name) VALUES (org_a, 'T29 kisi') RETURNING id INTO c_t;
+  EXECUTE 'RESET ROLE';
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.crm_leads (organization_id, contact_id, title, owner_user_id) VALUES (org_a, c_t, 'T29 firsat', pro2);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'crm.view olmayan sahip atandi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.crm_leads (organization_id, contact_id, title, owner_user_id) VALUES (org_a, c_t, 'T29 firsat', musteri) RETURNING id INTO l_t;
+  DELETE FROM public.crm_leads WHERE id = l_t;
+  DELETE FROM public.contacts WHERE id = c_t;
+  EXECUTE 'RESET ROLE';
+  DELETE FROM public.notifications WHERE type = 'crm' AND body = 'Sana fırsat atandı: T29 firsat';
+
+  -- 7) silme: A atanmisken silinemez (23503); atama silinince A silinir; deleted aktivite supplier 1 + event_supplier 1
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    DELETE FROM public.suppliers WHERE id = s_a;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'atanmis tedarikci silindi';
+  EXCEPTION WHEN foreign_key_violation THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.event_suppliers WHERE id = es_a;
+  DELETE FROM public.suppliers WHERE id = s_a;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.activity_logs WHERE organization_id = org_a AND entity_type IN ('supplier', 'event_supplier') AND action = 'deleted';
+  IF n <> 2 THEN RAISE EXCEPTION 'deleted aktivite % (2)', n; END IF;
+
+  -- 8) temizlik
+  DELETE FROM public.supplier_shortlists WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.event_suppliers WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.suppliers WHERE organization_id IN (org_a, org_k, org_b);
+  DELETE FROM public.events WHERE id = ev_a;
+  SELECT count(*) INTO n FROM public.suppliers WHERE organization_id IN (org_a, org_k, org_b);
+  IF n <> 0 THEN RAISE EXCEPTION 'temizlik: % tedarikci kaldi', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (29, 'T29 FAZ 8c tedarikciler + kisa liste', 'GECTI',
+    'tedarikci normalize + created_by + created 2; kendi saglayicisi 22023, ayni saglayici 23505, puan 6 / kategori 23514; crew_coordinator atadi, confirmed_at durumla, status_changed 2, diff event_id; ayni tedarikci 23505, yabanci tedarikci / baska etkinlik / arsiv 22023; ic maliyet: commercial yok 42501 (set+list), finance 15000 -> 1 satir, negatif 22023, NULL siler, access_audit >=3, tablo dogrudan 42501; sales okur 2/1 yazamaz 0, viewer 0 + 42501, anon 42501 (2 tablo), ince ayar ile sales yazdi + rating diff; kisa liste: kalem org kopyasi, kirpma, ayni saglayici 23505, baska etkinlik 22023, created 1 + item_added 2 + item_removed 1, kurum suppliers kapali 22023, ajans supplier_search kapali 22023 -> ac -> kendi saglayicisi 22023 -> 0007 eklendi -> kapat, cascade silmede ek aktivite yok + deleted 1, baska kurulus listeyi gormez / admin gorur; 8b-P2 sahip crm.view 22023; atanmis tedarikci 23503, deleted 2; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (29, 'T29 FAZ 8c tedarikciler + kisa liste', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

@@ -5,7 +5,7 @@
 `08-faz0-kiraci-temeli.md` (uyelik, davet, `organization_modules`, `org_role_permissions`); `19-faz7` bolum 12 acik kalemler
 (uyelik rol degistirme arayuzu). TUBITAK: Event OS modulleri CRM, Events, Crew, Talent Pool, Suppliers, Commercial, Operations, Finance,
 Insights; BKM Mutfak niyet mektubu "musaitlik, gorev, teklif ve butceyi tek projede takip" — bu fazin ilk dilimi "gorev"i kapatir.
-**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); **8b-DB/01 + 8b-P1 KAPANDI (21 Ekim) — FAZ 8b KAPANDI** (§4); sirada **8c** (§5). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
+**Durum:** 8-U KAPANDI (20 Ekim); 8a-DB/01 + hijyen_03 + 8a-DB/02 uretimde; **8a-P1 + D1b-1 KAPANDI (21 Ekim) — FAZ 8a KAPANDI**; tasarim dili v2 KAPANDI (D1-D4, 21 Ekim; `22-tasarim-dili-v2.md`); **8b-DB/01 + 8b-P1 KAPANDI (21 Ekim) — FAZ 8b KAPANDI** (§4); **8c-DB/01 hazir** (§5, dal + uretim bekliyor). Sira: 8-U (uyelik rolleri) -> **8a** (gorevler + aktivite) -> 8b (CRM) -> 8c (tedarikciler + Buyer
 Workspace). Her dilim: migration -> dal (asama4 + asama18) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 19 Ekim 2026)
@@ -177,11 +177,31 @@ atandi: Lansman sahne ekibi · FIRSAT". Firsat sil → KPI 0; iki deneme kisisi 
 (4) hotmail'deki "Sana firsat atandi" bildirimi firsat silinince kaliyor (baglanti artik olmayan kayda gider) — kayit silinince bildirimi
 temizleme (genel kalem; gorev/teklif bildirimleri icin de dusunulur).
 
-## 5. 8c — Tedarikciler + Buyer Workspace (plan; sonra)
+## 5. 8c — Tedarikciler + alici kisa listesi
 
-`suppliers` (kurulus bazli defter) ve alici icin `procurement_requests` / `supplier_shortlists` (madde 38; `rfps` 7b ile geldi). Alici menusu
-(05): Events, RFP, Tedarikci Arama, Teklif Karsilastirma (7b-P2 ile var), Butce, Onaylar, Sozlesmeler, Raporlama — hangi parcalarin FAZ 8'e,
-hangilerinin FAZ 9+'a kalacagi dilim acilinca kararlastirilir.
+**Kararlar (Guven, 21 Ekim 2026):** kapsam = ajans tedarikci defteri (`suppliers`) + etkinlige tedarikci atama (`event_suppliers`) + alici
+kisa listesi (`supplier_shortlists` / `supplier_shortlist_items`; Kesfet'ten ekle, RFP davetinde sec); `procurement_requests` FAZ 9+'a
+(butce/onay ile). Tedarikci serbest kayit (ad, kategori, iletisim kurulus ici, sehir, puan 1-5, not) + istege bagli Kashe saglayici bagi.
+Anlasilan tutar IC MALIYET: `internal.event_supplier_costs`, yalniz RPC (`commercial.view` okur, `commercial.manage` yazar) — ekip
+koordinatoru tedarikciyi gorur, tutari gormez. Yetki: `suppliers.view` / `suppliers.manage` (sahip, yonetici, proje yoneticisi, ekip
+koordinatoru yazar; satis, finans okur; izleyici gormez); kisa liste alicida `events.view` / `events.manage`. Moduller: ajansta
+`suppliers`, business'ta `supplier_search` varsayilan ACIK (`org_module_set` ikisini de acip kapatir).
+
+### 8c-DB/01 — `20261023120000_faz8c_01_tedarikciler.sql` (hazir; dal + uretim bekliyor)
+
+Nesneler: `org_role_permissions` + suppliers.*; `user_has_org_permission(uid, org, perm)`; `suppliers` (kategori CHECK: sound_light,
+stage_technical, catering, venue, transport, print_promo, decor, security, talent, other; e-posta kucuk harf; `linked_provider_id` kendi
+saglayicisi olamaz, kurulus icinde tekil; `is_active` arsiv); `event_suppliers` (hizmet ≤200, durum planned/confirmed/cancelled +
+`confirmed_at`, not, sira; etkinlik + tedarikci ayni kurulus; etkinlik basina tedarikci tekil; arsivdeki tedarikci atanamaz; tedarikci
+silme RESTRICT); `internal.event_supplier_costs` + `internal_event_supplier_costs_list(event)` / `internal_event_supplier_cost_set(atama,
+tutar, not)` (tutar NULL -> satir silinir; `log_access`); `supplier_shortlists` (ad 2-120, istege bagli etkinlik — ayni kurulus) +
+`supplier_shortlist_items` (providers; organization_id listeden kopya; kendi saglayicisi eklenemez; liste basina saglayici tekil);
+tetikleyiciler `fn_faz8c_*` (modul kapisi 22023, kurulus sabit, normalizasyon, aktivite entity `supplier` / `event_supplier` (diff'te
+event_id) / `shortlist` (kalem ekle/cikar `item_added` / `item_removed`; cascade silmede yazmaz); e-posta/telefon diff'e YAZILMAZ);
+`activity_logs_entity_type_check` + 3; RLS suppliers/event_suppliers suppliers.*, kisa liste events.*; modul dolumu +
+`fn_faz5_default_modules` (business: supplier_search); **8b-P2 kurali**: firsat sahibi `crm.view` tasimali (`fn_faz8b_lead_validate`,
+'sahibin crm yetkisi yok'). Bildirim yok. asama4 **T29** (yerelde 30/30 GECTI), asama18 **K25-K29** ESIT, K30-K31 bilgi.
+Not: `pg_trigger_depth()` cascade silmede 1 kalir — kalem/atama aktivitesi "ust kayit var mi" kontroluyle susturulur.
 
 ## 6. Acik sorular (dilim acilirken)
 
