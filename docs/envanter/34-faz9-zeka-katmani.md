@@ -4,9 +4,9 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)** — 9a-DB/01 dalda + uretimde (asama4 32/32, asama19 K1-K5 ESIT; uretim dolumu
-222 olay, son 7 gun 25), 9a-P1 `/admin/zeka` canli turdan gecti (bolum 2 kapanis notu). Sira: 9b fiyat kiyaslari -> 9c Trust Score V0
--> kapanis. Her dilim: migration -> dal (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
+**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b-DB/01 hazir** (`20261026120000_faz9b_01_fiyat_kiyaslari.sql`; yerelde asama4
+T32 33/33, asama19 K7-K9 ESIT; dal + uretim bekliyor). Sira: 9b-P1 -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
+(asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
 
@@ -174,6 +174,37 @@ Istatistik: `percentile_cont(0.25/0.5/0.75)`, `avg`; para birimi TRY disi gozlem
 Yayinlanan yoksa bos. `authenticated` + `anon` (sihirbaz anonim de olabilir); yalniz yayinlanmis satir dondurur (fonksiyon icinde
 `is_published`), tabloya dogrudan SELECT yok. Donus alanlari: `median, p25, p75, sample_size, period_end, granularity`.
 
+### Uygulama notlari (9b-DB/01, `20261026120000_faz9b_01_fiyat_kiyaslari.sql`)
+
+- **Rezervasyon ayri kaynak DEGIL:** `bookings_shape_check` geregi her rezervasyon ya teklif surumune (kaynak 1'de sayilir) ya da
+  quote'a (kaynak 3'te sayilir) baglidir; "crew sekli" diye bagimsiz bir rezervasyon yok. Kaynak 2 bu yuzden kodda yoktur (plan maddesi
+  dogru ongormustu: "ikinci kez sayilmaz").
+- **Teklif kalemleri:** teklifin SON GONDERILMIS surumu (`DISTINCT ON (proposal_id) ORDER BY version_no DESC`, `sent_at` dolu) —
+  revizyon ayni kalemi iki kez saymaz; etkinlik `COALESCE(proposals.event_id, rfps.event_id)`; `role_id` dolu + `is_visible_to_client`
+  + `unit_client_price > 0` + surum `currency = 'TRY'`; tur `events.event_type` yalniz `event_types` anahtariysa (degilse NULL -> kaba satir).
+- **Pro teklifleri:** `quotes.status = accepted`; rol = `v_provider_roles` birincil rol, birincil yoksa ve TEK aktif rol varsa o, aksi
+  halde gozlem ATLANIR (rol uydurulmaz); sehir `providers.city_id`; tur `events` (`conversations.event_id`) yoksa `conversations.event_type`.
+  Gozlem zamani `responded_at` (yoksa `created_at`). Kabulde tetikleyicinin actigi rezervasyon ayri gozlem uretmez.
+- **Hesap:** `price_benchmarks_compute(p_as_of date default current_date)` → `fn_faz9b_gozlemler(start, end)` (service_role) → uc aile
+  `UNION ALL` (GROUPING SETS degil: sehri NULL olan gozlem dar hucreye sizmasin), `percentile_cont`, `ON CONFLICT ... DO UPDATE`
+  (ayni gun yeniden kosarsa gunceller; eski gun silinmez). Tekil kisit `UNIQUE NULLS NOT DISTINCT (role_id, city_id, event_type,
+  period_end)` (PG15+; uzak PG17). Aile kurali CHECK: `city_id NULL` iken `event_type` NULL. Esik tek kaynak `fn_faz9b_yayin_esigi()` = 15;
+  `algorithm_version = 'bench-v0'`. Migration sonunda ilk hesap kosar (uretimde hucreler olusur; esik alti yayinlanmaz).
+- **Okuma:** `price_benchmark_lookup(rol, sehir, tur)` — SON hesap gununun (`max(period_end)`, tum tablo) yayinli en dar satiri; eski
+  gunun yayinli satiri DONMEZ (asama4 T32 bunu ayrica sinar). `price_benchmark_lookup_many(roller[], sehir, tur)` sihirbaz icin (yayinli
+  olmayan rol satir dondurmez). Ikisi de anon + authenticated. Tablo SELECT yalniz `is_admin`; varsayilan ALL ayricaligi authenticated'dan
+  geri alindi (asama19 K8 bunu olcer).
+- **Admin ozeti:** `price_benchmarks_summary()` (admin; 42501) → `period_end/period_start`, `threshold`, `cells_total`, `cells_published`,
+  `observations_total` (rol kaba satirlarinin toplami), `by_granularity`, `published_cells` (50; rol/sehir/tur adlariyla), `near_threshold`
+  (esik-7..esik-1 arasi 20 hucre). 9b-P1 admin blogu bunu okur.
+- **pg_cron:** `price-benchmarks-daily` `30 0 * * *` (00:30 UTC = 03:30 Istanbul); yalniz `pg_extension`'da `pg_cron` varsa (harness'ta yok),
+  `EXECUTE` ile dinamik (uzanti yokken ayristirma hatasi olmasin). asama19 K9 cron isini uzanti varligiyla karsilastirir
+  (`query_to_xml` ile — `cron.job` yokken salt SELECT'te adi gecemez).
+- **Test:** asama4 **T32** (16 kalem = 4 teklif x 4, revizyon cift saymaz, gizli/rolsuz/taslak/etkinliksiz girmez, quote tek rol;
+  A dugun 16 yayinli 4750/8500/12250, B dugun 3 ve A kurumsal 2 yayinsiz, A kaba 18, rol kaba >= 21, (rol,NULL,tur) yok, idempotan,
+  esik/ceyrek tutarli; lookup anon en dar/rol+sehir/rol/dunku satir donmez/olmayan rol 0/many 1; anon tablo 42501; admin olmayan 0 +
+  INSERT/compute/gozlem/ozet 42501; admin ozet) — test sehirleri `turkish_cities` plaka 998/999 gecici; asama19 **K7-K9** ESIT, **K10** bilgi.
+
 ### 9b-P1 — yuzeyler (yalniz yayinlanmis hucre; yoksa HICBIR SEY)
 
 - **Sihirbaz butce kutusu** (`anladim-ozeti` / adim 2): rollerin medyan toplami "Benzer etkinliklerde bu roller ~X TL (son 90 gun, N islem)";
@@ -235,7 +266,7 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 |---|---|---|
 | **9a-DB/01** — **KAPANDI** | `analytics_events` + CHECK sozluk + 10 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
 | **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
-| **9b-DB/01** | `price_benchmarks` + `price_benchmarks_compute` + cron + `price_benchmark_lookup` | asama4 **T32** (3 kaynak, cift sayim yok, esik, kaba satir, lookup en dar yayinli), asama19 K7-K10 |
+| **9b-DB/01** — hazir | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
 | **9b-P1** | sihirbaz/Kesfet/editor/profil ipuclari (yalniz yayinli) | tur: testguven sihirbaz, gmail editor (uretimde buyuk olasilikla hucre yok — "hicbir sey" davranisi dogrulanir) |
 | **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |
 | **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |

@@ -4616,4 +4616,207 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO t_sonuc VALUES (31, 'T31 FAZ 9a olay zinciri', 'HATA', SQLERRM);
 END $$;
 
+-- -----------------------------------------------------------------------------
+-- T32) FAZ 9b fiyat kiyaslari. ON KOSUL: 20261026120000 (faz9b 01) dalda. Test Ajans (org_a: owner 0004 = admin), pro2 0003 (TEK rol).
+--      Gozlem = son GONDERILMIS surumun gorunur rol kalemleri + kabul edilmis pro teklifi; gizli/rolsuz/taslak/etkinliksiz kalem girmez;
+--      revizyon cift sayilmaz; uc aile; esik 15; lookup son hesapta yayinli en dar satir (eski gunden donmez); anon okur; tablo admin-only.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; rol integer; rol2 integer; sehir_a integer; sehir_b integer;
+  ev_a uuid; ev_b uuid; ev_c uuid; prop uuid; ver uuid; prop_ilk uuid; conv uuid; q uuid;
+  i integer; j integer; n integer; n2 integer; st text; js jsonb; esik integer; r record;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO rol FROM public.service_roles WHERE is_active ORDER BY id LIMIT 1;
+  SELECT count(*), min(role_id) INTO n, rol2 FROM public.v_provider_roles WHERE provider_id = pro2 AND role_is_active;
+  IF org_a IS NULL OR rol IS NULL THEN RAISE EXCEPTION 'on kosul: org_a=% rol=%', org_a, rol; END IF;
+  IF n <> 1 THEN RAISE EXCEPTION 'on kosul: pro2 aktif rol sayisi % (1 beklenir: birincil yoksa tek rol kurali)', n; END IF;
+  IF to_regclass('public.price_benchmarks') IS NULL THEN RAISE EXCEPTION 'on kosul: faz9b_01 uygulanmamis'; END IF;
+  esik := public.fn_faz9b_yayin_esigi();
+  IF esik <> 15 THEN RAISE EXCEPTION 'yayin esigi % (15)', esik; END IF;
+
+  -- 0) temizlik (onceki yarim kosu) + test sehirleri (dalda turkish_cities 81 il; 998/999 bos)
+  DELETE FROM public.bookings WHERE conversation_id IN (SELECT id FROM public.conversations WHERE location = 'T32');
+  DELETE FROM public.quotes WHERE conversation_id IN (SELECT id FROM public.conversations WHERE location = 'T32');
+  DELETE FROM public.conversations WHERE location = 'T32';
+  DELETE FROM public.proposals WHERE title LIKE 'T32 %';
+  DELETE FROM public.events WHERE title LIKE 'T32 %';
+  DELETE FROM public.turkish_cities WHERE plate_no IN (998, 999);
+  INSERT INTO public.turkish_cities (plate_no, name) VALUES (998, 'T32 Sehir A') RETURNING id INTO sehir_a;
+  INSERT INTO public.turkish_cities (plate_no, name) VALUES (999, 'T32 Sehir B') RETURNING id INTO sehir_b;
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, status, city_id)
+  VALUES (org_a, ajans, 'T32 etkinlik A', 'wedding', current_date + 30, current_date + 30, 'draft', sehir_a) RETURNING id INTO ev_a;
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, status, city_id)
+  VALUES (org_a, ajans, 'T32 etkinlik B', 'wedding', current_date + 31, current_date + 31, 'draft', sehir_b) RETURNING id INTO ev_b;
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, status, city_id)
+  VALUES (org_a, ajans, 'T32 etkinlik C', 'corporate', current_date + 32, current_date + 32, 'draft', sehir_a) RETURNING id INTO ev_c;
+
+  -- 1) teklifler (ajans owner): A sehri dugun 4 teklif x 4 kalem = 16 gozlem (1000..16000); her teklifte gizli + rolsuz kalem (girmez)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  FOR i IN 1..4 LOOP
+    prop := public.proposal_create(org_a, 'T32 teklif A' || i, ev_a, NULL, NULL, NULL);
+    IF i = 1 THEN prop_ilk := prop; END IF;
+    SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+    FOR j IN 1..4 LOOP
+      INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+      VALUES (ver, rol, 'T32 kalem', 1, 1000 * ((i - 1) * 4 + j), true, j);
+    END LOOP;
+    INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+    VALUES (ver, rol, 'T32 gizli kalem', 1, 99999, false, 8);
+    INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+    VALUES (ver, NULL, 'T32 ulasim', 1, 777, true, 9);
+    PERFORM public.proposal_send(prop, 14);
+  END LOOP;
+  -- revizyon: ilk teklife yeni surum (kalemler kopyalanir) ve yeniden gonder -> yalniz son surum sayilir (16 kalir, 20 olmaz)
+  PERFORM public.proposal_new_version(prop_ilk);
+  PERFORM public.proposal_send(prop_ilk, 14);
+  -- B sehri dugun: 1 teklif 3 kalem (esik alti); A sehri kurumsal: 1 teklif 2 kalem (esik alti)
+  prop := public.proposal_create(org_a, 'T32 teklif B', ev_b, NULL, NULL, NULL);
+  SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+  FOR j IN 1..3 LOOP
+    INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+    VALUES (ver, rol, 'T32 kalem B', 1, 2000 * j, true, j);
+  END LOOP;
+  PERFORM public.proposal_send(prop, 14);
+  prop := public.proposal_create(org_a, 'T32 teklif C', ev_c, NULL, NULL, NULL);
+  SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+  FOR j IN 1..2 LOOP
+    INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+    VALUES (ver, rol, 'T32 kalem C', 1, 3000 * j, true, j);
+  END LOOP;
+  PERFORM public.proposal_send(prop, 14);
+  -- taslak (gonderilmemis) teklif + etkinliksiz teklif: gozlem DEGIL
+  prop := public.proposal_create(org_a, 'T32 taslak', ev_a, NULL, NULL, NULL);
+  SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+  INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+  VALUES (ver, rol, 'T32 taslak kalem', 1, 50000, true, 1);
+  prop := public.proposal_create(org_a, 'T32 etkinliksiz', NULL, NULL, 'T32 Musteri', 'faz1test+t32@kashe.net');
+  SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+  INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+  VALUES (ver, rol, 'T32 etkinliksiz kalem', 1, 60000, true, 1);
+  PERFORM public.proposal_send(prop, 14);
+  EXECUTE 'RESET ROLE';
+
+  -- 2) pazaryeri pro teklifi (pro2, tek rol, sehri yok): kabul -> gozlem (quote), rezervasyon tetikleyicisi ayri gozlem uretmez
+  INSERT INTO public.conversations (customer_id, professional_id, event_date, event_type, location, guest_count)
+  VALUES (musteri, pro2, current_date + 20, 'wedding', 'T32', 80) RETURNING id INTO conv;
+  INSERT INTO public.quotes (conversation_id, sender_id, total_amount, currency, services_description, expires_at, status)
+  VALUES (conv, pro2, 5000, 'TRY', 'T32 pro teklifi aciklamasi', now() + interval '7 days', 'pending') RETURNING id INTO q;
+  UPDATE public.quotes SET status = 'accepted' WHERE id = q;
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(current_date - 89, current_date) g WHERE g.source = 'quote' AND g.source_id = q
+     AND g.role_id = rol2 AND g.event_type = 'wedding' AND g.amount = 5000;
+  IF n <> 1 THEN RAISE EXCEPTION 'quote gozlemi % (1)', n; END IF;
+  -- gozlem sayimi (A dugun rol): 16; gizli/rolsuz/taslak/etkinliksiz yok
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(current_date - 89, current_date) g WHERE g.role_id = rol AND g.city_id = sehir_a AND g.event_type = 'wedding';
+  IF n <> 16 THEN RAISE EXCEPTION 'A dugun gozlem % (16; revizyon cift saydi ya da gizli kalem girdi)', n; END IF;
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(current_date - 89, current_date) g WHERE g.amount IN (99999, 777, 50000, 60000);
+  IF n <> 0 THEN RAISE EXCEPTION 'gizli/rolsuz/taslak/etkinliksiz kalem gozleme girdi (%)', n; END IF;
+
+  -- 3) hesap: uc aile, esik, idempotan
+  SELECT public.price_benchmarks_compute(current_date) INTO n;
+  IF n < 6 THEN RAISE EXCEPTION 'hesap % satir (>= 6)', n; END IF;
+  SELECT sample_size, is_published, p25, median, p75, average INTO r FROM public.price_benchmarks
+   WHERE role_id = rol AND city_id = sehir_a AND event_type = 'wedding' AND period_end = current_date;
+  IF r.sample_size IS DISTINCT FROM 16 OR NOT r.is_published OR r.p25 <> 4750 OR r.median <> 8500 OR r.p75 <> 12250 OR r.average <> 8500 THEN
+    RAISE EXCEPTION 'A dugun hucresi: %', r; END IF;
+  SELECT sample_size, is_published INTO r FROM public.price_benchmarks WHERE role_id = rol AND city_id = sehir_b AND event_type = 'wedding' AND period_end = current_date;
+  IF r.sample_size IS DISTINCT FROM 3 OR r.is_published THEN RAISE EXCEPTION 'B dugun hucresi (3, yayinsiz): %', r; END IF;
+  SELECT sample_size, is_published INTO r FROM public.price_benchmarks WHERE role_id = rol AND city_id = sehir_a AND event_type = 'corporate' AND period_end = current_date;
+  IF r.sample_size IS DISTINCT FROM 2 OR r.is_published THEN RAISE EXCEPTION 'A kurumsal hucresi (2, yayinsiz): %', r; END IF;
+  SELECT sample_size, is_published INTO r FROM public.price_benchmarks WHERE role_id = rol AND city_id = sehir_a AND event_type IS NULL AND period_end = current_date;
+  IF r.sample_size IS DISTINCT FROM 18 OR NOT r.is_published THEN RAISE EXCEPTION 'A kaba satir (18, yayinli): %', r; END IF;
+  SELECT sample_size, is_published INTO r FROM public.price_benchmarks WHERE role_id = rol AND city_id IS NULL AND event_type IS NULL AND period_end = current_date;
+  IF r.sample_size IS NULL OR r.sample_size < 21 OR NOT r.is_published THEN RAISE EXCEPTION 'rol kaba satir (>= 21, yayinli): %', r; END IF;
+  SELECT count(*) INTO n FROM public.price_benchmarks WHERE city_id IS NULL AND event_type IS NOT NULL;
+  IF n <> 0 THEN RAISE EXCEPTION '(rol, NULL, tur) ailesi olusmus (%)', n; END IF;
+  SELECT count(*) INTO n FROM public.price_benchmarks WHERE period_end = current_date;
+  PERFORM public.price_benchmarks_compute(current_date);
+  SELECT count(*) INTO n2 FROM public.price_benchmarks WHERE period_end = current_date;
+  IF n2 <> n THEN RAISE EXCEPTION 'yeniden hesap satir sayisini degistirdi (% -> %)', n, n2; END IF;
+  SELECT count(*) INTO n FROM public.price_benchmarks WHERE period_end = current_date AND ((is_published AND sample_size < esik) OR (NOT is_published AND sample_size >= esik) OR p25 > median OR median > p75);
+  IF n <> 0 THEN RAISE EXCEPTION 'esik/ceyrek tutarsizligi (%)', n; END IF;
+
+  -- 4) lookup (anon): en dar yayinli satir; esik alti hucre kaba satira duser; eski gunun yayinli satiri DONMEZ
+  INSERT INTO public.price_benchmarks (role_id, city_id, event_type, period_start, period_end, sample_size, p25, median, p75, average, is_published)
+  VALUES (rol, sehir_b, 'wedding', current_date - 90, current_date - 1, 40, 1, 2, 3, 2, true);   -- dunku yayinli (B dugun) satir
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT granularity, sample_size, median INTO r FROM public.price_benchmark_lookup(rol, sehir_a, 'wedding');
+  IF r.granularity IS DISTINCT FROM 'role_city_type' OR r.sample_size <> 16 OR r.median <> 8500 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'lookup A dugun: %', r; END IF;
+  SELECT granularity, sample_size INTO r FROM public.price_benchmark_lookup(rol, sehir_a, 'corporate');
+  IF r.granularity IS DISTINCT FROM 'role_city' OR r.sample_size <> 18 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'lookup A kurumsal -> rol+sehir: %', r; END IF;
+  SELECT granularity, sample_size, period_end INTO r FROM public.price_benchmark_lookup(rol, sehir_b, 'wedding');
+  IF r.granularity IS DISTINCT FROM 'role' OR r.sample_size < 21 OR r.period_end <> current_date THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'lookup B dugun -> rol (dunku satir donmemeli): %', r; END IF;
+  SELECT granularity INTO r FROM public.price_benchmark_lookup(rol, NULL, NULL);
+  IF r.granularity IS DISTINCT FROM 'role' THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'lookup rol: %', r; END IF;
+  SELECT count(*) INTO n FROM public.price_benchmark_lookup(-1, sehir_a, 'wedding');
+  IF n <> 0 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'olmayan rol satir dondu (%)', n; END IF;
+  SELECT count(*), max(role_id) INTO n, n2 FROM public.price_benchmark_lookup_many(ARRAY[rol, -1], sehir_a, 'wedding');
+  IF n <> 1 OR n2 <> rol THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'lookup_many % satir / rol % (1 / %)', n, n2, rol; END IF;
+  BEGIN
+    PERFORM count(*) FROM public.price_benchmarks;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon tabloyu okudu';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  DELETE FROM public.price_benchmarks WHERE role_id = rol AND period_end = current_date - 1 AND sample_size = 40;
+
+  -- 5) yetki: admin olmayan (musteri) tablo 0 satir, INSERT/compute/gozlemler/ozet 42501; admin (ajans) okur + ozet
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.price_benchmarks;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'admin olmayan % kiyas satiri gordu (0)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.price_benchmarks (role_id, period_start, period_end, sample_size) VALUES (rol, current_date - 89, current_date, 1);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated kiyas yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.price_benchmarks_compute(current_date);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated hesap kosturdu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM count(*) FROM public.fn_faz9b_gozlemler(current_date - 89, current_date);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated gozlemleri okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.price_benchmarks_summary();
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'admin olmayan ozet aldi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.price_benchmarks WHERE period_end = current_date;
+  SELECT public.price_benchmarks_summary() INTO js;
+  EXECUTE 'RESET ROLE';
+  IF n = 0 THEN RAISE EXCEPTION 'admin kiyas okuyamadi'; END IF;
+  IF (js->>'threshold')::int <> 15 OR (js->>'cells_published')::int < 3 OR (js->>'cells_total')::int < 6 OR (js->>'period_end')::date <> current_date
+     OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(js->'published_cells') c WHERE c->>'granularity' = 'role_city_type' AND (c->>'sample_size')::int = 16 AND c->>'city_name' = 'T32 Sehir A')
+     OR (js->'by_granularity'->'role_city_type'->>'published')::int < 1 THEN
+    RAISE EXCEPTION 'ozet icerik: %', js; END IF;
+
+  -- 6) temizlik: kaynaklar + sehirler (CASCADE hucreleri siler) + bu kosunun rol satirlari; hesap yeniden kosar (harness temiz kalsin)
+  DELETE FROM public.bookings WHERE conversation_id = conv;
+  DELETE FROM public.quotes WHERE id = q;
+  DELETE FROM public.conversations WHERE id = conv;
+  DELETE FROM public.proposals WHERE title LIKE 'T32 %';
+  DELETE FROM public.events WHERE title LIKE 'T32 %';
+  DELETE FROM public.turkish_cities WHERE plate_no IN (998, 999);
+  DELETE FROM public.price_benchmarks WHERE period_end = current_date AND role_id IN (rol, rol2);
+  PERFORM public.price_benchmarks_compute(current_date);
+
+  INSERT INTO t_sonuc VALUES (32, 'T32 FAZ 9b fiyat kiyaslari', 'GECTI',
+    'gozlem: 16 kalem (4 teklif x 4; revizyon cift saymadi; gizli/rolsuz/taslak/etkinliksiz girmedi) + quote 1 (tek rol, tur wedding); hesap: A dugun 16 yayinli (4750/8500/12250, ort 8500), B dugun 3 ve A kurumsal 2 yayinsiz, A kaba 18 yayinli, rol kaba >= 21 yayinli, (rol,NULL,tur) yok, yeniden hesap ayni satir sayisi, esik/ceyrek tutarli; lookup anon: en dar / rol+sehir / rol (dunku yayinli satir donmedi) / olmayan rol 0 / many 1; anon tablo 42501; admin olmayan 0 satir + INSERT/compute/gozlem/ozet 42501; admin okur + ozet (esik 15, yayinli >= 3, hucre A dugun 16)');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (32, 'T32 FAZ 9b fiyat kiyaslari', 'HATA', SQLERRM);
+END $$;
+
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

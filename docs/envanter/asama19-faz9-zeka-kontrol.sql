@@ -1,5 +1,5 @@
 -- =============================================================================
--- FAZ 9 / Asama 19 — Zeka katmani tutarlilik kontrolu (SALT OKUNUR; dalda ve URETIMDE)
+-- FAZ 9 / Asama 19 — Zeka katmani tutarlilik kontrolu (SALT OKUNUR; dalda ve URETIMDE) — 9a + 9b
 -- Bolum A (9a olay zinciri):
 --   K1 nesneler: analytics_events tablosu + fn_faz9_olay_yaz + analytics_summary + fn_faz9_booking_payload + CHECK sozluk 23 ad (5)
 --   K2 tetikleyiciler: trg_faz9_% 10 tabloda 10 (10)
@@ -10,7 +10,15 @@
 --   K5 yetki: SELECT politikasi 1 (is_admin) + authenticated INSERT/UPDATE/DELETE yok + anon SELECT yok + fn_faz9_olay_yaz
 --      authenticated EXECUTE yok + analytics_summary authenticated var (5)
 --   K6 bilgi: toplam olay / son 7 gun olay
--- Beklenen: K1-K5 ESIT; K6 BILGI.
+-- Bolum B (9b fiyat kiyaslari):
+--   K7 nesneler: price_benchmarks + fn_faz9b_yayin_esigi (=15) + fn_faz9b_gozlemler + price_benchmarks_compute + price_benchmark_lookup
+--      + price_benchmark_lookup_many + price_benchmarks_summary + aile CHECK + NULLS NOT DISTINCT tekil (9)
+--   K8 yetki: SELECT politikasi 1 (is_admin) + authenticated INSERT/UPDATE/DELETE yok + anon SELECT yok + compute/gozlemler
+--      authenticated EXECUTE yok + lookup anon VE authenticated var + lookup_many anon var + summary authenticated var, anon yok (7)
+--   K9 tutarlilik: yayinli satirda sample_size < esik / yayinsiz satirda >= esik / p25 > medyan / medyan > p75 / donem 90 gun degil /
+--      (rol, NULL, tur) ailesi -> ihlal toplami (0) + pg_cron: uzanti varsa 'price-benchmarks-daily' isi 1 (uzanti yoksa 0) -> fark (0)
+--   K10 bilgi: son hesap gunu hucre toplami (eski) / yayinlanan (yeni)
+-- Beklenen: K1-K5, K7-K9 ESIT; K6, K10 BILGI.
 -- =============================================================================
 
 WITH
@@ -65,11 +73,59 @@ k6 AS (
          (SELECT count(*) FROM public.analytics_events)::bigint,
          (SELECT count(*) FROM public.analytics_events WHERE occurred_at >= now() - interval '7 days')::bigint
 ),
+k7 AS (
+  SELECT 'K7 9b nesneleri (9)' AS kontrol,
+         ((to_regclass('public.price_benchmarks') IS NOT NULL)::int
+          + (to_regprocedure('public.fn_faz9b_yayin_esigi()') IS NOT NULL AND public.fn_faz9b_yayin_esigi() = 15)::int
+          + (to_regprocedure('public.fn_faz9b_gozlemler(date, date)') IS NOT NULL)::int
+          + (to_regprocedure('public.price_benchmarks_compute(date)') IS NOT NULL)::int
+          + (to_regprocedure('public.price_benchmark_lookup(integer, integer, text)') IS NOT NULL)::int
+          + (to_regprocedure('public.price_benchmark_lookup_many(integer[], integer, text)') IS NOT NULL)::int
+          + (to_regprocedure('public.price_benchmarks_summary()') IS NOT NULL)::int
+          + (SELECT count(*) FROM pg_constraint WHERE conname = 'price_benchmarks_family_check')::int
+          + (SELECT count(*) FROM pg_constraint c JOIN pg_index i ON i.indexrelid = c.conindid
+              WHERE c.conname = 'price_benchmarks_cell_day_key' AND i.indnullsnotdistinct)::int)::bigint AS eski,
+         9::bigint AS yeni
+),
+k8 AS (
+  SELECT 'K8 9b yetki (7)' AS kontrol,
+         ((SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'price_benchmarks' AND cmd = 'SELECT')
+          + (NOT has_table_privilege('authenticated', 'public.price_benchmarks', 'INSERT')
+             AND NOT has_table_privilege('authenticated', 'public.price_benchmarks', 'UPDATE')
+             AND NOT has_table_privilege('authenticated', 'public.price_benchmarks', 'DELETE'))::int
+          + (NOT has_table_privilege('anon', 'public.price_benchmarks', 'SELECT'))::int
+          + (NOT has_function_privilege('authenticated', 'public.price_benchmarks_compute(date)', 'EXECUTE')
+             AND NOT has_function_privilege('authenticated', 'public.fn_faz9b_gozlemler(date, date)', 'EXECUTE'))::int
+          + (has_function_privilege('anon', 'public.price_benchmark_lookup(integer, integer, text)', 'EXECUTE')
+             AND has_function_privilege('authenticated', 'public.price_benchmark_lookup(integer, integer, text)', 'EXECUTE'))::int
+          + (has_function_privilege('anon', 'public.price_benchmark_lookup_many(integer[], integer, text)', 'EXECUTE'))::int
+          + (has_function_privilege('authenticated', 'public.price_benchmarks_summary()', 'EXECUTE')
+             AND NOT has_function_privilege('anon', 'public.price_benchmarks_summary()', 'EXECUTE'))::int)::bigint,
+         7::bigint
+),
+k9 AS (
+  SELECT 'K9 9b tutarsizlik + cron farki (0)' AS kontrol,
+         ((SELECT count(*) FROM public.price_benchmarks b
+            WHERE (b.is_published AND b.sample_size < public.fn_faz9b_yayin_esigi())
+               OR (NOT b.is_published AND b.sample_size >= public.fn_faz9b_yayin_esigi())
+               OR b.p25 > b.median OR b.median > b.p75
+               OR b.period_end - b.period_start <> 89
+               OR (b.city_id IS NULL AND b.event_type IS NOT NULL))
+          + abs((SELECT count(*) FROM pg_extension WHERE extname = 'pg_cron')
+                - CASE WHEN to_regclass('cron.job') IS NULL THEN 0   -- cron.job yoksa dogrudan yazilamaz (ayristirma hatasi) -> query_to_xml
+                       ELSE ((xpath('/row/n/text()', query_to_xml('SELECT count(*) AS n FROM cron.job WHERE jobname = ''price-benchmarks-daily''', false, true, '')))[1])::text::int END))::bigint,
+         0::bigint
+),
+k10 AS (
+  SELECT 'K10 son hesap hucre toplami (eski) / yayinlanan (yeni) (bilgi)' AS kontrol,
+         (SELECT count(*) FROM public.price_benchmarks WHERE period_end = (SELECT max(period_end) FROM public.price_benchmarks))::bigint,
+         (SELECT count(*) FROM public.price_benchmarks WHERE is_published AND period_end = (SELECT max(period_end) FROM public.price_benchmarks))::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
-  UNION ALL SELECT * FROM k6
+  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k9 UNION ALL SELECT * FROM k10
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
-       CASE WHEN kontrol LIKE 'K6 %' THEN 'BILGI'
+       CASE WHEN kontrol LIKE 'K6 %' OR kontrol LIKE 'K10 %' THEN 'BILGI'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;
