@@ -44,6 +44,9 @@ const ADMIN_MENU: PanelMenuGrubu[] = [
       { href: '/admin/yorumlar', etiket: 'Yorumlar', ikon: 'mesaj' },
       { href: '/admin/sikayetler', etiket: 'Şikayetler', ikon: 'sikayet' },
       { href: '/admin/istatistikler', etiket: 'İstatistikler', ikon: 'istatistik' },
+      // FAZ 9a: olay zinciri gostergeleri (huni + adalet). Veri yalniz
+      // `analytics_summary` RPC'sinden gelir.
+      { href: '/admin/zeka', etiket: 'Zeka', ikon: 'zeka' },
     ],
   },
   {

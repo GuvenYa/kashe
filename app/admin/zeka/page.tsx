@@ -1,0 +1,755 @@
+'use client';
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  Cell,
+  LabelList,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
+import { createClient } from '@/app/lib/supabase-browser';
+import {
+  PanelBaslik,
+  PanelKart,
+  KpiKutu,
+  KpiSatir,
+  VeriTablosu,
+  type VeriSatiri,
+  type VeriSutunu,
+} from '@/app/components/panel';
+import { C, MONO, tooltipStyle } from '@/app/lib/grafik-tema';
+import {
+  HUNI_ADIMLARI,
+  OLAY_GRUP_ETIKETI,
+  OLAY_SIRASI,
+  olayEtiketi,
+  ondalik3,
+  oran,
+  sayi,
+  yuzde,
+} from '@/app/lib/zeka';
+import { istanbulGunu, tarihMetni } from '@/app/lib/tarih';
+
+/**
+ * FAZ 9a / P1 — admin zeka gostergeleri (`/admin/zeka`).
+ *
+ * TEK VERI KAYNAGI `analytics_summary(p_days)` RPC'sidir. `analytics_events`
+ * tablosu buradan DOGRUDAN SORGULANMAZ: RLS yalniz admine SELECT veriyor ama
+ * ham olay satirlarini istemciye tasimak hem gereksiz hem de ileride tablo
+ * buyudugunde tarayiciyi kilitleyecek bir yol olurdu. Ozet DB'de uretilir.
+ *
+ * ERISIM KORUMASI `app/admin/layout.tsx`'te; burada IKINCI bir kontrol YOK
+ * (iki yerde yazilan bir kural kayar). RPC de admin degilse 42501 doner ve o
+ * durum asagida kullaniciya anlasilir bir cumleye cevrilir.
+ *
+ * SAYI UYDURULMAZ: RPC'nin `null` dondurdugu her oran "—" gorunur; sifir
+ * yuzdeyle ("%0,0") KARISTIRILMAZ — biri olculmus, oteki olculememis.
+ */
+
+const RANGE_OPTIONS = [
+  { key: 7, label: '7 gün' },
+  { key: 30, label: '30 gün' },
+  { key: 90, label: '90 gün' },
+  { key: 365, label: '365 gün' },
+] as const;
+
+/** Adalet karsilastirmasinda SABIT pencereler (secili pencereden bagimsiz). */
+const SABIT_PENCERELER = [7, 30, 90] as const;
+
+type GunlukSatiri = { day: string; event_name: string; count: number };
+
+type Huni = {
+  brief_created: number;
+  event_confirmed: number;
+  match_run: number;
+  match_shown: number;
+  match_clicked: number;
+  selection: number;
+  approval: number;
+  booking_created: number;
+  booking_completed: number;
+  booking_cancelled: number;
+};
+
+type Adalet = {
+  shown_total: number;
+  shown_new_talent: number;
+  new_talent_share: number | null;
+  top3_new_talent_share: number | null;
+  providers_shown: number;
+  gini: number | null;
+};
+
+type Ozet = {
+  from: string;
+  days: number;
+  totals: Record<string, number>;
+  daily: GunlukSatiri[];
+  funnel: Huni;
+  fairness: Adalet;
+};
+
+/** "2026-10-01" -> "01 Eki" (grafik ekseni; dar alanda yil gereksiz). */
+function eksenGunu(gun: string): string {
+  const d = new Date(`${gun}T00:00:00Z`);
+  if (isNaN(d.getTime())) return gun;
+  return d.toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+}
+
+export default function ZekaPage() {
+  const [pDays, setPDays] = useState<number>(30);
+  const [ozet, setOzet] = useState<Ozet | null>(null);
+  const [sabitler, setSabitler] = useState<Record<number, Adalet | null>>({});
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [hata, setHata] = useState<string | null>(null);
+
+  /**
+   * Hata metni: 42501 beklenen durum (admin degil), digerleri teknik.
+   * Ham DB metni kullaniciya SIZDIRILMAZ; yalniz mesaj kismi gosterilir.
+   */
+  const hataMetni = useCallback(
+    (e: { code?: string | null; message?: string | null } | null): string => {
+      if (e?.code === '42501') {
+        return 'Bu sayfa yalnızca platform yöneticisine açık.';
+      }
+      return `Veriler yüklenemedi: ${e?.message ?? 'bilinmeyen hata'}`;
+    },
+    []
+  );
+
+  // Ilk yukleme: secili pencere + uc sabit pencere (adalet karsilastirmasi).
+  useEffect(() => {
+    let iptal = false;
+    const supabase = createClient();
+
+    (async () => {
+      setYukleniyor(true);
+      setHata(null);
+      const [secili, ...digerleri] = await Promise.all([
+        supabase.rpc('analytics_summary', { p_days: pDays }),
+        ...SABIT_PENCERELER.map((g) =>
+          supabase.rpc('analytics_summary', { p_days: g })
+        ),
+      ]);
+      if (iptal) return;
+
+      if (secili.error) {
+        setHata(hataMetni(secili.error));
+        setYukleniyor(false);
+        return;
+      }
+      setOzet(secili.data as unknown as Ozet);
+
+      const harita: Record<number, Adalet | null> = {};
+      SABIT_PENCERELER.forEach((g, i) => {
+        const sonuc = digerleri[i];
+        harita[g] = sonuc?.error
+          ? null
+          : ((sonuc?.data as unknown as Ozet | null)?.fairness ?? null);
+      });
+      setSabitler(harita);
+      setYukleniyor(false);
+    })();
+
+    return () => {
+      iptal = true;
+    };
+    // Ilk yukleme sabit pencereleri de ceker; `pDays` degisiminde asagidaki
+    // AYRI effect yalniz secili pencereyi yeniler (uc cagri tekrar atilmaz).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Pencere degisimi: YALNIZ secili pencere yenilenir (uc sabit pencere
+   * tekrar cekilmez — onlar karsilastirma icin ve degismiyor).
+   *
+   * `useRef`: ilk kosu yukaridaki effect tarafindan zaten yapildi; bu effect
+   * mount'ta atlanir. Ref yalniz effect ICINDE okunup yazilir (render sirasinda
+   * ref erisimi React kuralini ihlal ederdi).
+   */
+  const ilkAtlandi = useRef(false);
+  useEffect(() => {
+    if (!ilkAtlandi.current) {
+      ilkAtlandi.current = true;
+      return;
+    }
+    let iptal = false;
+    const supabase = createClient();
+
+    (async () => {
+      setYukleniyor(true);
+      setHata(null);
+      const { data, error } = await supabase.rpc('analytics_summary', {
+        p_days: pDays,
+      });
+      if (iptal) return;
+      if (error) {
+        setHata(hataMetni(error));
+        setYukleniyor(false);
+        return;
+      }
+      setOzet(data as unknown as Ozet);
+      setYukleniyor(false);
+    })();
+
+    return () => {
+      iptal = true;
+    };
+  }, [pDays, hataMetni]);
+
+  // ---------------------------------------------------------------------------
+  // Turetimler
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Gunluk toplam serisi: pencere BASINDAN bugune her gun bir nokta.
+   * `daily` yalniz olay OLAN gunleri getiriyor; aradaki bos gunler 0 ile
+   * doldurulur, aksi halde grafik zaman eksenini sikistirip yaniltirdi.
+   */
+  const gunlukSeri = useMemo(() => {
+    if (!ozet) return [];
+    const toplamlar = new Map<string, number>();
+    const kirilim = new Map<string, { ad: string; adet: number }[]>();
+    for (const s of ozet.daily ?? []) {
+      toplamlar.set(s.day, (toplamlar.get(s.day) ?? 0) + s.count);
+      const liste = kirilim.get(s.day) ?? [];
+      liste.push({ ad: s.event_name, adet: s.count });
+      kirilim.set(s.day, liste);
+    }
+
+    const baslangic = new Date(ozet.from);
+    if (isNaN(baslangic.getTime())) return [];
+    const bugun = new Date();
+    const noktalar: {
+      gun: string;
+      etiket: string;
+      toplam: number;
+      ilk3: { ad: string; adet: number }[];
+    }[] = [];
+
+    for (
+      const d = new Date(baslangic);
+      d <= bugun;
+      d.setUTCDate(d.getUTCDate() + 1)
+    ) {
+      const gun = istanbulGunu(d);
+      const liste = (kirilim.get(gun) ?? [])
+        .slice()
+        .sort((a, b) => b.adet - a.adet)
+        .slice(0, 3);
+      noktalar.push({
+        gun,
+        etiket: eksenGunu(gun),
+        toplam: toplamlar.get(gun) ?? 0,
+        ilk3: liste,
+      });
+      // 365 gunluk pencerede nokta sayisi sinirlanir (grafik okunur kalsin).
+      if (noktalar.length > 400) break;
+    }
+    return noktalar;
+  }, [ozet]);
+
+  /** Son 7 gun toplami (olay basina) — `daily`'den istemcide. */
+  const son7 = useMemo(() => {
+    const harita = new Map<string, number>();
+    if (!ozet) return harita;
+    const esik = new Date();
+    esik.setUTCDate(esik.getUTCDate() - 7);
+    const esikGun = istanbulGunu(esik);
+    for (const s of ozet.daily ?? []) {
+      if (s.day < esikGun) continue;
+      harita.set(s.event_name, (harita.get(s.event_name) ?? 0) + s.count);
+    }
+    return harita;
+  }, [ozet]);
+
+  const olayToplami = useMemo(
+    () =>
+      Object.values(ozet?.totals ?? {}).reduce(
+        (t, n) => t + (Number(n) || 0),
+        0
+      ),
+    [ozet]
+  );
+
+  const huni = ozet?.funnel ?? null;
+  const adalet = ozet?.fairness ?? null;
+
+  const huniVerisi = useMemo(() => {
+    if (!huni) return [];
+    return HUNI_ADIMLARI.map((a) => ({
+      etiket: a.etiket,
+      anahtar: a.anahtar,
+      sayi: Number(huni[a.anahtar as keyof Huni] ?? 0),
+    }));
+  }, [huni]);
+
+  const huniBos = !huni || (huni.brief_created === 0 && huni.booking_created === 0);
+
+  /** Adalet grafigi: sabit pencereler; `null` pay cubuk CIZMEZ (0 degil). */
+  const adaletVerisi = useMemo(
+    () =>
+      SABIT_PENCERELER.map((g) => {
+        const f = sabitler[g];
+        return {
+          pencere: `${g} gün`,
+          yeniPay:
+            f?.new_talent_share != null ? f.new_talent_share * 100 : undefined,
+          ilk3Pay:
+            f?.top3_new_talent_share != null
+              ? f.top3_new_talent_share * 100
+              : undefined,
+        };
+      }),
+    [sabitler]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Tablolar
+  // ---------------------------------------------------------------------------
+
+  const olaySutunlari: VeriSutunu[] = [
+    { anahtar: 'olay', baslik: 'Olay', kartEtiketiGizle: true },
+    { anahtar: 'grup', baslik: 'Grup', dar: true },
+    { anahtar: 'pencere', baslik: 'Pencere toplamı', sayisal: true },
+    { anahtar: 'son7', baslik: 'Son 7 gün', sayisal: true },
+  ];
+
+  const olaySatirlari: VeriSatiri[] = useMemo(() => {
+    const satirlar: VeriSatiri[] = OLAY_SIRASI.map((ad) => ({
+      anahtar: ad,
+      hucreler: {
+        olay: (
+          <span className="block min-w-0">
+            <span className="block text-ink break-words">
+              {olayEtiketi(ad)}
+            </span>
+            <span className="block font-mono text-[10px] text-ink-50 break-words">
+              {ad}
+            </span>
+          </span>
+        ),
+        grup: OLAY_GRUP_ETIKETI[ad] ?? '—',
+        pencere: sayi(Number(ozet?.totals?.[ad] ?? 0)),
+        son7: sayi(son7.get(ad) ?? 0),
+      },
+    }));
+    satirlar.push({
+      anahtar: 'toplam',
+      hucreler: {
+        olay: <span className="font-medium text-ink">Toplam</span>,
+        grup: '',
+        pencere: <span className="font-medium">{sayi(olayToplami)}</span>,
+        son7: (
+          <span className="font-medium">
+            {sayi([...son7.values()].reduce((t, n) => t + n, 0))}
+          </span>
+        ),
+      },
+    });
+    return satirlar;
+  }, [ozet, son7, olayToplami]);
+
+  const huniSutunlari: VeriSutunu[] = [
+    { anahtar: 'adim', baslik: 'Adım', kartEtiketiGizle: true },
+    { anahtar: 'sayi', baslik: 'Sayı', sayisal: true },
+    { anahtar: 'onceki', baslik: 'Önceki adıma oran', sayisal: true },
+    { anahtar: 'brief', baslik: "Brief'e oran", sayisal: true, dar: true },
+  ];
+
+  const huniSatirlari: VeriSatiri[] = useMemo(() => {
+    if (!huni) return [];
+    const brief = huniVerisi[0]?.sayi ?? 0;
+    const satirlar: VeriSatiri[] = huniVerisi.map((a, i) => ({
+      anahtar: a.anahtar,
+      hucreler: {
+        adim: <span className="text-ink">{a.etiket}</span>,
+        sayi: sayi(a.sayi),
+        onceki: i === 0 ? '—' : oran(a.sayi, huniVerisi[i - 1].sayi),
+        brief: i === 0 ? '—' : oran(a.sayi, brief),
+      },
+    }));
+    satirlar.push({
+      anahtar: 'booking_cancelled',
+      hucreler: {
+        adim: (
+          <span className="text-ink-72">İptal edilen rezervasyon</span>
+        ),
+        sayi: <span className="text-ink-72">{sayi(huni.booking_cancelled)}</span>,
+        onceki: <span className="text-ink-72">—</span>,
+        brief: <span className="text-ink-72">—</span>,
+      },
+    });
+    return satirlar;
+  }, [huni, huniVerisi]);
+
+  const adaletSutunlari: VeriSutunu[] = [
+    { anahtar: 'pencere', baslik: 'Pencere', kartEtiketiGizle: true },
+    { anahtar: 'gosterim', baslik: 'Gösterim', sayisal: true },
+    { anahtar: 'yeni', baslik: 'Yeni yetenek', sayisal: true },
+    { anahtar: 'pay', baslik: 'Pay', sayisal: true },
+    { anahtar: 'ilk3', baslik: 'İlk 3 pay', sayisal: true },
+    { anahtar: 'saglayici', baslik: 'Sağlayıcı', sayisal: true, dar: true },
+    { anahtar: 'gini', baslik: 'Gini', sayisal: true, dar: true },
+  ];
+
+  const adaletSatirlari: VeriSatiri[] = useMemo(() => {
+    const satir = (etiket: string, f: Adalet | null): VeriSatiri => ({
+      anahtar: etiket,
+      hucreler: {
+        pencere: <span className="text-ink">{etiket}</span>,
+        gosterim: sayi(f?.shown_total ?? null),
+        yeni: sayi(f?.shown_new_talent ?? null),
+        pay: yuzde(f?.new_talent_share ?? null),
+        ilk3: yuzde(f?.top3_new_talent_share ?? null),
+        saglayici: sayi(f?.providers_shown ?? null),
+        gini: ondalik3(f?.gini ?? null),
+      },
+    });
+    const satirlar = SABIT_PENCERELER.map((g) =>
+      satir(`${g} gün`, sabitler[g] ?? null)
+    );
+    // Secili pencere sabitlerden biri DEGILSE dorduncu satir eklenir.
+    if (ozet && !SABIT_PENCERELER.includes(ozet.days as 7 | 30 | 90)) {
+      satirlar.push(satir(`Seçili (${ozet.days} gün)`, adalet));
+    }
+    return satirlar;
+  }, [sabitler, ozet, adalet]);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  const pencereNotu = ozet?.from
+    ? `Pencere: ${tarihMetni(ozet.from) ?? ozet.from} — bugün`
+    : null;
+
+  const pencereSecici = (
+    <div className="inline-flex rounded-xl border border-line bg-card p-1">
+      {RANGE_OPTIONS.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => setPDays(o.key)}
+          aria-pressed={pDays === o.key}
+          style={{ fontFamily: MONO }}
+          className={
+            pDays === o.key
+              ? 'kashe-tap px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg bg-brand-ink text-paper transition-colors'
+              : 'kashe-tap px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] rounded-lg text-ink-50 hover:text-ink transition-colors'
+          }
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <>
+      <PanelBaslik
+        eyebrow="Admin · Zeka katmanı"
+        sagAlan={pencereSecici}
+        altNot="Olay zinciri analytics_events üzerinden; sayılar seçili pencereye göre (İstanbul günü)."
+      >
+        Zeka{' '}
+        <em className="not-italic text-brand-accent">göstergeleri</em>
+      </PanelBaslik>
+
+      {pencereNotu && (
+        <p
+          className="mb-6 text-[11px] uppercase tracking-[0.14em] text-ink-50"
+          style={{ fontFamily: MONO }}
+        >
+          {pencereNotu}
+        </p>
+      )}
+
+      {hata ? (
+        <PanelKart baslik="Zeka göstergeleri">
+          <p className="text-sm text-ink-72">{hata}</p>
+        </PanelKart>
+      ) : yukleniyor && !ozet ? (
+        <div className="space-y-6">
+          <div className="h-56 bg-card border border-line rounded-xl animate-pulse" />
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="h-72 bg-card border border-line rounded-xl animate-pulse" />
+            <div className="h-72 bg-card border border-line rounded-xl animate-pulse" />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* ── BLOK 1 — Gunluk olaylar ── */}
+          <PanelKart baslik="Günlük olaylar">
+            {olayToplami === 0 ? (
+              <p className="text-sm text-ink-72">Bu pencerede olay yok.</p>
+            ) : (
+              <div className="w-full" style={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={gunlukSeri}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={`${C.ink}14`}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="etiket"
+                      tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                      interval="preserveStartEnd"
+                      minTickGap={16}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                      allowDecimals={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v: unknown) => [sayi(Number(v)), 'Toplam']}
+                      labelFormatter={(_etiket, yuk) => {
+                        const n = yuk?.[0]?.payload as
+                          | { gun: string; ilk3: { ad: string; adet: number }[] }
+                          | undefined;
+                        if (!n) return '';
+                        const kirilim = n.ilk3
+                          .map((k) => `${olayEtiketi(k.ad)} · ${k.adet}`)
+                          .join('  |  ');
+                        return kirilim
+                          ? `${tarihMetni(n.gun) ?? n.gun} — ${kirilim}`
+                          : (tarihMetni(n.gun) ?? n.gun);
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="toplam"
+                      stroke={C.brandInk}
+                      fill={`${C.brandInk}26`}
+                      strokeWidth={2}
+                      name="Toplam"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            <div className="mt-5">
+              <VeriTablosu
+                sutunlar={olaySutunlari}
+                satirlar={olaySatirlari}
+                bosMetin="Olay listesi yüklenemedi."
+              />
+            </div>
+          </PanelKart>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* ── BLOK 2 — Huni ── */}
+            <PanelKart baslik="Huni · talepten rezervasyona">
+              <KpiSatir>
+                <KpiKutu
+                  etiket="Brief → rezervasyon"
+                  deger={oran(huni?.booking_created ?? 0, huni?.brief_created ?? 0)}
+                  altNot="Tüm pencere"
+                />
+                <KpiKutu
+                  etiket="Gösterim → tıklama"
+                  deger={oran(huni?.match_clicked ?? 0, huni?.match_shown ?? 0)}
+                  altNot="Aday kartları"
+                />
+                <KpiKutu
+                  etiket="Rezervasyon tamamlanma"
+                  deger={oran(
+                    huni?.booking_completed ?? 0,
+                    huni?.booking_created ?? 0
+                  )}
+                  altNot="Tamamlanan / oluşan"
+                  vurgu="moss"
+                />
+              </KpiSatir>
+
+              {huniBos ? (
+                <p className="text-sm text-ink-72">
+                  Bu pencerede huni verisi yok.
+                </p>
+              ) : (
+                <>
+                  <div
+                    className="w-full"
+                    style={{ height: HUNI_ADIMLARI.length * 28 + 24 }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={huniVerisi}
+                        layout="vertical"
+                        margin={{ top: 4, right: 40, left: 0, bottom: 4 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={`${C.ink}14`}
+                          horizontal={false}
+                        />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                          allowDecimals={false}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="etiket"
+                          tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                          width={110}
+                        />
+                        <Tooltip
+                          contentStyle={tooltipStyle}
+                          formatter={(v: unknown) => [sayi(Number(v)), 'Sayı']}
+                        />
+                        <Bar dataKey="sayi" radius={[0, 4, 4, 0]}>
+                          {huniVerisi.map((a) => (
+                            <Cell
+                              key={a.anahtar}
+                              fill={
+                                a.anahtar === 'booking_completed'
+                                  ? C.moss
+                                  : C.brandInk
+                              }
+                            />
+                          ))}
+                          <LabelList
+                            dataKey="sayi"
+                            position="right"
+                            style={{ fontSize: 11, fill: C.ink }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="mt-5">
+                    <VeriTablosu
+                      sutunlar={huniSutunlari}
+                      satirlar={huniSatirlari}
+                      bosMetin="Huni verisi yok."
+                    />
+                  </div>
+                </>
+              )}
+            </PanelKart>
+
+            {/* ── BLOK 3 — Adalet ── */}
+            <PanelKart baslik="Adalet · görünürlük dağılımı">
+              {adalet && adalet.shown_total === 0 && (
+                <p className="text-sm text-ink-72 mb-4">
+                  Bu pencerede eşleştirme gösterimi yok; Match koşusu
+                  yapıldıkça dolar.
+                </p>
+              )}
+
+              <KpiSatir>
+                <KpiKutu
+                  etiket="Yeni yetenek payı"
+                  deger={yuzde(adalet?.new_talent_share ?? null)}
+                  altNot="Gösterimlerde"
+                  vurgu="accent"
+                />
+                <KpiKutu
+                  etiket="İlk 3'te yeni yetenek"
+                  deger={yuzde(adalet?.top3_new_talent_share ?? null)}
+                  altNot="Üst sıralarda"
+                />
+                <KpiKutu
+                  etiket="Gini"
+                  deger={ondalik3(adalet?.gini ?? null)}
+                  altNot="0 eşit dağılım · 1 tek sağlayıcı"
+                />
+                <KpiKutu
+                  etiket="Gösterilen sağlayıcı"
+                  deger={sayi(adalet?.providers_shown ?? null)}
+                  altNot={`${sayi(adalet?.shown_total ?? null)} toplam gösterim`}
+                />
+              </KpiSatir>
+
+              <div className="w-full" style={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={adaletVerisi}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={`${C.ink}14`}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="pencere"
+                      tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                      width={36}
+                      unit="%"
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v: unknown, ad: unknown) => [
+                        yuzde(Number(v) / 100),
+                        String(ad),
+                      ]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      dataKey="yeniPay"
+                      name="Yeni yetenek payı"
+                      fill={C.brandInk}
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="ilk3Pay"
+                      name="İlk 3'te yeni yetenek"
+                      fill={C.brandAccent}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-5">
+                <VeriTablosu
+                  sutunlar={adaletSutunlari}
+                  satirlar={adaletSatirlari}
+                  bosMetin="Adalet verisi yok."
+                />
+              </div>
+
+              <p className="mt-4 text-xs text-ink-50 leading-relaxed">
+                Yeni yetenek: eşleştirme koşusunda <code>new_talent</code> kodu
+                alan sağlayıcı. Gini, sağlayıcı başına gösterim sayısının
+                dağılımıdır.
+              </p>
+            </PanelKart>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/app/lib/supabase-browser'
 import {
+  C,
+  MONO,
+  PIE_PALETTE,
+  SERIF,
+  tooltipStyle,
+} from '@/app/lib/grafik-tema'
+import {
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -17,17 +24,6 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
-
-// ---- Kashe tema (P6 — brand-ink/brand-accent) ----
-// Recharts inline renk ister (CSS değişkeni almaz), o yüzden hex sabit tutuldu.
-const C = {
-  paper: '#FFFFFF',
-  brandInk: '#00ACE2', // Faz-1: CYAN — başat seri (lacivert grafikte siyaha kaçar, tek taşımaz)
-  ink: '#040D26',        // lacivert — eksen/ızgara/metin
-  brandAccent: '#FA0B96',       // Faz-1: pembe seri
-  moss: '#1F8A5F',       // yeşil — SEMANTİK başarı/onay (korunur)
-  brandInkDeep: '#040D26',      // lacivert — ikincil seri
-}
 
 const ROLE_LABELS: Record<string, string> = {
   client: 'Müşteri',
@@ -59,12 +55,7 @@ const QUOTE_COLORS: Record<string, string> = {
   withdrawn: C.brandAccent,
 }
 
-const PIE_PALETTE = [C.brandInk, C.brandAccent, C.moss, C.brandInkDeep, '#D98C3F', '#8C6B4F', '#4F6B8C', '#A86B2E']
-
 const ROLE_ORDER = ['client', 'professional', 'business', 'agency'] as const
-
-const SERIF = 'var(--font-display), sans-serif'
-const MONO = 'var(--font-mono), monospace'
 
 // ---- Tipler ----
 type RegRow = { bucket: string; role_key: string; cnt: number }
@@ -179,14 +170,6 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       </div>
     </div>
   )
-}
-
-const tooltipStyle = {
-  borderRadius: 12,
-  border: `1px solid ${C.ink}1A`,
-  fontFamily: 'var(--font-body), sans-serif',
-  fontSize: 13,
-  background: '#fff',
 }
 
 export default function IstatistiklerPage() {

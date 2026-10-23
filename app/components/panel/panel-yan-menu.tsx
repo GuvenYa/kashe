@@ -94,6 +94,7 @@ const IKONLAR: Record<string, LucideIcon> = {
   kisaliste: ListFilter,
   ayar: Settings,
   istatistik: ChartColumn,
+  zeka: Sparkles,
   sikayet: Flag,
   blog: Newspaper,
   gorus: Quote,
