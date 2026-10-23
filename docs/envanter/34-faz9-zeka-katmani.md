@@ -4,8 +4,9 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a-DB/01 hazir** (`20261025120000_faz9a_01_olay_zinciri.sql`; yerelde asama4 T31 32/32, asama19 K1-K5 ESIT; dal + uretim bekliyor). Sira: 9a olay zinciri -> 9b fiyat kiyaslari -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
-(asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
+**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)** — 9a-DB/01 dalda + uretimde (asama4 32/32, asama19 K1-K5 ESIT; uretim dolumu
+222 olay, son 7 gun 25), 9a-P1 `/admin/zeka` canli turdan gecti (bolum 2 kapanis notu). Sira: 9b fiyat kiyaslari -> 9c Trust Score V0
+-> kapanis. Her dilim: migration -> dal (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
 
@@ -107,6 +108,26 @@ brief -> event_confirmed -> match_run -> match_shown (benzersiz aday) -> match_c
 (3) **Adalet gostergesi** (00-genel-bakis): `match_shown` icinde `is_new_talent` payi (%) ve ilk 3 sirada yeni yetenek payi; gosterim
 dagiliminin Gini katsayisi (saglayici basina gosterim). Veri `analytics_events`'ten TEK SQL (RPC `analytics_summary(p_days)`, admin).
 Her blok grafik + tablo (karar 8); DESIGN 9.
+
+### 9a kapanis notu (23 Ekim 2026) — KAPANDI
+
+- **9a-DB/01** (`20261025120000_faz9a_01_olay_zinciri.sql`): dal `faz9a/db`; dalda asama4 32/32 GECTI (T31 yeni), asama19 K1-K5 ESIT;
+  uretimde asama19 K1-K5 ESIT, K6 = 222 olay (dolum) / son 7 gun 25. Dal ve uretim ayni veriden geldigi icin iki ortamda sayilar esit.
+- **9a-P1** (dal `faz9a/p1`; gorev `35-claude-code-gorevi-9a-p1-admin-zeka.md`): yeni `app/admin/zeka/page.tsx` (istemci; TEK kaynak
+  `analytics_summary`, secili pencere + 7/30/90 sabit pencere = 4 RPC cagrisi, pencere degisiminde 1), `app/lib/zeka.ts` (23 olay etiketi,
+  4 grup — yasam dongusu sirasi, huni adimlari, `yuzde`/`oran`/`sayi`/`ondalik3`), `app/lib/grafik-tema.ts` (`C`, `tooltipStyle`,
+  `SERIF`/`MONO`, `PIE_PALETTE` ortak; `istatistikler/page.tsx` yalniz import'a dondu, davranis ayni), menu "Zeka" (`Sparkles`).
+  Pencere 7/30/90/365 ("Tumu" YOK — RPC 365'e kirpiyor, etiket yalan soylerdi). Grafikler recharts (Area / yatay Bar + LabelList / gruplu Bar).
+- **Canli tur (admin, 800 px + 375 px):** uc blok ve tablolar dolu; pencere secici calisiyor (365 gun -> 222 toplam, "Secili (365 gun)"
+  satiri adalet tablosuna eklendi); 375 px'te yatay tasma yok, tablolar kart modunda, huni ekseni okunur; `/admin/istatistikler` renkleri
+  degismedi; konsolda hata yok. Dal verisi (30 gun): 144 olay, brief -> rezervasyon %11,1, gosterim -> tiklama %20,0, yeni yetenek payi
+  %86,8, Gini 0,357, 12 saglayici / 76 gosterim.
+- **Turda duzeltilen:** (1) grup ici sira alfabetikti -> olay sozlugu (yasam dongusu) sirasi; (2) sayfanin kendi `istanbulGun` yardimcisi
+  -> `tarih.ts` `istanbulGunu`; (3) huni tablosu altina not: adimlar ic ice DEGIL (eslestirme olmadan havuzdan ekip / dogrudan teklif / RFP
+  olur), onceki adima oran %100'u asabilir — turda "Secim / teklif %500" gorundu, veri dogru, okuyan sasirmasin.
+- **Ertelenen (FAZ 10+):** gunluk yeni yetenek payi serisi (RPC gunluk `is_new_talent` kirilimi vermiyor; 7/30/90 pencere karsilastirmasi
+  ile karsilandi); huni "Tamamlanan" 0 cubugunda etiket cizilmiyor (recharts sifir genislik; kozmetik); `analytics_events` bolumleme hacim
+  buyurse.
 
 ## 3. 9b — Fiyat kiyaslari (`price_benchmarks`)
 
@@ -212,8 +233,8 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 
 | Dilim | Icerik | Test |
 |---|---|---|
-| **9a-DB/01** | `analytics_events` + CHECK sozluk + 9 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
-| **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) | tur: admin (gmail is_admin) |
+| **9a-DB/01** — **KAPANDI** | `analytics_events` + CHECK sozluk + 10 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
+| **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
 | **9b-DB/01** | `price_benchmarks` + `price_benchmarks_compute` + cron + `price_benchmark_lookup` | asama4 **T32** (3 kaynak, cift sayim yok, esik, kaba satir, lookup en dar yayinli), asama19 K7-K10 |
 | **9b-P1** | sihirbaz/Kesfet/editor/profil ipuclari (yalniz yayinli) | tur: testguven sihirbaz, gmail editor (uretimde buyuk olasilikla hucre yok — "hicbir sey" davranisi dogrulanir) |
 | **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |

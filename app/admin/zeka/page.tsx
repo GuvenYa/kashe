@@ -651,6 +651,15 @@ export default function ZekaPage() {
                       bosMetin="Huni verisi yok."
                     />
                   </div>
+
+                  {/* Adimlar ic ice DEGIL: eslestirme olmadan da secim/teklif olur
+                      (havuzdan ekip, dogrudan teklif, RFP). Oran %100'u asabilir;
+                      bu bir hata degil, okuyan sasirmasin diye yazilir. */}
+                  <p className="mt-4 text-xs text-ink-50 leading-relaxed">
+                    Adımlar iç içe değildir: eşleştirme olmadan da seçim ya da
+                    teklif olabilir (havuzdan ekip, doğrudan teklif, RFP). Bu
+                    yüzden önceki adıma oran %100&apos;ü aşabilir.
+                  </p>
                 </>
               )}
             </PanelKart>
