@@ -246,11 +246,17 @@ RPC; modul kapisi `org_module_enabled` + `org_module_set` (tasks/crm/suppliers/s
 - Insan onayli operasyon asistani (TUBITAK): gorev onerisi ureten yapay zeka katmani 8a'nin ustune gelir (FAZ 9 ile); 8a veri modelini
   buna gore acik tutar (`tasks.source` sutunu 8a'da YOK — gerekince eklenir; `activity_logs` zaten "kim/ne/ne zaman").
 - Eski `agency_members`/`business_members` tek tabloya inisi FAZ 10 (madde 44); 8-U bunu one almaz.
-- **Hijyen 04 (22 Ekim; `33-claude-code-gorevi-hijyen-04.md`):** biriken kucuk kalemler tek dilimde — DB:
+- **Hijyen 04 KAPANDI (22 Ekim 2026; dal `hijyen/04`; `33-claude-code-gorevi-hijyen-04.md`):** DB
   `20261024120000_hijyen_04_bildirim_temizligi.sql` (firsat / genel gorev silinince ona isaret eden bildirim silinir; AYRI AFTER DELETE
-  tetikleyicileri `trg_hijyen04_*`, mevcut aktivite fonksiyonlarina dokunulmadi; dolum; asama4 T30, asama18 K32-K33). UI (10 madde):
-  gorev hizli ekle iyimser, cok kurulus hesap karti (kisi adi), secim etiketleri (`secim-etiketi.ts`: baslik · tarih · durum), CRM panel sonu
-  rozeti, `/p/[id]` kisa liste banti, ajans kimlik satiri, ajans tamamlanmis is cipi, "Sure" kutusu (`latency_ms`), ekip kapsaminda
-  onerilenler, `/bildirimler` anonim -> giris. Yapilmayan: "Taranan profil" (FAZ 9, `run_event_match`), maliyet -> teklif kalemi (Finance),
-  anon `bookings` eski politikasi (FAZ 10).
+  tetikleyicileri `trg_hijyen04_*`, mevcut aktivite fonksiyonlarina dokunulmadi; dolum; asama4 T30 31/31, asama18 K32-K33 ESIT dal + uretim).
+  UI 9/10: gorev hizli ekle iyimser (yerel state; hata -> satir kalkar, baslik geri), hesap karti kisi adi ustte + kurulus alt satirda
+  (`panel-kabuk.ts` + Claude duzeltmesi: karti kendi kuran 8 sayfa `panelKabukProps(kurulus.id).hesap`'a baglandi — tek kaynak),
+  secim etiketleri (`secim-etiketi.ts`: etkinlik "baslik · 20 Kas 2026", teklif "baslik · Taslak · 19 Eki"; `tarih.ts` +`kisaAyliTarih`,
+  `gunAyMetni`), CRM panel sonu rozeti eyebrow satirina, `/p/[id]` kisa liste banti (iki dal; kurulus secimli; `kisaListedekiKuruluslar`),
+  ajans tamamlanmis is (`bookings.or(seller_provider_id, professional_id)` + completed), "Sure" kutusu (`latency_ms` doluysa), ekip
+  kapsaminda "N onerildi", `/bildirimler` anonim -> `/giris?redirect=`. **Yapilmayan:** ajans kimlik satiri (madde 6 — basligin yeniden
+  kurgusu; ayri dilim), "Taranan profil" (FAZ 9), maliyet -> teklif kalemi (Finance), anon `bookings` eski politikasi (FAZ 10).
+  **Tur:** gmail — hizli ekle aninda satir; etkinlik suzgeci ve firsat formu teklif/etkinlik secimleri ayirt edilir; Adaylar "SURE 0,1 sn";
+  Sunucu Ajans profili cip yok (rezervasyon `confirmed`, `completed` degil — kural). testguven — `/p/Test Pro` bant -> "Kisa listede ·
+  Listeyi ac"; hesap karti "Test Guven · Kurumsal"; cikis -> anonim `/bildirimler` girise. Konsol 0; deneme kayitlari silindi.
 - Edge Function `send-message-notification` tip listesi `['rfp','proposal','task','crm']` — 8b kapanisinda dagitildi (22 Ekim).
