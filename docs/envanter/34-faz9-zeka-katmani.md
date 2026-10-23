@@ -4,7 +4,7 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN (23 Ekim 2026). Sira: 9a olay zinciri -> 9b fiyat kiyaslari -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
+**Durum:** PLAN KAPANDI; **9a-DB/01 hazir** (`20261025120000_faz9a_01_olay_zinciri.sql`; yerelde asama4 T31 32/32, asama19 K1-K5 ESIT; dal + uretim bekliyor). Sira: 9a olay zinciri -> 9b fiyat kiyaslari -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
 (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
@@ -20,8 +20,18 @@ olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; it
    kodu dolar); saglayici `/profil`'de bilesenlerini ve "itiraz et" kanalini gorur (KVKK). Musteriye sayi gosterilmez; mevcut guven cipleri
    (gercek sinyaller) kalir.
 4. **Fiyat kiyasi hucresi rol x sehir x etkinlik turu;** son 90 gun kayan pencere, aylik degil gunluk hesap; yayin esigi 15 islem;
-   esik alti hucre yayinlanmaz, UI hicbir sey gostermez. (Oneri — bkz. bolum 6 soru 1: ayni hesapta `event_type = NULL` "tum turler"
-   satiri da uretilsin ki dar hucre dolmadiginda kaba kiyas gosterilebilsin.)
+   esik alti hucre yayinlanmaz, UI hicbir sey gostermez. **Kaba satirlar da uretilir** (rol x sehir x NULL, rol x NULL x NULL; Guven
+   onayi): dar hucre dolmadiginda `lookup` kaba satira duser ve `granularity` ile isaretler.
+5. **Trust V0 agirliklari bolum 4 tablosundaki gibi, Match esigi 70 sabit** (Guven: karar Claude'a birakildi; gerekce: dogrulama ve
+   tamamlanan is en guclu gercek sinyaller, degerlendirme ucuncu; yeni saglayici notr tabanla 15 puan alir ve `new_talent` kodu adaleti
+   ayrica korur).
+6. **Itiraz kanali `trust_appeals` tablosu** (Guven: karar Claude'a birakildi; gerekce: KVKK insan incelemesi kanitlanabilir olmali —
+   mailto iz birakmaz): saglayici kendi dokumune itiraz acar, admin `/admin/zeka` kuyrugunda inceler, karar + not yazar; e-posta yok (V0).
+7. **`analytics_events` saklama sinirsiz** (Guven: musterinin iki yillik portfoy gecmisi yetersiz kalabilir). Arsiv karari yok; tablo
+   bolumleme (partition) hacim buyurse FAZ 10+.
+8. **Admin `/admin/zeka` grafik + tablo** (Guven): her blokta kucuk grafik (gunluk olaylar cizgi, huni yatay cubuk, adalet payi cizgi,
+   trust dagilimi cubuk) + altinda tablo; grafik kutuphanesi uygulamada varsa o, yoksa inline SVG (tek bilesen `app/components/admin/
+   mini-grafik.tsx`; DESIGN 9 renkleri; `dataviz` kurallari: tek renk ailesi, eksen etiketi, bos durum).
 
 ## 2. 9a — Olay zinciri (`analytics_events`)
 
@@ -71,6 +81,18 @@ karari FAZ 10.
 booking_* -> `seller_provider_id` ya da `professional_id`. `organization_id`: brief/event/rfp/booking alici kurulusu; proposal/crew satici.
 Tutarlar MUSTERIYE DONUK alanlardir (`total_amount`, `unit_client_price`); `internal.*` hicbir olaya girmez.
 
+### Uygulama notlari (9a-DB/01)
+
+- Tek yazma noktasi `fn_faz9_olay_yaz(...)` (SECURITY DEFINER; authenticated EXECUTE yok) + tekil indeks `(event_name, entity_id)` →
+  ayni olay ayni varlik icin BIR kez (dolum idempotan; tekrar isaretlemeler olay eklemez). Sonuc: `proposal_revision` tekrar
+  istenirse ilk istek kalir (V0 kabul).
+- `match_run` olayi `match_runs` INSERT'inde degil, `run_event_match`'in sondaki `candidate_count/latency_ms` UPDATE'inde yazilir
+  (sayilar o anda dolar). `match_shown/clicked` dolumda adayin `created_at`'i ile (gosterim ani eski kayitlarda yok).
+- `bookings` iptalinde `cancelled_by_side`: `customer_id` → buyer, `professional_id`/`seller_provider_id` → seller, diger → other.
+- `analytics_summary(p_days)`: `totals` (olay basina), `daily` (Istanbul gunu), `funnel` (benzersiz etkinlik: match_run/shown/clicked;
+  `selection` = crew_selected + proposal_sent + quote_created), `fairness` (`new_talent_share`, `top3_new_talent_share`, `gini`
+  saglayici basina gosterim sayisi uzerinden; tek saglayici → NULL).
+
 ### Dolum (tek seferlik, migration icinde)
 
 Mevcut satirlardan `occurred_at` = kaynak zaman (`created_at`, `sent_at`, `approved_at`, `completed_at`, `cancelled_at`,
@@ -84,7 +106,7 @@ brief -> event_confirmed -> match_run -> match_shown (benzersiz aday) -> match_c
 (proposal_approved + quote_accepted + rfp_awarded) -> booking_created -> booking_completed; her adimda sayi + onceki adima oran;
 (3) **Adalet gostergesi** (00-genel-bakis): `match_shown` icinde `is_new_talent` payi (%) ve ilk 3 sirada yeni yetenek payi; gosterim
 dagiliminin Gini katsayisi (saglayici basina gosterim). Veri `analytics_events`'ten TEK SQL (RPC `analytics_summary(p_days)`, admin).
-Grafik yok (V0 tablo); DESIGN 9.
+Her blok grafik + tablo (karar 8); DESIGN 9.
 
 ## 3. 9b — Fiyat kiyaslari (`price_benchmarks`)
 
@@ -177,35 +199,35 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 
 - `my_trust_breakdown()` RPC: oturum sahibinin KENDI saglayicisinin son dokumu (authenticated; baska saglayici 42501). Ajans
   kurulusunda `settings.manage`.
-- `/profil` "Guven dokumu" karti (9c-P1): altı bilesen satir satir, puan + ham deger + "nasil artar" tek cumle; altta "Bu degerlendirmeye
-  itiraz et" → `mailto:info@kashe.net?subject=Guven%20dokumu%20itirazi` (KVKK insan incelemesi; V1'de tablo). Musteri yuzeyinde skor
-  YOK; Kesfet siralamasi DEGISMEZ (yalniz Match V0.2 `high_trust`).
-- Admin `/admin/zeka`: skor dagilimi (0-39 / 40-69 / 70+ sayilari), hesaplanmayan saglayici sayisi.
+- `/profil` "Guven dokumu" karti (9c-P1): alti bilesen satir satir, puan + ham deger + "nasil artar" tek cumle; altta "Bu degerlendirmeye
+  itiraz et" → `trust_appeals` kaydi (karar 6). Musteri yuzeyinde skor YOK; Kesfet siralamasi DEGISMEZ (yalniz Match V0.2 `high_trust`).
+- **`trust_appeals`** (karar 6): `id, provider_id fk, snapshot_id fk trust_score_snapshots, message text (20-2000), status
+  (open/reviewed/closed), admin_note text, reviewed_by uuid, reviewed_at, created_at`. RLS: saglayici kendi satirini INSERT/SELECT
+  (`providers.id = auth.uid()` ya da ajans kurulusunda `settings.manage`), admin hepsini SELECT/UPDATE (status + admin_note); acik itiraz
+  varken ikinci acilamaz (kismi tekil indeks). Admin `/admin/zeka` "Itirazlar" kuyrugu: acik/incelendi/kapali; karar + not; saglayici
+  `/profil`'de durumu gorur.
+- Admin `/admin/zeka`: skor dagilimi (0-39 / 40-69 / 70+ sayilari; cubuk grafik), hesaplanmayan saglayici sayisi, itiraz kuyrugu.
 
 ## 5. Dilimler ve dogrulama
 
 | Dilim | Icerik | Test |
 |---|---|---|
 | **9a-DB/01** | `analytics_events` + CHECK sozluk + 9 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
-| **9a-P1** | `/admin/zeka` (gunluk, huni, adalet) | tur: admin (gmail is_admin) |
+| **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) | tur: admin (gmail is_admin) |
 | **9b-DB/01** | `price_benchmarks` + `price_benchmarks_compute` + cron + `price_benchmark_lookup` | asama4 **T32** (3 kaynak, cift sayim yok, esik, kaba satir, lookup en dar yayinli), asama19 K7-K10 |
 | **9b-P1** | sihirbaz/Kesfet/editor/profil ipuclari (yalniz yayinli) | tur: testguven sihirbaz, gmail editor (uretimde buyuk olasilikla hucre yok — "hicbir sey" davranisi dogrulanir) |
-| **9c-DB/01** | `trust_score_snapshots` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar), asama19 K11-K14 |
-| **9c-P1** | `/profil` guven dokumu + itiraz; admin dagilim | tur: hotmail (Test Pro dokumu), gmail (ajans) |
+| **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |
+| **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |
 | **Kapanis** | 20/34 kapanis notu, CLAUDE.md FAZ 9 paragrafi, roadmap, 04-goc-plani madde 39-41 isaretleme | — |
 
 Kirmizi cizgiler (hepsi): `internal.*` hicbir olaya/kiyasa girmez; PII payload'a yazilmaz; uygulama `analytics_events`/`price_benchmarks`/
 `trust_score` YAZMAZ; her sey ekle-yalniz; algoritma degisikligi = yeni `algorithm_version`; hesaplar SECURITY DEFINER + cron;
 esik alti hicbir sey gosterilmez; musteriye skor yok.
 
-## 6. Acik sorular (Guven)
+## 6. Acik sorular — KAPANDI (Guven, 23 Ekim 2026; kararlar bolum 1 madde 4-8)
 
-1. Fiyat kiyasi kaba satirlari (`event_type NULL`, `city NULL`) ayni hesapta uretilsin mi? (Oneri: evet — dar hucre dolmadiginda
-   `lookup` kaba satira duser ve `granularity` ile isaretler; UI "bu rol genelde …" diye yazar.)
-2. Trust bileseni agirliklari (bolum 4 tablosu) — V0 icin kabul mu, degisiklik var mi? Esik 70 Match'te sabit kalsin mi?
-3. Itiraz kanali V0'da `mailto:info@kashe.net` yeterli mi, yoksa `trust_appeals` tablosu + admin kuyrugu ile mi acilsin?
-4. `analytics_events` saklama: sinirsiz mi, 24 ay mi (FAZ 10 arsiv)?
-5. 9a-P1 admin sayfasi grafiksiz tablo (V0) — kabul mu?
+1. Kaba satirlar: evet. 2. Agirliklar/esik: Claude karari — tablo ve 70 kalir. 3. Itiraz: `trust_appeals`. 4. Saklama: sinirsiz.
+5. Admin: grafik + tablo.
 
 ## 7. TUBITAK eslemesi (bilgi)
 

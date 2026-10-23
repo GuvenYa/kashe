@@ -4438,4 +4438,182 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO t_sonuc VALUES (30, 'T30 hijyen_04 bildirim temizligi', 'HATA', SQLERRM);
 END $$;
 
+-- -----------------------------------------------------------------------------
+-- T31) FAZ 9a olay zinciri. ON KOSUL: 20261025120000 (faz9a 01) dalda. Test Ajans (org_a: owner 0004 = admin, sales 0001),
+--      pro1 0002 (providers), service_roles aktif. Tetikleyiciler her gecisi BIR kez yazar; PII payload'a girmez; yalniz admin okur.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; ev uuid; br uuid; run_id uuid; cand uuid; crew_id uuid; cm uuid; prop uuid; ver uuid; prop2 uuid; ver2 uuid; bk uuid; bk2 uuid; rol integer;
+  n integer; n0 integer; st text; st2 text; js jsonb;
+BEGIN
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO rol FROM public.service_roles WHERE is_active ORDER BY id LIMIT 1;
+  IF org_a IS NULL OR rol IS NULL THEN RAISE EXCEPTION 'on kosul: org_a=% rol=%', org_a, rol; END IF;
+  IF to_regclass('public.analytics_events') IS NULL THEN RAISE EXCEPTION 'on kosul: faz9a_01 uygulanmamis'; END IF;
+  SELECT count(*) INTO n0 FROM public.analytics_events;
+
+  -- 1) brief_created (owner)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.event_briefs (created_by_user_id, organization_id, source, raw_text)
+  VALUES (ajans, org_a, 'agency_eventos', 'T31 brief metni — PII: faz1test+gizli@kashe.net 0532 111 11 11') RETURNING id INTO br;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*), max(payload::text), max(actor_user_id::text) INTO n, st, st2 FROM (SELECT payload, actor_user_id FROM public.analytics_events WHERE event_name = 'brief_created' AND entity_id = br) x;
+  IF n <> 1 THEN RAISE EXCEPTION 'brief_created % (1)', n; END IF;
+  IF st LIKE '%kashe.net%' OR st LIKE '%0532%' OR st LIKE '%raw_text%' THEN RAISE EXCEPTION 'brief payload PII tasiyor: %', st; END IF;
+  IF st2 <> ajans::text THEN RAISE EXCEPTION 'brief actor % (owner)', st2; END IF;
+
+  -- 2) event: draft -> confirmed -> matching (olay yok) -> cancelled
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, status)
+  VALUES (org_a, ajans, 'T31 etkinlik', 'corporate', current_date + 60, current_date + 60, 'draft') RETURNING id INTO ev;
+  UPDATE public.events SET status = 'confirmed', confirmed_at = now() WHERE id = ev;
+  UPDATE public.events SET status = 'matching' WHERE id = ev;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = ev AND event_name = 'event_confirmed';
+  IF n <> 1 THEN RAISE EXCEPTION 'event_confirmed % (1)', n; END IF;
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = ev;
+  IF n <> 1 THEN RAISE EXCEPTION 'matching gecisi olay yazdi (% satir, 1 beklenir)', n; END IF;
+
+  -- 3) match_run (INSERT olay yazmaz; candidate_count UPDATE'i yazar) + aday gosterim/tik (ikinci kez isaretleme olay eklemez)
+  INSERT INTO public.match_runs (event_id, strategy, algorithm_version, params, created_by)
+  VALUES (ev, 'hybrid', 'match-v0.2-test', '{"w": 1}'::jsonb, ajans) RETURNING id INTO run_id;
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = run_id;
+  IF n <> 0 THEN RAISE EXCEPTION 'match_run INSERT aninda olay yazildi (%)', n; END IF;
+  UPDATE public.match_runs SET candidate_count = 1, latency_ms = 42 WHERE id = run_id;
+  SELECT count(*), max(payload->>'latency_ms'), max(algorithm_version) INTO n, st, st2 FROM (SELECT payload, algorithm_version FROM public.analytics_events WHERE entity_id = run_id AND event_name = 'match_run') x;
+  IF n <> 1 OR st <> '42' OR st2 <> 'match-v0.2-test' THEN RAISE EXCEPTION 'match_run % / latency % / alg % (1 / 42 / test)', n, st, st2; END IF;
+  INSERT INTO public.match_candidates (match_run_id, provider_id, role_id, match_score, final_rank, reason_codes)
+  VALUES (run_id, pro1, rol, 77.5, 2, ARRAY['same_city', 'new_talent']) RETURNING id INTO cand;
+  UPDATE public.match_candidates SET was_shown = true WHERE id = cand;
+  UPDATE public.match_candidates SET was_shown = true WHERE id = cand;     -- tekrar: olay yok
+  UPDATE public.match_candidates SET was_clicked = true WHERE id = cand;
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = cand;
+  IF n <> 2 THEN RAISE EXCEPTION 'aday olaylari % (2: shown, clicked)', n; END IF;
+  SELECT payload INTO js FROM public.analytics_events WHERE entity_id = cand AND event_name = 'match_shown';
+  IF (js->>'is_new_talent')::boolean IS DISTINCT FROM true OR (js->>'final_rank') <> '2' OR js->>'provider_type' <> 'professional'
+     OR (SELECT algorithm_version FROM public.analytics_events WHERE entity_id = cand AND event_name = 'match_shown') <> 'match-v0.2-test' THEN
+    RAISE EXCEPTION 'match_shown payload: %', js; END IF;
+  SELECT provider_id::text INTO st FROM public.analytics_events WHERE entity_id = cand AND event_name = 'match_clicked';
+  IF st <> pro1::text THEN RAISE EXCEPTION 'match_clicked provider % (pro1)', st; END IF;
+
+  -- 4) crew_selected -> crew_confirmed
+  INSERT INTO public.crews (event_id, organization_id, name, strategy, algorithm_version, created_by)
+  VALUES (ev, org_a, 'T31 ekip', 'hybrid', 'match-v0.2-test', ajans) RETURNING id INTO crew_id;
+  INSERT INTO public.crew_members (crew_id, role_id, provider_id, pool_origin, status, match_candidate_id)
+  VALUES (crew_id, rol, pro1, 'marketplace', 'proposed', cand) RETURNING id INTO cm;
+  UPDATE public.crew_members SET status = 'contacted' WHERE id = cm;   -- olay yok
+  UPDATE public.crew_members SET status = 'confirmed' WHERE id = cm;
+  SELECT string_agg(event_name, ',' ORDER BY event_name) INTO st FROM public.analytics_events WHERE entity_id = cm;
+  IF st <> 'crew_confirmed,crew_selected' THEN RAISE EXCEPTION 'crew olaylari: %', st; END IF;
+  SELECT payload INTO js FROM public.analytics_events WHERE entity_id = cm AND event_name = 'crew_selected';
+  IF (js->>'from_match')::boolean IS DISTINCT FROM true OR js->>'pool_origin' <> 'marketplace' OR js->>'event_id' <> ev::text THEN
+    RAISE EXCEPTION 'crew_selected payload: %', js; END IF;
+
+  -- 5) teklif: olustur (olay yok) -> kalem -> gonder (proposal_sent; item_count 1, PII yok) -> declined (proposal_declined)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop := public.proposal_create(org_a, 'T31 teklif', ev, NULL, 'Gizli Musteri', 'faz1test+t31@kashe.net');
+  SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
+  INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+  VALUES (ver, rol, 'T31 kalem', 1, 12000, true, 1);
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_type = 'proposal' AND (entity_id = prop OR entity_id = ver);
+  IF n <> 0 THEN RAISE EXCEPTION 'taslak teklif olay yazdi (%)', n; END IF;
+  PERFORM public.proposal_send(prop, 14);
+  PERFORM public.proposal_set_status(prop, 'declined');
+  EXECUTE 'RESET ROLE';
+  SELECT payload INTO js FROM public.analytics_events WHERE entity_id = ver AND event_name = 'proposal_sent';
+  IF js IS NULL OR (js->>'item_count') <> '1' OR (js->>'total_amount')::numeric <> 14400 OR js::text LIKE '%Gizli%' OR js::text LIKE '%kashe.net%' THEN   -- 12000 + KDV %20
+    RAISE EXCEPTION 'proposal_sent payload: %', js; END IF;
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = prop AND event_name = 'proposal_declined';
+  IF n <> 1 THEN RAISE EXCEPTION 'proposal_declined % (1)', n; END IF;
+  SELECT organization_id::text || '|' || provider_id::text INTO st FROM public.analytics_events WHERE entity_id = prop AND event_name = 'proposal_declined';
+  IF st <> org_a::text || '|' || ajans::text THEN RAISE EXCEPTION 'proposal org/provider: %', st; END IF;
+
+  -- 6) rezervasyon: created -> cancelled (satici iptali, gun farki); ikinci rezervasyon -> completed
+  INSERT INTO public.bookings (proposal_version_id, seller_provider_id, customer_id, event_id, event_date, event_type, total_amount, status)
+  VALUES (ver, ajans, musteri, ev, current_date + 60, 'corporate', 12000, 'confirmed') RETURNING id INTO bk;
+  UPDATE public.bookings SET status = 'cancelled', cancelled_by = ajans, cancelled_at = now(), cancellation_reason = 'T31 gizli neden' WHERE id = bk;
+  SELECT payload INTO js FROM public.analytics_events WHERE entity_id = bk AND event_name = 'booking_cancelled';
+  IF js IS NULL OR js->>'cancelled_by_side' <> 'seller' OR (js->>'days_before_event')::int <> 60 OR js->>'shape' <> 'proposal'
+     OR js::text LIKE '%gizli%' THEN RAISE EXCEPTION 'booking_cancelled payload: %', js; END IF;
+  -- ikinci rezervasyon icin ikinci teklif (surum basina tek rezervasyon kurali)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop2 := public.proposal_create(org_a, 'T31 teklif 2', ev, NULL, NULL, NULL);
+  SELECT current_version_id INTO ver2 FROM public.proposals WHERE id = prop2;
+  INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+  VALUES (ver2, rol, 'T31 kalem 2', 1, 1000, true, 1);
+  PERFORM public.proposal_send(prop2, 14);
+  EXECUTE 'RESET ROLE';
+  INSERT INTO public.bookings (proposal_version_id, seller_provider_id, customer_id, event_id, event_date, event_type, total_amount, status)
+  VALUES (ver2, ajans, musteri, ev, current_date + 61, 'corporate', 1200, 'confirmed') RETURNING id INTO bk2;
+  UPDATE public.bookings SET status = 'completed', completed_at = now() WHERE id = bk2;
+  SELECT string_agg(event_name, ',' ORDER BY event_name) INTO st FROM public.analytics_events WHERE entity_id = bk2;
+  IF st <> 'booking_completed,booking_created' THEN RAISE EXCEPTION 'booking2 olaylari: %', st; END IF;
+
+  -- 7) etkinlik iptali
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.events SET status = 'cancelled' WHERE id = ev;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.analytics_events WHERE entity_id = ev AND event_name = 'event_cancelled';
+  IF n <> 1 THEN RAISE EXCEPTION 'event_cancelled % (1)', n; END IF;
+
+  -- 8) RLS: admin (ajans) okur (>0), sales (musteri) 0 satir + INSERT 42501 + analytics_summary 42501; anon 42501; admin ozet huni
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.analytics_events;
+  IF n = 0 THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'admin olay okuyamadi'; END IF;
+  SELECT public.analytics_summary(3650) INTO js;
+  EXECUTE 'RESET ROLE';
+  IF (js->'funnel'->>'brief_created')::int < 1 OR (js->'fairness'->>'shown_total')::int < 1 OR (js->'totals'->>'booking_completed')::int < 1 THEN
+    RAISE EXCEPTION 'analytics_summary icerik: %', js; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.analytics_events;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'sales % olay gordu (0)', n; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.analytics_events (event_name, entity_type, entity_id) VALUES ('brief_created', 'brief', gen_random_uuid());
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated olay yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.analytics_summary(30);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'admin olmayan ozet aldi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM count(*) FROM public.analytics_events;
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon olay okudu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 9) PII taramasi (tum tablo): payload anahtarlari arasinda yasakli alan yok
+  SELECT count(*) INTO n FROM public.analytics_events, LATERAL jsonb_object_keys(payload) k
+   WHERE k IN ('email', 'client_email', 'phone', 'full_name', 'client_name', 'name', 'body', 'notes', 'raw_text', 'description', 'cancellation_reason', 'title');
+  IF n <> 0 THEN RAISE EXCEPTION 'payload yasakli anahtar tasiyor (%)', n; END IF;
+
+  -- 10) temizlik (olaylar ekle-yalniz, kalir; kaynak satirlar silinir)
+  DELETE FROM public.bookings WHERE id IN (bk, bk2);
+  DELETE FROM public.proposals WHERE id IN (prop, prop2);
+  DELETE FROM public.crews WHERE id = crew_id;
+  DELETE FROM public.match_runs WHERE id = run_id;
+  DELETE FROM public.events WHERE id = ev;
+  DELETE FROM public.event_briefs WHERE id = br;
+  SELECT count(*) - n0 INTO n FROM public.analytics_events;
+
+  INSERT INTO t_sonuc VALUES (31, 'T31 FAZ 9a olay zinciri', 'GECTI',
+    'brief_created (PII yok, actor owner); event confirmed 1 / matching yok / cancelled 1; match_run INSERT yok -> UPDATE 1 (latency, alg); aday shown+clicked 2 (tekrar yok; new_talent, rank, tur, alg); crew selected+confirmed (contacted yok; from_match); teklif taslak 0 -> sent (item_count 1, 14400 KDV dahil, PII yok) -> declined (org/provider); booking cancelled (seller, 60 gun, proposal sekli, neden yok) + created/completed; admin okur + ozet (huni/adalet/toplam), sales 0 + INSERT 42501 + ozet 42501, anon 42501; yasakli anahtar 0; bu kosuda ' || n || ' olay');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (31, 'T31 FAZ 9a olay zinciri', 'HATA', SQLERRM);
+END $$;
+
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
