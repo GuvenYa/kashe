@@ -4617,7 +4617,7 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- T32) FAZ 9b fiyat kiyaslari. ON KOSUL: 20261026120000 (faz9b 01) dalda. Test Ajans (org_a: owner 0004 = admin), pro2 0003 (TEK rol).
+-- T32) FAZ 9b fiyat kiyaslari. ON KOSUL: 20261026120000 (faz9b 01) + 20261026130000 (faz9b 02) dalda. Test Ajans (org_a: owner 0004 = admin), pro2 0003 (TEK rol).
 --      Gozlem = son GONDERILMIS surumun gorunur rol kalemleri + kabul edilmis pro teklifi; gizli/rolsuz/taslak/etkinliksiz kalem girmez;
 --      revizyon cift sayilmaz; uc aile; esik 15; lookup son hesapta yayinli en dar satir (eski gunden donmez); anon okur; tablo admin-only.
 -- -----------------------------------------------------------------------------
@@ -4802,18 +4802,25 @@ BEGIN
      OR (js->'by_granularity'->'role_city_type'->>'published')::int < 1 THEN
     RAISE EXCEPTION 'ozet icerik: %', js; END IF;
 
-  -- 6) temizlik: kaynaklar + sehirler (CASCADE hucreleri siler) + bu kosunun rol satirlari; hesap yeniden kosar (harness temiz kalsin)
+  -- 6) temizlik: kaynaklar + sehirler (CASCADE hucreleri siler); hesap yeniden kosar -> gozlemi kalmayan AYNI GUN hucreleri silinir
+  --    (faz9b_02): rol kaba satiri gercek gozlem sayisina doner, quote rolu gozlemsizse satiri kalmaz
   DELETE FROM public.bookings WHERE conversation_id = conv;
   DELETE FROM public.quotes WHERE id = q;
   DELETE FROM public.conversations WHERE id = conv;
   DELETE FROM public.proposals WHERE title LIKE 'T32 %';
   DELETE FROM public.events WHERE title LIKE 'T32 %';
   DELETE FROM public.turkish_cities WHERE plate_no IN (998, 999);
-  DELETE FROM public.price_benchmarks WHERE period_end = current_date AND role_id IN (rol, rol2);
   PERFORM public.price_benchmarks_compute(current_date);
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(current_date - 89, current_date) g WHERE g.role_id = rol;
+  SELECT sample_size INTO n2 FROM public.price_benchmarks WHERE role_id = rol AND city_id IS NULL AND event_type IS NULL AND period_end = current_date;
+  IF (n = 0 AND n2 IS NOT NULL) OR (n > 0 AND n2 IS DISTINCT FROM n) THEN
+    RAISE EXCEPTION 'eskiyen hucre: rol kaba satiri % (gozlem %)', n2, n; END IF;
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(current_date - 89, current_date) g WHERE g.role_id = rol2;
+  SELECT count(*) INTO n2 FROM public.price_benchmarks WHERE role_id = rol2 AND period_end = current_date;
+  IF n = 0 AND n2 <> 0 THEN RAISE EXCEPTION 'eskiyen hucre: quote rolunun % satiri kaldi (gozlem 0)', n2; END IF;
 
   INSERT INTO t_sonuc VALUES (32, 'T32 FAZ 9b fiyat kiyaslari', 'GECTI',
-    'gozlem: 16 kalem (4 teklif x 4; revizyon cift saymadi; gizli/rolsuz/taslak/etkinliksiz girmedi) + quote 1 (tek rol, tur wedding); hesap: A dugun 16 yayinli (4750/8500/12250, ort 8500), B dugun 3 ve A kurumsal 2 yayinsiz, A kaba 18 yayinli, rol kaba >= 21 yayinli, (rol,NULL,tur) yok, yeniden hesap ayni satir sayisi, esik/ceyrek tutarli; lookup anon: en dar / rol+sehir / rol (dunku yayinli satir donmedi) / olmayan rol 0 / many 1; anon tablo 42501; admin olmayan 0 satir + INSERT/compute/gozlem/ozet 42501; admin okur + ozet (esik 15, yayinli >= 3, hucre A dugun 16)');
+    'gozlem: 16 kalem (4 teklif x 4; revizyon cift saymadi; gizli/rolsuz/taslak/etkinliksiz girmedi) + quote 1 (tek rol, tur wedding); hesap: A dugun 16 yayinli (4750/8500/12250, ort 8500), B dugun 3 ve A kurumsal 2 yayinsiz, A kaba 18 yayinli, rol kaba >= 21 yayinli, (rol,NULL,tur) yok, yeniden hesap ayni satir sayisi, esik/ceyrek tutarli; lookup anon: en dar / rol+sehir / rol (dunku yayinli satir donmedi) / olmayan rol 0 / many 1; anon tablo 42501; admin olmayan 0 satir + INSERT/compute/gozlem/ozet 42501; admin okur + ozet (esik 15, yayinli >= 3, hucre A dugun 16); temizlik sonrasi yeniden hesap eskiyen ayni gun hucreyi sildi');
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (32, 'T32 FAZ 9b fiyat kiyaslari', 'HATA', SQLERRM);
