@@ -4,8 +4,8 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b-DB/01 dalda + uretimde** (asama4 33/33, asama19 K7-K9 ESIT); **9b-DB/02 hazir**
-(`20261026130000_faz9b_02_eskiyen_hucre.sql`; yerelde 33/33) ve **9b-P1 incelemede** (Claude Code bitti, canli tur bekliyor). Sira: 9b tur +
+**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b-DB/01 dalda + uretimde** (asama4 33/33, asama19 K7-K9 ESIT); **9b-DB/02 + 03 hazir**
+(`20261026130000_faz9b_02_eskiyen_hucre.sql`, `20261026140000_faz9b_03_istanbul_gunu.sql`; yerelde 33/33) ve **9b-P1 incelemede** (Claude Code bitti, canli tur bekliyor). Sira: 9b tur +
 kapanis -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
 (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
@@ -202,6 +202,10 @@ Yayinlanan yoksa bos. `authenticated` + `anon` (sihirbaz anonim de olabilir); ya
   `clock_timestamp()`, yazilan/guncellenen satir `computed_at = clock_timestamp()`, sonda `period_end = p_as_of AND computed_at < basladi`
   silinir). Neden: kaynak ayni gun silinince sabahki satir `period_end = bugun` ile kaliyor ve lookup onu yayinli saniyordu (tur hazirligi
   geri alinirken fark edildi). Eski gunlere dokunulmaz. asama4 T32 temizlik adimi bunu sinar.
+- **9b-DB/03 (`20261026140000_faz9b_03_istanbul_gunu.sql`):** `price_benchmarks_compute` varsayilan `p_as_of` = ISTANBUL gunu
+  (`(now() AT TIME ZONE 'Europe/Istanbul')::date`), `current_date` (UTC) degil. Gozlemler Istanbul gunune kovalaniyor; 21:00-24:00 UTC
+  arasinda elle kosulan hesap o saatlerin islemlerini "yarin" sayip disarida birakiyordu (tur hazirliginda goruldu). Cron 00:30 UTC'de
+  iki gun ayni oldugu icin gece kosusu etkilenmiyordu. asama4 T32 de Istanbul gunuyle calisir.
 - **pg_cron:** `price-benchmarks-daily` `30 0 * * *` (00:30 UTC = 03:30 Istanbul); yalniz `pg_extension`'da `pg_cron` varsa (harness'ta yok),
   `EXECUTE` ile dinamik (uzanti yokken ayristirma hatasi olmasin). asama19 K9 cron isini uzanti varligiyla karsilastirir
   (`query_to_xml` ile — `cron.job` yokken salt SELECT'te adi gecemez).
@@ -271,7 +275,7 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 |---|---|---|
 | **9a-DB/01** — **KAPANDI** | `analytics_events` + CHECK sozluk + 10 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
 | **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
-| **9b-DB/01 + 02** — DB/01 dalda ve uretimde, DB/02 hazir | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
+| **9b-DB/01 + 02 + 03** — DB/01 dalda ve uretimde, DB/02-03 hazir | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
 | **9b-P1** | sihirbaz/Kesfet/editor/profil ipuclari (yalniz yayinli) | tur: testguven sihirbaz, gmail editor (uretimde buyuk olasilikla hucre yok — "hicbir sey" davranisi dogrulanir) |
 | **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |
 | **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |
