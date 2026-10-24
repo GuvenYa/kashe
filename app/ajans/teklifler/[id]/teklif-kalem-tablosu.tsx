@@ -7,6 +7,8 @@ import {
   type IcKalemSatiri,
   type KalemSatiri,
 } from '../teklif-data';
+import { formatTL, sayiMetni } from '@/app/lib/para';
+import { GRANULARITY_ETIKETI, type PazarKiyasi } from '@/app/lib/fiyat-kiyas';
 
 /**
  * TEKLIF KALEM TABLOSU (D1b-3 / madde 2).
@@ -47,6 +49,7 @@ export type IcMaliyetYazma = {
 
 export function TeklifKalemTablosu({
   kalemler,
+  pazarKiyaslari,
   icKalemler,
   duzenlenebilir,
   dondurulmus,
@@ -68,6 +71,13 @@ export function TeklifKalemTablosu({
   isPending,
 }: {
   kalemler: KalemSatiri[];
+  /**
+   * FAZ 9b: rol kimligi -> yayinli pazar kiyasi. Yetki yoksa ya da yayinli
+   * hucre yoksa BOS nesne; ipucu satiri HIC cizilmez (veri yok yazisi da yok).
+   *
+   * Fiyat girdisine, toplamlara ve kaydetmeye DOKUNMAZ: yalniz bilgi.
+   */
+  pazarKiyaslari: Record<number, PazarKiyasi>;
   /** `null` = henuz yuklenmedi (RPC cagrilmadi). */
   icKalemler: IcKalemSatiri[] | null;
   duzenlenebilir: boolean;
@@ -183,6 +193,28 @@ export function TeklifKalemTablosu({
         }}
         className={`${ALAN} w-full min-w-24`}
       />
+    );
+  }
+
+  /**
+   * FAZ 9b — pazar ipucu: fiyat hucresinin ALTINDA tek satir.
+   *
+   * Yalniz duzenlenebilir surumde, role bagli kalemde ve YAYINLI kiyas varsa
+   * cizilir. Dondurulmus/gonderilmis surumde `duzenlenebilir` zaten false;
+   * yeni eklenen kalemin `role_id` null oldugu icin ipucu almaz.
+   *
+   * Tiklanmaz, fiyati DEGISTIRMEZ: `kashe-tap` yok, bir eylem baglanmadi.
+   */
+  function PazarIpucuSatiri({ k }: { k: KalemSatiri }) {
+    if (!duzenlenebilir || k.role_id == null) return null;
+    const kiyas = pazarKiyaslari[k.role_id];
+    if (!kiyas) return null;
+    return (
+      <p className="font-mono text-[10px] text-ink-50 mt-1 leading-snug">
+        Pazar: medyan {formatTL(kiyas.median)} ·{' '}
+        {GRANULARITY_ETIKETI[kiyas.granularity]} ·{' '}
+        {sayiMetni(kiyas.sampleSize)} işlem
+      </p>
     );
   }
 
@@ -434,6 +466,7 @@ export function TeklifKalemTablosu({
                     </td>
                     <td className="py-3 pr-3">
                       <BirimGirdisi k={k} />
+                      <PazarIpucuSatiri k={k} />
                     </td>
                     <td className="py-3 pr-3 text-right">
                       <p className="font-display font-semibold text-ink tabular-nums">
@@ -510,6 +543,7 @@ export function TeklifKalemTablosu({
                       Birim fiyat
                     </p>
                     <BirimGirdisi k={k} />
+                    <PazarIpucuSatiri k={k} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-3">

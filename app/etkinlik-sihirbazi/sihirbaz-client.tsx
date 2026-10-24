@@ -15,6 +15,7 @@ import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { AnladimOzeti } from './anladim-ozeti';
+import { PazarButceKutusu } from './pazar-butce-kutusu';
 import { tarihMetni } from '@/app/lib/tarih';
 import { formatTLAralik } from '@/app/lib/para';
 
@@ -163,6 +164,7 @@ export function SihirbazClient({
   profiller,
   kuruluslar,
   oturumVar,
+  rolIdler,
 }: {
   kategoriler: Kategori[];
   sehirler: Sehir[];
@@ -171,6 +173,8 @@ export function SihirbazClient({
   /** events.manage yetkili kuruluslar (FAZ 7b/P1-ek). Girissizde bos dizi. */
   kuruluslar: { id: string; name: string }[];
   oturumVar: boolean;
+  /** FAZ 9b: kategori/rol slug -> `service_roles.id` (pazar kiyasi RPC'si icin). */
+  rolIdler: Record<string, number>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -394,6 +398,22 @@ export function SihirbazClient({
   const secilenRolAdlari = secilenKategoriler
     .map((id) => kategoriler.find((k) => k.id === id)?.name_tr ?? null)
     .filter((v): v is string => !!v);
+
+  /**
+   * FAZ 9b — pazar butce kutusunun girdisi: secili kategorilerin slug + ad +
+   * adedi. Kutu her rol icin yayinli kiyas bulamazsa HIC cizilmez.
+   */
+  const butceRolleri = secilenKategoriler
+    .map((id) => {
+      const kat = kategoriler.find((k) => k.id === id);
+      if (!kat) return null;
+      return {
+        slug: kat.slug,
+        ad: kat.name_tr,
+        adet: adetHaritasi.get(id) ?? 1,
+      };
+    })
+    .filter((v): v is { slug: string; ad: string; adet: number } => v !== null);
 
   const turGruplari = useMemo(() => {
     const gruplar = new Map<string, EtkinlikTuru[]>();
@@ -650,6 +670,15 @@ export function SihirbazClient({
           onAdim={(a) => guncelle({ adim: String(a) }, { gecmis: 'push' })}
         />
       )}
+
+      {/* FAZ 9b — pazar kiyasi. Ozetin HEMEN ALTINDA, tum adimlarda (adim 3'te
+          butce girilirken de). Yayinli kiyas yoksa hicbir sey cizmez. */}
+      <PazarButceKutusu
+        roller={butceRolleri}
+        rolIdler={rolIdler}
+        sehirId={sehir ? Number(sehir) : null}
+        tur={tur || null}
+      />
 
       <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
         {/* ADIM 0 — Anlat (isteğe bağlı) */}

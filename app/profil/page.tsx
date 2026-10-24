@@ -1,6 +1,17 @@
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { formatTL, formatTLAralik } from '@/app/lib/para';
+import { pazarKiyaslari } from '@/app/lib/fiyat-kiyas-data';
+import {
+  GRANULARITY_ETIKETI,
+  KONUM_ETIKETI,
+  KONUM_SINIFI,
+  konum,
+  ornekMetni,
+  pazarAraligi,
+  type PazarKiyasi,
+} from '@/app/lib/fiyat-kiyas';
 import { PublishToggle } from './publish-toggle';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { getUserFavorites } from '@/app/favoriler/actions';
@@ -340,6 +351,75 @@ export default async function ProfilPage() {
   let kpiGelenTeklif = 0;
   let kpiEtkinlik = 0;
 
+  /**
+   * FAZ 9b — pazar araligi karti (yalniz PROFESYONEL, yalniz kendi sayfasi).
+   *
+   * ROL SECIMI DB kuraliyla AYNI: birincil rol, yoksa TEK rol. Birden fazla rol
+   * var ve birincil isaretlenmemisse kart CIZILMEZ — hangi rolun kiyasi
+   * gosterilecegi belirsiz olurdu.
+   *
+   * Yayinli hucre yoksa kart yok ("veri yok" yazisi da yok). `/p/[id]` kamu
+   * profiline HICBIR SEY eklenmez: bu bilgi yalniz kisinin kendisine gorunur.
+   */
+  let pazarKarti: {
+    kiyas: PazarKiyasi;
+    rolAdi: string;
+    priceMin: number | null;
+    priceMax: number | null;
+    fiyatGirilmemis: boolean;
+  } | null = null;
+
+  if (isPro) {
+    const { data: rolData } = await supabase
+      .from('v_provider_roles')
+      .select(
+        'role_id, role_name_tr, is_primary, price_min, price_max, pricing_mode'
+      )
+      .eq('provider_id', user.id)
+      .eq('role_is_active', true);
+
+    const roller = (rolData ?? []) as {
+      role_id: number;
+      role_name_tr: string | null;
+      is_primary: boolean;
+      price_min: number | string | null;
+      price_max: number | string | null;
+      pricing_mode: string | null;
+    }[];
+
+    const secili =
+      roller.find((r) => r.is_primary) ??
+      (roller.length === 1 ? roller[0] : null);
+
+    if (secili) {
+      const kiyaslar = await pazarKiyaslari(
+        [secili.role_id],
+        (profile.city_id as number | null) ?? null,
+        null
+      );
+      const kiyas = kiyaslar.get(secili.role_id);
+      if (kiyas) {
+        const sayiYap = (v: number | string | null): number | null => {
+          if (v === null || v === undefined || v === '') return null;
+          const n = Number(v);
+          return Number.isFinite(n) ? n : null;
+        };
+        const min = sayiYap(secili.price_min);
+        const max = sayiYap(secili.price_max);
+        pazarKarti = {
+          kiyas,
+          rolAdi: secili.role_name_tr?.trim() || 'Rolün',
+          priceMin: min,
+          priceMax: max,
+          // Talep uzerine ya da ikisi de bos -> kendi fiyati KIYASLANMAZ.
+          fiyatGirilmemis:
+            secili.pricing_mode === 'on_request' ||
+            (min === null && max === null),
+        };
+      }
+    }
+  }
+
   if (isPro || isAgencyUser) {
     const [talepSonuc, rezervasyonSonuc] = await Promise.all([
       supabase
@@ -595,6 +675,68 @@ export default async function ProfilPage() {
                 </li>
               ))}
             </ul>
+          </PanelKart>
+        </div>
+      )}
+
+      {/* PAZAR ARALIGI (FAZ 9b) — yalniz yayinli kiyas varsa; kendisine
+          gorunur. Kiyas yoksa kart HIC cizilmez. */}
+      {pazarKarti && (
+        <div className="mb-8">
+          <PanelKart baslik="Pazar aralığı">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
+              {pazarKarti.rolAdi} ·{' '}
+              {GRANULARITY_ETIKETI[pazarKarti.kiyas.granularity]}
+            </p>
+            <p className="font-display font-semibold text-2xl text-ink tabular-nums mt-1.5">
+              {pazarAraligi(pazarKarti.kiyas)}
+            </p>
+            <p className="text-sm text-ink-72 mt-1">
+              medyan {formatTL(pazarKarti.kiyas.median)} ·{' '}
+              {ornekMetni(pazarKarti.kiyas)}
+            </p>
+
+            <div className="mt-4 pt-4 border-t border-line">
+              {pazarKarti.fiyatGirilmemis ? (
+                <p className="text-sm text-ink-72">
+                  Fiyatını{' '}
+                  <Link
+                    href="/profil/hizmetlerim"
+                    className="text-brand-ink hover:underline"
+                  >
+                    Hizmetlerim
+                  </Link>
+                  &apos;den gir.
+                </p>
+              ) : (
+                (() => {
+                  // Konum: alt sinir varsa ondan, yoksa ust sinirdan.
+                  const kendi = pazarKarti.priceMin ?? pazarKarti.priceMax;
+                  const yer = konum(kendi, pazarKarti.kiyas);
+                  return (
+                    <p className="text-sm text-ink">
+                      Senin liste fiyatın:{' '}
+                      <span className="tabular-nums">
+                        {formatTLAralik(
+                          pazarKarti.priceMin,
+                          pazarKarti.priceMax
+                        )}
+                      </span>
+                      {yer && (
+                        <span className={`ml-2 ${KONUM_SINIFI[yer]}`}>
+                          {KONUM_ETIKETI[yer]}
+                        </span>
+                      )}
+                    </p>
+                  );
+                })()
+              )}
+            </div>
+
+            <p className="text-xs text-ink-50 mt-4 leading-relaxed">
+              Kıyas, Kashe üzerinden gönderilen teklif ve kabul edilen
+              fiyatlardan hesaplanır; liste fiyatları dahil değildir.
+            </p>
           </PanelKart>
         </div>
       )}

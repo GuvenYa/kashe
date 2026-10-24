@@ -32,7 +32,9 @@ import {
   type VeriSutunu,
 } from '@/app/components/panel';
 import { C, MONO, tooltipStyle } from '@/app/lib/grafik-tema';
+import { formatTL } from '@/app/lib/para';
 import {
+  AILE_ETIKETI,
   HUNI_ADIMLARI,
   OLAY_GRUP_ETIKETI,
   OLAY_SIRASI,
@@ -94,6 +96,34 @@ type Adalet = {
   gini: number | null;
 };
 
+/** `price_benchmarks_summary()` donusu (FAZ 9b). */
+type KiyasHucresi = {
+  role_id: number;
+  role_name: string | null;
+  city_id: number | null;
+  city_name: string | null;
+  event_type: string | null;
+  event_type_name: string | null;
+  granularity: string;
+  sample_size: number;
+  p25: number | string;
+  median: number | string;
+  p75: number | string;
+};
+
+type EsigeYakin = KiyasHucresi & { missing: number };
+
+type KiyasOzeti = {
+  period_end: string | null;
+  threshold: number;
+  cells_total: number;
+  cells_published: number;
+  observations_total?: number;
+  by_granularity: Record<string, { total: number; published: number }>;
+  published_cells: KiyasHucresi[];
+  near_threshold: EsigeYakin[];
+};
+
 type Ozet = {
   from: string;
   days: number;
@@ -118,6 +148,8 @@ export default function ZekaPage() {
   const [pDays, setPDays] = useState<number>(30);
   const [ozet, setOzet] = useState<Ozet | null>(null);
   const [sabitler, setSabitler] = useState<Record<number, Adalet | null>>({});
+  const [kiyas, setKiyas] = useState<KiyasOzeti | null>(null);
+  const [kiyasHatasi, setKiyasHatasi] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -143,12 +175,16 @@ export default function ZekaPage() {
     (async () => {
       setYukleniyor(true);
       setHata(null);
+      // FAZ 9b: fiyat kiyasi ozeti pencere seciciden BAGIMSIZ (gunluk hesap);
+      // pencere degisiminde yeniden cekilmez. Digerleriyle PARALEL baslar.
+      const kiyasIstegi = supabase.rpc('price_benchmarks_summary');
       const [secili, ...digerleri] = await Promise.all([
         supabase.rpc('analytics_summary', { p_days: pDays }),
         ...SABIT_PENCERELER.map((g) =>
           supabase.rpc('analytics_summary', { p_days: g })
         ),
       ]);
+      const kiyasSonuc = await kiyasIstegi;
       if (iptal) return;
 
       if (secili.error) {
@@ -166,6 +202,11 @@ export default function ZekaPage() {
           : ((sonuc?.data as unknown as Ozet | null)?.fairness ?? null);
       });
       setSabitler(harita);
+      if (kiyasSonuc.error) {
+        setKiyasHatasi(hataMetni(kiyasSonuc.error));
+      } else {
+        setKiyas(kiyasSonuc.data as unknown as KiyasOzeti);
+      }
       setYukleniyor(false);
     })();
 
@@ -325,6 +366,79 @@ export default function ZekaPage() {
   // ---------------------------------------------------------------------------
   // Tablolar
   // ---------------------------------------------------------------------------
+
+  /** Blok 4 grafigi: aile basina toplam/yayinlanan (eksik anahtar 0). */
+  const aileVerisi = useMemo(
+    () =>
+      (['role_city_type', 'role_city', 'role'] as const).map((anahtar) => {
+        const a = kiyas?.by_granularity?.[anahtar];
+        return {
+          aile: AILE_ETIKETI[anahtar] ?? anahtar,
+          toplam: Number(a?.total ?? 0),
+          yayinlanan: Number(a?.published ?? 0),
+        };
+      }),
+    [kiyas]
+  );
+
+  const kiyasSutunlari: VeriSutunu[] = [
+    { anahtar: 'rol', baslik: 'Rol', kartEtiketiGizle: true },
+    { anahtar: 'sehir', baslik: 'Şehir', dar: true },
+    { anahtar: 'tur', baslik: 'Tür', dar: true },
+    { anahtar: 'islem', baslik: 'İşlem', sayisal: true },
+    { anahtar: 'p25', baslik: 'p25', sayisal: true },
+    { anahtar: 'medyan', baslik: 'Medyan', sayisal: true },
+    { anahtar: 'p75', baslik: 'p75', sayisal: true },
+  ];
+
+  const kiyasSatirlari: VeriSatiri[] = useMemo(
+    () =>
+      (kiyas?.published_cells ?? []).map((h, i) => ({
+        anahtar: `${h.role_id}-${h.city_id ?? 'x'}-${h.event_type ?? 'x'}-${i}`,
+        hucreler: {
+          rol: (
+            <span className="block text-ink break-words">
+              {h.role_name ?? '—'}
+            </span>
+          ),
+          sehir: h.city_name ?? 'Tümü',
+          tur: h.event_type_name ?? 'Tümü',
+          islem: sayi(h.sample_size),
+          // Tutarlar `para.ts` ile; burada hesap YOK, RPC degeri bicimlenir.
+          p25: formatTL(Number(h.p25)),
+          medyan: formatTL(Number(h.median)),
+          p75: formatTL(Number(h.p75)),
+        },
+      })),
+    [kiyas]
+  );
+
+  const yakinSutunlari: VeriSutunu[] = [
+    { anahtar: 'rol', baslik: 'Rol', kartEtiketiGizle: true },
+    { anahtar: 'sehir', baslik: 'Şehir', dar: true },
+    { anahtar: 'tur', baslik: 'Tür', dar: true },
+    { anahtar: 'islem', baslik: 'İşlem', sayisal: true },
+    { anahtar: 'eksik', baslik: 'Eksik', sayisal: true },
+  ];
+
+  const yakinSatirlari: VeriSatiri[] = useMemo(
+    () =>
+      (kiyas?.near_threshold ?? []).map((h, i) => ({
+        anahtar: `y-${h.role_id}-${h.city_id ?? 'x'}-${h.event_type ?? 'x'}-${i}`,
+        hucreler: {
+          rol: (
+            <span className="block text-ink break-words">
+              {h.role_name ?? '—'}
+            </span>
+          ),
+          sehir: h.city_name ?? 'Tümü',
+          tur: h.event_type_name ?? 'Tümü',
+          islem: sayi(h.sample_size),
+          eksik: sayi(h.missing),
+        },
+      })),
+    [kiyas]
+  );
 
   const olaySutunlari: VeriSutunu[] = [
     { anahtar: 'olay', baslik: 'Olay', kartEtiketiGizle: true },
@@ -560,6 +674,124 @@ export default function ZekaPage() {
                 bosMetin="Olay listesi yüklenemedi."
               />
             </div>
+          </PanelKart>
+
+          {/* ── BLOK 4 — Fiyat kiyaslari (FAZ 9b) ── */}
+          <PanelKart baslik="Fiyat kıyasları · yayınlanan hücreler">
+            {kiyasHatasi ? (
+              <p className="text-sm text-ink-72">{kiyasHatasi}</p>
+            ) : (
+              <>
+                <KpiSatir>
+                  <KpiKutu
+                    etiket="Hücre"
+                    deger={
+                      kiyas?.period_end ? sayi(kiyas.cells_total) : '—'
+                    }
+                    altNot="Son hesap"
+                  />
+                  <KpiKutu
+                    etiket="Yayınlanan"
+                    deger={
+                      kiyas?.period_end ? sayi(kiyas.cells_published) : '—'
+                    }
+                    altNot="Eşiği geçen"
+                    vurgu={
+                      (kiyas?.cells_published ?? 0) > 0 ? 'moss' : 'none'
+                    }
+                  />
+                  <KpiKutu
+                    etiket="Gözlem"
+                    deger={
+                      kiyas?.period_end
+                        ? sayi(kiyas.observations_total ?? 0)
+                        : '—'
+                    }
+                    altNot="son 90 gün"
+                  />
+                  <KpiKutu
+                    etiket="Eşik"
+                    deger={
+                      kiyas ? `${sayi(kiyas.threshold)} işlem` : '—'
+                    }
+                    altNot={
+                      kiyas?.period_end
+                        ? (tarihMetni(kiyas.period_end) ?? '')
+                        : 'Hesap yok'
+                    }
+                  />
+                </KpiSatir>
+
+                {!kiyas?.period_end ? (
+                  <p className="text-sm text-ink-72">Henüz hesap yok.</p>
+                ) : (
+                  <>
+                    <div className="w-full" style={{ height: 200 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={aileVerisi}
+                          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={`${C.ink}14`}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="aile"
+                            tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                            allowDecimals={false}
+                            width={36}
+                          />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            formatter={(v: unknown, ad: unknown) => [
+                              sayi(Number(v)),
+                              String(ad),
+                            ]}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Bar
+                            dataKey="toplam"
+                            name="Toplam"
+                            fill={C.brandInkDeep}
+                            radius={[4, 4, 0, 0]}
+                          />
+                          <Bar
+                            dataKey="yayinlanan"
+                            name="Yayınlanan"
+                            fill={C.moss}
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-5">
+                      <VeriTablosu
+                        sutunlar={kiyasSutunlari}
+                        satirlar={kiyasSatirlari}
+                        bosMetin={`Yayınlanan hücre yok (eşik ${sayi(
+                          kiyas.threshold
+                        )} işlem).`}
+                      />
+                    </div>
+
+                    <p className="font-display text-sm text-ink mt-6 mb-3">
+                      Eşiğe yakın
+                    </p>
+                    <VeriTablosu
+                      sutunlar={yakinSutunlari}
+                      satirlar={yakinSatirlari}
+                      bosMetin="Eşiğe yakın hücre yok."
+                    />
+                  </>
+                )}
+              </>
+            )}
           </PanelKart>
 
           <div className="grid lg:grid-cols-2 gap-6">

@@ -8,6 +8,8 @@ import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { TeklifEditoru } from './teklif-editoru';
 import type { KisiBagi } from './teklif-baslik';
+import { pazarKiyaslari } from '@/app/lib/fiyat-kiyas-data';
+import type { PazarKiyasi } from '@/app/lib/fiyat-kiyas';
 import type {
   KalemSatiri,
   RfpBaglami,
@@ -153,6 +155,10 @@ export default async function TeklifDetayPage({
   // Etkinlige erisim (RLS): satici kurulus cogu zaman gormez — o durumda
   // "Etkinlige git" satiri hic basilmaz.
   let etkinlikErisimi = false;
+  // FAZ 9b: kiyas RPC parametreleri (etkinlige erisim yoksa null kalir ve
+  // RPC `role` duzeyine duser).
+  let etkinlikSehirId: number | null = null;
+  let etkinlikTuru: string | null = null;
   let etkinlikOzeti: {
     title: string | null;
     event_type: string | null;
@@ -164,7 +170,8 @@ export default async function TeklifDetayPage({
     const { data: ev } = await supabase
       .from('events')
       .select(
-        'id, title, event_type, start_date, participant_count, turkish_cities(name)'
+        // FAZ 9b: `city_id` pazar kiyasi RPC'sine gider (sehir bazli hucre).
+        'id, title, event_type, start_date, participant_count, city_id, turkish_cities(name)'
       )
       .eq('id', teklif.event_id)
       .maybeSingle();
@@ -174,6 +181,7 @@ export default async function TeklifDetayPage({
       event_type: string | null;
       start_date: string | null;
       participant_count: number | null;
+      city_id: number | null;
       turkish_cities: { name: string } | null;
     } | null;
     if (e) {
@@ -184,8 +192,37 @@ export default async function TeklifDetayPage({
         city: e.turkish_cities?.name ?? null,
         participant_count: e.participant_count,
       };
+      etkinlikSehirId = e.city_id;
+      etkinlikTuru = e.event_type;
     }
   }
+
+  /**
+   * FAZ 9b — kalem fiyat ipuclari.
+   *
+   * YALNIZ `proposals.manage` yetkisi varken okunur: fiyat yazma yetkisi
+   * olmayan satici ekibi uyesi pazar kiyasi da gormez (ipucu fiyat kararinin
+   * yanindaki bilgi; karar yetkisi yoksa bilgi de gerekmiyor).
+   *
+   * Etkinlige erisim yoksa `city_id`/`event_type` null kalir ve RPC `role`
+   * duzeyine duser — o da gosterilir, etiketi "Türkiye genelinde" olur.
+   *
+   * Yayinli satir olmayan rol haritada YER ALMAZ; tablo o kalemde hicbir sey
+   * cizmez ("veri yok" yazisi konmaz).
+   */
+  const kalemRolleri = [
+    ...new Set(
+      kalemler
+        .map((k) => k.role_id)
+        .filter((v): v is number => typeof v === 'number')
+    ),
+  ];
+  const kiyasHaritasi = kurulus?.canManageProposals
+    ? await pazarKiyaslari(kalemRolleri, etkinlikSehirId, etkinlikTuru)
+    : new Map<number, PazarKiyasi>();
+  // `Map` istemci bilesenine SERILESTIRILEMEZ; duz nesneye cevrilir.
+  const pazarKiyasiKayitlari: Record<number, PazarKiyasi> =
+    Object.fromEntries(kiyasHaritasi);
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
@@ -227,6 +264,7 @@ export default async function TeklifDetayPage({
               gecerliSurum={gecerliSurum}
               surumler={surumler}
               kalemler={kalemler}
+              pazarKiyaslari={pazarKiyasiKayitlari}
               baglantilar={baglantilar}
               canManage={!!kurulus?.canManageProposals}
               maliyetGorulur={!!kurulus?.canSeeRates}

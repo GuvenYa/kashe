@@ -44,6 +44,7 @@ import {
   type IcMaliyetYazma,
 } from './teklif-kalem-tablosu';
 import { TeklifOzet } from './teklif-ozet';
+import type { PazarKiyasi } from '@/app/lib/fiyat-kiyas';
 
 /**
  * FAZ 7a / P1 — teklif editoru.
@@ -91,6 +92,7 @@ export function TeklifEditoru({
   etkinlikOzeti,
   kurulusAdi,
   kisiBagi,
+  pazarKiyaslari,
 }: {
   teklif: TeklifSatiri;
   gecerliSurum: SurumSatiri | null;
@@ -127,6 +129,11 @@ export function TeklifEditoru({
   kurulusAdi: string | null;
   /** FAZ 8b: alici satirindaki CRM kisi bagi (RFP yanitinda null). */
   kisiBagi: KisiBagi;
+  /**
+   * FAZ 9b: rol basina yayinli pazar kiyasi (rol kimligi -> kiyas).
+   * Yetki yoksa ya da yayinli hucre yoksa BOS nesne gelir ve ipucu cizilmez.
+   */
+  pazarKiyaslari: Record<number, PazarKiyasi>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -605,6 +612,7 @@ export function TeklifEditoru({
       {gecerliSurum && (
         <TeklifKalemTablosu
           kalemler={kalemler}
+          pazarKiyaslari={pazarKiyaslari}
           icKalemler={icKalemler}
           duzenlenebilir={duzenlenebilir}
           dondurulmus={dondurulmus}

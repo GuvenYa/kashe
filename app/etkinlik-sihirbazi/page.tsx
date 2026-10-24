@@ -39,8 +39,15 @@ export const metadata = {
 export default async function EtkinlikSihirbaziPage() {
   const supabase = await createClient();
 
-  const [categoriesRes, citiesRes, eventTypesRes, profilesRes, user, ekip] =
-    await Promise.all([
+  const [
+    categoriesRes,
+    citiesRes,
+    eventTypesRes,
+    profilesRes,
+    user,
+    ekip,
+    rolRes,
+  ] = await Promise.all([
       supabase
         .from('service_categories')
         .select('id, slug, name_tr')
@@ -63,11 +70,22 @@ export default async function EtkinlikSihirbaziPage() {
       // FAZ 7b/P1-ek: etkinligi kurulusa atfetmek icin events.manage yetkili
       // kuruluslar. Girissizde getCrewContext bos dizi doner.
       getCrewContext(),
+      // FAZ 9b: pazar butce kutusu rol KIMLIGI ile RPC cagiriyor; slug -> id
+      // koprusu burada kurulur (FAZ 3a: rol slug'i kategori slug'iyla birebir).
+      supabase.from('service_roles').select('id, slug').eq('is_active', true),
     ]);
 
   const kuruluslar = ekip.orgs
     .filter((o) => o.canManageEvents)
     .map((o) => ({ id: o.id, name: o.name }));
+
+  // slug -> rol kimligi (yalniz aktif roller; bulunamayan slug kutuya girmez).
+  const rolIdler: Record<string, number> = Object.fromEntries(
+    ((rolRes.data ?? []) as { id: number; slug: string }[]).map((r) => [
+      r.slug,
+      r.id,
+    ])
+  );
 
   type SayacSatiri = Pick<
     ProviderPublic,
@@ -104,6 +122,7 @@ export default async function EtkinlikSihirbaziPage() {
               profiller={profiller}
               kuruluslar={kuruluslar}
               oturumVar={!!user}
+              rolIdler={rolIdler}
             />
           </Suspense>
         </div>

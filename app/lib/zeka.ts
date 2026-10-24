@@ -154,6 +154,22 @@ export const HUNI_ADIMLARI = [
 ] as const;
 
 // -----------------------------------------------------------------------------
+// Fiyat kiyasi aileleri (FAZ 9b)
+// -----------------------------------------------------------------------------
+
+/**
+ * Hucre ailesi BASLIK etiketi (grafik ekseni, tablo sutunu).
+ *
+ * `fiyat-kiyas.ts`'teki `GRANULARITY_ETIKETI` ile KARISTIRILMAZ: o cumle ici
+ * ("bu sehirde genelde ..."), bu baslik ("Rol+sehir").
+ */
+export const AILE_ETIKETI: Record<string, string> = {
+  role_city_type: 'Rol+şehir+tür',
+  role_city: 'Rol+şehir',
+  role: 'Rol',
+};
+
+// -----------------------------------------------------------------------------
 // Bicimleyiciler
 // -----------------------------------------------------------------------------
 

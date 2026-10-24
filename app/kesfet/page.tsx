@@ -23,6 +23,12 @@ import {
 import { getCachedUser } from '@/app/lib/auth';
 import { getTalentPoolContext, getCrewContext } from '@/app/lib/org-context';
 import { kisaListeDurumu } from '@/app/lib/tedarikci-data';
+import { PazarIpucu } from './pazar-ipucu';
+import type { PazarKiyasi } from '@/app/lib/fiyat-kiyas';
+import {
+  pazarKiyaslari,
+  rolIdleriSlugdan,
+} from '@/app/lib/fiyat-kiyas-data';
 import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 
 export const metadata = {
@@ -222,6 +228,28 @@ export default async function KesfetPage({
   }
 
   const hasAttrFilters = Object.keys(activeAttrFilters).length > 0;
+
+  /**
+   * FAZ 9b — pazar ipucu. YALNIZ tam 1 kategori secili iken: coklu secimde
+   * hangi rolun kiyasi oldugu belirsiz kalirdi.
+   *
+   * FAZ 3a: rol slug'i kategori slug'iyla birebir ayni, bu yuzden kategori
+   * slug'i dogrudan rol aramasina cevrilebiliyor. Yayinli satir yoksa `kiyas`
+   * null kalir ve serit HIC cizilmez ("veri yok" yazisi da yok).
+   */
+  let pazarKiyasi: PazarKiyasi | null = null;
+  let pazarRolAdi: string | null = null;
+  if (selectedCategorySlug) {
+    const rolIdleri = await rolIdleriSlugdan([selectedCategorySlug]);
+    const rolId = rolIdleri.get(selectedCategorySlug);
+    if (rolId) {
+      const kiyaslar = await pazarKiyaslari([rolId], cityId, null);
+      pazarKiyasi = kiyaslar.get(rolId) ?? null;
+      pazarRolAdi =
+        (categories || []).find((c) => c.slug === selectedCategorySlug)
+          ?.name_tr ?? null;
+    }
+  }
 
   // KÖPRÜ — kategori hangi sistemdeyse ondan filtrelenir (tek giriş noktası).
   //  • 'category_attributes' → sorguya containment koşulları eklenir (DB tarafı)
@@ -649,6 +677,10 @@ export default async function KesfetPage({
 
             {/* Sağ — sonuçlar */}
             <div className="flex-1 min-w-0">
+              {/* FAZ 9b — pazar kıyası şeridi (yayınlı hücre varsa). */}
+              {pazarKiyasi && pazarRolAdi && (
+                <PazarIpucu kiyas={pazarKiyasi} rolAdi={pazarRolAdi} />
+              )}
               {error ? (
                 <div className="bg-danger-08 border border-danger/30 rounded-lg p-6">
                   <p className="text-danger text-sm">
