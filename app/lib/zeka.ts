@@ -169,6 +169,13 @@ export const AILE_ETIKETI: Record<string, string> = {
   role: 'Rol',
 };
 
+/**
+ * Guven puani dagilim araliklari (FAZ 9c) — SIRA SABIT, `trust_score_summary`
+ * donusundeki `low` / `mid` / `high` ile ayni sira. Esikler DB'de
+ * (`<40`, `40-69`, `>=70`); buradaki metinler yalniz etikettir.
+ */
+export const TRUST_ARALIK_ETIKETI = ['0–39', '40–69', '70+'] as const;
+
 // -----------------------------------------------------------------------------
 // Bicimleyiciler
 // -----------------------------------------------------------------------------

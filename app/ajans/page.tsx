@@ -21,6 +21,8 @@ import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-dat
 import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
 import { acikFirsatSayisi } from '@/app/lib/crm-data';
 import { tedarikciOzeti } from '@/app/lib/tedarikci-data';
+import { guvenDokumu } from '@/app/lib/guven-data';
+import { GuvenDokumuKarti } from '@/app/components/guven/guven-dokumu-karti';
 import { gorevDurumEtiketi } from '@/app/lib/gorevler';
 
 export const metadata = {
@@ -201,6 +203,18 @@ export default async function AjansPanelPage() {
     kurulus.suppliersEnabled && kurulus.canViewSuppliers
       ? await tedarikciOzeti(kurulus.id)
       : null;
+
+  /**
+   * FAZ 9c — kurulusun guven dokumu.
+   *
+   * Kurulus bir saglayici DEGIL; skor kurulusun pazaryeri kaydina
+   * (`legacy_profile_id`) ait. Kopru alan yoksa (eski kurulus) okuma hic
+   * denenmez. Yetkiyi RPC zorluyor: `settings.manage` olmayan uyede 42501
+   * doner, `guvenDokumu` null verir ve kart cizilmez.
+   */
+  const guvenDokumuVerisi = kurulus.legacyProfileId
+    ? await guvenDokumu(kurulus.legacyProfileId)
+    : null;
 
   const acikDavetler = davetler.filter(
     (d) =>
@@ -505,6 +519,19 @@ export default async function AjansPanelPage() {
           {formatPrice(bekleyenTeklifler[0].current_version.total_amount ?? 0)}{' '}
           (KDV dahil)
         </p>
+      )}
+
+      {/* GUVEN DOKUMU (FAZ 9c) — mevcut kartlarin ALTINDA, tam genislik.
+          Itiraz yalniz `settings.manage` ile acilir; yetkisiz uye mevcut
+          itirazi salt okunur gorur. RPC yetki vermezse kart hic cizilmez. */}
+      {guvenDokumuVerisi && (
+        <div className="mt-6">
+          <GuvenDokumuKarti
+            dokum={guvenDokumuVerisi}
+            providerId={guvenDokumuVerisi.provider_id}
+            itirazEdebilir={kurulus.canManageSettings}
+          />
+        </div>
       )}
     </PanelKabugu>
   );

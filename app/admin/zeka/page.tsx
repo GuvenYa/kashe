@@ -36,6 +36,7 @@ import { formatTL } from '@/app/lib/para';
 import {
   AILE_ETIKETI,
   HUNI_ADIMLARI,
+  TRUST_ARALIK_ETIKETI,
   OLAY_GRUP_ETIKETI,
   OLAY_SIRASI,
   olayEtiketi,
@@ -44,6 +45,14 @@ import {
   sayi,
   yuzde,
 } from '@/app/lib/zeka';
+import {
+  BILESENLER,
+  GUVEN_ESIGI,
+  ITIRAZ_DURUMU,
+  SAGLAYICI_TURU,
+  skorMetni,
+  type ItirazDurumu,
+} from '@/app/lib/guven';
 import { istanbulGunu, tarihMetni } from '@/app/lib/tarih';
 
 /**
@@ -124,6 +133,48 @@ type KiyasOzeti = {
   near_threshold: EsigeYakin[];
 };
 
+/**
+ * `trust_score_summary()` donusu (FAZ 9c).
+ *
+ * `numeric` alanlar PostgREST'te METIN gelir (`avg`, `snapshot_score`,
+ * bilesen ortalamalari): hepsi gosterimden once `Number(...)` ile cevrilir.
+ */
+type GuvenDagilimi = {
+  low: number;
+  mid: number;
+  high: number;
+  scored: number;
+  avg: number | string | null;
+  not_computed: number;
+  invisible: number;
+};
+
+type GuvenItirazSayilari = { open: number; reviewed: number; closed: number };
+
+type GuvenKuyrugu = {
+  id: string;
+  provider_id: string;
+  provider_name: string | null;
+  provider_type: string | null;
+  status: string;
+  message: string;
+  admin_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  snapshot_id: number | null;
+  snapshot_score: number | string | null;
+  current_score: number | string | null;
+};
+
+type GuvenOzeti = {
+  last_computed_at: string | null;
+  distribution: GuvenDagilimi;
+  appeals: GuvenItirazSayilari;
+  appeal_queue: GuvenKuyrugu[];
+  component_avgs: Record<string, number | string | null>;
+  high_threshold: number;
+};
+
 type Ozet = {
   from: string;
   days: number;
@@ -150,6 +201,12 @@ export default function ZekaPage() {
   const [sabitler, setSabitler] = useState<Record<number, Adalet | null>>({});
   const [kiyas, setKiyas] = useState<KiyasOzeti | null>(null);
   const [kiyasHatasi, setKiyasHatasi] = useState<string | null>(null);
+  const [guven, setGuven] = useState<GuvenOzeti | null>(null);
+  const [guvenHatasi, setGuvenHatasi] = useState<string | null>(null);
+  /** Itiraz karari: islenen satir ve o satirin not kutusu. */
+  const [islemde, setIslemde] = useState<string | null>(null);
+  const [notlar, setNotlar] = useState<Record<string, string>>({});
+  const [kararHatasi, setKararHatasi] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -178,6 +235,8 @@ export default function ZekaPage() {
       // FAZ 9b: fiyat kiyasi ozeti pencere seciciden BAGIMSIZ (gunluk hesap);
       // pencere degisiminde yeniden cekilmez. Digerleriyle PARALEL baslar.
       const kiyasIstegi = supabase.rpc('price_benchmarks_summary');
+      // FAZ 9c: guven ozeti de pencere seciciden BAGIMSIZ (gunluk hesap).
+      const guvenIstegi = supabase.rpc('trust_score_summary');
       const [secili, ...digerleri] = await Promise.all([
         supabase.rpc('analytics_summary', { p_days: pDays }),
         ...SABIT_PENCERELER.map((g) =>
@@ -185,6 +244,7 @@ export default function ZekaPage() {
         ),
       ]);
       const kiyasSonuc = await kiyasIstegi;
+      const guvenSonuc = await guvenIstegi;
       if (iptal) return;
 
       if (secili.error) {
@@ -206,6 +266,11 @@ export default function ZekaPage() {
         setKiyasHatasi(hataMetni(kiyasSonuc.error));
       } else {
         setKiyas(kiyasSonuc.data as unknown as KiyasOzeti);
+      }
+      if (guvenSonuc.error) {
+        setGuvenHatasi(hataMetni(guvenSonuc.error));
+      } else {
+        setGuven(guvenSonuc.data as unknown as GuvenOzeti);
       }
       setYukleniyor(false);
     })();
@@ -255,6 +320,42 @@ export default function ZekaPage() {
       iptal = true;
     };
   }, [pDays, hataMetni]);
+
+  /**
+   * FAZ 9c — itiraz karari (admin): `trust_appeal_review(p_appeal, p_status,
+   * p_note)`. Kararin kurallari DB'de (durum yalniz `reviewed`/`closed`, not
+   * en fazla 2000 karakter, `reviewed_by`/`reviewed_at` RPC'de dolar); burada
+   * TEKRAR EDILMEZ. Karardan sonra YALNIZ guven ozeti yeniden cekilir —
+   * olay/huni/kiyas verisi degismedi.
+   */
+  const itirazKarari = useCallback(
+    async (appealId: string, durum: 'reviewed' | 'closed') => {
+      setIslemde(appealId);
+      setKararHatasi(null);
+      const supabase = createClient();
+      const not = (notlar[appealId] ?? '').trim();
+      const { error } = await supabase.rpc('trust_appeal_review', {
+        p_appeal: appealId,
+        p_status: durum,
+        p_note: not === '' ? null : not,
+      });
+      if (error) {
+        setKararHatasi(hataMetni(error));
+        setIslemde(null);
+        return;
+      }
+      const { data, error: ozetHatasi } =
+        await supabase.rpc('trust_score_summary');
+      if (!ozetHatasi) setGuven(data as unknown as GuvenOzeti);
+      setNotlar((o) => {
+        const y = { ...o };
+        delete y[appealId];
+        return y;
+      });
+      setIslemde(null);
+    },
+    [notlar, hataMetni]
+  );
 
   // ---------------------------------------------------------------------------
   // Turetimler
@@ -560,6 +661,162 @@ export default function ZekaPage() {
     return satirlar;
   }, [sabitler, ozet, adalet]);
 
+  // --- Blok 5 (FAZ 9c) --------------------------------------------------------
+
+  /** Dagilim grafigi: 0-39 / 40-69 / 70+ — sira `TRUST_ARALIK_ETIKETI` ile ayni. */
+  const guvenDagilimi = useMemo(() => {
+    const d = guven?.distribution;
+    return [
+      { aralik: TRUST_ARALIK_ETIKETI[0], adet: Number(d?.low ?? 0) },
+      { aralik: TRUST_ARALIK_ETIKETI[1], adet: Number(d?.mid ?? 0) },
+      { aralik: TRUST_ARALIK_ETIKETI[2], adet: Number(d?.high ?? 0) },
+    ];
+  }, [guven]);
+
+  const guvenDagilimiBos = guvenDagilimi.every((g) => g.adet === 0);
+
+  /** Dagilim cubuk renkleri — grafik, kart skor renkleriyle ayni dili konusur. */
+  const DAGILIM_RENKLERI = [C.brandAccent, C.brandInk, C.moss];
+
+  const bilesenSutunlari: VeriSutunu[] = [
+    { anahtar: 'bilesen', baslik: 'Bileşen', kartEtiketiGizle: true },
+    { anahtar: 'ortalama', baslik: 'Ortalama puan', sayisal: true },
+    { anahtar: 'maks', baslik: 'Maksimum', sayisal: true },
+    { anahtar: 'doluluk', baslik: 'Doluluk', sayisal: true },
+  ];
+
+  const bilesenSatirlari: VeriSatiri[] = useMemo(
+    () =>
+      BILESENLER.map((b) => {
+        const ham = guven?.component_avgs?.[b.anahtar];
+        const ort = ham === null || ham === undefined ? null : Number(ham);
+        const gecerli = ort !== null && Number.isFinite(ort);
+        // Iptal bileseni NEGATIF: "doluluk" orani anlamsiz olur, "—" yazilir.
+        const iptal = b.anahtar === 'cancel';
+        return {
+          anahtar: b.anahtar,
+          hucreler: {
+            bilesen: <span className="block text-ink">{b.etiket}</span>,
+            ortalama: (
+              <span className="tabular-nums">
+                {gecerli ? skorMetni(ort) : '—'}
+              </span>
+            ),
+            maks: (
+              <span className="tabular-nums text-ink-72">
+                {iptal ? '0 (−15)' : b.maks}
+              </span>
+            ),
+            doluluk: (
+              <span className="tabular-nums text-ink-72">
+                {iptal || !gecerli ? '—' : oran(ort, b.maks)}
+              </span>
+            ),
+          },
+        };
+      }),
+    [guven]
+  );
+
+  const kuyrukSutunlari: VeriSutunu[] = [
+    { anahtar: 'saglayici', baslik: 'Sağlayıcı', kartEtiketiGizle: true },
+    { anahtar: 'puan', baslik: 'Puan', sayisal: true, dar: true },
+    { anahtar: 'itiraz', baslik: 'İtiraz' },
+    { anahtar: 'islem', baslik: 'Karar' },
+  ];
+
+  const kuyrukSatirlari: VeriSatiri[] = useMemo(
+    () =>
+      (guven?.appeal_queue ?? []).map((a) => {
+        const durum = ITIRAZ_DURUMU[a.status as ItirazDurumu] ?? null;
+        const dokumPuani =
+          a.snapshot_score === null || a.snapshot_score === undefined
+            ? null
+            : Number(a.snapshot_score);
+        const guncelPuan =
+          a.current_score === null || a.current_score === undefined
+            ? null
+            : Number(a.current_score);
+        return {
+          anahtar: a.id,
+          hucreler: {
+            saglayici: (
+              <span className="block min-w-0">
+                <span className="block text-ink truncate">
+                  {a.provider_name ?? 'Adsız sağlayıcı'}
+                </span>
+                <span className="block text-[11px] text-ink-50">
+                  {SAGLAYICI_TURU[a.provider_type ?? ''] ??
+                    (a.provider_type ?? '')}
+                  {durum ? ` · ${durum.etiket}` : ''} ·{' '}
+                  {tarihMetni(a.created_at) ?? ''}
+                </span>
+              </span>
+            ),
+            puan: (
+              <span className="tabular-nums">
+                {dokumPuani === null ? '—' : skorMetni(dokumPuani)}
+                <span className="block text-[11px] text-ink-50">
+                  güncel {guncelPuan === null ? '—' : skorMetni(guncelPuan)}
+                </span>
+              </span>
+            ),
+            itiraz: (
+              <span className="block min-w-0">
+                <span className="block text-sm text-ink whitespace-pre-wrap break-words">
+                  {a.message}
+                </span>
+                {a.admin_note && (
+                  <span className="block text-[11px] text-ink-50 mt-1 whitespace-pre-wrap break-words">
+                    Kashe notu: {a.admin_note}
+                  </span>
+                )}
+              </span>
+            ),
+            islem:
+              a.status === 'closed' ? (
+                <span className="text-[11px] text-ink-50">
+                  {tarihMetni(a.reviewed_at) ?? 'Kapatıldı'}
+                </span>
+              ) : (
+                <span className="block min-w-0">
+                  <textarea
+                    value={notlar[a.id] ?? ''}
+                    onChange={(e) =>
+                      setNotlar((o) => ({ ...o, [a.id]: e.target.value }))
+                    }
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="Kashe notu (isteğe bağlı)"
+                    aria-label="İtiraz notu"
+                    className="w-full bg-card border border-line rounded-lg px-2 py-1.5 text-xs text-ink placeholder:text-ink-50 focus:outline-none focus:border-brand-ink"
+                  />
+                  <span className="flex items-center gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => itirazKarari(a.id, 'reviewed')}
+                      disabled={islemde === a.id}
+                      className="kashe-tap px-2.5 py-1 bg-brand-ink text-paper rounded-lg font-display font-semibold text-[11px] hover:bg-brand-ink-deep transition-colors disabled:opacity-50"
+                    >
+                      İncelendi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => itirazKarari(a.id, 'closed')}
+                      disabled={islemde === a.id}
+                      className="kashe-tap px-2.5 py-1 border border-line text-ink rounded-lg font-display font-semibold text-[11px] hover:border-brand-ink transition-colors disabled:opacity-50"
+                    >
+                      Kapat
+                    </button>
+                  </span>
+                </span>
+              ),
+          },
+        };
+      }),
+    [guven, notlar, islemde, itirazKarari]
+  );
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -802,6 +1059,143 @@ export default function ZekaPage() {
                     />
                   </>
                 )}
+              </>
+            )}
+          </PanelKart>
+
+          {/* ── BLOK 5 — Guven puani (FAZ 9c) ──
+              Dagilim ve bilesen ortalamalari `trust_score_summary`'den gelir;
+              `trust_score_snapshots` tablosu buradan DA okunmaz. Itiraz karari
+              tek RPC ile yazilir, sonra yalniz bu ozet yenilenir. */}
+          <PanelKart baslik="Güven puanı · Trust Score V0">
+            {guvenHatasi ? (
+              <p className="text-sm text-ink-72">{guvenHatasi}</p>
+            ) : (
+              <>
+                <KpiSatir>
+                  <KpiKutu
+                    etiket="Puanlı sağlayıcı"
+                    deger={guven ? sayi(guven.distribution.scored) : '—'}
+                    altNot={
+                      guven?.last_computed_at
+                        ? (tarihMetni(guven.last_computed_at) ?? '')
+                        : 'Hesap yok'
+                    }
+                  />
+                  <KpiKutu
+                    etiket="Ortalama"
+                    deger={
+                      guven?.distribution.avg === null ||
+                      guven?.distribution.avg === undefined
+                        ? '—'
+                        : skorMetni(Number(guven.distribution.avg))
+                    }
+                    altNot="100 üzerinden"
+                  />
+                  <KpiKutu
+                    etiket={`Yüksek güven (${guven?.high_threshold ?? GUVEN_ESIGI}+)`}
+                    deger={guven ? sayi(guven.distribution.high) : '—'}
+                    altNot={
+                      guven
+                        ? `Puanlının ${oran(
+                            guven.distribution.high,
+                            guven.distribution.scored
+                          )}`
+                        : '—'
+                    }
+                    vurgu={
+                      (guven?.distribution.high ?? 0) > 0 ? 'moss' : 'none'
+                    }
+                  />
+                  <KpiKutu
+                    etiket="Açık itiraz"
+                    deger={guven ? sayi(guven.appeals.open) : '—'}
+                    altNot={
+                      guven
+                        ? `İncelendi ${sayi(guven.appeals.reviewed)} · kapatıldı ${sayi(
+                            guven.appeals.closed
+                          )}`
+                        : '—'
+                    }
+                    vurgu={(guven?.appeals.open ?? 0) > 0 ? 'accent' : 'none'}
+                  />
+                </KpiSatir>
+
+                {(guven?.distribution.not_computed ?? 0) > 0 && (
+                  <p className="text-xs text-ink-50 mb-4">
+                    {sayi(guven?.distribution.not_computed ?? 0)} yayında
+                    sağlayıcının puanı henüz hesaplanmadı (gece hesabını
+                    bekliyor).
+                  </p>
+                )}
+
+                {guvenDagilimiBos ? (
+                  <p className="text-sm text-ink-72">Henüz puan yok.</p>
+                ) : (
+                  <div className="w-full" style={{ height: 180 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={guvenDagilimi}
+                        margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={`${C.ink}14`}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="aralik"
+                          tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: `${C.ink}99` }}
+                          allowDecimals={false}
+                          width={36}
+                        />
+                        <Tooltip
+                          contentStyle={tooltipStyle}
+                          formatter={(v: unknown) => [
+                            sayi(Number(v)),
+                            'Sağlayıcı',
+                          ]}
+                        />
+                        <Bar dataKey="adet" radius={[4, 4, 0, 0]}>
+                          {guvenDagilimi.map((g, i) => (
+                            <Cell
+                              key={g.aralik}
+                              fill={DAGILIM_RENKLERI[i] ?? C.brandInk}
+                            />
+                          ))}
+                          <LabelList
+                            dataKey="adet"
+                            position="top"
+                            style={{ fontSize: 11, fill: `${C.ink}99` }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                <div className="mt-5">
+                  <VeriTablosu
+                    sutunlar={bilesenSutunlari}
+                    satirlar={bilesenSatirlari}
+                    bosMetin="Bileşen ortalaması yok."
+                  />
+                </div>
+
+                <p className="font-display text-sm text-ink mt-6 mb-3">
+                  İtiraz kuyruğu
+                </p>
+                {kararHatasi && (
+                  <p className="text-sm text-danger mb-3">{kararHatasi}</p>
+                )}
+                <VeriTablosu
+                  sutunlar={kuyrukSutunlari}
+                  satirlar={kuyrukSatirlari}
+                  bosMetin="İtiraz yok."
+                />
               </>
             )}
           </PanelKart>

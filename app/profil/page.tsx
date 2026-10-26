@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { formatTL, formatTLAralik } from '@/app/lib/para';
 import { pazarKiyaslari } from '@/app/lib/fiyat-kiyas-data';
+import { guvenDokumu } from '@/app/lib/guven-data';
+import { GuvenDokumuKarti } from '@/app/components/guven/guven-dokumu-karti';
 import {
   GRANULARITY_ETIKETI,
   KONUM_ETIKETI,
@@ -368,6 +370,15 @@ export default async function ProfilPage() {
     priceMax: number | null;
     fiyatGirilmemis: boolean;
   } | null = null;
+
+  /**
+   * FAZ 9c — guven dokumu (yalniz PROFESYONEL, yalniz kendi sayfasi).
+   *
+   * Yetkiyi RPC zorluyor (`fn_faz9c_provider_yetkisi`); 42501 ya da hata
+   * durumunda `null` doner ve kart cizilmez. Skor MUSTERIYE DONUK hicbir
+   * yuzeyde gorunmez — bu kart yalniz kisinin kendi panelinde.
+   */
+  const guvenDokumuVerisi = isPro ? await guvenDokumu() : null;
 
   if (isPro) {
     const { data: rolData } = await supabase
@@ -738,6 +749,18 @@ export default async function ProfilPage() {
               fiyatlardan hesaplanır; liste fiyatları dahil değildir.
             </p>
           </PanelKart>
+        </div>
+      )}
+
+      {/* GUVEN DOKUMU (FAZ 9c) — "Pazar araligi" kartinin HEMEN ALTINDA.
+          RPC yetki vermezse ya da hata donerse kart hic cizilmez. */}
+      {guvenDokumuVerisi && (
+        <div className="mb-8">
+          <GuvenDokumuKarti
+            dokum={guvenDokumuVerisi}
+            providerId={guvenDokumuVerisi.provider_id}
+            itirazEdebilir
+          />
         </div>
       )}
 
