@@ -1,5 +1,5 @@
 -- =============================================================================
--- FAZ 9 / Asama 19 — Zeka katmani tutarlilik kontrolu (SALT OKUNUR; dalda ve URETIMDE) — 9a + 9b
+-- FAZ 9 / Asama 19 — Zeka katmani tutarlilik kontrolu (SALT OKUNUR; dalda ve URETIMDE) — 9a + 9b + 9c
 -- Bolum A (9a olay zinciri):
 --   K1 nesneler: analytics_events tablosu + fn_faz9_olay_yaz + analytics_summary + fn_faz9_booking_payload + CHECK sozluk 23 ad (5)
 --   K2 tetikleyiciler: trg_faz9_% 10 tabloda 10 (10)
@@ -18,7 +18,16 @@
 --   K9 tutarlilik: yayinli satirda sample_size < esik / yayinsiz satirda >= esik / p25 > medyan / medyan > p75 / donem 90 gun degil /
 --      (rol, NULL, tur) ailesi -> ihlal toplami (0) + pg_cron: uzanti varsa 'price-benchmarks-daily' isi 1 (uzanti yoksa 0) -> fark (0)
 --   K10 bilgi: son hesap gunu hucre toplami (eski) / yayinlanan (yeni)
--- Beklenen: K1-K5, K7-K9 ESIT; K6, K10 BILGI.
+-- Bolum C (9c Trust Score V0):
+--   K11 nesneler: trust_score_snapshots + trust_appeals + fn_faz9c_provider_yetkisi + fn_faz9c_hesapla + trust_score_compute
+--      + my_trust_breakdown + trust_appeal_review + trust_score_summary + tek acik itiraz kismi tekil indeksi (9)
+--   K12 yetki: snapshots SELECT politikasi 1 + authenticated yazamaz + anon iki tabloyu okuyamaz + appeals politikalari 2 (SELECT, INSERT)
+--      + appeals authenticated INSERT var / UPDATE-DELETE yok + compute/hesapla authenticated EXECUTE yok
+--      + breakdown/review/summary authenticated var, anon yok (7)
+--   K13 tutarlilik: gorunur saglayici skorsuz / skor son snapshot'tan farkli / gorunmeyen saglayici skorlu / snapshot 0-100 disi /
+--      saglayici basina >1 acik itiraz -> ihlal toplami (0) + pg_cron 'trust-score-daily' farki (0)
+--   K14 bilgi: puanli saglayici (eski) / acik itiraz (yeni)
+-- Beklenen: K1-K5, K7-K9, K11-K13 ESIT; K6, K10, K14 BILGI.
 -- =============================================================================
 
 WITH
@@ -121,11 +130,66 @@ k10 AS (
          (SELECT count(*) FROM public.price_benchmarks WHERE period_end = (SELECT max(period_end) FROM public.price_benchmarks))::bigint,
          (SELECT count(*) FROM public.price_benchmarks WHERE is_published AND period_end = (SELECT max(period_end) FROM public.price_benchmarks))::bigint
 ),
+k11 AS (
+  SELECT 'K11 9c nesneleri (9)' AS kontrol,
+         ((to_regclass('public.trust_score_snapshots') IS NOT NULL)::int
+          + (to_regclass('public.trust_appeals') IS NOT NULL)::int
+          + (to_regprocedure('public.fn_faz9c_provider_yetkisi(uuid)') IS NOT NULL)::int
+          + (to_regprocedure('public.fn_faz9c_hesapla(public.providers)') IS NOT NULL)::int
+          + (to_regprocedure('public.trust_score_compute(uuid)') IS NOT NULL)::int
+          + (to_regprocedure('public.my_trust_breakdown(uuid)') IS NOT NULL)::int
+          + (to_regprocedure('public.trust_appeal_review(uuid, text, text)') IS NOT NULL)::int
+          + (to_regprocedure('public.trust_score_summary()') IS NOT NULL)::int
+          + (SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'trust_appeals_one_open_idx' AND indexdef LIKE '%UNIQUE%' AND indexdef LIKE '%open%')::int)::bigint AS eski,
+         9::bigint AS yeni
+),
+k12 AS (
+  SELECT 'K12 9c yetki (7)' AS kontrol,
+         ((SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'trust_score_snapshots' AND cmd = 'SELECT')
+          + (NOT has_table_privilege('authenticated', 'public.trust_score_snapshots', 'INSERT')
+             AND NOT has_table_privilege('authenticated', 'public.trust_score_snapshots', 'UPDATE')
+             AND NOT has_table_privilege('authenticated', 'public.trust_score_snapshots', 'DELETE'))::int
+          + (NOT has_table_privilege('anon', 'public.trust_score_snapshots', 'SELECT') AND NOT has_table_privilege('anon', 'public.trust_appeals', 'SELECT'))::int
+          + (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'trust_appeals' AND cmd IN ('SELECT', 'INSERT'))::int / 2
+          + (has_table_privilege('authenticated', 'public.trust_appeals', 'INSERT')
+             AND NOT has_table_privilege('authenticated', 'public.trust_appeals', 'UPDATE')
+             AND NOT has_table_privilege('authenticated', 'public.trust_appeals', 'DELETE'))::int
+          + (NOT has_function_privilege('authenticated', 'public.trust_score_compute(uuid)', 'EXECUTE')
+             AND NOT has_function_privilege('authenticated', 'public.fn_faz9c_hesapla(public.providers)', 'EXECUTE'))::int
+          + (has_function_privilege('authenticated', 'public.my_trust_breakdown(uuid)', 'EXECUTE')
+             AND has_function_privilege('authenticated', 'public.trust_appeal_review(uuid, text, text)', 'EXECUTE')
+             AND has_function_privilege('authenticated', 'public.trust_score_summary()', 'EXECUTE')
+             AND NOT has_function_privilege('anon', 'public.my_trust_breakdown(uuid)', 'EXECUTE')
+             AND NOT has_function_privilege('anon', 'public.trust_score_summary()', 'EXECUTE'))::int)::bigint,
+         7::bigint
+),
+k13 AS (
+  SELECT 'K13 9c tutarsizlik + cron farki (0)' AS kontrol,
+         ((SELECT count(*) FROM public.providers p
+            WHERE (p.is_published AND p.approval_status = 'approved' AND p.suspended_at IS NULL) AND p.trust_score IS NULL)
+          + (SELECT count(*) FROM public.providers p
+            WHERE NOT (p.is_published AND p.approval_status = 'approved' AND p.suspended_at IS NULL) AND p.trust_score IS NOT NULL)
+          + (SELECT count(*) FROM public.providers p
+             JOIN LATERAL (SELECT s.score FROM public.trust_score_snapshots s WHERE s.provider_id = p.id ORDER BY s.computed_at DESC, s.id DESC LIMIT 1) son ON true
+            WHERE p.trust_score IS NOT NULL AND p.trust_score <> son.score)
+          + (SELECT count(*) FROM public.trust_score_snapshots WHERE score < 0 OR score > 100)
+          + (SELECT count(*) FROM (SELECT provider_id FROM public.trust_appeals WHERE status = 'open' GROUP BY provider_id HAVING count(*) > 1) x)
+          + abs((SELECT count(*) FROM pg_extension WHERE extname = 'pg_cron')
+                - CASE WHEN to_regclass('cron.job') IS NULL THEN 0
+                       ELSE ((xpath('/row/n/text()', query_to_xml('SELECT count(*) AS n FROM cron.job WHERE jobname = ''trust-score-daily''', false, true, '')))[1])::text::int END))::bigint,
+         0::bigint
+),
+k14 AS (
+  SELECT 'K14 puanli saglayici (eski) / acik itiraz (yeni) (bilgi)' AS kontrol,
+         (SELECT count(*) FROM public.providers WHERE trust_score IS NOT NULL)::bigint,
+         (SELECT count(*) FROM public.trust_appeals WHERE status = 'open')::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k9 UNION ALL SELECT * FROM k10
+  UNION ALL SELECT * FROM k11 UNION ALL SELECT * FROM k12 UNION ALL SELECT * FROM k13 UNION ALL SELECT * FROM k14
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
-       CASE WHEN kontrol LIKE 'K6 %' OR kontrol LIKE 'K10 %' THEN 'BILGI'
+       CASE WHEN kontrol LIKE 'K6 %' OR kontrol LIKE 'K10 %' OR kontrol LIKE 'K14 %' THEN 'BILGI'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

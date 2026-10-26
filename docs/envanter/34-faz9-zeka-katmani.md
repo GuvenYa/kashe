@@ -4,8 +4,8 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b KAPANDI (25 Ekim 2026)** — 9b-DB/01-02-03 dalda + uretimde (asama4 33/33,
-asama19 K7-K9 ESIT), 9b-P1 canli turdan gecti (bolum 3 kapanis notu). Sira: 9c Trust Score V0 -> FAZ 9 kapanis. Her dilim: migration -> dal
+**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b KAPANDI (25 Ekim 2026)**; **9c-DB/01 hazir**
+(`20261027120000_faz9c_01_trust_score.sql`; yerelde asama4 T33 34/34, asama19 K11-K13 ESIT; dal + uretim bekliyor). Sira: 9c-P1 -> FAZ 9 kapanis. Her dilim: migration -> dal
 (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
@@ -296,6 +296,35 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
   `/profil`'de durumu gorur.
 - Admin `/admin/zeka`: skor dagilimi (0-39 / 40-69 / 70+ sayilari; cubuk grafik), hesaplanmayan saglayici sayisi, itiraz kuyrugu.
 
+### Uygulama notlari (9c-DB/01, `20261027120000_faz9c_01_trust_score.sql`)
+
+- **Hesap iki parca:** `fn_faz9c_hesapla(providers)` saf (yazmaz; bilesenler + skor jsonb) ve `trust_score_compute(p_provider uuid
+  default NULL)` yazar: gorunur saglayicilar (`is_published AND approval_status = 'approved' AND suspended_at IS NULL`) icin snapshot +
+  `providers.trust_score/trust_computed_at` (`set_config('kashe.sync_bypass','on', true)` ile koruma kapisi; islem sonunda off);
+  gorunur olmayanlarin skoru NULL'a cekilir (eski skor eslestirmeye sizmasin), snapshot yazilmaz. `computed_at = clock_timestamp()`
+  (ayni islemde iki kosu ayrisabilsin). pg_cron `trust-score-daily` 00:45 UTC. Migration sonunda ilk hesap kosar.
+- **Bilesen ayrintilari:** bio = profesyonelde `professional_profiles.bio` yoksa `profiles.bio`, kurulusta `organization_profiles.about`
+  yoksa `profiles.bio` (>= 120 karakter); avatar `profiles.avatar_url`; aktif rol `provider_services x service_roles.is_active`; portfoy
+  `portfolio_items.provider_id` ya da `profile_id`. Tamamlanan is tum zamanlar (`professional_id` ya da `seller_provider_id`). Iptal son
+  12 ay (`created_at`), satici kaynakli = `cancelled_by` saglayicinin kendisi ya da (kurulus saglayicisinda) aktif uyesi; `seller_cancelled = 0`
+  ise 0 puan. Degerlendirme `reviews.provider_id` ya da `professional_id`. Yanit: son 180 gun konusmalari, musterinin ILK mesaji -> saglayici
+  (ya da kurulus uyesi) ILK yaniti, `system` mesajlar haric, yanitsiz konusma medyana GIRMEZ (V0; cezalandirma V1), medyan saat.
+- **`providers.trust_score` kullanici tarafindan yazilamaz:** sutun yetkisi yok (42501) — koruma tetikleyicisi ikinci kat. asama4 T33 ikisini
+  de kabul eder.
+- **Itiraz:** saglayici `trust_appeals`'a DOGRUDAN INSERT (RLS `fn_faz9c_provider_yetkisi`: kendisi ya da ajans kurulusunda `settings.manage`;
+  WITH CHECK status open, admin alanlari bos); BEFORE INSERT tetikleyicisi `created_by = auth.uid()`, `snapshot_id` bos ise son dokum.
+  authenticated'da UPDATE/DELETE GRANT'i YOK (42501) — karar yalniz `trust_appeal_review(id, status, note)` (admin; reviewed/closed;
+  `reviewed_by/at`). Saglayici basina tek acik itiraz (`trust_appeals_one_open_idx` kismi tekil, 23505). SELECT: kendi + admin.
+- **Okuma:** `my_trust_breakdown(p_provider default auth.uid())` → `{provider_id, visible, snapshot{id, score, computed_at,
+  algorithm_version, components}, appeal{id, status, message, admin_note, created_at, reviewed_at, snapshot_id}}` (acik itiraz varsa o,
+  yoksa son); yetkisiz 42501. `trust_score_summary()` (admin) → `last_computed_at`, `distribution{low, mid, high, scored, avg, not_computed,
+  invisible}`, `appeals{open, reviewed, closed}`, `appeal_queue` (50; acik once), `component_avgs` (son snapshot ortalamalari),
+  `high_threshold 70`. Snapshot tablosunda saglayici kendi satirlarini da okur (RLS) — UI tek RPC kullanir.
+- **Test:** asama4 **T33** (notr tabanlar 8/7; full 25, 1 tamamlanan 10, 1/2 satici iptali -15, 3 degerlendirme 4.67 -> 15, yanit medyani
+  2 sa -> 15; skor = toplam; kullanici skor yazamaz; authenticated compute/snapshot 42501; dokum yetkisi; itiraz akisi: tek acik, kisa mesaj,
+  RLS, admin karari, gecersiz durum, karardan sonra yeni itiraz; gorunmeyen NULL; temizlik + yeniden hesap) — fixture musterileri 0001/0005/0006
+  (`conversations_unique_pair`: musteri x saglayici tek konusma); asama19 **K11-K13** ESIT, **K14** bilgi.
+
 ## 5. Dilimler ve dogrulama
 
 | Dilim | Icerik | Test |
@@ -304,7 +333,7 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 | **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
 | **9b-DB/01 + 02 + 03** — **KAPANDI** | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
 | **9b-P1** — **KAPANDI** | sihirbaz/Kesfet/editor/profil ipuclari + admin Blok 4 (yalniz yayinli) | tur: uretim onizlemesi bos durumlar (gmail) + yerel dev / dal DB dolu durumlar (fixture hesaplar, tur-9b seed) — gecti |
-| **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |
+| **9c-DB/01** — hazir | `trust_score_snapshots` + `trust_appeals` + `fn_faz9c_hesapla` + `trust_score_compute` + cron + `my_trust_breakdown` + `trust_appeal_review` + `trust_score_summary` | asama4 **T33** (bilesen puanlari, notr taban, koruma, dokum yetkisi, itiraz akisi, gorunmeyen NULL), asama19 K11-K13 (+K14 bilgi) |
 | **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |
 | **Kapanis** | 20/34 kapanis notu, CLAUDE.md FAZ 9 paragrafi, roadmap, 04-goc-plani madde 39-41 isaretleme | — |
 

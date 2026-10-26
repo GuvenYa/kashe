@@ -4827,4 +4827,237 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO t_sonuc VALUES (32, 'T32 FAZ 9b fiyat kiyaslari', 'HATA', SQLERRM);
 END $$;
 
+-- -----------------------------------------------------------------------------
+-- T33) FAZ 9c Trust Score V0. ON KOSUL: 20261027120000 (faz9c 01) dalda. pro2 0003 (gorunur profesyonel), pro1 0002, ajans 0004 (admin),
+--      musteri 0001. Bilesen kurallari (dogrulama, tamamlanan, iptal, degerlendirme, yanit), skor = bilesen toplami, koruma tetikleyicisi
+--      (kullanici skor yazamaz), gorunur olmayan NULL, dokum RPC yetkisi, itiraz (tek acik, RLS, admin karari), admin ozeti.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';   -- ikinci/ucuncu musteri (conversations_unique_pair: musteri x pro tek konusma)
+  finans  uuid := 'a0000000-0000-4000-8000-000000000006';
+  p public.providers; r jsonb; js jsonb; c jsonb;
+  conv uuid; conv2 uuid; conv3 uuid; q uuid; q2 uuid; bk uuid; bk2 uuid; itiraz uuid; itiraz2 uuid;
+  n int; n0 int; st text; sk numeric; sk2 numeric; eski_ver text; eski_pub boolean;
+BEGIN
+  IF to_regclass('public.trust_score_snapshots') IS NULL THEN RAISE EXCEPTION 'on kosul: faz9c_01 uygulanmamis'; END IF;
+  SELECT * INTO p FROM public.providers WHERE id = pro2;
+  IF p.id IS NULL OR NOT (p.is_published AND p.approval_status = 'approved' AND p.suspended_at IS NULL) THEN
+    RAISE EXCEPTION 'on kosul: pro2 gorunur degil'; END IF;
+  eski_ver := p.verification_level::text;
+  SELECT count(*) INTO n0 FROM public.trust_score_snapshots;
+
+  -- 0) temizlik (onceki yarim kosu)
+  DELETE FROM public.trust_appeals WHERE provider_id = pro2;
+  DELETE FROM public.reviews WHERE conversation_id IN (SELECT id FROM public.conversations WHERE location = 'T33');
+  DELETE FROM public.bookings WHERE conversation_id IN (SELECT id FROM public.conversations WHERE location = 'T33');
+  DELETE FROM public.quotes WHERE conversation_id IN (SELECT id FROM public.conversations WHERE location = 'T33');
+  DELETE FROM public.conversations WHERE location = 'T33';
+
+  -- 1) taban: hesap -> pro2 snapshot + providers.trust_score esit; skor = bilesen toplami (0..100)
+  PERFORM public.trust_score_compute(pro2);
+  SELECT score, components INTO sk, c FROM public.trust_score_snapshots WHERE provider_id = pro2 ORDER BY computed_at DESC LIMIT 1;
+  SELECT trust_score INTO sk2 FROM public.providers WHERE id = pro2;
+  IF sk IS NULL OR sk2 IS DISTINCT FROM sk THEN RAISE EXCEPTION 'taban: snapshot % / providers % (esit olmali)', sk, sk2; END IF;
+  IF sk <> GREATEST(0, LEAST(100, (c->'verification'->>'points')::int + (c->'profile'->>'points')::int + (c->'completed'->>'points')::int
+                              + (c->'cancel'->>'points')::int + (c->'reviews'->>'points')::int + (c->'response'->>'points')::int)) THEN
+    RAISE EXCEPTION 'skor bilesen toplami degil: % / %', sk, c; END IF;
+  IF (c->'reviews'->>'points')::int <> 8 OR (c->'response'->>'points')::int <> 7 THEN
+    RAISE EXCEPTION 'notr tabanlar (8 / 7) bekleniyordu: %', c; END IF;
+
+  -- 2) kurulum: dogrulama full (bypass ile), 1 tamamlanan + 1 satici iptali (12 ay), 3 degerlendirme (5,5,4 -> 4.67 -> 15),
+  --    yanit medyani 1 saat (-> 15)
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.providers SET verification_level = 'full' WHERE id = pro2;
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+  INSERT INTO public.conversations (customer_id, professional_id, event_date, event_type, location, guest_count)
+  VALUES (musteri, pro2, current_date + 20, 'wedding', 'T33', 80) RETURNING id INTO conv;
+  INSERT INTO public.conversations (customer_id, professional_id, event_date, event_type, location, guest_count)
+  VALUES (kurum, pro2, current_date + 25, 'wedding', 'T33', 60) RETURNING id INTO conv2;
+  INSERT INTO public.conversations (customer_id, professional_id, event_date, event_type, location, guest_count)
+  VALUES (finans, pro2, current_date + 30, 'corporate', 'T33', 40) RETURNING id INTO conv3;
+  -- mesajlar: musteri ilk mesaj, pro2 yaniti 1 saat sonra (conv) / 3 saat sonra (conv2) / yanitsiz (conv3) -> medyan 2 saat -> 15
+  INSERT INTO public.messages (conversation_id, sender_id, body, created_at) VALUES
+    (conv, musteri, 'T33 merhaba, musait misiniz?', now() - interval '10 days'),
+    (conv, pro2, 'T33 evet musaitim', now() - interval '10 days' + interval '1 hour'),
+    (conv2, kurum, 'T33 fiyat alabilir miyim?', now() - interval '8 days'),
+    (conv2, pro2, 'T33 tabii', now() - interval '8 days' + interval '3 hours'),
+    (conv3, finans, 'T33 soru', now() - interval '5 days');
+  -- quote -> kabul -> rezervasyon (tetikleyici) -> completed; ikinci quote -> rezervasyon -> satici iptali
+  INSERT INTO public.quotes (conversation_id, sender_id, total_amount, currency, services_description, expires_at, status)
+  VALUES (conv, pro2, 4000, 'TRY', 'T33 hizmet aciklamasi', now() + interval '7 days', 'pending') RETURNING id INTO q;
+  UPDATE public.quotes SET status = 'accepted' WHERE id = q;
+  SELECT id INTO bk FROM public.bookings WHERE quote_id = q;
+  UPDATE public.bookings SET status = 'completed', completed_at = now() WHERE id = bk;
+  INSERT INTO public.quotes (conversation_id, sender_id, total_amount, currency, services_description, expires_at, status)
+  VALUES (conv2, pro2, 3000, 'TRY', 'T33 hizmet aciklamasi 2', now() + interval '7 days', 'pending') RETURNING id INTO q2;
+  UPDATE public.quotes SET status = 'accepted' WHERE id = q2;
+  SELECT id INTO bk2 FROM public.bookings WHERE quote_id = q2;
+  UPDATE public.bookings SET status = 'cancelled', cancelled_by = pro2, cancelled_at = now() WHERE id = bk2;
+  INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body) VALUES
+    (conv, musteri, pro2, 5, 'T33 harika'), (conv2, kurum, pro2, 5, 'T33 cok iyi'), (conv3, finans, pro2, 4, 'T33 iyi');
+
+  PERFORM public.trust_score_compute(pro2);
+  SELECT score, components INTO sk2, c FROM public.trust_score_snapshots WHERE provider_id = pro2 ORDER BY computed_at DESC, id DESC LIMIT 1;
+  IF (c->'verification'->>'points')::int <> 25 OR c->'verification'->>'level' <> 'full' THEN RAISE EXCEPTION 'dogrulama: %', c->'verification'; END IF;
+  IF (c->'completed'->>'points')::int <> 10 OR (c->'completed'->>'count')::int < 1 THEN RAISE EXCEPTION 'tamamlanan: %', c->'completed'; END IF;
+  IF (c->'cancel'->>'points')::int <> -15 OR (c->'cancel'->>'seller_cancelled')::int < 1 THEN RAISE EXCEPTION 'iptal (-15 bekleniyordu; oran >= %%25): %', c->'cancel'; END IF;
+  IF (c->'reviews'->>'points')::int <> 15 OR (c->'reviews'->>'cnt')::int < 3 THEN RAISE EXCEPTION 'degerlendirme (15; avg 4.67): %', c->'reviews'; END IF;
+  IF (c->'response'->>'points')::int <> 15 OR (c->'response'->>'median_h')::numeric <> 2 THEN RAISE EXCEPTION 'yanit (15; medyan 2 sa): %', c->'response'; END IF;
+  IF sk2 <> GREATEST(0, LEAST(100, 25 + (c->'profile'->>'points')::int + 10 - 15 + 15 + 15)) THEN RAISE EXCEPTION 'skor toplami: % / %', sk2, c; END IF;
+  IF (c->'profile'->>'points')::int < 5 OR (c->'profile'->>'points')::int > 15 THEN RAISE EXCEPTION 'profil puani araligi: %', c->'profile'; END IF;
+  SELECT trust_score INTO sk FROM public.providers WHERE id = pro2;
+  IF sk IS DISTINCT FROM sk2 THEN RAISE EXCEPTION 'providers.trust_score % / snapshot %', sk, sk2; END IF;
+
+  -- 3) koruma: pro2 kendi skorunu yazamaz (sutun yetkisi 42501 ya da tetikleyici sessiz geri alma); authenticated hesap kosturamaz /
+  --    snapshot yazamaz
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.providers SET trust_score = 99 WHERE id = pro2;
+    EXECUTE 'RESET ROLE';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  SELECT trust_score INTO sk FROM public.providers WHERE id = pro2;
+  IF sk IS DISTINCT FROM sk2 THEN RAISE EXCEPTION 'kullanici skoru yazdi (%)', sk; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.trust_score_compute(pro2);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated hesap kosturdu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.trust_score_snapshots (provider_id, score) VALUES (pro2, 100);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'authenticated snapshot yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 4) dokum RPC: pro2 kendi dokumu (skor + 6 bilesen, itiraz null); musteri pro2 icin 42501; anon 42501; pro2 snapshot okur (RLS), musteri 0
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.my_trust_breakdown() INTO js;
+  SELECT count(*) INTO n FROM public.trust_score_snapshots WHERE provider_id = pro2;
+  EXECUTE 'RESET ROLE';
+  IF (js->'snapshot'->>'score')::numeric <> sk2 OR (SELECT count(*) FROM jsonb_object_keys(js->'snapshot'->'components')) <> 6
+     OR js->'appeal' IS DISTINCT FROM 'null'::jsonb OR (js->>'visible')::boolean IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'dokum icerigi: %', js; END IF;
+  IF n < 2 THEN RAISE EXCEPTION 'pro2 kendi snapshotlarini okuyamadi (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.my_trust_breakdown(pro2);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'musteri baskasinin dokumunu aldi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.trust_score_snapshots;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'musteri % snapshot gordu (0)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.my_trust_breakdown(pro2);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon dokum aldi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 5) itiraz: pro2 acar (snapshot_id otomatik, created_by, open); ikinci acik 23505; kisa mesaj 23514; musteri pro2 icin 42501;
+  --    musteri okuyamaz (0); pro2 UPDATE edemez (0 satir); admin karar (reviewed + not); non-admin karar 42501; gecersiz durum 22023;
+  --    karardan sonra yeni itiraz acilabilir; dokumda itiraz gorunur
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.trust_appeals (provider_id, message) VALUES (pro2, 'T33 itiraz: tamamlanan is sayim eksik gorunuyor, lutfen inceleyin.')
+  RETURNING id INTO itiraz;
+  BEGIN
+    INSERT INTO public.trust_appeals (provider_id, message) VALUES (pro2, 'T33 ikinci itiraz ayni anda acilmamali, test metni.');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'ikinci acik itiraz acildi';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.trust_appeals (provider_id, message) VALUES (pro2, 'kisa');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'kisa mesaj kabul edildi';
+  EXCEPTION WHEN check_violation THEN NULL; WHEN unique_violation THEN NULL; END;
+  BEGIN
+    UPDATE public.trust_appeals SET status = 'closed' WHERE id = itiraz;   -- UPDATE yetkisi yok (grant yok) -> 42501
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'saglayici itirazini guncelledi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT snapshot_id IS NOT NULL AND created_by = pro2 AND status = 'open' INTO st FROM (SELECT snapshot_id, created_by, status FROM public.trust_appeals WHERE id = itiraz) x;
+  IF st IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'itiraz satiri (snapshot_id/created_by/open): %', (SELECT row_to_json(a) FROM public.trust_appeals a WHERE a.id = itiraz); END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.trust_appeals (provider_id, message) VALUES (pro2, 'T33 musteri baskasi adina itiraz acamamali, test metni.');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'musteri baskasi adina itiraz acti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.trust_appeals;
+  BEGIN
+    PERFORM public.trust_appeal_review(itiraz, 'reviewed', 'olmaz');
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'admin olmayan karar yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 THEN RAISE EXCEPTION 'musteri % itiraz gordu (0)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.trust_appeal_review(itiraz, 'bozuk', NULL);
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'gecersiz durum kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  SELECT public.trust_appeal_review(itiraz, 'reviewed', 'T33 inceledik: sayim dogru.') INTO js;
+  SELECT public.trust_score_summary() INTO r;
+  EXECUTE 'RESET ROLE';
+  IF js->>'status' <> 'reviewed' OR js->>'reviewed_by' <> ajans::text OR js->>'reviewed_at' IS NULL OR js->>'admin_note' NOT LIKE 'T33 %' THEN
+    RAISE EXCEPTION 'karar satiri: %', js; END IF;
+  IF (r->'appeals'->>'reviewed')::int < 1 OR (r->'distribution'->>'scored')::int < 1
+     OR (r->'distribution'->>'low')::int + (r->'distribution'->>'mid')::int + (r->'distribution'->>'high')::int <> (r->'distribution'->>'scored')::int
+     OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(r->'appeal_queue') a WHERE a->>'id' = itiraz::text AND a->>'status' = 'reviewed')
+     OR (r->'component_avgs'->>'providers')::int < 1 THEN
+    RAISE EXCEPTION 'ozet icerigi: %', r; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.trust_appeals (provider_id, message) VALUES (pro2, 'T33 ikinci itiraz: karardan sonra yeni itiraz acilabilmeli.')
+  RETURNING id INTO itiraz2;
+  SELECT public.my_trust_breakdown() INTO js;
+  EXECUTE 'RESET ROLE';
+  IF js->'appeal'->>'id' <> itiraz2::text OR js->'appeal'->>'status' <> 'open' THEN RAISE EXCEPTION 'dokumda itiraz: %', js->'appeal'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.trust_score_summary();
+    EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'admin olmayan ozet aldi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 6) gorunur olmayan: pro1 yayindan kalkinca skor NULL, snapshot yazilmaz; geri alinca yeniden hesaplanir
+  SELECT is_published INTO eski_pub FROM public.providers WHERE id = pro1;
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.providers SET is_published = false WHERE id = pro1;
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+  SELECT count(*) INTO n FROM public.trust_score_snapshots WHERE provider_id = pro1;
+  PERFORM public.trust_score_compute(pro1);
+  SELECT trust_score INTO sk FROM public.providers WHERE id = pro1;
+  IF sk IS NOT NULL THEN RAISE EXCEPTION 'gorunmeyen saglayicinin skoru kaldi (%)', sk; END IF;
+  IF (SELECT count(*) FROM public.trust_score_snapshots WHERE provider_id = pro1) <> n THEN RAISE EXCEPTION 'gorunmeyene snapshot yazildi'; END IF;
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.providers SET is_published = eski_pub WHERE id = pro1;
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+
+  -- 7) temizlik: kurulum geri; skorlar yeniden hesaplanir (providers = son snapshot)
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.providers SET verification_level = eski_ver::public.verification_level WHERE id = pro2;
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+  DELETE FROM public.trust_appeals WHERE provider_id = pro2;
+  DELETE FROM public.reviews WHERE conversation_id IN (conv, conv2, conv3);
+  DELETE FROM public.bookings WHERE id IN (bk, bk2);
+  DELETE FROM public.quotes WHERE id IN (q, q2);
+  DELETE FROM public.conversations WHERE id IN (conv, conv2, conv3);
+  DELETE FROM public.trust_score_snapshots WHERE id > (SELECT COALESCE(max(id), 0) FROM (SELECT id FROM public.trust_score_snapshots ORDER BY id LIMIT n0) x);
+  PERFORM public.trust_score_compute();
+
+  INSERT INTO t_sonuc VALUES (33, 'T33 FAZ 9c Trust Score V0', 'GECTI',
+    'taban: snapshot = providers.trust_score, skor = bilesen toplami, notr 8/7; kurulum sonrasi dogrulama full 25, tamamlanan 1 -> 10, satici iptali 1/2 -> -15, 3 degerlendirme 4.67 -> 15, yanit medyani 2 sa -> 15, skor = toplam (' || sk2 || '); kullanici skor yazamadi (sessiz), authenticated compute/snapshot 42501; dokum: kendi (6 bilesen), musteri 42501, snapshot RLS 0, anon 42501; itiraz: acildi (snapshot_id, created_by), ikinci acik 23505, kisa 23514, musteri acamadi 42501 / gormedi 0 / karar 42501, saglayici UPDATE 42501, admin gecersiz durum 22023, karar reviewed + not + reviewed_by, ozet (dagilim toplami = puanli, kuyruk, bilesen ort.), karardan sonra yeni itiraz + dokumda; gorunmeyen pro1 skor NULL + snapshot yok; temizlik + yeniden hesap');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (33, 'T33 FAZ 9c Trust Score V0', 'HATA', SQLERRM);
+END $$;
+
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;
