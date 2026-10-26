@@ -4,9 +4,8 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b-DB/01 dalda + uretimde** (asama4 33/33, asama19 K7-K9 ESIT); **9b-DB/02 + 03 hazir**
-(`20261026130000_faz9b_02_eskiyen_hucre.sql`, `20261026140000_faz9b_03_istanbul_gunu.sql`; yerelde 33/33) ve **9b-P1 incelemede** (Claude Code bitti, canli tur bekliyor). Sira: 9b tur +
-kapanis -> 9c Trust Score V0 -> kapanis. Her dilim: migration -> dal
+**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b KAPANDI (25 Ekim 2026)** — 9b-DB/01-02-03 dalda + uretimde (asama4 33/33,
+asama19 K7-K9 ESIT), 9b-P1 canli turdan gecti (bolum 3 kapanis notu). Sira: 9c Trust Score V0 -> FAZ 9 kapanis. Her dilim: migration -> dal
 (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
@@ -224,6 +223,34 @@ Yayinlanan yoksa bos. `authenticated` + `anon` (sihirbaz anonim de olabilir); ya
 - **Pro profil (`/profil` kendi)**: "Rolun bu sehirde pazar araligi" karti — kendi fiyatiyla kiyas (yalniz kendisine).
 - Admin `/admin/zeka`'ya "Yayinlanan hucre sayisi / toplam" satiri.
 
+### 9b kapanis notu (25 Ekim 2026) — KAPANDI
+
+- **DB:** 01 (tablo, gozlemler, hesap, lookup, ozet, cron), 02 (ayni gun eskiyen hucre), 03 (hesap gunu Istanbul gunu) dalda ve uretimde;
+  uretim: 22 hucre / 0 yayinli / 13 gozlem / esik 15, cron `price-benchmarks-daily` 24 Ekim 03:30'da kostu (period_end 24 Ekim). Uretimde
+  yayinli hucre yok (15 islemlik hucre olusana kadar yuzeyler sessiz).
+- **9b-P1** (dal `faz9b/p1`; gorev `36-claude-code-gorevi-9b-p1-fiyat-kiyaslari.md`): `app/lib/fiyat-kiyas.ts` (tip, kapsam/konum
+  etiketleri, `enKabaKapsam`, `ornekMetni`), `app/lib/fiyat-kiyas-data.ts` (`server-only`; `pazarKiyaslari`, `rolIdleriSlugdan`),
+  `app/etkinlik-sihirbazi/pazar-butce-kutusu.tsx` (istemci RPC, 400 ms debounce, TAM kapsama sarti), `app/kesfet/pazar-ipucu.tsx`,
+  teklif sayfasi (`events.city_id` eklendi; `canManageProposals` ile) + `teklif-kalem-tablosu` (fiyat altinda ipucu; tablo + kart modu),
+  `/profil` pazar karti (birincil/tek rol; kendi liste fiyati + konum rozeti), `/admin/zeka` Blok 4 (KPI, aile grafigi, yayinli hucreler,
+  esige yakinlar; `price_benchmarks_summary` paralel). Tablo hicbir yerde dogrudan okunmuyor.
+- **Canli tur, iki asamali.** (1) Uretim onizlemesi (gmail): bos durumlar — sihirbaz kutu yok (RPC secim basina 1), Kesfet serit yok,
+  onayli teklifte ipucu yok, admin Blok 4 "Yayinlanan hucre yok (esik 15 islem)". (2) **Dolu durumlar yerel dev sunucusunda, dal DB'sine
+  bagli** (`$env:NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` + `NEXT_PUBLIC_BAKIM_MODU=false`, `.env.local` degismedi), fixture hesaplarla
+  (`faz1test+ajans` owner/admin, `faz1test+pro2` tek rol); `tur-9b-seed.sql` dala gercek esikle 2 yayinli rol kurdu (16 + 15 kalem,
+  gecici sehir plaka 999), `tur-9b-temizlik.sql` geri aldi. Sonuclar: sihirbaz ~9.250 -> iki rol ~14.250 -> adet 2 ile ~23.500 TL, yayinsiz
+  rol eklenince kutu kayboldu, sehir/tur eslesmeyince "Turkiye genelinde"; Kesfet "bu sehirde genelde 7.375 - 11.125 TL · medyan 9.250 TL
+  · son 90 gun · 16 islem"; taslak teklifte iki kalemde "Pazar: medyan ... · 16/15 islem"; admin 10 hucre / 6 yayinli / 38 gozlem, tablo 6
+  satir; `/profil` "Faz1 Test Match B · Turkiye genelinde · 4.125 - 5.875 TL · medyan 5.000 TL · 15 islem · Senin liste fiyatin 90.000 -
+  120.000 TL · pazarin ustunde".
+- **Turda duzeltilen:** admin yayinli hucre tablosunda `lg` altinda Sehir/Tur sutunlari gizlenince ayni rolun uc ailesi ayirt edilemiyordu ->
+  Rol hucresine "sehir · tur" alt satiri (esige yakin tablosunda da).
+- **Ogrenilen (kalici):** Vercel onizlemeleri URETIM Supabase'ine bagli (dal DB'si yalniz migration provasi + asama4; test disi kullanici
+  yok, `turkish_cities` bos). Dolu durum turu icin desen: dal DB'sine bagli yerel dev + fixture hesaplari + seed/temizlik betigi (uretime
+  test verisi ASLA yazilmaz). Yerel `.env.local` bakim modunu acik tutuyor; surec ortam degiskeni dosyayi ezer.
+- **Ertelenen:** gunluk pencere ici elle hesap kosusu yalniz admin/cron (UI'dan tetikleme yok); kiyas satirlarinin 180 gun arsivi FAZ 10;
+  Kesfet seridi sonuc 0 iken de gorunur (bilgi degeri var, bilincli).
+
 ## 4. 9c — Trust Score V0
 
 ### Ilke
@@ -275,8 +302,8 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 |---|---|---|
 | **9a-DB/01** — **KAPANDI** | `analytics_events` + CHECK sozluk + 10 kaynak tabloda tetikleyici + dolum + RLS + `analytics_summary(p_days)` | asama4 **T31** (her olay bir kez, dolum idempotan, PII yok, authenticated INSERT 42501, admin SELECT); **asama19** yeni kontrol dosyasi K1-K6 (nesneler, tetikleyici sayisi, dolum = kaynak sayilari, PII tarama, RLS) |
 | **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
-| **9b-DB/01 + 02 + 03** — DB/01 dalda ve uretimde, DB/02-03 hazir | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
-| **9b-P1** | sihirbaz/Kesfet/editor/profil ipuclari (yalniz yayinli) | tur: testguven sihirbaz, gmail editor (uretimde buyuk olasilikla hucre yok — "hicbir sey" davranisi dogrulanir) |
+| **9b-DB/01 + 02 + 03** — **KAPANDI** | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
+| **9b-P1** — **KAPANDI** | sihirbaz/Kesfet/editor/profil ipuclari + admin Blok 4 (yalniz yayinli) | tur: uretim onizlemesi bos durumlar (gmail) + yerel dev / dal DB dolu durumlar (fixture hesaplar, tur-9b seed) — gecti |
 | **9c-DB/01** | `trust_score_snapshots` + `trust_appeals` + `trust_score_compute` + cron + `my_trust_breakdown` + koruma tetikleyicisi uyumu | asama4 **T33** (bilesen puanlari, notr taban, koruma: kullanici yazamaz, fonksiyon yazar, high_trust kodu dolar, itiraz RLS + tek acik), asama19 K11-K14 |
 | **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |
 | **Kapanis** | 20/34 kapanis notu, CLAUDE.md FAZ 9 paragrafi, roadmap, 04-goc-plani madde 39-41 isaretleme | — |

@@ -397,8 +397,15 @@ export default function ZekaPage() {
         anahtar: `${h.role_id}-${h.city_id ?? 'x'}-${h.event_type ?? 'x'}-${i}`,
         hucreler: {
           rol: (
-            <span className="block text-ink break-words">
-              {h.role_name ?? '—'}
+            <span className="block min-w-0">
+              <span className="block text-ink break-words">
+                {h.role_name ?? '—'}
+              </span>
+              {/* Sehir/tur sutunlari `lg` altinda gizli (dar): ayni rolun uc
+                  ailesi ayirt edilemiyordu — kapsam burada da yazilir. */}
+              <span className="block font-mono text-[10px] text-ink-50 break-words">
+                {h.city_name ?? 'Tüm şehirler'} · {h.event_type_name ?? 'Tüm türler'}
+              </span>
             </span>
           ),
           sehir: h.city_name ?? 'Tümü',
@@ -427,8 +434,13 @@ export default function ZekaPage() {
         anahtar: `y-${h.role_id}-${h.city_id ?? 'x'}-${h.event_type ?? 'x'}-${i}`,
         hucreler: {
           rol: (
-            <span className="block text-ink break-words">
-              {h.role_name ?? '—'}
+            <span className="block min-w-0">
+              <span className="block text-ink break-words">
+                {h.role_name ?? '—'}
+              </span>
+              <span className="block font-mono text-[10px] text-ink-50 break-words">
+                {h.city_name ?? 'Tüm şehirler'} · {h.event_type_name ?? 'Tüm türler'}
+              </span>
             </span>
           ),
           sehir: h.city_name ?? 'Tümü',
