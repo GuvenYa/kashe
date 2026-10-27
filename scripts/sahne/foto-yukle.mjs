@@ -5,7 +5,7 @@
 //   node scripts/sahne/foto-yukle.mjs --sil      -> Storage nesneleri + portfoy satirlari + avatar_url temizlenir
 //   secenek: --yalniz-avatar  (portfoy atlanir)
 // Girdi: docs/sahne/foto-plan.json (uret.py), docs/sahne/foto/lisans.json + gorseller (foto-indir.mjs)
-// Avatar: bas harfler + kategori rengi (gercek yuz YOK), 256px PNG. Portfoy: kategori havuzundan 4-8 gorsel,
+// Avatar: bas harfler + renk (gercek yuz YOK), 256px PNG — yalniz portfoysuz hesaplara yazilir (saglayicida kapak = portfoy). Portfoy: kategori havuzundan 4-8 gorsel,
 //         altyazi "Foto: <sanatci> — <lisans>, Wikimedia Commons". Yalniz dal projesi (ukqhgspaallzjscjodbb) kabul edilir.
 // =============================================================================
 import { readFileSync, existsSync } from 'node:fs';
@@ -81,7 +81,11 @@ async function yukle() {
         // avatar
         const png = await avatarPng(u.harf, u.renk);
         await dene('avatar', () => sb.storage.from('avatars').upload(`${u.id}/avatar.png`, png, { contentType: 'image/png', upsert: true, cacheControl: '3600' }));
-        const avatarUrl = `${PLAN.storage}/avatars/${u.id}/avatar.png?t=${Date.now()}`;
+        // Saglayicilarda (pro/ajans) profiles.avatar_url BOS kalir: Kesfet karti kapak olarak avatar'i kullanir, bos olunca
+        // portfoyun ilk gorseline duser (etkinlik fotografi); profil sayfasi bas harf karesini kendisi cizer. Harf PNG'si
+        // musteri/kurum/yonetici hesaplarina (portfoysuz) yazilir. Guven puaninda "avatar" bileseni (+2) saglayicilarda 0 kalir.
+        const saglayici = u.tip === 'pro' || u.tip === 'ajans';
+        const avatarUrl = saglayici ? null : `${PLAN.storage}/avatars/${u.id}/avatar.png?t=${Date.now()}`;
         await dene('profiles', () => sb.from('profiles').update({ avatar_url: avatarUrl }).eq('id', u.id));
         avatarN += 1;
         // portfoy
