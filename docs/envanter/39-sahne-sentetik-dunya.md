@@ -4,7 +4,10 @@
 ajanslar, kurumlar ve musteriler; ici dolu profiller, fotografli portfoyler; 6 aylik gecmis (konusma, teklif, rezervasyon, yorum).
 Bu hesaplara girip ajans gibi ekip kurmak, teklif almak/vermek, admin panelinde veri biriktirmek, FAZ 9 zeka katmaninin (olay zinciri,
 fiyat kiyaslari, guven puani) ilk gunden dolu calismasini gormek ve eksikleri senaryo senaryo bulmak.
-**Durum:** KURULUM — uretec ve betikler hazir (bolum 5-7), calistirma sirasi bolum 8. FAZ 10 bu dunya kurulduktan sonra baslar.
+**Durum (27 Ekim 2026 gece):** KURULDU — dal Sahne'de 171 hesap + 6 aylik gecmis + 763 portfoy fotografi; onizleme (`sahne` dali)
+Sahne'ye bagli. Senaryo turlari: admin, ajans (sihirbaz -> eslestirme -> ekip -> teklif -> portal onayi -> rezervasyon), profesyonel
+(itiraz acildi), musteri (yorum, Teklif Al) YAPILDI; **kurum (RFP) turu ve admin'de itiraz karari KALDI.** Bulgular: `docs/sahne/bulgular.md`
+(32 madde; Y: #11 duzeltildi, #29 acik). Sonraki oturum sirasi bolum 11.
 
 ## 1. Kararlar (Guven, 27 Ekim 2026)
 
@@ -173,3 +176,21 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
   `price-benchmarks-daily`/`trust-score-daily` isleri zaten calisir, 03 betigi ilk hesabi aninda yapar; (3) Sahne hesaplari gercek
   e-posta almaz, "sifremi unuttum" akisi test edilemez; (4) Vercel Preview env degisince eski onizleme URL'leri de Sahne'ye baglanir
   (istenen davranis); (5) asama4 uretim korumasi desen degisikligi: `sahne+` eposta deseni uretimde yoksa koruma gucu aynen surer.
+
+## 11. Kaldigimiz yer ve sonraki oturum (27 Ekim gece)
+
+1. **Guven tek basina kontrol eder:** (a) Merve Avci ile /profil/portfoy'dan bir gorsel yukle -> "yuklendi" (Storage politikalari);
+   (b) bir musteriyle /p/<pro>'da "Teklif Al" formunu ELLE doldur (tarih + kisi dahil) -> konusma kartinda TARIH ve KISI cikiyor mu
+   (bulgu #31); (c) Vercel Preview `NEXT_PUBLIC_SITE_URL` = sahne onizleme adresi (Config) yapildi -> sonraki push'ta portal baglantisi
+   onizleme alan adiyla gelmeli (bulgu #16).
+2. **Kurum turu** (`sahne+kurum-teknopark@kashe.net` sahip + `sahne+<uye>` uyesi): /kurumsal -> etkinlik + gereksinim -> "Teklif talebi ac
+   (RFP)" -> ajans davet (Nova, Lumen) -> ajans tarafinda RFP yaniti -> kurumda karsilastirma -> karar (award) -> rezervasyon; uye
+   (viewer) yetkileri. Sonra admin (`sahne+admin`) /admin/zeka itiraz kuyrugu: Merve'nin itirazina karar + not.
+3. **Sahne v2 (uretec):** #8 eslestirme gecmisi (`04-sahne-eslestirme.sql`: `run_event_match` + shown/clicked, ajans jwt ile),
+   #26 kurum alicilarda kurumsal turler + "'da/'de" ek uyumu, #32 kategoriye ozel performans modulu metni, etkinlik_turleri 3-6 secenek.
+   Yeniden kurulum: 00-temizlik + foto-yukle --sil, sonra 01 -> foto-indir/yukle -> 02a..e -> 03 (ya da yalniz 02a..e + 03 ile gecmis).
+4. **Uygulama duzeltmeleri (Sahne'den cikan, FAZ 10 oncesi kucuk dal `sahne-duzeltmeler`):** #29 tamamlanan is cipi (SECURITY DEFINER
+   ozet; migration + asama4), #28 "Yorum birak" cagrisi, #14 suresi dolan teklif, #6 admin dashboard onay karti, #7 huni baslik KPI,
+   #16 preview portal URL (`VERCEL_BRANCH_URL`), #20/#19 kucukler. Urun kararlari: #4, #5, #18, #23.
+5. Sonra **FAZ 10a-DB/01** (38 numarali plan), dolu Sahne'de turlanir.
+
