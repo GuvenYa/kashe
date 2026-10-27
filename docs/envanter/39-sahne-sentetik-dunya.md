@@ -194,3 +194,9 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
    #16 preview portal URL (`VERCEL_BRANCH_URL`), #20/#19 kucukler. Urun kararlari: #4, #5, #18, #23.
 5. Sonra **FAZ 10a-DB/01** (38 numarali plan), dolu Sahne'de turlanir.
 
+**Karar (Guven, 27 Ekim gece; sira degisti):** Guven tur yapmaz; kota sifirlaninca DOGRUDAN **FAZ 10a-DB/01** ile baslanir.
+Kalan kurum (RFP, davet, uye yetkileri) turu 10a-P1'in canli turuna katilir (10a zaten davet/uyelik akisini degistirir); admin itiraz
+karari ayni turda verilir. Sahne v2 uretec duzeltmeleri ve uygulama duzeltmeleri (#28, #29, #14, #6, #7, #16) FAZ 10a kapanisindan
+sonra, 10b'den once tek kucuk dilim olarak ele alinir (10d'ye de tasinabilir). Madde 1'deki kontroller Guven'e birakilmadi;
+10a-P1 turunda ben yaparim.
+
