@@ -720,7 +720,8 @@ export default function ZekaPage() {
 
   const kuyrukSutunlari: VeriSutunu[] = [
     { anahtar: 'saglayici', baslik: 'Sağlayıcı', kartEtiketiGizle: true },
-    { anahtar: 'puan', baslik: 'Puan', sayisal: true, dar: true },
+    // `sayisal` DEGIL: saga yasli puan, solunda bosluk olmayan "Itiraz" metnine yapisir.
+    { anahtar: 'puan', baslik: 'Puan', dar: true },
     { anahtar: 'itiraz', baslik: 'İtiraz' },
     { anahtar: 'islem', baslik: 'Karar' },
   ];

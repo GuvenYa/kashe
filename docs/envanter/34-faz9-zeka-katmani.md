@@ -4,8 +4,8 @@
 "Karar zinciri" (Outcome Learning) ve "Temel ilkeler" (once calisan ve olculen surum; olcmeden tutma; veri dongusu asil varlik; adalet
 olculur); `02-guvenlik-modeli.md` bolum 7 (aciklanabilirlik: gerekce kodlari; itiraz hakki) ve 8 (KVKK); `18-faz6-eslestirme-ekip.md`
 (Match V0.2: `high_trust` = `trust_score >= 70` ya da `avg_rating >= 4.5 && cnt >= 3`; `new_talent` = `cnt < 3`; ekle-yalniz kosu kurali).
-**Durum:** PLAN KAPANDI; **9a KAPANDI (23 Ekim 2026)**; **9b KAPANDI (25 Ekim 2026)**; **9c-DB/01 hazir**
-(`20261027120000_faz9c_01_trust_score.sql`; yerelde asama4 T33 34/34, asama19 K11-K13 ESIT; dal + uretim bekliyor). Sira: 9c-P1 -> FAZ 9 kapanis. Her dilim: migration -> dal
+**Durum:** **FAZ 9 KAPANDI (26 Ekim 2026)** — 9a (23 Ekim), 9b (25 Ekim), 9c (26 Ekim) dalda + uretimde; kapanis bolum 8. Sira: FAZ 10
+Temizlik (04-goc-plani madde 42+) ya da acik kalemler (bolum 8). Her dilim: migration -> dal
 (asama4 + asama19) -> uretim -> Claude Code uygulama -> canli tur -> kapanis notu.
 
 ## 1. Kararlar (Guven, 23 Ekim 2026)
@@ -325,6 +325,52 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
   RLS, admin karari, gecersiz durum, karardan sonra yeni itiraz; gorunmeyen NULL; temizlik + yeniden hesap) — fixture musterileri 0001/0005/0006
   (`conversations_unique_pair`: musteri x saglayici tek konusma); asama19 **K11-K13** ESIT, **K14** bilgi.
 
+### 9c kapanis notu (26 Ekim 2026) — KAPANDI
+
+- **DB:** `20261027120000_faz9c_01_trust_score.sql` dalda + uretimde (asama4 34/34, asama19 K11-K13 ESIT; uretim K14 = 34 puanli
+  saglayici, 0 itiraz). Uretimde ilk hesap kostu: 34 saglayici, ortalama 23,7, hepsi 0-39 bandinda (dogrulama hicbirinde yok, tamamlanan
+  is az); `high_trust` (>= 70) henuz kimsede dolmuyor — Match V0.2 kodu veri gelince kendiliginden calisir.
+- **9c-P1** (dal `faz9c/p1`; gorev `37-claude-code-gorevi-9c-p1-guven-dokumu.md`): `app/lib/guven.ts` (6 bilesen etiket/maks/"nasil
+  artar", ham deger cumleleri, itiraz durumlari, esik 70), `guven-data.ts` (`my_trust_breakdown`), `guven-actions.ts` (`trust_appeals`
+  dogrudan INSERT; 23505/23514/42501 eslemesi), `app/components/guven/guven-dokumu-karti.tsx` (uc durum) + `itiraz-formu.tsx` (20-2000
+  kilidi, "Yeni itiraz ac" kapali baslar), `/profil` ("Pazar araligi" altinda) ve `/ajans` (kurulus saglayicisi `legacyProfileId`;
+  form yalniz `settings.manage`), `/admin/zeka` Blok 5 (4 KPI, dagilim 0-39/40-69/70+, bilesen ortalamalari, itiraz kuyrugu + satir ici
+  "Incelendi/Kapat + not" → `trust_appeal_review`, sonra yalniz ozet yenilenir). Sapma yok.
+- **Canli tur, iki asamali.** (1) Uretim onizlemesi: hotmail `/profil` → Test Pro 38/100 (dogrulama 0, profil 12, tamamlanan 18 = 4 is,
+  iptal -15 = 3/11, degerlendirme 8 notr, yanit 15 = medyan 0,1 sa), form kilitli (gonderilmedi); gmail `/admin/zeka` Blok 5 (34 / 23,7 /
+  0 / 0; dagilim; bilesen ortalamalari; "Itiraz yok") ve `/ajans` karti (Sunucu Ajans 25/100, form). (2) Yerel dev + dal DB, fixture
+  hesaplar: pro2 itiraz acti ("ACIK", "Itirazin inceleniyor", form kapandi) → faz1test+ajans admin kuyrukta not yazip "Incelendi" (KPI
+  acik 0 / incelendi 1, satirda Kashe notu; yalniz ozet yenilendi) → pro2 `/profil`de "INCELENDI" + Kashe notu kutusu + "Yeni itiraz ac".
+  `tur-9c-temizlik.sql` itirazi sildi.
+- **Turda duzeltilen:** `VeriTablosu` kurali — `sayisal` sutun saga yaslanir ve soldaki bosluk yoktur, yani sayisal sutunlar en SAGDA
+  olmali; kartta "Puan" (sayisal) hemen sagindaki "Deger" metnine yapisiyordu ("18 / 254 tamamlanan is") → Puan sola yaslandi; admin itiraz
+  kuyrugundaki "Puan" da ayni.
+- **Ertelenen:** yanitsiz konusmalarin yanit suresi puanina girmesi (V1); itiraz e-postasi (V0 yok — saglayici `/profil`de gorur);
+  gunluk hesap tetiklemesi UI'dan yok (cron); `trust_score_snapshots` arsivi FAZ 10+.
+
+## 8. FAZ 9 kapanis (23-26 Ekim 2026)
+
+**Toplam:** 5 migration (9a-01, 9b-01/02/03, 9c-01); 4 tablo (`analytics_events`, `price_benchmarks`, `trust_score_snapshots`,
+`trust_appeals`); 10 olay tetikleyicisi + 3 yardimci tetikleyici; 16 fonksiyon (`fn_faz9_olay_yaz`, `fn_faz9_booking_payload`,
+`analytics_summary`, `fn_faz9b_yayin_esigi`, `fn_faz9b_gozlemler`, `price_benchmarks_compute`, `price_benchmark_lookup(_many)`,
+`price_benchmarks_summary`, `fn_faz9c_provider_yetkisi`, `fn_faz9c_hesapla`, `fn_faz9c_appeal_before_insert`, `trust_score_compute`,
+`my_trust_breakdown`, `trust_appeal_review`, `trust_score_summary`); 2 pg_cron isi (`price-benchmarks-daily` 00:30 UTC,
+`trust-score-daily` 00:45 UTC); asama4 T31-T33 (34 test), asama19 K1-K14. Uygulama: `/admin/zeka` (5 blok, grafik + tablo), sihirbaz
+butce kutusu, Kesfet seridi, teklif editoru ipucu, `/profil` pazar araligi + guven dokumu + itiraz, `/ajans` guven dokumu. Musteri yuzeyinde
+skor yok; Kesfet siralamasi degismedi; `internal.*` hicbir olaya/kiyasa girmedi.
+
+**Ilkeler korundu:** olaylari tetikleyici yazar (uygulama yazmaz); PII payload'a girmez; kiyas yalniz musteriye donuk fiyattan, esik alti
+hicbir yerde gorunmez; skor kullanici tarafindan yazilamaz (sutun yetkisi + koruma tetikleyicisi), bilesenler saklanir, itiraz izi DB'de.
+
+**Ogrenilen (kalici):** Vercel onizlemeleri uretim Supabase'ine bagli; dal DB'si yalniz migration provasi + asama4 (test disi kullanici
+yok, `turkish_cities` bos). Dolu durum turu: dal DB'sine bagli yerel dev (`$env:` ile; `.env.local` degismez; bakim modu kapali) +
+fixture hesaplari + seed/temizlik betigi; uretime yalniz UI uzerinden ve yalniz okuma. Ayni gun iki hesap kosusu icin `clock_timestamp()`;
+gun sinirinda Istanbul gunu (`current_date` UTC'dir).
+
+**Acik kalemler (FAZ 10+ / V1):** gunluk yeni yetenek payi serisi; huni adimlari ic ice degil (bilgi notu var); `analytics_events`
+bolumleme; `price_benchmarks` 180 gun arsivi; yanitsiz konusma cezasi; itiraz e-postasi; "Taranan profil" sayaci (run_event_match);
+Trust V1 / Match V1 / fiyat modeli TUBITAK Ar-Ge donemi (bolum 7).
+
 ## 5. Dilimler ve dogrulama
 
 | Dilim | Icerik | Test |
@@ -333,9 +379,9 @@ gorunur saglayicilar (`is_visible`) hesaplanir; digerleri NULL kalir.
 | **9a-P1** | `/admin/zeka` (gunluk, huni, adalet; grafik + tablo) — **KAPANDI** | tur: admin (gmail is_admin) — gecti |
 | **9b-DB/01 + 02 + 03** — **KAPANDI** | `price_benchmarks` + `fn_faz9b_gozlemler` + `price_benchmarks_compute` + cron + `price_benchmark_lookup(_many)` + `price_benchmarks_summary` | asama4 **T32** (2 kaynak — rezervasyon sekil kuraliyla turev; cift sayim yok, esik, kaba satir, lookup en dar yayinli / eski gun donmez), asama19 K7-K9 (+K10 bilgi) |
 | **9b-P1** — **KAPANDI** | sihirbaz/Kesfet/editor/profil ipuclari + admin Blok 4 (yalniz yayinli) | tur: uretim onizlemesi bos durumlar (gmail) + yerel dev / dal DB dolu durumlar (fixture hesaplar, tur-9b seed) — gecti |
-| **9c-DB/01** — hazir | `trust_score_snapshots` + `trust_appeals` + `fn_faz9c_hesapla` + `trust_score_compute` + cron + `my_trust_breakdown` + `trust_appeal_review` + `trust_score_summary` | asama4 **T33** (bilesen puanlari, notr taban, koruma, dokum yetkisi, itiraz akisi, gorunmeyen NULL), asama19 K11-K13 (+K14 bilgi) |
-| **9c-P1** | `/profil` guven dokumu + itiraz formu/durumu; admin dagilim + itiraz kuyrugu | tur: hotmail (Test Pro dokumu + itiraz), gmail (admin kuyrugu) |
-| **Kapanis** | 20/34 kapanis notu, CLAUDE.md FAZ 9 paragrafi, roadmap, 04-goc-plani madde 39-41 isaretleme | — |
+| **9c-DB/01** — **KAPANDI** | `trust_score_snapshots` + `trust_appeals` + `fn_faz9c_hesapla` + `trust_score_compute` + cron + `my_trust_breakdown` + `trust_appeal_review` + `trust_score_summary` | asama4 **T33** (bilesen puanlari, notr taban, koruma, dokum yetkisi, itiraz akisi, gorunmeyen NULL), asama19 K11-K13 (+K14 bilgi) |
+| **9c-P1** — **KAPANDI** | `/profil` + `/ajans` guven dokumu + itiraz formu/durumu; admin Blok 5 dagilim + bilesen ortalamalari + itiraz kuyrugu | tur: uretim onizlemesi (hotmail dokum, gmail admin + ajans) + yerel dev / dal DB itiraz akisi (pro2 ↔ faz1test+ajans) — gecti |
+| **Kapanis** — **KAPANDI** | 34 bolum 8, CLAUDE.md FAZ 9 paragrafi + sema ozeti, roadmap v17, 04-goc-plani FAZ 8-9 kapanis notlari | — |
 
 Kirmizi cizgiler (hepsi): `internal.*` hicbir olaya/kiyasa girmez; PII payload'a yazilmaz; uygulama `analytics_events`/`price_benchmarks`/
 `trust_score` YAZMAZ; her sey ekle-yalniz; algoritma degisikligi = yeni `algorithm_version`; hesaplar SECURITY DEFINER + cron;

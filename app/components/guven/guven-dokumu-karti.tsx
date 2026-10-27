@@ -69,7 +69,9 @@ export function GuvenDokumuKarti({
 
   const sutunlar: VeriSutunu[] = [
     { anahtar: 'bilesen', baslik: 'Bileşen', kartEtiketiGizle: true },
-    { anahtar: 'puan', baslik: 'Puan', sayisal: true },
+    // `sayisal` DEGIL: saga yasli puan, hemen sagindaki "Deger" sutununa
+    // yapisiyordu ("18 / 254 tamamlanan is" diye okunuyordu). Sola yasli kalir.
+    { anahtar: 'puan', baslik: 'Puan' },
     { anahtar: 'deger', baslik: 'Değer' },
     { anahtar: 'nasil', baslik: 'Nasıl artar', dar: true },
   ];

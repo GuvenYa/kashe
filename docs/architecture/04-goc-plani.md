@@ -670,6 +670,21 @@ Acik kalemler 19 bolum 12 sonunda (e-posta, alici rezervasyon gorunumu, rol degi
 40. `price_benchmarks` + zamanlanmis toplama isi.
 41. Trust Score hesaplama isi.
 
+**FAZ 8 KAPANDI (19-22 Ekim 2026, `docs/envanter/20-faz8-event-os-modulleri.md`):** madde 37 **8-U** (`org_member_set_role`, 7 uyelik rolu
+tek gercek), **8a-DB/01** (`tasks`, `activity_logs`, `org_module_set`), **8b-DB/01** (`contacts`, `crm_leads`, `crm_contact_suggestions`),
+**8c-DB/01** (`suppliers`, `event_suppliers`, `internal.event_supplier_costs`); madde 38 kismen: `supplier_shortlists` +
+`supplier_shortlist_items` (8c-DB/01); `procurement_requests` ACILMADI (satin alma talepleri FAZ 10+). Uygulama 8-U/8a/8b/8c-P1 + Hijyen 04.
+Desen: yazma dogrudan tabloya, kurallar tetikleyicide; ic maliyet yalniz RPC.
+
+**FAZ 9 KAPANDI (23-26 Ekim 2026, `docs/envanter/34-faz9-zeka-katmani.md`):** madde 39 **9a-DB/01** (`analytics_events` ekle-yalniz, 10
+tetikleyici, `analytics_summary`); madde 40 **9b-DB/01-02-03** (`price_benchmarks` rol x sehir x tur, esik 15, `price_benchmarks_compute`
+pg_cron 00:30 UTC, `price_benchmark_lookup(_many)`, ayni gun eskiyen hucre + Istanbul gunu duzeltmeleri); madde 41 **9c-DB/01**
+(`trust_score_snapshots`, `trust_appeals`, `fn_faz9c_hesapla`, `trust_score_compute` pg_cron 00:45 UTC, `my_trust_breakdown`,
+`trust_appeal_review`, `trust_score_summary`; `providers.trust_score` yalniz fonksiyon yazar — madde 447/505/725 kurali korundu). Uygulama
+9a/9b/9c-P1 (`/admin/zeka` 5 blok, sihirbaz/Kesfet/teklif ipuclari, `/profil` + `/ajans` dokum ve itiraz). Kararlar (Guven, 23 Ekim):
+uc V0 simdi, ogrenme 2027 (IP2/IP3/IP5); olaylari tetikleyici yazar; skor sistem ici + saglayici kendi dokumunu gorur; `analytics_events`
+saklama sinirsiz; admin grafik + tablo.
+
 ### FAZ 10 — Temizlik
 
 42. Uyumluluk gorunumleri kaldirilir.
