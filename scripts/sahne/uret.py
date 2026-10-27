@@ -440,6 +440,22 @@ def category_attributes_uret(rnd, slug, p):
         out["skills"] = [{"name": s, "level": rnd.randint(1, 3)} for s in rnd.sample(["Dans", "Şarkı", "Yüzme", "Binicilik", "İngilizce aksan", "Doğaçlama", "Gitar", "Dövüş sanatı"], 3)]
     return out
 
+def etkinlik_turleri_uret(rnd, u):
+    # kategorinin tur agirliklarindan 2-5 anahtar (agirlik sirasiyla onde gelenler daha olasi); ajans odak kategorilerinin birlesimi
+    katlar = [u["kat"]] + ([u["kat2"]] if u.get("kat2") else []) + (u.get("odak", []) if u["tip"] == "ajans" else [])
+    agirlik = {}
+    for k in katlar:
+        for tur, w in V.KATEGORILER[k]["turler"].items():
+            agirlik[tur] = agirlik.get(tur, 0) + w
+    adet = rnd.randint(2, 5) if u["tip"] == "pro" else rnd.randint(4, 7)
+    secilen = []
+    kalan = dict(agirlik)
+    while kalan and len(secilen) < adet:
+        t = secim(rnd, kalan)
+        secilen.append(t)
+        del kalan[t]
+    return secilen
+
 def fiyat_uret(rnd, slug, p, kacinci=0):
     lo, hi = V.KATEGORILER[slug]["fiyat"]
     base = rnd.uniform(lo, hi * 0.6)
@@ -513,6 +529,11 @@ END $$;""" % ",".join(q(s) for s in V.KATEGORILER))
         elif u["tip"] == "ajans":
             bio = u["hakkinda"]
             cat_attr = {"service_region": "Türkiye geneli", "experience_label": "%d yıl · %d+ etkinlik" % (u["yil"], u["yil"] * 60)}
+        if u["tip"] in ("pro", "ajans"):
+            # ORTAK alan: category_attributes.etkinlik_turleri (event_types key'leri) — sihirbaz sayaci ve Kesfet
+            # "Etkinlik turu" filtresi yalniz bunu okur; eski sistem (attributes) kategorilerinde de bu kokte durur.
+            cat_attr["etkinlik_turleri"] = etkinlik_turleri_uret(rnd, u)
+            u["etkinlik_turleri"] = cat_attr["etkinlik_turleri"]
         onay = {"approved": "approved", "pending": "pending", "revision": "revision", "rejected": "rejected"}[u["durum"]]
         onay_saat = (u["kayit_saat"] - rnd.uniform(2, 72)) if onay == "approved" else None
         not_ = None
@@ -798,8 +819,9 @@ END $$;""")
             elif gun < 0:
                 status = "running" if rnd.random() < 0.3 else "completed"
             else:
-                status = rnd.choice(["confirmed", "confirmed", "matching", "booked", "draft"])
-            kisi = rnd.choice([50, 80, 120, 150, 200, 300, 500, 800])
+                status = rnd.choice(["confirmed", "confirmed", "matching", "booked"])   # uygulama taslak etkinlik uretmez (sihirbaz -> confirmed)
+            kisi = rnd.choice({"birthday": [20, 30, 50, 80], "baby_shower": [20, 30, 50], "henna": [80, 120, 150, 200], "engagement": [50, 80, 120, 200],
+                               "circumcision": [50, 80, 120, 200], "wedding": [100, 150, 200, 300, 500], "graduation": [100, 200, 300, 500]}.get(tur, [50, 80, 120, 150, 200, 300, 500, 800]))
             bmin = yuvarla(kisi * rnd.uniform(400, 900), 5000)
             bmax = yuvarla(bmin * rnd.uniform(1.3, 1.8), 5000)
             sehir = sahip["sehir"] if rnd.random() < 0.8 else D.sehir_sec()
@@ -1147,6 +1169,23 @@ SELECT (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%') AS 
 
 
 # ----------------------------------------------------------------------------- 00 / 03 / plan / md
+def yaz_01b(D, out):
+    # Mevcut kuruluma yama: 01 yeniden kosulmadan etkinlik_turleri + taslak etkinlik duzeltmesi (01'in yeni surumu bunlari zaten yazar)
+    rows = ",\n".join("(%s, %s)" % (q(u["id"]), qj(u["etkinlik_turleri"])) for u in D.prolar + D.ajanslar)
+    with open(os.path.join(out, "01b-sahne-etkinlik-turleri.sql"), "w", encoding="utf-8") as f:
+        f.write("""-- SAHNE 01b — YAMA (27 Ekim 2026): category_attributes.etkinlik_turleri (ortak alan; sihirbaz sayaci + Kesfet etkinlik turu filtresi)
+-- ve taslak etkinliklerin onaylanmasi (uygulama taslak uretmez). 01'in guncel surumu bunlari zaten icerir; bu dosya 01'i yeniden
+-- kosmadan MEVCUT kuruluma uygulamak icindir. Idempotan. YALNIZ DALDA.
+%s
+UPDATE public.profiles p SET category_attributes = COALESCE(p.category_attributes, '{}'::jsonb) || jsonb_build_object('etkinlik_turleri', v.turler)
+  FROM (VALUES
+%s
+  ) AS v(id, turler) WHERE p.id = v.id::uuid;
+UPDATE public.events SET status = 'confirmed', confirmed_at = COALESCE(confirmed_at, created_at) WHERE id::text LIKE '5a4e0002-%%' AND status = 'draft';
+SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%%' AND category_attributes ? 'etkinlik_turleri') AS turlu_profil,
+       (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%%' AND status = 'draft') AS taslak_etkinlik;
+""" % (GUARD, rows))
+
 def yaz_00(D, out):
     with open(os.path.join(out, "00-sahne-temizlik.sql"), "w", encoding="utf-8") as f:
         f.write("-- SAHNE 00 — temizlik: tum Sahne verisini siler (fixture'lar ve sema etkilenmez). YALNIZ DALDA. Storage nesneleri: node scripts/sahne/foto-yukle.mjs --sil\n\n")
@@ -1220,6 +1259,7 @@ def main():
     D.seed = a.seed
     D.tarih = datetime.date.today().isoformat()
     plan = yaz_01(D, a.out)
+    yaz_01b(D, a.out)
     yaz_02(D, a.out)
     yaz_00(D, a.out)
     yaz_plan(D, plan, a.out)

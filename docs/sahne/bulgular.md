@@ -1,0 +1,22 @@
+# Sahne bulgulari (senaryo turlari)
+
+Bkz. `docs/envanter/39-sahne-sentetik-dunya.md` bolum 9. Her satir: tarih, hesap/rol, sayfa, beklenen / gorulen, onem
+(Y = yuksek: akis kiriliyor / veri yanlis, O = orta: eksik ozellik / yaniltici, D = dusuk: kozmetik), durum.
+
+| # | Tarih | Hesap / rol | Sayfa | Beklenen / gorulen | Onem | Durum |
+|---|---|---|---|---|---|---|
+| 1 | 27 Eki | anon | /kesfet | Kart ustu AJANS + kategori + PREMIUM rozetleri ust uste biniyordu (kategori chip'i daralmiyor, konteyner yalniz kalbe yer birakiyordu) | D | DUZELTILDI (profile-card.tsx `TopChips reserve`) |
+| 2 | 27 Eki | anon | / (one cikanlar) | Avatarsiz saglayici kartlari harf placeholder'da kaliyordu; Kesfet'teki portfoy fallback'i ana sayfada yoktu | D | DUZELTILDI (featured-profiles.tsx portfoy sorgusu) |
+| 3 | 27 Eki | — | featured-profiles.tsx | eslint `react-hooks/purity`: `tierWeight` icinde `Date.now()` (onceden var) | D | FAZ 10d listesine yazildi (38 bolum 10d) |
+| 4 | 27 Eki | anon | /kesfet | Kategori filtresinde asama4'un biraktigi test kategorileri (`Faz1 Test Havuz Rol A/B`, `Match A/B/C`) listeleniyor; profili olmayan kategori filtrede gorunmemeli mi? | O | ACIK — urun karari (bos kategori filtrede gizlensin?) |
+| 5 | 27 Eki | anon | /p/[id] | Avatarsiz saglayicida 72 px bas harf karesi + sag altta ajans kimlik kartinda "VC" harfleri: uygulamanin normal avatar fallback'i (Sahne'de saglayici avatari bilerek bos: yuz yok). Istenirse saglayici avatari = kategori ikonu (repodaki yuzsuz line-art) + kapak oncelik sirasi portfoy > avatar (Kesfet/ana sayfa) | D | ACIK — urun karari |
+| 6 | 27 Eki | admin | /admin | Dashboard'da "onay bekleyen profil" karti yok (10 bekliyor + 3 revizyon yalniz /admin/profiller'de gorunuyor); kategori talebi / askida / sikayet var | O | ACIK |
+| 7 | 27 Eki | admin | /admin/zeka huni | Baslik KPI "BRIEF -> REZERVASYON %338,6" ve "Secim/teklif %1.306,7": adimlar ic ice olmadigi icin oran %100'u asiyor (dipnotta aciklaniyor) ama baslik KPI bozuk gorunuyor. Oneri: baslik orani yalniz brief'e bagli etkinliklerin rezervasyonu uzerinden ya da "x rezervasyon / y brief" biciminde | O | ACIK |
+| 8 | 27 Eki | admin | /admin/zeka adalet | Sahne'de eslestirme kosusu uretilmedi; blok asama4 gurultusunu gosteriyor (1 saglayici, 15 gosterim, Gini —). Sahne eki: ajans etkinlikleri icin `run_event_match` + `mark_match_candidates_shown/clicked` ile gecmis kosular (04-sahne-eslestirme.sql) | D | SAHNE — yapilacak |
+| 9 | 27 Eki | admin | /admin/zeka | asama4 her kosuda dala olay zinciri gurultusu birakiyordu (brief 44, match 31, rfp 15, "son 7 gun" sisik). asama4 T0'a fixture olaylarinin silinmesi eklendi; bir sonraki asama4 kosusunda temizlenir | O | DUZELTILDI (asama4 T0; harness 34/34) |
+| 10 | 27 Eki | admin | /admin/istatistikler, /admin/profiller | Sahne verisiyle sorunsuz: kategori/sehir dagilimi, teklif donusumu %79, onay kuyrugu 10/3/2 | — | OK |
+| 11 | 27 Eki | ajans (Nova) | /etkinlik-sihirbazi | Sihirbaz "Bu kombinasyonda su an kimse yok" dedi (Istanbul x kurumsal x DJ/muzisyen/fotografci/sunucu/ses-isik) — sayac `category_attributes.etkinlik_turleri` (ortak alan) okuyor, Sahne uretecinde bu alan doldurulmamisti; Kesfet "Etkinlik turu" filtresi de ayni alani kullanir | Y (Sahne verisi) | DUZELTILDI (uretec; mevcut kuruluma `01b-sahne-etkinlik-turleri.sql`) |
+| 12 | 27 Eki | ajans (Nova) | /etkinliklerim/[id] | Sahne "taslak" etkinlik uretmisti; uygulama taslak uretmez (sihirbaz -> confirmed), taslakta Adaylar sekmesi "etkinligin onayli olmasi gerekir" der ve onaylama dugmesi yok. Uretec duzeltildi (gelecek etkinlikler confirmed/matching/booked), mevcut taslaklar 01b ile onaylanir. Not: uygulamada taslak etkinlik kavrami enum'da var ama akista yok (FAZ 10d'de enum degerinin kaderi?) | O (Sahne verisi) | DUZELTILDI (01b) |
+| 13 | 27 Eki | ajans (Nova) | /etkinliklerim | "Dogum gunu · 800 kisi" gibi tura uymayan katilimci sayilari: uretec turune gore araliklar kullanir artik (yeni kurulumda) | D (Sahne verisi) | DUZELTILDI (uretec) |
+| 14 | 27 Eki | ajans (Nova) | /ajans "Acik isler" | Son tarihi (valid_until) gecmis "Gonderildi/Goruldu" teklifler acik is olarak listeleniyor (orn. 30 Mart 2026). Gecerliligi dolan teklif `expired`'a cekilmiyor (yalniz portal goruntulemede isaretleniyor); liste "suresi doldu" rozeti ya da gunluk expire isi istiyor | O | ACIK |
+| 15 | 27 Eki | ajans (Nova) | /ajans/havuz, /ajans | Havuz (8 uye + 4 harici, roller, iliski turu), gosterge (gorev/firsat/teklif sayilari), guven dokumu (73/100, 6 bilesen) Sahne verisiyle sorunsuz | — | OK |

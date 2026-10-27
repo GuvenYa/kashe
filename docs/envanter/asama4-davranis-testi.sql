@@ -165,6 +165,13 @@ BEGIN
   IF to_regclass('internal.access_audit') IS NOT NULL THEN
     DELETE FROM internal.access_audit WHERE actor_user_id = ANY(ids);
   END IF;
+  -- T31 olay zinciri (FK yok; ekle-yalniz): fixture aktor/saglayici/kurulus olaylari silinir — dalda Sahne'nin
+  -- zeka sayfasina test gurultusu birikmesin (27 Ekim 2026); uretimde fixture yok, etkisiz
+  IF to_regclass('public.analytics_events') IS NOT NULL THEN
+    DELETE FROM public.analytics_events
+     WHERE actor_user_id = ANY(ids) OR provider_id = ANY(ids)
+        OR organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
   -- T8/T9 kurum verisi (tablolar FAZ 0'dan once yoksa sessizce atla)
   IF to_regclass('public.business_members') IS NOT NULL THEN
     DELETE FROM public.business_members WHERE business_id = ANY(ids) OR member_user_id = ANY(ids);
