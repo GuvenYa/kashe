@@ -90,7 +90,7 @@ BEGIN
   IF to_regclass('cron.job') IS NOT NULL THEN
     EXECUTE 'SELECT count(*) FROM cron.job WHERE jobname = ''send-message-notifications''' INTO n_cron;
   END IF;
-  SELECT count(*) INTO n_prof FROM public.profiles WHERE email NOT LIKE 'faz1test+%';
+  SELECT count(*) INTO n_prof FROM public.profiles WHERE email NOT LIKE 'faz1test+%' AND email NOT LIKE 'sahne+%';   -- Sahne hesaplari (27 Ekim 2026) test verisidir
   IF n_cron > 0 OR n_prof > 10 THEN
     RAISE EXCEPTION 'URETIM KORUMASI: bu veritabani uretim gibi gorunuyor (cron isi=%, test disi profil=%). asama4 yalniz onizleme dalinda kosulur. Hicbir sey yazilmadi.', n_cron, n_prof;
   END IF;
@@ -4695,11 +4695,11 @@ BEGIN
   prop := public.proposal_create(org_a, 'T32 taslak', ev_a, NULL, NULL, NULL);
   SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
   INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
-  VALUES (ver, rol, 'T32 taslak kalem', 1, 50000, true, 1);
+  VALUES (ver, rol, 'T32 taslak kalem', 1, 50003, true, 1);   -- isaret tutar: Sahne tutarlari 500'un katidir
   prop := public.proposal_create(org_a, 'T32 etkinliksiz', NULL, NULL, 'T32 Musteri', 'faz1test+t32@kashe.net');
   SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
   INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
-  VALUES (ver, rol, 'T32 etkinliksiz kalem', 1, 60000, true, 1);
+  VALUES (ver, rol, 'T32 etkinliksiz kalem', 1, 60007, true, 1);
   PERFORM public.proposal_send(prop, 14);
   EXECUTE 'RESET ROLE';
 
@@ -4715,7 +4715,7 @@ BEGIN
   -- gozlem sayimi (A dugun rol): 16; gizli/rolsuz/taslak/etkinliksiz yok
   SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(bugun - 89, bugun) g WHERE g.role_id = rol AND g.city_id = sehir_a AND g.event_type = 'wedding';
   IF n <> 16 THEN RAISE EXCEPTION 'A dugun gozlem % (16; revizyon cift saydi ya da gizli kalem girdi)', n; END IF;
-  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(bugun - 89, bugun) g WHERE g.amount IN (99999, 777, 50000, 60000);
+  SELECT count(*) INTO n FROM public.fn_faz9b_gozlemler(bugun - 89, bugun) g WHERE g.amount IN (99999, 777, 50003, 60007);
   IF n <> 0 THEN RAISE EXCEPTION 'gizli/rolsuz/taslak/etkinliksiz kalem gozleme girdi (%)', n; END IF;
 
   -- 3) hesap: uc aile, esik, idempotan

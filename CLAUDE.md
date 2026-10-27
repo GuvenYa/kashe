@@ -155,11 +155,14 @@ DOGRUDAN INSERT (RLS; saglayici basina tek acik; UPDATE/DELETE yok), karar yalni
 pazar araligi + guven dokumu + itiraz, `/ajans` guven dokumu. MUSTERI YUZEYINDE SKOR YOK; Kesfet siralamasi degismez. Sabitler
 `app/lib/zeka.ts`, `fiyat-kiyas.ts`, `guven.ts`; sunucu okuma `*-data.ts` (`server-only`). Bkz. `docs/envanter/34-faz9-zeka-katmani.md`.
 
-**Onizleme ve tur (FAZ 9'da ogrenildi).** Vercel onizlemeleri URETIM Supabase'ine baglidir; dal DB'si (`ukqhgspaallzjscjodbb`) yalniz
-migration provasi + asama4 icindir (test disi kullanici yok, `turkish_cities` bos). Dolu durumlari gormek icin: dal DB'sine bagli yerel dev
-(`$env:NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` + `NEXT_PUBLIC_BAKIM_MODU="false"`; `.env.local` degismez) + asama4 fixture hesaplari +
-dal-only seed/temizlik betigi (uretim korumasi ile). Uretime yalniz UI uzerinden, yalniz okuma. Ayni islemde iki hesap kosusu
-`clock_timestamp()` ister (`now()` esit kalir).
+**Onizleme ve tur — Sahne (27 Ekim 2026'dan itibaren).** Dal projesi (`ukqhgspaallzjscjodbb`) = **Sahne**: sentetik test dunyasi
+(171 hesap `sahne+<slug>@kashe.net`, parola `Sahne!2026`, id oneki `5a4e0000-`; 122 profesyonel / 12 ajans / 8 kurum / 20 musteri / 1 yonetici,
+6 aylik gecmis, fotografli portfoy) + asama4 fixture'lari. Vercel **Preview** ortam degiskenleri dala cevrildi: onizlemeler Sahne'ye baglanir;
+uretim (`qydsooqmflrrwtgawhsv`) ve Production env dokunulmaz. Uretec `scripts/sahne/uret.py` -> `docs/sahne/0x-sahne-*.sql` (dal SQL Editor;
+her dosyada uretim korumasi), fotograflar `scripts/sahne/foto-indir.mjs` + `foto-yukle.mjs` (service role yalniz Guven'in PowerShell
+ortaminda). Uretim korumasi deseni: test disi profil = `email NOT LIKE 'faz1test+%' AND email NOT LIKE 'sahne+%'`. Hesap listesi
+`docs/sahne/hesaplar.md`, plan ve senaryolar `docs/envanter/39-sahne-sentetik-dunya.md`. Migration akisi degismez (dal -> asama4/asamaN ->
+uretim). Uretime yalniz UI uzerinden, yalniz okuma. Ayni islemde iki hesap kosusu `clock_timestamp()` ister (`now()` esit kalir).
 
 **Derleme dogrulamasi cikis koduyla DEGIL (24 Eylul 2026).** `npm run build` Windows'ta hata verse de exit 0 donebiliyor (`Failed to collect page data for /...` ciktisi gecti, `.next/BUILD_ID` olusmadi). Kanit = cikti sonunda route tablosu + hata satiri yok + `.next/BUILD_ID` var. Ayrica `'use client'` modulunden sunucu bilesenine sabit/veri import edilmez (sayfa verisi toplamayi kirar); ortak veri `'use client'` OLMAYAN bir `*-data.ts` modulunde tutulur (ornek `app/ilanlar/listings-data.ts`).
 

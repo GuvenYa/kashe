@@ -1,0 +1,611 @@
+{
+ "QUICK_OPTIONS_BY_SLUG": {
+  "dj": {
+   "set_suresi": [
+    "1–2 saat",
+    "2–4 saat",
+    "4–6 saat",
+    "6+ saat"
+   ],
+   "ekipman_durumu": [
+    "Kendi ekipmanı",
+    "Kısmi",
+    "Mekandan bekler"
+   ]
+  },
+  "muzisyen": {
+   "ekip_boyutu": [
+    "Solo",
+    "Duo",
+    "Trio",
+    "Grup 4+"
+   ]
+  },
+  "dansci": {
+   "ekip_boyutu": [
+    "Solo",
+    "Duo",
+    "Trio",
+    "Grup 4+"
+   ],
+   "gosteri_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "60–90 dk",
+    "90+ dk"
+   ]
+  },
+  "stand-up-komedyen": {
+   "gosteri_turu": [
+    "Kısa set",
+    "Tam gösteri",
+    "Doğaçlama",
+    "Hikaye anlatımı",
+    "Roast/özel konsept"
+   ],
+   "gosteri_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "60–90 dk",
+    "90+ dk"
+   ]
+  },
+  "illuzyonist": {
+   "gosteri_turu": [
+    "Sahne",
+    "Close-up",
+    "Mentalizm"
+   ],
+   "gosteri_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "60–90 dk",
+    "90+ dk"
+   ],
+   "yas_grubu": [
+    "Çocuk",
+    "Yetişkin",
+    "Her yaş"
+   ]
+  },
+  "palyaco": {
+   "gosteri_turu": [
+    "Çocuk şovu",
+    "Balon/Yüz boyama",
+    "Maskot"
+   ],
+   "gosteri_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "60–90 dk",
+    "90+ dk"
+   ],
+   "yas_grubu": [
+    "Çocuk",
+    "Yetişkin",
+    "Her yaş"
+   ]
+  },
+  "sunucu": {
+   "sunuculuk_turu": [
+    "Kurumsal",
+    "Düğün",
+    "Sahne/Festival",
+    "TV/Yayın"
+   ]
+  },
+  "fotografci": {
+   "teslim_suresi": [
+    "1–3 gün",
+    "1 hafta",
+    "2 hafta",
+    "1 ay+"
+   ],
+   "ekipman_durumu": [
+    "Kendi ekipmanı",
+    "Kısmi",
+    "Mekandan bekler"
+   ]
+  },
+  "videograf": {
+   "teslim_suresi": [
+    "1–3 gün",
+    "1 hafta",
+    "2 hafta",
+    "1 ay+"
+   ],
+   "ekipman_durumu": [
+    "Kendi ekipmanı",
+    "Kısmi",
+    "Mekandan bekler"
+   ]
+  },
+  "ses-isik": {
+   "hizmet_turu": [
+    "Ses",
+    "Işık",
+    "Ses+Işık",
+    "Sahne/LED"
+   ],
+   "ekipman_kapasitesi": [
+    "200 kişi altı",
+    "200–500",
+    "500–1000",
+    "1000+"
+   ],
+   "kurulum_suresi": [
+    "1 saat altı",
+    "1–2 saat",
+    "2–4 saat",
+    "4+ saat"
+   ]
+  },
+  "organizasyon": {
+   "hizmet_turu": [
+    "Düğün",
+    "Kurumsal",
+    "Festival",
+    "Full kapsam"
+   ],
+   "ekip_boyutu": [
+    "1–5 kişi",
+    "5–15 kişi",
+    "15+ kişi"
+   ]
+  },
+  "akrobat": {
+   "gosteri_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "60–90 dk",
+    "90+ dk"
+   ],
+   "yas_grubu": [
+    "Çocuk",
+    "Yetişkin",
+    "Her yaş"
+   ]
+  },
+  "sac-makyaj-styling": {
+   "prova": [
+    "Dahil",
+    "Ücretli",
+    "Yok"
+   ],
+   "kisi_kapasitesi": [
+    "1 kişi",
+    "2–4 kişi",
+    "5–10 kişi",
+    "10+ kişi"
+   ]
+  },
+  "etkinlik-koordinatoru": {
+   "calisma_suresi": [
+    "Yarım gün",
+    "Tam gün",
+    "Çok günlü",
+    "Esnek"
+   ]
+  },
+  "konusmaci": {
+   "konusma_suresi": [
+    "30 dk altı",
+    "30–60 dk",
+    "Yarım gün",
+    "Tam gün"
+   ],
+   "hedef_kitle": [
+    "Kurumsal",
+    "Öğrenci & genç",
+    "Karma"
+   ]
+  },
+  "canli-yayin": {
+   "kamera_sayisi": [
+    "1 kamera",
+    "2–3 kamera",
+    "4+ kamera"
+   ],
+   "etkinlik_formati": [
+    "Fiziksel",
+    "Çevrimiçi",
+    "Hibrit"
+   ]
+  },
+  "influencer": {
+   "hedef_kitle": [
+    "Kurumsal",
+    "Öğrenci & genç",
+    "Karma"
+   ],
+   "teslim_formati": [
+    "Ham çekim",
+    "Kurgulu video",
+    "Foto seti",
+    "Karma"
+   ]
+  },
+  "drone-pilotu": {
+   "teslim_suresi": [
+    "1–3 gün",
+    "1 hafta",
+    "2 hafta",
+    "1 ay+"
+   ],
+   "teslim_bicimi": [
+    "Video",
+    "Fotoğraf",
+    "Video + Fotoğraf"
+   ]
+  },
+  "karikaturist": {
+   "cizim_turu": [
+    "Portre karikatür",
+    "Canlı çizim",
+    "Dijital illüstrasyon",
+    "Karma"
+   ],
+   "teslim_suresi": [
+    "Anında",
+    "1–3 gün",
+    "1 hafta"
+   ]
+  }
+ },
+ "QUICK_MULTI_OPTIONS": {
+  "ceviri_turleri": {
+   "options": [
+    "Simultane",
+    "Ardıl",
+    "Yazılı",
+    "Fısıltı",
+    "Fuar çevirmenliği",
+    "Etkinlik rehberliği",
+    "VIP refakat"
+   ]
+  },
+  "enstruman": {
+   "options": [
+    "Gitar",
+    "Piyano",
+    "Keman",
+    "Vokal",
+    "Bateri",
+    "Bas",
+    "Saksafon",
+    "Perküsyon"
+   ],
+   "allowCustom": true
+  },
+  "dans_turleri": {
+   "options": [
+    "Modern/Show",
+    "Latin",
+    "Hip-hop/Sokak",
+    "Halk oyunları",
+    "Oryantal",
+    "Zeybek",
+    "Kına",
+    "Flash mob",
+    "Koreografi"
+   ]
+  },
+  "gosteri_turleri": {
+   "options": [
+    "Akrobasi",
+    "Jonglörlük",
+    "Ateş gösterisi",
+    "LED/Işık show",
+    "Bubble show",
+    "Pandomim",
+    "Stilt walker",
+    "Canlı heykel",
+    "Sirk performansı"
+   ]
+  },
+  "hizmet_turleri": {
+   "options": [
+    "Gelin saçı",
+    "Gelin makyajı",
+    "Kına/nişan makyajı",
+    "Sahne makyajı",
+    "Çekim makyajı",
+    "Model/oyuncu makyajı",
+    "Moda styling",
+    "Özel efekt makyajı"
+   ]
+  },
+  "gorev_turleri": {
+   "options": [
+    "Saha koordinasyonu",
+    "Backstage",
+    "Konuk akışı",
+    "Protokol",
+    "Zaman akışı",
+    "Ekip/gönüllü koordinasyonu",
+    "Prodüksiyon asistanlığı"
+   ]
+  },
+  "konusma_turleri": {
+   "options": [
+    "Keynote",
+    "Motivasyon",
+    "Sektörel",
+    "Girişimcilik",
+    "Teknoloji",
+    "Panelist",
+    "Kurumsal eğitim",
+    "Workshop",
+    "Yaratıcı atölye"
+   ]
+  },
+  "yayin_platformlari": {
+   "options": [
+    "Zoom",
+    "YouTube Live",
+    "Instagram Live",
+    "Microsoft Teams",
+    "Webex",
+    "Twitch",
+    "Özel RTMP"
+   ]
+  },
+  "icerik_turleri": {
+   "options": [
+    "Instagram post/reels",
+    "YouTube video",
+    "TikTok video",
+    "Story serisi",
+    "Canlı yayın",
+    "Ürün tanıtımı",
+    "Etkinlik içeriği",
+    "Marka elçiliği"
+   ]
+  },
+  "drone_tipi": {
+   "options": [
+    "Standart drone",
+    "FPV drone",
+    "Sinema drone",
+    "Mini drone"
+   ]
+  },
+  "lokasyon_tipi": {
+   "options": [
+    "Açık alan",
+    "Kentsel",
+    "Kıyı ve su",
+    "Dağ ve orman"
+   ]
+  }
+ },
+ "QUICK_LABELS": {
+  "turler": "Türler",
+  "deneyim": "Deneyim",
+  "set_suresi": "Set süresi",
+  "ekipman_durumu": "Ekipman",
+  "enstruman": "Enstrüman",
+  "ekip_boyutu": "Ekip",
+  "dans_turleri": "Dans türleri",
+  "gosteri_suresi": "Gösteri süresi",
+  "gosteri_turu": "Gösteri türü",
+  "dil": "Dil",
+  "yas_grubu": "Yaş grubu",
+  "sunuculuk_turu": "Sunuculuk türü",
+  "etkinlik_turleri": "Etkinlik türleri",
+  "oynayabildigi_yas_araligi": "Oynayabildiği yaş aralığı",
+  "boy": "Boy",
+  "calisma_sekli": "Çalışma şekli",
+  "uzmanlik": "Uzmanlık",
+  "teslim_suresi": "Teslim süresi",
+  "drone": "Drone",
+  "hizmet_turu": "Hizmet türü",
+  "ekipman_kapasitesi": "Ekipman kapasitesi",
+  "kurulum_suresi": "Kurulum süresi",
+  "dil_cifti": "Dil çifti",
+  "ceviri_turleri": "Çeviri türleri",
+  "yeminli": "Yeminli",
+  "cizim_turu": "Çizim türü",
+  "gosteri_turleri": "Gösteri türleri",
+  "hizmet_turleri": "Hizmet türleri",
+  "gorev_turleri": "Görev türleri",
+  "konusma_turleri": "Konuşma türleri",
+  "prova": "Prova",
+  "kisi_kapasitesi": "Kişi kapasitesi",
+  "calisma_suresi": "Çalışma süresi",
+  "konusma_suresi": "Konuşma süresi",
+  "hedef_kitle": "Hedef kitle",
+  "yayin_platformlari": "Yayın platformları",
+  "kamera_sayisi": "Kamera sayısı",
+  "etkinlik_formati": "Etkinlik formatı",
+  "icerik_turleri": "İçerik türleri",
+  "teslim_formati": "Teslim formatı",
+  "drone_tipi": "Drone tipi",
+  "lokasyon_tipi": "Lokasyon tipi",
+  "teslim_bicimi": "Teslim biçimi"
+ },
+ "SERVICE_REGION_OPTIONS": [
+  "Yalnızca kendi şehri",
+  "Şehir dışına çıkar",
+  "Türkiye geneli",
+  "Türkiye geneli + çevrimiçi"
+ ],
+ "CALISMA_SEKLI_OPTIONS": [
+  "Freelance",
+  "Ajansa bağlı",
+  "Freelance + Ajansa bağlı"
+ ],
+ "MODULE_REGISTRY": {
+  "repertuar": {
+   "key": "repertuar",
+   "defaultTitle": "Repertuar",
+   "fields": [
+    {
+     "key": "genres",
+     "type": "chips",
+     "label": "Türler / stiller"
+    },
+    {
+     "key": "notes",
+     "type": "text",
+     "label": "Serbest açıklama"
+    }
+   ]
+  },
+  "ekipman": {
+   "key": "ekipman",
+   "defaultTitle": "Ekipman",
+   "fields": [
+    {
+     "key": "items",
+     "type": "bullet_list",
+     "label": "Ekipman listesi"
+    },
+    {
+     "key": "venue_requirements",
+     "type": "text",
+     "label": "Mekan gereksinimleri"
+    }
+   ]
+  },
+  "performans": {
+   "key": "performans",
+   "defaultTitle": "Performans Bilgileri",
+   "fields": [
+    {
+     "key": "details",
+     "type": "key_value",
+     "label": "Anahtar bilgiler"
+    },
+    {
+     "key": "what_to_expect",
+     "type": "text",
+     "label": "Sizi ne bekliyor"
+    },
+    {
+     "key": "setup_logistics",
+     "type": "text",
+     "label": "Kurulum / lojistik notları"
+    }
+   ]
+  },
+  "fiziksel": {
+   "key": "fiziksel",
+   "defaultTitle": "Fiziksel Özellikler",
+   "fields": [
+    {
+     "key": "oynayabildigi_yas_araligi",
+     "type": "age_range",
+     "label": "Oynayabildiği yaş aralığı"
+    },
+    {
+     "key": "height",
+     "type": "physical",
+     "label": "Boy"
+    },
+    {
+     "key": "size",
+     "type": "physical",
+     "label": "Beden"
+    },
+    {
+     "key": "shoe",
+     "type": "physical",
+     "label": "Ayak"
+    },
+    {
+     "key": "hair",
+     "type": "physical",
+     "label": "Saç",
+     "options": [
+      "Siyah",
+      "Kahverengi",
+      "Sarı",
+      "Kızıl",
+      "Gri/Beyaz"
+     ],
+     "allowCustom": true
+    },
+    {
+     "key": "eyes",
+     "type": "physical",
+     "label": "Göz",
+     "options": [
+      "Kahverengi",
+      "Yeşil",
+      "Mavi",
+      "Ela"
+     ]
+    }
+   ],
+   "disclaimer": "Kullanıcı beyanı"
+  },
+  "sosyal_erisim": {
+   "key": "sosyal_erisim",
+   "defaultTitle": "Sosyal Erişim",
+   "fields": [
+    {
+     "key": "platforms",
+     "type": "social_reach",
+     "label": "Platformlar",
+     "note": "Takipçi aralığı — link alanı YOK (SIRA1)"
+    }
+   ]
+  },
+  "diller_belgeler": {
+   "key": "diller_belgeler",
+   "defaultTitle": "Diller & Belgeler",
+   "fields": [
+    {
+     "key": "language_pairs",
+     "type": "language_pairs",
+     "label": "Diller"
+    },
+    {
+     "key": "documents",
+     "type": "documents",
+     "label": "Belgeler"
+    }
+   ],
+   "disclaimer": "Belge yüklendi"
+  },
+  "uzmanlik_alanlari": {
+   "key": "uzmanlik_alanlari",
+   "defaultTitle": "Uzmanlık Alanları",
+   "fields": [
+    {
+     "key": "areas",
+     "type": "chips",
+     "label": "Alanlar"
+    }
+   ]
+  },
+  "calisma_parametreleri": {
+   "key": "calisma_parametreleri",
+   "defaultTitle": "Çalışma Parametreleri",
+   "fields": [
+    {
+     "key": "params",
+     "type": "key_value",
+     "label": "Parametreler"
+    },
+    {
+     "key": "notes",
+     "type": "text",
+     "label": "Not"
+    }
+   ]
+  },
+  "teknik_teslimat": {
+   "key": "teknik_teslimat",
+   "defaultTitle": "Teknik & Teslimat",
+   "fields": [
+    {
+     "key": "delivery",
+     "type": "key_value",
+     "label": "Teslim / kapasite bilgileri"
+    }
+   ]
+  }
+ }
+}

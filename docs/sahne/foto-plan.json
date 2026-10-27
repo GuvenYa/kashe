@@ -1,0 +1,1926 @@
+{
+ "proje_url": "https://ukqhgspaallzjscjodbb.supabase.co",
+ "storage": "https://ukqhgspaallzjscjodbb.supabase.co/storage/v1/object/public",
+ "uretildi": "2026-10-27",
+ "kategoriler": {
+  "fotografci": {
+   "ad": "Fotoğrafçı",
+   "arama": [
+    "wedding photography",
+    "event photographer camera",
+    "wedding couple photo shoot",
+    "corporate event photography"
+   ]
+  },
+  "dj": {
+   "ad": "DJ",
+   "arama": [
+    "DJ performing party",
+    "DJ mixing turntables",
+    "wedding DJ dance floor",
+    "club DJ booth"
+   ]
+  },
+  "muzisyen": {
+   "ad": "Müzisyen",
+   "arama": [
+    "live band wedding",
+    "acoustic guitar performance",
+    "jazz trio concert",
+    "wedding singer band"
+   ]
+  },
+  "videograf": {
+   "ad": "Videograf",
+   "arama": [
+    "videographer filming wedding",
+    "video camera operator event",
+    "cinema camera gimbal",
+    "film crew shooting"
+   ]
+  },
+  "sunucu": {
+   "ad": "Sunucu",
+   "arama": [
+    "master of ceremonies stage microphone",
+    "event host speaking stage",
+    "presenter on stage conference",
+    "award ceremony host"
+   ]
+  },
+  "organizasyon": {
+   "ad": "Organizasyon",
+   "arama": [
+    "wedding reception decoration tables",
+    "event decoration flowers venue",
+    "banquet hall setup",
+    "wedding venue decor"
+   ]
+  },
+  "hostes": {
+   "ad": "Hostes",
+   "arama": [
+    "trade fair booth hostess",
+    "exhibition stand staff",
+    "conference registration desk",
+    "trade show booth"
+   ]
+  },
+  "dansci": {
+   "ad": "Dansçı",
+   "arama": [
+    "dance performance stage",
+    "folk dance group performance",
+    "latin dance show",
+    "dancers performing event"
+   ]
+  },
+  "ses-isik": {
+   "ad": "Ses & Işık",
+   "arama": [
+    "stage lighting concert",
+    "sound system speakers stage",
+    "lighting rig event",
+    "mixing console live sound"
+   ]
+  },
+  "model": {
+   "ad": "Model",
+   "arama": [
+    "fashion runway show",
+    "fashion model catwalk",
+    "fashion photo shoot studio",
+    "runway fashion week"
+   ]
+  },
+  "oyuncu": {
+   "ad": "Oyuncu",
+   "arama": [
+    "theatre actors stage play",
+    "film set actors shooting",
+    "theater performance stage",
+    "drama stage performance"
+   ]
+  },
+  "sac-makyaj-styling": {
+   "ad": "Saç & Makyaj & Styling",
+   "arama": [
+    "bridal makeup artist",
+    "makeup artist backstage",
+    "hair stylist salon bride",
+    "wedding hair styling"
+   ]
+  },
+  "illuzyonist": {
+   "ad": "İllüzyonist",
+   "arama": [
+    "magician performing stage",
+    "magic show performance",
+    "close-up magic cards",
+    "illusionist show"
+   ]
+  },
+  "palyaco": {
+   "ad": "Palyaço",
+   "arama": [
+    "clown children party",
+    "face painting children festival",
+    "balloon animals children",
+    "children entertainer party"
+   ]
+  },
+  "tercuman": {
+   "ad": "Tercüman",
+   "arama": [
+    "interpreter booth conference",
+    "simultaneous interpretation booth",
+    "conference interpreter headset",
+    "translation booth"
+   ]
+  },
+  "stand-up-komedyen": {
+   "ad": "Stand-up Komedyen",
+   "arama": [
+    "stand-up comedian microphone stage",
+    "comedy club stage performer",
+    "comedian performing",
+    "stand up comedy show"
+   ]
+  },
+  "karikaturist": {
+   "ad": "Karikatürist",
+   "arama": [
+    "caricature artist drawing event",
+    "caricature drawing",
+    "live sketch artist portrait",
+    "street caricaturist"
+   ]
+  },
+  "akrobat": {
+   "ad": "Akrobat",
+   "arama": [
+    "acrobat performance stage",
+    "aerial acrobat silk",
+    "fire show performer",
+    "circus acrobatics show"
+   ]
+  },
+  "etkinlik-koordinatoru": {
+   "ad": "Etkinlik Koordinatörü",
+   "arama": [
+    "event coordinator backstage headset",
+    "event staff backstage",
+    "stage manager event",
+    "production crew event"
+   ]
+  },
+  "konusmaci": {
+   "ad": "Konuşmacı",
+   "arama": [
+    "keynote speaker conference stage",
+    "conference speaker audience",
+    "speaker presenting slides",
+    "panel discussion conference"
+   ]
+  },
+  "canli-yayin": {
+   "ad": "Canlı Yayın",
+   "arama": [
+    "live streaming camera production",
+    "broadcast camera crew event",
+    "video switcher control room",
+    "live stream studio setup"
+   ]
+  },
+  "influencer": {
+   "ad": "Influencer",
+   "arama": [
+    "content creator smartphone filming",
+    "influencer vlogging camera",
+    "social media creator ring light",
+    "vlogger filming"
+   ]
+  },
+  "drone-pilotu": {
+   "ad": "Drone Pilotu",
+   "arama": [
+    "drone pilot flying quadcopter",
+    "aerial drone photography",
+    "drone operator controller",
+    "quadcopter flight outdoor"
+   ]
+  }
+ },
+ "kullanicilar": [
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010001",
+   "tip": "pro",
+   "ad": "Eda Bozkurt",
+   "harf": "EB",
+   "renk": "#5B2A86",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010002",
+   "tip": "pro",
+   "ad": "Berk Polat",
+   "harf": "BP",
+   "renk": "#0F6E56",
+   "kat": "fotografci",
+   "kat2": "drone-pilotu",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010003",
+   "tip": "pro",
+   "ad": "Kerem Öz",
+   "harf": "KÖ",
+   "renk": "#B4532A",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010004",
+   "tip": "pro",
+   "ad": "Burcu Ateş",
+   "harf": "BA",
+   "renk": "#8A2D3B",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010005",
+   "tip": "pro",
+   "ad": "Tuğçe Duman",
+   "harf": "TD",
+   "renk": "#2F5D8A",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010006",
+   "tip": "pro",
+   "ad": "Büşra Sezer",
+   "harf": "BS",
+   "renk": "#6B4F1D",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010007",
+   "tip": "pro",
+   "ad": "Tuba Bozkurt",
+   "harf": "TB",
+   "renk": "#3C6E47",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010008",
+   "tip": "pro",
+   "ad": "Bahar Yalçın",
+   "harf": "BY",
+   "renk": "#1F3A5F",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010009",
+   "tip": "pro",
+   "ad": "Oğuz Özdemir",
+   "harf": "OÖ",
+   "renk": "#5B2A86",
+   "kat": "fotografci",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010010",
+   "tip": "pro",
+   "ad": "Deniz Ünal",
+   "harf": "DÜ",
+   "renk": "#0F6E56",
+   "kat": "fotografci",
+   "kat2": "videograf",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010011",
+   "tip": "pro",
+   "ad": "Yusuf Duman",
+   "harf": "YD",
+   "renk": "#B4532A",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010012",
+   "tip": "pro",
+   "ad": "Merve Avcı",
+   "harf": "MA",
+   "renk": "#8A2D3B",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010013",
+   "tip": "pro",
+   "ad": "Naz Güler",
+   "harf": "NG",
+   "renk": "#2F5D8A",
+   "kat": "dj",
+   "kat2": "muzisyen",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010014",
+   "tip": "pro",
+   "ad": "Deniz Avcı",
+   "harf": "DA",
+   "renk": "#6B4F1D",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010015",
+   "tip": "pro",
+   "ad": "Emre Güler",
+   "harf": "EG",
+   "renk": "#3C6E47",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010016",
+   "tip": "pro",
+   "ad": "Cem Kılıç",
+   "harf": "CK",
+   "renk": "#1F3A5F",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010017",
+   "tip": "pro",
+   "ad": "Melih Başak",
+   "harf": "MB",
+   "renk": "#5B2A86",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010018",
+   "tip": "pro",
+   "ad": "Ece Turan",
+   "harf": "ET",
+   "renk": "#0F6E56",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010019",
+   "tip": "pro",
+   "ad": "Utku Duman",
+   "harf": "UD",
+   "renk": "#B4532A",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010020",
+   "tip": "pro",
+   "ad": "Zehra Şahin",
+   "harf": "ZŞ",
+   "renk": "#8A2D3B",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010021",
+   "tip": "pro",
+   "ad": "Esra Çelik",
+   "harf": "EÇ",
+   "renk": "#2F5D8A",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010022",
+   "tip": "pro",
+   "ad": "Barış Taş",
+   "harf": "BT",
+   "renk": "#6B4F1D",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010023",
+   "tip": "pro",
+   "ad": "Berk Sarı",
+   "harf": "BS",
+   "renk": "#3C6E47",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010024",
+   "tip": "pro",
+   "ad": "Leyla Polat",
+   "harf": "LP",
+   "renk": "#1F3A5F",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010025",
+   "tip": "pro",
+   "ad": "Berk Kılıç",
+   "harf": "BK",
+   "renk": "#5B2A86",
+   "kat": "muzisyen",
+   "kat2": "dj",
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010026",
+   "tip": "pro",
+   "ad": "Fatih Koç",
+   "harf": "FK",
+   "renk": "#0F6E56",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010027",
+   "tip": "pro",
+   "ad": "Gül Sezer",
+   "harf": "GS",
+   "renk": "#B4532A",
+   "kat": "muzisyen",
+   "kat2": "dj",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010028",
+   "tip": "pro",
+   "ad": "Umut Şahin",
+   "harf": "UŞ",
+   "renk": "#8A2D3B",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010029",
+   "tip": "pro",
+   "ad": "Mehmet Karaca",
+   "harf": "MK",
+   "renk": "#2F5D8A",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010030",
+   "tip": "pro",
+   "ad": "Deniz Yalçın",
+   "harf": "DY",
+   "renk": "#6B4F1D",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010031",
+   "tip": "pro",
+   "ad": "Can Uysal",
+   "harf": "CU",
+   "renk": "#3C6E47",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010032",
+   "tip": "pro",
+   "ad": "Yiğit Karaca",
+   "harf": "YK",
+   "renk": "#1F3A5F",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010033",
+   "tip": "pro",
+   "ad": "Tarık Çakır",
+   "harf": "TÇ",
+   "renk": "#5B2A86",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010034",
+   "tip": "pro",
+   "ad": "Efe Kaya",
+   "harf": "EK",
+   "renk": "#0F6E56",
+   "kat": "videograf",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010035",
+   "tip": "pro",
+   "ad": "Melih Aydın",
+   "harf": "MA",
+   "renk": "#B4532A",
+   "kat": "sunucu",
+   "kat2": "stand-up-komedyen",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010036",
+   "tip": "pro",
+   "ad": "Naz Sarı",
+   "harf": "NS",
+   "renk": "#8A2D3B",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010037",
+   "tip": "pro",
+   "ad": "Hazal Güneş",
+   "harf": "HG",
+   "renk": "#2F5D8A",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010038",
+   "tip": "pro",
+   "ad": "Utku Erdoğan",
+   "harf": "UE",
+   "renk": "#6B4F1D",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010039",
+   "tip": "pro",
+   "ad": "Umut Şimşek",
+   "harf": "UŞ",
+   "renk": "#3C6E47",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010040",
+   "tip": "pro",
+   "ad": "Çağrı Keskin",
+   "harf": "ÇK",
+   "renk": "#1F3A5F",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010041",
+   "tip": "pro",
+   "ad": "Burak Keskin",
+   "harf": "BK",
+   "renk": "#5B2A86",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010042",
+   "tip": "pro",
+   "ad": "Elif Demir",
+   "harf": "ED",
+   "renk": "#0F6E56",
+   "kat": "organizasyon",
+   "kat2": "etkinlik-koordinatoru",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010043",
+   "tip": "pro",
+   "ad": "Taner Başak",
+   "harf": "TB",
+   "renk": "#B4532A",
+   "kat": "organizasyon",
+   "kat2": "etkinlik-koordinatoru",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010044",
+   "tip": "pro",
+   "ad": "Görkem Avcı",
+   "harf": "GA",
+   "renk": "#8A2D3B",
+   "kat": "organizasyon",
+   "kat2": "etkinlik-koordinatoru",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010045",
+   "tip": "pro",
+   "ad": "Naz Taş",
+   "harf": "NT",
+   "renk": "#2F5D8A",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010046",
+   "tip": "pro",
+   "ad": "Feride Turan",
+   "harf": "FT",
+   "renk": "#6B4F1D",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010047",
+   "tip": "pro",
+   "ad": "Eda Sarı",
+   "harf": "ES",
+   "renk": "#3C6E47",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010048",
+   "tip": "pro",
+   "ad": "Selin Karaca",
+   "harf": "SK",
+   "renk": "#1F3A5F",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010049",
+   "tip": "pro",
+   "ad": "Eda Tekin",
+   "harf": "ET",
+   "renk": "#5B2A86",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010050",
+   "tip": "pro",
+   "ad": "Sevgi Öz",
+   "harf": "SÖ",
+   "renk": "#0F6E56",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010051",
+   "tip": "pro",
+   "ad": "Deniz Arslan",
+   "harf": "DA",
+   "renk": "#B4532A",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010052",
+   "tip": "pro",
+   "ad": "Gül Kaya",
+   "harf": "GK",
+   "renk": "#8A2D3B",
+   "kat": "hostes",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010053",
+   "tip": "pro",
+   "ad": "Cansu Yılmaz",
+   "harf": "CY",
+   "renk": "#2F5D8A",
+   "kat": "dansci",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010054",
+   "tip": "pro",
+   "ad": "İrem Kurt",
+   "harf": "İK",
+   "renk": "#6B4F1D",
+   "kat": "dansci",
+   "kat2": "akrobat",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010055",
+   "tip": "pro",
+   "ad": "İlker Karaca",
+   "harf": "İK",
+   "renk": "#3C6E47",
+   "kat": "dansci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010056",
+   "tip": "pro",
+   "ad": "Hakan Ateş",
+   "harf": "HA",
+   "renk": "#1F3A5F",
+   "kat": "dansci",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010057",
+   "tip": "pro",
+   "ad": "Melih Arslan",
+   "harf": "MA",
+   "renk": "#5B2A86",
+   "kat": "dansci",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010058",
+   "tip": "pro",
+   "ad": "Arda Turan",
+   "harf": "AT",
+   "renk": "#0F6E56",
+   "kat": "dansci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010059",
+   "tip": "pro",
+   "ad": "Eren Acar",
+   "harf": "EA",
+   "renk": "#B4532A",
+   "kat": "ses-isik",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010060",
+   "tip": "pro",
+   "ad": "Efe Uysal",
+   "harf": "EU",
+   "renk": "#8A2D3B",
+   "kat": "ses-isik",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010061",
+   "tip": "pro",
+   "ad": "Umut Aktaş",
+   "harf": "UA",
+   "renk": "#2F5D8A",
+   "kat": "ses-isik",
+   "kat2": "canli-yayin",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010062",
+   "tip": "pro",
+   "ad": "Levent Avcı",
+   "harf": "LA",
+   "renk": "#6B4F1D",
+   "kat": "ses-isik",
+   "kat2": "canli-yayin",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010063",
+   "tip": "pro",
+   "ad": "Yavuz Ateş",
+   "harf": "YA",
+   "renk": "#3C6E47",
+   "kat": "ses-isik",
+   "kat2": "canli-yayin",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010064",
+   "tip": "pro",
+   "ad": "Eren Aksoy",
+   "harf": "EA",
+   "renk": "#1F3A5F",
+   "kat": "model",
+   "kat2": "oyuncu",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010065",
+   "tip": "pro",
+   "ad": "Kaan Aktaş",
+   "harf": "KA",
+   "renk": "#5B2A86",
+   "kat": "model",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010066",
+   "tip": "pro",
+   "ad": "Hakan Güler",
+   "harf": "HG",
+   "renk": "#0F6E56",
+   "kat": "model",
+   "kat2": "oyuncu",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010067",
+   "tip": "pro",
+   "ad": "Bahar Öz",
+   "harf": "BÖ",
+   "renk": "#B4532A",
+   "kat": "model",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010068",
+   "tip": "pro",
+   "ad": "Elif Aksoy",
+   "harf": "EA",
+   "renk": "#8A2D3B",
+   "kat": "model",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010069",
+   "tip": "pro",
+   "ad": "Efe Turan",
+   "harf": "ET",
+   "renk": "#2F5D8A",
+   "kat": "oyuncu",
+   "kat2": "model",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010070",
+   "tip": "pro",
+   "ad": "Cem Yılmaz",
+   "harf": "CY",
+   "renk": "#6B4F1D",
+   "kat": "oyuncu",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010071",
+   "tip": "pro",
+   "ad": "Enes Özdemir",
+   "harf": "EÖ",
+   "renk": "#3C6E47",
+   "kat": "oyuncu",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010072",
+   "tip": "pro",
+   "ad": "Zeynep Güneş",
+   "harf": "ZG",
+   "renk": "#1F3A5F",
+   "kat": "oyuncu",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010073",
+   "tip": "pro",
+   "ad": "Sevgi Tekin",
+   "harf": "ST",
+   "renk": "#5B2A86",
+   "kat": "oyuncu",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010074",
+   "tip": "pro",
+   "ad": "Ceren Taş",
+   "harf": "CT",
+   "renk": "#0F6E56",
+   "kat": "sac-makyaj-styling",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010075",
+   "tip": "pro",
+   "ad": "Cansu Polat",
+   "harf": "CP",
+   "renk": "#B4532A",
+   "kat": "sac-makyaj-styling",
+   "kat2": "model",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010076",
+   "tip": "pro",
+   "ad": "İrem Aydın",
+   "harf": "İA",
+   "renk": "#8A2D3B",
+   "kat": "sac-makyaj-styling",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010077",
+   "tip": "pro",
+   "ad": "Murat Aslan",
+   "harf": "MA",
+   "renk": "#2F5D8A",
+   "kat": "sac-makyaj-styling",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010078",
+   "tip": "pro",
+   "ad": "Zehra Şahin",
+   "harf": "ZŞ",
+   "renk": "#6B4F1D",
+   "kat": "sac-makyaj-styling",
+   "kat2": "model",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010079",
+   "tip": "pro",
+   "ad": "Doruk Tekin",
+   "harf": "DT",
+   "renk": "#3C6E47",
+   "kat": "illuzyonist",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010080",
+   "tip": "pro",
+   "ad": "Can Aydın",
+   "harf": "CA",
+   "renk": "#1F3A5F",
+   "kat": "illuzyonist",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010081",
+   "tip": "pro",
+   "ad": "Melis Öztürk",
+   "harf": "MÖ",
+   "renk": "#5B2A86",
+   "kat": "illuzyonist",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010082",
+   "tip": "pro",
+   "ad": "Mert Aydın",
+   "harf": "MA",
+   "renk": "#0F6E56",
+   "kat": "illuzyonist",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010083",
+   "tip": "pro",
+   "ad": "Ece Erdoğan",
+   "harf": "EE",
+   "renk": "#B4532A",
+   "kat": "palyaco",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010084",
+   "tip": "pro",
+   "ad": "Selin Ünal",
+   "harf": "SÜ",
+   "renk": "#8A2D3B",
+   "kat": "palyaco",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010085",
+   "tip": "pro",
+   "ad": "Halil Aydın",
+   "harf": "HA",
+   "renk": "#2F5D8A",
+   "kat": "palyaco",
+   "kat2": "illuzyonist",
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010086",
+   "tip": "pro",
+   "ad": "Gökhan Çakır",
+   "harf": "GÇ",
+   "renk": "#6B4F1D",
+   "kat": "palyaco",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010087",
+   "tip": "pro",
+   "ad": "Esra Tekin",
+   "harf": "ET",
+   "renk": "#3C6E47",
+   "kat": "tercuman",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010088",
+   "tip": "pro",
+   "ad": "Esra Korkmaz",
+   "harf": "EK",
+   "renk": "#1F3A5F",
+   "kat": "tercuman",
+   "kat2": "sunucu",
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010089",
+   "tip": "pro",
+   "ad": "Burcu Özkan",
+   "harf": "BÖ",
+   "renk": "#5B2A86",
+   "kat": "tercuman",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010090",
+   "tip": "pro",
+   "ad": "Naz Özdemir",
+   "harf": "NÖ",
+   "renk": "#0F6E56",
+   "kat": "tercuman",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010091",
+   "tip": "pro",
+   "ad": "Onur Acar",
+   "harf": "OA",
+   "renk": "#B4532A",
+   "kat": "stand-up-komedyen",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010092",
+   "tip": "pro",
+   "ad": "Taner Turan",
+   "harf": "TT",
+   "renk": "#8A2D3B",
+   "kat": "stand-up-komedyen",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010093",
+   "tip": "pro",
+   "ad": "Melis Çelik",
+   "harf": "MÇ",
+   "renk": "#2F5D8A",
+   "kat": "stand-up-komedyen",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010094",
+   "tip": "pro",
+   "ad": "Görkem Ünal",
+   "harf": "GÜ",
+   "renk": "#6B4F1D",
+   "kat": "stand-up-komedyen",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010095",
+   "tip": "pro",
+   "ad": "Melike Aksoy",
+   "harf": "MA",
+   "renk": "#3C6E47",
+   "kat": "karikaturist",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010096",
+   "tip": "pro",
+   "ad": "Koray Tekin",
+   "harf": "KT",
+   "renk": "#1F3A5F",
+   "kat": "karikaturist",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010097",
+   "tip": "pro",
+   "ad": "Mert Bulut",
+   "harf": "MB",
+   "renk": "#5B2A86",
+   "kat": "karikaturist",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010098",
+   "tip": "pro",
+   "ad": "Barış Arslan",
+   "harf": "BA",
+   "renk": "#0F6E56",
+   "kat": "karikaturist",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010099",
+   "tip": "pro",
+   "ad": "Pınar Sezer",
+   "harf": "PS",
+   "renk": "#B4532A",
+   "kat": "akrobat",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010100",
+   "tip": "pro",
+   "ad": "Tolga Doğan",
+   "harf": "TD",
+   "renk": "#8A2D3B",
+   "kat": "akrobat",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010101",
+   "tip": "pro",
+   "ad": "Merve Toprak",
+   "harf": "MT",
+   "renk": "#2F5D8A",
+   "kat": "akrobat",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010102",
+   "tip": "pro",
+   "ad": "Zeynep Çakır",
+   "harf": "ZÇ",
+   "renk": "#6B4F1D",
+   "kat": "akrobat",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010103",
+   "tip": "pro",
+   "ad": "Orhan Yalçın",
+   "harf": "OY",
+   "renk": "#3C6E47",
+   "kat": "etkinlik-koordinatoru",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010104",
+   "tip": "pro",
+   "ad": "Sıla Uysal",
+   "harf": "SU",
+   "renk": "#1F3A5F",
+   "kat": "etkinlik-koordinatoru",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010105",
+   "tip": "pro",
+   "ad": "Ege Öztürk",
+   "harf": "EÖ",
+   "renk": "#5B2A86",
+   "kat": "etkinlik-koordinatoru",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010106",
+   "tip": "pro",
+   "ad": "Zehra Yılmaz",
+   "harf": "ZY",
+   "renk": "#0F6E56",
+   "kat": "etkinlik-koordinatoru",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010107",
+   "tip": "pro",
+   "ad": "İpek Erol",
+   "harf": "İE",
+   "renk": "#B4532A",
+   "kat": "konusmaci",
+   "kat2": null,
+   "adet": 5
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010108",
+   "tip": "pro",
+   "ad": "Volkan Başak",
+   "harf": "VB",
+   "renk": "#8A2D3B",
+   "kat": "konusmaci",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010109",
+   "tip": "pro",
+   "ad": "Furkan Yıldız",
+   "harf": "FY",
+   "renk": "#2F5D8A",
+   "kat": "konusmaci",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010110",
+   "tip": "pro",
+   "ad": "Sinan Polat",
+   "harf": "SP",
+   "renk": "#6B4F1D",
+   "kat": "konusmaci",
+   "kat2": "sunucu",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010111",
+   "tip": "pro",
+   "ad": "Zehra Şimşek",
+   "harf": "ZŞ",
+   "renk": "#3C6E47",
+   "kat": "canli-yayin",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010112",
+   "tip": "pro",
+   "ad": "Mert Sarı",
+   "harf": "MS",
+   "renk": "#1F3A5F",
+   "kat": "canli-yayin",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010113",
+   "tip": "pro",
+   "ad": "Mert Aslan",
+   "harf": "MA",
+   "renk": "#5B2A86",
+   "kat": "canli-yayin",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010114",
+   "tip": "pro",
+   "ad": "Cemre Demir",
+   "harf": "CD",
+   "renk": "#0F6E56",
+   "kat": "canli-yayin",
+   "kat2": "videograf",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010115",
+   "tip": "pro",
+   "ad": "Özge Doğan",
+   "harf": "ÖD",
+   "renk": "#B4532A",
+   "kat": "influencer",
+   "kat2": "sunucu",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010116",
+   "tip": "pro",
+   "ad": "Eren Aksoy",
+   "harf": "EA",
+   "renk": "#8A2D3B",
+   "kat": "influencer",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010117",
+   "tip": "pro",
+   "ad": "Damla Demir",
+   "harf": "DD",
+   "renk": "#2F5D8A",
+   "kat": "influencer",
+   "kat2": "sunucu",
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010118",
+   "tip": "pro",
+   "ad": "Leyla Erdoğan",
+   "harf": "LE",
+   "renk": "#6B4F1D",
+   "kat": "influencer",
+   "kat2": "sunucu",
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010119",
+   "tip": "pro",
+   "ad": "İlker Sezer",
+   "harf": "İS",
+   "renk": "#3C6E47",
+   "kat": "drone-pilotu",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010120",
+   "tip": "pro",
+   "ad": "Merve Yalçın",
+   "harf": "MY",
+   "renk": "#1F3A5F",
+   "kat": "drone-pilotu",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010121",
+   "tip": "pro",
+   "ad": "Fatih Keskin",
+   "harf": "FK",
+   "renk": "#5B2A86",
+   "kat": "drone-pilotu",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000010122",
+   "tip": "pro",
+   "ad": "Selim Doğan",
+   "harf": "SD",
+   "renk": "#0F6E56",
+   "kat": "drone-pilotu",
+   "kat2": null,
+   "adet": 4
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020001",
+   "tip": "ajans",
+   "ad": "Nova Etkinlik",
+   "harf": "NE",
+   "renk": "#5B2A86",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020002",
+   "tip": "ajans",
+   "ad": "Lumen Prodüksiyon",
+   "harf": "LP",
+   "renk": "#0F6E56",
+   "kat": "ses-isik",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020003",
+   "tip": "ajans",
+   "ad": "Atlas Organizasyon",
+   "harf": "AO",
+   "renk": "#B4532A",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020004",
+   "tip": "ajans",
+   "ad": "Kuzey Yıldızı Events",
+   "harf": "KE",
+   "renk": "#8A2D3B",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020005",
+   "tip": "ajans",
+   "ad": "Mavi Sahne",
+   "harf": "MS",
+   "renk": "#2F5D8A",
+   "kat": "muzisyen",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020006",
+   "tip": "ajans",
+   "ad": "Artı Bir Ajans",
+   "harf": "AA",
+   "renk": "#6B4F1D",
+   "kat": "sunucu",
+   "kat2": null,
+   "adet": 7
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020007",
+   "tip": "ajans",
+   "ad": "Ritim Müzik Ajansı",
+   "harf": "RA",
+   "renk": "#3C6E47",
+   "kat": "dj",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020008",
+   "tip": "ajans",
+   "ad": "Vizyon Cast Ajansı",
+   "harf": "VA",
+   "renk": "#1F3A5F",
+   "kat": "model",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020009",
+   "tip": "ajans",
+   "ad": "Pusula Etkinlik",
+   "harf": "PE",
+   "renk": "#5B2A86",
+   "kat": "etkinlik-koordinatoru",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020010",
+   "tip": "ajans",
+   "ad": "Ekim Kreatif",
+   "harf": "EK",
+   "renk": "#0F6E56",
+   "kat": "influencer",
+   "kat2": null,
+   "adet": 8
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020011",
+   "tip": "ajans",
+   "ad": "Beyaz Güvercin Organizasyon",
+   "harf": "BO",
+   "renk": "#B4532A",
+   "kat": "organizasyon",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000020012",
+   "tip": "ajans",
+   "ad": "Zirve Teknik Prodüksiyon",
+   "harf": "ZP",
+   "renk": "#8A2D3B",
+   "kat": "ses-isik",
+   "kat2": null,
+   "adet": 6
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030001",
+   "tip": "kurum",
+   "ad": "Teknopark Yazılım A.Ş.",
+   "harf": "TA",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030002",
+   "tip": "kurum",
+   "ad": "Marmara Perakende Grubu",
+   "harf": "MG",
+   "renk": "#0F6E56",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030003",
+   "tip": "kurum",
+   "ad": "Anadolu İlaç",
+   "harf": "Aİ",
+   "renk": "#B4532A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030004",
+   "tip": "kurum",
+   "ad": "Ege Otomotiv",
+   "harf": "EO",
+   "renk": "#8A2D3B",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030005",
+   "tip": "kurum",
+   "ad": "Boğaziçi Finans",
+   "harf": "BF",
+   "renk": "#2F5D8A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030006",
+   "tip": "kurum",
+   "ad": "Akdeniz Gıda",
+   "harf": "AG",
+   "renk": "#6B4F1D",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030007",
+   "tip": "kurum",
+   "ad": "Başkent Eğitim Kurumları",
+   "harf": "BK",
+   "renk": "#3C6E47",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000030008",
+   "tip": "kurum",
+   "ad": "Mavi Deniz Turizm",
+   "harf": "MT",
+   "renk": "#1F3A5F",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031001",
+   "tip": "kurum_uye",
+   "ad": "Murat Öz",
+   "harf": "MÖ",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031002",
+   "tip": "kurum_uye",
+   "ad": "Melike Tekin",
+   "harf": "MT",
+   "renk": "#0F6E56",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031003",
+   "tip": "kurum_uye",
+   "ad": "Deniz Erol",
+   "harf": "DE",
+   "renk": "#B4532A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031004",
+   "tip": "kurum_uye",
+   "ad": "Dilara Kaya",
+   "harf": "DK",
+   "renk": "#8A2D3B",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031005",
+   "tip": "kurum_uye",
+   "ad": "Deniz Kaplan",
+   "harf": "DK",
+   "renk": "#2F5D8A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031006",
+   "tip": "kurum_uye",
+   "ad": "Büşra Şahin",
+   "harf": "BŞ",
+   "renk": "#6B4F1D",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031007",
+   "tip": "kurum_uye",
+   "ad": "Gamze Kara",
+   "harf": "GK",
+   "renk": "#3C6E47",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000031008",
+   "tip": "kurum_uye",
+   "ad": "Seda Şimşek",
+   "harf": "SŞ",
+   "renk": "#1F3A5F",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040001",
+   "tip": "musteri",
+   "ad": "Cansu Ünal",
+   "harf": "CÜ",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040002",
+   "tip": "musteri",
+   "ad": "Kaan Erol",
+   "harf": "KE",
+   "renk": "#0F6E56",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040003",
+   "tip": "musteri",
+   "ad": "İlker Arslan",
+   "harf": "İA",
+   "renk": "#B4532A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040004",
+   "tip": "musteri",
+   "ad": "Beren Kara",
+   "harf": "BK",
+   "renk": "#8A2D3B",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040005",
+   "tip": "musteri",
+   "ad": "Efe Kılıç",
+   "harf": "EK",
+   "renk": "#2F5D8A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040006",
+   "tip": "musteri",
+   "ad": "Melike Şimşek",
+   "harf": "MŞ",
+   "renk": "#6B4F1D",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040007",
+   "tip": "musteri",
+   "ad": "Cem Çakır",
+   "harf": "CÇ",
+   "renk": "#3C6E47",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040008",
+   "tip": "musteri",
+   "ad": "İrem Güneş",
+   "harf": "İG",
+   "renk": "#1F3A5F",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040009",
+   "tip": "musteri",
+   "ad": "Bahar Keskin",
+   "harf": "BK",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040010",
+   "tip": "musteri",
+   "ad": "Sinan Özdemir",
+   "harf": "SÖ",
+   "renk": "#0F6E56",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040011",
+   "tip": "musteri",
+   "ad": "Gökhan Demir",
+   "harf": "GD",
+   "renk": "#B4532A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040012",
+   "tip": "musteri",
+   "ad": "Yiğit Soylu",
+   "harf": "YS",
+   "renk": "#8A2D3B",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040013",
+   "tip": "musteri",
+   "ad": "Berk Polat",
+   "harf": "BP",
+   "renk": "#2F5D8A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040014",
+   "tip": "musteri",
+   "ad": "Caner Ateş",
+   "harf": "CA",
+   "renk": "#6B4F1D",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040015",
+   "tip": "musteri",
+   "ad": "Derya Çelik",
+   "harf": "DÇ",
+   "renk": "#3C6E47",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040016",
+   "tip": "musteri",
+   "ad": "Melike Aktaş",
+   "harf": "MA",
+   "renk": "#1F3A5F",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040017",
+   "tip": "musteri",
+   "ad": "Melis Erdoğan",
+   "harf": "ME",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040018",
+   "tip": "musteri",
+   "ad": "Selin Şahin",
+   "harf": "SŞ",
+   "renk": "#0F6E56",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040019",
+   "tip": "musteri",
+   "ad": "Batuhan Kılıç",
+   "harf": "BK",
+   "renk": "#B4532A",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000040020",
+   "tip": "musteri",
+   "ad": "Burak Polat",
+   "harf": "BP",
+   "renk": "#8A2D3B",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  },
+  {
+   "id": "5a4e0000-0000-4000-8000-000000090001",
+   "tip": "admin",
+   "ad": "Kashe Yönetim",
+   "harf": "KY",
+   "renk": "#5B2A86",
+   "kat": null,
+   "kat2": null,
+   "adet": 0
+  }
+ ]
+}

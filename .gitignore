@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Cowork/Claude masaustu uygulamasinin teslim klasoru (repoya girmez)
 Claude outputs/
+
+# Sahne acik lisansli fotograflar (yerelde indirilir; lisans kaydi repoda kalir)
+docs/sahne/foto/*
+!docs/sahne/foto/lisans.json

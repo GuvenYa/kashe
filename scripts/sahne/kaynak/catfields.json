@@ -1,0 +1,853 @@
+{
+ "fotografci": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "teslim_suresi",
+   "ekipman_durumu"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Çekim Alanları"
+   },
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "teknik_teslimat"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Tam çekim ekipmanı ile gelir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "dj": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "set_suresi",
+   "ekipman_durumu"
+  ],
+  "modules": [
+   {
+    "key": "repertuar"
+   },
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "performans",
+    "title": "Sahne Bilgileri"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ehliyet",
+    "label": "Ehliyet",
+    "description": "Kendi ekipmanını taşır"
+   },
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Kendi ses sistemiyle gelebilir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "muzisyen": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "enstruman",
+   "ekip_boyutu"
+  ],
+  "modules": [
+   {
+    "key": "repertuar"
+   },
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "performans",
+    "title": "Sahne Bilgileri"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ehliyet",
+    "label": "Ehliyet",
+    "description": "Enstrüman/ekipman ulaşımı"
+   },
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Kendi enstrüman/ekipmanı ile"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "sunucu": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "sunuculuk_turu"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Sunum Bilgileri"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "hostes": {
+  "archetype": "cast",
+  "quickInfo": [],
+  "modules": [
+   {
+    "key": "fiziksel"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ulasim",
+    "label": "Ulaşım",
+    "description": "Etkinlik lokasyonlarına ulaşım"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "videograf": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "teslim_suresi",
+   "ekipman_durumu"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Çekim Alanları"
+   },
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "teknik_teslimat"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "drone",
+    "label": "Drone",
+    "description": "Drone çekimi yapabilir"
+   },
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Tam video ekipmanı ile gelir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "oyuncu": {
+  "archetype": "cast",
+  "quickInfo": [],
+  "modules": [
+   {
+    "key": "fiziksel"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ulasim",
+    "label": "Ulaşım",
+    "description": "Set/prova lokasyonlarına ulaşım"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "model": {
+  "archetype": "cast",
+  "quickInfo": [],
+  "modules": [
+   {
+    "key": "fiziksel"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Çalışma Alanları"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ulasim",
+    "label": "Ulaşım",
+    "description": "Set lokasyonlarına ulaşım"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels",
+   "labelOverrides"
+  ]
+ },
+ "illuzyonist": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "gosteri_turu",
+   "gosteri_suresi",
+   "yas_grubu"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Gösteri Bilgileri"
+   },
+   {
+    "key": "ekipman"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Sahne düzenini kendi kurar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "palyaco": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "gosteri_turu",
+   "gosteri_suresi",
+   "yas_grubu"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Gösteri Bilgileri"
+   }
+  ],
+  "logistics": [],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "organizasyon": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "hizmet_turu",
+   "ekip_boyutu"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Hizmet Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "ses-isik": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "hizmet_turu",
+   "ekipman_kapasitesi",
+   "kurulum_suresi"
+  ],
+  "modules": [
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "teknik_teslimat",
+    "title": "Teknik Kapasite"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kurulum_ekibi",
+    "label": "Kurulum ekibi",
+    "description": "Kurulum/söküm ekibiyle gelir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "dansci": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "dans_turleri",
+   "ekip_boyutu",
+   "gosteri_suresi"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Gösteri Bilgileri"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kostum",
+    "label": "Kostüm",
+    "description": "Kendi kostümüyle gelir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "tercuman": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "ceviri_turleri",
+   "yeminli"
+  ],
+  "modules": [
+   {
+    "key": "diller_belgeler"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Çeviri Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "cevrimici",
+    "label": "Çevrimiçi",
+    "description": "Uzaktan/çevrimiçi çeviri yapar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "labelOverrides",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "stand-up-komedyen": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "gosteri_turu",
+   "gosteri_suresi"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Gösteri Bilgileri"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   },
+   {
+    "key": "sosyal_erisim"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kurumsal_dil",
+    "label": "Kurumsal dile uygun",
+    "description": "Kurum içi etkinliğe uygun, temiz içerik sunar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "karikaturist": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "cizim_turu",
+   "teslim_suresi"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Çizim Alanları"
+   },
+   {
+    "key": "performans",
+    "title": "Etkinlik / Canlı Çizim Bilgileri"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "canli_cizim",
+    "label": "Canlı çizim",
+    "description": "Etkinlikte canlı çizim yapar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels",
+   "portfolioGrid"
+  ]
+ },
+ "akrobat": {
+  "archetype": "sahne",
+  "quickInfo": [
+   "gosteri_turleri",
+   "gosteri_suresi",
+   "yas_grubu"
+  ],
+  "modules": [
+   {
+    "key": "performans",
+    "title": "Gösteri Bilgileri"
+   },
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "dis_mekan",
+    "label": "Açık hava",
+    "description": "Açık havada performans verebilir"
+   },
+   {
+    "key": "kostum",
+    "label": "Kostüm",
+    "description": "Kendi kostümüyle gelir"
+   },
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Sahne malzemesini kendi getirir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "sac-makyaj-styling": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "hizmet_turleri",
+   "prova",
+   "kisi_kapasitesi"
+  ],
+  "modules": [
+   {
+    "key": "ekipman",
+    "title": "Ürün & Kit"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "mekanda_hizmet",
+    "label": "Mekanda hizmet",
+    "description": "Gelin evi, otel veya sette hizmet verir"
+   },
+   {
+    "key": "kendi_urunleri",
+    "label": "Kendi ürünleri",
+    "description": "Kendi ürün ve kitiyle gelir"
+   },
+   {
+    "key": "ekiple_gelir",
+    "label": "Ekiple gelir",
+    "description": "Kalabalık hazırlıkta ekiple çalışır"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "etkinlik-koordinatoru": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "gorev_turleri",
+   "calisma_suresi"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ekip_yonetimi",
+    "label": "Ekip yönetimi",
+    "description": "Saha ekibi ve gönüllü yönetir"
+   },
+   {
+    "key": "sehir_disi_cok_gunlu",
+    "label": "Çok günlü saha",
+    "description": "Şehir dışı ve çok günlü işlere gider"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "konusmaci": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "konusma_turleri",
+   "konusma_suresi",
+   "hedef_kitle"
+  ],
+  "modules": [
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Uzmanlık Alanları"
+   },
+   {
+    "key": "diller_belgeler",
+    "title": "Diller"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "cevrimici",
+    "label": "Çevrimiçi",
+    "description": "Uzaktan/çevrimiçi katılır"
+   },
+   {
+    "key": "materyal",
+    "label": "Materyal",
+    "description": "Eğitim materyali ve katılım sertifikası sağlar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "canli-yayin": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "yayin_platformlari",
+   "kamera_sayisi",
+   "etkinlik_formati"
+  ],
+  "modules": [
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "teknik_teslimat",
+    "title": "Teknik Kapasite"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Kamera, encoder ve yayın setiyle gelir"
+   },
+   {
+    "key": "teknik_ekip",
+    "label": "Teknik ekip",
+    "description": "Çok kameralı işlerde ekibiyle çalışır"
+   },
+   {
+    "key": "yedek_baglanti",
+    "label": "Yedek bağlantı",
+    "description": "Yedek internet bağlantısı getirir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ },
+ "influencer": {
+  "archetype": "uzmanlik",
+  "quickInfo": [
+   "icerik_turleri",
+   "hedef_kitle",
+   "teslim_formati"
+  ],
+  "modules": [
+   {
+    "key": "sosyal_erisim"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "İçerik Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "fiziksel_katilim",
+    "label": "Etkinliğe katılım",
+    "description": "Etkinliğe fiziksel olarak katılır"
+   },
+   {
+    "key": "canli_yayin",
+    "label": "Canlı yayın",
+    "description": "Etkinlikten canlı yayın yapar"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels",
+   "portfolioGrid"
+  ]
+ },
+ "drone-pilotu": {
+  "archetype": "produksiyon",
+  "quickInfo": [
+   "drone_tipi",
+   "lokasyon_tipi",
+   "teslim_bicimi",
+   "teslim_suresi"
+  ],
+  "modules": [
+   {
+    "key": "ekipman"
+   },
+   {
+    "key": "teknik_teslimat"
+   },
+   {
+    "key": "uzmanlik_alanlari",
+    "title": "Deneyim Alanları"
+   },
+   {
+    "key": "calisma_parametreleri"
+   }
+  ],
+  "logistics": [
+   {
+    "key": "ucus_izni",
+    "label": "Uçuş izni",
+    "description": "Geçerli uçuş izni beyanı"
+   },
+   {
+    "key": "kurgu_dahil",
+    "label": "Kurgu dahil",
+    "description": "Çekim sonrası kurgu ve renk yapar"
+   },
+   {
+    "key": "kendi_ekipmani",
+    "label": "Kendi ekipmanı",
+    "description": "Drone ve yedek bataryayla gelir"
+   }
+  ],
+  "keys": [
+   "archetype",
+   "quickInfo",
+   "modules",
+   "experienceGroups",
+   "logisticsChecks",
+   "skillsWithLevels"
+  ]
+ }
+}

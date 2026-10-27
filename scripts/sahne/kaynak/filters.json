@@ -1,0 +1,1797 @@
+{
+ "fotografci": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "shoot_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "wedding",
+     "portrait",
+     "product",
+     "fashion",
+     "event",
+     "corporate",
+     "newborn",
+     "family",
+     "food",
+     "architecture",
+     "social",
+     "sports"
+    ]
+   },
+   {
+    "key": "style",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "classic",
+     "documentary",
+     "artistic",
+     "minimal",
+     "vintage"
+    ]
+   },
+   {
+    "key": "extras",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "drone",
+     "video",
+     "album",
+     "studio",
+     "sameday",
+     "makeup",
+     "second"
+    ]
+   },
+   {
+    "key": "delivery_format",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "digital",
+     "print",
+     "album",
+     "online"
+    ]
+   },
+   {
+    "key": "team_type",
+    "type": "single",
+    "path": null,
+    "options": [
+     "solo",
+     "team",
+     "both"
+    ]
+   },
+   {
+    "key": "delivery_time",
+    "type": "single",
+    "path": null,
+    "options": [
+     "fast",
+     "normal",
+     "standard"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "dj": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "music_style",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "pop",
+     "electronic",
+     "hiphop",
+     "retro",
+     "arabesk",
+     "latin",
+     "jazz",
+     "rock",
+     "mixed"
+    ]
+   },
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "wedding",
+     "engagement",
+     "corporate",
+     "club",
+     "birthday",
+     "festival",
+     "opening"
+    ]
+   },
+   {
+    "key": "extras",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "sound",
+     "lighting",
+     "stage",
+     "fog",
+     "led",
+     "mc",
+     "live"
+    ]
+   },
+   {
+    "key": "language",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "tr",
+     "foreign",
+     "mixed"
+    ]
+   },
+   {
+    "key": "team_type",
+    "type": "single",
+    "path": null,
+    "options": [
+     "solo",
+     "team",
+     "both"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "muzisyen": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "performance_type",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "solo",
+     "duo_trio",
+     "band",
+     "orchestra",
+     "dj_live"
+    ]
+   },
+   {
+    "key": "music_genre",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "pop",
+     "jazz_lounge",
+     "acoustic",
+     "thm",
+     "tsm",
+     "classical",
+     "rock",
+     "mixed"
+    ]
+   },
+   {
+    "key": "instruments",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "vocal",
+     "guitar",
+     "piano",
+     "violin",
+     "percussion",
+     "wind",
+     "bass",
+     "other"
+    ]
+   },
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "wedding",
+     "corporate",
+     "gala",
+     "restaurant",
+     "private"
+    ]
+   },
+   {
+    "key": "language",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "tr",
+     "foreign",
+     "mixed"
+    ]
+   },
+   {
+    "key": "own_sound",
+    "type": "single",
+    "path": null,
+    "options": [
+     "yes",
+     "no"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "sunucu": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "corporate",
+     "conference",
+     "gala",
+     "launch",
+     "wedding",
+     "fair",
+     "tv",
+     "sports"
+    ]
+   },
+   {
+    "key": "style",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "formal",
+     "corporate",
+     "energetic",
+     "elegant"
+    ]
+   },
+   {
+    "key": "language",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "tr",
+     "en",
+     "tr_en",
+     "other"
+    ]
+   },
+   {
+    "key": "format",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "physical",
+     "online",
+     "hybrid"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "hostes": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "fair",
+     "launch",
+     "congress",
+     "gala",
+     "corporate",
+     "activation",
+     "sports"
+    ]
+   },
+   {
+    "key": "task_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "welcome",
+     "registration",
+     "promotion",
+     "vip",
+     "service",
+     "guide"
+    ]
+   },
+   {
+    "key": "language",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "en",
+     "de",
+     "ru",
+     "ar",
+     "fr",
+     "other"
+    ]
+   },
+   {
+    "key": "work_duration",
+    "type": "single",
+    "path": null,
+    "options": [
+     "hourly",
+     "full_day",
+     "multi_day",
+     "flexible"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "videograf": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "shoot_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "wedding",
+     "corporate",
+     "promo",
+     "ad",
+     "social",
+     "product",
+     "music_video",
+     "event"
+    ]
+   },
+   {
+    "key": "style",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "cinematic",
+     "documentary",
+     "dynamic",
+     "minimal"
+    ]
+   },
+   {
+    "key": "extras",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "drone",
+     "editing",
+     "color",
+     "multicam",
+     "photo",
+     "live"
+    ]
+   },
+   {
+    "key": "delivery_time",
+    "type": "single",
+    "path": null,
+    "options": [
+     "fast",
+     "normal",
+     "standard"
+    ]
+   },
+   {
+    "key": "team_type",
+    "type": "single",
+    "path": null,
+    "options": [
+     "solo",
+     "team",
+     "both"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "oyuncu": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "profile_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "lead",
+     "support",
+     "extra",
+     "theater",
+     "voice",
+     "special"
+    ]
+   },
+   {
+    "key": "project_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "ad",
+     "series_film",
+     "short",
+     "theater",
+     "social",
+     "mv"
+    ]
+   },
+   {
+    "key": "skills",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "dance",
+     "sing",
+     "sports",
+     "instrument",
+     "accent",
+     "language",
+     "horse",
+     "martial"
+    ]
+   },
+   {
+    "key": "gender",
+    "type": "single",
+    "path": null,
+    "options": [
+     "female",
+     "male"
+    ]
+   },
+   {
+    "key": "age_group",
+    "type": "single",
+    "path": null,
+    "options": [
+     "child",
+     "teen",
+     "young",
+     "adult",
+     "mature"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "model": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "model_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "catalog",
+     "fashion",
+     "runway",
+     "beauty",
+     "promo",
+     "editorial",
+     "fitness",
+     "hand_foot"
+    ]
+   },
+   {
+    "key": "project_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "photo",
+     "video",
+     "runway",
+     "event"
+    ]
+   },
+   {
+    "key": "gender",
+    "type": "single",
+    "path": null,
+    "options": [
+     "female",
+     "male"
+    ]
+   },
+   {
+    "key": "age_group",
+    "type": "single",
+    "path": null,
+    "options": [
+     "child",
+     "teen",
+     "young",
+     "adult",
+     "mature"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "illuzyonist": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "show_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "stage",
+     "close_up",
+     "mentalism",
+     "comedy",
+     "illusion",
+     "kids"
+    ]
+   },
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "birthday",
+     "corporate",
+     "wedding",
+     "kids",
+     "stage"
+    ]
+   },
+   {
+    "key": "audience",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "kids",
+     "adults",
+     "mixed"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "palyaco": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "show_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "clown",
+     "animation",
+     "face_paint",
+     "balloon",
+     "magic",
+     "puppet",
+     "mascot"
+    ]
+   },
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "birthday",
+     "school",
+     "mall",
+     "family"
+    ]
+   },
+   {
+    "key": "age_group",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "0_3",
+     "4_6",
+     "7_10",
+     "10_plus"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "organizasyon": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "wedding",
+     "engagement",
+     "birthday",
+     "baby",
+     "corporate",
+     "launch",
+     "fair",
+     "concert"
+    ]
+   },
+   {
+    "key": "scope",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "full",
+     "coordination",
+     "concept",
+     "decor",
+     "catering",
+     "venue"
+    ]
+   },
+   {
+    "key": "extras",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "photo",
+     "music",
+     "sound_light",
+     "host",
+     "flower",
+     "transport"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "ses-isik": {
+  "source": "attributes",
+  "fields": [
+   {
+    "key": "services",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "sound",
+     "lighting",
+     "stage",
+     "led",
+     "projection",
+     "truss",
+     "generator",
+     "special"
+    ]
+   },
+   {
+    "key": "event_types",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "concert",
+     "wedding",
+     "corporate",
+     "conference",
+     "fair",
+     "festival"
+    ]
+   },
+   {
+    "key": "venue_type",
+    "type": "multi",
+    "path": null,
+    "options": [
+     "indoor",
+     "outdoor"
+    ]
+   },
+   {
+    "key": "operation",
+    "type": "single",
+    "path": null,
+    "options": [
+     "full",
+     "setup",
+     "rental"
+    ]
+   },
+   {
+    "key": "experience",
+    "type": "single",
+    "path": null,
+    "options": [
+     "junior",
+     "mid",
+     "senior",
+     "expert"
+    ]
+   }
+  ]
+ },
+ "dansci": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "dans_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "dans_turleri"
+    },
+    "options": [
+     "Modern/Show",
+     "Latin",
+     "Hip-hop/Sokak",
+     "Halk oyunları",
+     "Oryantal",
+     "Zeybek",
+     "Kına",
+     "Flash mob",
+     "Koreografi"
+    ]
+   },
+   {
+    "key": "ekip_boyutu",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "ekip_boyutu"
+    },
+    "options": [
+     "Solo",
+     "Duo",
+     "Trio",
+     "Grup 4+"
+    ]
+   },
+   {
+    "key": "gosteri_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "gosteri_suresi"
+    },
+    "options": [
+     "30 dk altı",
+     "30–60 dk",
+     "60–90 dk",
+     "90+ dk"
+    ]
+   },
+   {
+    "key": "kostum",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "kostum"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "tercuman": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "ceviri_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "ceviri_turleri"
+    },
+    "options": [
+     "Simultane",
+     "Ardıl",
+     "Yazılı",
+     "Fısıltı",
+     "Fuar çevirmenliği",
+     "Etkinlik rehberliği",
+     "VIP refakat"
+    ]
+   },
+   {
+    "key": "yeminli",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "yeminli"
+    },
+    "options": [
+     "Evet"
+    ]
+   },
+   {
+    "key": "dil",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "diller_belgeler",
+     "arrayField": "language_pairs"
+    },
+    "options": [
+     "Türkçe",
+     "İngilizce",
+     "Almanca",
+     "Fransızca",
+     "Arapça",
+     "Rusça",
+     "İspanyolca",
+     "İtalyanca",
+     "Rumca",
+     "Farsça",
+     "Çince",
+     "Japonca",
+     "Korece",
+     "Ukraynaca",
+     "Bulgarca",
+     "Gürcüce",
+     "Kürtçe",
+     "Azerbaycan Türkçesi"
+    ]
+   },
+   {
+    "key": "cevrimici",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "cevrimici"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "stand-up-komedyen": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "gosteri_turu",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "gosteri_turu"
+    },
+    "options": [
+     "Kısa set",
+     "Tam gösteri",
+     "Doğaçlama",
+     "Hikaye anlatımı",
+     "Roast/özel konsept"
+    ]
+   },
+   {
+    "key": "gosteri_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "gosteri_suresi"
+    },
+    "options": [
+     "30 dk altı",
+     "30–60 dk",
+     "60–90 dk",
+     "90+ dk"
+    ]
+   },
+   {
+    "key": "dil",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "diller_belgeler",
+     "arrayField": "language_pairs"
+    },
+    "options": [
+     "Türkçe",
+     "İngilizce",
+     "Almanca",
+     "Fransızca",
+     "Arapça",
+     "Rusça",
+     "İspanyolca",
+     "İtalyanca",
+     "Rumca",
+     "Farsça",
+     "Çince",
+     "Japonca",
+     "Korece",
+     "Ukraynaca",
+     "Bulgarca",
+     "Gürcüce",
+     "Kürtçe",
+     "Azerbaycan Türkçesi"
+    ]
+   },
+   {
+    "key": "kurumsal_dil",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "kurumsal_dil"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "karikaturist": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "cizim_turu",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "cizim_turu"
+    },
+    "options": [
+     "Portre karikatür",
+     "Canlı çizim",
+     "Dijital illüstrasyon",
+     "Karma"
+    ]
+   },
+   {
+    "key": "teslim_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "teslim_suresi"
+    },
+    "options": [
+     "Anında",
+     "1–3 gün",
+     "1 hafta"
+    ]
+   },
+   {
+    "key": "canli_cizim",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "canli_cizim"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "akrobat": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "gosteri_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "gosteri_turleri"
+    },
+    "options": [
+     "Akrobasi",
+     "Jonglörlük",
+     "Ateş gösterisi",
+     "LED/Işık show",
+     "Bubble show",
+     "Pandomim",
+     "Stilt walker",
+     "Canlı heykel",
+     "Sirk performansı"
+    ]
+   },
+   {
+    "key": "gosteri_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "gosteri_suresi"
+    },
+    "options": [
+     "30 dk altı",
+     "30–60 dk",
+     "60–90 dk",
+     "90+ dk"
+    ]
+   },
+   {
+    "key": "yas_grubu",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "yas_grubu"
+    },
+    "options": [
+     "Çocuk",
+     "Yetişkin",
+     "Her yaş"
+    ]
+   },
+   {
+    "key": "dis_mekan",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "dis_mekan"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "kostum",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "kostum"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "sac-makyaj-styling": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "hizmet_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "hizmet_turleri"
+    },
+    "options": [
+     "Gelin saçı",
+     "Gelin makyajı",
+     "Kına/nişan makyajı",
+     "Sahne makyajı",
+     "Çekim makyajı",
+     "Model/oyuncu makyajı",
+     "Moda styling",
+     "Özel efekt makyajı"
+    ]
+   },
+   {
+    "key": "prova",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "prova"
+    },
+    "options": [
+     "Dahil",
+     "Ücretli",
+     "Yok"
+    ]
+   },
+   {
+    "key": "kisi_kapasitesi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "kisi_kapasitesi"
+    },
+    "options": [
+     "1 kişi",
+     "2–4 kişi",
+     "5–10 kişi",
+     "10+ kişi"
+    ]
+   },
+   {
+    "key": "mekanda_hizmet",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "mekanda_hizmet"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "ekiple_gelir",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "ekiple_gelir"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "etkinlik-koordinatoru": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "gorev_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "gorev_turleri"
+    },
+    "options": [
+     "Saha koordinasyonu",
+     "Backstage",
+     "Konuk akışı",
+     "Protokol",
+     "Zaman akışı",
+     "Ekip/gönüllü koordinasyonu",
+     "Prodüksiyon asistanlığı"
+    ]
+   },
+   {
+    "key": "calisma_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "calisma_suresi"
+    },
+    "options": [
+     "Yarım gün",
+     "Tam gün",
+     "Çok günlü",
+     "Esnek"
+    ]
+   },
+   {
+    "key": "dil",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "diller_belgeler",
+     "arrayField": "language_pairs"
+    },
+    "options": [
+     "Türkçe",
+     "İngilizce",
+     "Almanca",
+     "Fransızca",
+     "Arapça",
+     "Rusça",
+     "İspanyolca",
+     "İtalyanca",
+     "Rumca",
+     "Farsça",
+     "Çince",
+     "Japonca",
+     "Korece",
+     "Ukraynaca",
+     "Bulgarca",
+     "Gürcüce",
+     "Kürtçe",
+     "Azerbaycan Türkçesi"
+    ]
+   },
+   {
+    "key": "ekip_yonetimi",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "ekip_yonetimi"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "konusmaci": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "konusma_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "konusma_turleri"
+    },
+    "options": [
+     "Keynote",
+     "Motivasyon",
+     "Sektörel",
+     "Girişimcilik",
+     "Teknoloji",
+     "Panelist",
+     "Kurumsal eğitim",
+     "Workshop",
+     "Yaratıcı atölye"
+    ]
+   },
+   {
+    "key": "konusma_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "konusma_suresi"
+    },
+    "options": [
+     "30 dk altı",
+     "30–60 dk",
+     "Yarım gün",
+     "Tam gün"
+    ]
+   },
+   {
+    "key": "hedef_kitle",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "hedef_kitle"
+    },
+    "options": [
+     "Kurumsal",
+     "Öğrenci & genç",
+     "Karma"
+    ]
+   },
+   {
+    "key": "dil",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "diller_belgeler",
+     "arrayField": "language_pairs"
+    },
+    "options": [
+     "Türkçe",
+     "İngilizce",
+     "Almanca",
+     "Fransızca",
+     "Arapça",
+     "Rusça",
+     "İspanyolca",
+     "İtalyanca",
+     "Rumca",
+     "Farsça",
+     "Çince",
+     "Japonca",
+     "Korece",
+     "Ukraynaca",
+     "Bulgarca",
+     "Gürcüce",
+     "Kürtçe",
+     "Azerbaycan Türkçesi"
+    ]
+   },
+   {
+    "key": "cevrimici",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "cevrimici"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "canli-yayin": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "yayin_platformlari",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "yayin_platformlari"
+    },
+    "options": [
+     "Zoom",
+     "YouTube Live",
+     "Instagram Live",
+     "Microsoft Teams",
+     "Webex",
+     "Twitch",
+     "Özel RTMP"
+    ]
+   },
+   {
+    "key": "kamera_sayisi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "kamera_sayisi"
+    },
+    "options": [
+     "1 kamera",
+     "2–3 kamera",
+     "4+ kamera"
+    ]
+   },
+   {
+    "key": "etkinlik_formati",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "etkinlik_formati"
+    },
+    "options": [
+     "Fiziksel",
+     "Çevrimiçi",
+     "Hibrit"
+    ]
+   },
+   {
+    "key": "kendi_ekipmani",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "kendi_ekipmani"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "yedek_baglanti",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "yedek_baglanti"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "influencer": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "icerik_turleri",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "icerik_turleri"
+    },
+    "options": [
+     "Instagram post/reels",
+     "YouTube video",
+     "TikTok video",
+     "Story serisi",
+     "Canlı yayın",
+     "Ürün tanıtımı",
+     "Etkinlik içeriği",
+     "Marka elçiliği"
+    ]
+   },
+   {
+    "key": "platform",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "sosyal_erisim",
+     "arrayField": "platforms",
+     "key": "platform"
+    },
+    "options": [
+     "Instagram",
+     "TikTok",
+     "YouTube",
+     "X",
+     "Diğer"
+    ]
+   },
+   {
+    "key": "takipci_araligi",
+    "type": "multi",
+    "path": {
+     "kind": "module",
+     "moduleKey": "sosyal_erisim",
+     "arrayField": "platforms",
+     "key": "followers_range"
+    },
+    "options": [
+     "10B altı",
+     "10–50B",
+     "50–250B",
+     "250B+"
+    ]
+   },
+   {
+    "key": "hedef_kitle",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "hedef_kitle"
+    },
+    "options": [
+     "Kurumsal",
+     "Öğrenci & genç",
+     "Karma"
+    ]
+   },
+   {
+    "key": "teslim_formati",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "teslim_formati"
+    },
+    "options": [
+     "Ham çekim",
+     "Kurgulu video",
+     "Foto seti",
+     "Karma"
+    ]
+   },
+   {
+    "key": "fiziksel_katilim",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "fiziksel_katilim"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ },
+ "drone-pilotu": {
+  "source": "category_attributes",
+  "fields": [
+   {
+    "key": "drone_tipi",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "drone_tipi"
+    },
+    "options": [
+     "Standart drone",
+     "FPV drone",
+     "Sinema drone",
+     "Mini drone"
+    ]
+   },
+   {
+    "key": "lokasyon_tipi",
+    "type": "multi",
+    "path": {
+     "kind": "quick_array",
+     "key": "lokasyon_tipi"
+    },
+    "options": [
+     "Açık alan",
+     "Kentsel",
+     "Kıyı ve su",
+     "Dağ ve orman"
+    ]
+   },
+   {
+    "key": "teslim_bicimi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "teslim_bicimi"
+    },
+    "options": [
+     "Video",
+     "Fotoğraf",
+     "Video + Fotoğraf"
+    ]
+   },
+   {
+    "key": "teslim_suresi",
+    "type": "single",
+    "path": {
+     "kind": "quick",
+     "key": "teslim_suresi"
+    },
+    "options": [
+     "1–3 gün",
+     "1 hafta",
+     "2 hafta",
+     "1 ay+"
+    ]
+   },
+   {
+    "key": "ucus_izni",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "ucus_izni"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "kurgu_dahil",
+    "type": "single",
+    "path": {
+     "kind": "logistics",
+     "key": "kurgu_dahil"
+    },
+    "options": [
+     "true"
+    ]
+   },
+   {
+    "key": "service_region",
+    "type": "single",
+    "path": {
+     "kind": "root",
+     "key": "service_region"
+    },
+    "options": [
+     "Yalnızca kendi şehri",
+     "Şehir dışına çıkar",
+     "Türkiye geneli",
+     "Türkiye geneli + çevrimiçi"
+    ]
+   }
+  ]
+ }
+}
