@@ -164,23 +164,34 @@ function MetaRow({
   );
 }
 
-/** Foto üstü sol overlay: (ajansta) AJANS rozeti + kategori chip'i (nokta + ad). */
+/** Foto üstü sol overlay: (ajansta) AJANS rozeti + kategori chip'i (nokta + ad).
+ *  Sağda kalp (4.5rem) ve varsa PREMİUM rozeti (+5rem) için yer bırakılır; kategori chip'i
+ *  daralabilir (min-w-0 + truncate) — üç rozet aynı satırda üst üste binmez (Sahne turu, 27 Ekim). */
 function TopChips({
   isAgency,
   categoryName,
+  reserve = 'heart',
 }: {
   isAgency: boolean;
   categoryName: string | null;
+  /** Sağda ayrılan alan: 'heart' (kalp), 'heart-premium' (kalp + rozet), 'premium' (yalnız rozet; kompakt). */
+  reserve?: 'heart' | 'heart-premium' | 'premium';
 }) {
+  const maxW =
+    reserve === 'heart-premium'
+      ? 'max-w-[calc(100%-9.5rem)]'
+      : reserve === 'premium'
+        ? 'max-w-[calc(100%-6rem)]'
+        : 'max-w-[calc(100%-4.5rem)]';
   return (
-    <div className="absolute top-3 left-3 flex items-center gap-2 max-w-[calc(100%-4.5rem)]">
+    <div className={`absolute top-3 left-3 flex items-center gap-2 ${maxW}`}>
       {isAgency && (
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0">
           Ajans
         </span>
       )}
       {categoryName && (
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 shrink-0 shadow-sm">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 min-w-0 shadow-sm">
           {/* Nokta CYAN (`sky`): kategori bir BILGI etiketi, pembe aksan ise
               eylem/vurgu rengi. Ikisi ayni kartta karismasin. */}
           <span
@@ -341,7 +352,7 @@ export function ProfileCard({
             className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
             aria-hidden="true"
           />
-          <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
+          <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'premium' : 'heart'} />
           {isPremium && (
             <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-[0.14em] bg-brand-accent text-paper px-2 py-1 rounded-md shadow-sm">
               Premium
@@ -379,7 +390,7 @@ export function ProfileCard({
               className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/25 to-transparent"
               aria-hidden="true"
             />
-            <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
+            <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'heart-premium' : 'heart'} />
             {PremiumBadge}
             {/* Ad + doğrulanmış (fotonun altında, gradient üstünde) */}
             <div className="absolute inset-x-0 bottom-0 p-4">
@@ -455,7 +466,7 @@ export function ProfileCard({
         <div className="hidden md:block relative aspect-[4/3]">
           <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
 
-          <TopChips isAgency={isAgencyCard} categoryName={categoryName} />
+          <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'heart-premium' : 'heart'} />
           {PremiumBadge}
 
           {/* Varsayılan alt şerit — hover'da kaybolur */}
