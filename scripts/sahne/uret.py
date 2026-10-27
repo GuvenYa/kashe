@@ -751,15 +751,8 @@ def brief_uret(rnd, kat, tur, tarih_gun, sehir, ilce, kisi, butce):
 
 def yaz_02(D, out):
     rnd = random.Random(D.rnd.random() + 1)
-    L = []
-    L.append("-- =============================================================================")
-    L.append("-- SAHNE 02 — 6 aylik gecmis: etkinlikler, konusmalar, mesajlar, teklifler, rezervasyonlar, yorumlar; ajans teklifleri (YALNIZ DALDA)")
-    L.append("-- Uretildi: scripts/sahne/uret.py (tohum %d, %s). 01-sahne-hesaplar.sql'den SONRA. Yeniden calistirmak guvenli (kendi satirlarini siler)." % (D.seed, D.tarih))
-    L.append("-- =============================================================================")
-    L.append(GUARD)
-    L.append(TEMP_FN)
-    L.append("""DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.profiles WHERE email LIKE 'sahne+%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: 01-sahne-hesaplar.sql calistirilmamis (profil=%)', n; END IF; END $$;""")
-    # kendi gecmisini sil (idempotan)
+    L = []  # ifadeler; sonda boyuta gore 02a, 02b, ... dosyalarina paketlenir (Dashboard SQL Editor boyut siniri)
+    # kendi gecmisini sil (idempotan; yalniz ilk parcada)
     L.append("""DO $$
 DECLARE ids uuid[]; orgs uuid[];
 BEGIN
@@ -981,7 +974,8 @@ END $$;""")
     L.append("INSERT INTO public.conversations (id, customer_id, professional_id, event_date, event_type, location, guest_count, budget_range, brief_data, request_type, start_time, created_at, last_message_at)\nVALUES\n%s;" % ",\n".join(conv_rows))
     L.append("INSERT INTO public.quotes (id, conversation_id, sender_id, total_amount, services_description, cancellation_policy, expires_at, status, created_at, responded_at, over_budget)\nVALUES\n%s;" % ",\n".join(quote_rows))
     # mesajlar zaman sirasiyla (last_message_at tetikleyicisi son mesaji yazsin)
-    L.append("INSERT INTO public.messages (id, conversation_id, sender_id, body, message_type, quote_id, created_at, read_at)\nSELECT v.id::uuid, v.cid::uuid, v.sender::uuid, v.body, v.tip::public.message_type, v.quote::uuid, v.ts, v.okundu FROM (VALUES\n%s\n) AS v(id, cid, sender, body, tip, quote, ts, okundu) ORDER BY v.ts;" % ",\n".join(msg_rows))
+    for i in range(0, len(msg_rows), 600):   # parca parca: tek ifade Dashboard sinirini asmasin
+        L.append("INSERT INTO public.messages (id, conversation_id, sender_id, body, message_type, quote_id, created_at, read_at)\nSELECT v.id::uuid, v.cid::uuid, v.sender::uuid, v.body, v.tip::public.message_type, v.quote::uuid, v.ts, v.okundu FROM (VALUES\n%s\n) AS v(id, cid, sender, body, tip, quote, ts, okundu) ORDER BY v.ts;" % ",\n".join(msg_rows[i:i + 600]))
     L.append("INSERT INTO public.bookings (id, quote_id, conversation_id, customer_id, professional_id, event_date, event_type, location, guest_count, total_amount, created_at)\nVALUES\n%s;" % ",\n".join(book_rows))
     L.append("\n".join(book_update))
     L.append("INSERT INTO public.reviews (id, conversation_id, customer_id, professional_id, rating, body, created_at, updated_at)\nVALUES\n%s;" % ",\n".join(rev_rows))
@@ -1126,8 +1120,30 @@ SELECT (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%') AS 
        (SELECT count(*) FROM public.proposals WHERE id::text LIKE '5a4e0003-%' AND status = 'approved') AS onayli,
        (SELECT count(*) FROM public.analytics_events WHERE entity_id::text LIKE '5a4e%') AS olay,
        (SELECT count(*) FROM public.notifications WHERE user_id::text LIKE '5a4e0000-%') AS bildirim;""")
-    with open(os.path.join(out, "02-sahne-gecmis.sql"), "w", encoding="utf-8") as f:
-        f.write("\n\n".join(L) + "\n")
+    # --- paketleme: ardisik ifadeler <= SINIR baytlik parcalara; her parca kendi korumasi + yardimcilari + on kosuluyla
+    SINIR = 380_000
+    parcalar, cur, boy = [], [], 0
+    for ifade in L:
+        b = len(ifade.encode("utf-8")) + 2
+        if cur and boy + b > SINIR:
+            parcalar.append(cur); cur, boy = [], 0
+        cur.append(ifade); boy += b
+    if cur:
+        parcalar.append(cur)
+    harfler = "abcdefghijklmnop"
+    adlar = ["02%s-sahne-gecmis.sql" % harfler[i] for i in range(len(parcalar))]
+    for i, parca in enumerate(parcalar):
+        bas = ["-- =============================================================================",
+               "-- SAHNE 02%s (%d/%d) — 6 aylik gecmis: etkinlikler, konusmalar, mesajlar, teklifler, rezervasyonlar, yorumlar, ajans teklifleri (YALNIZ DALDA)" % (harfler[i], i + 1, len(parcalar)),
+               "-- Uretildi: scripts/sahne/uret.py (tohum %d, %s). Sira: 01 -> 02a -> 02b -> ... (hepsi, atlamadan). 02a kendi gecmisini silip yeniden baslar." % (D.seed, D.tarih),
+               "-- =============================================================================", GUARD, TEMP_FN,
+               "DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.profiles WHERE email LIKE 'sahne+%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: 01-sahne-hesaplar.sql calistirilmamis (profil=%)', n; END IF; END $$;"]
+        if i > 0:
+            bas.append("DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.conversations WHERE id::text LIKE '5a4e0010-%%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: once 02a..02%s (konusma=%%)', n; END IF; END $$;" % harfler[i - 1])
+        son = ["SELECT %s AS parca, 'tamam' AS durum;" % q("02%s %d/%d" % (harfler[i], i + 1, len(parcalar)))] if i < len(parcalar) - 1 else []
+        with open(os.path.join(out, adlar[i]), "w", encoding="utf-8") as f:
+            f.write("\n\n".join(bas + parca + son) + "\n")
+    D.gecmis_dosyalari = adlar
 
 
 # ----------------------------------------------------------------------------- 00 / 03 / plan / md

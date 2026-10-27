@@ -1,7 +1,7 @@
 // =============================================================================
 // SAHNE — avatar + portfoy yukleme (dal projesi Storage) ve portfolio_items / profiles.avatar_url yazimi
 //   $env:SAHNE_SERVICE_ROLE_KEY = "<dal projesinin service_role anahtari>"   (PowerShell; dosyaya YAZILMAZ)
-//   node scripts/sahne/foto-yukle.mjs            -> yukle (idempotan: ayni yollara upsert, portfoy satirlari yenilenir)
+//   node scripts/sahne/foto-yukle.mjs            -> yukle (idempotan: ayni yollara upsert, portfoy satirlari yenilenir; hata alan hesap icin tekrar calistir)
 //   node scripts/sahne/foto-yukle.mjs --sil      -> Storage nesneleri + portfoy satirlari + avatar_url temizlenir
 //   secenek: --yalniz-avatar  (portfoy atlanir)
 // Girdi: docs/sahne/foto-plan.json (uret.py), docs/sahne/foto/lisans.json + gorseller (foto-indir.mjs)
@@ -30,6 +30,17 @@ const sb = createClient(URL_, KEY, { auth: { persistSession: false, autoRefreshT
 
 const kullanicilar = PLAN.kullanicilar;
 const lisans = existsSync(join(FOTO, 'lisans.json')) ? JSON.parse(readFileSync(join(FOTO, 'lisans.json'), 'utf8')) : {};
+
+const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
+// Storage/PostgREST gecici hatalarinda (429, 5xx, ag) 4 deneme: 1.5 s, 3 s, 6 s, 12 s
+async function dene(ad, fn) {
+  let son;
+  for (let i = 0; i < 5; i++) {
+    try { const r = await fn(); if (r && r.error) throw new Error(ad + ': ' + (r.error.message || JSON.stringify(r.error))); return r; }
+    catch (e) { son = e; if (i < 4) await bekle(1500 * Math.pow(2, i)); }
+  }
+  throw son;
+}
 
 function sira(uid, n) { // deterministik secim: uid hash -> baslangic
   const h = parseInt(createHash('md5').update(uid).digest('hex').slice(0, 8), 16);
@@ -61,7 +72,7 @@ async function sil() {
 }
 
 async function yukle() {
-  let avatarN = 0, fotoN = 0, hata = 0;
+  let avatarN = 0, fotoN = 0, hata = 0, gorselYok = 0; const hatalar = [];
   const kuyruk = [...kullanicilar];
   const isci = async () => {
     while (kuyruk.length) {
@@ -69,24 +80,22 @@ async function yukle() {
       try {
         // avatar
         const png = await avatarPng(u.harf, u.renk);
-        const { error: ae } = await sb.storage.from('avatars').upload(`${u.id}/avatar.png`, png, { contentType: 'image/png', upsert: true, cacheControl: '3600' });
-        if (ae) throw new Error('avatar: ' + ae.message);
+        await dene('avatar', () => sb.storage.from('avatars').upload(`${u.id}/avatar.png`, png, { contentType: 'image/png', upsert: true, cacheControl: '3600' }));
         const avatarUrl = `${PLAN.storage}/avatars/${u.id}/avatar.png?t=${Date.now()}`;
-        const { error: pe } = await sb.from('profiles').update({ avatar_url: avatarUrl }).eq('id', u.id);
-        if (pe) throw new Error('profiles: ' + pe.message);
+        await dene('profiles', () => sb.from('profiles').update({ avatar_url: avatarUrl }).eq('id', u.id));
         avatarN += 1;
         // portfoy
         if (YALNIZ_AVATAR || !u.adet || !u.kat) continue;
         const kaynaklar = [];
         const havuz = lisans[u.kat] || [];
         const havuz2 = u.kat2 ? (lisans[u.kat2] || []) : [];
-        if (!havuz.length) { console.warn(`  ${u.ad}: ${u.kat} icin gorsel yok (foto-indir.mjs?)`); continue; }
+        if (!havuz.length) { gorselYok += 1; console.warn(`  ${u.ad}: ${u.kat} icin gorsel yok (foto-indir.mjs?)`); continue; }
         const sec = sira(u.id, havuz.length);
         const ana = Math.max(1, u.adet - (havuz2.length ? 2 : 0));
         const kullanilan = new Set();
         for (let i = 0; i < ana; i++) { const k = sec(i); if (!kullanilan.has(k)) { kullanilan.add(k); kaynaklar.push(havuz[k]); } }
         if (havuz2.length) { const sec2 = sira(u.id + 'b', havuz2.length); kaynaklar.push(havuz2[sec2(0)]); if (havuz2.length > 1) kaynaklar.push(havuz2[sec2(1)]); }
-        await sb.from('portfolio_items').delete().eq('profile_id', u.id).like('media_url', '%/sahne-%');
+        await dene('portfolio_items sil', () => sb.from('portfolio_items').delete().eq('profile_id', u.id).like('media_url', '%/sahne-%'));
         await havuzSil('portfolio', u.id);
         const satirlar = [];
         for (let i = 0; i < kaynaklar.length; i++) {
@@ -95,18 +104,18 @@ async function yukle() {
           if (!existsSync(yol)) continue;
           const buf = readFileSync(yol);
           const ad = `sahne-${String(i + 1).padStart(2, '0')}.jpg`;
-          const { error: fe } = await sb.storage.from('portfolio').upload(`${u.id}/${ad}`, buf, { contentType: 'image/jpeg', upsert: true, cacheControl: '3600' });
-          if (fe) throw new Error('portfolio: ' + fe.message);
+          await dene('portfolio ' + ad, () => sb.storage.from('portfolio').upload(`${u.id}/${ad}`, buf, { contentType: 'image/jpeg', upsert: true, cacheControl: '3600' }));
           satirlar.push({ profile_id: u.id, media_url: `${PLAN.storage}/portfolio/${u.id}/${ad}`, media_type: 'image',
             caption: `Foto: ${k.sanatci} — ${k.lisans}, Wikimedia Commons`, sort_order: i });
           fotoN += 1;
         }
-        if (satirlar.length) { const { error: ie } = await sb.from('portfolio_items').insert(satirlar); if (ie) throw new Error('portfolio_items: ' + ie.message); }
-      } catch (e) { hata += 1; console.warn(`  ${u.ad} (${u.id}): ${e.message}`); }
+        if (satirlar.length) await dene('portfolio_items', () => sb.from('portfolio_items').insert(satirlar));
+      } catch (e) { hata += 1; hatalar.push(`${u.ad} (${u.id}): ${e.message}`); console.warn(`  HATA ${u.ad} (${u.id}): ${e.message}`); }
     }
   };
-  await Promise.all([isci(), isci(), isci(), isci()]);
-  console.log(`avatar ${avatarN}, portfoy gorseli ${fotoN}, hata ${hata} (${kullanicilar.length} hesap)`);
+  await Promise.all([isci(), isci()]);
+  console.log(`avatar ${avatarN}, portfoy gorseli ${fotoN}, gorsel-yok ${gorselYok}, hata ${hata} (${kullanicilar.length} hesap)`);
+  if (hatalar.length) { console.log('--- hatali hesaplar (betigi yeniden calistirmak yeterli; idempotan):'); for (const h of hatalar) console.log('  ' + h); }
 }
 
 (SIL ? sil() : yukle()).catch((e) => { console.error(e); process.exit(1); });

@@ -94,7 +94,7 @@ elle denenir), 1-2 `quote_requests` (teklif topla).
 | `00-sahne-temizlik.sql` | Koruma + tum Sahne satirlarini siler | Dal SQL Editor (gerekince) |
 | `00-sahne-taksonomi.sql` | 23 kategori eksikse ekler (yalniz harness / guvence; dalda 0 satir yazar) | Dal: calistir, "0 eklendi" bekle |
 | `01-sahne-hesaplar.sql` | 81 il; 171 `auth.users` (+`handle_new_user` -> profil, saglayici, kurulus); profil alanlari; hizmetler; deneyimler; uyelikler; havuz; tedarikci/CRM/gorev; favori; musaitlik | Dal SQL Editor (~30 sn) |
-| `02-sahne-gecmis.sql` | 6 aylik akis (bolum 7) + zaman duzeltme | Dal SQL Editor (~60 sn) |
+| `02a..02e-sahne-gecmis.sql` | 6 aylik akis (bolum 7) + zaman duzeltme; Dashboard SQL Editor boyut siniri ("Query is too large") yuzunden ~380 KB'lik 5 parca, sirayla ve atlamadan (02a kendi gecmisini silip bastan baslar; 02b+ on kosul kontrol eder) | Dal SQL Editor, 5 kez |
 | `03-sahne-hesap.sql` | `price_benchmarks_compute`, `trust_score_compute`; ozet ciktilar | Dal SQL Editor |
 | `foto-plan.json` | Her saglayici icin kategori + fotograf adedi + avatar bas harfleri/renk (betik girdisi) | `scripts/sahne/foto-*.mjs` okur |
 
@@ -146,7 +146,7 @@ Avatar: SVG (bas harfler, kategoriye gore 8 renkten biri) -> `sharp` -> 256px PN
 
 1. Vercel Preview env -> dal (bolum 2). 2. Dal SQL Editor: `00-sahne-taksonomi.sql` (0 eklendi), `01-sahne-hesaplar.sql`.
 3. PowerShell: `node scripts/sahne/foto-indir.mjs` -> kontak sayfalari kontrol (uygunsuz gorsel varsa `lisans.json`'dan sil, tekrar
-   kosmadan devam) -> `node scripts/sahne/foto-yukle.mjs`. 4. Dal SQL Editor: `02-sahne-gecmis.sql`, `03-sahne-hesap.sql`.
+   kosmadan devam) -> `node scripts/sahne/foto-yukle.mjs`. 4. Dal SQL Editor: `02a` ... `02e-sahne-gecmis.sql` (sirayla), `03-sahne-hesap.sql`.
 5. Onizleme/yerel dev ile giris: `sahne+ajans-nova@kashe.net` / `Sahne!2026` vb. (hesap listesi `docs/sahne/hesaplar.md`).
 Yeniden kurulum: `00-sahne-temizlik.sql` + `foto-yukle.mjs --sil`, sonra 2-4.
 
