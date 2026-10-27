@@ -114,6 +114,10 @@ degismeden gorunur (ters ayna).
 `bookings` eski politikalar `TO authenticated`; `ensure_organization_for_profile` sadeletirme; `profile_approval_status` enum adi
 (KOZMETIK — yapilmaz); asama kontrol dosyalarinin FAZ 10 sonrasi durumu (asama5 aynalama kontrolleri emekli/bilgi; asama7/9/10/11
 gozden gecirilir); CLAUDE.md "FAZ 10'a kadar" cumleleri temizlenir.
+Sahne turunda eklenen (27 Ekim 2026): `app/components/sections/featured-profiles.tsx` satir 61 `tierWeight` icindeki `Date.now()`
+eslint `react-hooks/purity` hatasi veriyor (onceden var; derlemeyi engellemiyor) — `Date.now()` bilesen gövdesinden once tek sefer
+alinir (`const now = Date.now()` sunucu fonksiyonunun basinda) ya da `premium_until` karsilastirmasi `isPremiumActive` yardimcisina
+tasinir; `npx eslint app/components/sections` temiz olmali.
 
 ### Hijyen 05 (30 gun sonra, ayri)
 

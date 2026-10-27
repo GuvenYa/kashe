@@ -97,9 +97,23 @@ export async function FeaturedProfiles() {
     favoritedIds = await getFavoritedIds();
   }
 
-  // NOT: kapak zinciri Kesfet'teki portföy fallback'ini KULLANMAZ (ek sorgu
-  // olurdu); avatar yoksa kart placeholder'a düşer. İş sayısı (bookings) da bu
+  // Kapak zinciri Keşfet ile AYNI: avatar yoksa portföyün İLK görseli (sort_order).
+  // Tek ek sorgu, en fazla 16 profil (27 Ekim 2026: Sahne turunda avatarsız
+  // sağlayıcı kartları harf placeholder'da kalıyordu). İş sayısı (bookings) bu
   // bölümde sorgulanmaz — jobsCount 0.
+  const portfolioCoverByProfile: Record<string, string> = {};
+  const { data: portfolioData } = await supabase
+    .from("portfolio_items")
+    .select("profile_id, media_url")
+    .eq("media_type", "image")
+    .in("profile_id", ids)
+    .order("sort_order", { ascending: true });
+  (portfolioData || []).forEach((pi) => {
+    const pid = pi.profile_id as string;
+    if (!portfolioCoverByProfile[pid] && pi.media_url) {
+      portfolioCoverByProfile[pid] = pi.media_url as string;
+    }
+  });
 
   return (
     <section className="bg-paper border-t border-line">
@@ -161,7 +175,7 @@ export async function FeaturedProfiles() {
               <ProfileCard
                 profile={p}
                 yogun
-                cover={p.avatar_url ?? null}
+                cover={p.avatar_url || portfolioCoverByProfile[p.id] || null}
                 rating={ratingsByProfile[p.id] || null}
                 isFavorited={favoritedIds.has(p.id)}
                 isLoggedIn={ziyaretci.girisli}
