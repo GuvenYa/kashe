@@ -4,7 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
-**Durum:** PLAN — envanter ve kararlar asagida; **10a-DB/01 sirada**. Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
+**Durum:** **10a-DB/01 yazildi ve harness'ta dogrulandi (28 Ekim 2026; asama4 35/35, asama20 K1-K6, asama18/asama5 uyarlandi) — dala
+`db push` + 10a-P1 (`40-claude-code-gorevi-10a-p1-uyelik.md`) sirada.** Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
 10d kucukler -> kapanis (DROP'lar Hijyen 05'e, 30 gun sonra). Her dilim: migration -> dal (asama4 + asama20) -> uretim -> Claude Code ->
 canli tur -> kapanis notu.
 
@@ -115,7 +116,7 @@ degismeden gorunur (ters ayna).
 (KOZMETIK — yapilmaz); asama kontrol dosyalarinin FAZ 10 sonrasi durumu (asama5 aynalama kontrolleri emekli/bilgi; asama7/9/10/11
 gozden gecirilir); CLAUDE.md "FAZ 10'a kadar" cumleleri temizlenir.
 Sahne turunda eklenen (27 Ekim 2026): `app/components/sections/featured-profiles.tsx` satir 61 `tierWeight` icindeki `Date.now()`
-eslint `react-hooks/purity` hatasi veriyor (onceden var; derlemeyi engellemiyor) — `Date.now()` bilesen gövdesinden once tek sefer
+eslint `react-hooks/purity` hatasi veriyor (onceden var; derlemeyi engellemiyor) — `Date.now()` bilesen govdesinden once tek sefer
 alinir (`const now = Date.now()` sunucu fonksiyonunun basinda) ya da `premium_until` karsilastirmasi `isPremiumActive` yardimcisina
 tasinir; `npx eslint app/components/sections` temiz olmali.
 
@@ -138,8 +139,8 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 
 | Dilim | Icerik | Test |
 |---|---|---|
-| **10a-DB/01** | davet/uyelik RPC'leri, bildirim tetikleyicileri yeni tabloda, aynalama kapanir, eski tablolar salt okunur | asama4 **T34** + T3/T4/T8 uyarlama; **asama20** K1-K4 |
-| **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 | tur: gmail/hotmail/testguven davet-kabul-cikarma |
+| **10a-DB/01** | davet/uyelik RPC'leri, bildirim tetikleyicileri yeni tabloda, aynalama kapanir, eski tablolar salt okunur — **YAZILDI** (bolum 6) | asama4 **T34** + T3/T4/T7/T8/T9/T10/T17/T18/T19/T25 uyarlama (35/35); **asama20** K1-K6; asama18 K2/K3 ve asama5 K3-K6 10a'ya uyarlandi |
+| **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 (`40-claude-code-gorevi-10a-p1-uyelik.md`) | tur (Sahne): ajans davet -> kabul -> ekipte gorunur -> rol degistir -> cikar; kurum ayni akis; `/davetlerim`; `/p/[id]` ekip |
 | **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser | asama20 K5; asama11 K1 emekli |
 | **10b-P1** | `EVENT_TYPES` silinir; 12 dosya tablodan okur | tur: ilan formu, Kesfet, teklif-topla |
 | **10c-DB/01** | ters ayna, koruma, `provider_id` NOT NULL, `views_count` | asama4 **T35**; asama20 K6-K8 |
@@ -152,4 +153,42 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
 
 ## 6. Kapanis notlari
 
-(dilimler kapandikca)
+### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness'ta dogrulandi, dal/uretim bekliyor)
+
+Plandan sapmalar ve kararlar (migration basligi ayrintili):
+
+1. **Bildirim tipi `team`:** `notifications.type` CHECK'e eklendi (davet + katilim; eski tetikleyiciler `message` kullaniyordu). E-posta
+   kuyruguna girmez (Edge Function yalniz rfp/proposal/task/crm). Uygulama etiketi 10a-P1: `team: 'Ekip'` (bilinmeyen tip zaten "Bildirim").
+   Kurum uyesi katilim baglantisi `/profil/kurumsal-ekip` (eski tetikleyici yanlislikla `/profil/ekibim` veriyordu).
+2. **Acik ekip sozlesmesi `organization_team_public`** (gorunum, `security_invoker = false`, anon/authenticated SELECT): eski
+   `agency_members` "Agency members are public" (USING true) politikasinin karsiligi. Yalniz ajans kuruluslari; ajans VE uye `providers`'ta
+   yayinda + onayli + askida degil; rol ACILMAZ. `/p/[id]` ekip listesi ve profesyonelin "temsil eden ajans" listesi bunu okur;
+   `organization_memberships` SELECT politikasi degismedi (uye kendi kurulusunu gorur; T8 8h sayilari korundu).
+3. **Davet kurallari RPC'de:** e-posta normalize (lower/trim), owner rolu verilemez, kendine / kurulusun kendi hesabina / zaten uyeye davet
+   22023, bekleyen cift 23505 (EXCLUDE kisiti FAZ 0'dan kaldi, RPC once bakar), mesaj <= 1000. Kabulde ajans kurulusuna yalniz
+   `professional` hesap (eski `validate_agency_membership_roles` + uygulama kurali), kurumsal kurulusa herhangi bir hesap; kurulusun kendi
+   hesabi uye olamaz (eski `no_self_membership`). Suresi dolmus davet: 22023, **durum `pending` kalir** (RAISE yazimi geri alir; arayuz
+   `expires_at`'a bakar; plan "expired olur" diyordu).
+4. **FAZ 5 havuz kaydi kabulde:** modul acik + `talents` kaydi varsa `fn_faz5_ensure_record_for_member(uyelik)`; hata kabulu bozmaz
+   (WARNING). Ayrilip yeniden katilan uye: eski kaydin izi (`legacy_agency_member_id`) silinmis uyelige bagliysa yeni uyelige tasinir
+   (eskiden `otr_org_talent_key` 23505 verirdi). `legacy_agency_member_id` artik `organization_memberships.id` tasir (ayna satirlarinda iki id
+   zaten ayni); sutun adi Hijyen 05'te. `ensure_talent_record_for_membership(p_membership_id)` — parametre adi degisti (P1 cagriyi gunceller).
+5. **Cikarma/ayrilma:** `org_member_remove` kendini (22023) ve `owner_seed`'i (22023) cikaramaz; owner/admin uyeyi yalniz owner (ya da platform
+   yoneticisi) cikarir (42501), son owner cikarilamaz; `org_member_leave` owner_seed ve son owner icin 22023. Uyelik silinince/askiya alininca
+   `conversation_assignees` temizligi yeni tabloda (`trg_faz10_remove_assignments_on_leave`). Havuz kaydi SILINMEZ ("ayrildi" izi; havuz sayfasi
+   uyelik id'sinin varligina bakar — P1 `organization_memberships` id'leriyle).
+6. **Dusenler (plandan fazla):** `on_*_validate_roles` (2) ve `trg_remove_assignments_on_leave` tetikleyici/fonksiyonlari da dustu (donmus
+   tabloda anlamsiz; asama20 K3 = 0 icin). Toplam 14 fonksiyon. `map_legacy_member_role`, `log_org_sync_error`, `organization_sync_log`,
+   `v_agency_members`/`v_business_members` Hijyen 05'e kaldi (gorunumler security_invoker; uygulama P1'de de kullanmaz).
+7. **Testler:** asama4 T3 (RPC ile davet/kabul), T4 (`org_member_remove`), T7 7k (`organization_invitations`), T8 8b/8e/8f/8j (ayna testleri
+   dogrudan tablo + RPC), T9/T10 (dogrudan uyelik), T17 (uyelik dogrudan; 17g `sync_org_talent_pool` = dolum), T18/T19/T25 (eski tablo
+   okumalari kalkti) uyarlandi; **T34** eklendi (35/35). **asama20** yeni (K1 salt okunur, K2 bilgi, K3 referans 0, K4 nesneler 12, K5 yetki 6,
+   K6 bilgi). **asama18** K2/K3 ayna yoksa 0 = 0; **asama5** K3-K6 ayna tetikleyicisi yoksa `EMEKLI` (uretimde de).
+8. **Uygulama penceresi:** migration uygulandiktan sonra P1 yayinlanana kadar davet/uyelik YAZMA akislari 42501 verir (okumalar surer).
+   Uretim sirasi: `main`'e birlestir -> Vercel uretim derlemesi baslarken `supabase db push` (uretim) -> yayin biter. Dalda: once `db push`,
+   sonra P1 (RPC'ler P1'den once var olmali).
+9. **Sahne v2 etkisi** (`scripts/sahne/uret.py`, 10a kapanisindan sonra): `agency_members`/`business_members` INSERT'leri yerine
+   `organization_memberships` (ayni id duzeni, `legacy_source` NULL, `invited_by` sahibi), `faz5_backfill_agency_members()` yerine kurulus
+   basina `sync_org_talent_pool(org)` (sahip JWT'siyle), davetler `organization_invitations`'a; `fn_faz10_member_notify` sahip bildirimi
+   uretir (uretec bu `team` bildirimlerini silebilir ya da gecmise tarihler). `00-sahne-temizlik.sql` eski tablolari postgres olarak siler (yetki
+   kisiti authenticated/anon icin), degismez. Sahne'nin dalda mevcut verisi migration esitlik kontrolunu gecer (ayna satirlari ayni id).

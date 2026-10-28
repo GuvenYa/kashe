@@ -13,13 +13,13 @@
 -- Kapsanan davranislar (test plani asama 4 + platform katmani):
 --   T1 kayit -> profil  (auth.users tetikleyicisi + handle_new_user uretim surumu)
 --   T2 teklif kabul -> rezervasyon (start_time/end_time tasinir, sistem mesaji, bildirim)
---   T3 ajans daveti kabul -> uyelik (agency_members, bildirimler)
---   T4 uyelikten cikarma -> atama temizligi (trg_remove_assignments_on_leave)
+--   T3 ajans daveti kabul -> uyelik (FAZ 10a: org_invitation_create/respond, organization_memberships, 'team' bildirimleri)
+--   T4 uyelikten cikarma -> atama temizligi (FAZ 10a: org_member_remove + trg_faz10_remove_assignments_on_leave)
 --   T5 koruma tetikleyicisi (normal kullanici sessiz geri alma, admin serbest)
 --   T6 GRANT + RLS: anon/authenticated rolleriyle gercek sorgular (09'un 4a/4c bolumu)
 --   T7 profiles PII adim 2: authenticated sutun kisiti, iletisim/admin/bildirim RPC'leri,
 --      davet politikalari auth.email() (ON KOSUL: 2a ve 2b dalda uygulanmis)
---   T8 FAZ 0 kiraci temeli: profil -> kurulus, uyelik/davet aynalama, has_org_permission,
+--   T8 FAZ 0 kiraci temeli: profil -> kurulus, uyelik/davet (FAZ 10a: dogrudan yeni tablo + RPC; ayna yok), has_org_permission,
 --      RLS + sutun kisiti, uyumluluk gorunumu (ON KOSUL: faz0 01-03 dalda uygulanmis)
 --   T9 FAZ 0 / 04 yetki fonksiyon gecisi (04 uygulanmamissa ATLANDI yazar)
 --   T10 FAZ 1 internal sema gizliligi: anon/authenticated/service_role internal'a ulasamaz,
@@ -71,6 +71,10 @@
 --       gorunurlugu, proposal_create_from_rfp + baglantisiz send, alici kurulus teklif okuma (gizli kalem/taslak surum yok), revizyon,
 --       rfp_detail, award (approved/awarded/not_selected), kapali RFP, rezervasyon alici kurulusla, ret/evaluating/cancel, anon
 --       (ON KOSUL: faz7b_01 dalda uygulanmis)
+--   T25-T33 FAZ 8-U/8a/8b/8c, Hijyen 03/04, FAZ 9a/9b/9c: blok basliklarinda
+--   T34 FAZ 10a uyelik tek tablo: davet kurallari (22023/23505/42501), kabul -> uyelik + havuz kaydi + bildirim, ajans kurali,
+--       iptal/ret/sure, cikarma/ayrilma kurallari (owner, son owner), eski tablolara yazma 42501, organization_team_public
+--       (ON KOSUL: 20261028120000 faz10a_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -290,41 +294,67 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- T3) Ajans daveti kabul -> uyelik
+-- T3) Ajans daveti kabul -> uyelik (FAZ 10a: RPC'ler; eski agency_invitations/agency_members yazilmaz)
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
-  inv uuid; m record; n int; ir record;
+  ajans uuid := 'a0000000-0000-4000-8000-000000000004';
+  pro2  uuid := 'a0000000-0000-4000-8000-000000000003';
+  org_a uuid; inv uuid; m_id uuid; m record; n int; ir record;
 BEGIN
-  INSERT INTO public.agency_invitations (agency_id, invited_email, invited_by_id, member_role, status)
-  VALUES ('a0000000-0000-4000-8000-000000000004', 'faz1test+pro2@kashe.net', 'a0000000-0000-4000-8000-000000000004', 'member', 'pending')
-  RETURNING id INTO inv;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  IF org_a IS NULL THEN RAISE EXCEPTION 'ajans kurulusu yok (T1 kaydi -> faz0 tetikleyicisi)'; END IF;
 
-  -- davet bildirimi (on_agency_invitation_insert_notify) — pro2 kayitli oldugu icin gitmeli
-  SELECT count(*) INTO n FROM public.notifications WHERE user_id = 'a0000000-0000-4000-8000-000000000003' AND link = '/davetlerim';
+  -- ajans davet eder (members.manage: owner_seed)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+ajans@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_create(org_a, 'FAZ1TEST+pro2@kashe.net ', 'viewer', 'T3 daveti') INTO inv;
+  EXECUTE 'RESET ROLE';
+
+  SELECT * INTO ir FROM public.organization_invitations WHERE id = inv;
+  IF ir.invited_email <> 'faz1test+pro2@kashe.net' OR ir.invited_user_id IS DISTINCT FROM pro2 OR ir.status <> 'pending' OR ir.role <> 'viewer' THEN
+    RAISE EXCEPTION 'davet: email=% user=% status=% role=%', ir.invited_email, ir.invited_user_id, ir.status, ir.role; END IF;
+
+  -- davet bildirimi (fn_faz10_invitation_notify) — pro2 kayitli oldugu icin gitmeli
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = pro2 AND type = 'team' AND link = '/davetlerim';
   IF n < 1 THEN RAISE EXCEPTION 'davet bildirimi yok'; END IF;
 
-  UPDATE public.agency_invitations SET status = 'accepted' WHERE id = inv;
+  -- pro2 kabul eder
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+pro2@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_respond(inv, true) INTO m_id;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
 
-  SELECT * INTO ir FROM public.agency_invitations WHERE id = inv;
-  IF ir.invited_user_id IS DISTINCT FROM 'a0000000-0000-4000-8000-000000000003'::uuid OR ir.responded_at IS NULL THEN
-    RAISE EXCEPTION 'davet: invited_user_id=% responded_at=%', ir.invited_user_id, ir.responded_at; END IF;
+  SELECT * INTO ir FROM public.organization_invitations WHERE id = inv;
+  IF ir.status <> 'accepted' OR ir.invited_user_id IS DISTINCT FROM pro2 OR ir.responded_at IS NULL THEN
+    RAISE EXCEPTION 'davet: status=% invited_user_id=% responded_at=%', ir.status, ir.invited_user_id, ir.responded_at; END IF;
 
-  SELECT * INTO m FROM public.agency_members WHERE agency_id = 'a0000000-0000-4000-8000-000000000004' AND professional_id = 'a0000000-0000-4000-8000-000000000003';
-  IF m.id IS NULL THEN RAISE EXCEPTION 'agency_members satiri olusmadi'; END IF;
-  IF m.member_role <> 'member' THEN RAISE EXCEPTION 'member_role=% (beklenen member)', m.member_role; END IF;
+  SELECT * INTO m FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro2;
+  IF m.id IS NULL OR m.id <> m_id THEN RAISE EXCEPTION 'organization_memberships satiri olusmadi (donus %)', m_id; END IF;
+  IF m.role <> 'viewer' OR m.status <> 'active' OR m.invited_by IS DISTINCT FROM ajans OR m.legacy_source IS NOT NULL THEN
+    RAISE EXCEPTION 'uyelik: role=% status=% invited_by=% src=%', m.role, m.status, m.invited_by, m.legacy_source; END IF;
+  -- eski tabloya yazilmadi
+  IF EXISTS (SELECT 1 FROM public.agency_members WHERE agency_id = ajans AND professional_id = pro2) THEN
+    RAISE EXCEPTION 'eski agency_members tablosuna yazildi (ayna kapali olmali)'; END IF;
 
-  -- ajansa "katildi" bildirimi (on_agency_member_insert_notify_agency)
-  SELECT count(*) INTO n FROM public.notifications WHERE user_id = 'a0000000-0000-4000-8000-000000000004' AND link = '/profil/ekibim';
+  -- ajansa "katildi" bildirimi (fn_faz10_member_notify)
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = ajans AND type = 'team' AND link = '/profil/ekibim';
   IF n < 1 THEN RAISE EXCEPTION 'ajansa katilim bildirimi yok'; END IF;
 
-  INSERT INTO t_sonuc VALUES (3, 'T3 davet kabul -> uyelik', 'GECTI', 'agency_members olustu, invited_user_id dolduruldu, 2 bildirim gitti');
+  INSERT INTO t_sonuc VALUES (3, 'T3 davet kabul -> uyelik', 'GECTI', 'org_invitation_create (e-posta normalize, kayitli davetli) -> team bildirimi; org_invitation_respond -> organization_memberships (viewer, invited_by), davet accepted, eski tablo bos, ajansa team bildirimi');
 EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
   INSERT INTO t_sonuc VALUES (3, 'T3 davet kabul -> uyelik', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------
--- T4) Uyelikten cikarma -> atama temizligi (trg_remove_assignments_on_leave)
+-- T4) Uyelikten cikarma -> atama temizligi (FAZ 10a: org_member_remove + trg_faz10_remove_assignments_on_leave)
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -345,14 +375,30 @@ BEGIN
   SELECT count(*) INTO n FROM public.conversation_assignees WHERE conversation_id = conv;
   IF n <> 1 THEN RAISE EXCEPTION 'atama satiri bekleniyor 1, bulunan %', n; END IF;
 
-  -- uyelikten cikar
-  DELETE FROM public.agency_members WHERE agency_id = 'a0000000-0000-4000-8000-000000000004' AND professional_id = 'a0000000-0000-4000-8000-000000000003';
+  -- uyelikten cikar (ajans, RPC)
+  PERFORM set_config('request.jwt.claim.sub', 'a0000000-0000-4000-8000-000000000004', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_remove(
+    (SELECT id FROM public.organizations WHERE legacy_profile_id = 'a0000000-0000-4000-8000-000000000004'),
+    'a0000000-0000-4000-8000-000000000003');
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF EXISTS (SELECT 1 FROM public.organization_memberships om JOIN public.organizations o ON o.id = om.organization_id
+              WHERE o.legacy_profile_id = 'a0000000-0000-4000-8000-000000000004' AND om.user_id = 'a0000000-0000-4000-8000-000000000003') THEN
+    RAISE EXCEPTION 'uyelik silinmedi'; END IF;
 
   SELECT count(*) INTO n FROM public.conversation_assignees WHERE conversation_id = conv;
-  IF n <> 0 THEN RAISE EXCEPTION 'atama silinmedi (trg_remove_assignments_on_leave), kalan %', n; END IF;
+  IF n <> 0 THEN RAISE EXCEPTION 'atama silinmedi (trg_faz10_remove_assignments_on_leave), kalan %', n; END IF;
+  -- T3 kabulunde acilan havuz kaydi (FAZ 5) kalir: izi silinen uyelige bagli ("ayrildi"); T17 kendi verisi icin temizler
+  IF NOT EXISTS (SELECT 1 FROM public.organization_talent_records r JOIN public.organizations o ON o.id = r.organization_id
+                  WHERE o.legacy_profile_id = 'a0000000-0000-4000-8000-000000000004' AND r.legacy_agency_member_id IS NOT NULL
+                    AND NOT EXISTS (SELECT 1 FROM public.organization_memberships x WHERE x.id = r.legacy_agency_member_id)) THEN
+    RAISE EXCEPTION 'ayrilan uyenin havuz kaydi kalmadi (FAZ 5 davranisi: kayit kalir)'; END IF;
 
-  INSERT INTO t_sonuc VALUES (4, 'T4 uyelikten cikarma -> atama temizligi', 'GECTI', 'uye silinince conversation_assignees satiri otomatik gitti');
+  INSERT INTO t_sonuc VALUES (4, 'T4 uyelikten cikarma -> atama temizligi', 'GECTI', 'org_member_remove ile uye silinince conversation_assignees satiri otomatik gitti; havuz kaydi kaldi (ayrildi izi)');
 EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (4, 'T4 uyelikten cikarma -> atama temizligi', 'HATA', SQLERRM);
 END $$;
 
@@ -565,11 +611,11 @@ BEGIN
   END;
   EXECUTE 'RESET ROLE';
 
-  -- 7k) authenticated davet sorgusu hata vermez (politika artik auth.email() kullaniyor)
+  -- 7k) authenticated davet sorgusu hata vermez (politika auth.email() kullaniyor; FAZ 10a: organization_invitations)
   PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
   PERFORM set_config('request.jwt.claim.email', 'faz1test+pro2@kashe.net', true);
   EXECUTE 'SET LOCAL ROLE authenticated';
-  SELECT count(*) INTO n FROM public.agency_invitations;
+  SELECT count(*) INTO n FROM public.organization_invitations;
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('request.jwt.claim.email', '', true);
@@ -586,7 +632,7 @@ END $$;
 
 
 -- -----------------------------------------------------------------------------
--- T8) FAZ 0 kiraci temeli: profil -> kurulus, aynalama, yetki, RLS
+-- T8) FAZ 0 kiraci temeli: profil -> kurulus, uyelik/davet (FAZ 10a: ayna yok), yetki, RLS
 -- ON KOSUL: 20260915150000/150100/150200 (faz0 01-03) dalda uygulanmis. T1-T4 verisine dayanir:
 -- ajans (0004) T1'de kaydoldu, pro2 T3'te uye oldu T4'te cikarildi, T5 ajans admin.
 -- Kendi verisi: kurum (0005, business) ve uye (0006, client).
@@ -611,12 +657,14 @@ BEGIN
   IF m.id IS NULL OR m.role <> 'owner' OR m.status <> 'active' OR m.legacy_source <> 'owner_seed' THEN
     RAISE EXCEPTION 'kurucu uyeligi: role=% status=% src=%', m.role, m.status, m.legacy_source; END IF;
 
-  -- 8b) pro2: T3'te eklendi, T4'te silindi -> yeni tabloda da yok; T3 daveti aynalandi (ayni id, accepted, viewer)
+  -- 8b) pro2: T3'te eklendi, T4'te cikarildi -> uyelik yok; T3 daveti accepted/viewer (FAZ 10a: yalniz yeni tablo)
   SELECT count(*) INTO n FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro2;
-  IF n <> 0 THEN RAISE EXCEPTION 'pro2 uyeligi yeni tabloda kaldi (DELETE aynalamasi), n=%', n; END IF;
-  SELECT count(*) INTO n FROM public.agency_invitations ai JOIN public.organization_invitations oi ON oi.id = ai.id
-   WHERE ai.agency_id = ajans AND oi.organization_id = org_a AND oi.status::text = ai.status::text AND oi.role = 'viewer';
-  IF n <> 1 THEN RAISE EXCEPTION 'T3 daveti aynalanmadi (n=%)', n; END IF;
+  IF n <> 0 THEN RAISE EXCEPTION 'pro2 uyeligi kaldi (T4 cikarma), n=%', n; END IF;
+  SELECT count(*) INTO n FROM public.organization_invitations oi
+   WHERE oi.organization_id = org_a AND oi.invited_user_id = pro2 AND oi.status = 'accepted' AND oi.role = 'viewer';
+  IF n <> 1 THEN RAISE EXCEPTION 'T3 daveti yok (n=%)', n; END IF;
+  IF EXISTS (SELECT 1 FROM public.agency_invitations WHERE agency_id = ajans) THEN
+    RAISE EXCEPTION 'eski agency_invitations tablosuna yazilmis (ayna kapali olmali)'; END IF;
 
   -- 8c) client icin kurulus yok
   IF public.organization_id_for_profile(musteri) IS NOT NULL THEN RAISE EXCEPTION 'client icin kurulus olusmus'; END IF;
@@ -641,30 +689,36 @@ BEGIN
   org_k := o.id;
   IF public.organization_id_for_profile(uye) IS NOT NULL THEN RAISE EXCEPTION 'uye (client) icin kurulus olusmus'; END IF;
 
-  -- 8e) business_members INSERT/UPDATE aynalamasi (ayni id; manager->admin, member->viewer)
-  INSERT INTO public.business_members (business_id, member_user_id, member_role) VALUES (kurum, uye, 'manager') RETURNING id INTO bm_id;
+  -- 8e) kurum uyeligi dogrudan yeni tabloda (FAZ 10a); uyumluluk gorunumu v_business_members eski rol adini uretir (admin->manager, viewer->member)
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status) VALUES (org_k, uye, 'admin', 'active') RETURNING id INTO bm_id;
   SELECT * INTO m FROM public.organization_memberships WHERE id = bm_id;
-  IF m.id IS NULL OR m.organization_id <> org_k OR m.user_id <> uye OR m.role <> 'admin' OR m.legacy_source <> 'business_members' THEN
-    RAISE EXCEPTION 'uyelik aynalamasi INSERT: org=% user=% role=% src=%', m.organization_id, m.user_id, m.role, m.legacy_source; END IF;
-  UPDATE public.business_members SET member_role = 'member' WHERE id = bm_id;
-  SELECT role INTO m FROM public.organization_memberships WHERE id = bm_id;
-  IF m.role <> 'viewer' THEN RAISE EXCEPTION 'uyelik aynalamasi UPDATE: role=% (beklenen viewer)', m.role; END IF;
-  SELECT count(*) INTO n FROM (
-    (SELECT id, business_id, member_user_id, member_role FROM public.business_members WHERE business_id = kurum
-     EXCEPT SELECT id, business_id, member_user_id, member_role FROM public.v_business_members WHERE business_id = kurum)
-    UNION ALL
-    (SELECT id, business_id, member_user_id, member_role FROM public.v_business_members WHERE business_id = kurum
-     EXCEPT SELECT id, business_id, member_user_id, member_role FROM public.business_members WHERE business_id = kurum)) x;
-  IF n <> 0 THEN RAISE EXCEPTION 'v_business_members eski tabloyla farkli (% satir)', n; END IF;
+  IF m.id IS NULL OR m.organization_id <> org_k OR m.user_id <> uye OR m.role <> 'admin' OR m.legacy_source IS NOT NULL THEN
+    RAISE EXCEPTION 'uyelik INSERT: org=% user=% role=% src=%', m.organization_id, m.user_id, m.role, m.legacy_source; END IF;
+  SELECT member_role::text INTO st FROM public.v_business_members WHERE id = bm_id AND business_id = kurum AND member_user_id = uye;
+  IF st IS DISTINCT FROM 'manager' THEN RAISE EXCEPTION 'v_business_members: admin -> % (beklenen manager)', st; END IF;
+  UPDATE public.organization_memberships SET role = 'viewer' WHERE id = bm_id;
+  SELECT member_role::text INTO st FROM public.v_business_members WHERE id = bm_id;
+  IF st IS DISTINCT FROM 'member' THEN RAISE EXCEPTION 'v_business_members: viewer -> % (beklenen member)', st; END IF;
+  IF EXISTS (SELECT 1 FROM public.business_members WHERE business_id = kurum) THEN
+    RAISE EXCEPTION 'eski business_members tablosuna yazilmis (ayna kapali olmali)'; END IF;
 
-  -- 8f) business_invitations aynalamasi: pending -> cancelled
-  INSERT INTO public.business_invitations (business_id, invited_email, invited_by_id, member_role, status)
-  VALUES (kurum, 'faz1test+pro1@kashe.net', kurum, 'manager', 'pending') RETURNING id INTO inv;
-  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv AND organization_id = org_k AND role = 'admin';
-  IF st IS DISTINCT FROM 'pending' THEN RAISE EXCEPTION 'davet aynalamasi INSERT: status=%', st; END IF;
-  UPDATE public.business_invitations SET status = 'cancelled' WHERE id = inv;
-  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv;
-  IF st IS DISTINCT FROM 'cancelled' THEN RAISE EXCEPTION 'davet aynalamasi UPDATE: status=%', st; END IF;
+  -- 8f) kurum daveti RPC ile: pending -> cancelled (kayitli davetli pro1: team bildirimi)
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'admin', NULL) INTO inv;
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv AND organization_id = org_k AND role = 'admin' AND invited_user_id = pro1;
+  IF st IS DISTINCT FROM 'pending' THEN RAISE EXCEPTION 'davet INSERT: status=%', st; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = pro1 AND type = 'team' AND link = '/davetlerim';
+  IF n < 1 THEN RAISE EXCEPTION 'pro1 kurum davet bildirimi yok'; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_invitation_cancel(inv);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv AND responded_at IS NOT NULL;
+  IF st IS DISTINCT FROM 'cancelled' THEN RAISE EXCEPTION 'davet iptal: status=%', st; END IF;
 
   -- 8g) has_org_permission / is_org_member (02 matrisi)
   PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
@@ -732,20 +786,19 @@ BEGIN
   IF o.display_name <> 'Test Kurum AS' OR o.subscription_tier <> 'plus' THEN
     RAISE EXCEPTION 'profil -> kurulus guncellemesi yansimadi: ad=% tier=%', o.display_name, o.subscription_tier; END IF;
 
-  -- 8j) DELETE aynalamasi + hata gunlugu bos
-  DELETE FROM public.business_members WHERE id = bm_id;
-  SELECT count(*) INTO n FROM public.organization_memberships WHERE id = bm_id;
-  IF n <> 0 THEN RAISE EXCEPTION 'uyelik DELETE aynalanmadi'; END IF;
+  -- 8j) uyelik silinir; eski ayna gunlugu bos (FAZ 10a: ayna yok, gunluk Hijyen 05'e kadar durur)
+  DELETE FROM public.organization_memberships WHERE id = bm_id;
   SELECT count(*) INTO n FROM public.organization_sync_log;
   IF n <> 0 THEN
     SELECT string_agg(source || '/' || operation || ': ' || detail, ' | ') INTO st FROM public.organization_sync_log;
     RAISE EXCEPTION 'organization_sync_log bos degil (%): %', n, st; END IF;
 
   INSERT INTO t_sonuc VALUES (8, 'T8 FAZ 0 kiraci temeli', 'GECTI',
-    'ajans+kurum kurulusu otomatik, kurucu owner_seed; uyelik INSERT/UPDATE/DELETE ve davet aynalandi (ayni id); v_business_members = business_members; has_org_permission matris + jsonb ince ayar + suspended; RLS uye 1 / pro1 0 / admin hepsi; tax_number ve anon 42501; profil guncellemesi yansidi; sync_log bos');
+    'ajans+kurum kurulusu otomatik, kurucu owner_seed; T3 daveti/uyeligi yalniz yeni tabloda, eski tablolar bos; v_business_members eski rol adi; kurum daveti RPC (pending -> cancelled, team bildirimi); has_org_permission matris + jsonb ince ayar + suspended; RLS uye 1 / pro1 0 / admin hepsi; tax_number ve anon 42501; profil guncellemesi yansidi; sync_log bos');
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
   INSERT INTO t_sonuc VALUES (8, 'T8 FAZ 0 kiraci temeli', 'HATA', SQLERRM);
 END $$;
 
@@ -764,9 +817,10 @@ BEGIN
     RETURN;
   END IF;
 
-  INSERT INTO public.business_members (business_id, member_user_id, member_role) VALUES (kurum, uye, 'manager') RETURNING id INTO bm_id;
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status)
+  SELECT id, uye, 'admin', 'active' FROM public.organizations WHERE legacy_profile_id = kurum RETURNING id INTO bm_id;
 
-  -- uye (manager): member ve manager esigi gecer, owner gecmez; is_business_member true
+  -- uye (admin = eski manager): member ve manager esigi gecer, owner gecmez; is_business_member true
   PERFORM set_config('request.jwt.claim.sub', uye::text, true);
   IF NOT public.has_business_role(kurum, 'member') OR NOT public.has_business_role(kurum, 'manager') THEN
     RAISE EXCEPTION 'manager: member/manager esigi gecmedi'; END IF;
@@ -785,7 +839,6 @@ BEGIN
     RAISE EXCEPTION 'yeni tablo satiri silindi ama fonksiyon hala true (eski tabloyu okuyor?)'; END IF;
   PERFORM set_config('request.jwt.claim.sub', '', true);
 
-  DELETE FROM public.business_members WHERE id = bm_id;
   SELECT count(*) INTO n FROM public.organization_sync_log;
   IF n <> 0 THEN RAISE EXCEPTION 'organization_sync_log bos degil (%)', n; END IF;
 
@@ -872,7 +925,7 @@ BEGIN
   IF n2 <> n + 1 THEN RAISE EXCEPTION 'denetim satiri sayisi % -> % (beklenen +1)', n, n2; END IF;
 
   -- 10e) RPC: viewer uye (settings.manage yok) -> 42501; iliskisiz pro1 -> 42501; anon -> 42501
-  INSERT INTO public.business_members (business_id, member_user_id, member_role) VALUES (kurum, uye, 'member') RETURNING id INTO bm_id;
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status) VALUES (org_k, uye, 'viewer', 'active') RETURNING id INTO bm_id;
   PERFORM set_config('request.jwt.claim.sub', uye::text, true);
   BEGIN
     EXECUTE 'SET LOCAL ROLE authenticated';
@@ -894,7 +947,7 @@ BEGIN
     EXECUTE 'RESET ROLE';
     RAISE EXCEPTION 'anon internal_audit_recent cagirdi';
   EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
-  DELETE FROM public.business_members WHERE id = bm_id;
+  DELETE FROM public.organization_memberships WHERE id = bm_id;
 
   -- 10f) reddedilen denemeler denetime yazilmamis olmali (RAISE geri alir); sahip okumasi tek kayit
   SELECT count(*) INTO n2 FROM internal.access_audit WHERE organization_id = org_k;
@@ -1792,7 +1845,7 @@ END $$;
 -- -----------------------------------------------------------------------------
 -- T17) FAZ 5 yetenek havuzu. ON KOSUL: 20260930120000/120100 (faz5 01-02) dalda.
 -- T8 verisine dayanir: ajans (0004) org_a sahibi (T5'ten beri admin), kurum (0005) org_k sahibi.
--- Kendi verisi: pro1 (0002) Ekibim uyesi (agency_members -> FAZ 0 aynasi) + crew_coordinator; musteri (0001) viewer,
+-- Kendi verisi: pro1 (0002) Ekibim uyesi (organization_memberships; FAZ 10a) + crew_coordinator; musteri (0001) viewer,
 -- uye (0006) finance (dogrudan uyelik); pro2 (0003) harici kayit -> davet -> claim; test rolleri faz1test-havuz-a/b.
 -- -----------------------------------------------------------------------------
 DO $$
@@ -1825,10 +1878,10 @@ BEGIN
   SELECT canonical_email INTO st FROM public.talents WHERE id = t_pro1;
   IF st IS DISTINCT FROM 'faz1test+pro1@kashe.net' THEN RAISE EXCEPTION 'pro1 canonical_email=% (ayna)', st; END IF;
 
-  -- uyelikler: pro1 Ekibim uyesi (agency_members -> FAZ 0 aynasi, sonra crew_coordinator); musteri viewer, uye finance dogrudan
-  INSERT INTO public.agency_members (agency_id, professional_id, member_role) VALUES (ajans, pro1, 'member') RETURNING id INTO am_id;
-  SELECT count(*) INTO n FROM public.organization_memberships WHERE id = am_id AND organization_id = org_a AND user_id = pro1;
-  IF n <> 1 THEN RAISE EXCEPTION 'pro1 uyeligi aynalanmadi (FAZ 0)'; END IF;
+  -- T3/T4 kalintisi: pro2'nin davet kabulunde acilan havuz kaydi silinir (T17 havuzu sifirdan kurar)
+  DELETE FROM public.organization_talent_records WHERE organization_id = org_a;
+  -- uyelikler (FAZ 10a: dogrudan yeni tablo): pro1 Ekibim uyesi (viewer, sonra crew_coordinator); musteri viewer, uye finance
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status) VALUES (org_a, pro1, 'viewer', 'active') RETURNING id INTO am_id;
   UPDATE public.organization_memberships SET role = 'crew_coordinator', status = 'active' WHERE id = am_id;
   INSERT INTO public.organization_memberships (organization_id, user_id, role, status)
   VALUES (org_a, musteri, 'viewer', 'active'), (org_a, uye, 'finance', 'active')
@@ -2071,7 +2124,8 @@ BEGIN
   SELECT invitation_status::text, invitation_token INTO r FROM public.organization_talent_records WHERE id = rec3;
   IF r.invitation_status <> 'declined' OR r.invitation_token IS NOT NULL THEN RAISE EXCEPTION 'decline: status=% token=%', r.invitation_status, r.invitation_token; END IF;
 
-  -- 17g) dolum fonksiyonu: pro1 (agency_members) -> yeni kayit + rol (provider_services'tan); pro2 (agency_members) -> mevcut kayda iz; ikinci kosu 0
+  -- 17g) Ekibim -> havuz esitleme (FAZ 10a: sync_org_talent_pool, eski faz5_backfill_agency_members yerine): pro1 -> yeni kayit + rol
+  --      (provider_services'tan); pro2 -> mevcut kayda uyelik izi; ikinci kosu 0
   PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   INSERT INTO public.services (profile_id, category_id, title, price_min, price_max, price_unit, sort_order)
@@ -2079,10 +2133,14 @@ BEGIN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
   IF NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a) THEN RAISE EXCEPTION 'provider_services turemedi (2b)'; END IF;
-  INSERT INTO public.agency_members (agency_id, professional_id, member_role) VALUES (ajans, pro2, 'member') RETURNING id INTO am2_id;
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status) VALUES (org_a, pro2, 'viewer', 'active') RETURNING id INTO am2_id;
 
-  SELECT * INTO d FROM public.faz5_backfill_agency_members();
-  IF d.yeni_kayit <> 1 OR d.yeni_rol < 1 OR d.atlanan <> 0 THEN RAISE EXCEPTION 'dolum: yeni=% rol=% atlanan=% (1/>=1/0)', d.yeni_kayit, d.yeni_rol, d.atlanan; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.sync_org_talent_pool(org_a) INTO n;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF n <> 1 THEN RAISE EXCEPTION 'esitleme: yeni kayit % (1 beklenir: pro1; pro2 mevcut kayda iz)', n; END IF;
   SELECT * INTO r FROM public.organization_talent_records WHERE legacy_agency_member_id = am_id;
   IF r.id IS NULL OR r.talent_id IS DISTINCT FROM t_pro1 OR r.source <> 'marketplace_linked' OR r.name IS DISTINCT FROM (SELECT trim(full_name) FROM public.profiles WHERE id = pro1) OR r.created_by IS DISTINCT FROM ajans THEN
     RAISE EXCEPTION 'pro1 dolum kaydi: id=% talent=% source=% name=% by=%', r.id, r.talent_id, r.source, r.name, r.created_by; END IF;
@@ -2090,15 +2148,20 @@ BEGIN
   IF n <> 1 THEN RAISE EXCEPTION 'pro1 dolum rolu yok'; END IF;
   SELECT legacy_agency_member_id INTO r FROM public.organization_talent_records WHERE id = rec;
   IF r.legacy_agency_member_id IS DISTINCT FROM am2_id THEN RAISE EXCEPTION 'pro2 mevcut kaydina dolum izi yazilmadi (%)', r.legacy_agency_member_id; END IF;
-  SELECT * INTO d FROM public.faz5_backfill_agency_members();
-  IF d.yeni_kayit <> 0 OR d.yeni_rol <> 0 THEN RAISE EXCEPTION 'dolum idempotan degil (yeni=% rol=%)', d.yeni_kayit, d.yeni_rol; END IF;
-  SELECT count(*) INTO n FROM public.agency_members a JOIN public.organizations o ON o.legacy_profile_id = a.agency_id
-    JOIN public.talents t ON t.user_id = a.professional_id
-   WHERE NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
-  IF n <> 0 THEN RAISE EXCEPTION 'havuz kaydi olmayan agency_members var (%)', n; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.sync_org_talent_pool(org_a) INTO n;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF n <> 0 THEN RAISE EXCEPTION 'esitleme idempotan degil (yeni=%)', n; END IF;
+  SELECT count(*) INTO n FROM public.organization_memberships m JOIN public.organizations o ON o.id = m.organization_id
+    JOIN public.talents t ON t.user_id = m.user_id AND t.claim_status <> 'merged'
+   WHERE m.organization_id = org_a AND m.status = 'active' AND m.user_id <> o.legacy_profile_id
+     AND NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
+  IF n <> 0 THEN RAISE EXCEPTION 'havuz kaydi olmayan Ekibim uyesi var (%)', n; END IF;
 
   INSERT INTO t_sonuc VALUES (17, 'T17 FAZ 5 yetenek havuzu', 'GECTI',
-    'modul: ajans acik / kurum kapali; kimlik aynasi; owner harici kayit + 2 rol (ikinci birincil 23505, visibility CHECK, kurulus sabit); crew_coordinator yazdi/okudu, viewer 0 satir + INSERT 42501, kurum 42501 (modul), anon 42501; find_talent_by_contact pro1 e-posta / client yok / viewer 42501 + denetim; oranlar: tarihce (eski kapandi), finance okudu+kapatti, crew_coordinator/kurum/anon 42501, dogrudan tablo 42501, denetim; davet: token sutunu kapali, yanlis e-posta 42501, pro2 claim (talent bagli, claimed), ayni token yok, suresi gecmis 22023, client claim yok, decline; dolum: pro1 yeni kayit+rol, pro2 mevcut kayda iz, idempotan, kayma 0');
+    'modul: ajans acik / kurum kapali; kimlik aynasi; owner harici kayit + 2 rol (ikinci birincil 23505, visibility CHECK, kurulus sabit); crew_coordinator yazdi/okudu, viewer 0 satir + INSERT 42501, kurum 42501 (modul), anon 42501; find_talent_by_contact pro1 e-posta / client yok / viewer 42501 + denetim; oranlar: tarihce (eski kapandi), finance okudu+kapatti, crew_coordinator/kurum/anon 42501, dogrudan tablo 42501, denetim; davet: token sutunu kapali, yanlis e-posta 42501, pro2 claim (talent bagli, claimed), ayni token yok, suresi gecmis 22023, client claim yok, decline; esitleme (sync_org_talent_pool): pro1 yeni kayit+rol, pro2 mevcut kayda uyelik izi, idempotan, kayma 0');
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
@@ -2108,7 +2171,7 @@ END $$;
 
 -- -----------------------------------------------------------------------------
 -- T18) FAZ 5/03 Ekibim -> havuz RPC'leri. ON KOSUL: 20260930130000 (faz5 03) dalda. T17 verisine dayanir
--- (ajans org_a; agency_members: pro1 ve pro2; havuz kayitlari dolumla yazilmis; musteri viewer uyesi).
+-- (ajans org_a; Ekibim uyeleri pro1 ve pro2 [organization_memberships]; havuz kayitlari esitlemeyle yazilmis; musteri viewer uyesi).
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -2123,8 +2186,8 @@ BEGIN
     RETURN;
   END IF;
   SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
-  SELECT id INTO am1 FROM public.agency_members WHERE agency_id = ajans AND professional_id = pro1;
-  SELECT id INTO am2 FROM public.agency_members WHERE agency_id = ajans AND professional_id = pro2;
+  SELECT id INTO am1 FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro1;
+  SELECT id INTO am2 FROM public.organization_memberships WHERE organization_id = org_a AND user_id = pro2;
   SELECT id INTO t_pro2 FROM public.talents WHERE user_id = pro2;
   IF org_a IS NULL OR am1 IS NULL OR am2 IS NULL THEN RAISE EXCEPTION 'T17 verisi yok (org=%, am1=%, am2=%)', org_a, am1, am2; END IF;
 
@@ -2179,9 +2242,10 @@ BEGIN
   SELECT count(*) INTO n FROM internal.access_audit WHERE organization_id = org_a AND detail->>'op' = 'talent.sync';
   IF n < 1 THEN RAISE EXCEPTION 'talent.sync denetim satiri yok'; END IF;
   -- kayma sifir
-  SELECT count(*) INTO n FROM public.agency_members a JOIN public.organizations o ON o.legacy_profile_id = a.agency_id
-    JOIN public.talents t ON t.user_id = a.professional_id
-   WHERE NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
+  SELECT count(*) INTO n FROM public.organization_memberships m JOIN public.organizations o ON o.id = m.organization_id
+    JOIN public.talents t ON t.user_id = m.user_id AND t.claim_status <> 'merged'
+   WHERE m.organization_id = org_a AND m.status = 'active' AND m.user_id <> o.legacy_profile_id
+     AND NOT EXISTS (SELECT 1 FROM public.organization_talent_records x WHERE x.organization_id = o.id AND x.talent_id = t.id);
   IF n <> 0 THEN RAISE EXCEPTION 'kayma % (0 beklenir)', n; END IF;
 
   INSERT INTO t_sonuc VALUES (18, 'T18 FAZ 5 Ekibim -> havuz RPC', 'GECTI',
@@ -2233,7 +2297,8 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro1 AND role_id = rol_a)
      OR NOT EXISTS (SELECT 1 FROM public.provider_services WHERE provider_id = pro2 AND role_id = rol_b) THEN
     RAISE EXCEPTION 'provider_services turetilmedi'; END IF;
-  IF (SELECT count(*) FROM public.agency_members WHERE agency_id = ajans AND professional_id IN (pro1, pro2)) <> 2 THEN
+  IF (SELECT count(*) FROM public.organization_memberships m JOIN public.organizations o ON o.id = m.organization_id
+       WHERE o.legacy_profile_id = ajans AND m.user_id IN (pro1, pro2) AND m.status = 'active') <> 2 THEN
     RAISE EXCEPTION 'pro1/pro2 ajans uyesi degil (T17 verisi)'; END IF;
 
   PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
@@ -3414,7 +3479,7 @@ END $$;
 
 -- -----------------------------------------------------------------------------
 -- T25) FAZ 8-U uyelik rolu. ON KOSUL: 20261020120000 (faz8u 01) dalda. Test Ajans kurulusu (owner 0004 owner_seed, sales 0001,
---      crew_coordinator 0002 [agency_members], viewer 0003 [agency_members]) verisine dayanir. Sonda roller eski haline doner.
+--      crew_coordinator 0002, viewer 0003) verisine dayanir. FAZ 10a: eski tablo yazimi yok. Sonda roller eski haline doner.
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -3434,30 +3499,27 @@ BEGIN
   IF org_a IS NULL OR m_pro1 IS NULL OR m_pro2 IS NULL OR m_owner IS NULL THEN
     RAISE EXCEPTION 'on kosul: org_a=% m_pro1=% m_pro2=% m_owner=%', org_a, m_pro1, m_pro2, m_owner;
   END IF;
-  SELECT legacy_source INTO st FROM public.organization_memberships WHERE id = m_pro2;
-  IF st <> 'agency_members' THEN RAISE EXCEPTION 'on kosul: pro2 legacy_source % (agency_members)', st; END IF;
-
-  -- 1) owner -> pro2 viewer -> sales (ince rol); eski tablo member kalir
+  -- 1) owner -> pro2 viewer -> sales (ince rol); uyumluluk gorunumu v_agency_members 'member' gosterir
   PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   PERFORM public.org_member_set_role(m_pro2, 'sales');
   EXECUTE 'RESET ROLE';
   SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
   IF st <> 'sales' THEN RAISE EXCEPTION 'pro2 rol % (sales)', st; END IF;
-  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro2;
-  IF st <> 'member' THEN RAISE EXCEPTION 'pro2 eski rol % (member)', st; END IF;
+  SELECT member_role::text INTO st FROM public.v_agency_members WHERE id = m_pro2;
+  IF st <> 'member' THEN RAISE EXCEPTION 'pro2 gorunum rolu % (member)', st; END IF;
 
-  -- 2) eski satirda rol disi guncelleme -> ince rol KORUNUR (FAZ 8-U aynasi)
-  UPDATE public.agency_members SET joined_at = joined_at WHERE id = m_pro2;
+  -- 2-3) (FAZ 10a: eski tablo yazilmaz; ayna testleri kalkti) owner -> pro2 admin (sales -> admin)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_set_role(m_pro2, 'admin');
+  EXECUTE 'RESET ROLE';
   SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
-  IF st <> 'sales' THEN RAISE EXCEPTION 'ayna ince rolu ezdi: % (sales)', st; END IF;
+  IF st <> 'admin' THEN RAISE EXCEPTION 'pro2 rol % (admin)', st; END IF;
+  SELECT member_role::text INTO st FROM public.v_agency_members WHERE id = m_pro2;
+  IF st <> 'manager' THEN RAISE EXCEPTION 'pro2 gorunum rolu % (manager)', st; END IF;
 
-  -- 3) eski satirda rol degisimi -> ayna yazar (manager -> admin)
-  UPDATE public.agency_members SET member_role = 'manager' WHERE id = m_pro2;
-  SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
-  IF st <> 'admin' THEN RAISE EXCEPTION 'ayna rol degisimini yazmadi: % (admin)', st; END IF;
-
-  -- 4) owner -> pro2 admin -> project_manager; eski tablo member'a doner
+  -- 4) owner -> pro2 admin -> project_manager; pro1 -> admin
   PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   PERFORM public.org_member_set_role(m_pro2, 'project_manager');
@@ -3465,10 +3527,8 @@ BEGIN
   EXECUTE 'RESET ROLE';
   SELECT role::text INTO st FROM public.organization_memberships WHERE id = m_pro2;
   IF st <> 'project_manager' THEN RAISE EXCEPTION 'pro2 rol % (project_manager)', st; END IF;
-  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro2;
-  IF st <> 'member' THEN RAISE EXCEPTION 'pro2 eski rol % (member, admin sonrasi)', st; END IF;
-  SELECT member_role::text INTO st FROM public.agency_members WHERE id = m_pro1;
-  IF st <> 'manager' THEN RAISE EXCEPTION 'pro1 eski rol % (manager)', st; END IF;
+  SELECT member_role::text INTO st FROM public.v_agency_members WHERE id = m_pro1;
+  IF st <> 'manager' THEN RAISE EXCEPTION 'pro1 gorunum rolu % (manager)', st; END IF;
 
   -- 5) admin (pro1): owner veremez (42501), finance verebilir, kendi rolunu degistiremez (22023), sahibi degistiremez (22023)
   PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
@@ -5065,6 +5125,315 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (33, 'T33 FAZ 9c Trust Score V0', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T34) FAZ 10a uyelik tek tablo. ON KOSUL: 20261028120000 (faz10a 01) dalda. Test Kurum (org_k: owner 0005 owner_seed),
+--      uye 0006 (client), pro1 0002 (professional), musteri 0001 (client), Test Ajans (org_a: owner 0004; musteri/uye/pro1/pro2 uyesi).
+--      Kendi verisi: org_k'ya uye daveti/uyeligi (basta temizlenir, sonda silinir); org_a'ya kurum (0005, business) daveti.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  kurum   uuid := 'a0000000-0000-4000-8000-000000000005';
+  uye     uuid := 'a0000000-0000-4000-8000-000000000006';
+  org_a uuid; org_k uuid; inv uuid; inv2 uuid; inv3 uuid; m_id uuid; r record; n int; n0 int; st text;
+BEGIN
+  IF to_regprocedure('public.org_invitation_respond(uuid, boolean)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (34, 'T34 FAZ 10a uyelik tek tablo', 'ATLANDI', 'org_invitation_respond yok; faz10a_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT id INTO org_k FROM public.organizations WHERE legacy_profile_id = kurum;
+  IF org_a IS NULL OR org_k IS NULL THEN RAISE EXCEPTION 'kurulus yok (T8)'; END IF;
+  -- baslangic: org_k'da uye/pro1 izi yok
+  DELETE FROM public.organization_memberships WHERE organization_id = org_k AND user_id IN (uye, pro1);
+  DELETE FROM public.organization_invitations WHERE organization_id = org_k AND invited_user_id IN (uye, pro1);
+  DELETE FROM public.organization_invitations WHERE organization_id = org_a AND invited_user_id = kurum;
+  DELETE FROM public.notifications WHERE user_id IN (uye, kurum, pro1) AND type = 'team';
+
+  -- 34a) davet kurallari (kurum sahibi)
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_create(org_k, ' Faz1Test+uye@kashe.net', 'finance', '  T34 mesaji  ') INTO inv;
+  BEGIN
+    PERFORM public.org_invitation_create(org_k, 'faz1test+uye@kashe.net', 'viewer', NULL);
+    RAISE EXCEPTION 'ayni e-postaya ikinci bekleyen davet gecti';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    PERFORM public.org_invitation_create(org_k, 'faz1test+kurum@kashe.net', 'viewer', NULL);
+    RAISE EXCEPTION 'kendine davet gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'owner', NULL);
+    RAISE EXCEPTION 'owner rolu davetle verildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.org_invitation_create(org_k, 'bozuk-adres', 'viewer', NULL);
+    RAISE EXCEPTION 'gecersiz e-posta gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'viewer', repeat('x', 1001));
+    RAISE EXCEPTION '1001 karakter mesaj gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.organization_invitations WHERE id = inv;
+  IF r.invited_email <> 'faz1test+uye@kashe.net' OR r.invited_user_id IS DISTINCT FROM uye OR r.role <> 'finance'
+     OR r.invitation_message <> 'T34 mesaji' OR r.status <> 'pending' OR r.invited_by_id <> kurum OR r.expires_at IS NULL THEN
+    RAISE EXCEPTION 'davet satiri: email=% user=% role=% msg=% status=% by=%', r.invited_email, r.invited_user_id, r.role, r.invitation_message, r.status, r.invited_by_id; END IF;
+  SELECT body INTO st FROM public.notifications WHERE user_id = uye AND type = 'team' AND link = '/davetlerim' ORDER BY created_at DESC LIMIT 1;
+  IF st IS NULL OR st NOT LIKE '%kurumsal ekibine davet etti' THEN RAISE EXCEPTION 'uye davet bildirimi: %', st; END IF;
+  -- yetkisiz: musteri (org_k uyesi degil) 42501; anon 42501
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+musteri@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'viewer', NULL);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'iliskisiz musteri davet olusturdu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'viewer', NULL);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon davet olusturdu';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 34b) yanit: baskasi (musteri) 42501; uye kabul -> uyelik + davet accepted + kuruma bildirim; ikinci kabul 22023
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+musteri@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_respond(inv, true);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'baskasinin davetini musteri kabul etti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+uye@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_respond(inv, true) INTO m_id;
+  BEGIN
+    PERFORM public.org_invitation_respond(inv, true);
+    RAISE EXCEPTION 'kabul edilmis davet yeniden yanitlandi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.organization_memberships WHERE id = m_id;
+  IF r.id IS NULL OR r.organization_id <> org_k OR r.user_id <> uye OR r.role <> 'finance' OR r.status <> 'active' OR r.invited_by IS DISTINCT FROM kurum THEN
+    RAISE EXCEPTION 'uyelik: org=% user=% role=% status=% by=%', r.organization_id, r.user_id, r.role, r.status, r.invited_by; END IF;
+  SELECT status::text, responded_at INTO r FROM public.organization_invitations WHERE id = inv;
+  IF r.status <> 'accepted' OR r.responded_at IS NULL THEN RAISE EXCEPTION 'davet kabul: status=% responded_at=%', r.status, r.responded_at; END IF;
+  SELECT body INTO st FROM public.notifications WHERE user_id = kurum AND type = 'team' AND link = '/profil/kurumsal-ekip' ORDER BY created_at DESC LIMIT 1;
+  IF st IS NULL OR st NOT LIKE 'Test Uye kurumsal ekibine%' THEN RAISE EXCEPTION 'kuruma katilim bildirimi: %', st; END IF;
+  IF EXISTS (SELECT 1 FROM public.business_members WHERE business_id = kurum AND member_user_id = uye) THEN
+    RAISE EXCEPTION 'eski business_members tablosuna yazildi'; END IF;
+  -- zaten uye olan kisiye yeni davet 22023
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_create(org_k, 'faz1test+uye@kashe.net', 'viewer', NULL);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'zaten uye olana davet gecti';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 34c) ajans kurali: kurum hesabi (business) ajans davetini kabul edemez (22023); ret olur
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+ajans@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_create(org_a, 'faz1test+kurum@kashe.net', 'viewer', NULL) INTO inv2;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.org_invitation_respond(inv2, true);
+    RAISE EXCEPTION 'business hesap ajansa katildi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv2;
+  IF st <> 'pending' THEN RAISE EXCEPTION 'reddedilen kabul sonrasi davet % (pending kalmali)', st; END IF;
+  IF EXISTS (SELECT 1 FROM public.organization_memberships WHERE organization_id = org_a AND user_id = kurum) THEN
+    RAISE EXCEPTION 'kurum ajans uyesi oldu'; END IF;
+  PERFORM public.org_invitation_respond(inv2, false);
+  EXECUTE 'RESET ROLE';
+  SELECT status::text, responded_at INTO r FROM public.organization_invitations WHERE id = inv2;
+  IF r.status <> 'declined' OR r.responded_at IS NULL THEN RAISE EXCEPTION 'ret: status=% responded_at=%', r.status, r.responded_at; END IF;
+
+  -- 34d) iptal: finance uye (members.manage yok) 42501; sahip iptal -> cancelled; ikinci iptal idempotan; iptal edilmise yanit 22023
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.org_invitation_create(org_k, 'faz1test+pro1@kashe.net', 'viewer', NULL) INTO inv3;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+uye@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_cancel(inv3);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'finance uye daveti iptal etti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+kurum@kashe.net', true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_invitation_cancel(inv3);
+  IF NOT public.org_invitation_cancel(inv3) THEN RAISE EXCEPTION 'ikinci iptal false'; END IF;
+  EXECUTE 'RESET ROLE';
+  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv3 AND responded_at IS NOT NULL;
+  IF st IS DISTINCT FROM 'cancelled' THEN RAISE EXCEPTION 'iptal: status=%', st; END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  PERFORM set_config('request.jwt.claim.email', 'faz1test+pro1@kashe.net', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_respond(inv3, true);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'iptal edilmis davet kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 34e) suresi dolmus davet: yanit 22023; durum pending kalir (RAISE yazimi geri alir; arayuz expires_at'a bakar)
+  INSERT INTO public.organization_invitations (organization_id, invited_email, invited_user_id, invited_by_id, role, status, expires_at)
+  VALUES (org_k, 'faz1test+pro1@kashe.net', pro1, kurum, 'viewer', 'pending', now() - interval '1 day') RETURNING id INTO inv3;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_invitation_respond(inv3, true);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'suresi dolmus davet kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  SELECT status::text INTO st FROM public.organization_invitations WHERE id = inv3;
+  IF st <> 'pending' THEN RAISE EXCEPTION 'suresi dolmus davet % (pending kalmali)', st; END IF;
+
+  -- 34f) cikarma: finance uye 42501; sahip kendini cikaramaz 22023; owner_seed cikarilamaz 22023; uye olmayan P0002; uye cikar -> satir yok
+  PERFORM set_config('request.jwt.claim.sub', uye::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_remove(org_k, kurum);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'finance uye sahibi cikardi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.org_member_remove(org_k, kurum);
+    RAISE EXCEPTION 'sahip kendini cikardi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    PERFORM public.org_member_remove(org_k, pro1);
+    RAISE EXCEPTION 'uye olmayan cikarildi';
+  EXCEPTION WHEN no_data_found THEN NULL; END;
+  PERFORM public.org_member_remove(org_k, uye);
+  EXECUTE 'RESET ROLE';
+  IF EXISTS (SELECT 1 FROM public.organization_memberships WHERE organization_id = org_k AND user_id = uye) THEN
+    RAISE EXCEPTION 'uye cikarilamadi'; END IF;
+  -- admin'i yalniz owner cikarir: uye'yi admin olarak ekle, pro1'i admin yap -> pro1 (admin) uye'yi cikaramaz (42501), sahip cikarir
+  INSERT INTO public.organization_memberships (organization_id, user_id, role, status) VALUES (org_k, uye, 'admin', 'active'), (org_k, pro1, 'admin', 'active');
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_remove(org_k, uye);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'admin baska admini cikardi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_remove(org_k, uye);
+  EXECUTE 'RESET ROLE';
+  IF EXISTS (SELECT 1 FROM public.organization_memberships WHERE organization_id = org_k AND user_id = uye) THEN
+    RAISE EXCEPTION 'sahip admini cikaramadi'; END IF;
+
+  -- 34g) ayrilma: pro1 (admin) ayrilir; sahip (owner_seed) ayrilamaz 22023; uye olmayan P0002
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.org_member_leave(org_k);
+  BEGIN
+    PERFORM public.org_member_leave(org_k);
+    RAISE EXCEPTION 'uye olmayan ayrildi';
+  EXCEPTION WHEN no_data_found THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  IF EXISTS (SELECT 1 FROM public.organization_memberships WHERE organization_id = org_k AND user_id = pro1) THEN
+    RAISE EXCEPTION 'pro1 ayrilamadi'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.org_member_leave(org_k);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'kurulus sahibi ayrildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  -- denetim izleri
+  SELECT count(*) INTO n FROM internal.access_audit
+   WHERE organization_id = org_k AND detail->>'op' IN ('invitation.create', 'invitation.cancel', 'invitation.accept', 'member.remove', 'member.leave');
+  IF n < 7 THEN RAISE EXCEPTION 'denetim izi eksik (% < 7)', n; END IF;
+
+  -- 34h) eski tablolar salt okunur: authenticated INSERT/UPDATE/DELETE 42501, SELECT acik; anon INSERT 42501
+  PERFORM set_config('request.jwt.claim.sub', kurum::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.business_invitations (business_id, invited_email, invited_by_id, member_role, status)
+    VALUES (kurum, 'faz1test+pro1@kashe.net', kurum, 'member', 'pending');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated business_invitations INSERT gecti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.agency_members SET member_role = 'manager' WHERE agency_id = ajans;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated agency_members UPDATE gecti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    DELETE FROM public.agency_invitations WHERE agency_id = ajans;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated agency_invitations DELETE gecti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO n FROM public.agency_members;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    INSERT INTO public.agency_members (agency_id, professional_id, member_role) VALUES (ajans, pro1, 'member');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon agency_members INSERT gecti';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  -- ayna/eski tetikleyici yok; yeni tetikleyiciler var
+  SELECT count(*) INTO n FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+   WHERE NOT t.tgisinternal AND c.relname IN ('agency_members', 'business_members', 'agency_invitations', 'business_invitations');
+  IF n <> 0 THEN RAISE EXCEPTION 'eski tablolarda % tetikleyici kaldi', n; END IF;
+  SELECT count(*) INTO n FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+   WHERE NOT t.tgisinternal AND t.tgname IN ('trg_faz10_invitation_notify', 'trg_faz10_member_notify', 'trg_faz10_remove_assignments_on_leave');
+  IF n <> 3 THEN RAISE EXCEPTION 'faz10 tetikleyicileri eksik (%)', n; END IF;
+
+  -- 34i) organization_team_public: anon okur; ajansin yayindaki uyeleri (pro1, pro2), musteri/uye (saglayici degil) yok; kurum ekibi yok
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.organization_team_public WHERE agency_id = ajans AND user_id IN (pro1, pro2);
+    SELECT count(*) INTO n0 FROM public.organization_team_public WHERE agency_id = ajans AND user_id IN (musteri, uye);
+    EXECUTE 'RESET ROLE';
+  EXCEPTION WHEN OTHERS THEN EXECUTE 'RESET ROLE'; RAISE; END;
+  IF n <> 2 THEN RAISE EXCEPTION 'organization_team_public ajans ekibi % (2 beklenir: pro1, pro2)', n; END IF;
+  IF n0 <> 0 THEN RAISE EXCEPTION 'organization_team_public saglayici olmayan uyeyi gosterdi (%)', n0; END IF;
+  IF EXISTS (SELECT 1 FROM public.organization_team_public WHERE organization_id = org_k) THEN
+    RAISE EXCEPTION 'organization_team_public kurum ekibini gosterdi'; END IF;
+
+  -- temizlik: kendi davetleri/bildirimleri (uyelikler yukarida silindi)
+  DELETE FROM public.organization_invitations WHERE id IN (inv, inv2, inv3) OR (organization_id = org_k AND invited_user_id IN (uye, pro1));
+  DELETE FROM public.notifications WHERE user_id IN (uye, kurum, pro1) AND type = 'team';
+
+  INSERT INTO t_sonuc VALUES (34, 'T34 FAZ 10a uyelik tek tablo', 'GECTI',
+    'davet: normalize + kayitli davetli + mesaj, cift 23505, kendine/owner/bozuk e-posta/1001 karakter 22023, iliskisiz ve anon 42501, team bildirimi; kabul: baskasi 42501, uyelik (finance, invited_by), accepted, kuruma team bildirimi, eski tablo bos, ikinci kabul/zaten uye 22023; ajans kurali: business hesap 22023 (pending kalir), ret declined; iptal: finance 42501, sahip cancelled, idempotan, iptal edilmise yanit 22023; sure dolmus 22023 (pending kalir); cikarma: finance 42501, kendini/owner_seed 22023, uye olmayan P0002, admin baska admini cikaramaz 42501, sahip cikarir; ayrilma: admin ayrildi, uye olmayan P0002, sahip 22023; denetim >= 7; eski tablolar: INSERT/UPDATE/DELETE 42501 (authenticated + anon), SELECT acik, tetikleyici 0; faz10 tetikleyicileri 3; organization_team_public anon: pro1+pro2, saglayici olmayan yok, kurum yok');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.email', '', true);
+  INSERT INTO t_sonuc VALUES (34, 'T34 FAZ 10a uyelik tek tablo', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

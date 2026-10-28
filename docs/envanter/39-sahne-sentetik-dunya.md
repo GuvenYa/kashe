@@ -179,6 +179,10 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
 
 ## 11. Kaldigimiz yer ve sonraki oturum (27 Ekim gece)
 
+**28 Ekim 2026 guncellemesi:** FAZ 10a-DB/01 yazildi ve harness'ta dogrulandi (asama4 35/35, asama20); durum ve kapanis notu
+`38-faz10-temizlik.md` bolum 6, uygulama gorevi `40-claude-code-gorevi-10a-p1-uyelik.md`. Sahne v2 uretec degisiklikleri 38 bolum 6 madde 9'da.
+
+
 1. **Guven tek basina kontrol eder:** (a) Merve Avci ile /profil/portfoy'dan bir gorsel yukle -> "yuklendi" (Storage politikalari);
    (b) bir musteriyle /p/<pro>'da "Teklif Al" formunu ELLE doldur (tarih + kisi dahil) -> konusma kartinda TARIH ve KISI cikiyor mu
    (bulgu #31); (c) Vercel Preview `NEXT_PUBLIC_SITE_URL` = sahne onizleme adresi (Config) yapildi -> sonraki push'ta portal baglantisi
