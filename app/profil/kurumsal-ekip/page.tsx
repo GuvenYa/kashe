@@ -4,6 +4,7 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { KurumsalEkipPaneli } from './kurumsal-ekip-paneli';
+import { kurulusumunId, OWNER_SEED_HARIC } from '@/app/lib/uyelik';
 import type {
   BusinessMemberWithProfile,
   BusinessInvitation,
@@ -35,48 +36,43 @@ export default async function KurumsalEkipPage() {
     redirect('/profil');
   }
 
-  // Üyeler + temel profil (üye herhangi bir kullanıcı — kategori/professional join YOK)
-  const { data: membersData } = await supabase
-    .from('business_members')
-    .select(
-      `
-      *,
-      member:profiles!business_members_member_user_id_fkey (
-        id, full_name, avatar_url, company_name, role
-      )
-    `
-    )
-    .eq('business_id', user.id)
-    .order('joined_at', { ascending: false });
+  // FAZ 10a: uyeler ve davetler TEK TABLODAN; rol satirin kendisinde
+  // (ikinci bir rol sorgusu YOK). Uye herhangi bir kullanici — kategori/
+  // professional join YOK.
+  const orgId = await kurulusumunId(supabase, user.id);
+
+  // Kurulusun kendi hesabi (owner_seed) listede GOSTERILMEZ.
+  const { data: membersData, error: uyeHatasi } = orgId
+    ? await supabase
+        .from('organization_memberships')
+        .select(
+          `id, organization_id, user_id, role, status, joined_at, legacy_source,
+           member:profiles!organization_memberships_user_id_fkey (
+             id, full_name, avatar_url, company_name, role
+           )`
+        )
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .or(OWNER_SEED_HARIC)
+        .order('joined_at', { ascending: false })
+    : { data: null, error: null };
+  if (uyeHatasi) console.error('[kurumsal-ekip] uyeler', uyeHatasi);
 
   const members = (membersData ??
     []) as unknown as BusinessMemberWithProfile[];
 
-  // FAZ 8-U: kurulus rolleri. organization_memberships.id = eski uye satirinin
-  // id'si (ayna ayni id ile yazar). RLS: organization_memberships_select_member.
-  const kurulusRolleri: Record<string, string> = {};
-  if (members.length > 0) {
-    const { data: uyelikler, error: uyelikHatasi } = await supabase
-      .from('organization_memberships')
-      .select('id, role')
-      .in(
-        'id',
-        members.map((m) => m.id)
-      );
-    if (uyelikHatasi) console.error('[kurumsal-ekip] kurulus rolleri', uyelikHatasi);
-    for (const u of (uyelikler ?? []) as { id: string; role: string }[]) {
-      kurulusRolleri[u.id] = u.role;
-    }
-  }
-
   // Davetler (tümü)
-  const { data: invitationsData } = await supabase
-    .from('business_invitations')
-    .select('*')
-    .eq('business_id', user.id)
-    .order('created_at', { ascending: false });
+  const { data: invitationsData, error: davetHatasi } = orgId
+    ? await supabase
+        .from('organization_invitations')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+    : { data: null, error: null };
+  if (davetHatasi) console.error('[kurumsal-ekip] davetler', davetHatasi);
 
-  const invitations = (invitationsData ?? []) as BusinessInvitation[];
+  const invitations = (invitationsData ??
+    []) as unknown as BusinessInvitation[];
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
@@ -105,7 +101,6 @@ export default async function KurumsalEkipPage() {
             members={members}
             invitations={invitations}
             currentUserId={user.id}
-            kurulusRolleri={kurulusRolleri}
           />
         </div>
     </PanelKabugu>

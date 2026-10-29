@@ -2,18 +2,34 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
-import {
-  validateInvitationInput,
-  canAcceptInvitation,
-  canDeclineInvitation,
-  canCancelInvitation,
-  type BusinessMemberRole,
-  type BusinessInvitationStatus,
-} from './business-data';
+import { ORG_ROLES, type OrgRole } from '@/app/lib/org-roles';
+import { kurulusumunId, uyelikHataMesaji } from '@/app/lib/uyelik';
+import { validateInvitationInput } from './business-data';
+
+/**
+ * KURUMSAL EKIP YAZMA YOLU — FAZ 10a.
+ *
+ * `app/ajans/agency-actions.ts` AYNASI: davet ve uyelik yazimi TEK YOL RPC
+ * (`org_invitation_create/_cancel/_respond`, `org_member_remove/_leave`).
+ * Uygulamanin `organization_invitations` / `organization_memberships` uzerinde
+ * INSERT/UPDATE/DELETE yetkisi YOK; kurallar RPC govdesinde.
+ *
+ * AJANSTAN FARK: kurumsal ekip uyesi herhangi bir hesap olabilir (erisim
+ * uyelikten gelir) — "profesyonel hesap gerekir" sarti yalniz ajans
+ * kurulusunda isler ve o sarti da RPC uygular.
+ */
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
+
+const UUID_KALIBI =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Davetle verilebilen roller: sahip HARIC (RPC de reddeder). */
+const DAVET_ROLLERI: readonly OrgRole[] = ORG_ROLES.filter(
+  (r) => r !== 'owner'
+);
 
 // =============================================================================
 // Davet oluşturma
@@ -21,12 +37,12 @@ type ActionResult<T = void> =
 
 type InviteUserToTeamInput = {
   email: string;
-  member_role: BusinessMemberRole;
+  role: OrgRole;
   message: string | null;
 };
 
 /**
- * Kurum (business) bir kullanıcıyı email ile ekibe davet eder.
+ * Kurum (business) bir kullaniciyi e-posta ile ekibe davet eder.
  */
 export async function inviteUserToTeam(
   input: InviteUserToTeamInput
@@ -39,63 +55,42 @@ export async function inviteUserToTeam(
 
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  // Validation
   const validationError = validateInvitationInput({
     email: input.email,
     message: input.message,
   });
   if (validationError) return { success: false, error: validationError };
 
-  // Davet eden kurum mu?
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return { success: false, error: 'Profil bulunamadı' };
-  if (profile.role !== 'business') {
-    return {
-      success: false,
-      error: 'Sadece kurumsal hesaplar ekip üyesi davet edebilir',
-    };
+  if (!DAVET_ROLLERI.includes(input.role)) {
+    return { success: false, error: 'Rol geçersiz.' };
   }
 
-  // Kendi email'ine davet engeli — adres oturumdan (profiles.email authenticated'a kapalı, PII adım 2b)
+  // Kendi adresine davet — oturumdan okunur (profiles.email authenticated'a
+  // kapali, PII adim 2b). RPC de reddeder.
   if (input.email.trim().toLowerCase() === (user.email ?? '').toLowerCase()) {
     return { success: false, error: 'Kendine davet gönderemezsin' };
   }
 
-  // INSERT — EXCLUDE constraint pending duplicate'i yakalayacak
-  const { data: newInvitation, error } = await supabase
-    .from('business_invitations')
-    .insert({
-      business_id: user.id,
-      invited_email: input.email.trim().toLowerCase(),
-      invited_by_id: user.id,
-      member_role: input.member_role,
-      invitation_message: input.message?.trim() || null,
-      status: 'pending',
-    })
-    .select('id')
-    .single();
-
-  if (error || !newInvitation) {
-    // EXCLUDE constraint error
-    if (error?.code === '23P01') {
-      return {
-        success: false,
-        error: 'Bu emaile zaten bekleyen bir davet var',
-      };
-    }
-    return {
-      success: false,
-      error: 'Davet gönderilemedi: ' + (error?.message ?? 'bilinmeyen'),
-    };
+  const orgId = await kurulusumunId(supabase, user.id);
+  if (!orgId) {
+    return { success: false, error: 'Kuruluş kaydın bulunamadı.' };
   }
 
-  revalidatePath('/profil/ekibim');
-  return { success: true, data: { id: newInvitation.id } };
+  const { data, error } = await supabase.rpc('org_invitation_create', {
+    p_org: orgId,
+    p_email: input.email.trim().toLowerCase(),
+    p_role: input.role,
+    p_message: input.message?.trim() || null,
+  });
+
+  if (error) {
+    console.error('[kurumsal ekip] davet olusturma', error.code, error.message);
+    return { success: false, error: uyelikHataMesaji(error) };
+  }
+
+  revalidatePath('/profil/kurumsal-ekip');
+  revalidatePath('/davetlerim');
+  return { success: true, data: { id: data as unknown as string } };
 }
 
 // =============================================================================
@@ -108,12 +103,27 @@ export async function inviteUserToTeam(
 export async function cancelTeamInvitation(
   invitationId: string
 ): Promise<ActionResult> {
-  return updateInvitationStatus(
-    invitationId,
-    'cancelled',
-    canCancelInvitation,
-    'business'
-  );
+  if (!UUID_KALIBI.test(invitationId)) {
+    return { success: false, error: 'Davet geçersiz.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { error } = await supabase.rpc('org_invitation_cancel', {
+    p_id: invitationId,
+  });
+  if (error) {
+    console.error('[kurumsal ekip] davet iptali', error.code, error.message);
+    return { success: false, error: uyelikHataMesaji(error) };
+  }
+
+  revalidatePath('/profil/kurumsal-ekip');
+  revalidatePath('/davetlerim');
+  return { success: true };
 }
 
 // =============================================================================
@@ -121,17 +131,12 @@ export async function cancelTeamInvitation(
 // =============================================================================
 
 /**
- * Davetli daveti kabul eder — trigger otomatik business_members'a ekler.
+ * Davetli daveti kabul eder — uyeligi RPC acar.
  */
 export async function acceptTeamInvitation(
   invitationId: string
 ): Promise<ActionResult> {
-  return updateInvitationStatus(
-    invitationId,
-    'accepted',
-    canAcceptInvitation,
-    'invitee'
-  );
+  return respondToTeamInvitation(invitationId, true);
 }
 
 /**
@@ -140,84 +145,35 @@ export async function acceptTeamInvitation(
 export async function declineTeamInvitation(
   invitationId: string
 ): Promise<ActionResult> {
-  return updateInvitationStatus(
-    invitationId,
-    'declined',
-    canDeclineInvitation,
-    'invitee'
-  );
+  return respondToTeamInvitation(invitationId, false);
 }
 
-/**
- * Davet status değişimi için iç yardımcı.
- */
-async function updateInvitationStatus(
+async function respondToTeamInvitation(
   invitationId: string,
-  newStatus: BusinessInvitationStatus,
-  validator: (current: BusinessInvitationStatus) => boolean,
-  actor: 'business' | 'invitee'
+  accept: boolean
 ): Promise<ActionResult> {
-  const supabase = await createClient();
+  if (!UUID_KALIBI.test(invitationId)) {
+    return { success: false, error: 'Davet geçersiz.' };
+  }
 
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  // Daveti çek
-  const { data: invitation } = await supabase
-    .from('business_invitations')
-    .select('id, business_id, invited_user_id, invited_email, status')
-    .eq('id', invitationId)
-    .single();
-
-  if (!invitation) return { success: false, error: 'Davet bulunamadı' };
-
-  // Yetki kontrolü
-  if (actor === 'business') {
-    if (invitation.business_id !== user.id) {
-      return { success: false, error: 'Bu davet senin değil' };
-    }
-  } else {
-    // invitee — email veya user_id ile eşleşmeli
-    const { data: myProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .single();
-
-    if (!myProfile) return { success: false, error: 'Profil bulunamadı' };
-
-    // Adres oturumdan: profiles.email authenticated'a kapalı (PII adım 2b)
-    const emailMatch =
-      invitation.invited_email.toLowerCase() ===
-      (user.email ?? '').toLowerCase();
-    const userMatch = invitation.invited_user_id === user.id;
-
-    if (!emailMatch && !userMatch) {
-      return { success: false, error: 'Bu davet sana ait değil' };
-    }
-
-    // NOT: agency'deki "role==='professional'" gate'i YOK — kurum ekip üyesi
-    // herhangi bir kullanıcı olabilir (erişim üyelikten gelir).
-  }
-
-  if (!validator(invitation.status as BusinessInvitationStatus)) {
-    return { success: false, error: 'Bu işlem mevcut durumda yapılamaz' };
-  }
-
-  const { error } = await supabase
-    .from('business_invitations')
-    .update({ status: newStatus })
-    .eq('id', invitationId);
-
+  const { error } = await supabase.rpc('org_invitation_respond', {
+    p_id: invitationId,
+    p_accept: accept,
+  });
   if (error) {
-    return { success: false, error: 'Güncellenemedi: ' + error.message };
+    console.error('[kurumsal ekip] davet yaniti', error.code, error.message);
+    return { success: false, error: uyelikHataMesaji(error) };
   }
 
-  revalidatePath('/profil/ekibim');
+  revalidatePath('/profil/kurumsal-ekip');
   revalidatePath('/davetlerim');
+  revalidatePath('/profil');
   return { success: true };
 }
 
@@ -226,114 +182,79 @@ async function updateInvitationStatus(
 // =============================================================================
 
 /**
- * Kurum bir üyeyi ekibinden çıkarır.
+ * Kurum bir uyeyi ekibinden cikarir. `membershipId` = `organization_memberships.id`.
  */
 export async function removeTeamMember(
-  memberId: string
+  membershipId: string
 ): Promise<ActionResult> {
-  const supabase = await createClient();
+  if (!UUID_KALIBI.test(membershipId)) {
+    return { success: false, error: 'Üyelik geçersiz.' };
+  }
 
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  const { data: member } = await supabase
-    .from('business_members')
-    .select('id, business_id, member_user_id')
-    .eq('id', memberId)
-    .single();
+  const { data: uyelik } = await supabase
+    .from('organization_memberships')
+    .select('organization_id, user_id')
+    .eq('id', membershipId)
+    .maybeSingle();
 
-  if (!member) return { success: false, error: 'Üye bulunamadı' };
-  if (member.business_id !== user.id) {
-    return { success: false, error: 'Bu kurum senin değil' };
-  }
+  const satir = uyelik as {
+    organization_id: string;
+    user_id: string;
+  } | null;
+  if (!satir) return { success: false, error: 'Üye bulunamadı' };
 
-  const { error } = await supabase
-    .from('business_members')
-    .delete()
-    .eq('id', memberId);
-
+  const { error } = await supabase.rpc('org_member_remove', {
+    p_org: satir.organization_id,
+    p_user: satir.user_id,
+  });
   if (error) {
-    return { success: false, error: 'Çıkarılamadı: ' + error.message };
+    console.error('[kurumsal ekip] uye cikarma', error.code, error.message);
+    return { success: false, error: uyelikHataMesaji(error) };
   }
 
-  revalidatePath('/profil/ekibim');
+  revalidatePath('/profil/kurumsal-ekip');
   return { success: true };
 }
 
 /**
- * Üye kendi üyeliğinden ayrılır.
+ * Uye kendi uyeliginden ayrilir. `membershipId` = `organization_memberships.id`.
  */
-export async function leaveTeam(memberId: string): Promise<ActionResult> {
-  const supabase = await createClient();
+export async function leaveTeam(membershipId: string): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(membershipId)) {
+    return { success: false, error: 'Üyelik geçersiz.' };
+  }
 
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { success: false, error: 'Giriş yapmalısın' };
 
-  const { data: member } = await supabase
-    .from('business_members')
-    .select('id, business_id, member_user_id')
-    .eq('id', memberId)
-    .single();
+  const { data: uyelik } = await supabase
+    .from('organization_memberships')
+    .select('organization_id')
+    .eq('id', membershipId)
+    .eq('user_id', user.id)
+    .maybeSingle();
 
-  if (!member) return { success: false, error: 'Üyelik bulunamadı' };
-  if (member.member_user_id !== user.id) {
-    return { success: false, error: 'Bu üyelik senin değil' };
-  }
+  const satir = uyelik as { organization_id: string } | null;
+  if (!satir) return { success: false, error: 'Üyelik bulunamadı' };
 
-  const { error } = await supabase
-    .from('business_members')
-    .delete()
-    .eq('id', memberId);
-
+  const { error } = await supabase.rpc('org_member_leave', {
+    p_org: satir.organization_id,
+  });
   if (error) {
-    return { success: false, error: 'Ayrılamadın: ' + error.message };
+    console.error('[kurumsal ekip] ayrilma', error.code, error.message);
+    return { success: false, error: uyelikHataMesaji(error) };
   }
 
   revalidatePath('/profil');
-  return { success: true };
-}
-
-/**
- * Üye rolünü değiştir (örn. member → manager).
- */
-export async function updateTeamMemberRole(
-  memberId: string,
-  newRole: BusinessMemberRole
-): Promise<ActionResult> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return { success: false, error: 'Giriş yapmalısın' };
-
-  const { data: member } = await supabase
-    .from('business_members')
-    .select('id, business_id')
-    .eq('id', memberId)
-    .single();
-
-  if (!member) return { success: false, error: 'Üye bulunamadı' };
-  if (member.business_id !== user.id) {
-    return { success: false, error: 'Bu kurum senin değil' };
-  }
-
-  const { error } = await supabase
-    .from('business_members')
-    .update({ member_role: newRole })
-    .eq('id', memberId);
-
-  if (error) {
-    return { success: false, error: 'Güncellenemedi: ' + error.message };
-  }
-
-  revalidatePath('/profil/ekibim');
+  revalidatePath('/profil/kurumsal-ekip');
   return { success: true };
 }

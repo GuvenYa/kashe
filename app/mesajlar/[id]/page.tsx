@@ -7,6 +7,7 @@ import { KarsiTarafPaneli } from './karsi-taraf-paneli';
 import type { Message } from '@/app/lib/types';
 import type { Quote } from '../quotes-data';
 import { getTeamContext } from '@/app/lib/business-write';
+import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 
 type ConversationParticipant = {
   id: string;
@@ -259,20 +260,35 @@ export default async function KonusmaPage({
   const isOwnerAgency =
     conv.professional_id === user.id && conv.professional?.role === 'agency';
 
-  // Owner ajansın ekip üyeleri (atama dropdown'ı için)
+  // Owner ajansın ekip üyeleri (atama dropdown'ı için).
+  // FAZ 10a: uyelik `organization_memberships`'ten okunur. Kurulusun kendi
+  // hesabi (`owner_seed`) listede YOK; atama yalniz PROFESYONEL uyeye yapilir
+  // (`assignConversation` ayni kumeyi dogrular).
   let teamMembers: { id: string; full_name: string | null }[] = [];
   if (isOwnerAgency) {
-    const { data: membersData } = await supabase
-      .from('agency_members')
-      .select(
-        'professional:profiles!agency_members_professional_id_fkey (id, full_name)'
-      )
-      .eq('agency_id', user.id);
+    const orgId = await kurulusumunId(supabase, user.id);
+    if (orgId) {
+      const { data: membersData } = await supabase
+        .from('organization_memberships')
+        .select(
+          `legacy_source,
+           uye:profiles!organization_memberships_user_id_fkey (id, full_name, role)`
+        )
+        .eq('organization_id', orgId)
+        .eq('status', 'active');
 
-    teamMembers = (membersData ?? [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((m) => (m as any).professional)
-      .filter(Boolean) as { id: string; full_name: string | null }[];
+      teamMembers = ((membersData ?? []) as unknown as {
+        legacy_source: string | null;
+        uye: { id: string; full_name: string | null; role: string } | null;
+      }[])
+        .filter((m) => m.legacy_source !== OWNER_SEED)
+        .map((m) => m.uye)
+        .filter(
+          (u): u is { id: string; full_name: string | null; role: string } =>
+            !!u && u.role === 'professional'
+        )
+        .map((u) => ({ id: u.id, full_name: u.full_name }));
+    }
   }
 
   return (

@@ -319,7 +319,10 @@ export async function deleteTalentRecord(input: {
 
   // FAZ 5/P3-ek: `talent_id` dolu olmasi silmeye engel DEGIL (P2 sahiplenme ve P3
   // pazaryeri eklemesi de doldurur). Yalniz AKTIF Ekibim uyeligi korunur:
-  // `legacy_agency_member_id` dolu VE o satir `agency_members`'ta hala var.
+  // `legacy_agency_member_id` dolu VE o satir Ekibim uyeligi
+  // (`organization_memberships`) olarak hala aktif.
+  //
+  // FAZ 10a: sutun adi kaldi ama kurulus uyeliginin kimligini tasiyor.
   const { data: kayit } = await supabase
     .from('organization_talent_records')
     .select('id, legacy_agency_member_id')
@@ -333,9 +336,10 @@ export async function deleteTalentRecord(input: {
     .legacy_agency_member_id;
   if (legacyId) {
     const { data: uyelik } = await supabase
-      .from('agency_members')
+      .from('organization_memberships')
       .select('id')
       .eq('id', legacyId)
+      .eq('status', 'active')
       .maybeSingle();
     if (uyelik) {
       return {

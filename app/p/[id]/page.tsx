@@ -7,7 +7,10 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { IletisimButton } from './iletisim-button';
-import { getWritableBusinesses } from '@/app/lib/business-write';
+import {
+  getOwnedBusinessIds,
+  getWritableBusinesses,
+} from '@/app/lib/business-write';
 import { HizmetSecici } from './hizmet-secici';
 import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
@@ -162,10 +165,10 @@ export default async function PublicProfilePage({
 
   const isAgencyProfile = profile.role === 'agency';
 
-  // Ajans ise: barındırdığı profesyonelleri çek
+  // Ajans ise: barındırdığı profesyonelleri çek.
+  // FAZ 10a: acik yuzeyde uyelik rolu YOK — tipte de rol alani kalmadi.
   type AgencyTeamMember = {
     id: string;
-    member_role: string;
     professional: {
       id: string;
       full_name: string | null;
@@ -175,23 +178,47 @@ export default async function PublicProfilePage({
     } | null;
   };
 
+  // FAZ 10a: ACIK ekip listesi `organization_team_public` gorunumunden gelir
+  // (ajans ve uye pazaryerinde yayinda + onayli + askida degil). Gorunumde ROL
+  // SUTUNU YOKTUR: acik yuzeyde uyelik rolu gosterilmez.
   let agencyTeam: AgencyTeamMember[] = [];
   if (isAgencyProfile) {
-    const { data: teamData } = await supabase
-      .from('agency_members')
-      .select(
-        `
-        id, member_role,
-        professional:profiles!agency_members_professional_id_fkey (
-          id, full_name, avatar_url, bio,
-          service_categories!profiles_primary_category_id_fkey (name_tr, emoji)
-        )
-      `
-      )
+    const { data: teamData, error: ekipHatasi } = await supabase
+      .from('organization_team_public')
+      .select('membership_id, user_id, joined_at')
       .eq('agency_id', profile.id)
       .order('joined_at', { ascending: false });
+    if (ekipHatasi) console.error('[profil] ajans ekibi', ekipHatasi);
 
-    agencyTeam = (teamData ?? []) as unknown as AgencyTeamMember[];
+    const ekipSatirlari = (teamData ?? []) as {
+      membership_id: string;
+      user_id: string;
+      joined_at: string | null;
+    }[];
+
+    if (ekipSatirlari.length > 0) {
+      const { data: uyeProfilleri } = await supabase
+        .from('profiles')
+        .select(
+          `id, full_name, avatar_url, bio,
+           service_categories!profiles_primary_category_id_fkey (name_tr, emoji)`
+        )
+        .in(
+          'id',
+          ekipSatirlari.map((s) => s.user_id)
+        );
+
+      const profilHaritasi = new Map(
+        ((uyeProfilleri ?? []) as unknown as AgencyTeamMember['professional'][])
+          .filter((p): p is NonNullable<AgencyTeamMember['professional']> => !!p)
+          .map((p) => [p.id, p])
+      );
+
+      agencyTeam = ekipSatirlari.map((s) => ({
+        id: s.membership_id,
+        professional: profilHaritasi.get(s.user_id) ?? null,
+      }));
+    }
   }
 
   // Profesyonel ise: temsil eden ajanslar
@@ -204,22 +231,48 @@ export default async function PublicProfilePage({
       avatar_url: string | null;
     } | null;
   };
+  // FAZ 10a: "temsil eden ajans" da ayni ACIK gorunumden (yalniz yayindaki
+  // uyelikler). `agency_id` ajansin pazaryeri profil kimligi.
   let representingAgencies: RepresentingAgency[] = [];
   if (profile.role === 'professional') {
-    const { data: repData } = await supabase
-      .from('agency_members')
-      .select(
-        `
-        id,
-        agency:profiles!agency_members_agency_id_fkey (
-          id, full_name, company_name, avatar_url
-        )
-      `
-      )
-      .eq('professional_id', profile.id)
+    const { data: repData, error: temsilHatasi } = await supabase
+      .from('organization_team_public')
+      .select('membership_id, agency_id, joined_at')
+      .eq('user_id', profile.id)
       .order('joined_at', { ascending: false });
+    if (temsilHatasi) console.error('[profil] temsil eden ajans', temsilHatasi);
 
-    representingAgencies = (repData ?? []) as unknown as RepresentingAgency[];
+    const temsilSatirlari = (repData ?? []) as {
+      membership_id: string;
+      agency_id: string | null;
+      joined_at: string | null;
+    }[];
+    const ajansIdleri = temsilSatirlari
+      .map((s) => s.agency_id)
+      .filter((v): v is string => !!v);
+
+    if (ajansIdleri.length > 0) {
+      const { data: ajansProfilleri } = await supabase
+        .from('profiles')
+        .select('id, full_name, company_name, avatar_url')
+        .in('id', ajansIdleri);
+
+      const ajansHaritasi = new Map(
+        ((ajansProfilleri ?? []) as {
+          id: string;
+          full_name: string | null;
+          company_name: string | null;
+          avatar_url: string | null;
+        }[]).map((a) => [a.id, a])
+      );
+
+      representingAgencies = temsilSatirlari.map((s) => ({
+        id: s.membership_id,
+        agency: s.agency_id
+          ? (ajansHaritasi.get(s.agency_id) ?? null)
+          : null,
+      }));
+    }
   }
   // Hizmetler + Portföy + Paketler + Müsaitlik
   const [
@@ -303,13 +356,11 @@ export default async function PublicProfilePage({
     // tamamlanmış rezervasyonu olan her ziyaretçi (professional dahil) aday olur;
     // gerçek yetki aşağıdaki completed-booking sorgusu + action/RLS ile belirlenir.
     reviewCandidateIds.push(user.id);
-    const { data: ownerMemberships } = await supabase
-      .from('business_members')
-      .select('business_id')
-      .eq('member_user_id', user.id)
-      .eq('member_role', 'owner');
-    for (const m of ownerMemberships ?? []) {
-      reviewCandidateIds.push(m.business_id);
+    // FAZ 10a: owner-ROL olunan kurum kuruluslari `organization_memberships`'ten
+    // (eski rol esdegeri `eskiKurumRolu`; kurulusun kendi hesabi zaten
+    // `user.id` ile yukarida eklendi).
+    for (const businessId of await getOwnedBusinessIds()) {
+      reviewCandidateIds.push(businessId);
     }
   }
   const canReview = reviewCandidateIds.length > 0;

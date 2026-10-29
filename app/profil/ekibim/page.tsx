@@ -4,6 +4,7 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { EkibimPaneli } from './ekibim-paneli';
+import { kurulusumunId, OWNER_SEED_HARIC } from '@/app/lib/uyelik';
 import type {
   AgencyMemberWithProfile,
   AgencyInvitation,
@@ -35,50 +36,43 @@ export default async function EkibimPage() {
     redirect('/profil');
   }
 
-  // Üyeler + profesyonel detayları
-  const { data: membersData } = await supabase
-    .from('agency_members')
-    .select(
-      `
-      *,
-      professional:profiles!agency_members_professional_id_fkey (
-        id, full_name, avatar_url, role, bio, primary_category_id,
-        service_categories!profiles_primary_category_id_fkey (name_tr, emoji)
-      )
-    `
-    )
-    .eq('agency_id', user.id)
-    .order('joined_at', { ascending: false });
+  // FAZ 10a: uyeler ve davetler TEK TABLODAN. Rol satirin kendisinde
+  // (`organization_memberships.role`), ikinci bir rol sorgusu YOK.
+  const orgId = await kurulusumunId(supabase, user.id);
+
+  // Kurulusun kendi hesabi (`owner_seed`) ekip listesinde GOSTERILMEZ:
+  // eski `agency_members` tablosunda da yoktu.
+  const { data: membersData, error: uyeHatasi } = orgId
+    ? await supabase
+        .from('organization_memberships')
+        .select(
+          `id, organization_id, user_id, role, status, joined_at, legacy_source,
+           professional:profiles!organization_memberships_user_id_fkey (
+             id, full_name, avatar_url, role, bio, primary_category_id,
+             service_categories!profiles_primary_category_id_fkey (name_tr, emoji)
+           )`
+        )
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .or(OWNER_SEED_HARIC)
+        .order('joined_at', { ascending: false })
+    : { data: null, error: null };
+  if (uyeHatasi) console.error('[ekibim] uyeler', uyeHatasi);
 
   const members = (membersData ??
     []) as unknown as AgencyMemberWithProfile[];
 
-  // FAZ 8-U: kurulus rolleri. organization_memberships.id = eski uye satirinin
-  // id'si (ayna ayni id ile yazar), bu yuzden dogrudan uye idleriyle sorgulanir.
-  // RLS: organization_memberships_select_member.
-  const kurulusRolleri: Record<string, string> = {};
-  if (members.length > 0) {
-    const { data: uyelikler, error: uyelikHatasi } = await supabase
-      .from('organization_memberships')
-      .select('id, role')
-      .in(
-        'id',
-        members.map((m) => m.id)
-      );
-    if (uyelikHatasi) console.error('[ekibim] kurulus rolleri', uyelikHatasi);
-    for (const u of (uyelikler ?? []) as { id: string; role: string }[]) {
-      kurulusRolleri[u.id] = u.role;
-    }
-  }
-
   // Davetler (tümü)
-  const { data: invitationsData } = await supabase
-    .from('agency_invitations')
-    .select('*')
-    .eq('agency_id', user.id)
-    .order('created_at', { ascending: false });
+  const { data: invitationsData, error: davetHatasi } = orgId
+    ? await supabase
+        .from('organization_invitations')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+    : { data: null, error: null };
+  if (davetHatasi) console.error('[ekibim] davetler', davetHatasi);
 
-  const invitations = (invitationsData ?? []) as AgencyInvitation[];
+  const invitations = (invitationsData ?? []) as unknown as AgencyInvitation[];
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
@@ -121,7 +115,6 @@ export default async function EkibimPage() {
             members={members}
             invitations={invitations}
             currentUserId={user.id}
-            kurulusRolleri={kurulusRolleri}
           />
         </div>
     </PanelKabugu>

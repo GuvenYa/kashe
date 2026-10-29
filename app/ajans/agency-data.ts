@@ -1,21 +1,22 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { ORG_ROLE_LABELS, type OrgRole } from '@/app/lib/org-roles';
+import type { DavetDurumu, UyelikDurumu } from '@/app/lib/uyelik';
+
 /**
- * Agency sistemi için type'lar, sabitler, helper'lar.
+ * Ekibim (ajans) sistemi icin type'lar, sabitler, helper'lar.
  * 'use server' OLMAYAN dosya — async olmayan export'lar burada.
+ *
+ * FAZ 10a: satirlar `organization_memberships` / `organization_invitations`
+ * tablolarindan gelir. Uyelik rolu TEK GERCEK `OrgRole` (yedi ince rol); eski
+ * uc kademeli `member_role` ('owner'|'manager'|'member') ve onun secenek
+ * listesi KALKTI — etiketler `ORG_ROLE_LABELS`'tan okunur.
  */
 
 // =============================================================================
 // Status enums
 // =============================================================================
 
-export type AgencyMemberRole = 'owner' | 'manager' | 'member';
-
-export type AgencyInvitationStatus =
-  | 'pending'
-  | 'accepted'
-  | 'declined'
-  | 'cancelled'
-  | 'expired';
+export type AgencyInvitationStatus = DavetDurumu;
 
 // =============================================================================
 // Row types (DB shape)
@@ -23,19 +24,21 @@ export type AgencyInvitationStatus =
 
 export type AgencyMember = {
   id: string;
-  agency_id: string;
-  professional_id: string;
-  member_role: AgencyMemberRole;
-  joined_at: string;
+  organization_id: string;
+  user_id: string;
+  role: OrgRole;
+  status: UyelikDurumu;
+  joined_at: string | null;
+  legacy_source: string | null;
 };
 
 export type AgencyInvitation = {
   id: string;
-  agency_id: string;
+  organization_id: string;
   invited_email: string;
   invited_user_id: string | null;
-  invited_by_id: string;
-  member_role: AgencyMemberRole;
+  invited_by_id: string | null;
+  role: OrgRole;
   status: AgencyInvitationStatus;
   invitation_message: string | null;
   created_at: string;
@@ -57,37 +60,24 @@ export type AgencyMemberWithProfile = AgencyMember & {
   } | null;
 };
 
+/**
+ * Davet + davet eden kurulusun kimligi.
+ *
+ * `agency.id` kurulusun PAZARYERI profil kimligi (`legacy_profile_id`):
+ * `/p/[id]` baglantisi onu bekliyor. Ad kurulus satirindan
+ * (`organizations_public.display_name`), avatar profilden.
+ */
 export type AgencyInvitationWithRelations = AgencyInvitation & {
   agency: {
     id: string;
-    full_name: string | null;
+    display_name: string | null;
     avatar_url: string | null;
-    company_name: string | null;
-    bio: string | null;
   } | null;
-};
-
-// Ajansın görünür özet bilgisi (profesyonel profilinde "şu ajansların üyesiyim")
-export type AgencyBrief = {
-  id: string;
-  full_name: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  member_role: AgencyMemberRole;
 };
 
 // =============================================================================
 // Constants
 // =============================================================================
-
-export const MEMBER_ROLE_OPTIONS: {
-  key: AgencyMemberRole;
-  label: string;
-}[] = [
-  { key: 'owner', label: 'Sahibi' },
-  { key: 'manager', label: 'Yönetici' },
-  { key: 'member', label: 'Üye' },
-];
 
 export const INVITATION_STATUS_OPTIONS: {
   key: AgencyInvitationStatus;
@@ -104,8 +94,9 @@ export const INVITATION_STATUS_OPTIONS: {
 // Helpers
 // =============================================================================
 
-export function getMemberRoleLabel(role: AgencyMemberRole): string {
-  return MEMBER_ROLE_OPTIONS.find((r) => r.key === role)?.label ?? role;
+/** FAZ 10a: etiket tek kaynak `org-roles.ts`. */
+export function getMemberRoleLabel(role: OrgRole | string): string {
+  return ORG_ROLE_LABELS[role as OrgRole] ?? role;
 }
 
 export function getInvitationStatusLabel(
@@ -133,7 +124,23 @@ export function getInvitationStatusTone(
 }
 
 /**
- * Davet status transition izinleri.
+ * Suresi dolmus bekleyen davet.
+ *
+ * DB durumu `pending` BIRAKIR (RPC suresi dolmus davette 22023 verir ve
+ * yazimi geri alir); "Suresi doldu" kararini arayuz `expires_at` ile verir.
+ */
+export function isInvitationExpired(invitation: {
+  status: AgencyInvitationStatus;
+  expires_at: string | null;
+}): boolean {
+  if (invitation.status !== 'pending' || !invitation.expires_at) return false;
+  const t = new Date(invitation.expires_at).getTime();
+  return Number.isFinite(t) && t < Date.now();
+}
+
+/**
+ * Davet status transition izinleri — yalniz DUGME GORUNURLUGU icin.
+ * Gercek kural DB'de (`org_invitation_respond` / `_cancel`).
  */
 export function canAcceptInvitation(status: AgencyInvitationStatus): boolean {
   return status === 'pending';
@@ -187,7 +194,8 @@ export function formatInvitationExpiry(expiresAt: string): string {
 }
 
 /**
- * Validation: davet input'u
+ * Validation: davet input'u — yalniz bos/kalip kontrolu.
+ * Normalize ve asil dogrulama DB'de (`org_invitation_create`).
  */
 export function validateInvitationInput(input: {
   email: string;

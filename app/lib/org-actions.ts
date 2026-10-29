@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { ORG_ROLES, type OrgRole } from '@/app/lib/org-roles';
+import { uyelikHataMesaji } from '@/app/lib/uyelik';
 
 /**
  * FAZ 8-U — kurulus uyelik rolu.
@@ -11,45 +12,15 @@ import { ORG_ROLES, type OrgRole } from '@/app/lib/org-roles';
  * uygulamanin UPDATE yetkisi YOK (yalniz SELECT); kurallar (kendi rolu, owner/admin,
  * son sahip, owner_seed) DB'de. Buradaki kontroller yalniz anlasilir mesaj icin.
  *
- * RPC eski tabloyu (agency_members / business_members) ve kurulus uyeligini
- * birlikte yazar — uygulama eski tabloya DOKUNMAZ.
+ * FAZ 10a: RPC artik yalniz `organization_memberships` yazar — eski uyelik
+ * tablolarina yazim kalkti (aynalama kapandi, o tablolar salt okunur).
+ * Hata metinleri ortak sozlukte (`uyelik.ts` `uyelikHataMesaji`).
  */
 
 type ActionResult = { success: true } | { success: false; error: string };
 
 const UUID_KALIBI =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** DB metinleri ASCII; eslesme ona gore. */
-function rolHataMesaji(error: {
-  code?: string | null;
-  message?: string | null;
-}): string {
-  const mesaj = error.message ?? '';
-
-  if (mesaj.includes('kendi rolunu degistiremezsin')) {
-    return 'Kendi rolünü değiştiremezsin.';
-  }
-  if (mesaj.includes('owner/admin rolunu yalniz kurulus sahibi degistirir')) {
-    return 'Sahip/Yönetici rolünü yalnız kuruluş sahibi değiştirebilir.';
-  }
-  if (mesaj.includes('son sahip dusurulemez')) {
-    return 'Son sahip düşürülemez.';
-  }
-  if (mesaj.includes('kurulus sahibinin rolu degistirilemez')) {
-    return 'Kuruluş sahibinin rolü değiştirilemez.';
-  }
-  if (mesaj.includes('uyelik aktif degil')) {
-    return 'Bu üyelik aktif değil.';
-  }
-  if (error.code === 'P0002' || mesaj.includes('uyelik yok')) {
-    return 'Üyelik bulunamadı.';
-  }
-  if (error.code === '42501' || mesaj.includes('oturum gerekir')) {
-    return 'Bu işlem için yetkin yok.';
-  }
-  return 'Rol değiştirilemedi, tekrar dene.';
-}
 
 export async function setOrgMemberRole(
   membershipId: string,
@@ -74,7 +45,7 @@ export async function setOrgMemberRole(
   });
   if (error) {
     console.error('[uyelik] rol degistirme', error.code, error.message);
-    return { success: false, error: rolHataMesaji(error) };
+    return { success: false, error: uyelikHataMesaji(error) };
   }
 
   revalidatePath('/profil/ekibim');

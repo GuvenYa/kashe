@@ -7,8 +7,14 @@ import { IlanDavetleriListesi, type IlanDaveti } from './ilan-davetleri-listesi'
 import { KurumsalDavetlerListesi } from './kurumsal-davetler-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCachedUser } from '@/app/lib/auth';
-import type { AgencyInvitationWithRelations } from '@/app/ajans/agency-data';
-import type { BusinessInvitationWithRelations } from '@/app/kurumsal/business-data';
+import type {
+  AgencyInvitation,
+  AgencyInvitationWithRelations,
+} from '@/app/ajans/agency-data';
+import type {
+  BusinessInvitation,
+  BusinessInvitationWithRelations,
+} from '@/app/kurumsal/business-data';
 
 export const metadata = {
   title: 'Davetlerim — Kashe',
@@ -38,22 +44,82 @@ export default async function DavetlerimPage() {
     redirect('/profil');
   }
 
-  // Davetleri çek - hem invited_user_id ile hem email ile eşleşenler
-  const { data: invitationsData } = await supabase
-    .from('agency_invitations')
-    .select(
-      `
-      *,
-      agency:profiles!agency_invitations_agency_id_fkey (
-        id, full_name, avatar_url, company_name, bio
-      )
-    `
-    )
+  // FAZ 10a: davetler TEK TABLODAN (`organization_invitations`). RLS zaten
+  // davetliye gore suzuyor; `.or(...)` filtresi okunurluk icin kalir.
+  //
+  // DAVET EDEN KURULUSUN KIMLIGI IKI ADIMDA: davet satiri kurulusa bagli ama
+  // kurulus adi `organizations_public` gorunumunde, avatar `profiles`'ta —
+  // gorunum uzerinden embed denemek yerine iki kucuk `in()` sorgusu.
+  const { data: tumDavetler, error: davetHatasi } = await supabase
+    .from('organization_invitations')
+    .select('*')
     .or(`invited_user_id.eq.${user.id},invited_email.eq.${user.email}`)
     .order('created_at', { ascending: false });
+  if (davetHatasi) console.error('[davetlerim] davetler', davetHatasi);
 
-  const invitations = (invitationsData ??
-    []) as unknown as AgencyInvitationWithRelations[];
+  const davetSatirlari = (tumDavetler ?? []) as unknown as (
+    | AgencyInvitation
+    | BusinessInvitation
+  )[];
+
+  const kurulusIdleri = [
+    ...new Set(davetSatirlari.map((d) => d.organization_id)),
+  ];
+
+  type KurulusKimligi = {
+    id: string;
+    display_name: string | null;
+    account_type: string;
+    legacy_profile_id: string | null;
+  };
+  let kuruluslar: KurulusKimligi[] = [];
+  if (kurulusIdleri.length > 0) {
+    const { data: kurulusData, error: kurulusHatasi } = await supabase
+      .from('organizations_public')
+      .select('id, display_name, account_type, legacy_profile_id')
+      .in('id', kurulusIdleri);
+    if (kurulusHatasi) console.error('[davetlerim] kuruluslar', kurulusHatasi);
+    kuruluslar = (kurulusData ?? []) as unknown as KurulusKimligi[];
+  }
+
+  const legacyIdler = kuruluslar
+    .map((k) => k.legacy_profile_id)
+    .filter((v): v is string => !!v);
+  const avatarlar = new Map<string, string | null>();
+  if (legacyIdler.length > 0) {
+    const { data: profilData } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', legacyIdler);
+    for (const p of (profilData ?? []) as {
+      id: string;
+      avatar_url: string | null;
+    }[]) {
+      avatarlar.set(p.id, p.avatar_url);
+    }
+  }
+
+  const kurulusHaritasi = new Map(kuruluslar.map((k) => [k.id, k]));
+
+  /** Davet + davet eden kurulusun kimligi (id = PAZARYERI profil kimligi). */
+  function kurulusKarti(organizationId: string) {
+    const k = kurulusHaritasi.get(organizationId);
+    if (!k || !k.legacy_profile_id) return null;
+    return {
+      id: k.legacy_profile_id,
+      display_name: k.display_name,
+      avatar_url: avatarlar.get(k.legacy_profile_id) ?? null,
+    };
+  }
+
+  const invitations: AgencyInvitationWithRelations[] = davetSatirlari
+    .filter(
+      (d) => kurulusHaritasi.get(d.organization_id)?.account_type === 'agency'
+    )
+    .map((d) => ({
+      ...(d as AgencyInvitation),
+      agency: kurulusKarti(d.organization_id),
+    }));
 
   // İlan davetleri (müşteri → profesyonel, bu kullanıcıya gelenler)
   const { data: listingInvitesData } = await supabase
@@ -74,22 +140,15 @@ export default async function DavetlerimPage() {
   const listingInvitations = (listingInvitesData ??
     []) as unknown as IlanDaveti[];
 
-  // Kurumsal ekip davetleri (bu kullanıcıya gelenler — email veya invited_user_id ile)
-  const { data: businessInvitesData } = await supabase
-    .from('business_invitations')
-    .select(
-      `
-      *,
-      business:profiles!business_invitations_business_id_fkey (
-        id, full_name, avatar_url, company_name, bio
-      )
-    `
+  // Kurumsal ekip davetleri — ayni satir kumesinden hesap turuyle ayrilir.
+  const businessInvitations: BusinessInvitationWithRelations[] = davetSatirlari
+    .filter(
+      (d) => kurulusHaritasi.get(d.organization_id)?.account_type === 'business'
     )
-    .or(`invited_user_id.eq.${user.id},invited_email.eq.${user.email}`)
-    .order('created_at', { ascending: false });
-
-  const businessInvitations = (businessInvitesData ??
-    []) as unknown as BusinessInvitationWithRelations[];
+    .map((d) => ({
+      ...(d as BusinessInvitation),
+      business: kurulusKarti(d.organization_id),
+    }));
 
   return (
     <>

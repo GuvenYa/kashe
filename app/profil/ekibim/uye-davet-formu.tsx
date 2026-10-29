@@ -5,9 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { inviteProfessional } from '@/app/ajans/agency-actions';
 import {
-  MEMBER_ROLE_OPTIONS,
-  type AgencyMemberRole,
-} from '@/app/ajans/agency-data';
+  ORG_ROLES,
+  ORG_ROLE_LABELS,
+  ORG_ROLE_SUMMARIES,
+  type OrgRole,
+} from '@/app/lib/org-roles';
+
+/** Davetle verilebilen roller: sahip HARIC (RPC de reddeder). */
+const DAVET_ROLLERI = ORG_ROLES.filter((r) => r !== 'owner');
 
 type Props = {
   onClose: () => void;
@@ -20,7 +25,7 @@ export function UyeDavetFormu({ onClose }: Props) {
   const [success, setSuccess] = useState(false);
 
   const [email, setEmail] = useState('');
-  const [memberRole, setMemberRole] = useState<AgencyMemberRole>('member');
+  const [memberRole, setMemberRole] = useState<OrgRole>('viewer');
   const [message, setMessage] = useState('');
 
   function handleSubmit(e: React.FormEvent) {
@@ -36,7 +41,7 @@ export function UyeDavetFormu({ onClose }: Props) {
     startTransition(async () => {
       const result = await inviteProfessional({
         email: trimmedEmail,
-        member_role: memberRole,
+        role: memberRole,
         message: message.trim() || null,
       });
 
@@ -47,7 +52,7 @@ export function UyeDavetFormu({ onClose }: Props) {
           setSuccess(false);
           setEmail('');
           setMessage('');
-          setMemberRole('member');
+          setMemberRole('viewer');
           router.refresh();
         }, 1500);
       } else {
@@ -104,31 +109,30 @@ export function UyeDavetFormu({ onClose }: Props) {
 
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Üye rolü
+            Kuruluş rolü
           </label>
           <div className="flex flex-wrap gap-2">
-            {MEMBER_ROLE_OPTIONS.filter((r) => r.key !== 'owner').map(
-              (option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setMemberRole(option.key)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
-                    memberRole === option.key
-                      ? 'bg-brand-ink text-paper border-brand-ink'
-                      : 'bg-paper text-ink-72 border-line hover:border-brand-ink/50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              )
-            )}
+            {DAVET_ROLLERI.map((rol) => (
+              <button
+                key={rol}
+                type="button"
+                onClick={() => setMemberRole(rol)}
+                title={ORG_ROLE_SUMMARIES[rol]}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                  memberRole === rol
+                    ? 'bg-brand-ink text-paper border-brand-ink'
+                    : 'bg-paper text-ink-72 border-line hover:border-brand-ink/50'
+                }`}
+              >
+                {ORG_ROLE_LABELS[rol]}
+              </button>
+            ))}
           </div>
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
-            Yönetici: davet edebilir, üye yönetebilir. Üye: standart yetki.
+            {ORG_ROLE_SUMMARIES[memberRole]}
           </p>
           <p className="text-[10px] text-ink-72 mt-1 font-mono">
-            Katıldıktan sonra kuruluş rolünü üye kartından inceltebilirsin.
+            Katıldıktan sonra rolü üye kartından değiştirebilirsin.
           </p>
         </div>
 

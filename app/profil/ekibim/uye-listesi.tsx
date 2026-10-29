@@ -12,11 +12,9 @@ import type { AgencyMemberWithProfile } from '@/app/ajans/agency-data';
 
 type Props = {
   members: AgencyMemberWithProfile[];
-  /** FAZ 8-U: uye id -> kurulus rolu (satir yoksa anahtar yok -> viewer). */
-  kurulusRolleri: Record<string, string>;
 };
 
-export function UyeListesi({ members, kurulusRolleri }: Props) {
+export function UyeListesi({ members }: Props) {
   if (members.length === 0) {
     return (
       <EmptyState
@@ -30,23 +28,13 @@ export function UyeListesi({ members, kurulusRolleri }: Props) {
   return (
     <div className="space-y-3">
       {members.map((member) => (
-        <UyeSatiri
-          key={member.id}
-          member={member}
-          kurulusRolu={kurulusRolleri[member.id]}
-        />
+        <UyeSatiri key={member.id} member={member} />
       ))}
     </div>
   );
 }
 
-function UyeSatiri({
-  member,
-  kurulusRolu,
-}: {
-  member: AgencyMemberWithProfile;
-  kurulusRolu: string | undefined;
-}) {
+function UyeSatiri({ member }: { member: AgencyMemberWithProfile }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -108,12 +96,8 @@ function UyeSatiri({
           </div>
         </Link>
 
-        {/* FAZ 8-U: kurulus rolu tek gercek; eski rol rozeti kalkti. */}
-        <KurulusRolSecici
-          membershipId={member.id}
-          rol={(kurulusRolu ?? 'viewer') as OrgRole}
-          aynalanmamis={kurulusRolu === undefined}
-        />
+        {/* FAZ 10a: rol uyelik satirinda; eski rol rozeti ve ayna yok. */}
+        <KurulusRolSecici membershipId={member.id} rol={member.role as OrgRole} />
 
         <div className="flex flex-col items-end gap-1">
           <button
