@@ -153,6 +153,26 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
 
 ## 6. Kapanis notlari
 
+### KALDIGIMIZ YER (29 Ekim 2026, Cowork haftalik kotasi doldu)
+
+- **Dalda uygulandi:** `faz10a/db` (migration + testler) dal projesine `supabase db push` ile gitti; asama4 35/35, asama20 ESIT,
+  asama18 ESIT, asama5 K3-K6 EMEKLI — hepsi Sahne dalinda dogrulandi. **10a-P1** `faz10a/p1` dalinda commit'li ve push'lu
+  (28 dosya + `app/lib/uyelik.ts`; diff okundu, CRLF->LF duzeltildi, tsc temiz). Onizleme:
+  `https://kashe-git-faz10a-p1-guvenyapicioglu-8124s-projects.vercel.app` (Sahne verisine bagli).
+- **Tur basladi, yarim kaldi:** Arti Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) ile `/profil/ekibim` acildi — 5 uye yeni tablodan,
+  ince rol kutulariyla dogru listelendi; "Davet gonder" formu acildi, davet GONDERILMEDI.
+- **Kalan tur (sirasiyla):** (1) ajans -> `sahne+baris-arslan@kashe.net` daveti (rol Izleyici) -> `/profil/ekibim` davet listesinde
+  "Bekliyor"; ayni e-postaya ikinci davet -> "Bu e-postaya zaten bekleyen bir davet var."; (2) Baris ile giris -> `/bildirimler` "Ekip"
+  bildirimi -> `/davetlerim` ad+avatar -> Kabul -> `/profil`de "uyesi oldugum ajans"; (3) ajans -> ekipte gorunur, ajansa "katildi"
+  bildirimi, `/ajans/havuz`da kayit, rol degistir (Satis), Cikar -> havuz kaydi "ayrildi"; (4) kurum `sahne+kurum-akdeniz-gida@kashe.net`
+  -> `sahne+bahar-keskin@kashe.net` daveti -> kabul -> `/profil/kurumsal-ekip`; (5) `/p/<arti-bir id>` ekip listesi (yalniz yayindaki
+  uyeler, rol rozeti yok), `/p/<uye id>` "temsil eden ajans"; (6) admin itiraz karari (Merve Avci), kurum RFP/davet/uye yetkileri turu,
+  portfoy yukleme, Teklif Al TARIH/KISI, portal URL (bulgular.md #31/#16).
+- **Tur bitince uretim (tek oturum):** `faz10a/db` + `faz10a/p1` -> `main` birlestir, push (Vercel uretim derlemesi baslar) ->
+  HEMEN `supabase link --project-ref qydsooqmflrrwtgawhsv` + `supabase db push` -> yayin biter -> uretimde SQL Editor: asama20
+  (K1/K3/K4/K5 ESIT) ve asama5 (K3-K6 EMEKLI) salt okunur. Sonra bu bolume kapanis satiri, roadmap v23, `CLAUDE.md` FAZ 10a notu.
+- Sonraki dilim 10b (etkinlik turu tek kaynak) ancak 10a uretimde ve tur temizse.
+
 ### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness'ta dogrulandi, dal/uretim bekliyor)
 
 Plandan sapmalar ve kararlar (migration basligi ayrintili):
