@@ -75,6 +75,8 @@
 --   T34 FAZ 10a uyelik tek tablo: davet kurallari (22023/23505/42501), kabul -> uyelik + havuz kaydi + bildirim, ajans kurali,
 --       iptal/ret/sure, cikarma/ayrilma kurallari (owner, son owner), eski tablolara yazma 42501, organization_team_public
 --       (ON KOSUL: 20261028120000 faz10a_01 dalda uygulanmis)
+--   T35 Duzeltme 01 (Sahne bulgulari): provider_public_stats (#29), proposals_expire_stale (#14), analytics_summary.funnel.linked (#7),
+--       ekip bildirimleri (#23) (ON KOSUL: 20261030120000 duzeltme_01 dalda uygulanmis)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -5434,6 +5436,133 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('request.jwt.claim.email', '', true);
   INSERT INTO t_sonuc VALUES (34, 'T34 FAZ 10a uyelik tek tablo', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T35) Duzeltme 01 (Sahne bulgulari #29/#14/#7/#23). ON KOSUL: 20261030120000 (duzeltme_01) dalda. Test Ajans (org_a, owner 0004 =
+--      admin), pro1 0002 rezervasyonlari (sayim), pro2 0003 (ekip uyesi). Kendi verisi: T35 teklifleri, etkinlik, ekip (sonda silinir).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; j jsonb; n int; n2 int; prop uuid; prop2 uuid; prop3 uuid; ver uuid; st text; tok text; ev35 uuid; crew35 uuid; r record;
+BEGIN
+  IF to_regprocedure('public.provider_public_stats(uuid)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (35, 'T35 Duzeltme 01 bulgular', 'ATLANDI', 'provider_public_stats yok; duzeltme_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+
+  -- 35a) #29 provider_public_stats = dogrudan sayim; anon ve authenticated cagirir; kimlik sutunu yok
+  SELECT count(*) INTO n FROM public.bookings WHERE (professional_id = pro1 OR seller_provider_id = pro1) AND status = 'completed';
+  j := public.provider_public_stats(pro1);
+  IF (j->>'completed_jobs')::int <> n THEN RAISE EXCEPTION 'pro1 completed_jobs % (dogrudan %)', j->>'completed_jobs', n; END IF;
+  IF (j->>'repeat_customers')::int > (j->>'distinct_customers')::int THEN RAISE EXCEPTION 'repeat > distinct'; END IF;
+  IF j ? 'customer_id' OR j ? 'customer_ids' THEN RAISE EXCEPTION 'stats kimlik sizdiriyor'; END IF;
+  SELECT count(*) INTO n FROM public.bookings WHERE (professional_id = ajans OR seller_provider_id = ajans) AND status = 'completed';
+  IF (public.provider_public_stats(ajans)->>'completed_jobs')::int <> n THEN RAISE EXCEPTION 'ajans completed_jobs farkli'; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    j := public.provider_public_stats(pro1);
+    EXECUTE 'RESET ROLE';
+  EXCEPTION WHEN OTHERS THEN EXECUTE 'RESET ROLE'; RAISE EXCEPTION 'anon provider_public_stats cagiramadi: %', SQLERRM; END;
+  IF (j->>'completed_jobs')::int IS NULL THEN RAISE EXCEPTION 'anon sonucu bos'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  j := public.provider_public_stats(pro1);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF (j->>'completed_jobs')::int IS NULL THEN RAISE EXCEPTION 'authenticated sonucu bos'; END IF;
+
+  -- 35b) #14 proposals_expire_stale: suresi gecen sent teklif expired, gecerli olan kalir; authenticated cagiramaz
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop  := public.proposal_create(org_a, 'T35 suresi gececek', NULL, NULL, 'T35 Musteri', 'faz1test+t35a@kashe.net');
+  prop2 := public.proposal_create(org_a, 'T35 gecerli', NULL, NULL, 'T35 Musteri', 'faz1test+t35b@kashe.net');
+  INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, sort_order)
+  SELECT current_version_id, 'T35 hizmet', 1, 1000, 1 FROM public.proposals WHERE id IN (prop, prop2);
+  SELECT s.token INTO tok FROM public.proposal_send(prop, 3) s;
+  SELECT s.token INTO tok FROM public.proposal_send(prop2, 14) s;
+  BEGIN
+    PERFORM public.proposals_expire_stale();
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'authenticated proposals_expire_stale cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  -- gonderilmis surumun gecerliligi gecmise (RPC bayragiyla; donmus surum kurali RPC disinda engeller)
+  SELECT id INTO ver FROM public.proposal_versions WHERE proposal_id = prop AND sent_at IS NOT NULL ORDER BY version_no DESC LIMIT 1;
+  PERFORM set_config('kashe.faz7_rpc', '1', true);
+  UPDATE public.proposal_versions SET valid_until = now() - interval '1 hour' WHERE id = ver;
+  PERFORM set_config('kashe.faz7_rpc', '0', true);
+  SELECT public.proposals_expire_stale() INTO n;
+  IF n < 1 THEN RAISE EXCEPTION 'expire kosusu 0 satir (>=1 beklenir)'; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop;
+  IF st <> 'expired' THEN RAISE EXCEPTION 'suresi gecen teklif % (expired beklenir)', st; END IF;
+  SELECT status::text INTO st FROM public.proposals WHERE id = prop2;
+  IF st <> 'sent' THEN RAISE EXCEPTION 'gecerli teklif % (sent kalmali)', st; END IF;
+  SELECT public.proposals_expire_stale() INTO n2;
+  IF n2 <> 0 THEN RAISE EXCEPTION 'ikinci kosu % (0 beklenir; idempotan)', n2; END IF;
+
+  -- 35c) #7 analytics_summary.funnel.linked: anahtarlar + zincir monoton (<= events)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);   -- ajans T5'ten beri admin
+  j := public.analytics_summary(365)->'funnel'->'linked';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF j IS NULL OR NOT (j ? 'events' AND j ? 'with_match' AND j ? 'with_selection' AND j ? 'with_approval' AND j ? 'with_booking') THEN
+    RAISE EXCEPTION 'linked blogu eksik: %', j; END IF;
+  IF (j->>'with_booking')::int > (j->>'events')::int OR (j->>'with_match')::int > (j->>'events')::int THEN
+    RAISE EXCEPTION 'linked sayimlar events''i asiyor: %', j; END IF;
+
+  -- 35d) #23 ekip bildirimleri (kendi verisi): ajans etkinligi + ekip + uye pro2 -> "ekibine ekledi"; teklif (ekipli) onay ->
+  --      rezervasyon -> "is kesinlesti"; kurulusun kendisine bildirim yok
+  DELETE FROM public.notifications WHERE user_id = pro2 AND type = 'team' AND (body LIKE '%ekibine ekledi' OR body LIKE '%iş kesinleşti%');
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.events (organization_id, owner_user_id, title, event_type, start_date, end_date, status)
+  VALUES (org_a, ajans, 'T35 ekip etkinligi', 'corporate', current_date + 40, current_date + 40, 'confirmed') RETURNING id INTO ev35;
+  INSERT INTO public.crews (event_id, organization_id, name) VALUES (ev35, org_a, 'T35 ekip') RETURNING id INTO crew35;
+  INSERT INTO public.crew_members (crew_id, role_id, provider_id) VALUES (crew35, (SELECT role_id FROM public.provider_services WHERE provider_id = pro2 LIMIT 1), pro2);
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = pro2 AND type = 'team' AND body LIKE 'Test Ajans seni "T35 ekip etkinligi" ekibine ekledi';
+  IF n <> 1 THEN RAISE EXCEPTION 'ekibe eklendi bildirimi % (1 beklenir)', n; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  prop3 := public.proposal_create(org_a, 'T35 ekip teklifi', ev35, crew35, 'T35 Musteri', 'faz1test+t35c@kashe.net');
+  -- ekipten turetilen kalemin fiyati yok (pro2 icin ic maliyet anlasmasi yok): gonderim icin fiyat girilir
+  UPDATE public.proposal_items SET unit_client_price = 5000
+   WHERE proposal_version_id = (SELECT current_version_id FROM public.proposals WHERE id = prop3) AND unit_client_price = 0;
+  SELECT s.token INTO tok FROM public.proposal_send(prop3, 14) s;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  PERFORM public.portal_proposal_approve(tok, 'T35 Onaylayan');
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.booking_from_proposal(prop3);
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = pro2 AND type = 'team' AND body LIKE '"T35 ekip etkinligi" için iş kesinleşti%';
+  IF n <> 1 THEN RAISE EXCEPTION 'is kesinlesti bildirimi % (1 beklenir)', n; END IF;
+  SELECT count(*) INTO n FROM public.notifications WHERE user_id = ajans AND type = 'team' AND body LIKE '%T35 ekip etkinligi%';
+  IF n <> 0 THEN RAISE EXCEPTION 'ajansin kendisine ekip bildirimi gitti (%)', n; END IF;
+
+  -- temizlik: T35 teklifleri, rezervasyon, ekip, etkinlik, bildirimler
+  PERFORM set_config('kashe.faz7_rpc', '1', true);
+  DELETE FROM public.bookings WHERE proposal_version_id IN (SELECT id FROM public.proposal_versions WHERE proposal_id = prop3);
+  DELETE FROM public.proposals WHERE id IN (prop, prop2, prop3);
+  PERFORM set_config('kashe.faz7_rpc', '0', true);
+  DELETE FROM public.events WHERE id = ev35;
+  DELETE FROM public.notifications WHERE user_id = pro2 AND type = 'team' AND body LIKE '%T35 ekip etkinligi%';
+
+  INSERT INTO t_sonuc VALUES (35, 'T35 Duzeltme 01 bulgular', 'GECTI',
+    'provider_public_stats = dogrudan sayim (pro1, ajans), anon + authenticated cagirir, kimlik yok; proposals_expire_stale: authenticated 42501, suresi gecen sent -> expired, gecerli sent kaldi, idempotan 0; analytics_summary.funnel.linked 5 anahtar, zincir <= events; ekip bildirimleri: ekibe eklendi (crew_members INSERT) + is kesinlesti (tekliften rezervasyon) pro2''ye, kurulusun kendisine yok; temizlik');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('kashe.faz7_rpc', '0', true);
+  INSERT INTO t_sonuc VALUES (35, 'T35 Duzeltme 01 bulgular', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

@@ -199,9 +199,13 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
    bulunma eki (`ek_de`), #32 9 performans kategorisine ozel metin, etkinlik_turleri 3-6 (pro) / 4-6 (ajans). Dalda yukleme: 00-temizlik +
    foto-yukle --sil, sonra 01a -> 01b -> foto-yukle -> 02a..e -> 03 -> 04 (bolum 8). Bekleyen davetler 10a-P1 turunun ham maddesi
    (`hesaplar.md` Davetler bolumu).
-4. **Uygulama duzeltmeleri (Sahne'den cikan, FAZ 10 oncesi kucuk dal `sahne-duzeltmeler`):** #29 tamamlanan is cipi (SECURITY DEFINER
-   ozet; migration + asama4), #28 "Yorum birak" cagrisi, #14 suresi dolan teklif, #6 admin dashboard onay karti, #7 huni baslik KPI,
-   #16 preview portal URL (`VERCEL_BRANCH_URL`), #20/#19 kucukler. Urun kararlari: #4, #5, #18, #23.
+4. **Uygulama duzeltmeleri (Duzeltme 01; dal `duzeltme-01`, `faz10a/p1` uzerinden) — DB TARAFI YAZILDI (29 Ekim):**
+   `supabase/migrations/20261030120000_duzeltme_01_sahne_bulgulari.sql` — #29 `provider_public_stats` (anon/authenticated, sayi doner),
+   #14 `proposals_expire_stale` + pg_cron `proposals-expire-daily` 00:15 (ilk kosu migration'da; Sahne'de 24 teklif expired oldu),
+   #7 `analytics_summary().funnel.linked` (zincirli huni), #23 ekip bildirimleri (`trg_duz_crew_member_notify`, `trg_duz_booking_crew_notify`,
+   type `team`). Harness: asama4 **T35** eklendi, 36/36; asama17/18/19/20 ESIT. Uygulama tarafi `41-claude-code-gorevi-duzeltme-01.md`
+   (#29 #28 #14 #6 #7 #16 #19 #20 #4 #5 #18 #26). Urun kararlari (Guven, 29 Ekim): #4 bos kategori gizlenir, #5 kategori ikonu,
+   #18 kismi kapsam gosterilir, #23 iki bildirim de gider.
 5. Sonra **FAZ 10a-DB/01** (38 numarali plan), dolu Sahne'de turlanir.
 
 **Karar (Guven, 27 Ekim gece; sira degisti):** Guven tur yapmaz; kota sifirlaninca DOGRUDAN **FAZ 10a-DB/01** ile baslanir.
