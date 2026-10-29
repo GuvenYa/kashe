@@ -159,7 +159,7 @@ pazar araligi + guven dokumu + itiraz, `/ajans` guven dokumu. MUSTERI YUZEYINDE 
 (171 hesap `sahne+<slug>@kashe.net`, parola `Sahne!2026`, id oneki `5a4e0000-`; 122 profesyonel / 12 ajans / 8 kurum / 20 musteri / 1 yonetici,
 6 aylik gecmis, fotografli portfoy) + asama4 fixture'lari. Vercel **Preview** ortam degiskenleri dala cevrildi: onizlemeler Sahne'ye baglanir;
 uretim (`qydsooqmflrrwtgawhsv`) ve Production env dokunulmaz. Uretec `scripts/sahne/uret.py` -> `docs/sahne/0x-sahne-*.sql` (dal SQL Editor;
-her dosyada uretim korumasi), fotograflar `scripts/sahne/foto-indir.mjs` + `foto-yukle.mjs` (service role yalniz Guven'in PowerShell
+her dosyada uretim korumasi; sira 00 -> 01a/01b -> 02a..e -> 03 -> 04; v2 29 Ekim: FAZ 10a sonrasi uyelikler dogrudan `organization_memberships`), fotograflar `scripts/sahne/foto-indir.mjs` + `foto-yukle.mjs` (service role yalniz Guven'in PowerShell
 ortaminda). Uretim korumasi deseni: test disi profil = `email NOT LIKE 'faz1test+%' AND email NOT LIKE 'sahne+%'`. Hesap listesi
 `docs/sahne/hesaplar.md`, plan ve senaryolar `docs/envanter/39-sahne-sentetik-dunya.md`. Migration akisi degismez (dal -> asama4/asamaN ->
 uretim). Uretime yalniz UI uzerinden, yalniz okuma. Ayni islemde iki hesap kosusu `clock_timestamp()` ister (`now()` esit kalir).

@@ -1,6 +1,6 @@
 # Sahne hesaplari (dal projesi; parola hepsinde `Sahne!2026`)
 
-Uretildi: 2026-10-27, tohum 2026. E-posta kutusu yok; sifre sifirlama calismaz.
+Uretildi: 2026-10-29, tohum 2026. E-posta kutusu yok; sifre sifirlama calismaz.
 
 ## Yonetici
 
@@ -189,3 +189,71 @@ Uretildi: 2026-10-27, tohum 2026. E-posta kutusu yok; sifre sifirlama calismaz.
 | `sahne+selin-sahin@kashe.net` | Selin Şahin | Antalya |
 | `sahne+batuhan-kilic@kashe.net` | Batuhan Kılıç | Gaziantep |
 | `sahne+burak-polat@kashe.net` | Burak Polat | İzmir |
+
+## Davetler (FAZ 10a; `organization_invitations`)
+
+Bekleyenler tur icindir: davetli hesapla `/davetlerim` -> kabul/ret; kurulus sahibiyle `/profil/ekibim` ya da `/profil/kurumsal-ekip` -> iptal.
+Suresi gecmis bekleyenler arayuzde "Suresi doldu" gorunur (DB durumu pending). Gecmis kabul/ret/iptal kayitlari davet listelerini doldurur.
+
+| Kurulus (sahip e-postasi) | Davetli | Rol | Durum |
+|---|---|---|---|
+| Artı Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) | `sahne+doruk-tekin@kashe.net` Doruk Tekin | viewer | pending (suresi gecmis) |
+| Atlas Organizasyon (`sahne+ajans-atlas@kashe.net`) | `sahne+sila-uysal@kashe.net` Sıla Uysal | crew_coordinator | pending |
+| Beyaz Güvercin Organizasyon (`sahne+ajans-beyaz-guvercin@kashe.net`) | `sahne+busra-sezer@kashe.net` Büşra Sezer | viewer | pending |
+| Ekim Kreatif (`sahne+ajans-ekim@kashe.net`) | `sahne+mert-aslan@kashe.net` Mert Aslan | viewer | pending (suresi gecmis) |
+| Lumen Prodüksiyon (`sahne+ajans-lumen@kashe.net`) | `sahne+fatih-keskin@kashe.net` Fatih Keskin | viewer | pending (suresi gecmis) |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+levent-avci@kashe.net` Levent Avcı | viewer | pending |
+| Nova Etkinlik (`sahne+ajans-nova@kashe.net`) | `sahne+cagri-keskin@kashe.net` Çağrı Keskin | viewer | pending |
+| Pusula Etkinlik (`sahne+ajans-pusula@kashe.net`) | `sahne+burcu-ates@kashe.net` Burcu Ateş | viewer | pending |
+| Ritim Müzik Ajansı (`sahne+ajans-ritim@kashe.net`) | `sahne+yavuz-ates@kashe.net` Yavuz Ateş | crew_coordinator | pending |
+| Anadolu İlaç (`sahne+kurum-anadolu-ilac@kashe.net`) | `sahne+derya-celik@kashe.net` Derya Çelik | project_manager | pending |
+| Başkent Eğitim Kurumları (`sahne+kurum-baskent-egitim@kashe.net`) | `sahne+caner-ates@kashe.net` Caner Ateş | finance | pending |
+| Boğaziçi Finans (`sahne+kurum-bogazici-finans@kashe.net`) | `sahne+beren-kara@kashe.net` Beren Kara | finance | pending |
+| Teknopark Yazılım A.Ş. (`sahne+kurum-teknopark@kashe.net`) | `sahne+melis-erdogan@kashe.net` Melis Erdoğan | viewer | pending |
+| Artı Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) | `sahne+onur-acar@kashe.net` Onur Acar | viewer | declined |
+| Artı Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) | `sahne+melis-ozturk@kashe.net` Melis Öztürk | sales | accepted |
+| Artı Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) | `sahne+can-aydin@kashe.net` Can Aydın | viewer | accepted |
+| Atlas Organizasyon (`sahne+ajans-atlas@kashe.net`) | `sahne+berk-polat@kashe.net` Berk Polat | viewer | declined |
+| Atlas Organizasyon (`sahne+ajans-atlas@kashe.net`) | `sahne+bahar-yalcin@kashe.net` Bahar Yalçın | viewer | accepted |
+| Atlas Organizasyon (`sahne+ajans-atlas@kashe.net`) | `sahne+esra-korkmaz@kashe.net` Esra Korkmaz | viewer | accepted |
+| Beyaz Güvercin Organizasyon (`sahne+ajans-beyaz-guvercin@kashe.net`) | `sahne+deniz-unal@kashe.net` Deniz Ünal | sales | accepted |
+| Beyaz Güvercin Organizasyon (`sahne+ajans-beyaz-guvercin@kashe.net`) | `sahne+fatih-koc@kashe.net` Fatih Koç | crew_coordinator | accepted |
+| Beyaz Güvercin Organizasyon (`sahne+ajans-beyaz-guvercin@kashe.net`) | `sahne+gokhan-cakir@kashe.net` Gökhan Çakır | viewer | accepted |
+| Ekim Kreatif (`sahne+ajans-ekim@kashe.net`) | `sahne+zehra-simsek@kashe.net` Zehra Şimşek | sales | accepted |
+| Ekim Kreatif (`sahne+ajans-ekim@kashe.net`) | `sahne+burcu-ates@kashe.net` Burcu Ateş | viewer | accepted |
+| Kuzey Yıldızı Events (`sahne+ajans-kuzey-yildizi@kashe.net`) | `sahne+arda-turan@kashe.net` Arda Turan | viewer | cancelled |
+| Kuzey Yıldızı Events (`sahne+ajans-kuzey-yildizi@kashe.net`) | `sahne+eda-bozkurt@kashe.net` Eda Bozkurt | sales | accepted |
+| Kuzey Yıldızı Events (`sahne+ajans-kuzey-yildizi@kashe.net`) | `sahne+gorkem-avci@kashe.net` Görkem Avcı | viewer | accepted |
+| Lumen Prodüksiyon (`sahne+ajans-lumen@kashe.net`) | `sahne+zehra-simsek@kashe.net` Zehra Şimşek | sales | accepted |
+| Lumen Prodüksiyon (`sahne+ajans-lumen@kashe.net`) | `sahne+can-uysal@kashe.net` Can Uysal | viewer | accepted |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+cansu-yilmaz@kashe.net` Cansu Yılmaz | sales | accepted |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+hakan-ates@kashe.net` Hakan Ateş | crew_coordinator | accepted |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+merve-avci@kashe.net` Merve Avcı | viewer | accepted |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+naz-guler@kashe.net` Naz Güler | viewer | accepted |
+| Mavi Sahne (`sahne+ajans-mavi-sahne@kashe.net`) | `sahne+berk-sari@kashe.net` Berk Sarı | viewer | accepted |
+| Nova Etkinlik (`sahne+ajans-nova@kashe.net`) | `sahne+naz-guler@kashe.net` Naz Güler | viewer | accepted |
+| Nova Etkinlik (`sahne+ajans-nova@kashe.net`) | `sahne+tarik-cakir@kashe.net` Tarık Çakır | viewer | accepted |
+| Nova Etkinlik (`sahne+ajans-nova@kashe.net`) | `sahne+merve-avci@kashe.net` Merve Avcı | viewer | accepted |
+| Nova Etkinlik (`sahne+ajans-nova@kashe.net`) | `sahne+gul-kaya@kashe.net` Gül Kaya | viewer | accepted |
+| Pusula Etkinlik (`sahne+ajans-pusula@kashe.net`) | `sahne+umut-aktas@kashe.net` Umut Aktaş | viewer | declined |
+| Pusula Etkinlik (`sahne+ajans-pusula@kashe.net`) | `sahne+umut-simsek@kashe.net` Umut Şimşek | viewer | cancelled |
+| Pusula Etkinlik (`sahne+ajans-pusula@kashe.net`) | `sahne+selin-karaca@kashe.net` Selin Karaca | viewer | accepted |
+| Ritim Müzik Ajansı (`sahne+ajans-ritim@kashe.net`) | `sahne+leyla-polat@kashe.net` Leyla Polat | sales | accepted |
+| Vizyon Cast Ajansı (`sahne+ajans-vizyon-cast@kashe.net`) | `sahne+elif-aksoy@kashe.net` Elif Aksoy | sales | accepted |
+| Vizyon Cast Ajansı (`sahne+ajans-vizyon-cast@kashe.net`) | `sahne+cansu-yilmaz@kashe.net` Cansu Yılmaz | viewer | accepted |
+| Vizyon Cast Ajansı (`sahne+ajans-vizyon-cast@kashe.net`) | `sahne+hakan-ates@kashe.net` Hakan Ateş | viewer | accepted |
+| Vizyon Cast Ajansı (`sahne+ajans-vizyon-cast@kashe.net`) | `sahne+efe-turan@kashe.net` Efe Turan | viewer | accepted |
+| Zirve Teknik Prodüksiyon (`sahne+ajans-zirve@kashe.net`) | `sahne+mert-sari@kashe.net` Mert Sarı | viewer | declined |
+| Zirve Teknik Prodüksiyon (`sahne+ajans-zirve@kashe.net`) | `sahne+zehra-yilmaz@kashe.net` Zehra Yılmaz | sales | accepted |
+| Akdeniz Gıda (`sahne+kurum-akdeniz-gida@kashe.net`) | `sahne+busra-sahin@kashe.net` Büşra Şahin | admin | accepted |
+| Anadolu İlaç (`sahne+kurum-anadolu-ilac@kashe.net`) | `sahne+deniz-erol@kashe.net` Deniz Erol | admin | accepted |
+| Başkent Eğitim Kurumları (`sahne+kurum-baskent-egitim@kashe.net`) | `sahne+gamze-kara@kashe.net` Gamze Kara | admin | accepted |
+| Boğaziçi Finans (`sahne+kurum-bogazici-finans@kashe.net`) | `sahne+deniz-kaplan@kashe.net` Deniz Kaplan | admin | accepted |
+| Ege Otomotiv (`sahne+kurum-ege-otomotiv@kashe.net`) | `sahne+dilara-kaya@kashe.net` Dilara Kaya | admin | accepted |
+| Marmara Perakende Grubu (`sahne+kurum-marmara-perakende@kashe.net`) | `sahne+melike-tekin@kashe.net` Melike Tekin | admin | accepted |
+| Mavi Deniz Turizm (`sahne+kurum-mavi-deniz@kashe.net`) | `sahne+seda-simsek@kashe.net` Seda Şimşek | admin | accepted |
+| Teknopark Yazılım A.Ş. (`sahne+kurum-teknopark@kashe.net`) | `sahne+murat-oz@kashe.net` Murat Öz | admin | accepted |
+
+## Eslestirme gecmisi (04)
+
+18 onayli/eslesme durumundaki etkinlik icin `run_event_match` kosusu (sahip hesabiyla); rol basina ilk 6-10 aday gosterildi, 0-3 aday tiklandi. Admin `/admin/zeka` huni ve adalet bloklari bu kosulari okur.

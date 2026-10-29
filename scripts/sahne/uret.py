@@ -3,10 +3,14 @@
 # =============================================================================
 # SAHNE — sentetik test dunyasi ureteci (bkz. docs/envanter/39-sahne-sentetik-dunya.md)
 #   python scripts/sahne/uret.py [--seed 2026] [--out docs/sahne]
-# Cikti: docs/sahne/00-sahne-temizlik.sql, 00-sahne-taksonomi.sql, 01-sahne-hesaplar.sql,
-#        02-sahne-gecmis.sql, 03-sahne-hesap.sql, foto-plan.json, hesaplar.md
+# Cikti: docs/sahne/00-sahne-temizlik.sql, 00-sahne-taksonomi.sql, 01a..-sahne-hesaplar.sql, 02a..-sahne-gecmis.sql,
+#        03-sahne-hesap.sql, 04-sahne-eslestirme.sql, foto-plan.json, hesaplar.md  (01/02 Dashboard boyut siniri icin parcali)
 # Kural: YALNIZ DAL (ukqhgspaallzjscjodbb). Her SQL dosyasinin basinda uretim korumasi vardir.
 # Bagimlilik yok (Python 3.9+). Deterministik: ayni tohum -> ayni cikti.
+# v2 (29 Ekim 2026, FAZ 10a sonrasi): uyelikler dogrudan organization_memberships (eski agency_members/business_members
+#   YAZILMAZ; ayna kalkti), havuz esitleme sync_org_talent_pool, bekleyen/gecmis davetler organization_invitations,
+#   katilim/davet bildirimleri gecmise tarihli; kurum alicilarinda kurumsal etkinlik turu + bulunma eki (#26);
+#   kategoriye ozel performans metni (#32); etkinlik turu 3-6 (#11); eslestirme gecmisi 04 (#8).
 # =============================================================================
 import argparse, json, os, random, re, sys, datetime
 
@@ -34,8 +38,8 @@ BRIEF = kaynak("brief.json")
 def uid(code, n):
     return "5a4e%04x-0000-4000-8000-%012d" % (code, n)
 
-U_USER, U_EVENT, U_PROP, U_VER, U_ITEM, U_CONV, U_MSG, U_QUOTE, U_BOOK, U_REV, U_REPLY, U_TR, U_TASK, U_QR = (
-    0x0000, 0x0002, 0x0003, 0x0004, 0x0005, 0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0020, 0x0024, 0x0030)
+U_USER, U_EVENT, U_PROP, U_VER, U_ITEM, U_CONV, U_MSG, U_QUOTE, U_BOOK, U_REV, U_REPLY, U_TR, U_TASK, U_QR, U_INV = (
+    0x0000, 0x0002, 0x0003, 0x0004, 0x0005, 0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0020, 0x0024, 0x0030, 0x0040)
 
 def q(s):
     if s is None:
@@ -95,6 +99,17 @@ def butce_araligi(tutar):
 def tur_ad(key):
     return V.ETKINLIK_TURLERI.get(key, "etkinlik").lower()
 
+def ek_de(kelime):
+    # Turkce bulunma eki (bulgular #26): son unluye gore a/e, sert unsuzden (p c t k s s h f) sonra t: Istanbul'da, Izmir'de, Gaziantep'te
+    k = kelime.strip()
+    son = k[-1].lower() if k else "e"
+    unlu = "e"
+    for ch in reversed(k.lower()):
+        if ch in "aeıioöuüâîû":
+            unlu = "a" if ch in "aıouâû" else "e"
+            break
+    return "'" + ("t" if son in "pçtksşhf" else "d") + unlu
+
 def yuvarla(x, adim=500):
     return int(round(x / adim) * adim)
 
@@ -119,6 +134,42 @@ CREATE OR REPLACE FUNCTION pg_temp.rol(s text) RETURNS int LANGUAGE sql STABLE A
 CREATE OR REPLACE FUNCTION pg_temp.sehir(s text) RETURNS int LANGUAGE sql STABLE AS $$ SELECT id FROM public.turkish_cities WHERE name = s ORDER BY id LIMIT 1 $$;
 CREATE OR REPLACE FUNCTION pg_temp.org(p uuid) RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT id FROM public.organizations WHERE legacy_profile_id = p $$;
 """
+
+# FAZ 10a: uyelik satiri dogrudan yazilir; fn_faz10_member_notify sahibe "katildi" bildirimini now() ile yazar -> her satirdan
+# sonra o bildirim uyelik zamanina cekilir (14 gunden eskiler okunmus).
+UYELIK_DO = """DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+%s
+  ) AS v(org, uye, rol, davet_eden, katilim) LOOP
+    INSERT INTO public.organization_memberships (organization_id, user_id, role, status, invited_by, joined_at, created_at, updated_at)
+    VALUES (r.org, r.uye::uuid, r.rol::public.organization_member_role, 'active', r.davet_eden::uuid, r.katilim, r.katilim, r.katilim)
+    ON CONFLICT (organization_id, user_id) DO UPDATE SET role = EXCLUDED.role, status = 'active', joined_at = EXCLUDED.joined_at;
+    UPDATE public.notifications SET created_at = r.katilim,
+           read_at = CASE WHEN r.katilim < now() - interval '14 days' THEN r.katilim + interval '4 hours' END
+     WHERE id = (SELECT n.id FROM public.notifications n WHERE n.user_id = r.davet_eden::uuid AND n.type = 'team'
+                  AND n.created_at > now() - interval '10 minutes' ORDER BY n.created_at DESC LIMIT 1);
+  END LOOP;
+END $$;"""
+
+# FAZ 10a: davetler dogrudan organization_invitations; bekleyen davette fn_faz10_invitation_notify davetliye bildirim yazar -> davet zamanina cekilir
+DAVET_DO = """DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+%s
+  ) AS v(id, org, eposta, davetli, davet_eden, rol, durum, mesaj, olusturma, yanit, bitis) LOOP
+    INSERT INTO public.organization_invitations (id, organization_id, invited_email, invited_user_id, invited_by_id, role, status,
+                                                 invitation_message, created_at, responded_at, expires_at)
+    VALUES (r.id::uuid, r.org, r.eposta, r.davetli::uuid, r.davet_eden::uuid, r.rol::public.organization_member_role,
+            r.durum::public.organization_invitation_status, r.mesaj, r.olusturma, r.yanit, r.bitis);
+    UPDATE public.notifications SET created_at = r.olusturma,
+           read_at = CASE WHEN r.olusturma < now() - interval '14 days' THEN r.olusturma + interval '6 hours' END
+     WHERE id = (SELECT n.id FROM public.notifications n WHERE n.user_id = r.davetli::uuid AND n.type = 'team'
+                  AND n.created_at > now() - interval '10 minutes' ORDER BY n.created_at DESC LIMIT 1);
+  END LOOP;
+END $$;"""
 
 TEMIZLIK_FN = """CREATE OR REPLACE FUNCTION pg_temp.sahne_temizle() RETURNS text LANGUAGE plpgsql AS $$
 DECLARE ids uuid[]; orgs uuid[]; n_u int; n_o int;
@@ -359,6 +410,34 @@ class Dunya:
         return None
 
 
+def paketle(L, out, onek, baslik, D, onkosul_sonraki, SINIR=380_000):
+    # ardisik ifadeler <= SINIR baytlik parcalara; her parca kendi korumasi + pg_temp yardimcilari + on kosuluyla
+    # (Dashboard SQL Editor ~1 MB uzeri sorguyu reddeder; 380 KB guvenli). Tek parca sigarsa dosya adi harfsiz kalir.
+    parcalar, cur, boy = [], [], 0
+    for ifade in L:
+        b = len(ifade.encode("utf-8")) + 2
+        if cur and boy + b > SINIR:
+            parcalar.append(cur); cur, boy = [], 0
+        cur.append(ifade); boy += b
+    if cur:
+        parcalar.append(cur)
+    harfler = "abcdefghijklmnop"
+    tek = len(parcalar) == 1
+    adlar = [("%s-%s.sql" % (onek, baslik)) if tek else ("%s%s-%s.sql" % (onek, harfler[i], baslik)) for i in range(len(parcalar))]
+    for i, parca in enumerate(parcalar):
+        etiket = onek if tek else "%s%s" % (onek, harfler[i])
+        bas = ["\n".join(["-- =============================================================================",
+                          "-- SAHNE %s (%d/%d) — %s (YALNIZ DALDA)" % (etiket, i + 1, len(parcalar), D.aciklama[onek]),
+                          "-- Uretildi: scripts/sahne/uret.py (tohum %d, %s). Sira: %s (hepsi, atlamadan). Ilk parca kendi verisini silip yeniden baslar." % (
+                              D.seed, D.tarih, " -> ".join(a.replace(".sql", "") for a in adlar)),
+                          "-- ============================================================================="]), GUARD, TEMP_FN]
+        if i > 0:
+            bas.append(onkosul_sonraki(harfler[i - 1]))
+        son = ["SELECT %s AS parca, 'tamam' AS durum;" % q("%s %d/%d" % (etiket, i + 1, len(parcalar)))] if i < len(parcalar) - 1 else []
+        with open(os.path.join(out, adlar[i]), "w", encoding="utf-8") as f:
+            f.write("\n\n".join(bas + parca + son) + "\n")
+    return adlar
+
 # ----------------------------------------------------------------------------- 01 hesaplar
 def deneyim_seviye(yil):
     return "junior" if yil < 2 else "mid" if yil < 5 else "senior" if yil < 10 else "expert"
@@ -409,9 +488,17 @@ def category_attributes_uret(rnd, slug, p):
             items = rnd.choice(V.EKIPMAN.get(slug, [["Kendi ekipmanı", "Yedek set"]]))
             modules[k] = {"items": items, "venue_requirements": "Sahne yakınında 2 adet 16A priz, kurulum için 60 dk."}
         elif k == "performans":
-            modules[k] = {"details": {"Gösteri süresi": quick.get("gosteri_suresi", "45 dk"), "Kişi sayısı": quick.get("ekip_boyutu", "Solo"), "Prova": "İsteğe bağlı"},
-                          "what_to_expect": "Giriş, ana program ve kapanış olmak üzere üç bölümlü bir akış; müzik ve kostüm seçimi etkinliğe göre uyarlanır.",
-                          "setup_logistics": "Mekana 90 dk önce varış, ses kontrolü ve sahne ölçüsü kontrolü."}
+            # v2 (#32): kategoriye ozel metin; sozlukte olmayan kategori icin genel metin
+            secenekler = V.PERFORMANS_METNI.get(slug)
+            if secenekler:
+                bekle, kurulum, ek = rnd.choice(secenekler)
+            else:
+                bekle = "Giriş, ana program ve kapanış olmak üzere üç bölümlü bir akış; müzik ve kostüm seçimi etkinliğe göre uyarlanır."
+                kurulum = "Mekana 90 dk önce varış, ses kontrolü ve sahne ölçüsü kontrolü."
+                ek = {}
+            details = {"Gösteri süresi": quick.get("gosteri_suresi", "45 dk"), "Kişi sayısı": quick.get("ekip_boyutu", "Solo"), "Prova": "İsteğe bağlı"}
+            details.update(ek)
+            modules[k] = {"details": details, "what_to_expect": bekle, "setup_logistics": kurulum}
         elif k == "fiziksel":
             modules[k] = {"oynayabildigi_yas_araligi": rnd.choice(["20–30", "25–35", "30–45", "18–25"]), "height": str(rnd.randint(160, 190)),
                           "size": rnd.choice(["S", "M", "L", "36", "38", "40"]), "shoe": str(rnd.randint(36, 45)),
@@ -447,7 +534,7 @@ def etkinlik_turleri_uret(rnd, u):
     for k in katlar:
         for tur, w in V.KATEGORILER[k]["turler"].items():
             agirlik[tur] = agirlik.get(tur, 0) + w
-    adet = rnd.randint(2, 5) if u["tip"] == "pro" else rnd.randint(4, 7)
+    adet = rnd.randint(3, 5) if u["tip"] == "pro" else rnd.randint(4, 6)   # v2: en az 3 (bulgular #11; Kesfet tur suzgeci / sihirbaz sayaci)
     secilen = []
     kalan = dict(agirlik)
     while kalan and len(secilen) < adet:
@@ -467,14 +554,9 @@ def fiyat_uret(rnd, slug, p, kacinci=0):
 
 def yaz_01(D, out):
     rnd = random.Random(D.rnd.random())
+    D.aciklama = {"01": "hesaplar, profiller, hizmetler, ajans ekipleri, kurumlar, davetler, CRM/gorev (parola hepsinde %s)" % PAROLA,
+                  "02": "6 aylik gecmis: etkinlikler, konusmalar, mesajlar, teklifler, rezervasyonlar, yorumlar, ajans teklifleri"}
     L = []
-    L.append("-- =============================================================================")
-    L.append("-- SAHNE 01 — hesaplar, profiller, hizmetler, ajans ekipleri, kurumlar, CRM/gorev (YALNIZ DALDA)")
-    L.append("-- Uretildi: scripts/sahne/uret.py (tohum %d, %s). Bkz. docs/envanter/39-sahne-sentetik-dunya.md" % (D.seed, D.tarih))
-    L.append("-- Yeniden calistirmak guvenli: once kendi verisini siler. Parola (hepsi): %s" % PAROLA)
-    L.append("-- =============================================================================")
-    L.append(GUARD)
-    L.append(TEMP_FN)
     L.append(TEMIZLIK_FN)
     L.append("SELECT pg_temp.sahne_temizle() AS onceki_temizlik;")
     # on kosul: kategoriler
@@ -644,24 +726,32 @@ END $$;""" % ",\n".join(vals))
         for g in sorted(set(rnd.randint(3, 120) for _ in range(rnd.randint(2, 6)))):
             rows.append("(%s, %s, %s)" % (q(u["id"]), d(g), q(rnd.choice(["Dolu", "Başka etkinlik", "Şehir dışı", None]))))
     L.append("INSERT INTO public.availability_blocks (profile_id, blocked_date, note)\nVALUES\n%s\nON CONFLICT DO NOTHING;" % ",\n".join(rows))
-    # ajans ekipleri (eski tablo -> ayna)
-    L.append("-- ajans ekipleri: agency_members (ayna -> organization_memberships), ince roller, havuz dolumu, harici kayitlar")
-    rows = []
-    for a in D.ajanslar:
-        for m in a["uyeler"]:
-            rows.append("(%s, %s, %s, %s)" % (q(a["id"]), q(m["p"]["id"]), q(m["rol"]), t(m["katilim"])))
-    L.append("INSERT INTO public.agency_members (agency_id, professional_id, member_role, joined_at)\nVALUES\n%s;" % ",\n".join(rows))
-    # ince roller: her ajansta ikinci uye sales, ucuncu crew_coordinator
-    rows = []
+    # ajans ekipleri (FAZ 10a: dogrudan organization_memberships; eski agency_members YAZILMAZ)
+    L.append("-- ajans ekipleri: organization_memberships (FAZ 10a; eski tablo yazilmaz), ince roller, havuz esitleme, harici kayitlar, davetler")
+    uyelik_rows = []
     for a in D.ajanslar:
         for i, m in enumerate(a["uyeler"]):
-            if i == 1:
-                rows.append("(%s, %s, 'sales')" % (q(a["id"]), q(m["p"]["id"])))
-            elif i == 2:
-                rows.append("(%s, %s, 'crew_coordinator')" % (q(a["id"]), q(m["p"]["id"])))
-    if rows:
-        L.append("UPDATE public.organization_memberships om SET role = v.rol::public.organization_member_role FROM (VALUES\n%s\n) AS v(ajans, uye, rol)\n WHERE om.organization_id = pg_temp.org(v.ajans::uuid) AND om.user_id = v.uye::uuid;" % ",\n".join(rows))
-    L.append("SELECT * FROM public.faz5_backfill_agency_members();")
+            rol = "admin" if m["rol"] == "manager" else ("sales" if i == 1 else ("crew_coordinator" if i == 2 else "viewer"))
+            m["org_rol"] = rol
+            uyelik_rows.append("(pg_temp.org(%s), %s, %s, %s, %s)" % (q(a["id"]), q(m["p"]["id"]), q(rol), q(a["id"]), t(m["katilim"])))
+    for k in D.kurumlar:
+        for m in k["uyeler"]:
+            uyelik_rows.append("(pg_temp.org(%s), %s, 'admin', %s, %s)" % (q(k["id"]), q(m["id"]), q(k["id"]), t(m["kayit_saat"] - 24)))
+    L.append(UYELIK_DO % ",\n".join(uyelik_rows))
+    # havuz esitleme: kurulus sahibi JWT'siyle sync_org_talent_pool (eski faz5_backfill_agency_members kalkti)
+    L.append("""DO $$
+DECLARE o record;
+BEGIN
+  FOR o IN SELECT id, owner_user_id FROM public.organizations WHERE account_type = 'agency' AND legacy_profile_id::text LIKE '5a4e0000-%' ORDER BY created_at LOOP
+    PERFORM set_config('request.jwt.claim.sub', o.owner_user_id::text, true);
+    PERFORM public.sync_org_talent_pool(o.id);
+  END LOOP;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+END $$;
+-- esitlemeyle acilan kayitlarin zamani uyelik zamanina
+UPDATE public.organization_talent_records r SET created_at = r.linked_at, updated_at = r.linked_at
+  FROM public.organizations o WHERE o.id = r.organization_id AND o.legacy_profile_id::text LIKE '5a4e0000-%'
+   AND r.source = 'marketplace_linked' AND r.linked_at IS NOT NULL AND r.created_at > now() - interval '10 minutes';""")
     rows = []
     for a in D.ajanslar:
         for h in a["harici"]:
@@ -679,12 +769,51 @@ BEGIN
     INSERT INTO public.organization_talent_record_roles (record_id, role_id, is_primary) VALUES (rec, pg_temp.rol(r.rol), true);
   END LOOP;
 END $$;""" % ",\n".join(rows))
-    # kurum uyeleri (eski tablo -> ayna)
-    rows = []
-    for k in D.kurumlar:
+    # davetler (FAZ 10a; organization_invitations): bekleyen (tur icin), suresi gecmis bekleyen, gecmis kabul/ret/iptal
+    D.davetler = []
+    inv_rows = []
+    uygun = [p for p in D.prolar if p["durum"] == "approved" and p["yayinda"] and not p.get("askida")]
+    uye_olan = set()
+    for a in D.ajanslar:
+        for m in a["uyeler"]:
+            uye_olan.add((a["id"], m["p"]["id"]))
+    dn = 0
+    def davet(sahip, kisi, rol, durum, saat, mesaj=None, sure=14 * 24):
+        nonlocal dn
+        dn += 1
+        yanit = None if durum == "pending" else saat - rnd.uniform(2, 72)
+        D.davetler.append(dict(id=uid(U_INV, dn), sahip=sahip, kisi=kisi, rol=rol, durum=durum, saat=saat))
+        inv_rows.append("(%s, pg_temp.org(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
+            q(uid(U_INV, dn)), q(sahip["id"]), q(kisi["email"]), q(kisi["id"]), q(sahip["id"]), q(rol), q(durum), q(mesaj),
+            t(saat), "NULL" if yanit is None else t(yanit), "pg_temp.t(%s) + interval '%d hours'" % ("%.2f" % saat, sure)))
+    for ai, a in enumerate(D.ajanslar):
+        adaylar = [p for p in uygun if p["kat"] in a["odak"] and (a["id"], p["id"]) not in uye_olan and p["id"] not in [x["kisi"]["id"] for x in D.davetler]]
+        if not adaylar:
+            continue
+        adaylar.sort(key=lambda p: (0 if p["sehir"] == a["sehir"] else 1, rnd.random()))
+        if ai % 2 == 0:      # her ikinci ajansta bekleyen davet (tur icin)
+            davet(a, adaylar[0], rnd.choice(["viewer", "viewer", "sales", "crew_coordinator"]), "pending", rnd.uniform(6, 24 * 6),
+                  rnd.choice(["Ekibimize katılmanı çok isteriz; sezon yoğun, birlikte çalışalım.", "Düğün sezonu için kadroyu genişletiyoruz.", None]))
+        if ai % 4 == 1 and len(adaylar) > 1:   # suresi gecmis bekleyen
+            davet(a, adaylar[1], "viewer", "pending", rnd.uniform(24 * 16, 24 * 40))
+        if ai % 3 == 2 and len(adaylar) > 2:   # reddedilmis
+            davet(a, adaylar[2], "viewer", "declined", rnd.uniform(24 * 20, 24 * 120))
+        if ai % 5 == 3 and len(adaylar) > 3:   # iptal
+            davet(a, adaylar[3], "viewer", "cancelled", rnd.uniform(24 * 20, 24 * 120))
+        # mevcut uyelerin bir kismi davetle katildi (gecmis kabul)
+        for m in a["uyeler"][1:]:
+            if rnd.random() < 0.5:
+                davet(a, m["p"], m["org_rol"], "accepted", m["katilim"] + rnd.uniform(24, 24 * 6))
+    for ki, k in enumerate(D.kurumlar):
+        if ki % 2 == 0:
+            aday = [m for m in D.musteriler if m["id"] not in [x["kisi"]["id"] for x in D.davetler]]
+            if aday:
+                davet(k, rnd.choice(aday), rnd.choice(["viewer", "finance", "project_manager"]), "pending", rnd.uniform(12, 24 * 5),
+                      "Etkinlik bütçelerini birlikte takip edelim.")
         for m in k["uyeler"]:
-            rows.append("(%s, %s, 'manager', %s)" % (q(k["id"]), q(m["id"]), t(m["kayit_saat"] - 24)))
-    L.append("INSERT INTO public.business_members (business_id, member_user_id, member_role, joined_at)\nVALUES\n%s;" % ",\n".join(rows))
+            davet(k, m, "admin", "accepted", m["kayit_saat"] - 24 + rnd.uniform(24, 72))
+    if inv_rows:
+        L.append(DAVET_DO % ",\n".join(inv_rows))
     # tedarikci, kisi, firsat, gorev (ajans)
     L.append("-- ajans CRM: tedarikciler, kisiler, firsatlar, gorevler")
     rows = []
@@ -739,9 +868,12 @@ SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%') AS hesa
        (SELECT count(*) FROM public.services WHERE profile_id::text LIKE '5a4e0000-%') AS hizmet,
        (SELECT count(*) FROM public.provider_services WHERE provider_id::text LIKE '5a4e0000-%') AS saglayici_rol,
        (SELECT count(*) FROM public.turkish_cities) AS il,
+       (SELECT count(*) FROM public.organization_invitations i JOIN public.organizations o ON o.id = i.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS davet,
+       (SELECT count(*) FROM public.organization_invitations i JOIN public.organizations o ON o.id = i.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%' AND i.status = 'pending' AND i.expires_at > now()) AS bekleyen_davet,
+       (SELECT count(*) FROM public.agency_members WHERE agency_id::text LIKE '5a4e0000-%') + (SELECT count(*) FROM public.business_members WHERE business_id::text LIKE '5a4e0000-%') AS eski_tablo,
        (SELECT count(*) FROM public.organization_sync_log WHERE occurred_at > now() - interval '10 minutes') AS sync_hata;""")
-    with open(os.path.join(out, "01-sahne-hesaplar.sql"), "w", encoding="utf-8") as f:
-        f.write("\n\n".join(L) + "\n")
+    D.hesap_dosyalari = paketle(L, out, "01", "sahne-hesaplar", D,
+        lambda onceki: "DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.profiles WHERE email LIKE 'sahne+%%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: once 01a..01%s (profil=%%)', n; END IF; END $$;" % onceki)
     return plan
 
 
@@ -862,15 +994,22 @@ END $$;""")
             genel.append((p, secim(rnd, V.KATEGORILER[p["kat"]]["turler"]), False))
     tum = yogun + genel
     rnd.shuffle(tum)
+    OZEL_TURLER = ("wedding", "engagement", "henna", "birthday", "baby_shower", "circumcision")
     for p, tur, zorla_kabul in tum:
-        # alici: tekil cift
+        # alici: tekil cift. v2 (#26): yogun hucrelerde ozel tur (dugun) yalniz bireysel musteriye gider (hucre sayisi korunur)
+        havuz = D.musteriler if (zorla_kabul and tur in OZEL_TURLER) else alicilar
         for _ in range(20):
-            alici = rnd.choice(alicilar)
+            alici = rnd.choice(havuz)
             if (alici["id"], p["id"]) not in ciftler:
                 break
         else:
             continue
         ciftler.add((alici["id"], p["id"]))
+        # v2 (#26): kurum sahibi / kurum uyesi alici kurumsal tur ister (kurumun tur listesi, kategoriyle kesisen varsa o)
+        if alici["tip"] in ("kurum", "kurum_uye") and not zorla_kabul:
+            kurum_turleri = alici["turler"] if alici["tip"] == "kurum" else alici["kurum"]["turler"]
+            ortak = [x for x in kurum_turleri if x in V.KATEGORILER[p["kat"]]["turler"]]
+            tur = rnd.choice(ortak or kurum_turleri)
         cn += 1
         cid = uid(U_CONV, cn)
         basla = rnd.uniform(24 * 3, 24 * 80) if zorla_kabul else rnd.uniform(24 * 1.5, 24 * 180)  # ilk mesaj: kac saat once (yogun hucreler 90 gunluk pencerede)
@@ -944,7 +1083,7 @@ END $$;""")
         brief = brief_uret(rnd, p["kat"], tur, tarih.isoformat(), sehir, ilce, kisi, butce)
         conv_rows.append("(%s, %s, %s, %s, %s, %s, %d, %s, %s, %s, %s, %s, %s)" % (q(cid), q(alici["id"]), q(p["id"]), d(gun), q(tur), q("%s / %s" % (sehir, ilce)), kisi, q(butce), qj(brief), q(rtype),
                                                                              q(rnd.choice(["18:00", "19:00", "20:00", "11:00", "14:00"])), t(basla), t(basla)))
-        fmt = dict(tur=tur_ad(tur), tarih=tarih_str, sehir=sehir, kisi=kisi, ad=p["ad"], ilce=ilce)
+        fmt = dict(tur=tur_ad(tur), tarih=tarih_str, sehir=sehir, sehir_de=sehir + ek_de(sehir), kisi=kisi, ad=p["ad"], ilce=ilce)
         SABLON = {"ACILIS": V.MUSTERI_ACILIS, "PRO_YANIT": V.PRO_YANIT, "MUSTERI_DEVAM": V.MUSTERI_DEVAM, "PRO_DEVAM": V.PRO_DEVAM,
                   "KAPANIS_OLUMLU": V.MUSTERI_KAPANIS_OLUMLU, "KAPANIS_OLUMSUZ": V.MUSTERI_KAPANIS_OLUMSUZ}
         def msg(sender, body, zaman_, tip="text", quote=None):
@@ -1142,50 +1281,11 @@ SELECT (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%') AS 
        (SELECT count(*) FROM public.proposals WHERE id::text LIKE '5a4e0003-%' AND status = 'approved') AS onayli,
        (SELECT count(*) FROM public.analytics_events WHERE entity_id::text LIKE '5a4e%') AS olay,
        (SELECT count(*) FROM public.notifications WHERE user_id::text LIKE '5a4e0000-%') AS bildirim;""")
-    # --- paketleme: ardisik ifadeler <= SINIR baytlik parcalara; her parca kendi korumasi + yardimcilari + on kosuluyla
-    SINIR = 380_000
-    parcalar, cur, boy = [], [], 0
-    for ifade in L:
-        b = len(ifade.encode("utf-8")) + 2
-        if cur and boy + b > SINIR:
-            parcalar.append(cur); cur, boy = [], 0
-        cur.append(ifade); boy += b
-    if cur:
-        parcalar.append(cur)
-    harfler = "abcdefghijklmnop"
-    adlar = ["02%s-sahne-gecmis.sql" % harfler[i] for i in range(len(parcalar))]
-    for i, parca in enumerate(parcalar):
-        bas = ["-- =============================================================================",
-               "-- SAHNE 02%s (%d/%d) — 6 aylik gecmis: etkinlikler, konusmalar, mesajlar, teklifler, rezervasyonlar, yorumlar, ajans teklifleri (YALNIZ DALDA)" % (harfler[i], i + 1, len(parcalar)),
-               "-- Uretildi: scripts/sahne/uret.py (tohum %d, %s). Sira: 01 -> 02a -> 02b -> ... (hepsi, atlamadan). 02a kendi gecmisini silip yeniden baslar." % (D.seed, D.tarih),
-               "-- =============================================================================", GUARD, TEMP_FN,
-               "DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.profiles WHERE email LIKE 'sahne+%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: 01-sahne-hesaplar.sql calistirilmamis (profil=%)', n; END IF; END $$;"]
-        if i > 0:
-            bas.append("DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.conversations WHERE id::text LIKE '5a4e0010-%%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: once 02a..02%s (konusma=%%)', n; END IF; END $$;" % harfler[i - 1])
-        son = ["SELECT %s AS parca, 'tamam' AS durum;" % q("02%s %d/%d" % (harfler[i], i + 1, len(parcalar)))] if i < len(parcalar) - 1 else []
-        with open(os.path.join(out, adlar[i]), "w", encoding="utf-8") as f:
-            f.write("\n\n".join(bas + parca + son) + "\n")
-    D.gecmis_dosyalari = adlar
+    D.gecmis_dosyalari = paketle(L, out, "02", "sahne-gecmis", D,
+        lambda onceki: "DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.conversations WHERE id::text LIKE '5a4e0010-%%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: once 02a..02%s (konusma=%%)', n; END IF; END $$;" % onceki)
 
 
 # ----------------------------------------------------------------------------- 00 / 03 / plan / md
-def yaz_01b(D, out):
-    # Mevcut kuruluma yama: 01 yeniden kosulmadan etkinlik_turleri + taslak etkinlik duzeltmesi (01'in yeni surumu bunlari zaten yazar)
-    rows = ",\n".join("(%s, %s)" % (q(u["id"]), qj(u["etkinlik_turleri"])) for u in D.prolar + D.ajanslar)
-    with open(os.path.join(out, "01b-sahne-etkinlik-turleri.sql"), "w", encoding="utf-8") as f:
-        f.write("""-- SAHNE 01b — YAMA (27 Ekim 2026): category_attributes.etkinlik_turleri (ortak alan; sihirbaz sayaci + Kesfet etkinlik turu filtresi)
--- ve taslak etkinliklerin onaylanmasi (uygulama taslak uretmez). 01'in guncel surumu bunlari zaten icerir; bu dosya 01'i yeniden
--- kosmadan MEVCUT kuruluma uygulamak icindir. Idempotan. YALNIZ DALDA.
-%s
-UPDATE public.profiles p SET category_attributes = COALESCE(p.category_attributes, '{}'::jsonb) || jsonb_build_object('etkinlik_turleri', v.turler)
-  FROM (VALUES
-%s
-  ) AS v(id, turler) WHERE p.id = v.id::uuid;
-UPDATE public.events SET status = 'confirmed', confirmed_at = COALESCE(confirmed_at, created_at) WHERE id::text LIKE '5a4e0002-%%' AND status = 'draft';
-SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%%' AND category_attributes ? 'etkinlik_turleri') AS turlu_profil,
-       (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%%' AND status = 'draft') AS taslak_etkinlik;
-""" % (GUARD, rows))
-
 def yaz_00(D, out):
     with open(os.path.join(out, "00-sahne-temizlik.sql"), "w", encoding="utf-8") as f:
         f.write("-- SAHNE 00 — temizlik: tum Sahne verisini siler (fixture'lar ve sema etkilenmez). YALNIZ DALDA. Storage nesneleri: node scripts/sahne/foto-yukle.mjs --sil\n\n")
@@ -1224,6 +1324,59 @@ SELECT c.slug, count(DISTINCT v.id) FILTER (WHERE v.is_visible) AS gorunur,
  GROUP BY c.id, c.slug ORDER BY gorunur DESC;
 """ % GUARD)
 
+ESLESTIRME_DO = """DO $$
+DECLARE r record; run uuid; ids uuid[]; aday record; k int;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+%s
+  ) AS v(etkinlik, sahip, strateji, kosu, goster, tikla) LOOP
+    DELETE FROM public.match_runs WHERE event_id = r.etkinlik::uuid;   -- tekrar kosuda eski Sahne kosusu gider
+    PERFORM set_config('request.jwt.claim.sub', r.sahip, true);
+    run := public.run_event_match(r.etkinlik::uuid, r.strateji::public.match_strategy);
+    -- gosterilenler: rol basina ilk N aday; tiklananlar: gosterilenlerden ilk M (deterministik sira)
+    SELECT array_agg(id) INTO ids FROM public.match_candidates WHERE match_run_id = run AND final_rank <= r.goster;
+    IF ids IS NOT NULL THEN PERFORM public.mark_match_candidates_shown(run, ids); END IF;
+    k := 0;
+    FOR aday IN SELECT id FROM public.match_candidates WHERE match_run_id = run AND was_shown ORDER BY final_rank, provider_id LOOP
+      EXIT WHEN k >= r.tikla;
+      PERFORM public.mark_match_candidate_clicked(aday.id);
+      k := k + 1;
+    END LOOP;
+    -- zaman: kosu, adaylar ve olaylar etkinlik olusturmasindan sonraki gune cekilir (tetikleyiciler now() yazdi)
+    UPDATE public.match_runs SET created_at = r.kosu WHERE id = run;
+    UPDATE public.match_candidates SET created_at = r.kosu WHERE match_run_id = run;
+    UPDATE public.analytics_events SET occurred_at = r.kosu WHERE entity_type = 'match_run' AND entity_id = run;
+    UPDATE public.analytics_events a SET occurred_at = r.kosu + (CASE a.event_name WHEN 'match_shown' THEN interval '2 minutes' ELSE interval '9 minutes' END)
+      FROM public.match_candidates mc WHERE a.entity_type = 'match_candidate' AND a.entity_id = mc.id AND mc.match_run_id = run;
+  END LOOP;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+END $$;"""
+
+def yaz_04(D, out):
+    # eslestirme gecmisi (bulgular #8): onayli / eslesme durumundaki etkinlikler icin run_event_match (sahip JWT'siyle),
+    # rol basina ilk 6-10 aday gosterildi, 0-3 aday tiklandi; zamanlar etkinlik olusturmasindan 1-3 gun sonra.
+    # Tamamlanmis/rezervasyonlu etkinlikler RPC'nin durum kosulu (confirmed/matching) disinda kalir; gecmis kosu uydurulmaz.
+    rnd = random.Random(D.seed + 4)
+    secilen = [ev for ev in D.etkinlikler if ev["status"] in ("confirmed", "matching")]
+    rows = []
+    for ev in secilen:
+        strateji = "hybrid" if ev["sahip"]["tip"] == "kurum" else rnd.choice(["hybrid", "hybrid", "individual"])
+        kosu = max(ev["olusturma"] - rnd.uniform(24, 72), 1.0)
+        rows.append("(%s, %s, %s, %s, %d, %d)" % (q(ev["id"]), q(ev["sahip"]["id"]), q(strateji), t(kosu), rnd.randint(6, 10), rnd.randint(0, 3)))
+    D.eslestirme_sayisi = len(rows)
+    L = ["-- SAHNE 04 — eslestirme gecmisi (FAZ 6 run_event_match + mark_match_candidates_shown / mark_match_candidate_clicked); YALNIZ DALDA; 02'den sonra.",
+         "-- Onayli/eslesme durumundaki %d etkinlik icin sahip JWT'siyle kosu; adaylar gercek Sahne verisinden (uydurma aday yok)." % len(rows),
+         GUARD, TEMP_FN, ESLESTIRME_DO % ",\n".join(rows),
+         """-- ozet
+SELECT (SELECT count(*) FROM public.match_runs r JOIN public.events e ON e.id = r.event_id WHERE e.id::text LIKE '5a4e0002-%') AS kosu,
+       (SELECT count(*) FROM public.match_candidates c JOIN public.match_runs r ON r.id = c.match_run_id JOIN public.events e ON e.id = r.event_id WHERE e.id::text LIKE '5a4e0002-%') AS aday,
+       (SELECT count(*) FROM public.match_candidates c JOIN public.match_runs r ON r.id = c.match_run_id JOIN public.events e ON e.id = r.event_id WHERE e.id::text LIKE '5a4e0002-%' AND c.was_shown) AS gosterilen,
+       (SELECT count(*) FROM public.match_candidates c JOIN public.match_runs r ON r.id = c.match_run_id JOIN public.events e ON e.id = r.event_id WHERE e.id::text LIKE '5a4e0002-%' AND c.was_clicked) AS tiklanan,
+       (SELECT count(DISTINCT c.provider_id) FROM public.match_candidates c JOIN public.match_runs r ON r.id = c.match_run_id JOIN public.events e ON e.id = r.event_id WHERE e.id::text LIKE '5a4e0002-%' AND c.was_shown) AS gosterilen_saglayici,
+       (SELECT count(*) FROM public.analytics_events WHERE event_name IN ('match_run', 'match_shown', 'match_clicked') AND occurred_at > now() - interval '1 hour') AS simdiki_olay;"""]
+    with open(os.path.join(out, "04-sahne-eslestirme.sql"), "w", encoding="utf-8") as f:
+        f.write("\n\n".join(L) + "\n")
+
 def yaz_plan(D, plan, out):
     with open(os.path.join(out, "foto-plan.json"), "w", encoding="utf-8") as f:
         json.dump({"proje_url": PROJE_URL, "storage": STORAGE, "uretildi": D.tarih, "kategoriler": {s: {"ad": m["ad"], "arama": m["arama"]} for s, m in V.KATEGORILER.items()},
@@ -1245,6 +1398,15 @@ def yaz_md(D, out):
     L += ["", "## Musteriler", "", "| E-posta | Ad | Sehir |", "|---|---|---|"]
     for m in D.musteriler:
         L.append("| `%s` | %s | %s |" % (m["email"], m["full"], m["sehir"]))
+    L += ["", "## Davetler (FAZ 10a; `organization_invitations`)", "",
+          "Bekleyenler tur icindir: davetli hesapla `/davetlerim` -> kabul/ret; kurulus sahibiyle `/profil/ekibim` ya da `/profil/kurumsal-ekip` -> iptal.",
+          "Suresi gecmis bekleyenler arayuzde \"Suresi doldu\" gorunur (DB durumu pending). Gecmis kabul/ret/iptal kayitlari davet listelerini doldurur.", "",
+          "| Kurulus (sahip e-postasi) | Davetli | Rol | Durum |", "|---|---|---|---|"]
+    for dv in sorted(D.davetler, key=lambda x: (x["durum"] != "pending", x["sahip"]["email"])):
+        durum = dv["durum"] + (" (suresi gecmis)" if dv["durum"] == "pending" and dv["saat"] > 14 * 24 else "")
+        L.append("| %s (`%s`) | `%s` %s | %s | %s |" % (dv["sahip"]["sirket"], dv["sahip"]["email"], dv["kisi"]["email"], dv["kisi"]["full"], dv["rol"], durum))
+    L += ["", "## Eslestirme gecmisi (04)", "",
+          "%d onayli/eslesme durumundaki etkinlik icin `run_event_match` kosusu (sahip hesabiyla); rol basina ilk 6-10 aday gosterildi, 0-3 aday tiklandi. Admin `/admin/zeka` huni ve adalet bloklari bu kosulari okur." % getattr(D, "eslestirme_sayisi", 0)]
     with open(os.path.join(out, "hesaplar.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
 
@@ -1259,13 +1421,14 @@ def main():
     D.seed = a.seed
     D.tarih = datetime.date.today().isoformat()
     plan = yaz_01(D, a.out)
-    yaz_01b(D, a.out)
     yaz_02(D, a.out)
+    yaz_04(D, a.out)
     yaz_00(D, a.out)
     yaz_plan(D, plan, a.out)
     yaz_md(D, a.out)
-    print("Sahne: %d hesap (%d pro, %d ajans, %d kurum, %d uye, %d musteri), %d etkinlik -> %s" % (
-        len(D.kullanicilar), len(D.prolar), len(D.ajanslar), len(D.kurumlar), len(D.kurum_uyeleri), len(D.musteriler), len(D.etkinlikler), os.path.abspath(a.out)))
+    print("Sahne: %d hesap (%d pro, %d ajans, %d kurum, %d uye, %d musteri), %d etkinlik, %d davet, %d eslestirme kosusu -> %s" % (
+        len(D.kullanicilar), len(D.prolar), len(D.ajanslar), len(D.kurumlar), len(D.kurum_uyeleri), len(D.musteriler), len(D.etkinlikler),
+        len(D.davetler), D.eslestirme_sayisi, os.path.abspath(a.out)))
 
 if __name__ == "__main__":
     main()

@@ -344,13 +344,14 @@ KURUMLAR = [
 
 # Musteri (client) hesaplari: (ad, soyad, sehir) uretec rastgele secer
 
-# Konusma sablonlari — {tur} etkinlik turu adi (kucuk), {tarih} gun.ay, {sehir}, {kisi} konuk sayisi, {ad} profesyonel adi
+# Konusma sablonlari — {tur} etkinlik turu adi (kucuk), {tarih} gun.ay, {sehir}, {sehir_de} (bulunma ekli: Istanbul'da / Izmir'de / Gaziantep'te),
+# {kisi} konuk sayisi, {ad} profesyonel adi. Ek uyumu uret.py ek_de() ile (bulgular #26).
 MUSTERI_ACILIS = [
-    "Merhaba, {tarih} tarihinde {sehir}'de {tur} organizasyonumuz var. Yaklaşık {kisi} kişi bekliyoruz. Müsait misiniz, fiyat bilgisi alabilir miyim?",
+    "Merhaba, {tarih} tarihinde {sehir_de} {tur} organizasyonumuz var. Yaklaşık {kisi} kişi bekliyoruz. Müsait misiniz, fiyat bilgisi alabilir miyim?",
     "Selam {ad} Bey/Hanım, profilinizi Kashe'de gördüm. {tur} için {tarih} günü düşünüyoruz, {sehir}. Paket içerikleriniz nedir?",
-    "Merhaba, {sehir}'de {tarih} tarihli {tur} etkinliğimiz için teklif rica ediyorum. Mekan henüz kesinleşmedi ama tarih sabit.",
+    "Merhaba, {sehir_de} {tarih} tarihli {tur} etkinliğimiz için teklif rica ediyorum. Mekan henüz kesinleşmedi ama tarih sabit.",
     "İyi günler, {tur} için sizinle çalışmak istiyoruz. Tarih {tarih}, yer {sehir}, davetli sayısı {kisi} civarı. Ücret ve koşullarınızı paylaşır mısınız?",
-    "Merhaba, referans üzerine yazıyorum. {tarih}'de {sehir}'de {tur} var; o gün uygun musunuz? Bütçe aralığımızı da yazdım.",
+    "Merhaba, referans üzerine yazıyorum. {tarih} günü {sehir_de} {tur} var; o gün uygun musunuz? Bütçe aralığımızı da yazdım.",
 ]
 PRO_YANIT = [
     "Merhaba, teşekkürler. {tarih} tarihi şu an için müsait. Detayları konuşup size özel bir teklif hazırlayayım; mekan ve saat bilgisini de alabilir miyim?",
@@ -428,3 +429,43 @@ TEDARIKCILER = [("Lezzet Catering", "catering"), ("Çiçek Atölyesi Flora", "de
                 ("Baskı Evi Promosyon", "print_promo"), ("Sahne Ekipman Kiralama", "stage_technical")]
 KISILER = [("Kurumsal İletişim Müdürü", "Pazarlama"), ("Etkinlik Sorumlusu", "İK"), ("Satın Alma Uzmanı", "Satın Alma"), ("Gelin Annesi", None), ("Damat", None), ("Genel Müdür Asistanı", "Yönetim")]
 LEAD_BASLIK = ["{kurum} yıl sonu partisi", "{ad} düğün organizasyonu", "{kurum} lansman sahne prodüksiyonu", "{ad} nişan daveti", "{kurum} bayi toplantısı teknik paket"]
+
+# Performans modulu metinleri (bulgular #32): kategoriye ozel; (what_to_expect, setup_logistics, ek detaylar)
+PERFORMANS_METNI = {
+    "dj": [("Açılışta ortam müziği, yemek sonrası tempo yükseltme ve gece yarısına doğru dans seti; istek parçalar akışa yedirilir.",
+            "Mekana 2 saat önce kurulum; ses sistemi yoksa kendi setim gelir, ışık için mekanla koordinasyon.", {"Set": "DJ booth + kontrolcü", "Mikrofon": "Anons için 1 kablosuz"}),
+           ("Düğün ve kurumsal davetlerde iki bölümlü set: dinleti ve dans. Çiftin özel parçaları ve ilk dans önceden provalanır.",
+            "Kurulum 90 dk, ses kontrolü 30 dk; jeneratör gereken açık havada önceden bilgi isterim.", {"Set": "Pioneer standart kurulum", "Yedek": "İkinci laptop + kablolu yedek"})],
+    "muzisyen": [("Karşılama kokteylinde akustik, yemekte hafif repertuvar, sonrasında canlı dans müziği; set listesi etkinlik sahibiyle birlikte netleşir.",
+                  "Ekip mekana 2 saat önce gelir; monitör ve mikrofon ihtiyacı teknik ekibe önceden iletilir.", {"Set süresi": "3 x 45 dk", "Ekip": "Trio / kuartet"}),
+                 ("Canlı performans ara vermeden akışa eşlik eder; istek parçalar repertuvar dahilinde o anda eklenir.",
+                  "Sahne ölçüsü ve elektrik hattı kurulum öncesi teyit edilir; ses sistemi mekandan ya da anlaşmalı tedarikçiden.", {"Set süresi": "2 x 60 dk", "Prova": "Etkinlik günü 30 dk"})],
+    "sunucu": [("Açılış konuşması, program akışı yönetimi, konuk ve konuşmacı anonsları, ödül töreni sunumu; metin ve akış önceden birlikte çalışılır.",
+                "Etkinlikten 1 saat önce mekanda, kulis ve sahne provası; metin değişiklikleri son ana kadar alınır.", {"Dil": "Türkçe / İngilizce", "Kıyafet": "Etkinlik konseptine uygun"}),
+               ("Kurumsal lansman ve gala sunumu; sahne enerjisi etkinliğin tonuna göre ayarlanır, interaktif bölümler eklenebilir.",
+                "Akış dokümanı etkinlikten 2 gün önce; prova mekanda 45 dk.", {"Deneyim": "Canlı yayın sunumu dahil", "Ekstra": "Yarışma / çekiliş yönetimi"})],
+    "dansci": [("Açılış gösterisi ve program arası performanslar; koreografi etkinlik temasına göre uyarlanır, kostüm dahildir.",
+                "Sahne zemini ve ölçüsü önceden kontrol edilir; ısınma ve prova için 60 dk alan.", {"Gösteri": "2 x 10 dk", "Ekip": "2-6 dansçı"}),
+               ("Modern ve geleneksel dans gösterileri; ekip koreografisi ya da solo performans seçeneği.",
+                "Mekana 90 dk önce varış, kostüm değişimi için kulis gerekir.", {"Gösteri": "15 dk", "Müzik": "Kendi kaydımız"})],
+    "illuzyonist": [("Masa arası yakın illüzyon ve sahne gösterisi; seyirci katılımlı numaralarla etkileşimli bir akış.",
+                     "Sahne gösterisi için 60 dk kurulum, yakın illüzyon için kurulum gerekmez.", {"Gösteri": "Sahne 30 dk + yakın 60 dk", "Yaş": "Her yaş grubu"}),
+                    ("Kurumsal etkinliklere uyarlanmış mentalizm ve illüzyon gösterisi; markaya özel final numarası hazırlanabilir.",
+                     "Ses sistemi ve yaka mikrofonu mekandan; ışık için basit bir spot yeterli.", {"Gösteri": "40 dk", "Prova": "Mekanda 30 dk"})],
+    "palyaco": [("Çocuklarla oyunlar, balon figürleri, yüz boyama ve kısa gösteri; yaş grubuna göre akış.",
+                 "Etkinlikten 30 dk önce mekanda; 3x3 m alan ve bir masa yeterli.", {"Süre": "2 saat", "Ekip": "1-2 kişi"}),
+                ("Doğum günü ve sünnet eğlencesi: sihirbazlık, danslı oyunlar, pasta anı yönetimi.",
+                 "Açık havada gölgelik alan rica edilir; ses sistemi kendi hoparlörümüzle.", {"Süre": "90 dk", "Ekstra": "Mini disko"})],
+    "stand-up-komedyen": [("Etkinliğe özel yazılmış bölümler içeren stand-up gösterisi; kurumsal etkinliklerde ekip ve sektör esprileri önceden onaylanır.",
+                           "Sahne, yaka ya da el mikrofonu ve ışık yeterli; prova gerekmez, teknik kontrol 20 dk.", {"Gösteri": "30-45 dk", "İçerik": "Kurumsal uyumlu"}),
+                          ("Gala ve lansmanlarda açılış gösterisi ya da program arası performans; interaktif bölümler seyirciyle.",
+                           "Etkinlikten 1 saat önce mekanda; akış sorumlusuyla kısa brifing.", {"Gösteri": "20-30 dk", "Dil": "Türkçe"})],
+    "karikaturist": [("Canlı karikatür: konuklar 3-5 dakikada çizilir, çizimler anında hediye edilir; kurumsal etkinliklerde logo baskılı kağıt kullanılabilir.",
+                      "Bir masa, iki sandalye ve aydınlatma yeterli; 30 dk kurulum.", {"Hız": "12-15 kişi / saat", "Süre": "2-4 saat"}),
+                     ("Dijital canlı karikatür: tabletle çizim, ekranda yansıtma ve anında e-posta/QR ile paylaşım.",
+                      "Ekran ve HDMI bağlantısı mekandan; kurulum 45 dk.", {"Hız": "10-12 kişi / saat", "Format": "Dijital + baskı"})],
+    "akrobat": [("Akrobasi ve hava gösterisi (kumaş, çember); açılış ya da program arasında 2 performans.",
+                 "Asma noktası ve yük kapasitesi önceden teyit edilir; güvenlik alanı 4x4 m; kurulum 2 saat.", {"Gösteri": "2 x 8 dk", "Ekip": "2-4 kişi"}),
+                ("Yer akrobasisi ve LED gösterisi; sahne ölçüsüne göre uyarlanır, mekan yüksekliği 4 m yeterli.",
+                 "Prova için 60 dk; sahne zemini kaymaz olmalı.", {"Gösteri": "12 dk", "Müzik": "Kendi kaydımız"})],
+}
