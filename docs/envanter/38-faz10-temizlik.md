@@ -172,6 +172,10 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
   HEMEN `supabase link --project-ref qydsooqmflrrwtgawhsv` + `supabase db push` -> yayin biter -> uretimde SQL Editor: asama20
   (K1/K3/K4/K5 ESIT) ve asama5 (K3-K6 EMEKLI) salt okunur. Sonra bu bolume kapanis satiri, roadmap v23, `CLAUDE.md` FAZ 10a notu.
 - Sonraki dilim 10b (etkinlik turu tek kaynak) ancak 10a uretimde ve tur temizse.
+- **29 Ekim ek:** Sahne v2 dala yuklendi (bekleyen davetler tur icin hazir, `docs/sahne/hesaplar.md` Davetler). **Duzeltme 01** (bulgular;
+  DB `20261030120000_duzeltme_01_sahne_bulgulari.sql` dalda uygulandi, asama4 36/36; P1 `duzeltme-01` dalinda, diff okundu, tsc temiz).
+  Tur `duzeltme-01` onizlemesinde yapilir (`kashe-git-duzeltme-01-...vercel.app`): 10a maddeleri + duzeltme maddeleri (41 bolum 12) birlikte.
+  Uretim: `duzeltme-01` -> `main` (10a-db + 10a-p1 + duzeltme-01 birlikte) + `supabase db push` (iki migration).
 
 ### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness'ta dogrulandi, dal/uretim bekliyor)
 

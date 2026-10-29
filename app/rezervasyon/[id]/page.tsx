@@ -9,6 +9,7 @@ import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
 import { getCrewContext } from '@/app/lib/org-context';
+import { canOwnForBusiness } from '@/app/lib/business-write';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -281,6 +282,38 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   const backLabel =
     teklifSekli || viewer === 'customer' ? 'Rezervasyonlarım' : 'Takvimim';
 
+  /**
+   * YORUM CAGRISI (Duzeltme 01 / #28).
+   *
+   * Is tamamlandiktan sonra musteriyi yoruma goturen tek tiklik yol yoktu;
+   * e-posta disinda cagri yoktu. Kosullar:
+   *   - rezervasyon `completed`
+   *   - bakan kisi MUSTERI (kendi hesabi ya da kurum adina `canOwnForBusiness`)
+   *   - saglayici belli (eski sekilde `professional_id`, teklif seklinde
+   *     `seller_provider_id`)
+   * Yorum zaten varsa cagri "Yorumun yayinda" olur. `reviews`'ta musteri
+   * kendi satirini RLS ile okur; baska kimsenin yorumu sorgulanmaz.
+   */
+  let yorumCagrisi: { href: string; etiket: string } | null = null;
+  if (booking.status === 'completed') {
+    const saglayiciId = booking.professional_id ?? booking.seller_provider_id;
+    const musteriId = booking.customer_id;
+    const musteriTarafi =
+      isCustomer || (!!musteriId && (await canOwnForBusiness(musteriId)));
+    if (saglayiciId && musteriId && musteriTarafi) {
+      const { data: yorumSatirlari } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('professional_id', saglayiciId)
+        .eq('customer_id', musteriId)
+        .limit(1);
+      const yorumVar = (yorumSatirlari ?? []).length > 0;
+      yorumCagrisi = yorumVar
+        ? { href: `/p/${saglayiciId}#yorumlar`, etiket: 'Yorumun yayında →' }
+        : { href: `/p/${saglayiciId}?yorum=1`, etiket: 'Yorum bırak →' };
+    }
+  }
+
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
   const kabuk = await panelKabukProps();
@@ -451,13 +484,22 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 <circle cx="12" cy="12" r="10" stroke="var(--color-moss)" strokeWidth="1.5" />
                 <path d="M8 12.5l3 3 5-6" stroke="var(--color-moss)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-ink font-medium">
                   İş tamamlandı.
                 </p>
                 <p className="text-xs text-ink-72 mt-0.5">
                   {formatDateTime(booking.completed_at)}
                 </p>
+                {/* Duzeltme 01 (#28): yorum cagrisi yalniz musteri tarafinda. */}
+                {yorumCagrisi && (
+                  <Link
+                    href={yorumCagrisi.href}
+                    className="kashe-tap inline-block mt-2 font-display font-semibold text-sm text-brand-ink hover:underline"
+                  >
+                    {yorumCagrisi.etiket}
+                  </Link>
+                )}
               </div>
             </div>
           )}

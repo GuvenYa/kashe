@@ -179,15 +179,21 @@ export function kisaGunEtiketi(iso: string | null | undefined): string | null {
 }
 
 /**
- * Kosu suresi — "0,8 sn" / "1,4 sn" (hijyen 04).
+ * Kosu suresi — "420 ms" / "1,4 sn" (Duzeltme 01 / #19).
+ *
+ * Eslestirme cogu kosuda bir saniyenin altinda bitiyor ve "0,4 sn" / "0,0 sn"
+ * gibi degerler okunmuyordu: 1 sn ALTINDA milisaniye, ustunde saniye yazilir.
  *
  * UYDURMA DEGIL: deger `match_runs.latency_ms` sutunundan gelir. Sutun bos
- * ise null doner ve kutu cizilmez; sure tahmin EDILMEZ.
+ * ise null doner ve kutu CIZILMEZ (hijyen 04 kurali); 0 olculmus ama anlamsiz
+ * bir degerdir — "0 ms" demek yerine "—" yazilir. Sure tahmin EDILMEZ.
  */
 export function sureMetni(ms: number | null | undefined): string | null {
   if (ms === null || ms === undefined) return null;
   const n = Number(ms);
   if (!Number.isFinite(n) || n < 0) return null;
+  if (n === 0) return '—';
+  if (n < 1000) return `${Math.round(n).toLocaleString('tr-TR')} ms`;
   const saniye = n / 1000;
   return (
     saniye.toLocaleString('tr-TR', {

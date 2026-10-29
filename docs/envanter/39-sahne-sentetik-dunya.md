@@ -204,7 +204,7 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
    #14 `proposals_expire_stale` + pg_cron `proposals-expire-daily` 00:15 (ilk kosu migration'da; Sahne'de 24 teklif expired oldu),
    #7 `analytics_summary().funnel.linked` (zincirli huni), #23 ekip bildirimleri (`trg_duz_crew_member_notify`, `trg_duz_booking_crew_notify`,
    type `team`). Harness: asama4 **T35** eklendi, 36/36; asama17/18/19/20 ESIT. Uygulama tarafi `41-claude-code-gorevi-duzeltme-01.md`
-   (#29 #28 #14 #6 #7 #16 #19 #20 #4 #5 #18 #26). Urun kararlari (Guven, 29 Ekim): #4 bos kategori gizlenir, #5 kategori ikonu,
+   (#29 #28 #14 #6 #7 #16 #19 #20 #4 #5 #18 #26) — YAPILDI (Claude Code, 29 Ekim; diff okundu, tsc temiz; Sahne turu bekliyor). Urun kararlari (Guven, 29 Ekim): #4 bos kategori gizlenir, #5 kategori ikonu,
    #18 kismi kapsam gosterilir, #23 iki bildirim de gider.
 5. Sonra **FAZ 10a-DB/01** (38 numarali plan), dolu Sahne'de turlanir.
 

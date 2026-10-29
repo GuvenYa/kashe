@@ -63,6 +63,13 @@ type Props = {
   initialQuotes: Record<string, Quote>;
   /** quote.id → booking.id (kabul edilmiş teklif kartından rezervasyona köprü) */
   bookingIdByQuoteId: Record<string, string>;
+  /**
+   * Duzeltme 01 (#28): tamamlanan isten sonra "Yorum birak" cagrisi.
+   * Sunucu karar verir (musteri tarafi + yorum var mi); `null` ise cizilmez.
+   */
+  yorumCagrisi: { href: string; etiket: string } | null;
+  /** Tamamlanma zamani — cagri bu zamandan SONRAKI ilk sistem mesajina asilir. */
+  tamamlanmaZamani: string | null;
 };
 
 const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -156,6 +163,8 @@ export function KonusmaDetay({
   initialMessages,
   initialQuotes,
   bookingIdByQuoteId,
+  yorumCagrisi,
+  tamamlanmaZamani,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -345,6 +354,31 @@ export function KonusmaDetay({
       })
       .catch(() => {});
   }
+
+  /**
+   * Yorum cagrisinin asilacagi sistem mesaji (Duzeltme 01 / #28).
+   *
+   * Tamamlama mesajini yazan eylem rezervasyonu ayni islemde `completed`
+   * yapiyor; bu yuzden `completed_at`ten SONRAKI ILK sistem mesaji o mesajdir.
+   * Metin eslestirme YOK (metin degisirse kirilirdi).
+   */
+  const tamamlamaMesajiId = useMemo(() => {
+    if (!tamamlanmaZamani) return null;
+    const esik = new Date(tamamlanmaZamani).getTime();
+    if (!Number.isFinite(esik)) return null;
+    let bulunan: string | null = null;
+    let enYakin = Infinity;
+    for (const m of messages) {
+      if (m.message_type !== 'system') continue;
+      const t = new Date(m.created_at).getTime();
+      if (!Number.isFinite(t) || t < esik) continue;
+      if (t < enYakin) {
+        enYakin = t;
+        bulunan = m.id;
+      }
+    }
+    return bulunan;
+  }, [messages, tamamlanmaZamani]);
 
   // GÜVENLİK — telefon/IBAN/e-posta için anlık client-side kontrol
   // Sunucu da aynı kontrolü yapar; bu sadece UX (kullanıcı bilinçli olur)
@@ -709,6 +743,18 @@ export function KonusmaDetay({
                 <div key={msg.id}>
                   {dayLabelEl}
                   <SystemMessage body={msg.body} createdAt={msg.created_at} />
+                  {/* Duzeltme 01 (#28): tamamlama mesajinin ALTINA yorum
+                      cagrisi (metin eslestirme yok; zaman karsilastirmasi). */}
+                  {yorumCagrisi && msg.id === tamamlamaMesajiId && (
+                    <div className="flex justify-center mt-1 mb-2">
+                      <Link
+                        href={yorumCagrisi.href}
+                        className="kashe-tap font-display font-semibold text-sm text-brand-ink hover:underline"
+                      >
+                        {yorumCagrisi.etiket}
+                      </Link>
+                    </div>
+                  )}
                 </div>
               );
             }

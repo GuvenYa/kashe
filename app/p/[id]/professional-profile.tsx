@@ -9,6 +9,8 @@ import { DavetButton } from './davet-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
 import { YorumButton } from './yorum-button';
+import { CategoryIcon } from '@/app/components/ui/category-icon';
+import { getCategoryIcon } from '@/app/lib/category-icon';
 import { ShareButton } from './share-button';
 import { type OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 import { ProfileMediaHero, type HeroMedia } from './profile-media-hero';
@@ -91,6 +93,8 @@ export type ProfessionalProfileProps = {
   canReview: boolean;
   hasCompletedBooking: boolean;
   existingReview: { id: string; rating: number; body: string | null } | null;
+  /** Duzeltme 01 (#28): `?yorum=1` ile gelindiyse modal acik baslar. */
+  yorumModaliAcik?: boolean;
   /** FAZ 5/P3: ajans uyesine "Havuza ekle" karti; yetki yoksa sunucu HIC gondermez. */
   havuzSlot?: ReactNode;
   /** hijyen 04: "Kisa listeye ekle" bandi (alici kurulus uyesinde dolu). */
@@ -128,10 +132,12 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
     showFavoriteButton, initialFavorited, canReview, hasCompletedBooking,
-    existingReview, havuzSlot, kisaListeSlot,
+    existingReview, yorumModaliAcik = false, havuzSlot, kisaListeSlot,
   } = props;
 
   const slug = profile.service_categories?.slug ?? null;
+  /** Duzeltme 01 (#5): avatarsiz profilde kategori ikonu (yoksa bas harf). */
+  const kategoriIkonu = getCategoryIcon(slug);
   const preset = getCategoryFields(slug);
   const attrs = (profile.category_attributes ?? {}) as AttrRecord;
   // Quick değerleri: çoklu-çip → string[], select/metin → string.
@@ -416,6 +422,16 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                     alt={displayName}
                     className="w-[72px] h-[72px] rounded-2xl object-cover border border-line shrink-0"
                   />
+                ) : kategoriIkonu ? (
+                  /* Duzeltme 01 (#5): avatarsizda kategori ikonu; ikon
+                     cizimleri koyu oldugu icin zemin ACIK. */
+                  <div className="w-[72px] h-[72px] rounded-2xl bg-paper-2 border border-line flex items-center justify-center overflow-hidden shrink-0">
+                    <CategoryIcon
+                      src={kategoriIkonu}
+                      name={profile.service_categories?.name_tr ?? displayName}
+                      initials={initials}
+                    />
+                  </div>
                 ) : (
                   <div className="w-[72px] h-[72px] rounded-2xl bg-brand-ink flex items-center justify-center text-paper font-display font-bold text-2xl shrink-0">
                     {initials}
@@ -664,6 +680,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
               hasConversation={hasCompletedBooking}
               existingReview={existingReview}
               enabled={canReview}
+              acikBaslat={yorumModaliAcik}
             />
           </main>
 

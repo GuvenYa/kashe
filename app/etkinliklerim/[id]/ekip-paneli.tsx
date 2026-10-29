@@ -111,6 +111,15 @@ export function EkipPaneli({
     kurulusSecenekleri[0]?.id ?? ''
   );
   const [havuzSecimi, setHavuzSecimi] = useState<Record<number, string>>({});
+  /**
+   * Rol basina "rolu olmayan kayitlar" acik mi (Duzeltme 01 / #20).
+   *
+   * Havuz listesi bu rolu TASIYAN kayitlarla baslar; rolu olmayanlar
+   * listenin sonunda, ad yaninda tekrar eden "rolu yok" etiketi olmadan,
+   * kapali bir grupta durur. Rolde hic kayit yoksa grup acik baslar
+   * (secilecek baska bir sey yok).
+   */
+  const [rolsuzAcik, setRolsuzAcik] = useState<Record<number, boolean>>({});
   const [notDuzenlenen, setNotDuzenlenen] = useState<string | null>(null);
   const [notMetni, setNotMetni] = useState('');
 
@@ -136,11 +145,39 @@ export function EkipPaneli({
   const duzenlenebilir =
     yazabilir && !!ekip && ekip.status !== 'confirmed' && ekip.status !== 'cancelled';
 
+  // ONAYLI kapsam acigi: "tam hizmet" kararinin olcutu (DB tetikleyicisi de
+  // onaylilara bakar) — oneri sayilmaz.
   const eksikZorunlu = kapsam.filter(
     (k) => k.zorunlu && k.onaylanan < k.gereken
   );
   const tamHizmet =
     kapsam.some((k) => k.zorunlu) && eksikZorunlu.length === 0;
+
+  /**
+   * "Eksik" uyarisi (Duzeltme 01 / #20).
+   *
+   * Eski metin yalniz onaylilara bakip, aday onerilmis rolu de "eksik" diye
+   * yaziyordu — kullanici calismaya baslamis rolu kayip saniyordu. Uyari artik
+   * yalniz NE ONAYLI NE ONERILI zorunlu roller icin cikar; ilerleme kaydedilen
+   * roller rol basina "0/1 onayli · 1 onerildi" satirinda gorunur.
+   */
+  const hicIlerlemeyenZorunlu = kapsam.filter(
+    (k) => k.zorunlu && k.onaylanan < k.gereken && k.onerilen === 0
+  );
+
+  /** Rolu olmayan kayitlar grubu gorunur mu (rolde kayit yoksa zorunlu acik). */
+  function rolsuzGorunur(blok: EkipRolBloku): boolean {
+    const rolsuz = blok.havuz.filter((h) => !h.roldeVar).length;
+    if (rolsuz === 0) return false;
+    const rolde = blok.havuz.length - rolsuz;
+    return rolde === 0 || rolsuzAcik[blok.roleId] === true;
+  }
+
+  /** Rol basina kisa ilerleme ozeti (ust satir). */
+  function kapsamOzeti(k: KapsamSatiri): string {
+    const temel = `${k.rolAdi} ${k.onaylanan}/${k.gereken} onaylı`;
+    return k.onerilen > 0 ? `${temel} · ${k.onerilen} önerildi` : temel;
+  }
 
   function ekipKur() {
     mesajlariTemizle();
@@ -412,10 +449,14 @@ export function EkipPaneli({
               {EKIP_DURUM_ETIKETLERI[ekip.status] ?? ekip.status} ·{' '}
               {ekip.organization_id ? 'Kuruluş ekibi' : 'Bireysel ekip'}
             </p>
-            <p className="text-sm text-ink-72 mt-1">
-              {uyeler.length} üye
-              {tamHizmet ? '' : eksikZorunlu.length > 0 ? ' · zorunlu roller eksik' : ''}
-            </p>
+            <p className="text-sm text-ink-72 mt-1">{uyeler.length} üye</p>
+            {/* Duzeltme 01 (#20): "zorunlu roller eksik" yerine rol basina
+                ilerleme (onayli / onerilen ayri). */}
+            {!tamHizmet && eksikZorunlu.length > 0 && (
+              <p className="text-sm text-ink-72 mt-0.5">
+                {eksikZorunlu.map(kapsamOzeti).join(' · ')}
+              </p>
+            )}
           </div>
 
           {yazabilir && (
@@ -520,9 +561,10 @@ export function EkipPaneli({
                 Tam hizmet
               </span>
             ) : (
-              eksikZorunlu.length > 0 && (
+              hicIlerlemeyenZorunlu.length > 0 && (
                 <span className="text-xs text-ink-72">
-                  Eksik: {eksikZorunlu.map((k) => k.rolAdi).join(', ')}
+                  Eksik:{' '}
+                  {hicIlerlemeyenZorunlu.map((k) => k.rolAdi).join(', ')}
                 </span>
               )
             )}
@@ -533,7 +575,7 @@ export function EkipPaneli({
               .map((k) => (
                 <li key={k.roleId} className="flex items-center gap-2">
                   <span className="text-ink">
-                    {k.rolAdi} {k.onaylanan}/{k.gereken}
+                    {k.rolAdi} {k.onaylanan}/{k.gereken} onaylı
                   </span>
                   {k.onerilen > 0 && (
                     <span className="text-ink-72">
@@ -784,12 +826,28 @@ export function EkipPaneli({
                     className={ALAN}
                   >
                     <option value="">Havuzdan seç</option>
-                    {blok.havuz.map((h) => (
-                      <option key={h.recordId} value={h.recordId}>
-                        {h.ad}
-                        {h.roldeVar ? '' : ' — rolü yok'}
-                      </option>
-                    ))}
+                    {blok.havuz
+                      .filter((h) => h.roldeVar)
+                      .map((h) => (
+                        <option key={h.recordId} value={h.recordId}>
+                          {h.ad}
+                        </option>
+                      ))}
+                    {rolsuzGorunur(blok) && (
+                      <optgroup
+                        label={`Rolü olmayan ${
+                          blok.havuz.filter((h) => !h.roldeVar).length
+                        } kayıt`}
+                      >
+                        {blok.havuz
+                          .filter((h) => !h.roldeVar)
+                          .map((h) => (
+                            <option key={h.recordId} value={h.recordId}>
+                              {h.ad}
+                            </option>
+                          ))}
+                      </optgroup>
+                    )}
                   </select>
                   <button
                     type="button"
@@ -799,6 +857,35 @@ export function EkipPaneli({
                   >
                     Havuzdan ekle
                   </button>
+                  {/* Duzeltme 01 (#20): rolu olmayan kayitlar kapali grupta;
+                      rolde kayit varsa bu dugmeyle acilir. */}
+                  {blok.havuz.some((h) => !h.roldeVar) &&
+                    blok.havuz.some((h) => h.roldeVar) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Kapatirken gizlenecek bir kayit seciliyse secim
+                          // temizlenir (aksi halde kutu bos gorunurdu). Yan etki
+                          // updater DISINDA: StrictMode updater'i iki kez kosabilir.
+                          const acik = rolsuzAcik[blok.roleId] === true;
+                          if (acik) {
+                            const secili = havuzSecimi[blok.roleId];
+                            const gizlenecek = blok.havuz.some(
+                              (h) => !h.roldeVar && h.recordId === secili
+                            );
+                            if (gizlenecek) {
+                              setHavuzSecimi((x) => ({ ...x, [blok.roleId]: '' }));
+                            }
+                          }
+                          setRolsuzAcik((o) => ({ ...o, [blok.roleId]: !acik }));
+                        }}
+                        aria-expanded={rolsuzAcik[blok.roleId] === true}
+                        className="kashe-tap text-xs text-brand-ink hover:underline"
+                      >
+                        Rolü olmayan{' '}
+                        {blok.havuz.filter((h) => !h.roldeVar).length} kayıt
+                      </button>
+                    )}
                   {blok.havuz.length === 0 && (
                     <span className="text-xs text-ink-50">
                       Havuzda kayıt yok

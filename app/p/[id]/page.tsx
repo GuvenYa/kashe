@@ -19,6 +19,8 @@ import { isFavorited as checkIsFavorited, getFavoritedIds } from '@/app/favorile
 import { ReviewCard } from '@/app/yorumlar/review-card';
 import { ProfileCard } from '@/app/kesfet/profile-card';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
+import { CategoryIcon } from '@/app/components/ui/category-icon';
+import { getCategoryIcon } from '@/app/lib/category-icon';
 import {
   formatPriceRange,
   getRoleLabel,
@@ -96,10 +98,13 @@ export default async function PublicProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ etkinlik?: string }>;
+  searchParams: Promise<{ etkinlik?: string; yorum?: string }>;
 }) {
   const { id } = await params;
-  const { etkinlik: etkinlikParam } = await searchParams;
+  const { etkinlik: etkinlikParam, yorum: yorumParam } = await searchParams;
+  // Duzeltme 01 (#28): rezervasyon/sohbetteki "Yorum birak" baglantisi.
+  // Kosullar YorumButton'da aynen kalir; parametre yalniz modali acar.
+  const yorumModaliAcik = yorumParam === '1';
   // FAZ 4c/P3: etkinlikten gelindiyse sohbete bag tasinir. Burada yalniz bicim
   // kontrolu yapilir; gecerliligi sunucu action'i (gorunenEtkinlikId) dogrular.
   const etkinlikId =
@@ -174,7 +179,12 @@ export default async function PublicProfilePage({
       full_name: string | null;
       avatar_url: string | null;
       bio: string | null;
-      service_categories: { name_tr: string; emoji: string | null } | null;
+      service_categories: {
+        name_tr: string;
+        emoji: string | null;
+        /** Duzeltme 01 (#5): avatarsiz uyede kategori ikonu icin. */
+        slug: string;
+      } | null;
     } | null;
   };
 
@@ -201,7 +211,7 @@ export default async function PublicProfilePage({
         .from('profiles')
         .select(
           `id, full_name, avatar_url, bio,
-           service_categories!profiles_primary_category_id_fkey (name_tr, emoji)`
+           service_categories!profiles_primary_category_id_fkey (name_tr, emoji, slug)`
         )
         .in(
           'id',
@@ -482,6 +492,16 @@ export default async function PublicProfilePage({
     .join('')
     .toUpperCase();
 
+  /**
+   * Avatarsiz saglayicinin kategori ikonu (Duzeltme 01 / #5).
+   *
+   * Slug yoksa (kategorisi olmayan ajans/kurum) `null` kalir ve mevcut bas
+   * harf karesi cizilir. Ikon dosyasi yoksa `CategoryIcon` kendisi bas harfe
+   * duser.
+   */
+  const kategoriIkonu = getCategoryIcon(profile.service_categories?.slug);
+  const kategoriAdi = profile.service_categories?.name_tr ?? null;
+
   const categoryLabel = profile.service_categories
     ? `${profile.service_categories.emoji || ''} ${profile.service_categories.name_tr}`.trim()
     : null;
@@ -567,39 +587,44 @@ export default async function PublicProfilePage({
   }
 
   /**
-   * AJANS TAMAMLANMIS IS SAYISI (hijyen 04).
+   * SAGLAYICI ACIK SAYILARI (Duzeltme 01 / #29).
    *
-   * Profesyonel dalinda bu sayi `bookings.professional_id` uzerinden geliyor;
-   * ajansin rezervasyonlari FAZ 7c ile `seller_provider_id` sutununa yaziliyor
-   * (teklif sekli). Ikisi birden sayilir: eski akista bir ajans profili
-   * `professional_id` ile de rezervasyon almis olabilir.
+   * `bookings` RLS'i ucuncu kisiye KAPALI: istemci sorgusu anonim ziyaretcide
+   * 0, giris yapmis musteride yalniz kendi rezervasyonlarini donduruyordu —
+   * yani cip ziyaretciye gore degisiyordu. Sayilar artik
+   * `provider_public_stats` RPC'sinden gelir (SECURITY DEFINER; yalniz SAYI,
+   * kimlik yok; anon + authenticated).
    *
-   * `providers.id = profiles.id` oldugu icin profil kimligi dogrudan kullanilir.
-   * Cip 0 iken CIZILMEZ (mevcut kural) — sifir "veri yok" demek degil, "is yok".
+   * RPC hata verirse `null` kalir ve cip/rozet CIZILMEZ — 0 ile ayni gorunur
+   * ama anlami farklidir: "veri yok", "is yok" degil.
+   *
+   * `providers.id = profiles.id` oldugu icin profil kimligi dogrudan gecer;
+   * RPC hem `professional_id` hem `seller_provider_id` (FAZ 7c teklif sekli)
+   * rezervasyonlarini sayar.
    */
-  let ajansTamamlanmisIs = 0;
-  let ajansTekrarTercih = false;
-  if (isAgencyProfile) {
-    const { data: ajansDealRows, error: ajansDealHatasi } = await supabase
-      .from('bookings')
-      .select('customer_id')
-      .or(
-        `seller_provider_id.eq.${profile.id},professional_id.eq.${profile.id}`
-      )
-      .eq('status', 'completed');
-    if (ajansDealHatasi) {
-      console.error('[profil] ajans tamamlanmis is', ajansDealHatasi.message);
+  type SaglayiciIstatistigi = {
+    completed_jobs: number;
+    distinct_customers: number;
+    repeat_customers: number;
+  };
+  let saglayiciIstatistigi: SaglayiciIstatistigi | null = null;
+  if (isAgencyProfile || profile.role === 'professional') {
+    const { data: istatistikData, error: istatistikHatasi } =
+      await supabase.rpc('provider_public_stats', { p_provider: profile.id });
+    if (istatistikHatasi) {
+      console.error('[profil] provider_public_stats', istatistikHatasi.message);
+    } else if (istatistikData) {
+      const h = istatistikData as unknown as Record<string, unknown>;
+      saglayiciIstatistigi = {
+        completed_jobs: Number(h.completed_jobs ?? 0),
+        distinct_customers: Number(h.distinct_customers ?? 0),
+        repeat_customers: Number(h.repeat_customers ?? 0),
+      };
     }
-    const satirlar = (ajansDealRows ?? []) as { customer_id: string | null }[];
-    ajansTamamlanmisIs = satirlar.length;
-    // Tekrar tercih AYNI veriden: ayni musteri birden fazla kez calistiysa.
-    const sayim = new Map<string, number>();
-    for (const d of satirlar) {
-      if (!d.customer_id) continue;
-      sayim.set(d.customer_id, (sayim.get(d.customer_id) ?? 0) + 1);
-    }
-    ajansTekrarTercih = [...sayim.values()].some((n) => n > 1);
   }
+
+  const ajansTamamlanmisIs = saglayiciIstatistigi?.completed_jobs ?? 0;
+  const ajansTekrarTercih = (saglayiciIstatistigi?.repeat_customers ?? 0) > 0;
 
   // Ajans/kurumsal MEVCUT render'ı aynen korur; yalnız professional yeni 2-kolon
   // düzene geçer. Erken return — benzer-profil sorguları professional'da hiç koşmaz.
@@ -613,23 +638,17 @@ export default async function PublicProfilePage({
       .order('sort_order', { ascending: true });
     const experiences = (expData ?? []) as ProfileExperience[];
 
-    // Tekrar-tercih sinyali — tamamlanmış rezervasyonları müşteriye göre grupla (indexli).
-    // "deal" = completed booking. (Kabul edilmiş teklif birleşimi Faz-2'ye bırakıldı.)
-    const { data: dealRows } = await supabase
-      .from('bookings')
-      .select('customer_id')
-      .eq('professional_id', profile.id)
-      .eq('status', 'completed');
-    const dealCounts = new Map<string, number>();
-    for (const d of dealRows ?? []) {
-      const cid = d.customer_id as string;
-      dealCounts.set(cid, (dealCounts.get(cid) ?? 0) + 1);
-    }
-    const distinctCustomers = dealCounts.size;
-    const repeatCustomers = [...dealCounts.values()].filter((n) => n > 1).length;
+    // Tekrar-tercih sinyali — Duzeltme 01 (#29): sayilar `provider_public_stats`
+    // RPC'sinden (yukarida bir kez okundu). "deal" = completed booking.
+    // RPC hata verdiyse sinyal `null`: rozet ve cip cizilmez.
     const repeatSignal =
-      distinctCustomers > 0
-        ? { distinctCustomers, repeatRate: repeatCustomers / distinctCustomers }
+      saglayiciIstatistigi && saglayiciIstatistigi.distinct_customers > 0
+        ? {
+            distinctCustomers: saglayiciIstatistigi.distinct_customers,
+            repeatRate:
+              saglayiciIstatistigi.repeat_customers /
+              saglayiciIstatistigi.distinct_customers,
+          }
         : null;
 
     const badgeCards = getBadgeCards({
@@ -644,12 +663,12 @@ export default async function PublicProfilePage({
 
     const isBusyNow = isBusy(new Set(blockedDates));
 
-    // D2 — guven cipleri: HEPSI mevcut veriden. `dealRows` yukarida tekrar
-    // tercih sinyali icin okundu; tamamlanmis is SAYISI ayni satirlardan
-    // gelir, EK SORGU YOK. Ortalama yanit suresi bugun hesaplanmiyor
+    // D2 — guven cipleri: HEPSI mevcut veriden. Tamamlanmis is sayisi
+    // `provider_public_stats`ten (Duzeltme 01 #29); RPC hata verdiyse 0 kalir
+    // ve cip cizilmez. Ortalama yanit suresi bugun hesaplanmiyor
     // (`getBadgeCards` responseTime: null, FAZ 2) — o yuzden null gecer ve
     // cip cizilmez; sayi UYDURULMAZ.
-    const tamamlanmisIsSayisi = (dealRows ?? []).length;
+    const tamamlanmisIsSayisi = saglayiciIstatistigi?.completed_jobs ?? 0;
     const guvenSinyalleri = {
       dogrulanmis: profileVerified,
       profilOnayli: profile.approval_status === 'approved',
@@ -842,6 +861,7 @@ export default async function PublicProfilePage({
           canReview={canReview}
           hasCompletedBooking={hasCompletedBooking}
           existingReview={existingReview}
+          yorumModaliAcik={yorumModaliAcik}
           havuzSlot={havuzSlot}
           kisaListeSlot={kisaListeSlot}
         />
@@ -1010,6 +1030,17 @@ export default async function PublicProfilePage({
                   alt={displayName}
                   className="w-28 h-28 rounded-full object-cover border-2 border-line shrink-0"
                 />
+              ) : kategoriIkonu ? (
+                /* Duzeltme 01 (#5): avatarsiz saglayicida bas harf yerine
+                   kategori ikonu. Ikon ACIK zeminde durur (ikon cizimleri
+                   koyu; koyu daire uzerinde okunmuyordu). */
+                <div className="w-28 h-28 rounded-full bg-paper-2 border-2 border-line flex items-center justify-center overflow-hidden shrink-0">
+                  <CategoryIcon
+                    src={kategoriIkonu}
+                    name={kategoriAdi ?? displayName}
+                    initials={initials}
+                  />
+                </div>
               ) : (
                 <div
                   className={`w-28 h-28 rounded-full flex items-center justify-center text-paper font-display font-semibold text-4xl shrink-0 ${
@@ -1184,6 +1215,9 @@ export default async function PublicProfilePage({
                     const proCategoryLabel = pro.service_categories
                       ? `${pro.service_categories.emoji || ''} ${pro.service_categories.name_tr}`.trim()
                       : null;
+                    const proIkon = getCategoryIcon(
+                      pro.service_categories?.slug
+                    );
                     return (
                       <Link
                         key={member.id}
@@ -1197,6 +1231,15 @@ export default async function PublicProfilePage({
                             alt={proName}
                             className="w-12 h-12 rounded-full object-cover border border-line shrink-0"
                           />
+                        ) : proIkon ? (
+                          /* Duzeltme 01 (#5): ekip uyesi kartinda da kategori ikonu. */
+                          <div className="w-12 h-12 rounded-full bg-paper-2 border border-line flex items-center justify-center overflow-hidden shrink-0">
+                            <CategoryIcon
+                              src={proIkon}
+                              name={pro.service_categories?.name_tr ?? proName}
+                              initials={proInitials}
+                            />
+                          </div>
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-brand-ink flex items-center justify-center text-paper font-display font-semibold shrink-0">
                             {proInitials}
@@ -1431,6 +1474,7 @@ export default async function PublicProfilePage({
               hasConversation={hasCompletedBooking}
               existingReview={existingReview}
               enabled={canReview}
+              acikBaslat={yorumModaliAcik}
             />
           </div>
             </aside>

@@ -40,6 +40,8 @@ export default async function AdminDashboardPage() {
     recentCategoryRequestsResult,
     recentSuspensionsResult,
     recentNewUsersResult,
+    pendingProvidersResult,
+    revisionProvidersResult,
   ] = await Promise.all([
     // Bugün yeni kayıt
     supabase
@@ -100,6 +102,18 @@ export default async function AdminDashboardPage() {
       .select('id, full_name, company_name, role, created_at')
       .order('created_at', { ascending: false })
       .limit(5),
+
+    // Duzeltme 01 (#6): onay kuyrugu. Kaynak `providers` (saglayici defteri) —
+    // onay akisi orada; admin RLS ile okur. Revizyon istenenler ayri sayilir,
+    // ikisi ayni karta girer.
+    supabase
+      .from('providers')
+      .select('id', { count: 'exact', head: true })
+      .eq('approval_status', 'pending'),
+    supabase
+      .from('providers')
+      .select('id', { count: 'exact', head: true })
+      .eq('approval_status', 'revision'),
   ]);
 
   const todayUsers = todayUsersResult.count ?? 0;
@@ -107,6 +121,8 @@ export default async function AdminDashboardPage() {
   const pendingCategoryRequests = pendingCategoryRequestsResult.count ?? 0;
   const suspendedUsers = suspendedUsersResult.count ?? 0;
   const pendingReports = pendingReportsResult.count ?? 0;
+  const pendingProviders = pendingProvidersResult.count ?? 0;
+  const revisionProviders = revisionProvidersResult.count ?? 0;
 
   const totalUsers = totalUsersResult.count ?? 0;
   const totalPros = totalProsResult.count ?? 0;
@@ -155,8 +171,8 @@ export default async function AdminDashboardPage() {
         </a>
       </div>
 
-      {/* 4 büyük sayı kartı */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-10">
+      {/* Ust sayi kartlari (Duzeltme 01 ile alti oldu) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-10">
         <StatCard
           label="Bugün yeni kayıt"
           value={todayUsers}
@@ -190,6 +206,18 @@ export default async function AdminDashboardPage() {
           href={
             pendingReports > 0 ? '/admin/sikayetler' : '/admin/sikayetler'
           }
+        />
+        {/* Duzeltme 01 (#6): onay kuyrugu panelde gorunmuyordu. */}
+        <StatCard
+          label="Onay bekleyen profil"
+          value={pendingProviders}
+          accent="brandAccent"
+          altNot={
+            revisionProviders > 0
+              ? `${revisionProviders.toLocaleString('tr-TR')} revizyon istendi`
+              : undefined
+          }
+          href="/admin/profiller?durum=pending"
         />
       </div>
 
@@ -338,11 +366,14 @@ function StatCard({
   value,
   accent,
   href,
+  altNot,
 }: {
   label: string;
   value: number;
   accent: 'brandInk' | 'moss' | 'brandAccent' | 'brandInkDeep';
   href?: string;
+  /** Ikincil sayi (ornek: "3 revizyon istendi"); yoksa satir cizilmez. */
+  altNot?: string;
 }) {
   const accentColors = {
     brandInk: 'border-brand-ink/30 bg-brand-ink/[0.04]',
@@ -371,6 +402,9 @@ function StatCard({
       <p className="font-display font-light text-3xl md:text-4xl text-ink tabular-nums leading-none">
         {value.toLocaleString('tr-TR')}
       </p>
+      {altNot && (
+        <p className="text-[11px] text-ink-72 mt-1.5 leading-snug">{altNot}</p>
+      )}
       {href && (
         <span className="absolute top-3 right-3 text-ink-50 text-xs">→</span>
       )}

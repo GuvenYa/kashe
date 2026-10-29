@@ -34,6 +34,54 @@ type ConversationRow = {
   professional: ConversationParticipant | null;
 };
 
+/**
+ * SEKME BASLIGI (Duzeltme 01 / #26).
+ *
+ * Birkac konusma sekmesi acikken hepsi ayni "Mesajlar — Kashe" basligini
+ * tasiyordu. Baslik karsi tarafin ADIYLA yazilir; e-posta/telefon gibi PII
+ * SORGULANMAZ (yalniz ad ve sirket adi okunur). Erisimi olmayan ya da
+ * bulunamayan konusmada genel baslik kalir (sayfa zaten 404 verir).
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const genel = { title: 'Mesajlar — Kashe' };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return genel;
+
+  const { data } = await supabase
+    .from('conversations')
+    .select(
+      `customer_id, professional_id,
+       customer:profiles!conversations_customer_id_fkey (full_name, company_name),
+       professional:profiles!conversations_professional_id_fkey (full_name, company_name)`
+    )
+    .eq('id', id)
+    .maybeSingle();
+
+  const konusma = data as unknown as {
+    customer_id: string;
+    professional_id: string;
+    customer: { full_name: string | null; company_name: string | null } | null;
+    professional: { full_name: string | null; company_name: string | null } | null;
+  } | null;
+  if (!konusma) return genel;
+
+  // Musteri tarafindaysa karsi taraf profesyonel, degilse musteri. Kurum ekip
+  // uyeligi burada cozulmez (ek sorgu olurdu); o durumda da musteri KENDISI
+  // olmadigi icin profesyonel adi dogru karsi taraftir.
+  const karsi =
+    konusma.customer_id === user.id ? konusma.professional : konusma.customer;
+  const ad = karsi?.company_name?.trim() || karsi?.full_name?.trim() || null;
+  return ad ? { title: `Mesaj — ${ad} — Kashe` } : genel;
+}
+
 export default async function KonusmaPage({
   params,
 }: {
@@ -232,7 +280,7 @@ export default async function KonusmaPage({
   //  - bookingIdByQuoteId (köprü): kabul edilmiş teklif kartından /rezervasyon/[id]
   const { data: convBookings } = await supabase
     .from('bookings')
-    .select('id, quote_id, status')
+    .select('id, quote_id, status, completed_at, customer_id, professional_id')
     .eq('conversation_id', id);
 
   const contactUnlocked = (convBookings ?? []).some(
@@ -251,6 +299,46 @@ export default async function KonusmaPage({
   const bookingIdByQuoteId: Record<string, string> = {};
   for (const b of convBookings ?? []) {
     if (b.quote_id) bookingIdByQuoteId[b.quote_id] = b.id;
+  }
+
+  /**
+   * YORUM CAGRISI (Duzeltme 01 / #28) — yalniz MUSTERI tarafinda.
+   *
+   * Tespit METIN ESLESTIRMEYLE DEGIL rezervasyon satiriyla yapilir: konusmanin
+   * `completed` rezervasyonu varsa, cagri o rezervasyonun `completed_at`
+   * zamanindan SONRAKI ilk sistem mesajinin altina cizilir (tamamlama
+   * mesajini yazan eylem ayni islemde ekliyor). Musteri kendi rezervasyonunu
+   * ve kendi yorumunu RLS ile okur.
+   */
+  let yorumCagrisi: { href: string; etiket: string } | null = null;
+  let tamamlanmaZamani: string | null = null;
+  const tamamlanan = (convBookings ?? []).find(
+    (b) => b.status === 'completed' && b.completed_at
+  ) as
+    | {
+        completed_at: string;
+        customer_id: string | null;
+        professional_id: string | null;
+      }
+    | undefined;
+  if (isCustomerSide && tamamlanan) {
+    const saglayiciId = tamamlanan.professional_id ?? conv.professional_id;
+    const musteriId = tamamlanan.customer_id;
+    // Kurum adina bakan uye yalniz yazma yetkisi varsa yorum birakabilir.
+    const yorumYazabilir = isCustomer || canWrite;
+    if (saglayiciId && musteriId && yorumYazabilir) {
+      const { data: yorumSatirlari } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('professional_id', saglayiciId)
+        .eq('customer_id', musteriId)
+        .limit(1);
+      const yorumVar = (yorumSatirlari ?? []).length > 0;
+      tamamlanmaZamani = tamamlanan.completed_at;
+      yorumCagrisi = yorumVar
+        ? { href: `/p/${saglayiciId}#yorumlar`, etiket: 'Yorumun yayında →' }
+        : { href: `/p/${saglayiciId}?yorum=1`, etiket: 'Yorum bırak →' };
+    }
   }
 
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
@@ -334,6 +422,8 @@ export default async function KonusmaPage({
                 initialMessages={messages}
                 initialQuotes={quotesById}
                 bookingIdByQuoteId={bookingIdByQuoteId}
+                yorumCagrisi={yorumCagrisi}
+                tamamlanmaZamani={tamamlanmaZamani}
               />
             </div>
 
