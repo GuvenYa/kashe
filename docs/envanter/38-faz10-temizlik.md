@@ -141,8 +141,8 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 |---|---|---|
 | **10a-DB/01** | davet/uyelik RPC'leri, bildirim tetikleyicileri yeni tabloda, aynalama kapanir, eski tablolar salt okunur — **YAZILDI** (bolum 6) | asama4 **T34** + T3/T4/T7/T8/T9/T10/T17/T18/T19/T25 uyarlama (35/35); **asama20** K1-K6; asama18 K2/K3 ve asama5 K3-K6 10a'ya uyarlandi |
 | **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 (`40-claude-code-gorevi-10a-p1-uyelik.md`) | tur (Sahne): ajans davet -> kabul -> ekipte gorunur -> rol degistir -> cikar; kurum ayni akis; `/davetlerim`; `/p/[id]` ekip |
-| **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser | asama20 K5; asama11 K1 emekli |
-| **10b-P1** | `EVENT_TYPES` silinir; 12 dosya tablodan okur | tur: ilan formu, Kesfet, teklif-topla |
+| **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser — **HAZIR, BEKLEYEN DOSYA** `docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql` (10a + Duzeltme 01 uretime cikinca `supabase/migrations/`e tasinir) | asama4 **T36** (37/37 harness), asama20 **K7** (10b yoksa BEKLIYOR), asama11 K1 EMEKLI |
+| **10b-P1** | `EVENT_TYPES` silinir; 17 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`, bekleyen) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti |
 | **10c-DB/01** | ters ayna, koruma, `provider_id` NOT NULL, `views_count` | asama4 **T35**; asama20 K6-K8 |
 | **10c-P1** | yazma yolu yeni tablolara, `profile_id` -> `provider_id` | tur: profil duzenle, admin onay, Kesfet degismez |
 | **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K9 |
@@ -176,6 +176,10 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
   DB `20261030120000_duzeltme_01_sahne_bulgulari.sql` dalda uygulandi, asama4 36/36; P1 `duzeltme-01` dalinda, diff okundu, tsc temiz).
   Tur `duzeltme-01` onizlemesinde yapilir (`kashe-git-duzeltme-01-...vercel.app`): 10a maddeleri + duzeltme maddeleri (41 bolum 12) birlikte.
   Uretim: `duzeltme-01` -> `main` (10a-db + 10a-p1 + duzeltme-01 birlikte) + `supabase db push` (iki migration).
+- **10b-DB/01 hazir (29 Ekim, bekleyen):** `docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql` — migrations klasorune
+  KONMADI ki dalda/uretimde erken uygulanmasin. Sirasi gelince: `git mv docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql
+  supabase/migrations/` -> dal `supabase db push` -> asama4 (T36 GECTI), asama20 (K7 ESIT), asama11 (K1 EMEKLI) -> `42` gorevi (10b-P1).
+  Harness'ta 10a + duzeltme_01 + 10b uzerinde asama4 37/37.
 
 ### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness'ta dogrulandi, dal/uretim bekliyor)
 

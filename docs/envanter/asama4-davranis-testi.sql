@@ -77,6 +77,8 @@
 --       (ON KOSUL: 20261028120000 faz10a_01 dalda uygulanmis)
 --   T35 Duzeltme 01 (Sahne bulgulari): provider_public_stats (#29), proposals_expire_stale (#14), analytics_summary.funnel.linked (#7),
 --       ekip bildirimleri (#23) (ON KOSUL: 20261030120000 duzeltme_01 dalda uygulanmis)
+--   T36 FAZ 10b etkinlik turu tek kaynak: 4 FK / 0 CHECK, anahtar disi 23503, NULL serbest, kullanimdaki tur silinemez, anon okur,
+--       veri temiz (ON KOSUL: 20261031120000 faz10b_01 dalda uygulanmis; degilse ATLANDI)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -5563,6 +5565,68 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('kashe.faz7_rpc', '0', true);
   INSERT INTO t_sonuc VALUES (35, 'T35 Duzeltme 01 bulgular', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T36) FAZ 10b etkinlik turu tek kaynak. ON KOSUL: 20261031120000 (faz10b 01) dalda. T1 verisine dayanir (musteri 0001, pro1 0002,
+--      pro2 0003; ikili tekilligi icin musteri<->pro2 yeni konusma). Kendi verisi sonda silinir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  conv uuid; n int; t text;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_fkey') THEN
+    INSERT INTO t_sonuc VALUES (36, 'T36 FAZ 10b etkinlik turu', 'ATLANDI', 'conversations_event_type_fkey yok; faz10b_01 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  -- 36a) dort FK var, uc CHECK yok
+  SELECT count(*) INTO n FROM pg_constraint WHERE contype = 'f'
+   AND conname IN ('conversations_event_type_fkey', 'listings_event_type_fkey', 'bookings_event_type_fkey', 'quote_requests_event_type_fkey');
+  IF n <> 4 THEN RAISE EXCEPTION 'event_type FK sayisi % (4)', n; END IF;
+  SELECT count(*) INTO n FROM pg_constraint WHERE contype = 'c'
+   AND conname IN ('conversations_event_type_check', 'listings_event_type_check', 'bookings_event_type_check');
+  IF n <> 0 THEN RAISE EXCEPTION 'eski CHECK kisiti kaldi (%)', n; END IF;
+  -- 36b) anahtar disi deger 23503; tablodaki anahtar ve NULL serbest
+  DELETE FROM public.conversations WHERE customer_id = musteri AND professional_id = pro2 AND location = 'T36';
+  BEGIN
+    INSERT INTO public.conversations (customer_id, professional_id, event_type, location) VALUES (musteri, pro2, 'olmayan-tur', 'T36');
+    RAISE EXCEPTION 'anahtar disi event_type kabul edildi';
+  EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+  INSERT INTO public.conversations (customer_id, professional_id, event_type, location) VALUES (musteri, pro2, 'corporate', 'T36') RETURNING id INTO conv;
+  UPDATE public.conversations SET event_type = NULL WHERE id = conv;
+  UPDATE public.conversations SET event_type = (SELECT key FROM public.event_types WHERE is_active ORDER BY sort_order LIMIT 1) WHERE id = conv;
+  BEGIN
+    UPDATE public.conversations SET event_type = 'olmayan-tur' WHERE id = conv;
+    RAISE EXCEPTION 'anahtar disi guncelleme kabul edildi';
+  EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+  -- 36c) kullanimdaki tur silinemez (RESTRICT); anon event_types okur
+  SELECT event_type INTO t FROM public.conversations WHERE id = conv;
+  BEGIN
+    DELETE FROM public.event_types WHERE key = t;
+    RAISE EXCEPTION 'kullanimdaki tur silindi (%)', t;
+  EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO n FROM public.event_types WHERE is_active;
+    EXECUTE 'RESET ROLE';
+  EXCEPTION WHEN OTHERS THEN EXECUTE 'RESET ROLE'; RAISE; END;
+  IF n < 10 THEN RAISE EXCEPTION 'anon event_types okuyamadi (%)', n; END IF;
+  -- 36d) veri: anahtar disi deger 0 (dort tablo)
+  SELECT (SELECT count(*) FROM public.conversations c WHERE c.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = c.event_type))
+       + (SELECT count(*) FROM public.listings l WHERE l.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = l.event_type))
+       + (SELECT count(*) FROM public.bookings b WHERE b.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = b.event_type))
+       + (SELECT count(*) FROM public.quote_requests q WHERE q.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = q.event_type))
+    INTO n;
+  IF n <> 0 THEN RAISE EXCEPTION 'anahtar disi deger kaldi (%)', n; END IF;
+
+  DELETE FROM public.conversations WHERE id = conv;
+  INSERT INTO t_sonuc VALUES (36, 'T36 FAZ 10b etkinlik turu', 'GECTI',
+    'FK 4 / CHECK 0; anahtar disi INSERT ve UPDATE 23503, anahtar ve NULL serbest; kullanimdaki tur silinemez; anon event_types okur; dort tabloda anahtar disi deger 0');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (36, 'T36 FAZ 10b etkinlik turu', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

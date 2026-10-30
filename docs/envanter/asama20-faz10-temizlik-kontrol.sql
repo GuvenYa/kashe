@@ -13,8 +13,11 @@
 --   K5 yetki: 5 RPC authenticated EXECUTE var (5) + anon yok (0 -> 5 esit) + organization_team_public anon SELECT var (1)
 --      + organization_memberships/organization_invitations authenticated yalniz SELECT (yazma 0) -> toplam (6)
 --   K6 bilgi: bekleyen davet (eski) / son 30 gun davetle acilan uyelik (yeni; legacy_source bos)
--- Bolum B (10b etkinlik turu) K7+, Bolum C (10c) ve D (10d) sonraki dilimlerde eklenir.
--- Beklenen: K1, K3, K4, K5 ESIT; K2, K6 BILGI.
+-- Bolum B (10b etkinlik turu; 20261031120000_faz10b_01):
+--   K7 event_type tek kaynak: conversations/listings/bookings/quote_requests -> event_types(key) FK (4) - eski CHECK (0)
+--      - anahtar disi deger (0) -> (4). 10b uygulanmamissa (FK yok) BEKLIYOR yazar; 10b sonrasi ESIT; asama11 K1 EMEKLI.
+-- Bolum C (10c) ve D (10d) sonraki dilimlerde eklenir.
+-- Beklenen: K1, K3, K4, K5, K7 ESIT; K2, K6 BILGI.
 -- =============================================================================
 
 WITH
@@ -97,11 +100,24 @@ k6 AS (
          (SELECT count(*) FROM public.organization_memberships
            WHERE legacy_source IS NULL AND invited_by IS NOT NULL AND joined_at >= now() - interval '30 days')::bigint
 ),
+k7 AS (
+  SELECT 'K7 event_type tek kaynak: 4 FK - eski CHECK - anahtar disi deger (4)' AS kontrol,
+         ((SELECT count(*) FROM pg_constraint WHERE contype = 'f'
+            AND conname IN ('conversations_event_type_fkey', 'listings_event_type_fkey', 'bookings_event_type_fkey', 'quote_requests_event_type_fkey'))
+          - (SELECT count(*) FROM pg_constraint WHERE contype = 'c'
+              AND conname IN ('conversations_event_type_check', 'listings_event_type_check', 'bookings_event_type_check'))
+          - ((SELECT count(*) FROM public.conversations c WHERE c.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = c.event_type))
+             + (SELECT count(*) FROM public.listings l WHERE l.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = l.event_type))
+             + (SELECT count(*) FROM public.bookings b WHERE b.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = b.event_type))
+             + (SELECT count(*) FROM public.quote_requests q WHERE q.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = q.event_type))))::bigint,
+         4::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
-  UNION ALL SELECT * FROM k6
+  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K2 %' OR kontrol LIKE 'K6 %' THEN 'BILGI'
+            WHEN kontrol LIKE 'K7 %' AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_fkey') THEN 'BEKLIYOR'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;
