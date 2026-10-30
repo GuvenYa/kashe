@@ -209,7 +209,30 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
 
 ## 6. Kapanis notlari
 
-### KALDIGIMIZ YER (29 Ekim 2026, Cowork haftalik kotasi doldu)
+### KALDIGIMIZ YER (30 Ekim 2026 — Cowork kotasi acilinca SIRA)
+
+1. **Tur** — `duzeltme-01` onizlemesi (`https://kashe-git-duzeltme-01-guvenyapicioglu-8124s-projects.vercel.app`, Sahne v2 verisi):
+   (a) 10a: Arti Bir Ajans (`sahne+ajans-arti-bir@kashe.net`) `/profil/ekibim` -> bekleyen davet listesi (Sahne v2: `docs/sahne/hesaplar.md`
+   Davetler) -> yeni davet `sahne+baris-arslan@kashe.net` (Izleyici) -> cift davet uyarisi -> Baris ile `/bildirimler` "Ekip" + `/davetlerim`
+   kabul -> ekipte / `/ajans/havuz` kaydi -> rol degistir -> cikar; kurum `sahne+kurum-akdeniz-gida@kashe.net` -> `sahne+bahar-keskin@kashe.net`
+   daveti -> kabul -> `/profil/kurumsal-ekip`; `/p/<arti-bir>` ekip (rol rozeti yok), `/p/<uye>` temsil eden ajans.
+   (b) Duzeltme 01 (41 bolum 12): `/p/<pro>` anonim "N TAMAMLANMIS IS" cipi; `/rezervasyon/<tamamlanan>` "Yorum birak" -> modal;
+   `/ajans` acik islerde suresi gecmis teklif yok; `/admin` onay karti; `/admin/zeka` baslik KPI <= %100; teklif gonderiminde portal
+   baglantisi onizleme alan adinda; Kesfet filtresinde test kategorileri yok; avatarsiz pro'da kategori ikonu; sihirbaz 4. adim 4/5 rol kutusu;
+   konusma sekmesi "Mesaj — <ad> — Kashe". (c) Kalan: admin itiraz karari (Merve Avci — Sahne v2 yuklemesi itirazi sildi, turda yeniden
+   acilir), kurum RFP/uye yetkileri, portfoy yukleme (#27), Teklif Al TARIH/KISI (#31).
+2. **Uretim (tek oturum):** `git checkout main` -> `git merge --no-ff duzeltme-01` (10a-db + 10a-p1 + duzeltme-01 icerir) -> `git push`
+   (Vercel uretim derlemesi baslar) -> HEMEN `supabase link --project-ref qydsooqmflrrwtgawhsv` -> `supabase db push` (iki migration:
+   20261028 faz10a_01, 20261030 duzeltme_01) -> yayin biter -> uretimde SQL Editor salt okunur: asama20 (K1/K3/K4/K5 ESIT, K7 BEKLIYOR),
+   asama5 (K3-K6 EMEKLI), asama18/asama19 ESIT. Vercel Preview `NEXT_PUBLIC_SITE_URL` gecici degeri kaldirilabilir (#16 kodla cozuldu).
+   Sonra kapanis satiri (bolum 6), roadmap, CLAUDE.md FAZ 10a + Duzeltme 01 notu, `04-goc-plani` madde 43-44.
+3. **10b:** `git checkout -b faz10b/db` -> `git mv docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql supabase/migrations/`
+   -> dal `supabase db push` -> asama4 (T36 GECTI), asama20 (K7 ESIT), asama11 (K1 EMEKLI) -> `faz10b/p1` + `42` gorevi -> tur (ilan formu,
+   Kesfet, teklif-topla, kategori bilgileri, konusma karti) -> uretim.
+4. **10c:** bolum 10c tasarimina gore DB/01 harness'ta yazilir (T37, K8, asama10 ESIT) -> dal -> P1 -> tur -> uretim; sonra DB/02 + P2.
+5. **Sahne v3** (10c-1 ile birlikte): uretec provider tarafina yazar.
+
+### (eski) KALDIGIMIZ YER (29 Ekim 2026, Cowork haftalik kotasi doldu)
 
 - **Dalda uygulandi:** `faz10a/db` (migration + testler) dal projesine `supabase db push` ile gitti; asama4 35/35, asama20 ESIT,
   asama18 ESIT, asama5 K3-K6 EMEKLI — hepsi Sahne dalinda dogrulandi. **10a-P1** `faz10a/p1` dalinda commit'li ve push'lu
