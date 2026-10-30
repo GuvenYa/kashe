@@ -4,8 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
-**Durum:** **10a-DB/01 yazildi ve harness'ta dogrulandi (28 Ekim 2026; asama4 35/35, asama20 K1-K6, asama18/asama5 uyarlandi) — dala
-`db push` + 10a-P1 (`40-claude-code-gorevi-10a-p1-uyelik.md`) sirada.** Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
+**Durum (30 Ekim 2026):** 10a-DB/01 + 10a-P1 + Duzeltme 01 dalda (asama4 37/37 harness, 36 dal), uretim bekliyor (tur: Cowork kotasi);
+10b-DB/01 bekleyen dosya (`docs/envanter/bekleyen/`), 10b-P1 gorevi yazildi (42); **10c plan turu yapildi, kararlar bolum 4, tasarim bolum 10c**. Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
 10d kucukler -> kapanis (DROP'lar Hijyen 05'e, 30 gun sonra). Her dilim: migration -> dal (asama4 + asama20) -> uretim -> Claude Code ->
 canli tur -> kapanis notu.
 
@@ -95,20 +95,61 @@ loglanir); uc CHECK duser. asama11 K1 ("CHECK listesi = tablo") emekli; yerine a
 (`etkinlikTurleri()`; `unstable_cache` ya da istek basina), istemci bilesenlere prop. 12 dosya. Tur: ilan formu, Kesfet filtresi,
 teklif-topla, kategori bilgileri, mesaj basligi.
 
-### 10c — Saglayici yazma yolu + `profile_id` kesimi (madde 43, 45)
+### 10c — Saglayici yazma yolu + `profile_id` kesimi (madde 43, 45) — PLAN (kararlar bolum 4; 30 Ekim 2026)
 
-**Plan turu once** (acik sorular bolum 4): `services` aynasinin kaderi, `increment_profile_views`, admin onay akisinin hedefi.
+Envanter (harness = uretim semasi): `providers` (approval/suspend/is_published/city_id/slug/display_name), `professional_profiles`
+(bio, headline, experience_years, languages, equipment, pricing), `organization_profiles` (about, team_size_range, ...); authenticated'in
+uc tabloda yalniz SELECT'i var (yazma bugun yalniz ayna tetikleyicileriyle). `profiles` tasinmis alanlar: `approval_status`,
+`approval_note`, `approved_at`, `suspended_at/reason/by`, `is_published`, `city_id`, `bio`, `primary_category_id`, `attributes`,
+`category_attributes`, `views_count`. Hesap alanlari `profiles`'ta KALIR: `role, is_admin, full_name, company_name, email, phone,
+avatar_url, premium_tier/until, last_seen_at, kvkk_approved_at, welcome_email_sent_at, default_allowed_applicant_roles`.
+Ileri ayna `fn_sync_profile_to_provider` bugun display_name/city/approval/is_published/bio tasiyor; `fn_faz2b_sync_primary_role`
+`profiles.primary_category_id` -> `provider_services` birincil satiri. `provider_id` 5 tabloda NULL sayisi 0 (harness: services 300,
+experiences 361, reviews 82, favorites 110, portfolio 0); FK'ler `ON DELETE SET NULL`.
 
-**10c-DB/01** (taslak): `providers.views_count` (+ `increment_profile_views` -> providers); `profiles` tasinmis alanlar icin
-`protect_profiles_moved_fields` (yalniz `kashe.sync_bypass`/fonksiyon yazar; kullanici yazimi sessiz geri alinir — FAZ 2a deseni);
-ters ayna `trg_faz10_sync_provider_to_profile` (providers/alt profil -> profiles kopyasi); `trg_faz2_sync_profile_to_provider` duser;
-`provider_id` NOT NULL + FK CASCADE (5 tablo; once NULL sayisi 0 dogrulanir), `trg_faz2b_set_provider_id` yon degistirir
-(`provider_id` -> eski sutun), eski sutunlar FAZ 11'e kadar kalir.
+**10c-1 / DB/01** (`20261101120000_faz10c_01_saglayici_yazma_yolu.sql`, 10b uretimden sonra):
+- `providers.attributes jsonb`, `providers.category_attributes jsonb` (+ GIN `jsonb_path_ops` `idx_providers_category_attributes_gin`),
+  `providers.views_count int NOT NULL DEFAULT 0`; dolum `profiles`'tan (saglayici satiri olanlar); eski GIN indeks 10c-2'de duser
+  (okuyan kalmadiginda).
+- `v_providers_public`: `attributes`, `category_attributes`, `primary_category_id` (-> `service_roles.legacy_category_id` uzerinden
+  birincil rolden), `views_count` saglayici tarafindan okunur; sutun adlari ve sirasi DEGISMEZ (uygulama ve asama10 sozlesmesi).
+- Yazma yolu: GRANT UPDATE (city_id, district, service_radius_km, is_published, attributes, category_attributes, approval_status,
+  approval_note, approved_at, suspended_at, suspension_reason, suspended_by) ON providers TO authenticated; politika
+  `providers_update_own` (`id = auth.uid()`) + `providers_update_admin` (`is_admin`); `protect_sensitive_provider_fields` admin disi
+  icin onay/guven alanlarini geri alir (mevcut). `professional_profiles` / `organization_profiles`: GRANT UPDATE (icerik sutunlari)
+  + `*_update_own` (`provider_id = auth.uid()`). RPC `provider_set_primary_category(p_category_id int)`: sahip; `provider_services`
+  birincil satirini degistirir (`recompute_provider_services` mantigi), `profiles.primary_category_id` aynayla dolar.
+- `increment_profile_views(profile_id_param)` -> `providers.views_count` (+1); `profiles.views_count` aynayla.
+- Ters ayna `trg_faz10c_sync_provider_to_profile` (providers AFTER UPDATE; professional_profiles / organization_profiles AFTER
+  INSERT/UPDATE; provider_services birincil degisimi): `profiles` kopyalari `kashe.sync_bypass='on'` ile yazilir.
+- Koruma `protect_profiles_moved_fields` (profiles BEFORE UPDATE): `kashe.sync_bypass` degilse tasinmis alanlar `OLD` degerinde
+  kalir (admin DAHIL — tek yazma yolu saglayici tarafi); `protect_sensitive_profile_fields`'in onay/askiya dallari bu tetikleyiciye
+  tasinir (role/is_admin korumasi orada kalir).
+- Ileri ayna daraltilir: `fn_sync_profile_to_provider` yalniz `display_name` (full_name/company_name) ve `talents.full_name`;
+  `fn_faz2b_sync_primary_role` DUSER (yon degisti). `ensure_provider_for_profile` kayitta ilk satiri acmaya devam eder (role'e gore).
+- Esitlik kontrolu migration basinda: `profiles` x `providers` tasinmis alanlar farki 0 olmali (FAZ 2a aynasi), fark varsa RAISE.
+- Sahne: uretec v3 — profil guncellemeleri `providers` / alt profillere (admin JWT yerine `kashe.sync_bypass` ya da sahip JWT);
+  `01` dosyasinda `attributes`/`category_attributes` `providers`'a.
+- Test: asama4 **T37** (sahip providers/alt profil yazar -> profiles kopyasi dolar; profiles tasinmis alana yazim sessiz geri alinir;
+  admin onay providers'tan -> kopya; views RPC; birincil kategori RPC; anon/baskasi 42501), asama20 **K8** (GRANT/politika sayilari,
+  ayna tetikleyicileri, esitlik), asama10 gorunum sozlesmesi degismez (ESIT).
 
-**10c-P1:** profil duzenleme, avatar, kategori bilgileri, admin onay/askiya alma yazmalari yeni tablolara (`providers`,
-`professional_profiles`, `organization_profiles`); `profile_id` okuma/yazmalari `provider_id`'ye (108 gecis); `own-profile.ts`
-`PROFILE_OPEN_COLUMNS` yeni kaynaga. Tur: hotmail profil duzenle (bio/sehir/kategori), portfoy ekle, admin onay; `/p/[slug]` ve Kesfet
-degismeden gorunur (ters ayna).
+**10c-1 / P1 (Claude Code):** `profil/duzenle/actions.ts` (bio -> professional_profiles.bio / organization_profiles.about; city_id,
+attributes -> providers; primary_category_id -> `provider_set_primary_category`; `approval_status='pending'` sifirlamasi providers'a;
+hesap alanlari full_name/company_name/phone profiles'ta kalir — payload ikiye bolunur), `profil/duzenle` yayin dugmesi
+(`is_published` -> providers), `kategori-bilgileri/actions.ts` (`category_attributes` whitelist merge -> providers), `admin/actions.ts`
+(onay/ret/revizyon/askiya alma/kaldirma -> providers; premium/is_admin profiles'ta kalir), `admin/profiller` sorgulari (durum suzgeci
+`providers.approval_status` ya da `v_providers_public`), `p/[id]/profile-views-actions.ts` (RPC adi ayni), `own-profile.ts`
+`PROFILE_OPEN_COLUMNS` tasinmis alanlar `v_providers_public`/providers'tan. Kesfet, /p/[id], ana sayfa okumalari DEGISMEZ (gorunum).
+Tur (Sahne): profesyonel profil duzenle (bio/sehir/kategori/ozellikler) -> /p/[id] ve Kesfet yansir; yayina al/kaldir; admin onay ->
+Kesfet'te gorunur; goruntulenme sayaci; `profiles` dogrudan yazimi (SQL Editor) geri alinir.
+
+**10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
+(once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
+`professional_id` doldurur; istemci eski sutunu gondermezse de dolar); eski GIN indeks (`profiles.category_attributes`) duser;
+asama4 **T38**, asama20 **K9**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
+ve `favorites.professional_id` dahil), tipler; eski sutunlar FAZ 11'e kadar kalir (tetikleyici doldurur). Tur: portfoy/hizmet/deneyim
+ekle-sil, favori, yorum; /p/[id] ve Kesfet degismez.
 
 ### 10d — Kucukler
 
@@ -126,14 +167,27 @@ DROP: `agency_members`, `business_members`, `agency_invitations`, `business_invi
 eski fonksiyonlar (`fn_sync_*`, `on_*_accepted_add_member`, `validate_*_membership_roles`, `map_legacy_member_role`?), `profiles`
 tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + tetikleyici. Her biri once "0 referans" kaniti ile.
 
-## 4. Acik sorular (10c plan turunda, Guven'e)
+## 4. Acik sorular — KARARLAR (10c plan turu, Guven, 30 Ekim 2026)
 
-1. `services` tablosu: paket/aciklama/fiyat alanlari `provider_services`'te yok. (a) `services` kalir, `provider_services` turev
-   (bugunku) — 10c dokunmaz; (b) `provider_services` genisler ve `services` salt okunur. Oneri: (a) — pazaryeri paketleri `services`
-   kavramina bagli, FAZ 10'un konusu degil.
-2. Admin onay/askiya alma hedefi: `providers.approval_status` (dogru kaynak) — admin paneli `profiles` yerine `providers`'a yazar; ters
-   ayna `profiles.approval_status`'u doldurur. Oneri: evet.
-3. `increment_profile_views`: `providers.views_count` eklenir, RPC oraya yazar, `profiles.views_count` ters ayna ile dolar. Oneri: evet.
+1. **`services` kalir, ayna kalir.** Pazaryeri paketleri (`title/description/duration_hours/is_active/price_starting`) `services`'te;
+   `provider_services` turev olmaya devam eder (`trg_faz2b_sync_services`). 10c yalniz `services.provider_id` NOT NULL + ters turetmeye
+   dokunur. (b) secenegi — `provider_services` genislemesi — FAZ 11'e not.
+2. **Admin onay/askiya alma ve `is_published` `providers`'a yazilir; `profiles` kopya.** Admin paneli ve profil duzenleme
+   `providers.approval_status / approval_note / approved_at / suspended_* / is_published` yazar; ters ayna `profiles` kopyasini doldurur;
+   83 okuyan dosya degismez. `profiles`'taki kopyalar koruma tetikleyicisiyle kilitlenir (yalniz ayna yazar; kullanici/admin yazimi
+   sessiz geri alinir — FAZ 2a deseni).
+3. **`increment_profile_views` -> `providers.views_count`.** `profiles.views_count` ters aynayla dolar (`/profil` okuması degismez).
+   Ilan sayaci (`listings.views_count`) AYRI, dokunulmaz.
+4. **`attributes` / `category_attributes`: `providers`'a iki jsonb sutun** (GIN `jsonb_path_ops` indeksi tasinir); `v_providers_public`
+   oradan okur; Kesfet containment sorgulari, sihirbaz sayaci ve Sahne ureteci sema olarak degismez (yalniz hedef tablo). Satir tablosu
+   (`provider_attributes`, per-alan sorgu / deger sozlugu / AI ozellikleri) **FAZ 11/12'de ayri tasarim turu**; o zaman jsonb'den tabloya
+   tek migrasyonla tasinir. Ilk tercih satir tablosuydu; belge sekilli moduller (ekipman.items[], performans.details{}, sosyal_erisim.platforms[])
+   ve "en riskli dilim kucuk adimlarla" ilkesi nedeniyle jsonb'de karar kilindi.
+5. **10c iki alt dilim:** 10c-1 yazma yolu (DB/01 + P1 + tur + uretim), 10c-2 `provider_id` kesimi (DB/02 + P2 + tur + uretim).
+6. **Yazma modeli (10c-1):** sahibin kendi saglayici satirina DOGRUDAN UPDATE (RLS `id = auth.uid()` + sutun duzeyi GRANT; koruma
+   tetikleyicisi `protect_sensitive_provider_fields` admin disi icin onay/guven alanlarini zaten geri aliyor) — bugunku `profiles`
+   modeliyle ayni; admin icin `providers_update_admin` politikasi. Tek RPC: `provider_set_primary_category(p_category_id)` (birincil rol
+   degisimi `provider_services.is_primary` ile; `profiles.primary_category_id` kopyasi aynayla dolar). Kural tasiyan baska yazim yok.
 
 ## 5. Dilimler ve dogrulama (ozet)
 
@@ -143,9 +197,11 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 | **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 (`40-claude-code-gorevi-10a-p1-uyelik.md`) | tur (Sahne): ajans davet -> kabul -> ekipte gorunur -> rol degistir -> cikar; kurum ayni akis; `/davetlerim`; `/p/[id]` ekip |
 | **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser — **HAZIR, BEKLEYEN DOSYA** `docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql` (10a + Duzeltme 01 uretime cikinca `supabase/migrations/`e tasinir) | asama4 **T36** (37/37 harness), asama20 **K7** (10b yoksa BEKLIYOR), asama11 K1 EMEKLI |
 | **10b-P1** | `EVENT_TYPES` silinir; 17 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`, bekleyen) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti |
-| **10c-DB/01** | ters ayna, koruma, `provider_id` NOT NULL, `views_count` | asama4 **T35**; asama20 K6-K8 |
-| **10c-P1** | yazma yolu yeni tablolara, `profile_id` -> `provider_id` | tur: profil duzenle, admin onay, Kesfet degismez |
-| **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K9 |
+| **10c-1 DB/01** | providers jsonb sutunlar + views_count, yazma yolu (RLS/GRANT + `provider_set_primary_category`), ters ayna, koruma, ileri ayna daralir | asama4 **T37**; asama20 **K8**; asama10 ESIT |
+| **10c-1 P1** | profil duzenle / kategori bilgileri / admin / yayin / views yazmalari saglayici tarafina | tur: profil duzenle, admin onay, yayin, sayac; Kesfet ve /p/[id] degismez |
+| **10c-2 DB/02** | `provider_id` NOT NULL + CASCADE, `set_provider_id` yon degisimi, eski GIN duser | asama4 **T38**; asama20 **K9** |
+| **10c-2 P2** | 108 `profile_id`/`professional_id` gecisi `provider_id`'ye | tur: portfoy/hizmet/deneyim/favori/yorum |
+| **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K10 |
 | **Kapanis** | 38 bolum 6, CLAUDE.md FAZ 10 paragrafi, roadmap, 04-goc-plani madde 42-45 | — |
 
 Kirmizi cizgiler: her kesimde once uygulama yeni yola gecer, DB sonra kapatir (ters sira eski sayfalari kirar); fiziksel DROP bu fazda
