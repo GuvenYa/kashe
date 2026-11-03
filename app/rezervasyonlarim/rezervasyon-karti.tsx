@@ -4,9 +4,17 @@ import { paraBirimliMetin } from '@/app/lib/para';
 import Link from 'next/link';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 
+/**
+ * Rezervasyon karti — IKI SEKIL (CLAUDE.md FAZ 7c).
+ *
+ * Eski sekil karsi tarafi `customer`/`professional` embed'inden okur. A8 ile
+ * TEKLIF SEKLI de ciziliyor: o satirlarda dort eski sutun NULL olabilir, karsi
+ * taraf adi sunucuda cozulur ve `teklifSekli` ile isaretlenir.
+ */
 type Booking = {
   id: string;
-  conversation_id: string;
+  /** Teklif seklinde NULL (sohbet yok). */
+  conversation_id: string | null;
   event_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -31,6 +39,10 @@ type Booking = {
     company_name: string | null;
     role: string;
   } | null;
+  /** A8: teklif dosyasindan dogan rezervasyon mu. */
+  teklifSekli?: boolean;
+  /** A8: teklif seklinde karsi tarafin adi (musteri ya da alici kurulus). */
+  karsiTarafAdi?: string | null;
 };
 
 const TONES = [
@@ -101,12 +113,14 @@ export function RezervasyonKarti({
 }) {
   const otherParty = viewer === 'customer' ? b.professional : b.customer;
 
-  const displayName = otherParty
-    ? (otherParty.role === 'business' || otherParty.role === 'agency') &&
-      otherParty.company_name
-      ? otherParty.company_name
-      : otherParty.full_name || 'İsimsiz'
-    : 'İsimsiz';
+  const displayName = b.teklifSekli
+    ? b.karsiTarafAdi?.trim() || 'Müşteri'
+    : otherParty
+      ? (otherParty.role === 'business' || otherParty.role === 'agency') &&
+        otherParty.company_name
+        ? otherParty.company_name
+        : otherParty.full_name || 'İsimsiz'
+      : 'İsimsiz';
 
   const initials = displayName
     .split(' ')
@@ -159,6 +173,13 @@ export function RezervasyonKarti({
               {categoryLabel && (
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-0.5">
                   {categoryLabel}
+                </p>
+              )}
+              {/* A8: kaynagi acikca yaz — teklif dosyasindan dogan
+                  rezervasyonun sohbeti ve teklif kalemi yok. */}
+              {b.teklifSekli && (
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 mt-0.5">
+                  Teklif dosyası
                 </p>
               )}
             </div>

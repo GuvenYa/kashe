@@ -4,7 +4,8 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { KurumsalEkipPaneli } from './kurumsal-ekip-paneli';
-import { kurulusumunId, OWNER_SEED_HARIC } from '@/app/lib/uyelik';
+import { OWNER_SEED_HARIC } from '@/app/lib/uyelik';
+import { getCrewContext } from '@/app/lib/org-context';
 import type {
   BusinessMemberWithProfile,
   BusinessInvitation,
@@ -14,8 +15,13 @@ export const metadata = {
   title: 'Kurumsal Ekip — Kashe',
 };
 
-export default async function KurumsalEkipPage() {
+export default async function KurumsalEkipPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kurulus?: string }>;
+}) {
   const supabase = await createClient();
+  const { kurulus: kurulusParam } = await searchParams;
 
   const {
     data: { user },
@@ -25,21 +31,30 @@ export default async function KurumsalEkipPage() {
     redirect('/giris?redirect=/profil/kurumsal-ekip');
   }
 
-  // Rol kontrolü — sadece kurum (business)
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'business') {
+  /**
+   * KAPI (A7): PROFIL SAHIPLIGI DEGIL `members.manage`.
+   *
+   * Once `profiles.role === 'business'` + kurulusun profil sahipligi
+   * araniyordu; davetle katilan yonetici kendi ekibini goremiyordu. Artik
+   * sayfa, kullanicinin UYE YONETME yetkisi olan ilk KURUM kurulusunu
+   * kullanir (`?kurulus=<id>` ile secilebilir). Yetki kaynagi
+   * `getCrewContext` (`has_org_permission('members.manage')`).
+   */
+  const { orgs } = await getCrewContext();
+  const yonetilebilir = orgs.filter(
+    (o) => o.accountType === 'business' && o.canManageMembers
+  );
+  const secili = kurulusParam
+    ? (yonetilebilir.find((o) => o.id === kurulusParam) ?? null)
+    : (yonetilebilir[0] ?? null);
+  if (!secili) {
     redirect('/profil');
   }
 
   // FAZ 10a: uyeler ve davetler TEK TABLODAN; rol satirin kendisinde
   // (ikinci bir rol sorgusu YOK). Uye herhangi bir kullanici — kategori/
   // professional join YOK.
-  const orgId = await kurulusumunId(supabase, user.id);
+  const orgId = secili.id;
 
   // Kurulusun kendi hesabi (owner_seed) listede GOSTERILMEZ.
   const { data: membersData, error: uyeHatasi } = orgId
@@ -101,6 +116,7 @@ export default async function KurumsalEkipPage() {
             members={members}
             invitations={invitations}
             currentUserId={user.id}
+            orgId={secili.id}
           />
         </div>
     </PanelKabugu>

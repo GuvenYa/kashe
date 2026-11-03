@@ -19,6 +19,9 @@ import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
 import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
 import { gorevDurumEtiketi } from '@/app/lib/gorevler';
+// A7: RFP durum etiketleri TEK KAYNAK — gostergedeki yerel harita kalkti
+// ("Sonuclandi" / "Secim yapildi" iki ayri metin uretiyordu).
+import { RFP_DURUM_ETIKETLERI } from '@/app/kurumsal/rfp/rfp-data';
 
 export const metadata = {
   title: 'Kurumsal panel — Kashe',
@@ -55,15 +58,6 @@ type EtkinlikSatiri = {
 const ACIK_RFP = ['sent', 'collecting', 'evaluating'];
 /** Aliciya ULASMIS teklif (taslak surum aliciya kapali — FAZ 7b). */
 const GELEN_TEKLIF = ['sent', 'viewed', 'approved', 'revision_requested'];
-
-const RFP_DURUM: Record<string, string> = {
-  draft: 'Taslak',
-  sent: 'Gönderildi',
-  collecting: 'Toplanıyor',
-  evaluating: 'Değerlendirmede',
-  awarded: 'Sonuçlandı',
-  cancelled: 'İptal edildi',
-};
 
 export default async function KurumsalPanelPage() {
   const supabase = await createClient();
@@ -173,7 +167,7 @@ export default async function KurumsalPanelPage() {
         etkinlik: r.event?.title?.trim() || '—',
         teklif: gelen,
         tarih: r.deadline ? zamanMetni(r.deadline) : '—',
-        durum: RFP_DURUM[r.status] ?? r.status,
+        durum: RFP_DURUM_ETIKETLERI[r.status] ?? r.status,
       },
       vurgu: ACIK_RFP.includes(r.status) && gelen > 0,
     };

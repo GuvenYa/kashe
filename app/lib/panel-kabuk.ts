@@ -51,16 +51,18 @@ function hesapKarti(
       rozet: secili.accountType === 'agency' ? 'Ajans' : 'Kurumsal',
     };
   }
+  // Kisisel sayfalarda da KISI adi ustte: ajans/kurum rolunde `ad` firma adi
+  // oldugundan kart "Lumen Produksiyon / Lumen Produksiyon" yaziyordu.
   if (orgs.length > 1) {
     return {
-      ad,
+      ad: kisiAdi,
       altSatir: `${orgs.length} kuruluş`,
       avatarUrl,
     };
   }
   if (orgs.length === 1) {
     return {
-      ad,
+      ad: kisiAdi,
       altSatir: orgs[0].name,
       avatarUrl,
     };

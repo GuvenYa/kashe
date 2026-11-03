@@ -39,6 +39,8 @@ type InviteUserToTeamInput = {
   email: string;
   role: OrgRole;
   message: string | null;
+  /** A7: sayfanin sectigi kurulus (uye yonetici); yoksa profil sahipligi. */
+  orgId?: string | null;
 };
 
 /**
@@ -71,7 +73,9 @@ export async function inviteUserToTeam(
     return { success: false, error: 'Kendine davet gönderemezsin' };
   }
 
-  const orgId = await kurulusumunId(supabase, user.id);
+  // A7: davetle katilan yoneticinin profil sahipligi yok; kurulus sayfadan
+  // gelir. Yetki kapisi RPC'de (members.manage), burada yalniz kimlik.
+  const orgId = input.orgId ?? (await kurulusumunId(supabase, user.id));
   if (!orgId) {
     return { success: false, error: 'Kuruluş kaydın bulunamadı.' };
   }

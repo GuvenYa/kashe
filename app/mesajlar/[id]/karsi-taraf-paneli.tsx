@@ -23,11 +23,24 @@ type Props = {
   contactUnlocked: boolean;
 };
 
-export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) {
-  const isOtherProfessional = other.role === 'professional' || other.role === 'business';
+/**
+ * Karsi tarafin rol etiketi (A3) — dort rolun hepsi burada.
+ *
+ * Eksik 'agency' dali yuzunden ajans karsi tarafta "Musteri" gorunuyordu.
+ */
+const ROL_ETIKETLERI: Record<string, string> = {
+  client: 'Müşteri',
+  professional: 'Profesyonel',
+  agency: 'Ajans',
+  business: 'Kurumsal',
+};
 
+/** Halka acik profil sayfasi olan roller (`/p/<id>` bu ucunde aciliyor). */
+const ACIK_PROFIL_ROLLERI = ['professional', 'agency', 'business'];
+
+export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) {
   const displayName =
-    other.role === 'business' && other.company_name
+    (other.role === 'business' || other.role === 'agency') && other.company_name
       ? other.company_name
       : other.full_name || 'İsimsiz';
 
@@ -39,15 +52,11 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
     .join('')
     .toUpperCase();
 
-  const roleLabel =
-    other.role === 'professional'
-      ? 'Profesyonel'
-      : other.role === 'business'
-        ? 'Kurumsal'
-        : 'Müşteri';
+  const roleLabel = ROL_ETIKETLERI[other.role] ?? 'Müşteri';
 
-  // Profesyonele tıklanınca kamu profiline gidebilir; müşterinin kamu profili yok
-  const showProfileLink = isOtherProfessional;
+  // Saglayici tarafa tiklaninca kamu profiline gidebilir; musterinin kamu
+  // profili yok. Ajans A3'ten once DISARIDA kalmisti.
+  const showProfileLink = ACIK_PROFIL_ROLLERI.includes(other.role);
 
   return (
     <aside className="bg-card border border-line rounded-lg p-6 md:sticky md:top-24 md:self-start">

@@ -4,7 +4,8 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { createClient } from '@/app/lib/supabase-server';
 import { EkibimPaneli } from './ekibim-paneli';
-import { kurulusumunId, OWNER_SEED_HARIC } from '@/app/lib/uyelik';
+import { OWNER_SEED_HARIC } from '@/app/lib/uyelik';
+import { getCrewContext } from '@/app/lib/org-context';
 import type {
   AgencyMemberWithProfile,
   AgencyInvitation,
@@ -14,8 +15,13 @@ export const metadata = {
   title: 'Ekibim — Kashe',
 };
 
-export default async function EkibimPage() {
+export default async function EkibimPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kurulus?: string }>;
+}) {
   const supabase = await createClient();
+  const { kurulus: kurulusParam } = await searchParams;
 
   const {
     data: { user },
@@ -25,20 +31,30 @@ export default async function EkibimPage() {
     redirect('/giris?redirect=/profil/ekibim');
   }
 
-  // Rol kontrolü — sadece ajans
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'agency') {
+  /**
+   * KAPI (A7): PROFIL SAHIPLIGI DEGIL `members.manage`.
+   *
+   * Once `profiles.role === 'agency'` + kurulusun profil sahipligi araniyordu;
+   * davetle katilan yonetici kendi ekibini goremiyordu. Artik sayfa,
+   * kullanicinin UYE YONETME yetkisi olan ilk AJANS kurulusunu kullanir
+   * (`?kurulus=<id>` ile secilebilir). Yetki kaynagi `getCrewContext`
+   * (`has_org_permission('members.manage')`); davet/rol/cikarma RPC'leri de
+   * ayni izni istiyor — uygulama yeni kural yazmaz.
+   */
+  const { orgs } = await getCrewContext();
+  const yonetilebilir = orgs.filter(
+    (o) => o.accountType === 'agency' && o.canManageMembers
+  );
+  const secili = kurulusParam
+    ? (yonetilebilir.find((o) => o.id === kurulusParam) ?? null)
+    : (yonetilebilir[0] ?? null);
+  if (!secili) {
     redirect('/profil');
   }
 
   // FAZ 10a: uyeler ve davetler TEK TABLODAN. Rol satirin kendisinde
   // (`organization_memberships.role`), ikinci bir rol sorgusu YOK.
-  const orgId = await kurulusumunId(supabase, user.id);
+  const orgId = secili.id;
 
   // Kurulusun kendi hesabi (`owner_seed`) ekip listesinde GOSTERILMEZ:
   // eski `agency_members` tablosunda da yoktu.
@@ -115,6 +131,7 @@ export default async function EkibimPage() {
             members={members}
             invitations={invitations}
             currentUserId={user.id}
+            orgId={orgId}
           />
         </div>
     </PanelKabugu>

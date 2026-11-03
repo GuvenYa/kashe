@@ -24,8 +24,8 @@ export default async function AdminDashboardPage() {
 
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // NOT: "bu hafta" ve "toplam" rezervasyon artik RPC'den geliyor (A6), bu
+  // yuzden yerel tarih penceresi gerekmiyor.
 
   // 4 ana sayı için paralel sorgular
   const [
@@ -48,11 +48,11 @@ export default async function AdminDashboardPage() {
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', startOfToday.toISOString()),
-    // Bu hafta yeni rezervasyon
-    supabase
-      .from('bookings')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', sevenDaysAgo.toISOString()),
+    // A6 — rezervasyon sayilari RPC'den: `bookings` DOGRUDAN sayildiginda
+    // admin RLS yalniz taraf oldugu satirlari donduruyor (eksik sayim).
+    // `admin_stats_weekly_compare` ve `admin_report_stats` SECURITY DEFINER
+    // (ayni RPC'ler `/admin/rapor` ve `/admin/istatistikler`de de kullaniliyor).
+    supabase.rpc('admin_stats_weekly_compare'),
     // Bekleyen kategori talebi
     supabase
       .from('category_requests')
@@ -77,9 +77,7 @@ export default async function AdminDashboardPage() {
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .in('role', ['professional', 'agency']),
-    supabase
-      .from('bookings')
-      .select('id', { count: 'exact', head: true }),
+    supabase.rpc('admin_report_stats'),
 
     // Son 5 kategori talebi
     supabase
@@ -121,7 +119,23 @@ export default async function AdminDashboardPage() {
   ]);
 
   const todayUsers = todayUsersResult.count ?? 0;
-  const weekBookings = weekBookingsResult.count ?? 0;
+  // "Bu hafta rezervasyon": weekly_compare'in `rezervasyon` satiri.
+  // Hata ya da satir yoksa null -> kartta "—" (sayi uydurulmaz).
+  let weekBookings: number | null = null;
+  if (weekBookingsResult.error) {
+    console.error(
+      '[admin] admin_stats_weekly_compare:',
+      weekBookingsResult.error
+    );
+  } else {
+    const satir = (
+      (weekBookingsResult.data ?? []) as {
+        metric: string;
+        this_week: number | string | null;
+      }[]
+    ).find((r) => r.metric === 'rezervasyon');
+    weekBookings = satir ? Number(satir.this_week ?? 0) : null;
+  }
   const pendingCategoryRequests = pendingCategoryRequestsResult.count ?? 0;
   const suspendedUsers = suspendedUsersResult.count ?? 0;
   const pendingReports = pendingReportsResult.count ?? 0;
@@ -130,7 +144,21 @@ export default async function AdminDashboardPage() {
 
   const totalUsers = totalUsersResult.count ?? 0;
   const totalPros = totalProsResult.count ?? 0;
-  const totalBookings = totalBookingsResult.count ?? 0;
+  // "Rezervasyon" (toplam): `admin_report_stats` `bookings` metriginin
+  // aylik satirlarinin toplami.
+  let totalBookings: number | null = null;
+  if (totalBookingsResult.error) {
+    console.error('[admin] admin_report_stats:', totalBookingsResult.error);
+  } else {
+    totalBookings = (
+      (totalBookingsResult.data ?? []) as {
+        metric: string;
+        cnt: number | string | null;
+      }[]
+    )
+      .filter((r) => r.metric === 'bookings')
+      .reduce((t, r) => t + Number(r.cnt ?? 0), 0);
+  }
 
   const recentCategoryRequests = recentCategoryRequestsResult.data ?? [];
   // email ve suspension_reason authenticated rolüne kapalı (PII adım 2b) — admin RPC'siyle birleşir.
@@ -373,7 +401,8 @@ function StatCard({
   altNot,
 }: {
   label: string;
-  value: number;
+  /** `null` = OLCULEMEDI (RPC hatasi) -> "—"; sifirla karistirilmaz. */
+  value: number | null;
   accent: 'brandInk' | 'moss' | 'brandAccent' | 'brandInkDeep';
   href?: string;
   /** Ikincil sayi (ornek: "3 revizyon istendi"); yoksa satir cizilmez. */
@@ -404,7 +433,7 @@ function StatCard({
         {label}
       </p>
       <p className="font-display font-light text-3xl md:text-4xl text-ink tabular-nums leading-none">
-        {value.toLocaleString('tr-TR')}
+        {value === null ? '—' : value.toLocaleString('tr-TR')}
       </p>
       {altNot && (
         <p className="text-[11px] text-ink-72 mt-1.5 leading-snug">{altNot}</p>
@@ -421,11 +450,11 @@ function StatCard({
   return content;
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: number | null }) {
   return (
     <div>
       <p className="font-display font-semibold text-xl text-ink tabular-nums">
-        {value.toLocaleString('tr-TR')}
+        {value === null ? '—' : value.toLocaleString('tr-TR')}
       </p>
       <p className="text-[11px] text-ink-72">{label}</p>
     </div>

@@ -13,6 +13,8 @@ type Props = {
   members: AgencyMemberWithProfile[];
   invitations: AgencyInvitation[];
   currentUserId: string;
+  /** A7: sayfanin sectigi kurulus — davet eylemi bu kimlige gider. */
+  orgId: string;
 };
 
 // FAZ 10a: kurulus rolu uyelik satirinin kendisinde (member.role) —
@@ -21,6 +23,7 @@ export function EkibimPaneli({
   members,
   invitations,
   currentUserId,
+  orgId,
 }: Props) {
   const [showInviteForm, setShowInviteForm] = useState(false);
 
@@ -52,7 +55,7 @@ export function EkibimPaneli({
 
       {/* Davet formu (toggle) */}
       {showInviteForm && (
-        <UyeDavetFormu onClose={() => setShowInviteForm(false)} />
+        <UyeDavetFormu orgId={orgId} onClose={() => setShowInviteForm(false)} />
       )}
 
       {/* Bekleyen davetler */}

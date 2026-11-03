@@ -1269,6 +1269,13 @@ function QueueCard({ label, count, href, accent }: { label: string; count: numbe
   )
 }
 
+/** Haritada olmayan islem anahtari icin yedek etiket (ilk harf buyuk). */
+function okunurIslem(anahtar: string): string {
+  const bosluklu = anahtar.replace(/_/g, ' ').trim()
+  if (!bosluklu) return anahtar
+  return bosluklu.charAt(0).toLocaleUpperCase('tr') + bosluklu.slice(1)
+}
+
 // action metnini okunabilir Türkçe etikete + renge çevir
 function actionMeta(action: string): { label: string; color: string } {
   const map: Record<string, { label: string; color: string }> = {
@@ -1284,8 +1291,35 @@ function actionMeta(action: string): { label: string; color: string } {
     approve_category: { label: 'kategori talebini onayladı', color: C.moss },
     decline_category: { label: 'kategori talebini reddetti', color: C.brandInkDeep },
     add_category: { label: 'kategori ekledi', color: C.brandAccent },
+    // A6 — `logAction` bu iki islemi de yaziyordu ama haritada yoktu; ham
+    // anahtar ("request_profile_revision") gorunuyordu.
+    request_profile_revision: { label: 'profil revizyonu istendi', color: '#D98C3F' },
+    request_listing_revision: { label: 'ilan revizyonu istendi', color: '#D98C3F' },
+    // Ayni tarama: `logAction` bu anahtarlari da yaziyor, haritada yoktu
+    // (yedek etiket Ingilizce gorunurdu).
+    make_admin: { label: 'admin yetkisi verdi', color: C.brandAccent },
+    remove_admin: { label: 'admin yetkisini kaldırdı', color: C.brandInkDeep },
+    grant_premium: { label: 'premium verdi', color: C.brandAccent },
+    revoke_premium: { label: 'premium aboneliğini kaldırdı', color: C.brandInkDeep },
+    dismiss_report: { label: 'şikayeti kapattı', color: C.brandInkDeep },
+    review_report: { label: 'şikayeti incelemeye aldı', color: '#D98C3F' },
+    resolve_report: { label: 'şikayeti sonuçlandırdı', color: C.moss },
+    create_blog_post: { label: 'blog yazısı ekledi', color: C.brandAccent },
+    update_blog_post: { label: 'blog yazısını güncelledi', color: C.brandAccent },
+    delete_blog_post: { label: 'blog yazısını sildi', color: C.brandInkDeep },
+    create_testimonial: { label: 'görüş ekledi', color: C.brandAccent },
+    update_testimonial: { label: 'görüşü güncelledi', color: C.brandAccent },
+    delete_testimonial: { label: 'görüşü sildi', color: C.brandInkDeep },
+    review_category_request: { label: 'kategori talebini incelemeye aldı', color: '#D98C3F' },
+    approve_category_request: { label: 'kategori talebini onayladı', color: C.moss },
+    decline_category_request: { label: 'kategori talebini reddetti', color: C.brandInkDeep },
+    remove_review: { label: 'yorumu kaldırdı', color: C.brandInkDeep },
+    remove_review_reply: { label: 'yorum yanıtını kaldırdı', color: C.brandInkDeep },
   }
-  return map[action] ?? { label: action.replace(/_/g, ' '), color: C.brandAccent }
+  // Haritada olmayan islem: ham anahtar yerine okunur yedek etiket
+  // ("delete_blog_post" -> "Delete blog post"). Yeni islem eklenince
+  // haritaya da yazilir; yedek yalniz sessiz kalmasin diye.
+  return map[action] ?? { label: okunurIslem(action), color: C.brandAccent }
 }
 
 // hedef tipine göre link üret (varsa)

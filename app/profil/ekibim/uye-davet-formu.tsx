@@ -15,10 +15,12 @@ import {
 const DAVET_ROLLERI = ORG_ROLES.filter((r) => r !== 'owner');
 
 type Props = {
+  /** A7: davetin gidecegi kurulus (sayfanin sectigi). */
+  orgId: string;
   onClose: () => void;
 };
 
-export function UyeDavetFormu({ onClose }: Props) {
+export function UyeDavetFormu({ orgId, onClose }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -43,18 +45,23 @@ export function UyeDavetFormu({ onClose }: Props) {
         email: trimmedEmail,
         role: memberRole,
         message: message.trim() || null,
+        orgId,
       });
 
       if (result.success) {
         setSuccess(true);
-        // 1.5 saniye sonra formu sıfırla + kapat
+        // A9: basari mesaji 2 sn gorunur, SONRA form KAPANIR. Once yalniz
+        // alanlar temizleniyordu; form acik kalinca kullanici ayni daveti
+        // tekrar gonderdigini saniyordu. `router.refresh()` bekleyen davetler
+        // listesini tazeler (davet satiri kapanmadan once listede gorunur).
         setTimeout(() => {
           setSuccess(false);
           setEmail('');
           setMessage('');
           setMemberRole('viewer');
           router.refresh();
-        }, 1500);
+          onClose();
+        }, 2000);
       } else {
         setError(result.error);
       }

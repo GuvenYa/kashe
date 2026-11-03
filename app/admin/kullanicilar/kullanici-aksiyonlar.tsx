@@ -227,11 +227,12 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               Askıyı kaldır
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-moss">{displayName}</em>&apos;ın askısı
+              <em className="text-moss">{displayName}</em> için askı
               kaldırılsın mı?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
-              Kullanıcı tekrar login olabilir ve platformu kullanabilir.
+              Kullanıcı tekrar login olabilir ve platformu kullanabilir. Onaylı
+              profil yeniden yayına alınır.
             </p>
             {user.suspension_reason && (
               <div className="bg-paper-2/50 border border-line rounded-lg p-3 mb-4">
@@ -252,7 +253,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               Admin yetkisi ver
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-brand-ink">{displayName}</em>&apos;a admin
+              <em className="text-brand-ink">{displayName}</em> için admin
               yetkisi verilsin mi?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
@@ -284,7 +285,7 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
               Premium ver
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-2 leading-tight">
-              <em className="text-brand-ink">{displayName}</em>&apos;a premium
+              <em className="text-brand-ink">{displayName}</em> için premium
               ver
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
