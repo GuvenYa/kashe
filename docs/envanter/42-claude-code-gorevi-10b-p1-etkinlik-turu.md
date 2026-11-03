@@ -1,7 +1,7 @@
 # Claude Code gorevi — FAZ 10b / P1: Etkinlik turu tek kaynak (`EVENT_TYPES` sabiti silinir; liste `event_types` tablosundan okunur)
 
-**BEKLEYEN GOREV:** `supabase/migrations/20261031120000_faz10b_01_etkinlik_turu_fk.sql` dala uygulandiktan sonra verilir (10a +
-Duzeltme 01 uretime ciktiktan sonra). Asagidaki metni oldugu gibi Claude Code'a ver. Kaynak: `docs/envanter/38-faz10-temizlik.md`
+**GOREV (4 Kasim 2026 guncel):** `supabase/migrations/20261104120000_faz10b_01_etkinlik_turu_fk.sql` dala uygulandiktan sonra verilir
+(29 Ekim taslagi 20261031120000 idi; Duzeltme 03-B'den sonra yeniden damgalandi). Asagidaki metni oldugu gibi Claude Code'a ver. Kaynak: `docs/envanter/38-faz10-temizlik.md`
 bolum 10b. Dal: `faz10b/p1` (Guven acar). **Migration YOK.** DB tarafi: `conversations`, `listings`, `bookings`, `quote_requests`
 `event_type` sutunlari `event_types(key)` tablosuna FK ile bagli (ON UPDATE CASCADE); eski CHECK listeleri yok; anahtar disi deger
 23503. `event_types` anon + authenticated SELECT (sutunlar: `key, name_tr, group_key, sort_order, is_active`).
@@ -55,6 +55,13 @@ UI Turkce. Commit ATMA.
 - `app/p/[id]/professional-profile.tsx`: etiket yolu saglayici/etiketle.
 - Portal (`app/portal/*`) ve e-posta sablonlari `event_type` etiketi gosteriyorsa ayni yoldan (anon portalda saglayici yoksa sunucu
   tarafinda `etiketle`).
+- `etkinlikTuruEtiketi` bugunku TUM cagiranlari (`grep -rn "etkinlikTuruEtiketi" app`: `kazanclarim/page.tsx`,
+  `rezervasyonlarim/rezervasyon-karti.tsx` ve digerleri) yeni imzaya tasinir; hicbiri ham anahtara dusmez.
+- **Ham anahtar gosterimi kalmaz** (bulgu 55): `app/takvimim/page.tsx` "Sıradaki işler" satiri (~283) `b.event_type`'i oldugu gibi
+  yaziyor ("gala", "wedding") -> etiket. Tara: `grep -rn "event_type\]\|\.event_type}" app --include=*.tsx`; ekrana giden her
+  `event_type` etiketten gecer.
+- `app/lib/brief-ozet.ts` (Duzeltme 03-A, sohbet seridi brief satirlari) `brief-config` etiketlerini okur: `EVENT_TYPE_OPTIONS`
+  kalkinca bu dosya kirilmaz (event_type zaten seritte; brief satirlarinda tekrar gosterilmez — davranis ayni kalir).
 
 ## 3) Dogrulama
 

@@ -87,9 +87,9 @@ ani; sonra bilgi), K3 eski tabloya referans veren fonksiyon sayisi (yalniz izinl
 
 ### 10b — Etkinlik turu tek kaynak
 
-**10b-DB/01** (`20261029120000_faz10b_01_etkinlik_turu_fk.sql`): `conversations`, `listings`, `bookings`, `quote_requests`
-`event_type` -> FK `event_types(key)` ON UPDATE CASCADE; once veri kontrolu (anahtar disi deger varsa `other`'a cevrilir ve sayisi
-loglanir); uc CHECK duser. asama11 K1 ("CHECK listesi = tablo") emekli; yerine asama20 K5 (FK var, CHECK yok).
+**10b-DB/01** (`20261104120000_faz10b_01_etkinlik_turu_fk.sql`; 29 Ekim taslagi 20261031120000 idi, 4 Kasim'da yeniden damgalandi):
+`conversations`, `listings`, `bookings`, `quote_requests` `event_type` -> FK `event_types(key)` ON UPDATE CASCADE; once veri kontrolu
+(anahtar disi deger varsa dosya DURUR ve degerleri listeler — veri degistirmez; on kontrol `faz10b-on-kontrol.sql`); uc CHECK duser. asama11 K1 ("CHECK listesi = tablo") emekli; yerine asama20 K5 (FK var, CHECK yok).
 
 **10b-P1:** `EVENT_TYPES` sabiti silinir; tek kaynak `event_types` tablosu — sunucu yardimcisi `app/lib/etkinlik-turu.ts`
 (`etkinlikTurleri()`; `unstable_cache` ya da istek basina), istemci bilesenlere prop. 12 dosya. Tur: ilan formu, Kesfet filtresi,
@@ -195,7 +195,7 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 |---|---|---|
 | **10a-DB/01** | davet/uyelik RPC'leri, bildirim tetikleyicileri yeni tabloda, aynalama kapanir, eski tablolar salt okunur — **YAZILDI** (bolum 6) | asama4 **T34** + T3/T4/T7/T8/T9/T10/T17/T18/T19/T25 uyarlama (35/35); **asama20** K1-K6; asama18 K2/K3 ve asama5 K3-K6 10a'ya uyarlandi |
 | **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 (`40-claude-code-gorevi-10a-p1-uyelik.md`) | tur (Sahne): ajans davet -> kabul -> ekipte gorunur -> rol degistir -> cikar; kurum ayni akis; `/davetlerim`; `/p/[id]` ekip |
-| **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser — **HAZIR, BEKLEYEN DOSYA** `docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql` (10a + Duzeltme 01 uretime cikinca `supabase/migrations/`e tasinir) | asama4 **T36** (37/37 harness), asama20 **K7** (10b yoksa BEKLIYOR), asama11 K1 EMEKLI |
+| **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser — **4 Kasim: `supabase/migrations/20261104120000_faz10b_01_etkinlik_turu_fk.sql`** (yeniden damgalandi; anahtar disi deger varsa DURUR) + on kontrol `faz10b-on-kontrol.sql` | asama4 **T36** (37/37 harness, 03-B dahil; T13/T23/T24 03-B beklentilerine guncellendi), asama20 **K7** (10b yoksa BEKLIYOR), asama11 K1 EMEKLI |
 | **10b-P1** | `EVENT_TYPES` silinir; 17 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`, bekleyen) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti |
 | **10c-1 DB/01** | providers jsonb sutunlar + views_count, yazma yolu (RLS/GRANT + `provider_set_primary_category`), ters ayna, koruma, ileri ayna daralir | asama4 **T37**; asama20 **K8**; asama10 ESIT |
 | **10c-1 P1** | profil duzenle / kategori bilgileri / admin / yayin / views yazmalari saglayici tarafina | tur: profil duzenle, admin onay, yayin, sayac; Kesfet ve /p/[id] degismez |
