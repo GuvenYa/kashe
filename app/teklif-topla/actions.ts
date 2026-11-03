@@ -6,7 +6,7 @@ import {
   QUOTE_EXPIRY_OPTIONS,
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
-import { budgetToRangeKey } from '@/app/mesajlar/data';
+import { budgetToRangeKey, EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
@@ -177,7 +177,14 @@ export async function createQuoteRequest(
       city_id: input.city_id,
       brief_data: input.brief_data,
       event_date: input.event_date,
-      event_type: input.event_type,
+      // FAZ 10b: event_type FK ile event_types'a bagli; liste disi deger (eski
+      // ?tur= on-doldurma) yazilmaz -> NULL (sohbetteki safeEventType kalibi).
+      // 10b-P1 bu kontrolu tablodan okunan listeye tasir.
+      event_type:
+        input.event_type &&
+        (EVENT_TYPE_KEYS as readonly string[]).includes(input.event_type)
+          ? input.event_type
+          : null,
       budget_min: input.budget_min,
       budget_max: input.budget_max,
       share_budget: input.share_budget,

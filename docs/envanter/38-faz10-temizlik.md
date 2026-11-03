@@ -89,7 +89,12 @@ ani; sonra bilgi), K3 eski tabloya referans veren fonksiyon sayisi (yalniz izinl
 
 **10b-DB/01** (`20261104120000_faz10b_01_etkinlik_turu_fk.sql`; 29 Ekim taslagi 20261031120000 idi, 4 Kasim'da yeniden damgalandi):
 `conversations`, `listings`, `bookings`, `quote_requests` `event_type` -> FK `event_types(key)` ON UPDATE CASCADE; once veri kontrolu
-(anahtar disi deger varsa dosya DURUR ve degerleri listeler — veri degistirmez; on kontrol `faz10b-on-kontrol.sql`); uc CHECK duser. asama11 K1 ("CHECK listesi = tablo") emekli; yerine asama20 K5 (FK var, CHECK yok).
+(anahtar disi deger varsa dosya DURUR ve degerleri listeler — veri degistirmez; on kontrol `faz10b-on-kontrol.sql`); uc CHECK duser.
+**4 Kasim uretim denemesi:** 01 durdu — `quote_requests.event_type` icinde `activation`, `fashion` (Temmuz taksonomi duzeltmesi
+3f7ffc5 oncesi model/hostes brief listeleri). Eklenen: **10b-DB/00** `20261104110000_faz10b_00_etkinlik_turu_veri.sql` (VERI:
+anahtar disi -> 'other', brief_data dokunulmaz, listings updated_at tetikleyicisi gecici kapali) + uygulama kontrolu
+(`teklif-topla/actions.ts`, `ilanlar/listings-actions.ts`: liste disi tur -> NULL; P1 tabloya tasir). Sira: kod uretime -> db push
+(00 + 01). Dalda 01 zaten uygulu oldugu icin 00 `supabase db push --include-all` ile (dalda 0 satir, no-op). asama11 K1 ("CHECK listesi = tablo") emekli; yerine asama20 K5 (FK var, CHECK yok).
 
 **10b-P1:** `EVENT_TYPES` sabiti silinir; tek kaynak `event_types` tablosu — sunucu yardimcisi `app/lib/etkinlik-turu.ts`
 (`etkinlikTurleri()`; `unstable_cache` ya da istek basina), istemci bilesenlere prop. 12 dosya. Tur: ilan formu, Kesfet filtresi,
