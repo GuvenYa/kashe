@@ -216,6 +216,12 @@ Uretim: `main` <- `duzeltme-01` (merge e4317d5; 10 commit: 9f17bef 10a-DB, d8f0d
 uretim SQL Editor salt okunur: asama20 K1/K3/K4/K5 ESIT + K7 BEKLIYOR, asama5 K3-K6 EMEKLI, asama18 ve asama19 ESIT; canli kontrol
 `/davetlerim` (ajans hesabi) sorunsuz. Hijyen 05 DROP'lari icin 30 gun: ~3 Aralik 2026. Fahri'nin manuel urun incelemesi Sahne
 onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahri.md`, bulgu tablosu Google Sheet "Sahne bulgulari — Fahri"); bulgulari Duzeltme 03 olur.
+**Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
+iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
+yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif
+rezervasyonlari, davet formu kapanisi) once; **03-B DB** (portal onay/revizyon bildirimi, quotes gunluk sure sonu, iptal/tamamlama
+bildirimleri, kurum rezervasyon bildirimi, RFP revizyon kilidi, portal teklifi <-> musteri hesabi, yorum politikasi) sona. Ekip uyesi
+kabul/ret: urun karari (10d/11).
 **Duzeltme 02 (3 Kasim, uretimde):** bulgu #39 menu sadelestirme — avatar menusu/mobil hamburger kisa baslatici, panel yan menusu katlanabilir bolumler (gorev 43; `app/lib/panel-menu.ts` modeline `bolum` / `oncelik`, `baslaticiMenusu`; DB yok). Siradaki: madde 3 (10b).
 
 ### TUR TAMAMLANDI (3 Kasim 2026)

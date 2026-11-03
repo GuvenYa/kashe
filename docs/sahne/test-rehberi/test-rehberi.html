@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kashe Sahne — Test Rehberi</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  :root {
+    --ink: #14213d; --ink2: #3a4a6b; --muted: #6b7a99; --line: #dfe3ee;
+    --paper: #ffffff; --soft: #f4f6fb; --accent: #e63946; --ok: #2a9d8f; --warn: #e9c46a; --gold: #f4a261;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Inter", "DejaVu Sans", Arial, sans-serif; font-size: 10.6pt; line-height: 1.5; color: var(--ink); background: var(--paper); }
+  h1, h2, h3, h4 { font-family: "Inter Display", "Inter", sans-serif; line-height: 1.2; margin: 0; }
+  h1 { font-size: 30pt; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 19pt; font-weight: 800; margin: 0 0 8pt; padding-top: 6pt; color: var(--ink); letter-spacing: -0.01em; }
+  h3 { font-size: 13.5pt; font-weight: 700; margin: 16pt 0 6pt; color: var(--ink); }
+  h4 { font-size: 11pt; font-weight: 700; margin: 12pt 0 4pt; color: var(--ink2); }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt 18pt; padding: 0; }
+  li { margin: 0 0 3pt; }
+  code { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 9.2pt; background: var(--soft); padding: 1px 4px; border-radius: 3px; color: #1b1b1b; }
+  a { color: var(--ink); text-decoration: none; }
+  .small { font-size: 9pt; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .section { page-break-before: always; }
+  .nobreak { page-break-inside: avoid; }
+  .eyebrow { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6pt; }
+  .lead { font-size: 12pt; color: var(--ink2); }
+
+  /* Kapak */
+  .cover { height: 256mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+  .cover .mark { display: flex; align-items: center; gap: 10pt; }
+  .cover .logo { width: 34pt; height: 34pt; }
+  .cover .brand { font-weight: 800; font-size: 20pt; letter-spacing: -0.02em; }
+  .cover .title { margin-top: 60mm; }
+  .cover .title .eyebrow { margin-bottom: 14pt; }
+  .cover .title p.lead { margin-top: 14pt; max-width: 130mm; }
+  .cover .meta { border-top: 1px solid var(--line); padding-top: 10pt; display: flex; justify-content: space-between; font-size: 9pt; color: var(--muted); }
+  .pill { display: inline-block; font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink2); background: var(--soft); }
+
+  /* Kutular */
+  .box { border: 1px solid var(--line); border-radius: 8pt; padding: 9pt 11pt; margin: 8pt 0 10pt; background: var(--paper); page-break-inside: avoid; }
+  .box .label { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4pt; }
+  .box.see { background: #f1f9f7; border-color: #bfe3dc; }
+  .box.see .label { color: #1d7a6e; }
+  .box.tip { background: #fff8e8; border-color: #f1dfa6; }
+  .box.tip .label { color: #9a6b00; }
+  .box.warn { background: #fdeeef; border-color: #f3bfc4; }
+  .box.warn .label { color: #a4222d; }
+  .box.shot { background: var(--soft); border-style: dashed; text-align: left; }
+  .box.shot .label { color: var(--ink2); }
+  .box.shot img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6pt; margin-top: 6pt; }
+  .box.acct { background: var(--soft); }
+
+  /* Adimlar */
+  ol.steps { list-style: none; margin: 0 0 10pt 0; counter-reset: step; }
+  ol.steps > li { counter-increment: step; position: relative; padding-left: 30pt; margin: 0 0 7pt; page-break-inside: avoid; }
+  ol.steps > li::before { content: attr(data-n); position: absolute; left: 0; top: 1pt; width: 20pt; height: 20pt; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700; font-size: 9.5pt; display: flex; align-items: center; justify-content: center; }
+  ol.steps > li .role { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-right: 6pt; }
+  ol.steps > li .ui { font-weight: 600; color: var(--ink); }
+  ol.steps > li .see-inline { display: block; margin-top: 3pt; color: #1d7a6e; font-size: 10pt; }
+  ol.steps > li .see-inline::before { content: "Göreceğin: "; font-weight: 700; }
+
+  /* Tablolar */
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0 12pt; font-size: 9.4pt; page-break-inside: auto; }
+  th, td { border-bottom: 1px solid var(--line); padding: 5pt 6pt; vertical-align: top; text-align: left; }
+  th { font-family: "DejaVu Sans Mono", monospace; font-size: 7.8pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--soft); }
+  tr { page-break-inside: avoid; }
+  td code { white-space: nowrap; }
+
+  .kv { display: grid; grid-template-columns: 34mm 1fr; gap: 3pt 10pt; font-size: 10pt; }
+  .kv b { color: var(--ink2); font-weight: 600; }
+
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding: 5pt 0; }
+  .toc li span:last-child { color: var(--muted); font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; }
+
+  .role-chip { display: inline-block; font-size: 8.5pt; font-weight: 700; padding: 1px 7px; border-radius: 999px; color: #fff; background: var(--ink2); letter-spacing: 0.02em; }
+  .role-chip.musteri { background: #2a9d8f; }
+  .role-chip.pro { background: #457b9d; }
+  .role-chip.ajans { background: #e76f51; }
+  .role-chip.kurum { background: #6d597a; }
+  .role-chip.admin { background: #14213d; }
+  .role-chip.anon { background: #8d99ae; }
+
+  .timeline { border-left: 2px solid var(--line); margin: 8pt 0 10pt 6pt; padding-left: 12pt; }
+  .timeline div { margin-bottom: 6pt; }
+  .footer-note { font-size: 8.5pt; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6pt; margin-top: 14pt; }
+</style>
+</head>
+<body>
+
+<!-- ============================ KAPAK ============================ -->
+<section class="cover">
+  <div class="mark">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M8 6 L34 20 L8 34 Z" fill="#14213d"/><path d="M8 6 L21 13 L8 20 Z" fill="#e63946"/></svg>
+    <span class="brand">Kashe</span>
+    <span class="pill">Sahne · test ortamı</span>
+  </div>
+  <div class="title">
+    <div class="eyebrow">Test rehberi · Sürüm 1.0 · Kasım 2026</div>
+    <h1>Kashe'yi baştan sona<br>deneyimle.</h1>
+    <p class="lead">Dört rol, dört uçtan uca hikâye, bir de perde arkası: ne yaptığını, ekranda ne görmen gerektiğini ve nereye not edeceğini adım adım anlatan rehber. Teknik bilgi gerekmez; merak ve dikkat yeter.</p>
+  </div>
+  <div class="meta">
+    <span>Sahne, Kashe'nin sahte verilerle dolu deneme dünyasıdır. Burada yaptığın hiçbir şey gerçek kullanıcıya ulaşmaz.</span>
+    <span>kashe.net</span>
+  </div>
+</section>
+
+<!-- ============================ ICINDEKILER ============================ -->
+<section class="toc">
+  <div class="eyebrow">İçindekiler</div>
+  <h2>Yol haritası</h2>
+  <ol>
+    <li><span>1 · Hoş geldin: bu rehber ne, senden ne bekliyoruz</span><span>Bölüm 1</span></li>
+    <li><span>2 · Başlamadan: adres, hesaplar, kurallar, küçük hileler</span><span>Bölüm 2</span></li>
+    <li><span>3 · Oyuncu kadrosu: hangi hesapla kimi oynayacaksın</span><span>Bölüm 3</span></li>
+    <li><span>4 · Nasıl bakacaksın: üç soru, bulgu yazma sanatı</span><span>Bölüm 4</span></li>
+    <li><span>5 · Isınma turu: giriş yapmadan Kashe</span><span>Bölüm 5</span></li>
+    <li><span>6 · Hikâye 1 — Düğün fotoğrafçısı: müşteri ile tekil profesyonel</span><span>Bölüm 6</span></li>
+    <li><span>7 · Hikâye 2 — Ajans: ekip kur, eksiği pazaryerinden tamamla, teklifi gönder</span><span>Bölüm 7</span></li>
+    <li><span>8 · Hikâye 3 — Kurum: ekip daveti, teklif talebi (RFP), ajanslardan teklif</span><span>Bölüm 8</span></li>
+    <li><span>9 · Hikâye 4 — Yönetici: onay, itiraz, perde arkası</span><span>Bölüm 9</span></li>
+    <li><span>10 · Zeka katmanı: hangi işlem neyi, ne zaman değiştirir</span><span>Bölüm 10</span></li>
+    <li><span>11 · Ek turlar: ilan, Teklif Topla, kategori talebi, şikayet</span><span>Bölüm 11</span></li>
+    <li><span>12 · Bilinen eksikler: bunları yeniden bildirmene gerek yok</span><span>Bölüm 12</span></li>
+    <li><span>13 · Bulgu tablosu ve ritim</span><span>Bölüm 13</span></li>
+    <li><span>Ek A · Tüm sayfa adresleri · Ek B · Küçük sözlük</span><span>Ekler</span></li>
+  </ol>
+</section>
+
+<!-- ============================ 1 HOS GELDIN ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 1</div>
+  <h2>Hoş geldin</h2>
+  <p class="lead">Kashe, etkinlik dünyasının yetenek pazaryeri: düğün yapan bir çift, ürün lansmanı planlayan bir şirket ya da ekip kuran bir ajans, ihtiyacı olan profesyoneli burada bulur, teklif alır, anlaşır. Sen bu dünyayı dört farklı gözle gezeceksin.</p>
+
+  <h3>Senden ne bekliyoruz?</h3>
+  <p>Hata avcılığından çok <b>ürün incelemesi</b>. Elbette kırılan bir şey görürsen yaz; ama asıl değerli olan şu: "Bu ekranda ne yapacağımı anladım mı? Bana doğru ve yeterli bilgi veriyor mu? Güven verdi mi?" Bir ajans sahibi, bir kurum yetkilisi ya da düğün hazırlığındaki biri gibi düşün. Beğenmediğin bir buton adı, kafanı karıştıran bir başlık, fazla gelen bir adım, eksik bir uyarı: hepsi bulgudur.</p>
+
+  <h3>Ne kadar sürer?</h3>
+  <div class="kv">
+    <b>Isınma</b><span>15 dakika, giriş yapmadan</span>
+    <b>Hikâye 1</b><span>45 dakika, iki hesap arasında gidip geleceksin</span>
+    <b>Hikâye 2</b><span>60–90 dakika, en uzun ve en keyifli olanı</span>
+    <b>Hikâye 3</b><span>60 dakika, üç hesap</span>
+    <b>Hikâye 4</b><span>45 dakika, yönetici gözü</span>
+    <b>Ek turlar</b><span>istediğin kadar</span>
+  </div>
+  <p class="small" style="margin-top:8pt">Hepsini bir günde yapmak zorunda değilsin. Her hikâye kendi başına bitiyor; bir sonrakine istediğin zaman geçebilirsin.</p>
+
+  <h3>Rehber nasıl okunur?</h3>
+  <p>Her hikâye numaralı adımlardan oluşur. Her adımın başında <span class="role">rol</span> yazar; o adımı hangi hesapla yapacağını gösterir. Adımın altında <span style="color:#1d7a6e;font-weight:700">Göreceğin:</span> satırı vardır: ekranda beklediğimiz şey tam olarak budur. Gördüğün farklıysa, işte bulgu.</p>
+
+  <div class="box see"><div class="label">Göreceğin</div>Bu tür yeşil kutular, "o anda ekranda şunu görmelisin" demek. Metinler uygulamadan birebir alındı; küçük farklar (büyük harf, satır kırılması) önemli değil.</div>
+  <div class="box tip"><div class="label">İpucu</div>Sarı kutular küçük hileler ve kolaylıklar içerir.</div>
+  <div class="box warn"><div class="label">Dikkat</div>Kırmızı kutular, yanlış anlaşılması kolay yerleri ya da bilerek böyle çalışan davranışları işaretler.</div>
+  <div class="box shot"><div class="label">Ekran görüntüsü</div>Gri kesikli kutularda, o anda karşına çıkacak ekranın görüntüsü var.</div>
+</section>
+
+<!-- ============================ 2 BASLAMADAN ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 2</div>
+  <h2>Başlamadan</h2>
+
+  <h3>Adres ve giriş</h3>
+  <div class="box acct">
+    <div class="kv">
+      <b>Sahne adresi</b><span><code>https://kashe-git-sahne-guvenyapicioglu-8124s-projects.vercel.app</code></span>
+      <b>Giriş sayfası</b><span><code>…/giris</code> (adresin sonuna <code>/giris</code> ekle)</span>
+      <b>Parola</b><span>Tüm Sahne hesaplarında aynı: <code>Sahne!2026</code></span>
+      <b>Hesap değiştirme</b><span>Sağ üstteki avatar → <b>Çıkış yap</b> → <code>/giris</code> → yeni hesapla gir</span>
+    </div>
+  </div>
+  <p>Bu rehberde "adrese git" dediğimizde ana adresin sonuna sayfa yolunu ekle. Örnek: <code>/kesfet</code> → <code>https://kashe-git-sahne-…vercel.app/kesfet</code>. Ek A'da bütün yolların listesi var.</p>
+
+  <h3>Beş kural</h3>
+  <ol>
+    <li><b>Sahne bir kum havuzu.</b> Veriler sahte, hesaplar sahte, e-postalar bir yere gitmez. Davet gönder, teklif yaz, onayla, reddet, iptal et; hiçbir şey kırılmaz, kimse rahatsız olmaz.</li>
+    <li><b>kashe.net'te test yok.</b> Sahte hesaplar yalnız Sahne adresinde çalışır. Gerçek sitede deneme yapma.</li>
+    <li><b>Gerçek kişi verisi girme.</b> Formlara yalnız <code>sahne+…@kashe.net</code> adresleri; gerçek telefon, ad, TC, kart bilgisi yok.</li>
+    <li><b>Sahne hesaplarının e-posta kutusu yok.</b> Şifre sıfırlama çalışmaz. "E-posta gönderildi" denen yerlerde e-posta aslında gitmez; bağlantıları ekrandan kopyalarsın (rehber nerede olduğunu söyler).</li>
+    <li><b>Veri ara sıra sıfırlanır.</b> Yaptıkların bir gün silinebilir. Bulguyu gördüğün anda tabloya yaz (Bölüm 13); ertelersen kaybolabilir.</li>
+  </ol>
+
+  <h3>Küçük hileler</h3>
+  <ul>
+    <li><b>İki hesabı aynı anda açık tutmak:</b> Normal pencerede bir hesap, <b>gizli pencerede</b> (Chrome: Ctrl+Shift+N, Edge/Firefox: Ctrl+Shift+P) diğer hesap. Böylece müşteri ↔ profesyonel gidiş gelişlerinde sürekli çıkış yapmazsın.</li>
+    <li><b>Ekran görüntüsü:</b> Windows'ta <b>Win+Shift+S</b>, Mac'te <b>Cmd+Shift+4</b>. Görüntüyü bulgu tablosuna bağlantı olarak ekle (Drive'a at, bağlantıyı yapıştır) ya da toplu olarak gönder.</li>
+    <li><b>Sayfa adresi:</b> Her bulguya tarayıcı çubuğundaki adresi yapıştır. "Teklifler sayfasında" demek yerine adres, bizi doğru yere ışınlar.</li>
+    <li><b>Yenile:</b> Yönetici sayfaları canlı güncellenmez. Bir işlem yaptıktan sonra sayıyı görmek için sayfayı yenile (F5).</li>
+    <li><b>Mobil bakış:</b> Tarayıcı penceresini telefon genişliğine daralt ya da telefondan aç. Üst menü hamburgere dönüşür; orada da gez.</li>
+  </ul>
+
+  <h3>Bir şey ters giderse</h3>
+  <p>Sayfa açılmazsa, "Vercel Authentication" ekranı çıkarsa ya da bir hesapla giriş yapamazsan not al ve devam et; bunlar ortam sorunudur, ürün bulgusu değil. Yine de tabloya yaz, "Tür" sütununa <b>ortam</b> de.</p>
+</section>
+
+<!-- ============================ 3 OYUNCU KADROSU ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 3</div>
+  <h2>Oyuncu kadrosu</h2>
+  <p class="lead">Bütün rolleri sen oynayacaksın. Her hikâyenin hesapları aşağıda; hepsinin parolası <code>Sahne!2026</code>.</p>
+
+  <table>
+    <thead><tr><th>Hikâye</th><th>Rol</th><th>Kim</th><th>E-posta</th><th>Not</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><span class="role-chip musteri">Müşteri</span></td><td>İrem Güneş</td><td><code>sahne+irem-gunes@kashe.net</code></td><td>İstanbul, düğün hazırlığında</td></tr>
+      <tr><td>1</td><td><span class="role-chip pro">Profesyonel</span></td><td>Burcu Ateş</td><td><code>sahne+burcu-ates@kashe.net</code></td><td>Fotoğrafçı, İstanbul, belge doğrulamalı</td></tr>
+      <tr><td>1b</td><td><span class="role-chip pro">Profesyonel</span></td><td>Kerem Öz</td><td><code>sahne+kerem-oz@kashe.net</code></td><td>Fotoğrafçı, İstanbul (Teklif Topla için)</td></tr>
+      <tr><td>2</td><td><span class="role-chip ajans">Ajans</span></td><td>Mavi Sahne</td><td><code>sahne+ajans-mavi-sahne@kashe.net</code></td><td>İstanbul; müzisyen, DJ, dansçı, akrobat, ses-ışık ekibi</td></tr>
+      <tr><td>2</td><td><span class="role-chip musteri">Müşteri</span></td><td>Sinan Özdemir</td><td><code>sahne+sinan-ozdemir@kashe.net</code></td><td>İstanbul, şirket yılbaşı partisi için ajans arıyor</td></tr>
+      <tr><td>2</td><td><span class="role-chip pro">Profesyonel</span></td><td>Pazaryerinden seçeceğin sunucu</td><td><code>sahne+&lt;ad-soyad&gt;@kashe.net</code></td><td>Adaylardan birini seçince adresi sen türeteceksin (aşağıda)</td></tr>
+      <tr><td>3</td><td><span class="role-chip kurum">Kurum</span></td><td>Marmara Perakende Grubu</td><td><code>sahne+kurum-marmara-perakende@kashe.net</code></td><td>İstanbul, perakende zinciri</td></tr>
+      <tr><td>3</td><td><span class="role-chip musteri">Kurum üyesi</span></td><td>Caner Ateş</td><td><code>sahne+caner-ates@kashe.net</code></td><td>Kuruma "Proje yöneticisi" olarak katılacak</td></tr>
+      <tr><td>3</td><td><span class="role-chip ajans">Ajans 2</span></td><td>Nova Etkinlik</td><td><code>sahne+ajans-nova@kashe.net</code></td><td>İstanbul; daveti reddedecek ajans</td></tr>
+      <tr><td>4</td><td><span class="role-chip admin">Yönetici</span></td><td>Sahne yöneticisi</td><td><code>sahne+admin@kashe.net</code></td><td>/admin ve /admin/zeka</td></tr>
+      <tr><td>4</td><td><span class="role-chip pro">Profesyonel</span></td><td>Melih Başak</td><td><code>sahne+melih-basak@kashe.net</code></td><td>DJ, Muğla, onay bekliyor (onaylayacaksın)</td></tr>
+      <tr><td>4</td><td><span class="role-chip pro">Profesyonel</span></td><td>Deniz Avcı</td><td><code>sahne+deniz-avci@kashe.net</code></td><td>DJ, Ankara, onay bekliyor (revizyon isteyeceksin)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box tip"><div class="label">E-posta kuralı</div>Sahne'de her kişinin adresi adından türer: <code>sahne+ad-soyad@kashe.net</code>, Türkçe harfler sadeleşir (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u, İ→i). <b>Çağrı Keskin</b> → <code>sahne+cagri-keskin@kashe.net</code>, <b>Gül Kaya</b> → <code>sahne+gul-kaya@kashe.net</code>. Ajanslar <code>sahne+ajans-…</code>, kurumlar <code>sahne+kurum-…</code>. Böylece ekranda gördüğün herhangi bir profesyonelin yerine geçebilirsin.</div>
+
+  <div class="box warn"><div class="label">Dikkat</div>Bu dünyada 171 hesap, 6 aylık geçmiş var: eski konuşmalar, rezervasyonlar, yorumlar. Hepsi sahte ve rastgele üretildi. İsimler, tarihler, fiyatlar arasında tuhaflık görürsen (aynı kişi iki şehirde, mantıksız bir tutar) not al ama "Tür" sütununa <b>Sahne verisi</b> yaz: bu bir uygulama hatası değil, sahte verinin cilvesi.</div>
+</section>
+
+<!-- ============================ 4 NASIL BAKACAKSIN ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 4</div>
+  <h2>Nasıl bakacaksın</h2>
+
+  <h3>Her ekranda üç soru</h3>
+  <ol>
+    <li><b>Ne yapacağımı anladım mı?</b> Sayfaya ilk baktığında bir sonraki adım belli mi, yoksa aramak mı gerekti?</li>
+    <li><b>Bilgi doğru ve yeterli mi?</b> Eksik bir alan, yanlış bir sayı, yanıltıcı bir etiket var mı?</li>
+    <li><b>Güven verdi mi?</b> Fiyat, rozet, metin, zamanlama: bir müşteri ya da profesyonel olsan burada "tamam, devam" der miydin?</li>
+  </ol>
+  <p>Üçünden birine "hayır" dediğin her yer bir bulgu. Küçük görünen şeyler (bir buton adı, bir chip'in rengi, bir başlığın tonu) de dahil. Sen "önemsiz" diye eleme; önceliklendirmeyi birlikte yaparız.</p>
+
+  <h3>Bulgu nasıl yazılır?</h3>
+  <p>Üç cümle yeter: <b>ne yaptım</b>, <b>ne bekledim</b>, <b>ne gördüm</b>. Yanına sayfa adresi ve ekran görüntüsü.</p>
+  <table>
+    <thead><tr><th style="width:50%">İyi bulgu</th><th>Yetersiz bulgu</th></tr></thead>
+    <tbody>
+      <tr><td>"Teklifi gönderdikten sonra sayfa yenilendi, bir onay mesajı görmedim; gönderildi mi emin olamadım. Adres: …/ajans/teklifler/…, ekran görüntüsü ekli."</td><td>"Teklif akışı kafa karıştırıcı."</td></tr>
+      <tr><td>"Keşfet'te 'PREMİUM' rozeti kartın üstünde kategori adının üzerine biniyor (telefon genişliğinde)."</td><td>"Kartlar bozuk."</td></tr>
+      <tr><td>"Öneri: Ekip sekmesindeki 'Öneriye çevir' ne yapıyor anlamadım; yanına kısa açıklama iyi olur."</td><td>"Buton isimleri değişmeli."</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Önem ve tür</h3>
+  <div class="kv">
+    <b>Önem Y</b><span><b>Yüksek:</b> akış kırılıyor ya da veri yanlış (ilerleyemedim, yanlış kişi/tutar göründü)</span>
+    <b>Önem O</b><span><b>Orta:</b> eksik özellik ya da yanıltıcı davranış (yapılabiliyor ama yanlış anlaşılıyor)</span>
+    <b>Önem D</b><span><b>Düşük:</b> kozmetik; metin, hizalama, renk, isimlendirme</span>
+    <b>Tür</b><span><b>hata</b> / <b>öneri</b> (ürün fikri, isim değişikliği) / <b>Sahne verisi</b> (sahte verinin tuhaflığı) / <b>ortam</b> (sayfa açılmadı vb.)</span>
+  </div>
+
+  <div class="box tip"><div class="label">İpucu</div>Senaryo dışına çıkmak serbest, hatta istenen bir şey. Yolunu kaybettiysen, kaybolduğun yer de bir bulgudur: "Buradan panele nasıl dönerim bulamadım."</div>
+</section>
+
+<!-- ============================ 5 ISINMA ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 5 · 15 dakika · <span class="role-chip anon">Giriş yok</span></div>
+  <h2>Isınma turu</h2>
+  <p class="lead">Önce dışarıdan bak: siteye ilk kez gelen biri ne görüyor?</p>
+
+  <ol class="steps">
+    <li data-n="1"><span class="role">anonim</span> Ana adrese git. Başlık, "Kashe AI" kutusu ("Etkinliğini anlat: tür, tarih, şehir, kişi sayısı…"), popüler kategoriler, sayılar.
+      <span class="see-inline">Üst barda <span class="ui">Keşfet · İlanlar · Blog · Kashe AI</span> ve sağda <span class="ui">Giriş yap / Üye ol</span>. Altta kayan profesyonel şeridi.</span></li>
+    <li data-n="2"><span class="role">anonim</span> <code>/kesfet</code>'e geç. Sol tarafta süzgeçler: Kim (Hepsi / Profesyoneller / Ajanslar), Kategori, Şehir, Etkinlik türü, "Daha fazla filtre". Birkaçını dene; sonuç sayısı değişsin.
+      <span class="see-inline">Kartlarda <span class="ui">AJANS</span>, <span class="ui">PREMİUM</span>, <span class="ui">YENİ</span> rozetleri, şehir ve "X TL'den" fiyatı. Boş kategori süzgeçte yok.</span></li>
+    <li data-n="3"><span class="role">anonim</span> Bir fotoğrafçı kartına tıkla (örneğin <b>Kerem Öz</b>: <code>/p/5a4e0000-0000-4000-8000-000000010003</code>).
+      <span class="see-inline">Üstte güven çipleri: <span class="ui">KİMLİK DOĞRULANDI · PROFİL ONAYLI · 10 TAMAMLANMIŞ İŞ · YÜKSEK PUANLI</span>. Sağda <span class="ui">Teklif Al</span> ve <span class="ui">Rezervasyon Talebi</span>. Aşağıda paketler, portföy, deneyim, yorumlar.</span></li>
+    <li data-n="4"><span class="role">anonim</span> Bir ajans profiline bak (Keşfet'te "Kim: Ajanslar" süz, örneğin <b>Mavi Sahne</b>).
+      <span class="see-inline"><span class="ui">Ekibimiz</span> bölümü: "Bu ajansın çatısı altındaki profesyoneller." ve üye kartları; <span class="ui">Paketler</span> bölümünde "Bu paket için ilet".</span></li>
+    <li data-n="5"><span class="role">anonim</span> <code>/ilanlar</code> ve <code>/blog</code>'a göz at. Bir ilan aç; "Başvur" ne yapıyor? (Giriş istemeli.)</li>
+    <li data-n="6"><span class="role">anonim</span> Kashe AI kutusuna bir cümle yaz: "Aralıkta İstanbul'da 150 kişilik kurumsal yılbaşı yemeği, DJ ve sunucu lazım" → <span class="ui">Başlayalım →</span>.
+      <span class="see-inline">Etkinlik sihirbazı açılır; sağ panelde "Etkinliğini anladım." ve çıkarılan kısıtlar (tür, şehir, tarih, kişi). Adımları gezmek için giriş gerekmez; onaylamak için istenir.</span></li>
+  </ol>
+  <div class="box tip"><div class="label">Bak bakalım</div>Bu turda özellikle şuna dikkat et: ilk 30 saniyede "burası ne işe yarıyor, ben ne yapabilirim" sorusuna cevap aldın mı? Alamadıysan nerede takıldığını yaz; bu en değerli bulgulardan biri olur.</div>
+</section>
+
+<!-- ============================ 6 HIKAYE 1 ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 6 · Hikâye 1 · 45 dakika · <span class="role-chip musteri">Müşteri</span> <span class="role-chip pro">Profesyonel</span></div>
+  <h2>Düğün fotoğrafçısı</h2>
+  <p class="lead">İrem düğün için fotoğrafçı arıyor. Burcu Ateş'i buluyor, teklif istiyor, Burcu fiyat veriyor, İrem onaylıyor; iş yapılıyor, yorum yazılıyor. En temel Kashe hikâyesi bu: iki kişi, bir anlaşma.</p>
+
+  <div class="box acct"><div class="label">Bu hikâyenin hesapları</div>
+    <div class="kv">
+      <b>Müşteri</b><span>İrem Güneş · <code>sahne+irem-gunes@kashe.net</code> (normal pencere)</span>
+      <b>Profesyonel</b><span>Burcu Ateş · <code>sahne+burcu-ates@kashe.net</code> (gizli pencere)</span>
+    </div>
+  </div>
+
+  <h3>Perde 1 · Talep</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">müşteri</span> İrem ile giriş yap. <code>/kesfet</code>'te Kategori: <span class="ui">Fotoğrafçı</span>, Şehir: <span class="ui">İstanbul</span> süz. <b>Burcu Ateş</b>'in kartına tıkla.
+      <span class="see-inline">Profil sayfası; sağda <span class="ui">Teklif Al</span> ve <span class="ui">Rezervasyon Talebi</span>. Üstte güven çipleri, aşağıda paketler ve portföy.</span></li>
+    <li data-n="2"><span class="role">müşteri</span> <span class="ui">Teklif Al</span>'a bas. Pencere başlığında Burcu'nun adı ve "<b>talep gönder</b>". Fotoğrafçıya özel alanları doldur: <span class="ui">Etkinlik / çekim türü *</span> (Düğün), <span class="ui">Tarih</span> (gelecekte bir gün), <span class="ui">Şehir / lokasyon</span>, <span class="ui">Çekim süresi</span>, <span class="ui">Stil tercihi</span>, <span class="ui">Drone çekimi gerekli mi?</span>, <span class="ui">Bütçe aralığı</span>. <span class="ui">Mesajın *</span> alanına iki cümle yaz. <span class="ui">Talebi gönder</span>.
+      <span class="see-inline">Doğrudan sohbet sayfasına düşersin (<code>/mesajlar/…</code>). Üstte "Etkinlik" şeridi: <span class="ui">Tür · Tarih · Lokasyon · Bütçe</span>. Sağ panelde <span class="ui">Konuşulan kişi</span>, altında kilit kutusu: "<b>İletişim kilitli</b> — Telefon ve e-posta, rezervasyon onaylandıktan sonra görünür. Anlaşana kadar mesajlaşma Kashe üzerinden devam eder."</span></li>
+    <li data-n="3"><span class="role">müşteri</span> Şimdi gizliliği zorla: mesaj kutusuna "beni 0532 123 45 67'den ara" yaz.
+      <span class="see-inline">Göndermeden uyarı çıkar: "Mesajında <b>telefon numarası</b> var gibi görünüyor. Kashe içinde iletişim daha güvenli…" ve <span class="ui">Gönder</span> pasifleşir. Aynısını bir e-posta adresi ve bir IBAN ile dene. Sayıyı iki mesaja bölerek de dene; sistem son mesajları birlikte okur ve yine uyarır.</span></li>
+    <li data-n="4"><span class="role">müşteri</span> <span class="ui">Hazır mesajlar +</span> düğmesine bas, bir şablon seç ("Fiyatlandırma hakkında bilgi alabilir miyim?"), gönder. <span class="ui">Dosya ekle</span> ile küçük bir görsel de ekle.
+      <span class="see-inline">Mesaj balonu, saat; dosya mesajında "Görseli aç". Bu formda bir gözün de şu: kategoriye özel alanlar (stil, drone) sohbette görünmüyor; yalnız tür, tarih, lokasyon ve bütçe var. Bunun doğru olup olmadığını sen söyle (Bölüm 12'de "bilinen" olarak duruyor).</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-1-sohbet"><div class="label">Ekran görüntüsü · Sohbet sayfası, kilit kutusu açıkken</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 2 · Teklif</h3>
+  <ol class="steps" start="5">
+    <li data-n="5"><span class="role">pro</span> Gizli pencerede Burcu ile giriş yap. Üst barda <span class="ui">Mesajlar</span> rozeti 1 göstermeli. <code>/bildirimler</code>'de "<b>Yeni mesaj aldın</b>" (Mesaj etiketi). <code>/mesajlar</code>'da İrem'in sohbeti en üstte: ad, son mesaj, "Düğün · tarih".
+      <span class="see-inline">Sohbeti açınca aynı etkinlik şeridi; sağ panelde "Müşteri" etiketi ve kilit kutusu. Profesyonelin hazır mesajları farklı ("Bu tarih için müsaitim, detayları konuşabiliriz.").</span></li>
+    <li data-n="6"><span class="role">pro</span> Bir hazır mesajla yanıt ver. Sonra mesaj kutusunun yanındaki <span class="ui">Teklif oluştur</span> (TL simgeli) düğmesine bas.
+      <span class="see-inline">Pencere: üstte "Yeni teklif", başlık "<b>Teklif gönder</b>". Alanlar: <span class="ui">Toplam fiyat (TL)</span>, <span class="ui">Hizmet kapsamı</span> (hazır taslaklar var, tıkla ve düzenle; en az 10 karakter), <span class="ui">Geçerlilik süresi</span> (24 saat · 3 gün · <b>7 gün</b> · 14 gün · 30 gün), <span class="ui">İptal politikası</span> (Standart / Esnek / Sıkı / "Kendi politikamı yazayım →").</span></li>
+    <li data-n="7"><span class="role">pro</span> 38.000 TL, kapsamı iki cümleyle yaz, Esnek politika, <span class="ui">Teklifi gönder</span>.
+      <span class="see-inline">Sohbette teklif kartı: "Teklif", toplam, hizmet kapsamı, iptal politikası (açılır), "Geçerlilik: 7 gün kaldı", rozet <span class="ui">Bekliyor</span>. Senin tarafında <span class="ui">Teklifi geri çek</span> düğmesi (iki kez tıklamalı: "Eminsen tekrar tıkla").</span></li>
+    <li data-n="8"><span class="role">müşteri</span> İrem'e dön, sayfayı yenile. <code>/bildirimler</code>: "<b>Burcu Ateş sana bir teklif gönderdi</b>". Sohbette aynı kart, altında <span class="ui">Reddet</span> ve <span class="ui">Onayla</span>.
+      <span class="see-inline">Her ikisi de iki tık ister; ilk tıkta düğme "Eminsen tekrar tıkla" olur. Bu "yanlışlıkla onay" korumasını nasıl buldun?</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-1-teklif"><div class="label">Ekran görüntüsü · Teklif kartı, müşteri tarafı (Reddet / Onayla)</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 3 · Anlaşma ve kilidin açılması</h3>
+  <ol class="steps" start="9">
+    <li data-n="9"><span class="role">müşteri</span> <span class="ui">Onayla</span> → "Eminsen tekrar tıkla" → Onayla.
+      <span class="see-inline">Kart <span class="ui">Onaylandı</span> olur, altında "Bu teklifi onayladın" ve <span class="ui">Rezervasyonu görüntüle →</span>. Sohbete sistem mesajı düşer: "✓ Teklif onaylandı". <b>Sağ panelde kilit kalkar:</b> Burcu'nun <span class="ui">Telefon</span> ve <span class="ui">E-posta</span> satırları görünür (tıklanabilir). Bu an Kashe'nin en kritik anı: anlaşmadan önce iletişim yok, anlaştıktan sonra var.</span></li>
+    <li data-n="10"><span class="role">müşteri</span> <span class="ui">Rezervasyonu görüntüle →</span> ile <code>/rezervasyon/…</code> sayfasına geç.
+      <span class="see-inline">Üstte Burcu'nun adı, "Fotoğrafçı", rozet <span class="ui">Onaylandı</span>. Bloklar: <span class="ui">Etkinlik</span> (Tarih, Tür, Lokasyon…), <span class="ui">Hizmet kapsamı</span>, <span class="ui">İptal politikası</span>, <span class="ui">Anlaşılan tutar</span> ("Rezervasyon … tarihinde onaylandı."), <span class="ui">Konuşmaya git</span>. Aksiyonlar'da müşteri için yalnız <span class="ui">Rezervasyonu iptal et</span>. Bu sayfada telefon/e-posta yok; iletişim bilgisi yalnız sohbetin sağ panelinde.</span></li>
+    <li data-n="11"><span class="role">müşteri</span> <code>/rezervasyonlarim</code>: "<b>Aldığın hizmetler</b>" → "Yaklaşan" altında Burcu'nun kartı (ad, kategori, ONAYLANDI, tarih, tür, lokasyon, tutar, Detay).</li>
+    <li data-n="12"><span class="role">pro</span> Burcu'ya dön. <code>/bildirimler</code>: "<b>İrem Güneş teklifini onayladı 🎉</b>". Sohbette "Müşteri teklifi onayladı" ve sağ panelde İrem'in telefon ve e-postası. <code>/takvimim</code>'de rezervasyon işaretli gün; <code>/kazanclarim</code>'da tutar.
+      <span class="see-inline">Rezervasyon sayfasında (Aksiyonlar) profesyonel iki düğme görür: <span class="ui">İş tamamlandı</span> ve <span class="ui">Rezervasyonu iptal et</span>.</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-1-kilit"><div class="label">Ekran görüntüsü · Onaydan sonra sağ panel: Telefon ve E-posta açık</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 4 · İş biter, yorum gelir</h3>
+  <ol class="steps" start="13">
+    <li data-n="13"><span class="role">pro</span> Rezervasyon sayfasında <span class="ui">İş tamamlandı</span>.
+      <span class="see-inline">Pencere: "İşi tamamlandı olarak işaretle." ve uyarı: "Bu işlem geri alınamaz. Müşteriye e-posta ile bildirilecek ve senin için yorum bırakabilir hale gelecek." Düğme <span class="ui">Tamamlandı</span>. Sonra sayfada "İş tamamlandı." ve tarih; rozet <span class="ui">Tamamlandı</span>. Sohbete sistem mesajı: "Profesyonel işi tamamlandı olarak işaretledi".</span></li>
+    <li data-n="14"><span class="role">müşteri</span> İrem'de sohbeti yenile. "işi tamamlandı" mesajının altında <span class="ui">Yorum bırak →</span>; aynı bağlantı rezervasyon sayfasında da var. Tıkla.
+      <span class="see-inline">Burcu'nun profili açılır, yorum penceresi hazır: "<b>Yorum Yaz</b> — Burcu Ateş için deneyimini paylaş.", <span class="ui">Puanın</span> (1–5 yıldız), <span class="ui">Yaşadığın deneyim (opsiyonel)</span>, <span class="ui">Yorumu Gönder</span>.</span></li>
+    <li data-n="15"><span class="role">müşteri</span> 5 yıldız ve iki cümle, gönder.
+      <span class="see-inline">Profilde yorum listesinde yorumun, "Onaylı yorum" rozetiyle; ortalama ve yorum sayısı anında güncellenir. Sohbetteki bağlantı "Yorumun yayında →" olur.</span></li>
+    <li data-n="16"><span class="role">pro</span> Burcu: <code>/bildirimler</code> "<b>Yeni yorum aldın</b>". Kendi profilinde yorum kartında <span class="ui">Yanıtla</span> → "Yoruma Yanıt" → teşekkür yaz → <span class="ui">Yanıtı Gönder</span>.
+      <span class="see-inline">Yorumun altında "Profesyonelin yanıtı · tarih". İrem'e "<b>Yorumuna yanıt geldi</b>" bildirimi gider.</span></li>
+    <li data-n="17"><span class="role">müşteri</span> Son bir tur: İrem'in <code>/profil</code> sayfasındaki özet kartları (Yaklaşan rezervasyon, Gelen teklif…) bu hikâyeden sonra ne diyor? Sayılar mantıklı mı?</li>
+  </ol>
+
+  <div class="box warn"><div class="label">Bilerek böyle</div>Profesyonel işi etkinlik gününden önce de "tamamlandı" işaretleyebilir; tarih kontrolü yok. Rezervasyon iptali ve tamamlanması için uygulama içi bildirim yok (yalnız e-posta, Sahne'de gitmez). İptal penceresindeki "Karşı tarafa bildirim ve e-posta gönderilecek" cümlesi bu yüzden eksik anlatıyor; biliyoruz.</div>
+
+  <div class="box tip"><div class="label">İstersen bir de bu yolu dene · Reddetme ve geri çekme</div>Burcu ile ikinci bir teklif gönder (örneğin başka bir paket için), İrem ile <span class="ui">Reddet</span>; sohbete "✗ Teklif reddedildi" düşmeli, Burcu'ya "İrem Güneş teklifini reddetti" bildirimi gitmeli. Bir üçüncü teklifi de Burcu kendisi <span class="ui">Teklifi geri çek</span> ile geri alsın: "↩ Teklif geri çekildi". Not: bir teklif onaylanırsa aynı sohbetteki diğer bekleyen teklifler kendiliğinden reddedilir.</div>
+
+  <div class="box see"><div class="label">Perde arkası · bu hikâye yöneticide ne bırakır?</div>
+  <code>/admin/zeka</code> "Günlük olaylar" tablosunda (yenileyince): <b>Fiyat teklifi verildi</b> (+1 her teklif), <b>Fiyat teklifi kabul</b> (+1), <b>Fiyat teklifi red</b> (varsa), <b>Rezervasyon oluştu</b> (+1), <b>Rezervasyon tamamlandı</b> (+1). Yorum ve mesajlar olay üretmez. Gece 03:30'da kabul edilen teklif fiyat kıyasına gözlem olarak girer; 03:45'te Burcu'nun güven puanında "Tamamlanan iş" ve "Değerlendirme" bileşenleri yeniden hesaplanır. Ayrıntı Bölüm 10.</div>
+
+  <h3>Hikâye 1b · Teklif Topla: beş fotoğrafçıdan birden teklif</h3>
+  <p>"Teklif Al" tek kişiye gider. <b>Teklif Topla</b> ise bir ihtiyacı aynı anda birçok profesyonele duyurur; herkes kendi teklifini yollar, müşteri karşılaştırır. 20 dakika.</p>
+  <ol class="steps">
+    <li data-n="1"><span class="role">müşteri</span> İrem ile <code>/teklif-topla</code>. "<b>Ne arıyorsun?</b>" Kategori: Fotoğrafçı, Şehir: İstanbul. "Etkinlik detayları" bölümünde fotoğrafçı alanları. "<b>Gönderim ayarları</b>": Kimlere (Hepsi), Kaç profesyonele (20), Teklif dönüş süresi (48 saat), bütçe aralığı, "Bütçe bilgimi profesyonellerle paylaş". <span class="ui">Teklif talebini gönder</span>.
+      <span class="see-inline"><code>/teklif-taleplerim</code> ("Pro teklifleri"): "<b>Gelen teklifler</b> — N profesyonele gönderildi, 0 teklif geldi…" ve gönderilen profesyonellerin listesi. Listedeki fotoğrafçılardan birini seç (Kerem Öz varsa onu).</span></li>
+    <li data-n="2"><span class="role">pro</span> Gizli pencerede o profesyonel ile gir (e-posta kuralı: <code>sahne+ad-soyad@kashe.net</code>). <code>/bildirimler</code>: "<b>Sana yeni bir teklif talebi geldi</b>" → <code>/teklif-talepleri</code>.
+      <span class="see-inline">Talep kartında müşterinin brief'i, bütçe (paylaştıysa), dönüş süresi; düğmeler <span class="ui">Teklif ver</span> ve <span class="ui">İlgilenmiyorum</span>.</span></li>
+    <li data-n="3"><span class="role">pro</span> <span class="ui">Teklif ver</span> → aynı "Teklif gönder" penceresi → gönder.
+      <span class="see-inline">Bir sohbet açılır ve teklif kartı içine düşer; talep kartında "Teklifi gör →".</span></li>
+    <li data-n="4"><span class="role">müşteri</span> İrem'de <code>/teklif-taleplerim</code>: teklif sayısı 1, "En uygun" işareti, <span class="ui">Teklifi incele & mesajlaş →</span>. Bu kez <span class="ui">Reddet</span>.
+      <span class="see-inline">"✗ Teklif reddedildi" sistem mesajı; profesyonele "… teklifini reddetti" bildirimi. İkinci bir profesyonelle de dene ve bu kez <span class="ui">İlgilenmiyorum</span> tarafını gör ("Emin misin?").</span></li>
+  </ol>
+  <div class="box tip"><div class="label">Bak bakalım</div>Teklif Topla ile Teklif Al arasındaki farkı ekran sana anlattı mı? Hangisini ne zaman kullanacağını bir müşteri nasıl anlar? Bu soru bir "öneri" bulgusuna dönüşebilir.</div>
+</section>
+
+
+<!-- ============================ 7 HIKAYE 2 ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 7 · Hikâye 2 · 60–90 dakika · <span class="role-chip ajans">Ajans</span> <span class="role-chip musteri">Müşteri</span> <span class="role-chip pro">Profesyonel</span></div>
+  <h2>Ajans: ekip kur, eksiği pazaryerinden tamamla, teklifi gönder</h2>
+  <p class="lead">Sinan'ın şirketi yılbaşı partisi yapıyor; işi bir ajansa vermek istiyor. Mavi Sahne etkinliği kuruyor, kendi ekibini yerleştiriyor, ekipte olmayan bir rolü (sunucu) Kashe pazaryerinden buluyor, teklif dosyasını hazırlayıp gönderiyor. Sinan portalda önce revizyon istiyor, sonra onaylıyor. Rezervasyon açılıyor, ekip haberdar oluyor. Kashe'nin en uzun ve en zengin hikâyesi.</p>
+
+  <div class="box acct"><div class="label">Bu hikâyenin hesapları</div>
+    <div class="kv">
+      <b>Ajans</b><span>Mavi Sahne · <code>sahne+ajans-mavi-sahne@kashe.net</code> (normal pencere)</span>
+      <b>Müşteri</b><span>Sinan Özdemir · <code>sahne+sinan-ozdemir@kashe.net</code> (gizli pencere)</span>
+      <b>Profesyonel</b><span>Ekibe alacağın sunucu; adını adaylardan seçeceksin, e-postasını kuraldan türeteceksin (Bölüm 3)</span>
+    </div>
+  </div>
+
+  <h3>Perde 1 · Müşteri ajansa yazar</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">müşteri</span> Gizli pencerede Sinan ile gir. <code>/kesfet</code> → Kim: <span class="ui">Ajanslar</span> → <b>Mavi Sahne</b> kartı.
+      <span class="see-inline">Ajans profili: <span class="ui">Ekibimiz</span> (üye kartları, rol rozeti yok), <span class="ui">Paketler</span>, portföy; sağda <span class="ui">Teklif Al</span> / <span class="ui">Rezervasyon Talebi</span>.</span></li>
+    <li data-n="2"><span class="role">müşteri</span> <span class="ui">Teklif Al</span>: Etkinlik türü <b>Kurumsal</b>, tarih (gelecek ay), lokasyon İstanbul, kişi sayısı 150, bütçe "50.000 TL üzeri", mesaj: "Şirket yılbaşı partisi için DJ, canlı müzik, ses-ışık ve sunucu arıyoruz." → <span class="ui">Talebi gönder</span>.
+      <span class="see-inline">Sohbet açılır; karşı taraf Mavi Sahne. Sağ panelde "Kurumsal" etiketi ve kilit kutusu. Henüz teklif yok.</span></li>
+  </ol>
+
+  <h3>Perde 2 · Ajans etkinliği kurar ve adayları görür</h3>
+  <ol class="steps" start="3">
+    <li data-n="3"><span class="role">ajans</span> Normal pencerede Mavi Sahne ile gir. Sağ üstteki hesap menüsü: ad + "Ajans" satırı, <span class="ui">Panel</span>, Etkinlikler, Teklifler, Ekipler, Profilim… <code>/mesajlar</code>'da Sinan'ın mesajı; sohbette <span class="ui">Ekibe ata</span> düğmesini de gör (bir üyeye sohbeti devredebilirsin; şimdilik dokunma).</li>
+    <li data-n="4"><span class="role">ajans</span> <code>/etkinlik-sihirbazi</code>. Kashe AI kutusuna Sinan'ın cümlesini yaz ("Aralıkta İstanbul'da 150 kişilik kurumsal yılbaşı partisi, DJ, canlı müzik, ses-ışık ve sunucu") → <span class="ui">Analiz et</span>.
+      <span class="see-inline">Sağ panelde "Etkinliğini anladım." ve çıkarılan alanlar; adımlarda tür, şehir, tarih, katılımcı, bütçe önceden dolu gelir. Eksikleri sen tamamla (bütçe 150.000–250.000 TL).</span></li>
+    <li data-n="5"><span class="role">ajans</span> 5. adım "İhtiyaç": roller <b>DJ</b>, <b>Müzisyen</b>, <b>Ses & Işık</b>, <b>Sunucu</b> (yanlarındaki sayılar o anki uygun profesyonel sayısı).
+      <span class="see-inline">Roller seçilince <span class="ui">Pazar kıyası</span> kutusu: "Benzer etkinliklerde ~… TL (k/n rol)" ve varsa "Veri olmayan rol: …". Bu kutu geçmiş tekliflerden hesaplanır; bir ajans sahibi olarak işine yarar mı?</span></li>
+    <li data-n="6"><span class="role">ajans</span> "<b>Bu etkinlik kimin adına?</b>" → <span class="ui">Mavi Sahne</span> ("Kuruluş seçersen etkinlik o kuruluşa ait olur; teklif talebi (RFP) yalnız kuruluş etkinliklerinde açılabilir."). Başlık yaz: "Sinan Bey yılbaşı partisi". <span class="ui">Onayla ve etkinliği oluştur</span>.
+      <span class="see-inline">Etkinlik sayfası <span class="ui">Adaylar</span> sekmesinde açılır ve eşleştirme kendiliğinden başlar: "Profesyoneller taranıyor" → "<b>Eşleşme hazır</b>", dört onay satırı (müsaitlik, aynı şehir, bütçe uyumu, uyum puanı). Kutular: Rol 4 · Uygun aday · Ajans · Süre ("… ms").</span></li>
+    <li data-n="7"><span class="role">ajans</span> Üç yol sekmesine bak: <span class="ui">Tekil profesyonellerden ekip</span> / <span class="ui">Tüm işi ajansa ver</span> / <span class="ui">Hibrit ekip</span>. Rol başına aday kartları: "Önerilen" etiketi, şehir ve gerekçeler ("Aynı şehir · Tarihte müsait · Bütçeye uygun"), "X TL'den", uyum halkası (%), "<tarih> müsait", <span class="ui">Profili gör</span>. Altta yapışkan şerit: "Önerilen ekip · N tekil profesyonel", bütçe çubuğu.
+      <span class="see-inline">Sunucu rolünde Mavi Sahne'nin kendi ekibinden kimse yok; adaylar Kashe pazaryerinden geliyor. Bir sunucu adayının adını not et (e-posta kuralı için).</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-2-adaylar"><div class="label">Ekran görüntüsü · Adaylar sekmesi: eşleşme kartı ve rol başına adaylar</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 3 · Ekip</h3>
+  <ol class="steps" start="8">
+    <li data-n="8"><span class="role">ajans</span> <span class="ui">Ekibi oluştur →</span>.
+      <span class="see-inline"><span class="ui">Ekip</span> sekmesi: "Ekip · Taslak · Kuruluş ekibi · 4 üye". <span class="ui">Kapsam</span> kutusu: "DJ 0/1 onaylı · 1 önerildi …". Her üye kartında durum seçimi (<span class="ui">Önerildi / İletişime geçildi / Onaylandı / Reddetti / Değiştirildi</span>), <span class="ui">Kilitle</span>, <span class="ui">Not</span>, <span class="ui">Çıkar</span>, kaynak etiketi (Havuz / Pazaryeri).</span></li>
+    <li data-n="9"><span class="role">ajans</span> Hemen <span class="ui">Onayla</span>'ya bas, bilerek.
+      <span class="see-inline">Hata: "<b>Zorunlu roller onaylanmış üyelerle kapsanmadan ekip onaylanamaz: …</b>". Kural doğru çalışıyor; mesaj anlaşılır mı?</span></li>
+    <li data-n="10"><span class="role">ajans</span> "Üye ekle" bölümünde DJ ve Müzisyen için <span class="ui">Havuzdan seç</span> listesine bak: Mavi Sahne'nin kendi ekibi ("Havuz" kaynaklı). Önerilen pazaryeri adayını <span class="ui">Çıkar</span>, yerine havuzdan kendi DJ'ini <span class="ui">Havuzdan ekle</span>. Sunucu için pazaryeri adayı kalsın (ekibin eksiğini pazaryeri tamamlıyor). Rolü olmayan havuz kayıtları "Rolü olmayan N kayıt" düğmesinin altında.</li>
+    <li data-n="11"><span class="role">ajans</span> Her üyeyi sırayla <span class="ui">İletişime geçildi</span> → <span class="ui">Onaylandı</span> yap; birine <span class="ui">Not</span> ekle, birini <span class="ui">Kilitle</span>. Kapsam kutusu "Tam hizmet" olunca <span class="ui">Onayla</span>.
+      <span class="see-inline">Ekip durumu "Onaylandı". Yenileyince kapsam "DJ 1/1 onaylı" vb.</span></li>
+    <li data-n="12"><span class="role">ajans</span> <span class="ui">İç maliyet</span> kartı ("Gizli — yalnız ticari yetkililer görür") → <span class="ui">Aç</span> → bir üye için <span class="ui">Elle gir / güncelle</span>: Maliyet 8.000, birim iş başı, Müşteri fiyatı 12.000.
+      <span class="see-inline">Bu rakamlar yalnız ajans içinde kalır; az sonra teklifte müşteri fiyatı kalem olarak gelecek, maliyet gelmeyecek.</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-2-ekip"><div class="label">Ekran görüntüsü · Ekip sekmesi: kapsam kutusu, üye kartları, iç maliyet</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 4 · Pazaryerinden gelen profesyonelin gözü</h3>
+  <ol class="steps" start="13">
+    <li data-n="13"><span class="role">pro</span> Gizli pencerede Sinan'dan çık, ekibe aldığın sunucu ile gir (<code>sahne+ad-soyad@kashe.net</code>). <code>/bildirimler</code>.
+      <span class="see-inline">"<b>Mavi Sahne seni "Sinan Bey yılbaşı partisi" ekibine ekledi</b>" (EKİP etiketi). Tıklayınca <code>/profil</code>'e gidersin; orada ekip yerine dair ayrı bir bölüm <b>yok</b>, kabul/ret düğmesi de yok (bilinen eksik, Bölüm 12). Bir profesyonel olarak burada ne görmek isterdin? Bu soru bu hikâyenin en değerli "öneri" bulgusu olabilir.</span></li>
+    <li data-n="14"><span class="role">pro</span> <code>/etkinliklerim</code>'e bak: ajansın etkinliği burada görünmez (ekip üyesi etkinliği göremez; tasarım gereği). Bu doğru mu, yoksa en azından "bir etkinliğe önerildin" kartı olmalı mı? Yaz.</li>
+  </ol>
+
+  <h3>Perde 5 · Teklif dosyası</h3>
+  <ol class="steps" start="15">
+    <li data-n="15"><span class="role">ajans</span> Ekip sekmesinde <span class="ui">Teklif oluştur</span>.
+      <span class="see-inline"><code>/ajans/teklifler/…</code> editörü: "Teklif · Sürüm 1", başlık alanı, "Müşteri adı / Müşteri e-postası", <span class="ui">Müşteri görünümü</span> anahtarı, <span class="ui">PDF indir</span> (pasif, "Yakında"), <span class="ui">Teklifi gönder →</span>. <span class="ui">Kalemler</span> tablosu: her ekip üyesi bir kalem (iç maliyet girdiğin üyenin fiyatı 12.000, diğerleri 0). Sütunlar: Kalem · Adet · Birim fiyat · Toplam · Müşteriye görünür · İç maliyet (Yükle) · Marj.</span></li>
+    <li data-n="16"><span class="role">ajans</span> Başlık "Yılbaşı partisi — sahne paketi"; Müşteri adı "Sinan Özdemir", e-posta <code>sahne+sinan-ozdemir@kashe.net</code> ("Kişi olarak ekle" bağlantısı CRM'e kaydeder; dene). Boş fiyatları doldur (ör. 15.000 / 25.000 / 18.000). <span class="ui">+ Kalem ekle</span>: "Ekip ulaşımı" 3.000, <span class="ui">Müşteriye görünür</span> işaretini <b>kaldır</b> (gizli kalem).
+      <span class="see-inline">Gizli kalemde "gizli" rozeti; alt not: "Gizli kalemler müşteriye gösterilmez ve toplama girmez". Özette <span class="ui">Müşteriye teklif</span> (KDV %20 dahil), <span class="ui">İç maliyet · yalnız ajans</span>, <span class="ui">Marj · yalnız ajans</span> ("Yükle" ile dolar). Kalemlerde "Pazar: medyan … TL" ipucu çıkabilir.</span></li>
+    <li data-n="17"><span class="role">ajans</span> <span class="ui">Müşteri görünümü</span> anahtarını aç.
+      <span class="see-inline">Müşterinin göreceği belge: gizli kalem yok, iç maliyet ve marj yok. Anahtarı kapat.</span></li>
+    <li data-n="18"><span class="role">ajans</span> <span class="ui">Teklifi gönder →</span>.
+      <span class="see-inline">Pencere "Teklifi gönder": "Görünür kalem: N", "Toplam (KDV dahil): …", "Alıcı e-posta: sahne+sinan-ozdemir@kashe.net", <span class="ui">Geçerlilik (gün)</span> (14 yaz), uyarı "Gönderdikten sonra bu sürüm kilitlenir; değişiklik için yeni sürüm açman gerekir." → <span class="ui">Onayla ve gönder</span>.</span></li>
+    <li data-n="19"><span class="role">ajans</span> Gönderim sonrası ekranı dikkatle oku.
+      <span class="see-inline">"Teklif gönderildi…" mesajı, <span class="ui">Müşteri bağlantısı</span> kutusu ve <span class="ui">Kopyala</span>. Uyarı: "<b>Bu bağlantı bir daha gösterilmez.</b> Yeniden göndermek için yeni sürüm aç." Kalemler başlığı "Gönderildi — kilitli". <b>Bağlantıyı şimdi kopyala</b>, bir yere yapıştır; e-posta Sahne'de gitmez, müşteri bağlantıyı senden alacak.</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-2-gonderim"><div class="label">Ekran görüntüsü · Gönderim sonrası: müşteri bağlantısı ve "bir daha gösterilmez" uyarısı</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 6 · Müşteri portalı: önce revizyon, sonra onay</h3>
+  <ol class="steps" start="20">
+    <li data-n="20"><span class="role">müşteri</span> Gizli pencerede (giriş gerekmez) kopyaladığın bağlantıyı aç: <code>…/portal/teklif/&lt;uzun jeton&gt;</code>.
+      <span class="see-inline">Belge: "Teklif", <b>Mavi Sahne</b>, rozet <span class="ui">Görüntülendi</span> (açtığın an "Gönderildi" → "Görüntülendi" oldu), "Sayın Sinan Özdemir,", başlık, "Sürüm 1 · gönderim …", etkinlik kutusu, kalemler (gizli kalem yok), Ara toplam / KDV / Genel toplam, "Geçerlilik: …". Düğmeler: <span class="ui">Teklifi onayla</span>, <span class="ui">Revizyon iste</span>. Reddet düğmesi <b>yok</b> (bilinen).</span></li>
+    <li data-n="21"><span class="role">müşteri</span> <span class="ui">Revizyon iste</span> → "Neyin değişmesini istiyorsun?" → "Ses-ışık kalemini düşürebilir misiniz?" → <span class="ui">Gönder</span>.
+      <span class="see-inline">"Revizyon talebin iletildi: …" bandı.</span></li>
+    <li data-n="22"><span class="role">ajans</span> Mavi Sahne'de <code>/ajans/teklifler</code>: durum <span class="ui">Revizyon istendi</span>. Teklifi aç: "Müşterinin revizyon notu" kutusu. Ajansa bu olay için <b>bildirim gelmez</b> (bilinen eksik); bunu nasıl fark edeceğini düşün.
+      <span class="see-inline"><span class="ui">Yeni sürüm</span> → "Yeni sürüm açıldı; kalemler kopyalandı." → "Sürüm 2". Fiyatı düşür, <span class="ui">Teklifi gönder →</span> → yeni bağlantıyı kopyala. "Eski sürümler (1)" açılır listesi ve "Müşteri bağlantıları" listesinde eski bağlantı görüntüleme sayısıyla durur.</span></li>
+    <li data-n="23"><span class="role">müşteri</span> Yeni bağlantıyı aç: "Sürüm 2". <span class="ui">Teklifi onayla</span> → "Ad Soyad (onaylayan)" yaz, "<b>Teklifi okudum, kabul ediyorum.</b>" kutusunu işaretle → <span class="ui">Onaylıyorum</span>.
+      <span class="see-inline">Üstte "Onaylandı · Sinan Özdemir · tarih saat", rozet <span class="ui">Onaylandı</span>, düğmeler kaybolur. Eski (sürüm 1) bağlantıyı tekrar aç: ne diyor?</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-2-portal"><div class="label">Ekran görüntüsü · Müşteri portalı: belge ve onay bloğu</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 7 · Rezervasyon ve ekibin haberi</h3>
+  <ol class="steps" start="24">
+    <li data-n="24"><span class="role">ajans</span> Teklif sayfasını yenile: "Onaylandı · Sinan Özdemir · …", "Onaylanmış teklifte değişiklik yapılamaz." → <span class="ui">Rezervasyon oluştur</span> → "… için … tutarında rezervasyon oluşturulacak. Emin misin?" → <span class="ui">Oluştur</span>.
+      <span class="see-inline">"Rezervasyon: Onaylı" ve <span class="ui">Rezervasyona git</span>. <code>/rezervasyonlarim</code>'de "<b>Kuruluş rezervasyonları</b>" bölümünde kart; <code>/ajans</code> göstergesinde sayılar.</span></li>
+    <li data-n="25"><span class="role">pro</span> Sunucu hesabında <code>/bildirimler</code>.
+      <span class="see-inline">"<b>"Sinan Bey yılbaşı partisi" için iş kesinleşti (GG.AA.YYYY) — Mavi Sahne</b>". İki bildirim arasında (ekibe eklendi → iş kesinleşti) profesyonelin elinde başka bir şey yok; <code>/takvimim</code>'e bir şey düşmez (ekip üyesi başına rezervasyon yok, tasarım gereği).</span></li>
+    <li data-n="26"><span class="role">müşteri</span> Sinan ile giriş yapıp <code>/rezervasyonlarim</code>'e bak: bu rezervasyon <b>görünmez</b>. Portaldan onaylanan teklifler müşteri hesabına bağlanmıyor; müşteri belgeyi yalnız bağlantıdan görüyor (bilinen eksik, Bölüm 12). Bir müşteri olarak bunu nasıl buldun?</li>
+  </ol>
+
+  <div class="box warn"><div class="label">Bilerek böyle (şimdilik)</div>Portal onayı ve revizyon isteği ajansa bildirim üretmez; ajans teklif listesindeki duruma bakar. Portaldan onaylanan teklif müşterinin Kashe hesabıyla ilişkilendirilmez. Ekip üyesi profesyonel kabul/ret veremez. Ajansın teklif rezervasyonları Takvim ve Kazançlar sayfalarında görünmez. Hepsi listede (Bölüm 12); yine de "nasıl olmalı" fikrin varsa yaz.</div>
+
+  <h3>Perde 8 · Alternatif yol: sohbetten fiyat teklifi</h3>
+  <p>Ajans, teklif dosyası yerine Hikâye 1'deki gibi sohbet içinde kısa bir fiyat teklifi de verebilir; bu yol müşterinin hesabına bağlanır ve iletişim kilidini açar.</p>
+  <ol class="steps" start="27">
+    <li data-n="27"><span class="role">ajans</span> Sinan'la sohbete gir, <span class="ui">Teklif oluştur</span> → fiyat, kapsam, geçerlilik → <span class="ui">Teklifi gönder</span>.</li>
+    <li data-n="28"><span class="role">müşteri</span> Sinan'da sohbette kart → <span class="ui">Onayla</span> ×2.
+      <span class="see-inline">"✓ Teklif onaylandı", <span class="ui">Rezervasyonu görüntüle →</span>, sağ panelde Mavi Sahne'nin telefon/e-postası; <code>/rezervasyonlarim</code> "Aldığın hizmetler"de kart. İki yolu kıyasla: hangisi hangi durumda mantıklı? Ekran bunu sana anlattı mı?</span></li>
+  </ol>
+
+  <h3>Ajans panelinde kısa gezinti</h3>
+  <ul>
+    <li><code>/ajans</code> gösterge: Açık RFP, Bekleyen teklif, Bu ay etkinlik, Aktif ekip, Açık/Gecikmiş görev, Açık fırsat; "Açık işler", "Yaklaşan etkinlikler", "Ekip ve havuz", güven dökümü.</li>
+    <li><code>/ajans/ekipler</code>: kurduğun ekip, durumu, "N üye". <code>/ajans/teklifler</code>: durum rozetleri (Taslak · Gönderildi · Görüntülendi · Onaylandı · Revizyon istendi · Süresi doldu · Reddedildi/Kapatıldı).</li>
+    <li><code>/ajans/havuz</code>: ekip + harici kişiler tek listede; <span class="ui">Harici kişi ekle</span>, ilişki/durum etiketleri; iç oran tablosu yalnız ticari yetkide.</li>
+    <li><code>/ajans/musteriler</code> (CRM): "Öneri" şeridinde teklif müşterisi Sinan için "Kişi olarak ekle"; fırsat aşamaları Yeni → İletişimde → Teklif verildi → Kazanıldı/Kaybedildi.</li>
+    <li><code>/profil/ekibim</code>: kuruluş üyeleri ve roller; <span class="ui">Yeni üye davet et</span> ile bir Sahne profesyonelini (örneğin ekibe aldığın sunucuyu) <b>İzleyici</b> rolüyle davet et; sonra o hesapla <code>/davetlerim</code>'den <span class="ui">Kabul et</span> → <span class="ui">Onayla</span>. Üç kavramı ayırt et: <b>kuruluş üyeliği</b> (kalıcı ekip arkadaşı, rolü var), <b>havuz kaydı</b> (ajansın kişi defteri), <b>etkinlik ekibi</b> (tek bir etkinlikteki rol).</li>
+  </ul>
+
+  <div class="box see"><div class="label">Perde arkası · bu hikâye yöneticide ne bırakır?</div><code>/admin/zeka</code>: <b>Brief oluşturuldu</b>, <b>Etkinlik onaylandı</b>, <b>Eşleştirme koşusu</b>, <b>Aday gösterildi</b>, <b>Aday tıklandı</b> (Profili gör'e bastıysan), <b>Ekibe seçildi</b> (her üye), <b>Ekip onayladı</b> (Onaylandı yaptığın her üye), <b>Teklif gönderildi</b> (her sürüm), <b>Teklifte revizyon istendi</b>, <b>Teklif onaylandı</b>, <b>Rezervasyon oluştu</b>. Huni başlığında "Onaylanan etkinlik → rezervasyon" oranı bu etkinlikle artar. Adalet bloğu gösterimleri sayar. Gece 03:30'da teklif kalemleri fiyat kıyasına gözlem olur. Ayrıntı Bölüm 10.</div>
+</section>
+
+
+<!-- ============================ 8 HIKAYE 3 ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 8 · Hikâye 3 · 60 dakika · <span class="role-chip kurum">Kurum</span> <span class="role-chip musteri">Kurum üyesi</span> <span class="role-chip ajans">Ajans ×2</span></div>
+  <h2>Kurum: ekip daveti, teklif talebi, ajanslardan teklif</h2>
+  <p class="lead">Marmara Perakende bayi toplantısı yapacak. Kurum yetkilisi, meslektaşı Caner'i ekibe "Proje yöneticisi" olarak alıyor; Caner etkinliği kuruyor, iki ajansa resmî teklif talebi (RFP) gönderiyor. Biri teklif veriyor, diğeri reddediyor. Kurum revizyon istiyor, sonra seçiyor; ajans rezervasyonu açıyor. Şirketlerin Kashe'yi kullanma biçimi bu.</p>
+
+  <div class="box acct"><div class="label">Bu hikâyenin hesapları</div>
+    <div class="kv">
+      <b>Kurum sahibi</b><span>Marmara Perakende Grubu · <code>sahne+kurum-marmara-perakende@kashe.net</code> (normal pencere)</span>
+      <b>Kurum üyesi</b><span>Caner Ateş · <code>sahne+caner-ates@kashe.net</code> (gizli pencere)</span>
+      <b>Ajans 1</b><span>Mavi Sahne · <code>sahne+ajans-mavi-sahne@kashe.net</code> (teklif verecek)</span>
+      <b>Ajans 2</b><span>Nova Etkinlik · <code>sahne+ajans-nova@kashe.net</code> (reddedecek)</span>
+    </div>
+  </div>
+
+  <h3>Perde 1 · Ekip daveti ve üye yetkileri</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">kurum</span> Marmara Perakende ile gir. <code>/kurumsal</code>: "Kurumsal panel · Gösterge", KPI kutuları (Açık teklif talebi, Gelen teklif, Yaklaşan etkinlik, Onaylı rezervasyon), "Görevler: Kapalı" kutusunda <span class="ui">Ayarlar →</span>, "Hızlı başlangıç", "Ekip · Kuruluş üyesi".</li>
+    <li data-n="2"><span class="role">kurum</span> <code>/profil/kurumsal-ekip</code> → <span class="ui">Davet gönder</span>: e-posta <code>sahne+caner-ates@kashe.net</code>, rol <span class="ui">Proje yöneticisi</span> ("Etkinlikleri ve ekibi yönetir, teklifleri görür. İç maliyeti görmez."), kısa not → <span class="ui">Daveti gönder</span>.
+      <span class="see-inline">"✓ Davet gönderildi"; "Bekleyen davetler (1)": BEKLİYOR, rol, "13 gün içinde dolacak", notun, <span class="ui">İptal et</span>. Aynı adrese ikinci davet denersen: "Bu e-postaya zaten bekleyen bir davet var."</span></li>
+    <li data-n="3"><span class="role">üye</span> Gizli pencerede Caner ile gir. <code>/bildirimler</code>: "<b>Marmara Perakende Grubu seni kurumsal ekibine davet etti</b>". <code>/davetlerim</code> → kart (rol önerilen, mesaj) → <span class="ui">Kabul et</span> → <span class="ui">Onayla</span>.
+      <span class="see-inline">"Geçmiş (1) · KABUL EDİLDİ". Sağ üst hesap menüsünde rol satırı "<b>Müşteri · Proje yöneticisi · Marmara Perakende Grubu</b>" ve "<b>Marmara Perakende Grubu paneli</b>" satırı. <code>/profil</code>'de "Kuruluşlarım" altında kurum ve "Panele git →".</span></li>
+    <li data-n="4"><span class="role">üye</span> <span class="ui">Marmara Perakende Grubu paneli</span> → <code>/kurumsal</code>.
+      <span class="see-inline">Aynı gösterge, ama "Görevler" kutusunda "Modül kapalı" (üye ayar açamaz) ve sol menüde "Ekip" ile "Ayarlar" yok. Bir üye olarak yetki sınırlarını ekran sana hissettirdi mi?</span></li>
+    <li data-n="5"><span class="role">kurum</span> Sahip hesabında <code>/profil/kurumsal-ekip</code>: "Ekip üyeleri" listesinde Caner, rol seçicisi (değiştirmeyi dene: <span class="ui">İzleyici</span> yap, sonra geri al), <span class="ui">Çıkar</span> → <span class="ui">Onayla</span> (henüz çıkarma). <code>/kurumsal/ayarlar</code>: "Modüller" → <span class="ui">Görevler</span>'i <span class="ui">Aç</span> → "Açılsın mı?" → Onayla. Caner tarafında yenile: Görevler artık menüde.</li>
+  </ol>
+
+  <h3>Perde 2 · Kısa liste</h3>
+  <ol class="steps" start="6">
+    <li data-n="6"><span class="role">üye</span> Caner ile <code>/kesfet</code> → Ajanslar → Mavi Sahne profili.
+      <span class="see-inline">Profilde kurumlara özel bant: <span class="ui">Kısa listeye ekle</span>. Bas: "Kısa listede · Teklif talebi açarken buradan davet edebilirsin." ve "Listeyi aç →".</span></li>
+    <li data-n="7"><span class="role">üye</span> <code>/kurumsal/kisa-liste</code>: "Genel" listesi, içinde Mavi Sahne; <span class="ui">Yeni liste</span> (liste adı, etkinliğe bağlı/bağsız), kalem notu "Neden bu listede?". Alt bağlantı: "Kısa listedeki ajansları teklif talebine davet edebilirsin → Teklif talepleri".</li>
+  </ol>
+
+  <h3>Perde 3 · Etkinlik ve teklif talebi</h3>
+  <ol class="steps" start="8">
+    <li data-n="8"><span class="role">üye</span> <code>/etkinlik-sihirbazi</code>: Kurumsal, İstanbul, gelecek ay, 300 kişi, bütçe 200.000–300.000; roller DJ, Sunucu, Ses & Işık, Fotoğrafçı; "Bu etkinlik kimin adına?" → <span class="ui">Marmara Perakende Grubu</span>; başlık "Bayi toplantısı 2027" → <span class="ui">Onayla ve etkinliği oluştur</span>.
+      <span class="see-inline">Etkinlik sayfası; sağ üstte <span class="ui">Teklif talebi aç</span>. Adaylar sekmesinde "Tüm işi ajansa ver" kartlarında da "Teklif talebi aç →" var. Kurum etkinliğinde "Ekip" sekmesi var ama havuz ve iç maliyet yok.</span></li>
+    <li data-n="9"><span class="role">üye</span> <span class="ui">Teklif talebi aç</span> → <code>/kurumsal/rfp?etkinlik=…</code> → <span class="ui">Yeni teklif talebi</span>: Etkinlik (seçili), Başlık "Bayi toplantısı sahne ve teknik", Son tarih (+7 gün) → <span class="ui">Oluştur</span>.
+      <span class="see-inline">Düzenleyici: "Teklif talebi (RFP)", <span class="ui">Açıklama</span> ("Ajanslara iletmek istediğin notlar"), <span class="ui">İstenen roller</span> tablosu (etkinliğin ihtiyaçları kopyalandı: Rol · Adet · Bütçe ipucu (TL) · Not · Zorunlu), "Bütçe ipucu yalnız size görünür; ajanslar görmez." Bir rolde bütçe ipucu gir (ör. 20.000–30.000).</span></li>
+    <li data-n="10"><span class="role">üye</span> "Davet edilen ajanslar (0)" → <span class="ui">Kısa listeden seç</span> → Mavi Sahne <span class="ui">Davet et</span>; "Ajans ara" kutusuna "Nova" → <span class="ui">Ara</span> → <span class="ui">Davet et</span>. Sonra <span class="ui">Gönder</span> → "2 ajansa gönderilecek; gönderildikten sonra kalemler değişmez. Emin misin?" → onayla.
+      <span class="see-inline">"Teklif talebi gönderildi."; durum <span class="ui">Gönderildi</span>; kalemler "Gönderildi — kilitli". Hata metinlerini de gör: davet yokken Gönder → "En az bir ajans davet et."</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-3-rfp"><div class="label">Ekran görüntüsü · RFP düzenleyici: roller, bütçe ipucu, davetli ajanslar</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 4 · Ajanslar yanıtlar</h3>
+  <ol class="steps" start="11">
+    <li data-n="11"><span class="role">ajans 1</span> Normal pencerede Mavi Sahne ile gir. <code>/bildirimler</code>: "<b>Yeni teklif talebi: Bayi toplantısı sahne ve teknik</b>" → <code>/ajans/rfp/…</code>.
+      <span class="see-inline">Alıcı adı, durum "Yanıt bekliyor", "Son tarih", "Açıklama", "İstenen roller" (Rol · Adet · Zorunlu · Not). <b>Bütçe ipucu burada yok</b>; kurumun gizli bilgisi ajansa sızmıyor. Düğmeler <span class="ui">Teklif hazırla</span> / <span class="ui">Daveti reddet</span>.</span></li>
+    <li data-n="12"><span class="role">ajans 1</span> <span class="ui">Teklif hazırla</span>.
+      <span class="see-inline">Teklif editörü; başlıkta "Alıcı: Marmara Perakende Grubu", "Talep: … / Talebi gör", kalemler talepteki rollerden geldi, fiyatlar boş. Fiyatları gir, <span class="ui">Teklifi gönder →</span> → pencerede "Alıcı: Marmara Perakende Grubu (Kashe içinde görür)" → <span class="ui">Onayla ve gönder</span> → "Teklif alıcıya iletildi." Bu kez müşteri bağlantısı <b>yok</b>: RFP yanıtı kurumun hesabına gider. Listede "RFP yanıtı" rozeti.</span></li>
+    <li data-n="13"><span class="role">ajans 2</span> Nova Etkinlik ile gir (aynı pencerede çıkış/giriş). <code>/ajans/rfp</code> → talep → <span class="ui">Daveti reddet</span> → "Daveti reddedeceksin; talep sahibine bildirilir. Emin misin?" → <span class="ui">Reddet</span>.
+      <span class="see-inline">Rozet "Daveti reddettin".</span></li>
+  </ol>
+
+  <h3>Perde 5 · Kurum karşılaştırır, revizyon ister, seçer</h3>
+  <ol class="steps" start="14">
+    <li data-n="14"><span class="role">üye</span> Caner'de <code>/bildirimler</code>: "<b>Mavi Sahne teklif gönderdi: …</b>" ve "<b>Nova Etkinlik daveti reddetti: …</b>". <code>/kurumsal/rfp/…</code>.
+      <span class="see-inline">Durum <span class="ui">Yanıt toplanıyor</span>; "Davet edilen ajanslar (2)": Mavi Sahne "Yanıtladı · Sürüm 1 · tutar", Nova "Reddetti". "<b>Gelen teklifler (1)</b>" tablosu: rol başına tutar, Ara toplam, KDV, Genel toplam, Geçerlilik, Not; "Tutarlar ajansın müşteriye sunduğu fiyatlardır." (iç maliyet yok). Düğmeler <span class="ui">Seç</span> / <span class="ui">Revizyon iste</span>; "Teklifi reddet" diye bir düğme yok.</span></li>
+    <li data-n="15"><span class="role">üye</span> <span class="ui">Revizyon iste</span> → "DJ fiyatını yeniden değerlendirir misiniz?" → gönder.
+      <span class="see-inline">"Revizyon istendi."; teklif hücresinde "Yanıt bekleniyor". Dikkat: talebi "Değerlendirmeye al" yaptıktan sonra ya da son tarih geçince revizyon istersen ajans yeni sürüm gönderemez (bilinen tuzak, Bölüm 12). Şimdi talep hâlâ "Yanıt toplanıyor", sorun yok.</span></li>
+    <li data-n="16"><span class="role">ajans 1</span> Mavi Sahne'de <code>/bildirimler</code>: "<b>Teklifin için revizyon istendi: …</b>" → teklif → <span class="ui">Yeni sürüm</span> → DJ fiyatını düşür → gönder ("Sürüm 2").</li>
+    <li data-n="17"><span class="role">üye</span> Caner'de talep sayfasını yenile: "Sürüm 2", yeni tutar. <span class="ui">Seç</span> → "“Mavi Sahne” teklifi (…) seçilecek. Teklif onaylanır, diğer davetler “seçilmedi” olur; bu işlem geri alınamaz." → <span class="ui">Seç</span>.
+      <span class="see-inline">"Seçim yapıldı." Bant: "Seçim yapıldı · Mavi Sahne · tutar · tarih" ve "<b>Rezervasyonu ajans oluşturur.</b>" Durum <span class="ui">Seçim yapıldı</span>. <code>/kurumsal</code> göstergesinde aynı talep "Sonuçlandı" diye görünür; iki sayfanın durum adları farklı (bilinen).</span></li>
+  </ol>
+
+  <div class="box shot" id="shot-3-karsilastirma"><div class="label">Ekran görüntüsü · Gelen teklifler tablosu ve Seç / Revizyon iste</div>(Görsel buraya gelecek)</div>
+
+  <h3>Perde 6 · Rezervasyon</h3>
+  <ol class="steps" start="18">
+    <li data-n="18"><span class="role">ajans 1</span> <code>/bildirimler</code>: "<b>Teklifin kabul edildi: …</b>" → teklif sayfası "Onaylandı · Caner Ateş · …" → <span class="ui">Rezervasyon oluştur</span> → <span class="ui">Oluştur</span>.</li>
+    <li data-n="19"><span class="role">üye</span> Caner: RFP sayfasında "Rezervasyon oluşturuldu · tarih" bağlantısı; <code>/rezervasyonlarim</code> → "<b>Kuruluşunuz adına alınan</b> — Onayladığınız tekliflerden açılan rezervasyonlar." altında kart; <code>/rezervasyon/…</code>: "Kuruluşunuz adına · Marmara Perakende Grubu", tutar KDV dahil, yalnız <span class="ui">Rezervasyonu iptal et</span>. Kuruma bu an için bildirim gelmez (bilinen).
+      <span class="see-inline"><code>/kurumsal</code>: "Onaylı rezervasyon" ve "Toplam … TL" arttı.</span></li>
+    <li data-n="20"><span class="role">kurum</span> Sahip hesabında aynı sayfaları gez: her şey Caner'in gördüğüyle aynı mı? Ayrıca <code>/teklif-topla</code>'yı sahipken aç: "Kimin adına?" seçeneği "Kurum adına: Marmara Perakende Grubu" çıkar; Caner'de (Proje yöneticisi) bu seçenek çıkmaz (bilinen sınır: kurum adına Teklif Topla ve ilan yalnız Sahip/Yönetici).</li>
+  </ol>
+
+  <div class="box tip"><div class="label">Bir de şunu dene</div>Caner'le ikinci bir talep aç, hiç davet etmeden <span class="ui">İptal et</span>; sonra Mavi Sahne'yi davet ettiğin üçüncü bir talebi gönderdikten sonra <span class="ui">Değerlendirmeye al</span> ("Yeni yanıt alınmaz; mevcut tekliflerle değerlendirme yapılır."). Durum geçişleri ve uyarı metinleri sana yeterince açık mı?</div>
+
+  <div class="box see"><div class="label">Perde arkası · bu hikâye yöneticide ne bırakır?</div><code>/admin/zeka</code>: <b>Etkinlik onaylandı</b>, <b>RFP gönderildi</b>, <b>Teklif gönderildi</b> (sürüm başına), <b>Teklifte revizyon istendi</b>, <b>Teklif onaylandı</b>, <b>RFP sonuçlandı</b>, <b>Rezervasyon oluştu</b>. Davet reddi ve "Değerlendirmeye al" olay üretmez. Gece 03:30'da teklif kalemleri fiyat kıyasına girer (örneğin "DJ · İstanbul · Kurumsal" hücresi bir gözlem kazanır).</div>
+</section>
+
+
+<!-- ============================ 9 HIKAYE 4 ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 9 · Hikâye 4 · 45 dakika · <span class="role-chip admin">Yönetici</span> <span class="role-chip pro">Profesyonel</span></div>
+  <h2>Yönetici: onay, itiraz, perde arkası</h2>
+  <p class="lead">Kashe'nin arka odası. Yeni profilleri onaylıyor, revizyon istiyor, bir güven puanı itirazına karar veriyor ve önceki üç hikâyenin bıraktığı izleri "Zeka" sayfasında okuyorsun.</p>
+
+  <div class="box acct"><div class="label">Bu hikâyenin hesapları</div>
+    <div class="kv">
+      <b>Yönetici</b><span><code>sahne+admin@kashe.net</code> (normal pencere)</span>
+      <b>Onaylanacak pro</b><span>Melih Başak (DJ, Muğla) · <code>sahne+melih-basak@kashe.net</code></span>
+      <b>Revizyon istenecek pro</b><span>Deniz Avcı (DJ, Ankara) · <code>sahne+deniz-avci@kashe.net</code></span>
+      <b>İtiraz edecek pro</b><span>Burcu Ateş (Hikâye 1) · <code>sahne+burcu-ates@kashe.net</code> (gizli pencere)</span>
+    </div>
+  </div>
+
+  <h3>Perde 1 · Dashboard</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">admin</span> Yönetici ile gir; hesap menüsünde <span class="ui">Admin paneli</span> → <code>/admin</code>.
+      <span class="see-inline">"Dashboard — Platformun canlı durumu ve hızlı aksiyonlar." Altı kart: <span class="ui">Bugün yeni kayıt</span>, <span class="ui">Bu hafta rezervasyon</span>, <span class="ui">Bekleyen kategori talebi</span>, <span class="ui">Askıdaki kullanıcı</span>, <span class="ui">Bekleyen şikayet</span>, <span class="ui">Onay bekleyen profil</span> ("N revizyon istendi"). Listeler: son kategori talepleri, son yeni kullanıcılar, son askıya alınanlar. Alt şerit: Toplam kullanıcı · Profesyonel + ajans · Rezervasyon. Sağ üstte <span class="ui">Rapor indir (.xlsx)</span>: dört sayfalık Excel (Özet, Kullanıcılar, Profesyoneller, Aylık trend); indirip aç.</span></li>
+    <li data-n="2"><span class="role">admin</span> "Bu hafta rezervasyon" sayısını not et; Hikâye 1–3'te açtığın rezervasyonlar dahil mi? (Bu kartın sayımı eksik çıkabiliyor; bilinen, Bölüm 12. Gördüğün sayıyı yaz.)</li>
+  </ol>
+
+  <h3>Perde 2 · Profil onayı</h3>
+  <ol class="steps" start="3">
+    <li data-n="3"><span class="role">admin</span> <code>/admin/profiller</code>.
+      <span class="see-inline">Sekmeler ve sayılar: <span class="ui">Onay Bekleyen · Revizyonda · Reddedilen · Tümü</span>; bu sayılar dashboard kartıyla aynı olmalı. Kartta rol, kategori, ad, e-posta, "Onay bekliyor / Yayında değil" rozetleri, "Kayıt: …", <span class="ui">Önizle →</span>, <span class="ui">Askıya al →</span>, düğmeler <span class="ui">Onayla · Revizyon iste · Reddet</span>.</span></li>
+    <li data-n="4"><span class="role">admin</span> <b>Melih Başak</b> (DJ): <span class="ui">Önizle →</span> ile profile bak (yayında olmayan profilin yönetici gözüyle görünümü), geri dön, <span class="ui">Onayla</span>.
+      <span class="see-inline">Kart listeden düşer, sekme sayıları azalır. Gizli pencerede giriş yapmadan <code>/kesfet</code> → Kategori DJ → Melih Başak artık listede (anında yayında). Sahne'de e-posta gitmez; gerçekte "Profilin onaylandı ve yayında" e-postası gider.</span></li>
+    <li data-n="5"><span class="role">admin</span> <b>Deniz Avcı</b> (DJ): <span class="ui">Revizyon iste</span> → not kutusu "Revizyon notu (kullanıcıya gösterilecek)…" → "Portföyüne en az üç görsel ekle, tanıtım metnini uzat." → gönder.
+      <span class="see-inline">Kart "Revizyonda" sekmesine geçer, üzerinde "Not: …". Boş not ile denersen: "Gerekçe yazmalısın."</span></li>
+    <li data-n="6"><span class="role">pro</span> Gizli pencerede Deniz Avcı ile gir: <code>/profil</code>'de revizyon durumu ve yönetici notu görünüyor mu? Profilini düzenleyip yeniden onaya gönderebiliyor mu? Burada gördüğün her şeyi yaz; bu akış en az turlanan yerlerden.</li>
+    <li data-n="7"><span class="role">admin</span> <code>/admin/kullanicilar</code>: arama, rol/durum süzgeçleri; bir Sahne müşterisini (ör. Yiğit Soylu) <span class="ui">Askıya al</span> → pencere "Hesabı askıya al", sebep (5–500 karakter) → onayla; dashboard'da "Askıdaki kullanıcı" +1; sonra <span class="ui">Askıyı kaldır</span>.
+      <span class="see-inline">Askı kaldırılınca profil yayına kendiliğinden dönmez; profesyonelse yeniden onay gerekir (bilinen).</span></li>
+  </ol>
+
+  <h3>Perde 3 · Güven puanı ve itiraz</h3>
+  <ol class="steps" start="8">
+    <li data-n="8"><span class="role">pro</span> Gizli pencerede Burcu Ateş ile <code>/profil</code>: <span class="ui">Güven dökümü</span> kartı: "Trust Score V0 · tarih · günlük hesaplanır", tablo (Bileşen · Puan · Değer · Nasıl artar), altta "70 ve üzeri eşleştirmede "yüksek güven" olarak işaretlenir. Puan yalnız sana görünür; müşteriler sayıyı görmez." Bir de <span class="ui">Pazar aralığı</span> kartı: rolün için p25–p75, medyan, "Senin liste fiyatın: … pazar aralığında/altında/üstünde".
+      <span class="see-inline">Burada Hikâye 1'in etkisi <b>henüz yok</b>: tamamlanan iş ve yorum gece 03:45'te hesaba girer. Ertesi gün tekrar bak; "Tamamlanan iş" ve "Değerlendirme" satırları değişmiş olmalı.</span></li>
+    <li data-n="9"><span class="role">pro</span> <span class="ui">Bu değerlendirmeye itiraz et</span> → "Hangi bileşenin neden hatalı olduğunu yaz…" (en az 20 karakter) → <span class="ui">İtirazı gönder</span>.
+      <span class="see-inline">"İtirazın inceleniyor." İkinci itiraz açılamaz.</span></li>
+    <li data-n="10"><span class="role">admin</span> <code>/admin/zeka</code> → "Güven puanı · Trust Score V0" bloğu: "Açık itiraz 1". <span class="ui">İtiraz kuyruğu</span> satırı: sağlayıcı, itiraz anındaki puan ("güncel …"), mesaj, Karar sütununda not kutusu + <span class="ui">İncelendi</span> / <span class="ui">Kapat</span>. Not yaz ("Portföy ve yorum sayısı ertesi gün hesaba girer.") → <span class="ui">Kapat</span>.
+      <span class="see-inline">Satırda tarih; "Açık itiraz 0 · kapatıldı 1". Karar puanı değiştirmez (bilerek). Burcu tarafında: "Kashe notu · tarih" ve <span class="ui">Yeni itiraz aç</span>.</span></li>
+  </ol>
+
+  <h3>Perde 4 · Zeka sayfası: izleri oku</h3>
+  <ol class="steps" start="11">
+    <li data-n="11"><span class="role">admin</span> <code>/admin/zeka</code>, pencere <span class="ui">7 gün</span>. Beş blok: <span class="ui">Günlük olaylar</span>, <span class="ui">Fiyat kıyasları · yayınlanan hücreler</span>, <span class="ui">Güven puanı</span>, <span class="ui">Huni · talepten rezervasyona</span>, <span class="ui">Adalet · görünürlük dağılımı</span>.
+      <span class="see-inline">"Günlük olaylar" tablosunda bugünün satırları: Hikâye 1–3'ün her adımı burada bir olay. Beklediğin olayları hikâyelerin sonundaki "Perde arkası" kutularından kontrol et: sayı tutuyor mu?</span></li>
+    <li data-n="12"><span class="role">admin</span> Huni bloğu: başlık oranları (Onaylanan etkinlik → rezervasyon, Eşleştirme kullanan, Seçim yapan, Gösterim → tıklama) ve adım tablosu. Not: "Adımlar iç içe değildir … önceki adıma oran %100'ü aşabilir." Bu açıklama yeterli mi, yoksa kafa karıştırıyor mu?</li>
+    <li data-n="13"><span class="role">admin</span> Adalet bloğu: "Yeni yetenek payı", "İlk 3'te yeni yetenek", "Gini", "Gösterilen sağlayıcı". Hikâye 2'deki eşleştirme bu sayıları oynattı.</li>
+    <li data-n="14"><span class="role">admin</span> Fiyat kıyasları: "Hücre / Yayınlanan / Gözlem / Eşik 15 işlem", yayınlanan hücreler tablosu (rol · şehir · tür · işlem · p25 · medyan · p75), "Eşiğe yakın". Bugünkü tekliflerin burada <b>henüz</b> olmadığını, yarın sabah bir gözlem daha eklendiğini görmek için yarın tekrar bak.</li>
+    <li data-n="15"><span class="role">admin</span> Diğer sayfalara da birer dakika: <code>/admin/istatistikler</code> (sekmeler: Genel, Talep-Arz, İçerik, Büyüme, Hunisi, Tutundurma, Rezervasyon, Operasyonel, Yönetim), <code>/admin/sikayetler</code>, <code>/admin/kategori-talepleri</code>, <code>/admin/ilanlar</code>, <code>/admin/yorumlar</code>. Hangi sayı bir yönetici olarak işine yarar, hangisi gürültü? Yaz.</li>
+  </ol>
+
+  <div class="box shot" id="shot-4-zeka"><div class="label">Ekran görüntüsü · /admin/zeka: Günlük olaylar ve Huni blokları</div>(Görsel buraya gelecek)</div>
+</section>
+
+<!-- ============================ 10 ZEKA ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 10</div>
+  <h2>Zeka katmanı: hangi işlem neyi, ne zaman değiştirir</h2>
+  <p class="lead">Kashe'nin "zekası" bugün üç kural tabanlı parçadan oluşuyor: olay zinciri, fiyat kıyasları ve güven puanı. Her işlemin izini nerede ve ne zaman göreceğin aşağıda.</p>
+
+  <h3>Dürüst bir not</h3>
+  <p>Bugün sistemde kendi kendine öğrenen bir model yok. Eşleştirme sabit ağırlıklarla puanlar (aynı şehir 40, yüksek güven 15, yeni yetenek 5…), fiyat kıyası son 90 günün yüzdeliklerini alır, güven puanı altı bileşenli sabit bir formülle hesaplanır. Sistemin yaptığı tek "güncelleme", aynı kuralların her gece yeni veriyle yeniden koşması. Öğrenen modeller (kabul olasılığı, fiyat modeli, kalibre edilmiş güven) 2027 Ar-Ge dönemine planlandı; bugün yaptığın her işlem o modellerin eğitim verisini biriktiriyor: hangi aday gösterildi, hangisi tıklandı, teklif tutarları, kim iptal etti, günlük puan dökümleri. Yani senin turların da bu verinin parçası.</p>
+
+  <h3>İşlem → iz tablosu</h3>
+  <p class="small">"Anında" = işlemin hemen ardından, sayfayı yenileyince. "Gece" = İstanbul saatiyle 03:30 (fiyat kıyası) ve 03:45 (güven puanı).</p>
+  <table>
+    <thead><tr><th>Yaptığın işlem</th><th>/admin/zeka'da</th><th>Başka yerde</th><th>Ne zaman</th></tr></thead>
+    <tbody>
+      <tr><td>Kayıt olmak</td><td>—</td><td>Dashboard: Bugün yeni kayıt, son yeni kullanıcılar; pro/ajans/işletme ise Onay bekleyen profil</td><td>anında</td></tr>
+      <tr><td>Profil onayı</td><td>Olay yok; ertesi gece "Puanlı sağlayıcı" +1, profil bileşeni başlar</td><td>Keşfet'e girer; onay kartı düşer</td><td>profil anında; puan gece</td></tr>
+      <tr><td>Revizyon / Reddet / Askı</td><td>Ertesi gece puan boşalır, dağılımdan çıkar</td><td>Keşfet'ten çıkar; askı sayısı artar</td><td>anında; puan gece</td></tr>
+      <tr><td>Sihirbazda brief</td><td>Brief oluşturuldu; huni "Brief"</td><td>—</td><td>anında</td></tr>
+      <tr><td>Etkinlik onayı</td><td>Etkinlik onaylandı; huni paydası</td><td>—</td><td>anında</td></tr>
+      <tr><td>Eşleştirme</td><td>Eşleştirme koşusu, Aday gösterildi, Aday tıklandı; Adalet bloğu</td><td>—</td><td>anında</td></tr>
+      <tr><td>Ekibe ekleme / üye Onaylandı / Reddetti</td><td>Ekibe seçildi, Ekip onayladı, Ekip reddetti; "Seçim yapan"</td><td>Profesyonele "ekibine ekledi" bildirimi (yalnız ekleme)</td><td>anında</td></tr>
+      <tr><td>Teklif dosyası gönderme</td><td>Teklif gönderildi (sürüm başına)</td><td>Fiyat kıyasına gözlem</td><td>olay anında; kıyas gece</td></tr>
+      <tr><td>Portal onay / revizyon; ajans "Kapat"</td><td>Teklif onaylandı / Teklifte revizyon istendi (yalnız ilk) / Teklif reddedildi</td><td>—</td><td>anında</td></tr>
+      <tr><td>Sohbette fiyat teklifi / kabul / red</td><td>Fiyat teklifi verildi / kabul / red</td><td>Kabul edilen teklif fiyat kıyasına gözlem</td><td>anında; kıyas gece</td></tr>
+      <tr><td>RFP gönder / seç / iptal</td><td>RFP gönderildi / RFP sonuçlandı / RFP iptal</td><td>Davet reddi ve "Değerlendirmeye al" olay üretmez</td><td>anında</td></tr>
+      <tr><td>Rezervasyon oluşması</td><td>Rezervasyon oluştu; huni "Rezervasyon"</td><td>Dashboard "Bu hafta rezervasyon" (eksik sayabilir)</td><td>anında</td></tr>
+      <tr><td>İş tamamlandı</td><td>Rezervasyon tamamlandı; ertesi gece "Tamamlanan iş" bileşeni</td><td>Müşteriye "Yorum bırak"</td><td>olay anında; puan gece</td></tr>
+      <tr><td>Rezervasyon iptali</td><td>Rezervasyon iptal; satıcı iptal ettiyse ertesi gece "İptal" bileşeni düşer (müşteri iptali puanı etkilemez)</td><td>—</td><td>olay anında; puan gece</td></tr>
+      <tr><td>Yorum / yorum silme</td><td>Olay yok; ertesi gece "Değerlendirme" bileşeni (3 yorumun altında nötr 8)</td><td>Profilde ortalama anında</td><td>gece</td></tr>
+      <tr><td>Mesaja yanıt</td><td>Olay yok; ertesi gece "Yanıt süresi" (yalnız yanıtlanan konuşmalar, son 180 gün)</td><td>—</td><td>gece</td></tr>
+      <tr><td>Avatar, tanıtım, portföy, rol ekleme</td><td>Ertesi gece "Profil onayı ve tamlığı" bileşeni</td><td>Profil anında</td><td>gece</td></tr>
+      <tr><td>İtiraz / karar</td><td>Açık itiraz sayısı, kuyruk; karar puanı değiştirmez</td><td>Pro "Kashe notu" görür</td><td>anında</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Güven puanının altı bileşeni</h3>
+  <table>
+    <thead><tr><th>Bileşen</th><th>En çok</th><th>Nasıl hesaplanır</th></tr></thead>
+    <tbody>
+      <tr><td>Doğrulama</td><td>25</td><td>Doğrulama düzeyi: yok 0 · e-posta 10 · belge 20 · tam 25</td></tr>
+      <tr><td>Profil onayı ve tamlığı</td><td>15</td><td>Onaylı 5 · tanıtım ≥120 karakter 3 · avatar 2 · en az bir rol 2 · en az 3 portföy öğesi 3</td></tr>
+      <tr><td>Tamamlanan iş</td><td>25</td><td>Tüm zamanlarda satıcı tarafı tamamlanan rezervasyon: 1–2 → 10 · 3–9 → 18 · 10+ → 25</td></tr>
+      <tr><td>İptal</td><td>0 (−15'e kadar)</td><td>Son 12 ayda satıcının iptal oranı: yok 0 · %10 altı −5 · %25 altı −10 · üzeri −15</td></tr>
+      <tr><td>Değerlendirme</td><td>20</td><td>3'ten az yorum: nötr 8 · ortalama ≥4,7 → 20 · ≥4,3 → 15 · ≥3,8 → 10 · altı 4</td></tr>
+      <tr><td>Yanıt süresi</td><td>15</td><td>Müşterinin ilk mesajından ilk yanıta geçen sürenin medyanı: ≤2 saat 15 · ≤24 saat 10 · ≤72 saat 5 · üzeri 0 · veri yoksa nötr 7</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Puan 0–100 arasında, yalnız yayındaki sağlayıcılar için hesaplanır; 70 ve üzeri eşleştirmede +15 puan "yüksek güven" avantajı alır. Müşteri sayıyı görmez, Keşfet sıralaması değişmez.</p>
+
+  <h3>Fiyat kıyası nasıl oluşur?</h3>
+  <p>Her hücre bir <b>rol × şehir × etkinlik türü</b> üçlüsü. Gözlem = ajansın gönderdiği teklif dosyasındaki görünür rol kalemleri (son gönderilen sürüm) + sohbette kabul edilmiş fiyat teklifleri. Liste fiyatları ve iç maliyetler <b>asla</b> sayılmaz. Bir hücrede son 90 günde en az 15 gözlem olunca "yayınlanır" ve kullanıcılar görür: sihirbazda "Pazar kıyası" kutusu, Keşfet şeridi, ajans teklif editöründe "Pazar: medyan …", profesyonelin profilinde "Pazar aralığı". Yayınlı hücre yoksa hiçbir şey görünmez; "veri yok" yazısı bile yok. Bu sessizlik doğru mu, kullanıcıya söylenmeli mi? Fikrin değerli.</p>
+</section>
+
+<!-- ============================ 11 EK TURLAR ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 11 · isteğe bağlı</div>
+  <h2>Ek turlar</h2>
+
+  <h3>İlan tahtası (müşteri → yönetici → profesyonel)</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">müşteri</span> İrem ile <code>/ilanlar/yeni</code>: Temel bilgiler, Proje detayları, Aranan nitelikler, Çalışma koşulları, etkinlik türü, lokasyon, kişi sayısı, son başvuru tarihi, bütçe; <span class="ui">Yayınla</span> ("İlan admin onayına gönderilir…").
+      <span class="see-inline"><code>/ilanlarim</code>: "İlanın onaya gönderildi. Admin onayladıktan sonra ilan tahtasında görünür ve başvuru kabul eder." Durum "Onay bekliyor".</span></li>
+    <li data-n="2"><span class="role">admin</span> <code>/admin/ilanlar</code> → Onay Bekleyen → <span class="ui">Onayla</span>; "Öne çıkarma" seçeneklerine bak (Acil / Kategori üstü / Vitrin, 7 gün).</li>
+    <li data-n="3"><span class="role">pro</span> Kerem Öz ile <code>/ilanlar</code> → ilan → başvur; <code>/basvurularim</code>'da "Bekliyor".</li>
+    <li data-n="4"><span class="role">müşteri</span> İrem: <code>/ilanlar/…</code> başvurular: <span class="ui">Kısa listeye al</span> / <span class="ui">Kabul et</span> / <span class="ui">Reddet</span> (her biri → Onayla); <span class="ui">Başvuruları kapat</span>. Profilden ilana davet: bir profesyonelin sayfasında <span class="ui">Davet</span> → ilanı seç → "Daveti gönder"; pro tarafında "Bir ilana davet edildin: …".</li>
+  </ol>
+
+  <h3>Kategori talebi ve şikayet</h3>
+  <ol class="steps">
+    <li data-n="1"><span class="role">müşteri</span> Keşfet'in altındaki "Aklında başka bir şey mi var? Aradığın kategori burada yok mu?" → "Kategori öner" ile bir kategori iste (ör. "Barista şov").</li>
+    <li data-n="2"><span class="role">müşteri</span> Bir profilde <span class="ui">Şikayet</span> → neden (Spam / Uygunsuz içerik / Sahte / Taciz / Diğer) → gönder.</li>
+    <li data-n="3"><span class="role">admin</span> <code>/admin/kategori-talepleri</code>: <span class="ui">İncelemeye al</span> → <span class="ui">Onayla</span> ("Eminim — Onayla"); not: onay yalnız talebi kapatır, kategoriyi ayrıca "Yeni kategori ekle" ile eklersin. <code>/admin/sikayetler</code>: <span class="ui">İncelemeye al</span> → <span class="ui">Çözüldü</span> + not.</li>
+  </ol>
+
+  <h3>Profesyonel profilini baştan sona</h3>
+  <p>Kerem Öz ile <code>/profil/duzenle</code> (avatar yükle, tanıtım), <code>/profil/hizmetlerim</code> ve <code>/profil/paketler</code> (fiyat), <code>/profil/portfoy</code> (görsel yükle, açıklama, sırala), <code>/profil/deneyim</code>, <code>/profil/kategori-bilgileri</code> (çalıştığı etkinlik türleri; Keşfet süzgecine etkisi), <code>/takvimim</code> (müsaitlik kapat/aç), <code>/premium</code>. Her değişikliği profilde ve Keşfet'te kontrol et.</p>
+
+  <h3>Mobil tur</h3>
+  <p>Telefondan ya da daraltılmış pencereden Hikâye 1'i baştan sona tekrar et: hamburger menü (Panel bloğu, Mesajlar/Bildirimler rozetleri), profil sayfasındaki alt sabit çubuk (Teklif Al / Rezervasyon Talebi), sohbet sayfası, teklif kartı. Kaydırma, taşma, dokunma alanı: ne rahatsız etti?</p>
+</section>
+
+<!-- ============================ 12 BILINEN EKSIKLER ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 12</div>
+  <h2>Bilinen eksikler</h2>
+  <p class="lead">Bunları zaten biliyoruz; yeniden bildirmene gerek yok. Ama "bence şöyle olmalı" diyorsan o fikir çok değerli: tabloya <b>öneri</b> olarak yaz.</p>
+  <ol>
+    <li>Ekibe alınan profesyonel yalnız bildirim alır; kabul/ret veremez, etkinliği göremez; durum değişikliği ve ekipten çıkarma için bildirim yok.</li>
+    <li>Müşteri portalında onay ve revizyon isteği ajansa bildirim üretmez; ajans durumu listeden görür.</li>
+    <li>Portaldan onaylanan teklif, müşterinin Kashe hesabına bağlanmaz (müşteri rezervasyonunu Kashe içinde göremez).</li>
+    <li>Portalda "Reddet" düğmesi yok; müşteri yalnız onaylar ya da revizyon ister.</li>
+    <li>Rezervasyon iptali ve tamamlanması için uygulama içi bildirim yok (yalnız e-posta); iptal penceresindeki metin "bildirim" diyor.</li>
+    <li>Sohbette süresi geçen fiyat teklifi "Bekliyor" rozetinde kalır; yalnız geçerlilik satırı "Süresi doldu" der.</li>
+    <li>Sohbet sayfasındaki etkinlik şeridi kategoriye özel brief alanlarını (stil, drone vb.) göstermez.</li>
+    <li>Ajansın teklif dosyasından doğan rezervasyonlar Takvim ve Kazançlar sayfalarında görünmez.</li>
+    <li>Teklif editöründe "PDF indir" henüz çalışmıyor ("Yakında").</li>
+    <li>Askıdan çıkarılan profil yayına kendiliğinden dönmez; yeniden onay gerekir.</li>
+    <li>Dashboard'daki rezervasyon sayıları eksik çıkabilir; Excel raporu ve Zeka sayfası doğrudur.</li>
+    <li>Kurum göstergesi ile Teklif talepleri sayfası aynı durumlara farklı ad verir (Sonuçlandı / Seçim yapıldı, Toplanıyor / Yanıt toplanıyor).</li>
+    <li>RFP "Değerlendirmede" iken ya da son tarih geçtikten sonra revizyon istenirse ajans yeni sürüm gönderemez; revizyon istenen teklif seçilemez.</li>
+    <li>Davetle katılan Yönetici rolündeki üye, kurumun "Ekip" sayfasına giremez (menüde yok).</li>
+    <li>Rezervasyon açılınca kuruma bildirim gitmez.</li>
+    <li>Profil reddinde profesyonele e-posta gitmez; onay ve revizyonda gider.</li>
+    <li>İlan başvurusundaki "Kısa listeye al" ile kurumun Kısa liste modülü farklı şeylerdir; adları aynı.</li>
+    <li>Profesyonel işi etkinlik gününden önce "tamamlandı" işaretleyebilir.</li>
+  </ol>
+</section>
+
+<!-- ============================ 13 BULGU TABLOSU ============================ -->
+<section class="section">
+  <div class="eyebrow">Bölüm 13</div>
+  <h2>Bulgu tablosu ve ritim</h2>
+  <p>Tek yer: <b>"Sahne bulguları"</b> Google Sheet'i (bağlantı sana ayrıca iletildi). Sütunları:</p>
+  <table>
+    <thead><tr><th>#</th><th>Tarih</th><th>Hesap / rol</th><th>Sayfa (URL)</th><th>Ne yaptım</th><th>Ne bekledim</th><th>Ne gördüm</th><th>Ekran görüntüsü</th><th>Önem</th><th>Tür</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>…</td><td>Ajans — Mavi Sahne</td><td>…/profil/ekibim</td><td>Davet gönderdim</td><td>Onay mesajı ve kapanan form</td><td>Liste güncellendi, form açık kaldı</td><td>bağlantı</td><td>D</td><td>öneri</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Her satır tek gözlem. Aynı sorun iki sayfada varsa iki satır.</li>
+    <li>"Bence şöyle olmalı" diyorsan Tür = <b>öneri</b>; buton adı, başlık, chip rengi, metin tonu önerileri de buraya.</li>
+    <li>Bölüm 12'dekileri yazma; ama onlara dair fikir yaz.</li>
+    <li>Sahte verinin tuhaflıkları (isim, tarih, tutar) Tür = <b>Sahne verisi</b>.</li>
+  </ul>
+  <h3>Ritim</h3>
+  <p>Hikâye başına bir oturum, sonunda 15 dakikalık özet: en çok neye takıldın, en çok neyi beğendin, bir şeyi değiştirebilsen ne olurdu? Her oturumdan sonra 20 dakikalık üçlü triyaj: hangisi hata, hangisi ürün kararı, hangisi sonraya. Düzeltmeler aynı Sahne adresine gelir; sen yeniden denersin ("Durum" sütununa "doğrulandı" ya da "hâlâ var").</p>
+  <p class="footer-note">Teşekkürler. Bu rehberi izlerken bir yerde "ya bu niye böyle?" dediysen, cevabı çoğu zaman "iyi soru" olacak. Soruyu yaz.</p>
+</section>
+
+<!-- ============================ EK A ============================ -->
+<section class="section">
+  <div class="eyebrow">Ek A</div>
+  <h2>Tüm sayfa adresleri</h2>
+  <p class="small">Ana adresin sonuna eklenir. Bazı sayfalar role göre açılır; yetkin yoksa seni panele ya da profile yönlendirir.</p>
+  <table>
+    <thead><tr><th>Herkes</th><th>Müşteri / kurum üyesi</th><th>Profesyonel</th><th>Ajans</th><th>Kurum</th><th>Yönetici</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/</code><br><code>/kesfet</code><br><code>/ilanlar</code><br><code>/blog</code><br><code>/kashe-ai</code><br><code>/giris</code><br><code>/uye-ol</code><br><code>/p/&lt;id&gt;</code><br><code>/portal/teklif/&lt;jeton&gt;</code></td>
+        <td><code>/profil</code><br><code>/etkinlik-sihirbazi</code><br><code>/etkinliklerim</code><br><code>/teklif-topla</code><br><code>/teklif-taleplerim</code><br><code>/ilanlarim</code><br><code>/ilanlar/yeni</code><br><code>/rezervasyonlarim</code><br><code>/rezervasyon/&lt;id&gt;</code><br><code>/mesajlar</code><br><code>/bildirimler</code><br><code>/davetlerim</code><br><code>/odemelerim</code><br><code>/favorilerim</code></td>
+        <td><code>/profil</code><br><code>/profil/duzenle</code><br><code>/profil/hizmetlerim</code><br><code>/profil/paketler</code><br><code>/profil/portfoy</code><br><code>/profil/deneyim</code><br><code>/profil/kategori-bilgileri</code><br><code>/teklif-talepleri</code><br><code>/basvurularim</code><br><code>/takvimim</code><br><code>/kazanclarim</code><br><code>/premium</code></td>
+        <td><code>/ajans</code><br><code>/ajans/teklifler</code><br><code>/ajans/rfp</code><br><code>/ajans/ekipler</code><br><code>/ajans/havuz</code><br><code>/ajans/musteriler</code><br><code>/ajans/tedarikciler</code><br><code>/profil/ekibim</code><br><code>/kurulus/gorevler</code><br><code>/etkinliklerim/&lt;id&gt;?sekme=adaylar|ekip|gorevler|aktivite</code></td>
+        <td><code>/kurumsal</code><br><code>/kurumsal/rfp</code><br><code>/kurumsal/kisa-liste</code><br><code>/kurumsal/ayarlar</code><br><code>/profil/kurumsal-ekip</code><br><code>/kurulus/gorevler</code></td>
+        <td><code>/admin</code><br><code>/admin/profiller</code><br><code>/admin/ilanlar</code><br><code>/admin/kullanicilar</code><br><code>/admin/kategori-talepleri</code><br><code>/admin/yorumlar</code><br><code>/admin/sikayetler</code><br><code>/admin/istatistikler</code><br><code>/admin/zeka</code><br><code>/admin/blog</code><br><code>/admin/gorusler</code><br><code>/admin/rapor</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="eyebrow" style="margin-top:14pt">Ek B</div>
+  <h2>Küçük sözlük</h2>
+  <div class="kv">
+    <b>Brief</b><span>Müşterinin ihtiyacını anlatan form (tür, tarih, yer, bütçe…). "Teklif Al" formu ve sihirbazın ilk adımı birer brief.</span>
+    <b>Teklif Al</b><span>Tek bir profesyonele/ajansa talep gönderip sohbet açmak.</span>
+    <b>Teklif Topla</b><span>Aynı ihtiyacı birçok profesyonele duyurup tekliflerini karşılaştırmak.</span>
+    <b>Fiyat teklifi</b><span>Sohbetin içinde gönderilen kısa teklif (tutar, kapsam, geçerlilik). Onaylanınca rezervasyon ve iletişim açılır.</span>
+    <b>Teklif dosyası</b><span>Ajansın kalem kalem hazırladığı resmî teklif; müşteri portal bağlantısından görür, onaylar ya da revizyon ister.</span>
+    <b>Portal</b><span>Giriş gerektirmeyen, bağlantıyla açılan teklif sayfası.</span>
+    <b>RFP / Teklif talebi</b><span>Kurumun (ya da ajansın) seçtiği ajanslara gönderdiği resmî talep; ajanslar teklif dosyasıyla yanıtlar, kurum seçer.</span>
+    <b>Eşleştirme</b><span>Etkinliğin rolleri için uygun profesyonel ve ajans adaylarının puanlanıp sıralanması.</span>
+    <b>Ekip</b><span>Tek bir etkinlik için kurulan kadro; üyeleri ajans yönetir.</span>
+    <b>Havuz</b><span>Ajansın kendi kişi defteri (Kashe üyeleri + harici kişiler).</span>
+    <b>Kuruluş üyeliği</b><span>Bir ajans ya da kurum hesabının kalıcı ekip arkadaşı; rolü (Sahip, Yönetici, Satış, Proje yöneticisi, Ekip koordinatörü, Finans, İzleyici) yetkisini belirler.</span>
+    <b>İç maliyet</b><span>Ajansın kendi maliyeti ve marjı; yalnız Sahip, Yönetici ve Finans görür; müşteriye asla gitmez.</span>
+    <b>Kısa liste</b><span>Kurumun beğendiği ajansları biriktirdiği liste; RFP davetinde kullanılır.</span>
+    <b>Güven puanı</b><span>Profesyonelin 100 üzerinden, yalnız kendine görünen, gece hesaplanan puanı.</span>
+    <b>Pazar kıyası</b><span>Rol × şehir × tür için son 90 günün fiyat aralığı; en az 15 gözlemle yayınlanır.</span>
+  </div>
+</section>
+
+</body>
+</html>
