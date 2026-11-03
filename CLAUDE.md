@@ -104,8 +104,23 @@ project_manager, crew_coordinator, finance, viewer); eski `agency_members` / `bu
 aynasiyla eslenir ve ayna, eski satirdaki alakasiz guncellemelerde ince rolu EZMEZ. Rol degistirme TEK YOL `org_member_set_role(uuid, role)`
 RPC (members.manage; kendi rolu, owner_seed, son sahip korunur; owner/admin yalniz sahip) — uygulamanin `organization_memberships` UPDATE
 yetkisi YOK, eski tabloya dokunmaz. Etiket/ozet tek kaynak `app/lib/org-roles.ts` (ozetler `org_role_permissions`'tan turetilir, elle
-yazilmaz); secim bileseni `app/components/ui/kurulus-rol-secici.tsx`. Davet/cikarma eski akista (FAZ 10 tek tablo). Bkz.
+yazilmaz); secim bileseni `app/components/ui/kurulus-rol-secici.tsx`. Davet/cikarma FAZ 10a RPC'lerinde (asagida). Bkz.
 `docs/envanter/20-faz8-event-os-modulleri.md` bolum 2.
+
+**Uyelik tek tablo (FAZ 10a, uretim 3 Kasim 2026) + Duzeltme 01.** Uyelik ve davet TEK GERCEK `organization_memberships` /
+`organization_invitations`; eski `agency_members`, `business_members`, `agency_invitations`, `business_invitations` SALT OKUNUR (yazma
+42501, ayna ve eski tetikleyiciler/fonksiyonlar dustu) ve Hijyen 05'te (~3 Aralik) DROP edilir — yeni kod bunlari OKUMAZ bile. Davet/kabul/
+ret/iptal/cikarma/ayrilma yalniz RPC: `org_invitation_create(org, email, role, message)`, `org_invitation_cancel(id)`,
+`org_invitation_respond(id, accept)`, `org_member_remove(org, user)`, `org_member_leave(org)` (kurallar DB'de; hatalar 42501/22023/23505/
+P0002 Turkce mesajli, uygulama `uyelikHataMesaji` ile gosterir); uygulamanin bu iki tabloya INSERT/UPDATE/DELETE yetkisi YOK. Ortak katman
+`app/lib/uyelik.ts` (`kurulusumunId`, `uyeliklerim`, `OWNER_SEED_HARIC` — sahip tohumu listelerde sayilmaz). Halka acik ekip listesi yalniz
+`organization_team_public` gorunumu (rol sutunu yok). Havuz kaydi `ensure_talent_record_for_membership(p_membership_id)`. Suresi gecen davet
+`expires_at` ile suzulur (durum pending kalir). Bildirim turu `team`. Duzeltme 01 kurallari: profil cipleri (`N tamamlanmis is`, tekrar
+tercih) YALNIZ `provider_public_stats(uuid)` RPC'sinden (bookings ziyaretci RLS'iyle sayilmaz); suresi gecen `sent` teklifler gunluk
+`proposals_expire_stale()` (pg_cron 00:15 UTC) ile `expired` olur, uygulama ayrica `valid_until` ile suzer; e-posta/portal baglantilari
+`requestSiteUrl()` (`app/lib/site.ts`; onizlemede dal adresi); ekip bildirimleri (`crew_members` INSERT -> "ekibine ekledi", tekliften
+rezervasyon -> "is kesinlesti") tetikleyicide. Admin onay kuyrugu sayimi `profiles`'tan (isletme hesabinin `providers` satiri yok). Bkz.
+`docs/envanter/38-faz10-temizlik.md` (10a, Duzeltme 01, 10b/10c plani), `docs/sahne/bulgular.md`.
 
 **Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,
 INSERT/UPDATE/DELETE `events.manage`. Kurallar DB tetikleyicisinde, uygulama YALNIZ anlasilir Turkce mesaj uretir (`app/lib/gorevler.ts`

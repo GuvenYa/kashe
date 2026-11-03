@@ -4,7 +4,7 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
-**Durum (30 Ekim 2026):** 10a-DB/01 + 10a-P1 + Duzeltme 01 dalda (asama4 37/37 harness, 36 dal), uretim bekliyor (tur: Cowork kotasi);
+**Durum (3 Kasim 2026):** **10a + Duzeltme 01 URETIMDE** (merge e4317d5; `supabase db push` 20261028 + 20261030; asama20/5/18/19 uretimde beklendigi gibi; tur 3 Kasim, bulgular 4-38);
 10b-DB/01 bekleyen dosya (`docs/envanter/bekleyen/`), 10b-P1 gorevi yazildi (42); **10c plan turu yapildi, kararlar bolum 4, tasarim bolum 10c**. Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
 10d kucukler -> kapanis (DROP'lar Hijyen 05'e, 30 gun sonra). Her dilim: migration -> dal (asama4 + asama20) -> uretim -> Claude Code ->
 canli tur -> kapanis notu.
@@ -209,7 +209,15 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
 
 ## 6. Kapanis notlari
 
-### TUR TAMAMLANDI (3 Kasim 2026) — SIRA: URETIM
+### URETIME CIKTI (3 Kasim 2026) — SIRA: 10b
+
+Uretim: `main` <- `duzeltme-01` (merge e4317d5; 10 commit: 9f17bef 10a-DB, d8f0d4e 10a-P1, 13f53ff Sahne v2, 3d42f74 + e1e7761 Duzeltme 01,
+8311ab8 10b bekleyen, 2854782 10c plan, 4255d24, e619a42 tur yamalari), `supabase db push` -> 20261028 faz10a_01 + 20261030 duzeltme_01;
+uretim SQL Editor salt okunur: asama20 K1/K3/K4/K5 ESIT + K7 BEKLIYOR, asama5 K3-K6 EMEKLI, asama18 ve asama19 ESIT; canli kontrol
+`/davetlerim` (ajans hesabi) sorunsuz. Hijyen 05 DROP'lari icin 30 gun: ~3 Aralik 2026. Fahri'nin manuel urun incelemesi Sahne
+onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahri.md`); bulgulari Duzeltme 02 olur. Siradaki: madde 3 (10b).
+
+### TUR TAMAMLANDI (3 Kasim 2026)
 
 `duzeltme-01` onizlemesinde (Sahne v2) madde 1'deki tur bitti; tum 10a ve Duzeltme 01 kontrolleri dogrulandi (`docs/sahne/bulgular.md`
 satirlar 4-31 durumlari, yeni satirlar 34-38). Turda yapilan branch verisi: Arti Bir'in "Teknopark Gala" etkinliginde 4 kisilik ekip + teklif
@@ -269,7 +277,7 @@ yoneticisi), Bahar -> Baris Arslan brief konusmasi, Sevgi Tekin portfoy/avatar P
   supabase/migrations/` -> dal `supabase db push` -> asama4 (T36 GECTI), asama20 (K7 ESIT), asama11 (K1 EMEKLI) -> `42` gorevi (10b-P1).
   Harness'ta 10a + duzeltme_01 + 10b uzerinde asama4 37/37.
 
-### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness'ta dogrulandi, dal/uretim bekliyor)
+### 10a-DB/01 — `supabase/migrations/20261028120000_faz10a_01_uyelik_tek_tablo.sql` (28 Ekim 2026; harness; dal 29 Ekim; URETIM 3 Kasim 2026)
 
 Plandan sapmalar ve kararlar (migration basligi ayrintili):
 

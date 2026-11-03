@@ -692,6 +692,15 @@ saklama sinirsiz; admin grafik + tablo.
 44. `agency_members`, `business_members`, `agency_invitations`, `business_invitations` kullanimdan kaldirilir.
 45. `profiles`'tan tasinmis alanlar kaldirilir.
 
+**FAZ 10a URETIMDE (3 Kasim 2026, `docs/envanter/38-faz10-temizlik.md`):** madde 43-44'un uyelik tarafi: cift yazma kapatildi (FAZ 0
+aynasi ve 13 eski tetikleyici / 14 fonksiyon dustu), `agency_members` / `business_members` / `agency_invitations` / `business_invitations`
+SALT OKUNUR (DROP Hijyen 05, ~3 Aralik), tek tablo `organization_memberships` / `organization_invitations` + 5 RPC (`org_invitation_create/
+cancel/respond`, `org_member_remove/leave`), `organization_team_public` gorunumu; uygulama 10a-P1 (`app/lib/uyelik.ts`). Ayni cikista
+Duzeltme 01 (Sahne turu bulgulari: `provider_public_stats`, `proposals_expire_stale` + gunluk is, `analytics_summary.funnel.linked`, ekip
+bildirimleri; uygulama 41). Kalan: madde 42-43'un etkinlik turu parcasi **10b** (CHECK listeleri -> `event_types` FK, `EVENT_TYPES` sabiti
+silinir; migration bekleyen dosyada), madde 43/45'in saglayici parcasi **10c** (yazma yolu `providers`'a, `profile_id` kesimi; plan 38
+bolum 10c), madde 42 gorunumler ve madde 45 kalan alanlar 10c-2 / 10d.
+
 ---
 
 ## 5. RLS GOC STRATEJISI
