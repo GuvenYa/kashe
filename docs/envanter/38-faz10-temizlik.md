@@ -90,6 +90,8 @@ ani; sonra bilgi), K3 eski tabloya referans veren fonksiyon sayisi (yalniz izinl
 **10b-DB/01** (`20261104120000_faz10b_01_etkinlik_turu_fk.sql`; 29 Ekim taslagi 20261031120000 idi, 4 Kasim'da yeniden damgalandi):
 `conversations`, `listings`, `bookings`, `quote_requests` `event_type` -> FK `event_types(key)` ON UPDATE CASCADE; once veri kontrolu
 (anahtar disi deger varsa dosya DURUR ve degerleri listeler — veri degistirmez; on kontrol `faz10b-on-kontrol.sql`); uc CHECK duser.
+**10b-DB URETIMDE (4 Kasim):** dal asama4 37/37 + asama20 K7 ESIT; uretim db push 00 (quote_requests 2 satir activation/fashion
+-> other) + 01, asama20 K1-K7 ESIT. Siradaki: 10b-P1 (gorev 42, dal `faz10b/p1`).
 **4 Kasim uretim denemesi:** 01 durdu — `quote_requests.event_type` icinde `activation`, `fashion` (Temmuz taksonomi duzeltmesi
 3f7ffc5 oncesi model/hostes brief listeleri). Eklenen: **10b-DB/00** `20261104110000_faz10b_00_etkinlik_turu_veri.sql` (VERI:
 anahtar disi -> 'other', brief_data dokunulmaz, listings updated_at tetikleyicisi gecici kapali) + uygulama kontrolu

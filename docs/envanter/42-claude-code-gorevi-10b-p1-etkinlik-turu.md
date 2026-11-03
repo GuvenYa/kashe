@@ -51,7 +51,13 @@ UI Turkce. Commit ATMA.
   tablodan anahtar kumesi; `category_attributes.etkinlik_turleri` jsonb'dir, FK yok — dogrulama burada kalir, kaynak tablo).
 - `app/mesajlar/actions.ts`: `startConversation` vb. `event_type` dogrulamasi tablodan (ya da DB 23503 -> Turkce mesaj); eski kume
   kontrolu kalkar.
-- `app/teklif-topla/page.tsx` + `teklif-topla-formu.tsx`: tur secenekleri sunucudan prop.
+- `app/teklif-topla/page.tsx` + `teklif-topla-formu.tsx`: tur secenekleri sunucudan prop. `?tur=` on-doldurmasi yalniz tablodaki
+  anahtarsa forma gecer.
+- **10b-DB/00 ile eklenen sunucu kontrolleri KORUNUR, kaynagi degisir:** `app/teklif-topla/actions.ts` (`createQuoteRequest`
+  `event_type`) ve `app/ilanlar/listings-actions.ts` (`gecerliEtkinlikTuru`, create + update) bugun `EVENT_TYPE_KEYS` ile liste disi
+  turu NULL'a ceviriyor. Sabit silinince kontrol KALKMAZ: anahtar kumesi `etkinlikTurleri()`'nden (aktif + pasif; pasif tur mevcut
+  kayitta kalabilir) okunur, davranis ayni (liste disi -> NULL, hata yok). Uretimde FK var: kontrol kalkarsa liste disi deger 23503
+  ile kaydi kirar.
 - `app/p/[id]/professional-profile.tsx`: etiket yolu saglayici/etiketle.
 - Portal (`app/portal/*`) ve e-posta sablonlari `event_type` etiketi gosteriyorsa ayni yoldan (anon portalda saglayici yoksa sunucu
   tarafinda `etiketle`).
