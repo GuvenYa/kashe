@@ -122,6 +122,19 @@ tercih) YALNIZ `provider_public_stats(uuid)` RPC'sinden (bookings ziyaretci RLS'
 rezervasyon -> "is kesinlesti") tetikleyicide. Admin onay kuyrugu sayimi `profiles`'tan (isletme hesabinin `providers` satiri yok). Bkz.
 `docs/envanter/38-faz10-temizlik.md` (10a, Duzeltme 01, 10b/10c plani), `docs/sahne/bulgular.md`.
 
+**Bildirimler ve kilitler (Duzeltme 03-B, uretim 3 Kasim 2026).** Kurulus uyelerine bildirim TEK yardimci:
+`fn_faz7b_notify_org(org, izin, link, govde, tur DEFAULT 'rfp', haric_kullanici DEFAULT NULL)` (islemi yapan kendine almaz).
+Bildirim turu `booking`: `trg_duz03_booking_notify` (bookings INSERT + UPDATE OF status) — teklif sekli olusunca alici kurulus
+(`events.view`) + musteri, iptalde karsi taraf, tamamlanmada musteri (`/p/<pro>?yorum=1`) + alici kurulus; link `/rezervasyon/<id>`.
+`booking` e-posta kuyruguna GIRMEZ (eski sekil e-postasi uygulamada). Portal onay/revizyonu saticiya `proposal` bildirimi yazar;
+onayda `proposals.client_email` bir hesapla birebir eslesirse `buyer_user_id` dolar (satici kurulusun kendi hesabi haric) ve
+`booking_from_proposal` musteriyi tasir — uygulama bu rezervasyonlari `/rezervasyonlarim` "Teklif dosyasıyla aldığın" bolumunde
+`customer_id` + `proposal_version_id` ile okur. RFP: revizyon YANITI (onceki gonderilmis surumde alici notu var) `evaluating` ve son
+tarih sonrasi da gonderilir, ilk yanit kurali aynen; `rfp_award` `revision_requested` teklifi de secer (son gonderilmis surum).
+Sohbet teklifleri `quotes_expire_stale()` (pg_cron `quotes-expire-daily` 00:20 UTC); uygulama suresi gecmis `pending`i de "Suresi
+doldu" cizer. Yorum INSERT politikasi `fn_duz03_tamamlanmis_rezervasyon_var(musteri, saglayici)` ister (sohbet sarti aynen).
+Bkz. `docs/envanter/38-faz10-temizlik.md` bolum 6, `asama21-duzeltme-03b-kontrol.sql`.
+
 **Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,
 INSERT/UPDATE/DELETE `events.manage`. Kurallar DB tetikleyicisinde, uygulama YALNIZ anlasilir Turkce mesaj uretir (`app/lib/gorevler.ts`
 hata eslemesi; metinler `RAISE EXCEPTION` govdeleriyle birebir). Ayni kural iki yerde yazilmaz: "atanan kisi aktif uye mi", "etkinlik/havuz

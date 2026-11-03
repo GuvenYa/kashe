@@ -220,7 +220,9 @@ onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahr
 A2 kategori kaynagi (profesyonelin kategorisi) ve davet `orgId` ek yamalari; sohbet basliginda ajans icin kurulus adi ve panel hesap
 kartinda kisi adi (bulgu 49-50) ek yamalari. Rehber v2 (`docs/sahne/test-rehberi/`, 10 ekran goruntusu `shots/`) ayni dalda. Yeni
 bulgular 51-57 (kozmetik; 57 Sahne temizligi). Siradaki: main'e merge, `sahne` dali guncelle, sonra 03-B (DB).
-**Duzeltme 03-B (3 Kasim, dosyalar hazir, dal `duzeltme-03b`):** `20261103150000_duzeltme_03b_01_bildirim_ve_kilitler.sql`
+**Duzeltme 03-B (3 Kasim, URETIMDE — merge 696d6d7; dal asama21 K1-K6 ESIT + Sahne 06 8/8 GECTI; uretim db push dolum 0 teklif / 5 eski
+sohbet teklifi sessiz expired, asama21 K1-K6 ESIT; onizleme turu: portal -> rezervasyon -> musteri bildirimi, RFP revizyon yaniti
+degerlendirmede gonderildi + secildi + kurum rezervasyon bildirimi; tur yamalari bulgu 58-59; rehber v2.1 bilinen eksikler 18 -> 9):** `20261103150000_duzeltme_03b_01_bildirim_ve_kilitler.sql`
 (notifications.type + 'booking'; `fn_faz7b_notify_org(org, izin, link, govde, tur='rfp', haric=NULL)`; portal onay/revizyon ->
 satici 'proposal' bildirimi + onayda e-posta esi hesaba `buyer_user_id` bagi; RFP revizyon yaniti 'evaluating'/son tarih sonrasi da
 gonderilir (`proposal_send` v_rev), revizyon istenen teklif secilebilir (`rfp_award`); `quotes_expire_stale()` + pg_cron
