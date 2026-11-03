@@ -215,7 +215,8 @@ Uretim: `main` <- `duzeltme-01` (merge e4317d5; 10 commit: 9f17bef 10a-DB, d8f0d
 8311ab8 10b bekleyen, 2854782 10c plan, 4255d24, e619a42 tur yamalari), `supabase db push` -> 20261028 faz10a_01 + 20261030 duzeltme_01;
 uretim SQL Editor salt okunur: asama20 K1/K3/K4/K5 ESIT + K7 BEKLIYOR, asama5 K3-K6 EMEKLI, asama18 ve asama19 ESIT; canli kontrol
 `/davetlerim` (ajans hesabi) sorunsuz. Hijyen 05 DROP'lari icin 30 gun: ~3 Aralik 2026. Fahri'nin manuel urun incelemesi Sahne
-onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahri.md`); bulgulari Duzeltme 02 olur. Siradaki: madde 3 (10b).
+onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahri.md`, bulgu tablosu Google Sheet "Sahne bulgulari — Fahri"); bulgulari Duzeltme 03 olur.
+**Duzeltme 02 (3 Kasim, uretimde):** bulgu #39 menu sadelestirme — avatar menusu/mobil hamburger kisa baslatici, panel yan menusu katlanabilir bolumler (gorev 43; `app/lib/panel-menu.ts` modeline `bolum` / `oncelik`, `baslaticiMenusu`; DB yok). Siradaki: madde 3 (10b).
 
 ### TUR TAMAMLANDI (3 Kasim 2026)
 
