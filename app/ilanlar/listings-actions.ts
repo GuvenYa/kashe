@@ -6,6 +6,13 @@ import { isUserSuspended } from '@/app/lib/check-suspension';
 import { sendPushToUser } from '@/app/lib/push-server';
 import { canWriteForBusiness, canOwnForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
+import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
+
+/** FAZ 10b: event_type FK ile event_types'a bagli; liste disi deger yazilmaz
+ *  (NULL). 10b-P1 bu kontrolu tablodan okunan listeye tasir. */
+function gecerliEtkinlikTuru(v: string | null | undefined): string | null {
+  return v && (EVENT_TYPE_KEYS as readonly string[]).includes(v) ? v : null;
+}
 import {
   validateListingInput,
   validateApplicationInput,
@@ -142,7 +149,7 @@ export async function createListing(
       project_details: input.project_details?.trim() || null,
       work_conditions: input.work_conditions?.trim() || null,
       event_date: input.event_date || null,
-      event_type: input.event_type || null,
+      event_type: gecerliEtkinlikTuru(input.event_type),
       location: input.location?.trim() || null,
       city_id: input.city_id,
       guest_count: input.guest_count,
@@ -236,7 +243,8 @@ export async function updateListing(
   if (input.work_conditions !== undefined)
     updateData.work_conditions = input.work_conditions?.trim() || null;
   if (input.event_date !== undefined) updateData.event_date = input.event_date;
-  if (input.event_type !== undefined) updateData.event_type = input.event_type;
+  if (input.event_type !== undefined)
+    updateData.event_type = gecerliEtkinlikTuru(input.event_type);
   if (input.location !== undefined)
     updateData.location = input.location?.trim() || null;
   if (input.city_id !== undefined) updateData.city_id = input.city_id;

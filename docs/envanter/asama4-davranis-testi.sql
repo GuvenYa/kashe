@@ -78,7 +78,7 @@
 --   T35 Duzeltme 01 (Sahne bulgulari): provider_public_stats (#29), proposals_expire_stale (#14), analytics_summary.funnel.linked (#7),
 --       ekip bildirimleri (#23) (ON KOSUL: 20261030120000 duzeltme_01 dalda uygulanmis)
 --   T36 FAZ 10b etkinlik turu tek kaynak: 4 FK / 0 CHECK, anahtar disi 23503, NULL serbest, kullanimdaki tur silinemez, anon okur,
---       veri temiz (ON KOSUL: 20261031120000 faz10b_01 dalda uygulanmis; degilse ATLANDI)
+--       veri temiz (ON KOSUL: 20261104120000 faz10b_01 dalda uygulanmis; degilse ATLANDI)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -1336,10 +1336,12 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
   SELECT id INTO conv FROM public.conversations WHERE customer_id = musteri AND professional_id = pro1 ORDER BY created_at LIMIT 1;
   IF conv IS NULL THEN RAISE EXCEPTION 'T2 sohbeti bulunamadi (yorum testi icin gerekli)'; END IF;
-  EXECUTE 'SET LOCAL ROLE authenticated';
+  -- Duzeltme 03-B: yorum INSERT politikasi tamamlanmis rezervasyon ister (fn_duz03_tamamlanmis_rezervasyon_var); bu adim
+  -- yalniz provider_id turetimini sinar -> yorum RLS disinda (sahip) yazilir. Politikanin kendisi: Sahne 06 T3.
   INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body) VALUES (conv, musteri, pro1, 5, 'T13 yorum')
   RETURNING provider_id INTO v_prov;
   IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'reviews.provider_id=%', v_prov; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
   INSERT INTO public.favorites (user_id, professional_id) VALUES (musteri, pro1) RETURNING provider_id INTO v_prov;
   IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'favorites.provider_id=%', v_prov; END IF;
   INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t13c.jpg', 'image', 'T13 client')
@@ -3006,7 +3008,9 @@ BEGIN
   SELECT b.*, pv.total_amount AS v_total, p.seller_provider_id AS p_seller, p.event_id AS p_event INTO r
     FROM public.bookings b JOIN public.proposal_versions pv ON pv.id = b.proposal_version_id JOIN public.proposals p ON p.id = pv.proposal_id
    WHERE b.id = b1;
-  IF r.quote_id IS NOT NULL OR r.conversation_id IS NOT NULL OR r.customer_id IS NOT NULL OR r.professional_id IS NOT NULL THEN
+  -- Duzeltme 03-B: customer_id = teklifin buyer_user_id'si (portal onayinda client_email bir hesapla eslesirse dolar); digerleri NULL
+  IF r.quote_id IS NOT NULL OR r.conversation_id IS NOT NULL OR r.professional_id IS NOT NULL
+     OR r.customer_id IS DISTINCT FROM (SELECT p2.buyer_user_id FROM public.proposals p2 JOIN public.proposal_versions v2 ON v2.proposal_id = p2.id WHERE v2.id = r.proposal_version_id) THEN
     RAISE EXCEPTION 'teklif seklinde eski sutunlar dolu: %', r; END IF;
   IF r.seller_provider_id <> r.p_seller OR r.event_id IS DISTINCT FROM r.p_event OR r.status::text <> 'confirmed'
      OR r.total_amount <> r.v_total OR r.total_amount <> 11400 OR r.currency <> 'TRY' OR r.platform_fee <> 0 OR r.crew_member_id IS NOT NULL THEN
@@ -3346,7 +3350,8 @@ BEGIN
   EXECUTE 'RESET ROLE';
   SELECT p.status::text || '/' || COALESCE(pv.client_note, '-') INTO st FROM public.proposals p JOIN public.proposal_versions pv ON pv.id = p.current_version_id WHERE p.id = prop_a;
   IF st <> 'revision_requested/DJ fiyati yuksek' THEN RAISE EXCEPTION 'revizyon sonrasi %', st; END IF;
-  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans AND link = '/ajans/teklifler/' || prop_a::text;
+  -- Duzeltme 03-B: satici teklif bildirimleri 'proposal' turunde (eskiden 'rfp')
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'proposal' AND user_id = ajans AND link = '/ajans/teklifler/' || prop_a::text;
   IF n <> 1 THEN RAISE EXCEPTION 'revizyon bildirimi % (1)', n; END IF;
   PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
@@ -3414,7 +3419,7 @@ BEGIN
   IF st <> 'sent' THEN RAISE EXCEPTION 'secilmeyen teklif durumu degisti (%)', st; END IF;
   SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans2 AND body LIKE 'Teklif talebi ba_ka bir teklife%';
   IF n <> 1 THEN RAISE EXCEPTION 'secilmedi bildirimi % (1)', n; END IF;
-  SELECT count(*) INTO n FROM public.notifications WHERE type = 'rfp' AND user_id = ajans AND body LIKE 'Teklifin kabul edildi%';
+  SELECT count(*) INTO n FROM public.notifications WHERE type = 'proposal' AND user_id = ajans AND body LIKE 'Teklifin kabul edildi%';
   IF n <> 1 THEN RAISE EXCEPTION 'kabul bildirimi % (1)', n; END IF;
   PERFORM set_config('request.jwt.claim.sub', ajans2::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
@@ -5568,7 +5573,7 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- T36) FAZ 10b etkinlik turu tek kaynak. ON KOSUL: 20261031120000 (faz10b 01) dalda. T1 verisine dayanir (musteri 0001, pro1 0002,
+-- T36) FAZ 10b etkinlik turu tek kaynak. ON KOSUL: 20261104120000 (faz10b 01) dalda. T1 verisine dayanir (musteri 0001, pro1 0002,
 --      pro2 0003; ikili tekilligi icin musteri<->pro2 yeni konusma). Kendi verisi sonda silinir.
 -- -----------------------------------------------------------------------------
 DO $$

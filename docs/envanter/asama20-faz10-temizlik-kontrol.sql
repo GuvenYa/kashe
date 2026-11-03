@@ -13,7 +13,7 @@
 --   K5 yetki: 5 RPC authenticated EXECUTE var (5) + anon yok (0 -> 5 esit) + organization_team_public anon SELECT var (1)
 --      + organization_memberships/organization_invitations authenticated yalniz SELECT (yazma 0) -> toplam (6)
 --   K6 bilgi: bekleyen davet (eski) / son 30 gun davetle acilan uyelik (yeni; legacy_source bos)
--- Bolum B (10b etkinlik turu; 20261031120000_faz10b_01):
+-- Bolum B (10b etkinlik turu; 20261104120000_faz10b_01):
 --   K7 event_type tek kaynak: conversations/listings/bookings/quote_requests -> event_types(key) FK (4) - eski CHECK (0)
 --      - anahtar disi deger (0) -> (4). 10b uygulanmamissa (FK yok) BEKLIYOR yazar; 10b sonrasi ESIT; asama11 K1 EMEKLI.
 -- Bolum C (10c) ve D (10d) sonraki dilimlerde eklenir.
