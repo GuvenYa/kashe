@@ -309,9 +309,12 @@ export default async function KonusmaPage({
    * seritte zaten olan bes alan ve `message` atlanir. Istemciye HAZIR
    * satirlar gider (sunucu modulu istemciye girmez).
    */
+  // Kategori her zaman PROFESYONELIN kategorisidir (brief o kategorinin
+  // formuyla dolduruldu); karsi tarafa gore secilirse profesyonel kendi
+  // ekraninda ham anahtar gorur (musteri kategorisiz).
   const briefAlanlari = briefSatirlari(
     conv.brief_data,
-    other.service_categories?.slug ?? null
+    conv.professional?.service_categories?.slug ?? null
   );
 
   /**

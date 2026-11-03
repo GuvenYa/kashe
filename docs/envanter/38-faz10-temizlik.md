@@ -216,6 +216,10 @@ Uretim: `main` <- `duzeltme-01` (merge e4317d5; 10 commit: 9f17bef 10a-DB, d8f0d
 uretim SQL Editor salt okunur: asama20 K1/K3/K4/K5 ESIT + K7 BEKLIYOR, asama5 K3-K6 EMEKLI, asama18 ve asama19 ESIT; canli kontrol
 `/davetlerim` (ajans hesabi) sorunsuz. Hijyen 05 DROP'lari icin 30 gun: ~3 Aralik 2026. Fahri'nin manuel urun incelemesi Sahne
 onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahri.md`, bulgu tablosu Google Sheet "Sahne bulgulari — Fahri"); bulgulari Duzeltme 03 olur.
+**Duzeltme 03-A (3 Kasim, dal `duzeltme-03a`, tur tamamlandi):** gorev 44 A1-A9 uygulandi; onizleme turunda A1/A2/A3/A7/A8/A9 dogrulandi,
+A2 kategori kaynagi (profesyonelin kategorisi) ve davet `orgId` ek yamalari; sohbet basliginda ajans icin kurulus adi ve panel hesap
+kartinda kisi adi (bulgu 49-50) ek yamalari. Rehber v2 (`docs/sahne/test-rehberi/`, 10 ekran goruntusu `shots/`) ayni dalda. Yeni
+bulgular 51-57 (kozmetik; 57 Sahne temizligi). Siradaki: main'e merge, `sahne` dali guncelle, sonra 03-B (DB).
 **Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
 iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
 yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif

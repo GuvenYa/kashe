@@ -234,12 +234,15 @@ export function KonusmaDetay({
   const channelRef = useRef<any>(null);
   const assignRef = useRef<HTMLDivElement>(null);
 
+  // Kurum ve AJANS karsi tarafta kurulus adi (sag panel A3 ile ayni kural;
+  // baslik "Enes Aksoy", panel "Lumen Produksiyon" yazmasin).
   const otherName =
-    other.role === 'business' && other.company_name
+    (other.role === 'business' || other.role === 'agency') &&
+    other.company_name
       ? other.company_name
       : other.full_name || 'İsimsiz';
 
-  const initials = (other.full_name || other.company_name || 'K')
+  const initials = (otherName || 'K')
     .split(' ')
     .map((s) => s[0])
     .filter(Boolean)
