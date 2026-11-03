@@ -220,6 +220,18 @@ onizlemesinde (`sahne` dali, main ile ayni; rehber `docs/sahne/test-rehberi-fahr
 A2 kategori kaynagi (profesyonelin kategorisi) ve davet `orgId` ek yamalari; sohbet basliginda ajans icin kurulus adi ve panel hesap
 kartinda kisi adi (bulgu 49-50) ek yamalari. Rehber v2 (`docs/sahne/test-rehberi/`, 10 ekran goruntusu `shots/`) ayni dalda. Yeni
 bulgular 51-57 (kozmetik; 57 Sahne temizligi). Siradaki: main'e merge, `sahne` dali guncelle, sonra 03-B (DB).
+**Duzeltme 03-B (3 Kasim, dosyalar hazir, dal `duzeltme-03b`):** `20261103150000_duzeltme_03b_01_bildirim_ve_kilitler.sql`
+(notifications.type + 'booking'; `fn_faz7b_notify_org(org, izin, link, govde, tur='rfp', haric=NULL)`; portal onay/revizyon ->
+satici 'proposal' bildirimi + onayda e-posta esi hesaba `buyer_user_id` bagi; RFP revizyon yaniti 'evaluating'/son tarih sonrasi da
+gonderilir (`proposal_send` v_rev), revizyon istenen teklif secilebilir (`rfp_award`); `quotes_expire_stale()` + pg_cron
+`quotes-expire-daily` 00:20 UTC; `fn_duz03_booking_notify` tetikleyicisi (olustu -> alici kurulus/musteri, iptal -> karsi taraf,
+tamamlandi -> musteri `/p/<pro>?yorum=1` + kurum); reviews INSERT politikasi `fn_duz03_tamamlanmis_rezervasyon_var`),
+`20261103150100_duzeltme_03b_02_dolum.sql` (onayli dogrudan tekliflerde e-posta esi -> buyer_user_id + bookings.customer_id;
+suresi gecmis sohbet teklifleri: 7 gunden eskiler sistem mesajsiz, yeniler mesajla expired), `asama21-duzeltme-03b-kontrol.sql`
+(K1-K6 ESIT, K7-K9 bilgi), `docs/sahne/06-sahne-duzeltme-03b-davranis.sql` (8 adim, ROLLBACK; yerelde 8/8 GECTI, mutasyon
+yakalandi). Uygulama: bildirim etiketi 'booking', sohbet teklif kartinda suresi gecmis 'pending' = "Suresi doldu", iptal/tamamlama
+pencere metinleri. E-posta kuyruguna 'booking' EKLENMEDI (eski sekil e-postasi uygulamada; cift olmasin). Acik: portal musterisi
+yorum birakamaz (reviews.conversation_id zorunlu; urun karari), portalda "Reddet" dugmesi (urun karari), ekip uyesi kabul/ret (10d/11).
 **Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
 iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
 yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif

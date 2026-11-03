@@ -122,7 +122,7 @@ export function TeklifKarsilastirma({
     canManage &&
     !secilen &&
     talepAcik &&
-    ['sent', 'viewed'].includes(seritSutunu.proposalStatus);
+    ['sent', 'viewed', 'revision_requested'].includes(seritSutunu.proposalStatus);
 
   return (
     <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
@@ -396,11 +396,13 @@ export function TeklifKarsilastirma({
               <td className="p-3" />
               {sutunlar.map((s) => {
                 const buSecildi = secilen?.proposalId === s.proposalId;
+                // Duzeltme 03-B: revizyon istenen teklif de secilebilir (son
+                // gonderilmis surum; `rfp_award` 'revision_requested' kabul eder).
                 const islemVar =
                   canManage &&
                   !secilen &&
                   talepAcik &&
-                  ['sent', 'viewed'].includes(s.proposalStatus);
+                  ['sent', 'viewed', 'revision_requested'].includes(s.proposalStatus);
                 return (
                   <td key={s.proposalId} className={sutunSinifi(s)}>
                     {secilen ? (
@@ -421,6 +423,7 @@ export function TeklifKarsilastirma({
                         toplamMetni={
                           paraMetni(s.totalAmount, s.currency) ?? '—'
                         }
+                        revizyonBekliyor={s.proposalStatus === 'revision_requested'}
                       />
                     ) : (
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50">
@@ -455,6 +458,7 @@ export function TeklifKarsilastirma({
               toplamMetni={
                 paraMetni(seritSutunu.totalAmount, seritSutunu.currency) ?? '—'
               }
+              revizyonBekliyor={seritSutunu.proposalStatus === 'revision_requested'}
             />
           }
         />

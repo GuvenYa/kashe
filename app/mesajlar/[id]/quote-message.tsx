@@ -43,8 +43,14 @@ export function QuoteCard({
   // Pasif üye kabul/red butonunu görmesin (action zaten reddeder)
   const showAccept = canAccept && canAct;
   const canWithdraw = canWithdrawQuote(quote, currentUserId);
-  const isPendingStatus = quote.status === 'pending';
-  const tone = getQuoteStatusTone(quote.status);
+  // Duzeltme 03-B: gunluk is (quotes_expire_stale, 00:20 UTC) 'expired' yazana kadar
+  // suresi gecmis 'pending' teklif kartta "Suresi doldu" gorunur (sunucu kabulu zaten reddeder).
+  const durum =
+    quote.status === 'pending' && new Date(quote.expires_at) < new Date()
+      ? 'expired'
+      : quote.status;
+  const isPendingStatus = durum === 'pending';
+  const tone = getQuoteStatusTone(durum);
   const isMine = quote.sender_id === currentUserId;
 
   function handleAccept() {
@@ -128,7 +134,7 @@ export function QuoteCard({
           <span
             className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] font-medium border ${badgeStyles[tone]}`}
           >
-            {getQuoteStatusLabel(quote.status)}
+            {getQuoteStatusLabel(durum)}
           </span>
         </div>
 
@@ -289,7 +295,7 @@ export function QuoteCard({
                     : 'Bu teklifi reddettin'}
                 </span>
               )}
-              {quote.status === 'expired' && (
+              {durum === 'expired' && (
                 <span>Teklif onaylanmadan süresi doldu</span>
               )}
               {quote.status === 'withdrawn' && (

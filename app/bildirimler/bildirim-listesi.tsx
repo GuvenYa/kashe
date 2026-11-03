@@ -74,6 +74,8 @@ const TYPE_LABELS: Record<string, string> = {
   // FAZ 10a — davet (davetliye, /davetlerim) ve katilim (kurulus sahibine,
   // /profil/ekibim ya da /profil/kurumsal-ekip); tetikleyici yazar.
   team: 'Ekip',
+  // Duzeltme 03-B — rezervasyon olustu / iptal / tamamlandi (tetikleyici yazar)
+  booking: 'Rezervasyon',
 };
 
 /**

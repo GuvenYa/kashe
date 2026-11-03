@@ -333,6 +333,70 @@ export default async function RezervasyonlarimPage() {
     }
   }
 
+  // ---- Duzeltme 03-B — KISI olarak teklif dosyasiyla alinan rezervasyonlar ----
+  // Portal onayinda musteri e-postasi bir Kashe hesabiyla eslesirse teklif o hesaba
+  // baglanir (`proposals.buyer_user_id`) ve `booking_from_proposal` customer_id'yi
+  // doldurur. Bu satirlar eski sekil degildir (ilk bolum yalniz eski sekli alir).
+  const kisiTeklifRezervasyonlari: KurulusRezervasyonu[] = [];
+  {
+    const aliciIdleri = new Set(aliciRezervasyonlari.map((r) => r.id));
+    const { data: kisiData, error: kisiHatasi } = await supabase
+      .from('bookings')
+      .select(
+        `
+        id, status, event_date, location, total_amount, currency, created_at,
+        proposal_version_id,
+        surum:proposal_versions!bookings_proposal_version_id_fkey (
+          version_no,
+          proposal:proposals!proposal_versions_proposal_id_fkey (
+            id, title, client_name, seller_organization_id,
+            seller:organizations_public!proposals_seller_organization_id_fkey (display_name)
+          )
+        )
+      `
+      )
+      .eq('customer_id', user.id)
+      .not('proposal_version_id', 'is', null)
+      .order('event_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (kisiHatasi) console.error('[rezervasyon] kisi teklif listesi', kisiHatasi);
+
+    type KisiBookingRow = {
+      id: string;
+      status: string;
+      event_date: string | null;
+      location: string | null;
+      total_amount: number | string;
+      currency: string;
+      created_at: string;
+      surum: {
+        version_no: number;
+        proposal: {
+          title: string;
+          seller: { display_name: string | null } | null;
+        } | null;
+      } | null;
+    };
+
+    for (const r of (kisiData ?? []) as unknown as KisiBookingRow[]) {
+      if (aliciIdleri.has(r.id)) continue;
+      const teklif = r.surum?.proposal ?? null;
+      kisiTeklifRezervasyonlari.push({
+        id: r.id,
+        status: r.status,
+        event_date: r.event_date,
+        location: r.location,
+        total_amount: r.total_amount,
+        currency: r.currency,
+        created_at: r.created_at,
+        teklifBasligi: teklif?.title ?? 'Teklif',
+        musteriAdi: null,
+        kurulusAdi: teklif?.seller?.display_name ?? null,
+        versionNo: r.surum?.version_no ?? null,
+      });
+    }
+  }
+
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
   const kabuk = await panelKabukProps();
@@ -350,7 +414,8 @@ export default async function RezervasyonlarimPage() {
 
           {bookings.length === 0 &&
           kurulusRezervasyonlari.length === 0 &&
-          aliciRezervasyonlari.length === 0 ? (
+          aliciRezervasyonlari.length === 0 &&
+          kisiTeklifRezervasyonlari.length === 0 ? (
             <EmptyState
               icon={Calendar}
               title="Henüz rezervasyon yok"
@@ -369,6 +434,26 @@ export default async function RezervasyonlarimPage() {
                 list={asSeller}
                 viewer="professional"
               />
+
+              {/* Duzeltme 03-B — kisi olarak onaylanan teklif dosyalarindan */}
+              {kisiTeklifRezervasyonlari.length > 0 && (
+                <section>
+                  <h2 className="font-display font-semibold text-xl md:text-2xl text-ink tracking-tight mb-1">
+                    Teklif dosyasıyla aldığın{' '}
+                    <span className="text-ink-50 font-normal text-base">
+                      ({kisiTeklifRezervasyonlari.length})
+                    </span>
+                  </h2>
+                  <p className="text-sm text-ink-72 mb-5">
+                    Ajansların gönderdiği ve onayladığın tekliflerden açılan rezervasyonlar.
+                  </p>
+                  <div className="space-y-3">
+                    {kisiTeklifRezervasyonlari.map((r) => (
+                      <KurulusKarti key={r.id} rez={r} taraf="alici" />
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* FAZ 7c — kurulus rezervasyonlari (yalniz proposals.view yetkili ajans uyesi) */}
               {kurulusRezervasyonlari.length > 0 && (
