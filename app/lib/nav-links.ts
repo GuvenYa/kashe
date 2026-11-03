@@ -1,6 +1,6 @@
 // TEK KAYNAK — masaüstü üst bar + mobil hamburger ortak public nav linkleri.
 // Parite kuralı: her iki yüzey de BU listelerden türer; elle kopya tutulmaz.
-// (Kişisel/rol linkleri ayrı tek kaynakta: top-nav.tsx → menuLinks.)
+// (Kisisel/rol linkleri ayri tek kaynakta: app/lib/panel-menu.ts.)
 
 export type NavLink = {
   href: string;

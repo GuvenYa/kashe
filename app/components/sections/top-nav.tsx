@@ -9,7 +9,16 @@ import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
 import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
-import { panelMenusu, menuyuDuzlestir } from "@/app/lib/panel-menu";
+import { panelMenusu, baslaticiMenusu } from "@/app/lib/panel-menu";
+import { ORG_ROLE_LABELS, type OrgRole } from "@/app/lib/org-roles";
+
+/** Hesap turu etiketleri — rol satirinin ilk parcasi. */
+const HESAP_ROL_ETIKETLERI: Record<string, string> = {
+  client: "Müşteri",
+  professional: "Profesyonel",
+  agency: "Ajans",
+  business: "İşletme",
+};
 
 export async function TopNav() {
   const supabase = await createClient();
@@ -54,19 +63,31 @@ export async function TopNav() {
     .join("")
     .toUpperCase();
 
-  // ISLERIM listesi — TEK KAYNAK `app/lib/panel-menu.ts`.
+  // KISA BASLATICI — TEK KAYNAK `app/lib/panel-menu.ts` (Duzeltme 02).
   //
   // Eskiden burada 13 maddelik bir dizi elle kuruluyordu ve rol/izin kurallari
-  // bu dosyaya gomuluydu; ayni kurallar yan menude bir kez daha yazilmak
-  // zorunda kalirdi. Artik iki yuzey ayni modeli okur.
-  //
-  // `/mesajlar` DISARIDA: ust bar ve hamburger onu okunmamis rozetiyle
-  // kendi render ediyor; listeye koymak ayni satiri iki kez gosterirdi.
+  // bu dosyaya gomuluydu; sonra duzlestirici tum maddeleri duz listeye
+  // doktu (ajans sahibinde 16 satir). Artik model kisa baslatici veriyor:
+  // Panel + en cok kullanilan dort madde + hesap satirlari.
   const panelGruplari = user ? await panelMenusu() : [];
-  const { isler, hesap } = menuyuDuzlestir(panelGruplari);
-  const menuLinks: { href: string; label: string }[] = [...isler, ...hesap]
-    .filter((m) => m.href !== '/mesajlar')
-    .map((m) => ({ href: m.href, label: m.etiket }));
+  const baslatici = baslaticiMenusu(panelGruplari, {
+    rol: role,
+    kullaniciId: user?.id ?? null,
+  });
+
+  // Rol satiri: hesap turu + (uyesi oldugu kurulus varsa) uyelik rolu ve
+  // kurulus adi. Ornek: "Musteri - Proje yoneticisi - Akdeniz Gida".
+  const rolEtiketi = HESAP_ROL_ETIKETLERI[role ?? ''] ?? 'Hesap';
+  const uyelik = baslatici.uyelik;
+  const rolSatiri = uyelik
+    ? [
+        rolEtiketi,
+        ORG_ROLE_LABELS[(uyelik.rol ?? '') as OrgRole],
+        uyelik.ad,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : rolEtiketi;
 
   const navLinkClass =
     "font-body text-xs uppercase tracking-[0.16em] text-ink-50 hover:text-ink transition-colors duration-200 whitespace-nowrap";
@@ -106,7 +127,7 @@ export async function TopNav() {
             </a>
           ))}
           {user ? (
-            // Teklif Topla: girişli + teklif toplayabilen roller (menuLinks/gate ile tutarlı)
+            // Teklif Topla: girisli + teklif toplayabilen roller (menu modeliyle tutarli)
             canCollectOffers && (
               <a href="/teklif-topla" className={navLinkClass}>
                 Teklif Topla
@@ -140,7 +161,13 @@ export async function TopNav() {
               <UserMenu
                 initials={initials}
                 avatarUrl={avatarUrl}
-                links={menuLinks}
+                baslik={{
+                  ad: fullName?.trim() || user.email || 'Hesabım',
+                  rol: rolSatiri,
+                }}
+                panel={baslatici.panel}
+                oncelikli={baslatici.oncelikli}
+                hesap={baslatici.hesap}
                 isAdmin={isAdmin}
               />
             </>
@@ -170,7 +197,7 @@ export async function TopNav() {
           canCollectOffers={canCollectOffers}
           userId={user?.id ?? null}
           notificationCount={notificationCount}
-          menuLinks={menuLinks}
+          baslatici={baslatici}
         />
       </div>
     </nav>

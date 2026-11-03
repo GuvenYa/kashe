@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import {
   ArrowLeft,
   Bell,
@@ -13,6 +13,7 @@ import {
   Calendar,
   CalendarDays,
   ChartColumn,
+  ChevronDown,
   ClipboardList,
   Compass,
   CreditCard,
@@ -47,7 +48,12 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/app/lib/supabase-browser';
 import { KasheMark } from '@/app/components/ui/kashe-mark';
-import type { PanelMenuGrubu } from '@/app/lib/panel-menu-tipler';
+import {
+  BOLUM_ETIKETLERI,
+  BOLUM_SIRASI,
+  type PanelMenuBolumu,
+  type PanelMenuGrubu,
+} from '@/app/lib/panel-menu-tipler';
 
 /**
  * Panel yan menusu — TEK istemci parcasi (gerisi sunucu bileseni).
@@ -99,6 +105,52 @@ const IKONLAR: Record<string, LucideIcon> = {
   blog: Newspaper,
   gorus: Quote,
 };
+
+/**
+ * KATLANABILIR BOLUMLER (Duzeltme 02) — durum `localStorage`'da.
+ *
+ * Okuma EFEKTSIZ: `useSyncExternalStore` ile yapilir (efekt icinde setState
+ * cascading render demek; ayni desen `cerez-banner.tsx`). Anlik goruntu METIN
+ * doner — React deger esitligiyle karsilastirir, her cagrida yeni nesne donmek
+ * sonsuz render olurdu. Okunamazsa (gizli sekme, kapali site verisi) varsayilan
+ * gecerli olur.
+ */
+const DEPO_ONEKI = 'kashe.panel-menu.';
+
+/** Katlanir grubun tek bolumu icin kullanilan anahtar eki. */
+const GRUP_BOLUMU = 'grup';
+
+function depoAnahtari(grupBasligi: string, bolum: string): string {
+  return DEPO_ONEKI + grupBasligi + '.' + bolum;
+}
+
+/** Grupta maddesi olan bolum sayisi. */
+function bolumSayisi(grup: PanelMenuGrubu): number {
+  return BOLUM_SIRASI.filter((b) => grup.maddeler.some((m) => m.bolum === b))
+    .length;
+}
+
+function depoOku(anahtar: string): string {
+  try {
+    return window.localStorage.getItem(anahtar) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function depoYaz(anahtar: string, acik: boolean): void {
+  try {
+    window.localStorage.setItem(anahtar, acik ? '1' : '0');
+  } catch {
+    // Sessiz: durum yalniz bir kolaylik, akis bozulmaz.
+  }
+}
+
+// localStorage ayni sekmede olay yayinlamaz; abonelige gerek yok — deger
+// yalniz kullanicinin tiklamasiyla degisir, o da ayri state'te tutulur.
+function abone(): () => void {
+  return () => {};
+}
 
 export type PanelHesap = {
   ad: string;
@@ -169,6 +221,77 @@ export function PanelYanMenu({
     return adaylar[0].grup + String.fromCharCode(0) + adaylar[0].href;
   })();
 
+  /**
+   * Hangi bolumler var: grup basina yalniz MADDESI OLAN bolumler.
+   * Katlanir grup (Profil icerigi) tek anahtar tasir.
+   */
+  const bolumAnahtarlari = useMemo(() => {
+    const liste: string[] = [];
+    for (const grup of menu) {
+      if (grup.katlanir) {
+        liste.push(depoAnahtari(grup.baslik, GRUP_BOLUMU));
+        continue;
+      }
+      for (const bolum of BOLUM_SIRASI) {
+        if (grup.maddeler.some((m) => m.bolum === bolum)) {
+          liste.push(depoAnahtari(grup.baslik, bolum));
+        }
+      }
+    }
+    return liste;
+  }, [menu]);
+
+  // Sunucu anlik goruntusu bos ('' x N): hidrasyondan sonra gercek deger gelir.
+  const depoAnlik = useSyncExternalStore(
+    abone,
+    () => bolumAnahtarlari.map((a) => depoOku(a)).join('|'),
+    () => bolumAnahtarlari.map(() => '').join('|')
+  );
+
+  const kayitli = useMemo(() => {
+    const harita = new Map<string, boolean>();
+    const parcalar = depoAnlik.split('|');
+    bolumAnahtarlari.forEach((anahtar, i) => {
+      const deger = parcalar[i];
+      if (deger === '1' || deger === '0') harita.set(anahtar, deger === '1');
+    });
+    return harita;
+  }, [depoAnlik, bolumAnahtarlari]);
+
+  /** Bu oturumda kullanicinin eliyle degistirdigi bolumler (depoyu ezer). */
+  const [elleAcilan, setElleAcilan] = useState<Record<string, boolean>>({});
+
+  /** Aktif maddenin bulundugu grup + bolum: o bolum acik gelir. */
+  const aktifBolum = useMemo(() => {
+    if (!aktifAnahtar) return null;
+    const [grupBasligi, href] = aktifAnahtar.split(String.fromCharCode(0));
+    const grup = menu.find((g) => g.baslik === grupBasligi);
+    if (!grup) return null;
+    if (grup.katlanir) return depoAnahtari(grup.baslik, GRUP_BOLUMU);
+    const madde = grup.maddeler.find((m) => m.href === href);
+    if (!madde?.bolum) return null;
+    return depoAnahtari(grup.baslik, madde.bolum);
+  }, [aktifAnahtar, menu]);
+
+  /**
+   * Bolum acik mi: kullanicinin bu oturumdaki tiklamasi > aktif sayfa kurali >
+   * `localStorage` > varsayilan (`calisma` acik, digerleri kapali).
+   */
+  function bolumAcikMi(anahtar: string, bolum: PanelMenuBolumu | null): boolean {
+    const elle = elleAcilan[anahtar];
+    if (elle !== undefined) return elle;
+    if (anahtar === aktifBolum) return true;
+    const depo = kayitli.get(anahtar);
+    if (depo !== undefined) return depo;
+    return bolum === 'calisma';
+  }
+
+  function bolumuDegistir(anahtar: string, suAnAcik: boolean): void {
+    const yeni = !suAnAcik;
+    setElleAcilan((o) => ({ ...o, [anahtar]: yeni }));
+    depoYaz(anahtar, yeni);
+  }
+
   const basHarfler = hesap.ad
     .split(' ')
     .map((s) => s[0])
@@ -182,6 +305,34 @@ export function PanelYanMenu({
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
+  }
+
+  /** Tek menu satiri — bolumsuz, bolumlu ve katlanir grupta ayni cizim. */
+  function maddeSatiri(grupBasligi: string, madde: PanelMenuGrubu['maddeler'][number]) {
+    const Ikon = IKONLAR[madde.ikon];
+    const seciliMi =
+      aktifAnahtar === grupBasligi + String.fromCharCode(0) + madde.href;
+    return (
+      <Link
+        key={madde.href}
+        href={madde.href}
+        onClick={() => setAcik(false)}
+        aria-current={seciliMi ? 'page' : undefined}
+        className={
+          seciliMi
+            ? 'flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors bg-paper/10 text-paper'
+            : 'flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors text-paper/55 hover:text-paper hover:bg-paper/5'
+        }
+      >
+        {Ikon && <Ikon size={16} className="shrink-0" aria-hidden />}
+        <span className="min-w-0 truncate">{madde.etiket}</span>
+        {!!madde.rozet && madde.rozet > 0 && (
+          <span className="ml-auto min-w-[18px] h-[18px] px-1.5 bg-brand-accent text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none shrink-0">
+            {madde.rozet > 99 ? '99+' : madde.rozet}
+          </span>
+        )}
+      </Link>
+    );
   }
 
   const ALT_BAGLANTI =
@@ -213,40 +364,99 @@ export function PanelYanMenu({
         aria-label="Panel"
         className="flex-1 overflow-y-auto py-4 px-3 space-y-4"
       >
-        {menu.map((grup) => (
-          <div key={grup.baslik} className="space-y-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper/40 px-3 pb-1">
-              {grup.baslik}
-            </p>
-            {grup.maddeler.map((madde) => {
-              const Ikon = IKONLAR[madde.ikon];
-              const seciliMi =
-                aktifAnahtar ===
-                grup.baslik + String.fromCharCode(0) + madde.href;
-              return (
-                <Link
-                  key={madde.href}
-                  href={madde.href}
-                  onClick={() => setAcik(false)}
-                  aria-current={seciliMi ? 'page' : undefined}
-                  className={
-                    seciliMi
-                      ? 'flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors bg-paper/10 text-paper'
-                      : 'flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2.5 rounded-lg transition-colors text-paper/55 hover:text-paper hover:bg-paper/5'
-                  }
+        {menu.map((grup) => {
+          // Bolumsuz maddeler (Pazaryeri, Hesap) grup basliginin hemen
+          // altinda, bolumlerden ONCE cizilir.
+          const bolumsuz = grup.maddeler.filter((m) => !m.bolum);
+          const grupAnahtari = depoAnahtari(grup.baslik, GRUP_BOLUMU);
+          const grupAcik = grup.katlanir
+            ? bolumAcikMi(grupAnahtari, null)
+            : true;
+
+          return (
+            <div key={grup.baslik} className="space-y-1">
+              {grup.katlanir ? (
+                // Tek parca katlanir grup: baslik dugme (Profil icerigi).
+                <button
+                  type="button"
+                  onClick={() => bolumuDegistir(grupAnahtari, grupAcik)}
+                  aria-expanded={grupAcik}
+                  className="w-full flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-paper/40 hover:text-paper/72 px-3 pb-1 transition-colors"
                 >
-                  {Ikon && <Ikon size={16} className="shrink-0" aria-hidden />}
-                  <span className="min-w-0 truncate">{madde.etiket}</span>
-                  {!!madde.rozet && madde.rozet > 0 && (
-                    <span className="ml-auto min-w-[18px] h-[18px] px-1.5 bg-brand-accent text-paper text-[10px] font-mono font-bold rounded-full flex items-center justify-center leading-none shrink-0">
-                      {madde.rozet > 99 ? '99+' : madde.rozet}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+                  <span className="min-w-0 truncate">{grup.baslik}</span>
+                  <ChevronDown
+                    size={12}
+                    aria-hidden
+                    className={
+                      grupAcik
+                        ? 'shrink-0 ml-auto rotate-180 transition-transform'
+                        : 'shrink-0 ml-auto transition-transform'
+                    }
+                  />
+                </button>
+              ) : (
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper/40 px-3 pb-1">
+                  {grup.baslik}
+                </p>
+              )}
+
+              {grupAcik && bolumsuz.map((madde) => maddeSatiri(grup.baslik, madde))}
+
+              {grupAcik &&
+                !grup.katlanir &&
+                BOLUM_SIRASI.map((bolum) => {
+                  const maddeler = grup.maddeler.filter(
+                    (m) => m.bolum === bolum
+                  );
+                  if (maddeler.length === 0) return null;
+                  // Grupta tek bolum varsa (izleyici uye, dar yetki) baslik
+                  // gurultu olur: maddeler dogrudan, katlanmadan cizilir.
+                  if (bolumSayisi(grup) === 1) {
+                    return (
+                      <div key={bolum} className="space-y-1">
+                        {maddeler.map((madde) => maddeSatiri(grup.baslik, madde))}
+                      </div>
+                    );
+                  }
+                  const anahtar = depoAnahtari(grup.baslik, bolum);
+                  const bolumAcik = bolumAcikMi(anahtar, bolum);
+                  return (
+                    <div key={bolum} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => bolumuDegistir(anahtar, bolumAcik)}
+                        aria-expanded={bolumAcik}
+                        className="w-full flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-paper/35 hover:text-paper/60 px-3 py-2 transition-colors"
+                      >
+                        <span className="min-w-0 truncate">
+                          {BOLUM_ETIKETLERI[bolum]}
+                        </span>
+                        <ChevronDown
+                          size={12}
+                          aria-hidden
+                          className={
+                            bolumAcik
+                              ? 'shrink-0 ml-auto rotate-180 transition-transform'
+                              : 'shrink-0 ml-auto transition-transform'
+                          }
+                        />
+                      </button>
+                      {bolumAcik &&
+                        maddeler.map((madde) =>
+                          maddeSatiri(grup.baslik, madde)
+                        )}
+                    </div>
+                  );
+                })}
+
+              {grupAcik &&
+                grup.katlanir &&
+                grup.maddeler
+                  .filter((m) => m.bolum)
+                  .map((madde) => maddeSatiri(grup.baslik, madde))}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Hesap karti + cikislar */}
