@@ -10,19 +10,29 @@ CREATE OR REPLACE FUNCTION pg_temp.kim(p uuid) RETURNS void LANGUAGE sql AS $$ S
 -- Lumen ajansi sahibi 5a4e0000-...-020002 (org 1e522123), Beren Kara musteri 040004, Teknopark kurum sahibi 030001 (org 16b8c87b), Arti Bir sahibi 020006 (org eab53497)
 DO $$
 DECLARE
-  lumen_org uuid := '1e522123-c6e8-494d-9d76-8c64a05887f3'; lumen_u uuid := '5a4e0000-0000-4000-8000-000000020002';
+  -- Sabit kimlikler Sahne SQL'inden (profil = saglayici = 5a4e0000-...; etkinlik 5a4e0002-...). Kurulus id'leri ve rol id'leri
+  -- yukleme aninda uretildiginden (gen_random_uuid / identity) ASLA sabit yazilmaz: legacy_profile_id ve slug ile bulunur.
+  lumen_u uuid := '5a4e0000-0000-4000-8000-000000020002'; lumen_org uuid;
   beren uuid := '5a4e0000-0000-4000-8000-000000040004';
-  tek_org uuid := '16b8c87b-94ca-401f-8584-07620cdb36b6'; tek_u uuid := '5a4e0000-0000-4000-8000-000000030001';
-  arti_org uuid := 'eab53497-2582-40d6-9fdc-f9201f28d7a0'; arti_u uuid := '5a4e0000-0000-4000-8000-000000020006'; arti_pr uuid := '5a4e0000-0000-4000-8000-000000020006';
+  tek_u uuid := '5a4e0000-0000-4000-8000-000000030001'; tek_org uuid;
+  arti_u uuid := '5a4e0000-0000-4000-8000-000000020006'; arti_pr uuid := '5a4e0000-0000-4000-8000-000000020006'; arti_org uuid;
   ev_lumen uuid := '5a4e0002-0000-4000-8000-000000000007'; ev_tek uuid := '5a4e0002-0000-4000-8000-000000000051';
+  rol_sunucu integer;
   prop uuid; ver uuid; tok text; n int; b_id uuid; rfp uuid; prop2 uuid; ver2 uuid; n_lumen_uye int; r record; v_err text;
 BEGIN
+  SELECT id INTO lumen_org FROM public.organizations WHERE legacy_profile_id = lumen_u;
+  SELECT id INTO tek_org   FROM public.organizations WHERE legacy_profile_id = tek_u;
+  SELECT id INTO arti_org  FROM public.organizations WHERE legacy_profile_id = arti_u;
+  SELECT id INTO rol_sunucu FROM public.service_roles WHERE slug = 'sunucu';
+  IF lumen_org IS NULL OR tek_org IS NULL OR arti_org IS NULL OR rol_sunucu IS NULL THEN
+    RAISE EXCEPTION 'Sahne kimlikleri bulunamadi (lumen %, teknopark %, arti bir %, sunucu rolu %)', lumen_org, tek_org, arti_org, rol_sunucu;
+  END IF;
   -- ============ T1 portal: gonder -> onayla -> satici bildirimi + buyer_user_id -> rezervasyon -> musteri bildirimi
   PERFORM pg_temp.kim(lumen_u);
   prop := public.proposal_create(lumen_org, 'Test 03B dogrudan teklif', ev_lumen, NULL, 'Beren Kara', 'SAHNE+Beren-Kara@kashe.net', NULL);
   SELECT current_version_id INTO ver FROM public.proposals WHERE id = prop;
   INSERT INTO public.proposal_items (proposal_version_id, role_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
-  VALUES (ver, 782, 'Sunucu', 1, 10000, true, 1);
+  VALUES (ver, rol_sunucu, 'Sunucu', 1, 10000, true, 1);
   SELECT token INTO tok FROM public.proposal_send(prop, 14);
   IF tok IS NULL THEN RAISE EXCEPTION 'T1: token bos'; END IF;
   PERFORM set_config('request.jwt.claim.sub', '', true);  -- anonim portal
@@ -92,7 +102,7 @@ BEGIN
   -- ============ T4 RFP revizyon kilidi
   PERFORM pg_temp.kim(tek_u);
   rfp := public.rfp_create(tek_org, ev_tek, 'Test 03B RFP', 'aciklama', now() + interval '3 days');
-  INSERT INTO public.rfp_items (rfp_id, role_id, quantity, is_required, sort_order) VALUES (rfp, 782, 1, true, 1);
+  INSERT INTO public.rfp_items (rfp_id, role_id, quantity, is_required, sort_order) VALUES (rfp, rol_sunucu, 1, true, 1);
   PERFORM public.rfp_invite(rfp, arti_pr);
   PERFORM public.rfp_send(rfp);
   PERFORM pg_temp.kim(arti_u);
@@ -137,7 +147,7 @@ BEGIN
   -- ============ T5 ilk yanit kilidi degismedi: degerlendirmedeki talebe ILK yanit gonderilemez
   PERFORM pg_temp.kim(tek_u);
   rfp := public.rfp_create(tek_org, ev_tek, 'Test 03B RFP 2', NULL, now() + interval '3 days');
-  INSERT INTO public.rfp_items (rfp_id, role_id, quantity, is_required, sort_order) VALUES (rfp, 782, 1, true, 1);
+  INSERT INTO public.rfp_items (rfp_id, role_id, quantity, is_required, sort_order) VALUES (rfp, rol_sunucu, 1, true, 1);
   PERFORM public.rfp_invite(rfp, arti_pr);
   PERFORM public.rfp_send(rfp);
   PERFORM pg_temp.kim(arti_u);

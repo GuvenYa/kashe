@@ -26,12 +26,17 @@ export function KarsilastirmaIslemleri({
   proposalId,
   saticiAdi,
   toplamMetni,
+  revizyonBekliyor = false,
 }: {
   rfpId: string;
   proposalId: string;
   saticiAdi: string;
   /** Onay metninde gosterilen genel toplam (KDV dahil). */
   toplamMetni: string;
+  /** Duzeltme 03-B: revizyon istendi, ajans henuz yeni surum gondermedi. Son
+   *  gonderilmis surum secilebilir (`rfp_award` kabul eder); ikinci revizyon
+   *  istenemez (DB reddeder), dugme gizlenir. */
+  revizyonBekliyor?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -88,17 +93,23 @@ export function KarsilastirmaIslemleri({
           >
             Seç
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setBilgi(null);
-              setKapi('revizyon');
-            }}
-            disabled={isPending}
-            className={BTN_IKINCIL}
-          >
-            Revizyon iste
-          </button>
+          {revizyonBekliyor ? (
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50">
+              Yanıt bekleniyor
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setBilgi(null);
+                setKapi('revizyon');
+              }}
+              disabled={isPending}
+              className={BTN_IKINCIL}
+            >
+              Revizyon iste
+            </button>
+          )}
         </div>
       )}
 
@@ -108,6 +119,8 @@ export function KarsilastirmaIslemleri({
             &ldquo;{saticiAdi}&rdquo; teklifi ({toplamMetni}) seçilecek. Teklif
             onaylanır, diğer davetler &ldquo;seçilmedi&rdquo; olur; bu işlem
             geri alınamaz.
+            {revizyonBekliyor &&
+              ' Revizyon yanıtı beklenmeden son gönderilen sürüm seçilir.'}
           </p>
           <div className="flex items-center gap-2 flex-wrap mt-2">
             <button
