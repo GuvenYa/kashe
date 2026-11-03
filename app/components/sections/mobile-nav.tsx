@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
 import { UnreadBadge } from './unread-badge';
 import { DISCOVERY_LINKS, MARKETING_LINKS } from '@/app/lib/nav-links';
+import type { BaslaticiMenusu } from '@/app/lib/panel-menu-tipler';
 
 type Props = {
   isLoggedIn: boolean;
@@ -19,7 +20,12 @@ type Props = {
   canCollectOffers: boolean;
   userId: string | null;
   notificationCount: number;
-  menuLinks: { href: string; label: string }[];
+  /**
+   * Kisa baslatici (Duzeltme 02) — avatar menusuyle AYNI model.
+   * Eski duz liste prop'u kalkti: 16 satirlik "Islerim" yerine
+   * Panel + en cok kullanilan maddeler + hesap satirlari.
+   */
+  baslatici: BaslaticiMenusu;
 };
 
 export function MobileNav({
@@ -33,7 +39,7 @@ export function MobileNav({
   canCollectOffers,
   userId,
   notificationCount,
-  menuLinks,
+  baslatici,
 }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -79,15 +85,6 @@ export function MobileNav({
   // eyebrow'larıyla aynı) — link renkleri değişmez.
   const groupLabel =
     'font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand-ink pt-1 pb-1.5';
-
-  // menuLinks (tek kaynak) → gruplara ayrım:
-  //  - Profilim: İşlerim BAŞINA (özgün düzen)  - Premium: Hesap
-  //  - Bildirimler: Hesap'ta badge'li ayrı render  - kalanı: İşlerim
-  const profileLink = menuLinks.find((l) => l.href === '/profil');
-  const premiumLink = menuLinks.find((l) => l.href === '/premium');
-  const workLinks = menuLinks.filter(
-    (l) => !['/profil', '/premium', '/bildirimler'].includes(l.href)
-  );
 
   // Keşif linkleri (tek kaynak nav-links; üst bar ile parite) — iki dalda da kullanılır
   const discoveryItems = DISCOVERY_LINKS.map((link) => (
@@ -142,18 +139,20 @@ export function MobileNav({
             <nav className="px-6 py-4">
               {isLoggedIn ? (
                 <>
-                  {/* İŞLERİM — Profilim başta (özgün düzen), sonra çalışma yüzeyleri.
+                  {/* PANEL — kisa baslatici (Duzeltme 02): gosterge + en cok
+                      kullanilan maddeler. Gerisi panel yan menusunde.
                       Pazarlama linkleri girişli kullanıcıda YOK. */}
-                  <p className={groupLabel}>İşlerim</p>
-                  {profileLink && (
-                    <a href={profileLink.href} className={linkClass}>
-                      {profileLink.label}
+                  <p className={groupLabel}>Panel</p>
+                  {baslatici.panel && (
+                    <a href={baslatici.panel.href} className={linkClass}>
+                      Panel
                     </a>
                   )}
-                  <a href="/mesajlar" className={linkClassInlineBadge}>
-                    Mesajlar
-                    {userId && <UnreadBadge userId={userId} />}
-                  </a>
+                  {baslatici.oncelikli.map((madde) => (
+                    <a key={madde.href} href={madde.href} className={linkClass}>
+                      {madde.etiket}
+                    </a>
+                  ))}
                   {/* Teklif Topla: yalnız teklif toplayabilen roller (client/business/manager).
                       Pro/ajans canCollectOffers=false → zaten gizli (v1 kararı). */}
                   {canCollectOffers && (
@@ -161,11 +160,6 @@ export function MobileNav({
                       Teklif Topla
                     </a>
                   )}
-                  {workLinks.map((link) => (
-                    <a key={link.href} href={link.href} className={linkClass}>
-                      {link.label}
-                    </a>
-                  ))}
 
                   <div className="border-t border-line my-3" />
 
@@ -175,13 +169,13 @@ export function MobileNav({
 
                   <div className="border-t border-line my-3" />
 
-                  {/* HESAP — Premium + Bildirimler + Admin + Çıkış */}
+                  {/* HESAP — Mesajlar + Bildirimler (rozetli) + hesap satirlari
+                      + Admin + Çıkış. Rozetli satirlar baslaticida YOK, burada. */}
                   <p className={groupLabel}>Hesap</p>
-                  {premiumLink && (
-                    <a href={premiumLink.href} className={linkClass}>
-                      {premiumLink.label}
-                    </a>
-                  )}
+                  <a href="/mesajlar" className={linkClassInlineBadge}>
+                    Mesajlar
+                    {userId && <UnreadBadge userId={userId} />}
+                  </a>
                   <a href="/bildirimler" className={linkClassInlineBadge}>
                     Bildirimler
                     {notificationCount > 0 && (
@@ -190,9 +184,14 @@ export function MobileNav({
                       </span>
                     )}
                   </a>
+                  {baslatici.hesap.map((madde) => (
+                    <a key={madde.href} href={madde.href} className={linkClass}>
+                      {madde.etiket}
+                    </a>
+                  ))}
                   {isAdmin && (
                     <a href="/admin" className={linkClass}>
-                      Admin Paneli
+                      Admin paneli
                     </a>
                   )}
                   <button
