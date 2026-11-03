@@ -1,24 +1,26 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { ORG_ROLE_LABELS, type OrgRole } from '@/app/lib/org-roles';
+import type { DavetDurumu, UyelikDurumu } from '@/app/lib/uyelik';
+
 /**
  * Kurumsal Ekip (business) sistemi için type'lar, sabitler, helper'lar.
  * 'use server' OLMAYAN dosya — async olmayan export'lar burada.
  *
- * app/ajans/agency-data.ts AYNASI. FARK: üye HERHANGİ bir kullanıcı (erişim üyelikten gelir),
- * o yüzden join'de professional-özel alanlar (service_categories vb.) yok — temel profil alanları.
+ * app/ajans/agency-data.ts AYNASI. FARK: üye HERHANGİ bir kullanıcı (erişim
+ * üyelikten gelir), o yüzden join'de professional-özel alanlar
+ * (service_categories vb.) yok — temel profil alanları.
+ *
+ * FAZ 10a: satirlar `organization_memberships` / `organization_invitations`
+ * tablolarindan gelir; rol TEK GERCEK `OrgRole` (eski uc kademeli
+ * `member_role` kalkti). Eski kurum rolu semantigine ihtiyac duyan yazma
+ * yetkisi kontrolleri `uyelik.ts` `eskiKurumRolu` ile turetilir.
  */
 
 // =============================================================================
-// Status enums (business_member_role / business_invitation_status aynası)
+// Status enums
 // =============================================================================
 
-export type BusinessMemberRole = 'owner' | 'manager' | 'member';
-
-export type BusinessInvitationStatus =
-  | 'pending'
-  | 'accepted'
-  | 'declined'
-  | 'cancelled'
-  | 'expired';
+export type BusinessInvitationStatus = DavetDurumu;
 
 // =============================================================================
 // Row types (DB shape)
@@ -26,19 +28,21 @@ export type BusinessInvitationStatus =
 
 export type BusinessMember = {
   id: string;
-  business_id: string;
-  member_user_id: string;
-  member_role: BusinessMemberRole;
-  joined_at: string;
+  organization_id: string;
+  user_id: string;
+  role: OrgRole;
+  status: UyelikDurumu;
+  joined_at: string | null;
+  legacy_source: string | null;
 };
 
 export type BusinessInvitation = {
   id: string;
-  business_id: string;
+  organization_id: string;
   invited_email: string;
   invited_user_id: string | null;
-  invited_by_id: string;
-  member_role: BusinessMemberRole;
+  invited_by_id: string | null;
+  role: OrgRole;
   status: BusinessInvitationStatus;
   invitation_message: string | null;
   created_at: string;
@@ -59,37 +63,23 @@ export type BusinessMemberWithProfile = BusinessMember & {
   } | null;
 };
 
+/**
+ * Davet + davet eden kurulusun kimligi.
+ *
+ * `business.id` kurulusun PAZARYERI profil kimligi (`legacy_profile_id`):
+ * `/p/[id]` baglantisi onu bekliyor.
+ */
 export type BusinessInvitationWithRelations = BusinessInvitation & {
   business: {
     id: string;
-    full_name: string | null;
+    display_name: string | null;
     avatar_url: string | null;
-    company_name: string | null;
-    bio: string | null;
   } | null;
-};
-
-// Kurumun görünür özet bilgisi (üyenin "şu kurumların ekibindeyim" listesi için)
-export type BusinessBrief = {
-  id: string;
-  full_name: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  member_role: BusinessMemberRole;
 };
 
 // =============================================================================
 // Constants
 // =============================================================================
-
-export const MEMBER_ROLE_OPTIONS: {
-  key: BusinessMemberRole;
-  label: string;
-}[] = [
-  { key: 'owner', label: 'Sahibi' },
-  { key: 'manager', label: 'Yönetici' },
-  { key: 'member', label: 'Üye' },
-];
 
 export const INVITATION_STATUS_OPTIONS: {
   key: BusinessInvitationStatus;
@@ -106,8 +96,9 @@ export const INVITATION_STATUS_OPTIONS: {
 // Helpers
 // =============================================================================
 
-export function getMemberRoleLabel(role: BusinessMemberRole): string {
-  return MEMBER_ROLE_OPTIONS.find((r) => r.key === role)?.label ?? role;
+/** FAZ 10a: etiket tek kaynak `org-roles.ts`. */
+export function getMemberRoleLabel(role: OrgRole | string): string {
+  return ORG_ROLE_LABELS[role as OrgRole] ?? role;
 }
 
 export function getInvitationStatusLabel(
@@ -135,7 +126,23 @@ export function getInvitationStatusTone(
 }
 
 /**
- * Davet status transition izinleri.
+ * Suresi dolmus bekleyen davet.
+ *
+ * DB durumu `pending` BIRAKIR (RPC suresi dolmus davette 22023 verir ve
+ * yazimi geri alir); "Suresi doldu" kararini arayuz `expires_at` ile verir.
+ */
+export function isInvitationExpired(invitation: {
+  status: BusinessInvitationStatus;
+  expires_at: string | null;
+}): boolean {
+  if (invitation.status !== 'pending' || !invitation.expires_at) return false;
+  const t = new Date(invitation.expires_at).getTime();
+  return Number.isFinite(t) && t < Date.now();
+}
+
+/**
+ * Davet status transition izinleri — yalniz DUGME GORUNURLUGU icin.
+ * Gercek kural DB'de (`org_invitation_respond` / `_cancel`).
  */
 export function canAcceptInvitation(status: BusinessInvitationStatus): boolean {
   return status === 'pending';
@@ -189,7 +196,8 @@ export function formatInvitationExpiry(expiresAt: string): string {
 }
 
 /**
- * Validation: davet input'u
+ * Validation: davet input'u — yalniz bos/kalip kontrolu.
+ * Normalize ve asil dogrulama DB'de (`org_invitation_create`).
  */
 export function validateInvitationInput(input: {
   email: string;

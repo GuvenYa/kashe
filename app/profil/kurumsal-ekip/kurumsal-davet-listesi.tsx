@@ -11,6 +11,7 @@ import {
   formatInvitationAge,
   formatInvitationExpiry,
   canCancelInvitation,
+  isInvitationExpired,
   type BusinessInvitation,
 } from '@/app/kurumsal/business-data';
 
@@ -41,7 +42,12 @@ function DavetSatiri({
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  const tone = getInvitationStatusTone(invitation.status);
+  // FAZ 10a: suresi dolmus bekleyen davette DB durumu 'pending' KALIR;
+  // "Suresi doldu" kararini arayuz verir (bkz. org_invitation_respond).
+  const suresiDoldu = isInvitationExpired(invitation);
+  const tone = suresiDoldu
+    ? 'neutral'
+    : getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-ink-blue text-white border-ink-blue',
@@ -95,15 +101,17 @@ function DavetSatiri({
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border ${badgeStyles[tone]}`}
               >
-                {getInvitationStatusLabel(invitation.status)}
+                {suresiDoldu
+                  ? 'Süresi doldu'
+                  : getInvitationStatusLabel(invitation.status)}
               </span>
               <span className="text-[10px] font-mono text-ink-72">
-                Rol: {getMemberRoleLabel(invitation.member_role)}
+                Rol: {getMemberRoleLabel(invitation.role)}
               </span>
               <span className="text-[10px] font-mono text-ink-72">
                 {formatInvitationAge(invitation.created_at)}
               </span>
-              {invitation.status === 'pending' && (
+              {invitation.status === 'pending' && !suresiDoldu && (
                 <span className="text-[10px] font-mono text-ink-72">
                   {formatInvitationExpiry(invitation.expires_at)}
                 </span>
@@ -117,7 +125,7 @@ function DavetSatiri({
           </div>
         </div>
 
-        {canCancelInvitation(invitation.status) && (
+        {canCancelInvitation(invitation.status) && !suresiDoldu && (
           <button
             onClick={handleCancel}
             disabled={isPending}

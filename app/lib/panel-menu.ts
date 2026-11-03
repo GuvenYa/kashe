@@ -83,8 +83,8 @@ function musteriGrubu(): PanelMenuMaddesi[] {
  * Ajans kurulusu grubu.
  *
  * "Ekip uyeleri" (`/profil/ekibim`) yalniz kullanicinin KENDI ajans profilinde
- * durur: o sayfa `agency_members`'i profil sahipligiyle okur, kurulus uyeligiyle
- * degil — izleyici bir uyeye gosterilse bos ya da yetkisiz acilirdi.
+ * durur: o sayfa kurulusu profil sahipligiyle bulur (`legacy_profile_id`),
+ * uyelikle degil — izleyici bir uyeye gosterilse bos ya da yetkisiz acilirdi.
  */
 function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [

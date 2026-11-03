@@ -20,3 +20,24 @@ export const SITE_URL = (
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
+
+/**
+ * ISTEGIN KENDI TABAN ADRESI (Duzeltme 01 / #16).
+ *
+ * `SITE_URL` CANONICAL adrestir: sitemap, robots, OG ve e-posta sablonlari
+ * onu kullanmaya devam eder (onizlemeden uretilmis canonical URL SEO'da zarar
+ * verir). Ama ONIZLEMEDE uretilen bir portal baglantisi uretime isaret ederse
+ * acilmaz — jeton orada yoktur. Bu yuzden PAYLASILAN baglanti (teklif portali)
+ * istegin kendi dagitimindan kurulur.
+ *
+ * `VERCEL_ENV` 'production' ise her zaman `SITE_URL`. Degilse
+ * `VERCEL_BRANCH_URL` (dalin sabit adresi; yoksa `VERCEL_URL` — o dagitima
+ * ozel) kullanilir. Yerelde ikisi de yoktur -> `SITE_URL` (localhost).
+ */
+export function requestSiteUrl(): string {
+  if (process.env.VERCEL_ENV === 'production') return SITE_URL;
+  const host = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+  if (!host) return SITE_URL;
+  const temiz = host.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  return temiz ? `https://${temiz}` : SITE_URL;
+}

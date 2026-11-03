@@ -113,10 +113,15 @@ export default async function AjansHavuzPage({
   if (kayitRes.error) console.error('[havuz] kayit listesi', kayitRes.error);
 
   // FAZ 5/P3-ek — "Ekibim'den yonetilir" (Sil gizli) yalniz AKTIF Ekibim uyeliginde:
-  // `legacy_agency_member_id` dolu VE o satir `agency_members`'ta hala var. Tek sorgu.
-  // `agency_members` SELECT'i herkese acik; yine de RLS satiri gizlerse kume bos doner
-  // -> Sil GORUNUR. O yoldan yanlis silinen kayit, sayfa acilisindaki
-  // `sync_org_talent_pool` ile kendini onarir (kayit + roller geri yaratilir).
+  // `legacy_agency_member_id` dolu VE o satir Ekibim uyeligi
+  // (`organization_memberships`) olarak hala var. Tek sorgu.
+  //
+  // FAZ 10a: kaynak eski uyelik tablosu DEGIL, kurulus uyeligi. Sutun adi
+  // `legacy_agency_member_id` kaldi ama uyelik kimligini tasiyor (ayna
+  // doneminde iki id ayniydi; ad Hijyen 05'te duzelir).
+  //
+  // RLS satiri gizlerse kume bos doner -> Sil GORUNUR. O yoldan yanlis silinen
+  // kayit, sayfa acilisindaki `sync_org_talent_pool` ile kendini onarir.
   const hamKayitlar = (kayitRes.data ?? []) as unknown as Omit<
     HavuzKaydi,
     'ekibimUyesi'
@@ -133,9 +138,10 @@ export default async function AjansHavuzPage({
   let aktifUyelikIdleri = new Set<string>();
   if (legacyIdler.length > 0) {
     const { data: uyelikler, error: uyelikHatasi } = await supabase
-      .from('agency_members')
+      .from('organization_memberships')
       .select('id')
-      .in('id', legacyIdler);
+      .in('id', legacyIdler)
+      .eq('status', 'active');
     if (uyelikHatasi) console.error('[havuz] ekibim uyelikleri', uyelikHatasi);
     aktifUyelikIdleri = new Set(
       ((uyelikler ?? []) as { id: string }[]).map((u) => u.id)

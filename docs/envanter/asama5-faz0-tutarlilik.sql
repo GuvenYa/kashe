@@ -9,6 +9,8 @@
 --
 -- Kullanim: Dashboard SQL Editor'a yapistir, calistir; tek sonuc tablosu gelir.
 -- Sutunlar: kontrol, eski, yeni, fark (eski-yeni mutlak / EXCEPT satir sayisi), durum
+-- FAZ 10a (28 Ekim 2026): ayna kapandi, eski tablolar donduruldu; K3-K6 (eski = yeni) artik anlamsiz ->
+-- ayna tetikleyicisi yoksa EMEKLI yazar. K1/K2/K7/K8 gecerli kalir. Yeni tablolarin kontrolu: asama20.
 -- =============================================================================
 
 WITH
@@ -120,6 +122,8 @@ hepsi AS (
 SELECT kontrol, eski, yeni,
        CASE WHEN kontrol LIKE 'K3x%' OR kontrol LIKE 'K4x%' THEN eski + yeni ELSE abs(eski - yeni) END AS fark,
        CASE WHEN kontrol LIKE 'K1c%' THEN 'BILGI'
+            WHEN (kontrol LIKE 'K3%' OR kontrol LIKE 'K4%' OR kontrol LIKE 'K5%' OR kontrol LIKE 'K6%')
+                 AND NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_faz0_sync_agency_member') THEN 'EMEKLI'
             WHEN (CASE WHEN kontrol LIKE 'K3x%' OR kontrol LIKE 'K4x%' THEN eski + yeni ELSE abs(eski - yeni) END) = 0 THEN 'ESIT'
             ELSE 'FARK' END AS durum
   FROM hepsi;

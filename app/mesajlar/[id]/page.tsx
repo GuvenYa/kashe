@@ -7,6 +7,7 @@ import { KarsiTarafPaneli } from './karsi-taraf-paneli';
 import type { Message } from '@/app/lib/types';
 import type { Quote } from '../quotes-data';
 import { getTeamContext } from '@/app/lib/business-write';
+import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 
 type ConversationParticipant = {
   id: string;
@@ -32,6 +33,54 @@ type ConversationRow = {
   customer: ConversationParticipant | null;
   professional: ConversationParticipant | null;
 };
+
+/**
+ * SEKME BASLIGI (Duzeltme 01 / #26).
+ *
+ * Birkac konusma sekmesi acikken hepsi ayni "Mesajlar — Kashe" basligini
+ * tasiyordu. Baslik karsi tarafin ADIYLA yazilir; e-posta/telefon gibi PII
+ * SORGULANMAZ (yalniz ad ve sirket adi okunur). Erisimi olmayan ya da
+ * bulunamayan konusmada genel baslik kalir (sayfa zaten 404 verir).
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const genel = { title: 'Mesajlar — Kashe' };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return genel;
+
+  const { data } = await supabase
+    .from('conversations')
+    .select(
+      `customer_id, professional_id,
+       customer:profiles!conversations_customer_id_fkey (full_name, company_name),
+       professional:profiles!conversations_professional_id_fkey (full_name, company_name)`
+    )
+    .eq('id', id)
+    .maybeSingle();
+
+  const konusma = data as unknown as {
+    customer_id: string;
+    professional_id: string;
+    customer: { full_name: string | null; company_name: string | null } | null;
+    professional: { full_name: string | null; company_name: string | null } | null;
+  } | null;
+  if (!konusma) return genel;
+
+  // Musteri tarafindaysa karsi taraf profesyonel, degilse musteri. Kurum ekip
+  // uyeligi burada cozulmez (ek sorgu olurdu); o durumda da musteri KENDISI
+  // olmadigi icin profesyonel adi dogru karsi taraftir.
+  const karsi =
+    konusma.customer_id === user.id ? konusma.professional : konusma.customer;
+  const ad = karsi?.company_name?.trim() || karsi?.full_name?.trim() || null;
+  return ad ? { title: `Mesaj — ${ad} — Kashe` } : genel;
+}
 
 export default async function KonusmaPage({
   params,
@@ -231,7 +280,7 @@ export default async function KonusmaPage({
   //  - bookingIdByQuoteId (köprü): kabul edilmiş teklif kartından /rezervasyon/[id]
   const { data: convBookings } = await supabase
     .from('bookings')
-    .select('id, quote_id, status')
+    .select('id, quote_id, status, completed_at, customer_id, professional_id')
     .eq('conversation_id', id);
 
   const contactUnlocked = (convBookings ?? []).some(
@@ -252,6 +301,46 @@ export default async function KonusmaPage({
     if (b.quote_id) bookingIdByQuoteId[b.quote_id] = b.id;
   }
 
+  /**
+   * YORUM CAGRISI (Duzeltme 01 / #28) — yalniz MUSTERI tarafinda.
+   *
+   * Tespit METIN ESLESTIRMEYLE DEGIL rezervasyon satiriyla yapilir: konusmanin
+   * `completed` rezervasyonu varsa, cagri o rezervasyonun `completed_at`
+   * zamanindan SONRAKI ilk sistem mesajinin altina cizilir (tamamlama
+   * mesajini yazan eylem ayni islemde ekliyor). Musteri kendi rezervasyonunu
+   * ve kendi yorumunu RLS ile okur.
+   */
+  let yorumCagrisi: { href: string; etiket: string } | null = null;
+  let tamamlanmaZamani: string | null = null;
+  const tamamlanan = (convBookings ?? []).find(
+    (b) => b.status === 'completed' && b.completed_at
+  ) as
+    | {
+        completed_at: string;
+        customer_id: string | null;
+        professional_id: string | null;
+      }
+    | undefined;
+  if (isCustomerSide && tamamlanan) {
+    const saglayiciId = tamamlanan.professional_id ?? conv.professional_id;
+    const musteriId = tamamlanan.customer_id;
+    // Kurum adina bakan uye yalniz yazma yetkisi varsa yorum birakabilir.
+    const yorumYazabilir = isCustomer || canWrite;
+    if (saglayiciId && musteriId && yorumYazabilir) {
+      const { data: yorumSatirlari } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('professional_id', saglayiciId)
+        .eq('customer_id', musteriId)
+        .limit(1);
+      const yorumVar = (yorumSatirlari ?? []).length > 0;
+      tamamlanmaZamani = tamamlanan.completed_at;
+      yorumCagrisi = yorumVar
+        ? { href: `/p/${saglayiciId}#yorumlar`, etiket: 'Yorumun yayında →' }
+        : { href: `/p/${saglayiciId}?yorum=1`, etiket: 'Yorum bırak →' };
+    }
+  }
+
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
 
@@ -259,20 +348,35 @@ export default async function KonusmaPage({
   const isOwnerAgency =
     conv.professional_id === user.id && conv.professional?.role === 'agency';
 
-  // Owner ajansın ekip üyeleri (atama dropdown'ı için)
+  // Owner ajansın ekip üyeleri (atama dropdown'ı için).
+  // FAZ 10a: uyelik `organization_memberships`'ten okunur. Kurulusun kendi
+  // hesabi (`owner_seed`) listede YOK; atama yalniz PROFESYONEL uyeye yapilir
+  // (`assignConversation` ayni kumeyi dogrular).
   let teamMembers: { id: string; full_name: string | null }[] = [];
   if (isOwnerAgency) {
-    const { data: membersData } = await supabase
-      .from('agency_members')
-      .select(
-        'professional:profiles!agency_members_professional_id_fkey (id, full_name)'
-      )
-      .eq('agency_id', user.id);
+    const orgId = await kurulusumunId(supabase, user.id);
+    if (orgId) {
+      const { data: membersData } = await supabase
+        .from('organization_memberships')
+        .select(
+          `legacy_source,
+           uye:profiles!organization_memberships_user_id_fkey (id, full_name, role)`
+        )
+        .eq('organization_id', orgId)
+        .eq('status', 'active');
 
-    teamMembers = (membersData ?? [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((m) => (m as any).professional)
-      .filter(Boolean) as { id: string; full_name: string | null }[];
+      teamMembers = ((membersData ?? []) as unknown as {
+        legacy_source: string | null;
+        uye: { id: string; full_name: string | null; role: string } | null;
+      }[])
+        .filter((m) => m.legacy_source !== OWNER_SEED)
+        .map((m) => m.uye)
+        .filter(
+          (u): u is { id: string; full_name: string | null; role: string } =>
+            !!u && u.role === 'professional'
+        )
+        .map((u) => ({ id: u.id, full_name: u.full_name }));
+    }
   }
 
   return (
@@ -318,6 +422,8 @@ export default async function KonusmaPage({
                 initialMessages={messages}
                 initialQuotes={quotesById}
                 bookingIdByQuoteId={bookingIdByQuoteId}
+                yorumCagrisi={yorumCagrisi}
+                tamamlanmaZamani={tamamlanmaZamani}
               />
             </div>
 

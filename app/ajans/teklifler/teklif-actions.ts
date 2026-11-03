@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { sendAccountEmail } from '@/app/lib/email/account-emails';
 import { teklifEmail } from '@/app/lib/email/proposal-email';
-import { SITE_URL } from '@/app/lib/email/resend-client';
+import { requestSiteUrl } from '@/app/lib/site';
 import { paraMetni, tarihMetni } from './teklif-data';
 
 /**
@@ -448,7 +448,10 @@ export async function sendProposal(input: {
     console.error('[teklif] gonderim: jeton donmedi');
     return { success: false, error: 'Bağlantı oluşturulamadı, tekrar dene.' };
   }
-  const baglanti = `${SITE_URL}/portal/teklif/${satir.token}`;
+  // Duzeltme 01 (#16): PAYLASILAN baglanti istegin kendi dagitimindan kurulur
+  // — onizlemede uretilen jeton uretim adresinde gecersizdir. Canonical
+  // adresler (sitemap/OG/e-posta sablonu metni) `SITE_URL`de kalir.
+  const baglanti = `${requestSiteUrl()}/portal/teklif/${satir.token}`;
 
   // E-posta icerigi icin teklif + gecerli surum + satici adi (jeton yok).
   const { data: teklifData } = await supabase

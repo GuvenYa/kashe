@@ -19,6 +19,14 @@ type Props = {
   /** Yorum yazma butonunu gösterip göstermeme kararı parent'ta alınır;
    *  bu component sadece müşteri + giriş yapmış + kendi profili değil durumda render edilir. */
   enabled: boolean;
+  /**
+   * Duzeltme 01 (#28): rezervasyon ya da sohbetten gelen "Yorum birak"
+   * baglantisi (`/p/<id>?yorum=1`) modali ACIK baslatir.
+   *
+   * KOSULLAR DEGISMEZ: `enabled` ya da yazma kosulu tutmuyorsa parametre yok
+   * sayilir (asagidaki `acikBasla` hesabi) — baglanti elle de yazilabilir.
+   */
+  acikBaslat?: boolean;
 };
 
 export function YorumButton({
@@ -27,8 +35,10 @@ export function YorumButton({
   hasConversation,
   existingReview,
   enabled,
+  acikBaslat = false,
 }: Props) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const acikBasla = acikBaslat && enabled && hasConversation;
+  const [modalOpen, setModalOpen] = useState(acikBasla);
 
   if (!enabled) return null;
 

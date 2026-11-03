@@ -144,14 +144,31 @@ export default async function KesfetPage({
         .filter((k) => (EVENT_TYPE_KEYS as readonly string[]).includes(k))
     : [];
 
-  const [{ data: categories }, { data: cities }] = await Promise.all([
-    supabase
-      .from('service_categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('name_tr'),
-    supabase.from('turkish_cities').select('*').order('name'),
-  ]);
+  const [{ data: categories }, { data: cities }, { data: doluKategoriSatirlari }] =
+    await Promise.all([
+      supabase
+        .from('service_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name_tr'),
+      supabase.from('turkish_cities').select('*').order('name'),
+      // Duzeltme 01 (#4): FILTREDE yalniz gorunur saglayicisi OLAN kategoriler
+      // listelenir (bos kategoriler "0 sonuc" tuzagi kuruyordu). Kosul sonuc
+      // listesinin kendi tabaniyla ayni: `is_visible` + Kesfet rolleri.
+      applyDiscoverBase(
+        supabase
+          .from('v_providers_public')
+          .select('primary_category_id')
+          .eq('is_visible', true)
+          .not('primary_category_id', 'is', null)
+      ),
+    ]);
+
+  const doluKategoriIdleri = new Set(
+    ((doluKategoriSatirlari ?? []) as { primary_category_id: number | null }[])
+      .map((r) => r.primary_category_id)
+      .filter((v): v is number => v !== null)
+  );
 
   let query = supabase
     .from('v_providers_public')
@@ -250,6 +267,20 @@ export default async function KesfetPage({
           ?.name_tr ?? null;
     }
   }
+
+  /**
+   * Filtrede gosterilecek kategoriler (Duzeltme 01 / #4).
+   *
+   * Gorunur saglayicisi olanlar + URL'de SECILI olanlar. Secili ama bos bir
+   * kategori listede KALIR: aksi halde kullanicinin secimi kutudan kaybolur,
+   * sonuc listesi de "0 sonuc" derken sebebi gorunmezdi.
+   *
+   * `categories` (tam liste) arama eslesmesi ve ad/slug cozumleri icin
+   * oldugu gibi kullanilmaya devam eder; /kategoriler ve ana sayfa DEGISMEZ.
+   */
+  const filtreKategorileri = ((categories || []) as ServiceCategory[]).filter(
+    (c) => doluKategoriIdleri.has(c.id) || categoryIds.includes(c.id)
+  );
 
   // KÖPRÜ — kategori hangi sistemdeyse ondan filtrelenir (tek giriş noktası).
   //  • 'category_attributes' → sorguya containment koşulları eklenir (DB tarafı)
@@ -657,7 +688,7 @@ export default async function KesfetPage({
             {/* Sol — filtre sidebar (mobilde drawer) */}
             <aside className="lg:w-64 lg:shrink-0">
               <KesfetFilters
-                categories={(categories || []) as ServiceCategory[]}
+                categories={filtreKategorileri}
                 cities={orderCities((cities || []) as TurkishCity[])}
                 currentCategories={categoryIds}
                 currentCity={cityId}

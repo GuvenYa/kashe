@@ -3,7 +3,9 @@
 -- Bolum A (8-U uyelik rolu):
 --   K1  org_member_set_role yetkisi: authenticated var + anon yok (2)
 --   K2  ayna fonksiyonlari ince rolu koruyan CASE'i tasir (fn_sync_agency_member, fn_sync_business_member) (2)
+--       FAZ 10a (28 Ekim 2026) sonrasi ayna yok: iki fonksiyon da dusmusse 0 = 0 (EMEKLI; asama20 K3/K4 devralir)
 --   K3  org rolu <-> eski tablo rolu tutarsizligi (agency_members / business_members kaynakli uyelikler;
+--       FAZ 10a sonrasi eski tablo donmus, rol yalniz yeni tabloda degisir: ayna tetikleyicisi yoksa 0 = 0 (EMEKLI)
 --       map_org_role_to_legacy(org.role) <> eski member_role) (0)
 --   K4  bilgi: ince rollu aktif uyelik (sales, project_manager, crew_coordinator, finance)
 --   K5  bilgi: owner_seed olmayan owner uyelik
@@ -55,18 +57,21 @@ k1 AS (
          2::bigint AS yeni
 ),
 k2 AS (
-  SELECT 'K2 ayna CASE (ince rol korunur) (2)' AS kontrol,
+  SELECT 'K2 ayna CASE (ince rol korunur) (2; FAZ 10a sonrasi 0)' AS kontrol,
          (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
            WHERE n.nspname = 'public' AND p.proname IN ('fn_sync_agency_member', 'fn_sync_business_member')
              AND pg_get_functiondef(p.oid) LIKE '%NEW.member_role IS NOT DISTINCT FROM OLD.member_role%')::bigint,
-         2::bigint
+         (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+           WHERE n.nspname = 'public' AND p.proname IN ('fn_sync_agency_member', 'fn_sync_business_member'))::bigint
 ),
 k3 AS (
-  SELECT 'K3 org rolu <-> eski rol tutarsizligi (0)' AS kontrol,
-         ((SELECT count(*) FROM public.organization_memberships m JOIN public.agency_members a ON a.id = m.id
-            WHERE m.legacy_source = 'agency_members' AND public.map_org_role_to_legacy(m.role) <> a.member_role::text)
-          + (SELECT count(*) FROM public.organization_memberships m JOIN public.business_members b ON b.id = m.id
-              WHERE m.legacy_source = 'business_members' AND public.map_org_role_to_legacy(m.role) <> b.member_role::text))::bigint,
+  SELECT 'K3 org rolu <-> eski rol tutarsizligi (0; FAZ 10a sonrasi emekli)' AS kontrol,
+         (CASE WHEN EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_faz0_sync_agency_member') THEN
+           (SELECT count(*) FROM public.organization_memberships m JOIN public.agency_members a ON a.id = m.id
+             WHERE m.legacy_source = 'agency_members' AND public.map_org_role_to_legacy(m.role) <> a.member_role::text)
+           + (SELECT count(*) FROM public.organization_memberships m JOIN public.business_members b ON b.id = m.id
+               WHERE m.legacy_source = 'business_members' AND public.map_org_role_to_legacy(m.role) <> b.member_role::text)
+          ELSE 0 END)::bigint,
          0::bigint
 ),
 k4 AS (

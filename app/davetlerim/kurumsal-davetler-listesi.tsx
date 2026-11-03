@@ -79,8 +79,7 @@ function DavetKarti({
   );
 
   const business = invitation.business;
-  const businessName =
-    business?.company_name || business?.full_name || 'Bir kurum';
+  const businessName = business?.display_name?.trim() || 'Bir kurum';
 
   const tone = getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
@@ -175,7 +174,7 @@ function DavetKarti({
         <span>
           Rol önerilen:{' '}
           <strong className="text-ink">
-            {getMemberRoleLabel(invitation.member_role)}
+            {getMemberRoleLabel(invitation.role)}
           </strong>
         </span>
         <span>{formatInvitationAge(invitation.created_at)}</span>

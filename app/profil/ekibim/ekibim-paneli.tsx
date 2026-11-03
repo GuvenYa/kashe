@@ -13,15 +13,14 @@ type Props = {
   members: AgencyMemberWithProfile[];
   invitations: AgencyInvitation[];
   currentUserId: string;
-  /** FAZ 8-U: uye id -> kurulus rolu (ayna satiri yoksa anahtar yok). */
-  kurulusRolleri: Record<string, string>;
 };
 
+// FAZ 10a: kurulus rolu uyelik satirinin kendisinde (member.role) —
+// ayri bir rol haritasi yok.
 export function EkibimPaneli({
   members,
   invitations,
   currentUserId,
-  kurulusRolleri,
 }: Props) {
   const [showInviteForm, setShowInviteForm] = useState(false);
 
@@ -75,7 +74,7 @@ export function EkibimPaneli({
           Ekip üyeleri{' '}
           <span className="text-ink-72 text-base">({members.length})</span>
         </h2>
-        <UyeListesi members={members} kurulusRolleri={kurulusRolleri} />
+        <UyeListesi members={members} />
       </section>
 
       {/* Geçmiş davetler */}

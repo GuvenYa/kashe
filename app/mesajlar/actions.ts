@@ -4,7 +4,8 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
-import { canWriteForBusiness } from '@/app/lib/business-write';
+import { canWriteForBusiness, getTeamContext } from '@/app/lib/business-write';
+import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import {
   EVENT_TYPE_KEYS,
@@ -604,17 +605,11 @@ export async function sendMessage(
     hasAccess = !!assignee;
   }
 
-  // Kurumsal ekip: owner/manager kurum adına mesaj gönderebilir ('member' pasif kalır)
-  if (conv && !hasAccess) {
-    const { data: membership } = await supabase
-      .from('business_members')
-      .select('member_role')
-      .eq('business_id', conv.customer_id)
-      .eq('member_user_id', user.id)
-      .maybeSingle();
-    hasAccess =
-      membership?.member_role === 'owner' ||
-      membership?.member_role === 'manager';
+  // Kurumsal ekip: owner/manager kurum adına mesaj gönderebilir ('member' pasif kalır).
+  // FAZ 10a: uyelik `organization_memberships`'ten okunur; kural tek yerde
+  // (`business-write.ts` -> `eskiKurumRolu`), burada kopyalanmaz.
+  if (conv && !hasAccess && conv.customer_id) {
+    hasAccess = await canWriteForBusiness(conv.customer_id);
   }
 
   if (!conv || !hasAccess) {
@@ -699,16 +694,11 @@ export async function getTeamConversationIds(): Promise<string[]> {
 
   if (!user) return [];
 
-  const { data: memberships } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-
   // Yalnız PASİF ('member') üyelikler unread sayımından hariç tutulur.
   // owner/manager (canWrite) kurum konuşmalarının unread'i normal sayılır.
-  const teamBusinessIds = (memberships ?? [])
-    .filter((m) => m.member_role === 'member')
-    .map((m) => m.business_id);
+  // FAZ 10a: setler `organization_memberships`'ten tureyen tek baglamdan gelir.
+  const { teamBusinessIds: tumKurumlar, canWriteSet } = await getTeamContext();
+  const teamBusinessIds = tumKurumlar.filter((id) => !canWriteSet.has(id));
 
   if (teamBusinessIds.length === 0) return [];
 
@@ -781,14 +771,23 @@ export async function assignConversation(
     return { success: false, error: 'Bu konuşmayı atama yetkin yok.' };
   }
 
-  const { data: member } = await supabase
-    .from('agency_members')
-    .select('id')
-    .eq('agency_id', user.id)
-    .eq('professional_id', professionalId)
-    .maybeSingle();
+  // FAZ 10a: "ekibinde mi" sorusu kurulus uyeligiyle yanitlanir. Kurulusun
+  // kendi hesabi (`owner_seed`) ekip uyesi sayilmaz — atama ona yapilmaz.
+  const orgId = await kurulusumunId(supabase, user.id);
+  let ekipUyesi = false;
+  if (orgId) {
+    const { data: uyelik } = await supabase
+      .from('organization_memberships')
+      .select('id, legacy_source')
+      .eq('organization_id', orgId)
+      .eq('user_id', professionalId)
+      .eq('status', 'active')
+      .maybeSingle();
+    const satir = uyelik as { id: string; legacy_source: string | null } | null;
+    ekipUyesi = !!satir && satir.legacy_source !== OWNER_SEED;
+  }
 
-  if (!member) {
+  if (!ekipUyesi) {
     return { success: false, error: 'Bu profesyonel ekibinde değil.' };
   }
 

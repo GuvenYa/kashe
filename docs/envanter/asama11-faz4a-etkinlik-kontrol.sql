@@ -3,6 +3,7 @@
 --
 -- 4a veri yazmaz (event_types referansi haric); kontrol sema/yetki/degismezlik odaklidir. Beklenen: hepsi ESIT.
 --   K1 event_types anahtarlari = conversations.event_type CHECK listesi (uygulama EVENT_TYPES ile ayni kume)
+--      FAZ 10b (faz10b_01) sonrasi CHECK yok, sutun FK ile tabloya bagli: K1 EMEKLI yazar (yerine asama20 K7)
 --   K2 brief basina tam bir is_current (surumu olan brief sayisi = is_current sayisi)
 --   K3 surum numarasi tekrari/boslugu yok (brief basina max(version_no) = count)
 --   K4 event_requirements'ta pasif role bagli satir (bilgi degil: 4a'da 0)
@@ -82,6 +83,7 @@ hepsi AS (
 SELECT kontrol, eski, yeni,
        CASE WHEN kontrol LIKE 'K1%' THEN eski + yeni ELSE abs(eski - yeni) END AS fark,
        CASE WHEN kontrol LIKE 'K9%' THEN 'BILGI'
+            WHEN kontrol LIKE 'K1%' AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_check') THEN 'EMEKLI'
             WHEN (CASE WHEN kontrol LIKE 'K1%' THEN eski + yeni ELSE abs(eski - yeni) END) = 0 THEN 'ESIT'
             ELSE 'FARK' END AS durum
   FROM hepsi;

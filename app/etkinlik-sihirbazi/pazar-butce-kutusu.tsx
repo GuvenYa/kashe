@@ -14,11 +14,14 @@ import {
 /**
  * PAZAR BUTCE KUTUSU (FAZ 9b) — sihirbazda secili rollerin pazar medyani.
  *
- * KUTU YALNIZ HER SECILI ROL ICIN SATIR DONDUGUNDE CIZILIR. Bir rol bile
- * yayinli degilse toplam eksik kalir ve kullaniciyi yanlis bir butceye
- * yonlendirir — o yuzden kismi veriyle HICBIR SEY gosterilmez. Yukleme ve hata
- * durumunda da kutu yok (yayinli hucre yoksa yuzeyde hicbir sey cizilmez
- * karari; "veri yok" yazisi bile konmaz).
+ * KISMI KAPSAM (Duzeltme 01 / #18): rollerin EN AZ YARISI icin yayinli satir
+ * varsa kutu cizilir ve kapsam ACIKCA yazilir ("(4/5 rol)" + veri olmayan
+ * roller). Yarinin altinda kutu YOK: o kadar eksik bir toplam yanlis bir
+ * butceye yonlendirir. Yukleme ve hata durumunda da kutu yok (yayinli hucre
+ * yoksa yuzeyde hicbir sey cizilmez karari; "veri yok" yazisi bile konmaz).
+ *
+ * EKSIK ROL ICIN TAHMIN URETILMEZ: toplam yalniz VERI OLAN rollerin
+ * medyanlarindan gelir; eksik rol toplama hic girmez.
  *
  * FIYAT UYDURULMAZ: toplam yalniz RPC medyanlarinin `adet` ile carpimidir ve
  * "~" ile yazilir. Yuvarlama yok; `formatTL` ne verirse o. Kutu hicbir alani
@@ -92,15 +95,18 @@ export function PazarButceKutusu({
 
   if (!kiyaslar || roller.length === 0 || idler.length === 0) return null;
 
-  // TAM KAPSAMA SARTI: her secili rolun yayinli satiri olmali.
+  // Kapsam: veri OLAN ve OLMAYAN roller ayrilir.
   const satirlar: { rol: ButceRolu; kiyas: PazarKiyasi }[] = [];
+  const eksikRoller: ButceRolu[] = [];
   for (const r of roller) {
     const id = rolIdler[r.slug];
     const k = id ? kiyaslar.get(id) : undefined;
-    if (!k) return null;
-    satirlar.push({ rol: r, kiyas: k });
+    if (k) satirlar.push({ rol: r, kiyas: k });
+    else eksikRoller.push(r);
   }
-  if (satirlar.length === 0) return null;
+  // En az yarisi kapsanmali (yarinin altinda kutu cizilmez).
+  if (satirlar.length === 0 || satirlar.length * 2 < roller.length) return null;
+  const tamKapsam = eksikRoller.length === 0;
 
   const toplam = satirlar.reduce(
     (t, s) => t + s.kiyas.median * Math.max(1, s.rol.adet),
@@ -114,11 +120,19 @@ export function PazarButceKutusu({
         Pazar kıyası
       </p>
       <p className="font-display font-semibold text-ink mt-1.5 break-words">
-        Benzer etkinliklerde bu roller ~{formatTL(toplam)}
+        {tamKapsam
+          ? `Benzer etkinliklerde bu roller ~${formatTL(toplam)}`
+          : `Benzer etkinliklerde ~${formatTL(toplam)} (${satirlar.length}/${roller.length} rol)`}
       </p>
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50 mt-1">
         son 90 gün · {GRANULARITY_ETIKETI[kapsam]}
       </p>
+      {/* Duzeltme 01 (#18): eksik roller ACIKCA yazilir; tahmin uretilmez. */}
+      {!tamKapsam && (
+        <p className="text-sm text-ink-72 mt-1.5 break-words">
+          Veri olmayan rol: {eksikRoller.map((r) => r.ad).join(', ')}
+        </p>
+      )}
 
       <ul className="mt-3 space-y-1">
         {satirlar.map((s) => (

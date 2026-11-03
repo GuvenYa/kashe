@@ -24,15 +24,12 @@ import {
 export function KurulusRolSecici({
   membershipId,
   rol,
-  aynalanmamis = false,
   yuzey = 'ajans',
 }: {
-  /** `organization_memberships.id` = eski uye satirinin id'si (ayna ayni id ile yazar). */
+  /** `organization_memberships.id` — uyelik satirinin kendi kimligi. */
   membershipId: string;
-  /** Mevcut kurulus rolu; ayna satiri yoksa 'viewer' gosterilir. */
+  /** Mevcut kurulus rolu (uyelik satirindan; FAZ 10a'da ayna yok). */
   rol: OrgRole;
-  /** Ayna satiri bulunamadi — deger varsayilan, uyari `title`'da. */
-  aynalanmamis?: boolean;
   /** Kurumsal yuzeyde ozetlerde yetenek havuzu gecmez (o modul ajansa ozel). */
   yuzey?: 'ajans' | 'kurumsal';
 }) {
@@ -80,11 +77,7 @@ export function KurulusRolSecici({
         value={secilen}
         disabled={isPending}
         onChange={(e) => rolDegisti(e.target.value)}
-        title={
-          aynalanmamis
-            ? 'Bu üye için kuruluş üyeliği henüz aynalanmamış; varsayılan gösteriliyor.'
-            : ozetler[secilen]
-        }
+        title={ozetler[secilen]}
         className="w-full px-3 py-1.5 bg-paper border border-line rounded-lg text-sm text-ink focus:border-brand-ink focus:outline-none disabled:opacity-50"
       >
         {ORG_ROLES.map((r) => (
@@ -97,12 +90,6 @@ export function KurulusRolSecici({
       <p className="text-[11px] text-ink-50 leading-snug mt-1">
         {ozetler[secilen]}
       </p>
-
-      {aynalanmamis && (
-        <p className="text-[11px] text-ink-50 leading-snug mt-1">
-          Kuruluş üyeliği henüz aynalanmamış; varsayılan gösteriliyor.
-        </p>
-      )}
 
       {ownerOnayi && (
         <div className="mt-2 px-3 py-2 bg-paper border border-line-strong rounded-lg">

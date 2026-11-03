@@ -71,6 +71,9 @@ const TYPE_LABELS: Record<string, string> = {
   // FAZ 8b — firsat sahibine atama ("Sana firsat atandi: ...");
   // baglanti /ajans/musteriler?firsat=<id> paneli acar.
   crm: 'Fırsat',
+  // FAZ 10a — davet (davetliye, /davetlerim) ve katilim (kurulus sahibine,
+  // /profil/ekibim ya da /profil/kurumsal-ekip); tetikleyici yazar.
+  team: 'Ekip',
 };
 
 /**

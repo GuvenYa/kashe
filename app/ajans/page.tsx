@@ -65,7 +65,11 @@ type TeklifSatiri = {
   rfp_id: string | null;
   client_name: string | null;
   buyer: { display_name: string | null } | null;
-  current_version: { total_amount: number | null } | null;
+  current_version: {
+    total_amount: number | null;
+    /** Duzeltme 01 (#14): gecerlilik gecmisse teklif "acik is" degildir. */
+    valid_until: string | null;
+  } | null;
 };
 
 type EtkinlikSatiri = {
@@ -83,6 +87,24 @@ const ACIK_RFP_DURUMU = ['sent', 'collecting'];
 const YANITSIZ_DAVET = ['sent', 'viewed'];
 /** Gonderilmis ama sonuclanmamis teklif. */
 const BEKLEYEN_TEKLIF = ['sent', 'viewed'];
+
+/**
+ * Gecerliligi SURMEYEN teklif acik is degildir (Duzeltme 01 / #14).
+ *
+ * DB gunluk isle (`proposals_expire_stale`, 00:15) bu teklifleri `expired`
+ * yapiyor; panel gun icinde de dogru gostersin diye ayni kurali okur
+ * (`valid_until` bos ise sure yok, acik kalir). Kural DB'de; buradaki
+ * kontrol yalniz GOSTERIM — durum yazimi yapilmaz.
+ *
+ * Zaman okumasi BU FONKSIYONUN ICINDE: sunucu bilesen govdesinde `Date.now()`
+ * `react-hooks/purity` hatasi veriyor (bkz. FAZ 10d notu).
+ */
+function surumGecerli(surum: { valid_until: string | null } | null): boolean {
+  const son = surum?.valid_until;
+  if (!son) return true;
+  const t = new Date(son).getTime();
+  return !Number.isFinite(t) || t >= Date.now();
+}
 
 export default async function AjansPanelPage() {
   const supabase = await createClient();
@@ -128,7 +150,7 @@ export default async function AjansPanelPage() {
       .select(
         `id, title, status, created_at, rfp_id, client_name,
          buyer:organizations_public!proposals_buyer_organization_id_fkey(display_name),
-         current_version:proposal_versions!proposals_current_version_fkey(total_amount)`
+         current_version:proposal_versions!proposals_current_version_fkey(total_amount, valid_until)`
       )
       .eq('seller_organization_id', kurulus.id)
       .order('created_at', { ascending: false }),
@@ -222,8 +244,9 @@ export default async function AjansPanelPage() {
       ACIK_RFP_DURUMU.includes(d.rfp.status) &&
       YANITSIZ_DAVET.includes(d.status)
   );
-  const bekleyenTeklifler = teklifler.filter((t) =>
-    BEKLEYEN_TEKLIF.includes(t.status)
+  const bekleyenTeklifler = teklifler.filter(
+    (t) =>
+      BEKLEYEN_TEKLIF.includes(t.status) && surumGecerli(t.current_version)
   );
   const taslakSayisi = teklifler.filter((t) => t.status === 'draft').length;
   const ayEtkinlikSayisi = (ayEtkinlikSonuc.data ?? []).length;

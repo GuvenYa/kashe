@@ -96,9 +96,10 @@ elle denenir), 1-2 `quote_requests` (teklif topla).
 |---|---|---|
 | `00-sahne-temizlik.sql` | Koruma + tum Sahne satirlarini siler | Dal SQL Editor (gerekince) |
 | `00-sahne-taksonomi.sql` | 23 kategori eksikse ekler (yalniz harness / guvence; dalda 0 satir yazar) | Dal: calistir, "0 eklendi" bekle |
-| `01-sahne-hesaplar.sql` | 81 il; 171 `auth.users` (+`handle_new_user` -> profil, saglayici, kurulus); profil alanlari; hizmetler; deneyimler; uyelikler; havuz; tedarikci/CRM/gorev; favori; musaitlik | Dal SQL Editor (~30 sn) |
+| `01a..01b-sahne-hesaplar.sql` | 81 il; 171 `auth.users` (+`handle_new_user` -> profil, saglayici, kurulus); profil alanlari; hizmetler; deneyimler; uyelikler (v2: dogrudan `organization_memberships`, FAZ 10a); havuz (`sync_org_talent_pool`); davetler (`organization_invitations`: bekleyen/suresi gecmis/ret/iptal/kabul); tedarikci/CRM/gorev; favori; musaitlik. Boyut siniri icin 2 parca, sirayla | Dal SQL Editor, 2 kez (~30 sn) |
 | `02a..02e-sahne-gecmis.sql` | 6 aylik akis (bolum 7) + zaman duzeltme; Dashboard SQL Editor boyut siniri ("Query is too large") yuzunden ~380 KB'lik 5 parca, sirayla ve atlamadan (02a kendi gecmisini silip bastan baslar; 02b+ on kosul kontrol eder) | Dal SQL Editor, 5 kez |
 | `03-sahne-hesap.sql` | `price_benchmarks_compute`, `trust_score_compute`; ozet ciktilar | Dal SQL Editor |
+| `04-sahne-eslestirme.sql` | v2 (#8): onayli/eslesme durumundaki etkinlikler icin `run_event_match` (sahip JWT), ilk 6-10 aday gosterildi, 0-3 tiklandi; zamanlar etkinlik olusturmasindan sonraki gune (admin zeka huni/adalet) | Dal SQL Editor (02'den sonra) |
 | `foto-plan.json` | Her saglayici icin kategori + fotograf adedi + avatar bas harfleri/renk (betik girdisi) | `scripts/sahne/foto-*.mjs` okur |
 
 Kaynak girdileri `scripts/sahne/kaynak/*.json` uygulama konfigurasyonundan turetildi (brief-config, filter-config, category-fields,
@@ -147,11 +148,13 @@ Avatar: SVG (bas harfler, kategoriye gore 8 renkten biri) -> `sharp` -> 256px PN
 
 ## 8. Calistirma sirasi (Guven)
 
-1. Vercel Preview env -> dal (bolum 2). 2. Dal SQL Editor: `00-sahne-taksonomi.sql` (0 eklendi), `01-sahne-hesaplar.sql`.
+1. Vercel Preview env -> dal (bolum 2). 2. Dal SQL Editor: `00-sahne-taksonomi.sql` (0 eklendi), `01a-sahne-hesaplar.sql`, `01b-sahne-hesaplar.sql`.
 3. PowerShell: `node scripts/sahne/foto-indir.mjs` -> kontak sayfalari kontrol (uygunsuz gorsel varsa `lisans.json`'dan sil, tekrar
-   kosmadan devam) -> `node scripts/sahne/foto-yukle.mjs`. 4. Dal SQL Editor: `02a` ... `02e-sahne-gecmis.sql` (sirayla), `03-sahne-hesap.sql`.
+   kosmadan devam) -> `node scripts/sahne/foto-yukle.mjs`. 4. Dal SQL Editor: `02a` ... `02e-sahne-gecmis.sql` (sirayla), `03-sahne-hesap.sql`, `04-sahne-eslestirme.sql`.
 5. Onizleme/yerel dev ile giris: `sahne+ajans-nova@kashe.net` / `Sahne!2026` vb. (hesap listesi `docs/sahne/hesaplar.md`).
-Yeniden kurulum: `00-sahne-temizlik.sql` + `foto-yukle.mjs --sil`, sonra 2-4.
+Yeniden kurulum: `00-sahne-temizlik.sql` + `foto-yukle.mjs --sil`, sonra 2-4 (fotograflar diskte duruyorsa `foto-indir` atlanir; `foto-yukle` idempotan).
+**v2 (29 Ekim 2026, FAZ 10a sonrasi) ile zorunlu:** 10a aynayi kapattigi icin eski uretec dosyalari (01 tek parca) ekipleri bos birakir; dalda bir sonraki
+yukleme v2 dosyalariyla yapilir (bulgular #33). Eski `01-sahne-hesaplar.sql` ve `01b-sahne-etkinlik-turleri.sql` kaldirildi.
 
 ## 9. Senaryo listesi (eksik bulma turu)
 
@@ -179,6 +182,10 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
 
 ## 11. Kaldigimiz yer ve sonraki oturum (27 Ekim gece)
 
+**28 Ekim 2026 guncellemesi:** FAZ 10a-DB/01 yazildi ve harness'ta dogrulandi (asama4 35/35, asama20); durum ve kapanis notu
+`38-faz10-temizlik.md` bolum 6, uygulama gorevi `40-claude-code-gorevi-10a-p1-uyelik.md`. Sahne v2 uretec degisiklikleri 38 bolum 6 madde 9'da.
+
+
 1. **Guven tek basina kontrol eder:** (a) Merve Avci ile /profil/portfoy'dan bir gorsel yukle -> "yuklendi" (Storage politikalari);
    (b) bir musteriyle /p/<pro>'da "Teklif Al" formunu ELLE doldur (tarih + kisi dahil) -> konusma kartinda TARIH ve KISI cikiyor mu
    (bulgu #31); (c) Vercel Preview `NEXT_PUBLIC_SITE_URL` = sahne onizleme adresi (Config) yapildi -> sonraki push'ta portal baglantisi
@@ -186,12 +193,19 @@ Her senaryoda bulunan eksik `docs/sahne/bulgular.md`'ye yazilir (tarih, hesap, a
 2. **Kurum turu** (`sahne+kurum-teknopark@kashe.net` sahip + `sahne+<uye>` uyesi): /kurumsal -> etkinlik + gereksinim -> "Teklif talebi ac
    (RFP)" -> ajans davet (Nova, Lumen) -> ajans tarafinda RFP yaniti -> kurumda karsilastirma -> karar (award) -> rezervasyon; uye
    (viewer) yetkileri. Sonra admin (`sahne+admin`) /admin/zeka itiraz kuyrugu: Merve'nin itirazina karar + not.
-3. **Sahne v2 (uretec):** #8 eslestirme gecmisi (`04-sahne-eslestirme.sql`: `run_event_match` + shown/clicked, ajans jwt ile),
-   #26 kurum alicilarda kurumsal turler + "'da/'de" ek uyumu, #32 kategoriye ozel performans modulu metni, etkinlik_turleri 3-6 secenek.
-   Yeniden kurulum: 00-temizlik + foto-yukle --sil, sonra 01 -> foto-indir/yukle -> 02a..e -> 03 (ya da yalniz 02a..e + 03 ile gecmis).
-4. **Uygulama duzeltmeleri (Sahne'den cikan, FAZ 10 oncesi kucuk dal `sahne-duzeltmeler`):** #29 tamamlanan is cipi (SECURITY DEFINER
-   ozet; migration + asama4), #28 "Yorum birak" cagrisi, #14 suresi dolan teklif, #6 admin dashboard onay karti, #7 huni baslik KPI,
-   #16 preview portal URL (`VERCEL_BRANCH_URL`), #20/#19 kucukler. Urun kararlari: #4, #5, #18, #23.
+3. **Sahne v2 (uretec) — YAPILDI (29 Ekim, harness'ta 10a uzerinde bastan sona yuklendi; asama4 35/35, asama17/18/19/20 ESIT):**
+   FAZ 10a uyumu (uyelikler dogrudan `organization_memberships`, havuz `sync_org_talent_pool`, 56 davet, bildirimler gecmise tarihli),
+   #8 eslestirme gecmisi (`04-sahne-eslestirme.sql`: 18 kosu / 380 aday / 370 gosterim / 28 tik), #26 kurum alicilarda kurumsal tur +
+   bulunma eki (`ek_de`), #32 9 performans kategorisine ozel metin, etkinlik_turleri 3-6 (pro) / 4-6 (ajans). Dalda yukleme: 00-temizlik +
+   foto-yukle --sil, sonra 01a -> 01b -> foto-yukle -> 02a..e -> 03 -> 04 (bolum 8). Bekleyen davetler 10a-P1 turunun ham maddesi
+   (`hesaplar.md` Davetler bolumu).
+4. **Uygulama duzeltmeleri (Duzeltme 01; dal `duzeltme-01`, `faz10a/p1` uzerinden) — DB TARAFI YAZILDI (29 Ekim):**
+   `supabase/migrations/20261030120000_duzeltme_01_sahne_bulgulari.sql` — #29 `provider_public_stats` (anon/authenticated, sayi doner),
+   #14 `proposals_expire_stale` + pg_cron `proposals-expire-daily` 00:15 (ilk kosu migration'da; Sahne'de 24 teklif expired oldu),
+   #7 `analytics_summary().funnel.linked` (zincirli huni), #23 ekip bildirimleri (`trg_duz_crew_member_notify`, `trg_duz_booking_crew_notify`,
+   type `team`). Harness: asama4 **T35** eklendi, 36/36; asama17/18/19/20 ESIT. Uygulama tarafi `41-claude-code-gorevi-duzeltme-01.md`
+   (#29 #28 #14 #6 #7 #16 #19 #20 #4 #5 #18 #26) — YAPILDI (Claude Code, 29 Ekim; diff okundu, tsc temiz; Sahne turu bekliyor). Urun kararlari (Guven, 29 Ekim): #4 bos kategori gizlenir, #5 kategori ikonu,
+   #18 kismi kapsam gosterilir, #23 iki bildirim de gider.
 5. Sonra **FAZ 10a-DB/01** (38 numarali plan), dolu Sahne'de turlanir.
 
 **Karar (Guven, 27 Ekim gece; sira degisti):** Guven tur yapmaz; kota sifirlaninca DOGRUDAN **FAZ 10a-DB/01** ile baslanir.

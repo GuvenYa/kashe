@@ -4,6 +4,12 @@ import Link from 'next/link';
 import { formatTL, formatTLAralik } from '@/app/lib/para';
 import { pazarKiyaslari } from '@/app/lib/fiyat-kiyas-data';
 import { guvenDokumu } from '@/app/lib/guven-data';
+import {
+  kurulusumunId,
+  uyeliklerim,
+  OWNER_SEED,
+  OWNER_SEED_HARIC,
+} from '@/app/lib/uyelik';
 import { GuvenDokumuKarti } from '@/app/components/guven/guven-dokumu-karti';
 import {
   GRANULARITY_ETIKETI,
@@ -126,20 +132,30 @@ export default async function ProfilPage() {
     }
   }
 
-  // Ajans ise: üye sayısı + bekleyen davet sayısı
+  // FAZ 10a: ekip sayimlari kurulus uyeliginden. Kurulusun kendi hesabi
+  // (`owner_seed`) uye sayilmaz — eski tablolarda da yoktu. Bekleyen davet
+  // sayisi suresi GECMEMIS davetleri sayar (durum DB'de `pending` kalabilir).
+  const kendiKurulusumunId =
+    isAgencyUser || isBusinessUser
+      ? await kurulusumunId(supabase, user.id)
+      : null;
+
   let agencyMemberCount = 0;
   let pendingInvitationCount = 0;
-  if (isAgencyUser) {
+  if (isAgencyUser && kendiKurulusumunId) {
     const [membersCountResult, invitationsCountResult] = await Promise.all([
       supabase
-        .from('agency_members')
+        .from('organization_memberships')
         .select('id', { count: 'exact', head: true })
-        .eq('agency_id', user.id),
+        .eq('organization_id', kendiKurulusumunId)
+        .eq('status', 'active')
+        .or(OWNER_SEED_HARIC),
       supabase
-        .from('agency_invitations')
+        .from('organization_invitations')
         .select('id', { count: 'exact', head: true })
-        .eq('agency_id', user.id)
-        .eq('status', 'pending'),
+        .eq('organization_id', kendiKurulusumunId)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString()),
     ]);
     agencyMemberCount = membersCountResult.count ?? 0;
     pendingInvitationCount = invitationsCountResult.count ?? 0;
@@ -147,41 +163,58 @@ export default async function ProfilPage() {
 
   // Kurum ise: ekip üye sayısı
   let businessMemberCount = 0;
-  if (isBusinessUser) {
+  if (isBusinessUser && kendiKurulusumunId) {
     const businessMembersResult = await supabase
-      .from('business_members')
+      .from('organization_memberships')
       .select('id', { count: 'exact', head: true })
-      .eq('business_id', user.id);
+      .eq('organization_id', kendiKurulusumunId)
+      .eq('status', 'active')
+      .or(OWNER_SEED_HARIC);
     businessMemberCount = businessMembersResult.count ?? 0;
   }
 
-  // Profesyonel ise: üye olduğu ajanslar
+  // Profesyonel ise: üye olduğu ajanslar.
+  // FAZ 10a: uyelikler `organization_memberships`'ten (`uyeliklerim`); ad
+  // kurulus satirindan, avatar kurulusun pazaryeri profilinden. Kurulusun
+  // kendi hesabi listede YOK.
   type MyAgency = {
     id: string;
-    member_role: string;
-    agency: {
-      id: string;
-      full_name: string | null;
-      company_name: string | null;
-      avatar_url: string | null;
-    } | null;
+    agency: { id: string; name: string; avatar_url: string | null } | null;
   };
   let myAgencies: MyAgency[] = [];
   if (isPro) {
-    const { data: myAgenciesData } = await supabase
-      .from('agency_members')
-      .select(
-        `
-        id, member_role,
-        agency:profiles!agency_members_agency_id_fkey (
-          id, full_name, company_name, avatar_url
-        )
-      `
-      )
-      .eq('professional_id', user.id)
-      .order('joined_at', { ascending: false });
+    const ajansUyelikleri = (await uyeliklerim(supabase, user.id)).filter(
+      (u) =>
+        u.accountType === 'agency' &&
+        u.legacySource !== OWNER_SEED &&
+        !!u.legacyProfileId
+    );
 
-    myAgencies = (myAgenciesData ?? []) as unknown as MyAgency[];
+    const ajansAvatarlari = new Map<string, string | null>();
+    if (ajansUyelikleri.length > 0) {
+      const { data: ajansProfilleri } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in(
+          'id',
+          ajansUyelikleri.map((u) => u.legacyProfileId as string)
+        );
+      for (const a of (ajansProfilleri ?? []) as {
+        id: string;
+        avatar_url: string | null;
+      }[]) {
+        ajansAvatarlari.set(a.id, a.avatar_url);
+      }
+    }
+
+    myAgencies = ajansUyelikleri.map((u) => ({
+      id: u.membershipId,
+      agency: {
+        id: u.legacyProfileId as string,
+        name: u.displayName?.trim() || 'İsimsiz ajans',
+        avatar_url: ajansAvatarlari.get(u.legacyProfileId as string) ?? null,
+      },
+    }));
   }
 
   // Müşteri ise favorilerini çek (en yeni 4 + toplam sayı için)
@@ -1296,8 +1329,7 @@ export default async function ProfilPage() {
                   {myAgencies.map((m) => {
                     const ag = m.agency;
                     if (!ag) return null;
-                    const agName =
-                      ag.company_name || ag.full_name || 'İsimsiz ajans';
+                    const agName = ag.name;
                     const agInitials = agName
                       .split(' ')
                       .map((s) => s[0])

@@ -83,7 +83,22 @@ const SABIT_PENCERELER = [7, 30, 90] as const;
 
 type GunlukSatiri = { day: string; event_name: string; count: number };
 
+/**
+ * Zincirli huni (Duzeltme 01 / #7): pencerede ONAYLANAN etkinlikler ve her
+ * adimda AYNI etkinlige baglanan sayilar. Ham `funnel.*` sayimlari farkli
+ * varliklari boluyordu ve oran %100'u asabiliyordu; baslik KPI'lari artik
+ * bu bloktan okunur. Eski RPC surumunde alan YOK -> KPI "—" gosterir.
+ */
+type HuniZincir = {
+  events: number;
+  with_match: number;
+  with_selection: number;
+  with_approval: number;
+  with_booking: number;
+};
+
 type Huni = {
+  linked?: HuniZincir | null;
   brief_created: number;
   event_confirmed: number;
   match_run: number;
@@ -445,6 +460,9 @@ export default function ZekaPage() {
   }, [huni]);
 
   const huniBos = !huni || (huni.brief_created === 0 && huni.booking_created === 0);
+
+  /** Zincirli huni blogu; eski RPC surumunde yok (KPI "—"). */
+  const zincir = huni?.linked ?? null;
 
   /** Adalet grafigi: sabit pencereler; `null` pay cubuk CIZMEZ (0 degil). */
   const adaletVerisi = useMemo(
@@ -1204,25 +1222,50 @@ export default function ZekaPage() {
           <div className="grid lg:grid-cols-2 gap-6">
             {/* ── BLOK 2 — Huni ── */}
             <PanelKart baslik="Huni · talepten rezervasyona">
+              {/* Baslik KPI'lari ZINCIRLI sayimdan (Duzeltme 01 #7): her oranin
+                  payi ve paydasi AYNI etkinlik kumesine bakar, boylece %100'u
+                  asamaz. `linked` yoksa (eski RPC) "—" gorunur; sayi uydurulmaz. */}
               <KpiSatir>
                 <KpiKutu
-                  etiket="Brief → rezervasyon"
-                  deger={oran(huni?.booking_created ?? 0, huni?.brief_created ?? 0)}
-                  altNot="Tüm pencere"
+                  etiket="Onaylanan etkinlik → rezervasyon"
+                  deger={
+                    zincir
+                      ? oran(zincir.with_booking, zincir.events)
+                      : '—'
+                  }
+                  altNot={
+                    zincir
+                      ? `${sayi(zincir.with_booking)} / ${sayi(zincir.events)}`
+                      : 'Veri yok'
+                  }
+                  vurgu="moss"
+                />
+                <KpiKutu
+                  etiket="Eşleştirme kullanan"
+                  deger={
+                    zincir ? oran(zincir.with_match, zincir.events) : '—'
+                  }
+                  altNot={
+                    zincir
+                      ? `${sayi(zincir.with_match)} / ${sayi(zincir.events)}`
+                      : 'Veri yok'
+                  }
+                />
+                <KpiKutu
+                  etiket="Seçim yapan"
+                  deger={
+                    zincir ? oran(zincir.with_selection, zincir.events) : '—'
+                  }
+                  altNot={
+                    zincir
+                      ? `${sayi(zincir.with_selection)} / ${sayi(zincir.events)}`
+                      : 'Veri yok'
+                  }
                 />
                 <KpiKutu
                   etiket="Gösterim → tıklama"
                   deger={oran(huni?.match_clicked ?? 0, huni?.match_shown ?? 0)}
                   altNot="Aday kartları"
-                />
-                <KpiKutu
-                  etiket="Rezervasyon tamamlanma"
-                  deger={oran(
-                    huni?.booking_completed ?? 0,
-                    huni?.booking_created ?? 0
-                  )}
-                  altNot="Tamamlanan / oluşan"
-                  vurgu="moss"
                 />
               </KpiSatir>
 
@@ -1283,7 +1326,11 @@ export default function ZekaPage() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="mt-5">
+                  <p className="mt-5 text-xs text-ink-50 leading-relaxed">
+                    Adımlar iç içe değildir; başlık oranları zincirli sayımdan
+                    (aynı etkinlik) hesaplanır.
+                  </p>
+                  <div className="mt-3">
                     <VeriTablosu
                       sutunlar={huniSutunlari}
                       satirlar={huniSatirlari}

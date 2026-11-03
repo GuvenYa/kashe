@@ -98,8 +98,7 @@ function DavetKarti({
   );
 
   const agency = invitation.agency;
-  const agencyName =
-    agency?.company_name || agency?.full_name || 'Bir ajans';
+  const agencyName = agency?.display_name?.trim() || 'Bir ajans';
 
   const tone = getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
@@ -195,7 +194,7 @@ function DavetKarti({
         <span>
           Rol önerilen:{' '}
           <strong className="text-ink">
-            {getMemberRoleLabel(invitation.member_role)}
+            {getMemberRoleLabel(invitation.role)}
           </strong>
         </span>
         <span>{formatInvitationAge(invitation.created_at)}</span>

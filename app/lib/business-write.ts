@@ -1,16 +1,45 @@
 import { createClient } from '@/app/lib/supabase-server';
+import {
+  eskiKurumRolu,
+  uyeliklerim,
+  OWNER_SEED,
+  type Uyeligim,
+} from '@/app/lib/uyelik';
+
+/**
+ * KURUM ADINA YAZMA YETKISI — FAZ 10a.
+ *
+ * Kaynak `organization_memberships` (eski `business_members` SALT OKUNUR).
+ * Ince kurulus rolu, eski uc kademeli kurum rolune `eskiKurumRolu` ile
+ * indirilir (owner_seed/owner -> owner, admin -> manager, digerleri ->
+ * member); kurumsal yazma yetkisi bugun bu uc kademeye bakiyor.
+ *
+ * KURULUSUN KENDI HESABI HARIC (`owner_seed`): eski `business_members`
+ * kurumun kendi satirini icermiyordu ve kurum sahibi zaten kendi profil
+ * id'siyle yaziyor. Bugunku davranis birebir korunur — `owner_seed`
+ * satirlari burada hic sayilmaz.
+ *
+ * `business_id` degeri kurulusun PAZARYERI profil kimligidir
+ * (`organizations.legacy_profile_id`): konusmalar, ilanlar ve yorumlar hala
+ * o kimlige bagli.
+ */
 
 export type WritableBusiness = {
   business_id: string;
   business_name: string;
 };
 
-/**
- * Kullanıcının manager+ (owner/manager) rolünde olduğu kurumlar — "kimin adına"
- * seçici + kurum adına oluşturma action'ları bunu kullanır.
- * Üyeliği yoksa boş dizi (seçici hiç render edilmez, form bugünkü gibi davranır).
- */
-export async function getWritableBusinesses(): Promise<WritableBusiness[]> {
+/** Kurum uyelikleri: hesap turu business + kurulusun kendi satiri haric. */
+function kurumUyelikleri(uyelikler: Uyeligim[]): Uyeligim[] {
+  return uyelikler.filter(
+    (u) =>
+      u.accountType === 'business' &&
+      u.legacySource !== OWNER_SEED &&
+      !!u.legacyProfileId
+  );
+}
+
+async function kurumUyelikleriniOku(): Promise<Uyeligim[]> {
   const supabase = await createClient();
 
   const {
@@ -18,22 +47,26 @@ export async function getWritableBusinesses(): Promise<WritableBusiness[]> {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data } = await supabase
-    .from('business_members')
-    .select('business_id, member_role, business:profiles!business_members_business_id_fkey (full_name, company_name)')
-    .eq('member_user_id', user.id)
-    .in('member_role', ['owner', 'manager']);
+  return kurumUyelikleri(await uyeliklerim(supabase, user.id));
+}
 
-  return (
-    (data ?? []) as unknown as Array<{
-      business_id: string;
-      member_role: string;
-      business: { full_name: string | null; company_name: string | null } | null;
-    }>
-  ).map((m) => ({
-    business_id: m.business_id,
-    business_name: m.business?.company_name || m.business?.full_name || 'Kurum',
-  }));
+/**
+ * Kullanıcının manager+ (owner/manager) rolünde olduğu kurumlar — "kimin adına"
+ * seçici + kurum adına oluşturma action'ları bunu kullanır.
+ * Üyeliği yoksa boş dizi (seçici hiç render edilmez, form bugünkü gibi davranır).
+ */
+export async function getWritableBusinesses(): Promise<WritableBusiness[]> {
+  const uyelikler = await kurumUyelikleriniOku();
+
+  return uyelikler
+    .filter((u) => {
+      const rol = eskiKurumRolu(u.role, u.legacySource);
+      return rol === 'owner' || rol === 'manager';
+    })
+    .map((u) => ({
+      business_id: u.legacyProfileId as string,
+      business_name: u.displayName?.trim() || 'Kurum',
+    }));
 }
 
 /**
@@ -43,24 +76,11 @@ export async function getWritableBusinesses(): Promise<WritableBusiness[]> {
 export async function canWriteForBusiness(
   businessId: string
 ): Promise<boolean> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data: membership } = await supabase
-    .from('business_members')
-    .select('member_role')
-    .eq('business_id', businessId)
-    .eq('member_user_id', user.id)
-    .maybeSingle();
-
-  return (
-    membership?.member_role === 'owner' ||
-    membership?.member_role === 'manager'
-  );
+  const uyelikler = await kurumUyelikleriniOku();
+  const uyelik = uyelikler.find((u) => u.legacyProfileId === businessId);
+  if (!uyelik) return false;
+  const rol = eskiKurumRolu(uyelik.role, uyelik.legacySource);
+  return rol === 'owner' || rol === 'manager';
 }
 
 /**
@@ -68,21 +88,10 @@ export async function canWriteForBusiness(
  * ilan silme, close/cancel, promotion, kurum adına yorum). manager YETMEZ.
  */
 export async function canOwnForBusiness(businessId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data: membership } = await supabase
-    .from('business_members')
-    .select('member_role')
-    .eq('business_id', businessId)
-    .eq('member_user_id', user.id)
-    .maybeSingle();
-
-  return membership?.member_role === 'owner';
+  const uyelikler = await kurumUyelikleriniOku();
+  const uyelik = uyelikler.find((u) => u.legacyProfileId === businessId);
+  if (!uyelik) return false;
+  return eskiKurumRolu(uyelik.role, uyelik.legacySource) === 'owner';
 }
 
 /**
@@ -90,29 +99,19 @@ export async function canOwnForBusiness(businessId: string): Promise<boolean> {
  * bağlamını çözmek için — self konuşma yoksa owner kurumların konuşması aranır).
  */
 export async function getOwnedBusinessIds(): Promise<string[]> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data } = await supabase
-    .from('business_members')
-    .select('business_id')
-    .eq('member_user_id', user.id)
-    .eq('member_role', 'owner');
-
-  return (data ?? []).map((m) => m.business_id);
+  const uyelikler = await kurumUyelikleriniOku();
+  return uyelikler
+    .filter((u) => eskiKurumRolu(u.role, u.legacySource) === 'owner')
+    .map((u) => u.legacyProfileId as string);
 }
 
 /**
  * Kurumsal ekip bağlamı — TEK sorguda üyelik id'leri + rol setleri. Sayfalarda
- * kopyalanan "business_members çek + filtrele" bloğunu (5+ yer) tek kaynağa taşır.
+ * kopyalanan "uyelik oku + filtrele" blogunu (5+ yer) tek kaynaga tasir.
  *
  * - teamBusinessIds: üyesi olunan TÜM kurumlar (owner/manager/member) — okuma
- *   görünürlüğü. Kurum-kendine-üyelik DB'de imkansız (no_self_business_membership),
- *   o yüzden ayrıca filtre gerekmez.
+ *   gorunurlugu. Kurumun kendi hesabi uye olamaz (DB kurali); kurulusun
+ *   kendi uyelik satiri (`owner_seed`) da burada haric tutulur.
  * - canWriteSet: owner+manager (kurum adına yazma / yönetim — edit/publish/composer).
  * - canOwnSet: yalnız owner (owner-only aksiyonlar — silme/close/cancel/promotion).
  */
@@ -121,42 +120,19 @@ export async function getTeamContext(): Promise<{
   canWriteSet: Set<string>;
   canOwnSet: Set<string>;
 }> {
-  const supabase = await createClient();
+  const uyelikler = await kurumUyelikleriniOku();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return {
-      teamBusinessIds: [],
-      canWriteSet: new Set<string>(),
-      canOwnSet: new Set<string>(),
-    };
+  const teamBusinessIds: string[] = [];
+  const canWriteSet = new Set<string>();
+  const canOwnSet = new Set<string>();
+
+  for (const u of uyelikler) {
+    const id = u.legacyProfileId as string;
+    const rol = eskiKurumRolu(u.role, u.legacySource);
+    teamBusinessIds.push(id);
+    if (rol === 'owner' || rol === 'manager') canWriteSet.add(id);
+    if (rol === 'owner') canOwnSet.add(id);
   }
 
-  const { data } = await supabase
-    .from('business_members')
-    .select('business_id, member_role')
-    .eq('member_user_id', user.id);
-
-  const memberships = (data ?? []) as Array<{
-    business_id: string;
-    member_role: string;
-  }>;
-
-  return {
-    teamBusinessIds: memberships.map((m) => m.business_id),
-    canWriteSet: new Set(
-      memberships
-        .filter(
-          (m) => m.member_role === 'owner' || m.member_role === 'manager'
-        )
-        .map((m) => m.business_id)
-    ),
-    canOwnSet: new Set(
-      memberships
-        .filter((m) => m.member_role === 'owner')
-        .map((m) => m.business_id)
-    ),
-  };
+  return { teamBusinessIds, canWriteSet, canOwnSet };
 }

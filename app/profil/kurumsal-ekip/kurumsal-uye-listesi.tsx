@@ -11,11 +11,9 @@ import type { BusinessMemberWithProfile } from '@/app/kurumsal/business-data';
 
 type Props = {
   members: BusinessMemberWithProfile[];
-  /** FAZ 8-U: uye id -> kurulus rolu (satir yoksa anahtar yok -> viewer). */
-  kurulusRolleri: Record<string, string>;
 };
 
-export function KurumsalUyeListesi({ members, kurulusRolleri }: Props) {
+export function KurumsalUyeListesi({ members }: Props) {
   if (members.length === 0) {
     return (
       <EmptyState
@@ -29,23 +27,13 @@ export function KurumsalUyeListesi({ members, kurulusRolleri }: Props) {
   return (
     <div className="space-y-3">
       {members.map((member) => (
-        <UyeSatiri
-          key={member.id}
-          member={member}
-          kurulusRolu={kurulusRolleri[member.id]}
-        />
+        <UyeSatiri key={member.id} member={member} />
       ))}
     </div>
   );
 }
 
-function UyeSatiri({
-  member,
-  kurulusRolu,
-}: {
-  member: BusinessMemberWithProfile;
-  kurulusRolu: string | undefined;
-}) {
+function UyeSatiri({ member }: { member: BusinessMemberWithProfile }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -95,11 +83,10 @@ function UyeSatiri({
           </div>
         </div>
 
-        {/* FAZ 8-U: kurulus rolu tek gercek; eski rol rozeti kalkti. */}
+        {/* FAZ 10a: rol uyelik satirinda; eski rol rozeti ve ayna yok. */}
         <KurulusRolSecici
           membershipId={member.id}
-          rol={(kurulusRolu ?? 'viewer') as OrgRole}
-          aynalanmamis={kurulusRolu === undefined}
+          rol={member.role as OrgRole}
           yuzey="kurumsal"
         />
 
