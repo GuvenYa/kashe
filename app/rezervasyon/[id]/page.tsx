@@ -590,8 +590,8 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               </p>
             </div>
             <p className="text-xs text-ink-50 mt-3 leading-relaxed">
-              Rezervasyon onayı {formatDateTime(booking.created_at)}'de
-              gerçekleşti.
+              Rezervasyon {formatDateTime(booking.created_at)} tarihinde
+              onaylandı.
             </p>
           </div>
 

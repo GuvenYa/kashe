@@ -103,16 +103,20 @@ export default async function AdminDashboardPage() {
       .order('created_at', { ascending: false })
       .limit(5),
 
-    // Duzeltme 01 (#6): onay kuyrugu. Kaynak `providers` (saglayici defteri) —
-    // onay akisi orada; admin RLS ile okur. Revizyon istenenler ayri sayilir,
-    // ikisi ayni karta girer.
+    // Duzeltme 01 (#6): onay kuyrugu. Kaynak `profiles` — /admin/profiller
+    // listesiyle ayni kume (profesyonel + isletme + ajans). Isletme (kurum)
+    // hesaplarinin `providers` satiri yok; providers'dan sayinca kart eksik
+    // kaliyordu (Sahne turu 3 Kas). Revizyon istenenler ayri sayilir, ikisi
+    // ayni karta girer.
     supabase
-      .from('providers')
+      .from('profiles')
       .select('id', { count: 'exact', head: true })
+      .in('role', ['professional', 'business', 'agency'])
       .eq('approval_status', 'pending'),
     supabase
-      .from('providers')
+      .from('profiles')
       .select('id', { count: 'exact', head: true })
+      .in('role', ['professional', 'business', 'agency'])
       .eq('approval_status', 'revision'),
   ]);
 

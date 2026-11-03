@@ -206,7 +206,17 @@ export default async function DavetlerimPage() {
           {profile.role !== 'professional' && (
             <div className="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-lg px-4 py-3 mb-6">
               Ajans davetlerini kabul edebilmek için <strong>profesyonel</strong>{' '}
-              hesap gerek. Mevcut hesabın <strong>{profile.role}</strong> rolünde.
+              hesap gerek. Mevcut hesabın{' '}
+              <strong>
+                {profile.role === 'client'
+                  ? 'müşteri'
+                  : profile.role === 'business'
+                    ? 'işletme'
+                    : profile.role === 'agency'
+                      ? 'ajans'
+                      : profile.role}
+              </strong>{' '}
+              rolünde.
             </div>
           )}
 

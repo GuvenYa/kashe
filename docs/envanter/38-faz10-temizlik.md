@@ -209,6 +209,15 @@ YOK; `internal.*` ve FAZ 6-9 yapilarina dokunulmaz; her dilim asama4 + asama20 i
 
 ## 6. Kapanis notlari
 
+### TUR TAMAMLANDI (3 Kasim 2026) — SIRA: URETIM
+
+`duzeltme-01` onizlemesinde (Sahne v2) madde 1'deki tur bitti; tum 10a ve Duzeltme 01 kontrolleri dogrulandi (`docs/sahne/bulgular.md`
+satirlar 4-31 durumlari, yeni satirlar 34-38). Turda yapilan branch verisi: Arti Bir'in "Teknopark Gala" etkinliginde 4 kisilik ekip + teklif
+(Bahar Keskin portalda onayladi; rezervasyon olusturulmadi), Akdeniz Gida -> Bahar Keskin kurumsal ekip daveti (kabul edildi, Proje
+yoneticisi), Bahar -> Baris Arslan brief konusmasi, Sevgi Tekin portfoy/avatar PNG. Tur sonrasi uc kucuk yama (commit'e girer):
+`app/admin/page.tsx` (onay karti `profiles` kaynagi — kurum hesabi providers'da yok), `app/davetlerim/page.tsx` (rol adi Turkce),
+`app/rezervasyon/[id]/page.tsx` ("tarihinde onaylandi"). Sonraki adim madde 2 (uretim), ardindan 3-5.
+
 ### KALDIGIMIZ YER (30 Ekim 2026 — Cowork kotasi acilinca SIRA)
 
 1. **Tur** — `duzeltme-01` onizlemesi (`https://kashe-git-duzeltme-01-guvenyapicioglu-8124s-projects.vercel.app`, Sahne v2 verisi):
