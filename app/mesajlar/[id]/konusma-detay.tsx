@@ -20,6 +20,7 @@ import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
 import { MediaLightbox } from '@/app/components/media-lightbox';
 import type { Message } from '@/app/lib/types';
+import type { BriefSatiri } from '@/app/lib/brief-ozet';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -59,6 +60,11 @@ type Props = {
   location: string | null;
   guestCount: number | null;
   budgetRange: string | null;
+  /**
+   * A2: kategoriye ozel brief alanlari — sunucuda hazirlanir
+   * (`app/lib/brief-ozet.ts`); burada yalniz cizilir.
+   */
+  briefAlanlari: BriefSatiri[];
   initialMessages: Message[];
   initialQuotes: Record<string, Quote>;
   /** quote.id → booking.id (kabul edilmiş teklif kartından rezervasyona köprü) */
@@ -160,6 +166,7 @@ export function KonusmaDetay({
   location,
   guestCount,
   budgetRange,
+  briefAlanlari,
   initialMessages,
   initialQuotes,
   bookingIdByQuoteId,
@@ -531,6 +538,8 @@ export function KonusmaDetay({
     [viewerRole, categorySlug]
   );
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  /** A2: sekizden fazla brief alani varsa kalani dugmeyle acilir. */
+  const [briefAcik, setBriefAcik] = useState(false);
 
   function applyTemplate(text: string) {
     // Mevcut metin varsa araya boşlukla ekle, yoksa direkt yaz
@@ -683,6 +692,38 @@ export function KonusmaDetay({
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* BRIEF ALANLARI (A2) — kategoriye ozel cevaplar. Seritteki bes alan
+          ve serbest mesaj burada TEKRAR ETMEZ; ilk sekiz alan acik, kalani
+          dugmeyle acilir. */}
+      {briefAlanlari.length > 0 && (
+        <div className="border-b border-line bg-brand-ink/[0.02] px-4 md:px-5 py-2.5">
+          <dl className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {(briefAcik ? briefAlanlari : briefAlanlari.slice(0, 8)).map((a) => (
+              <div key={a.etiket} className="flex items-baseline gap-1.5 min-w-0">
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50 shrink-0">
+                  {a.etiket}:
+                </dt>
+                <dd className="text-[12px] text-ink min-w-0 break-words">
+                  {a.deger}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {briefAlanlari.length > 8 && (
+            <button
+              type="button"
+              onClick={() => setBriefAcik((v) => !v)}
+              aria-expanded={briefAcik}
+              className="kashe-tap mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-brand-ink hover:underline"
+            >
+              {briefAcik
+                ? 'Daha az göster'
+                : `+${briefAlanlari.length - 8} alan`}
+            </button>
+          )}
         </div>
       )}
 

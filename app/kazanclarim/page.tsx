@@ -11,9 +11,21 @@ export const metadata = {
   title: 'Kazançlarım — Kashe',
 };
 
+/**
+ * Kazanc satiri — IKI REZERVASYON SEKLI (CLAUDE.md FAZ 7c; A8).
+ *
+ * Teklif sekli (`proposal_version_id` dolu) `professional_id` TASIMAZ;
+ * satici `seller_provider_id`de. O satirlarda tutar KDV DAHIL toplamdir ve
+ * platform ucreti YOKTUR (Kashe teklif dosyasindan komisyon almiyor) — ucret
+ * `satirUcreti` icinde acikca ayrilir, `calcCommission` oraya uygulanmaz.
+ */
 type BookingRow = {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
+  /** A8: teklif dosyasindan dogan rezervasyon mu. */
+  teklifSekli?: boolean;
+  /** A8: teklif seklinde karsi tarafin adi. */
+  karsiTarafAdi?: string | null;
   event_type: string | null;
   event_date: string | null;
   total_amount: number | null;
@@ -64,7 +76,63 @@ export default async function KazanclarimPage() {
     .eq('professional_id', user.id)
     .order('event_date', { ascending: false });
 
-  const bookings = (bookingsData ?? []) as BookingRow[];
+  /**
+   * A8 — TEKLIF SEKLI rezervasyonlar. `providers.id = profiles.id` (FAZ 2a)
+   * oldugu icin kurulus sahibinin saglayici kimligi kendi kullanici kimligi;
+   * kisisel kazanc sayfasi bu kapsamda dogru.
+   */
+  const { data: teklifData, error: teklifHatasi } = await supabase
+    .from('bookings')
+    .select(
+      `
+      id, customer_id, event_type, event_date, total_amount, status,
+      completed_at, created_at,
+      alici:organizations_public!bookings_buyer_organization_id_fkey (
+        display_name
+      ),
+      surum:proposal_versions!bookings_proposal_version_id_fkey (
+        proposal:proposals!proposal_versions_proposal_id_fkey (
+          client_name
+        )
+      )
+    `
+    )
+    .eq('seller_provider_id', user.id)
+    .order('event_date', { ascending: false });
+  if (teklifHatasi) console.error('[kazanclar] teklif sekli', teklifHatasi);
+
+  type TeklifSatiri = BookingRow & {
+    alici: { display_name: string | null } | null;
+    surum: { proposal: { client_name: string | null } | null } | null;
+  };
+
+  const teklifSatirlari: BookingRow[] = (
+    (teklifData ?? []) as unknown as TeklifSatiri[]
+  ).map((t) => ({
+    ...t,
+    teklifSekli: true,
+    karsiTarafAdi:
+      t.surum?.proposal?.client_name?.trim() ||
+      t.alici?.display_name?.trim() ||
+      null,
+  }));
+
+  const bookings = [
+    ...((bookingsData ?? []) as BookingRow[]),
+    ...teklifSatirlari,
+  ];
+
+  /**
+   * Satir basina brut / platform ucreti / net.
+   *
+   * Eski sekilde komisyon `calcCommission` ile; teklif seklinde ucret 0
+   * (tutar zaten KDV dahil ve tahsilat ajansin kendi akisinda).
+   */
+  function satirUcreti(b: BookingRow) {
+    const brut = b.total_amount ?? 0;
+    if (b.teklifSekli) return { gross: brut, commission: 0, net: brut };
+    return calcCommission(brut);
+  }
 
   const completed = bookings.filter((b) => b.status === 'completed');
   const onayli = bookings.filter((b) => b.status === 'confirmed');
@@ -79,7 +147,13 @@ export default async function KazanclarimPage() {
   const upcoming = onayli.filter((b) => !gecmisKalan.includes(b));
 
   // Müşteri isimleri (toplu çek)
-  const customerIds = Array.from(new Set(bookings.map((b) => b.customer_id)));
+  const customerIds = Array.from(
+    new Set(
+      bookings
+        .map((b) => b.customer_id)
+        .filter((v): v is string => !!v)
+    )
+  );
   const customerMap = new Map<string, string>();
   if (customerIds.length > 0) {
     const { data: customers } = await supabase
@@ -95,12 +169,19 @@ export default async function KazanclarimPage() {
     });
   }
 
-  // Toplam özet (sadece completed = gerçekleşmiş kazanç)
-  const totalGross = completed.reduce(
-    (sum, b) => sum + (b.total_amount ?? 0),
-    0
+  // Toplam ozet (yalniz completed = gerceklesmis kazanc). Ucret SATIR BASINA
+  // hesaplanir: teklif sekli komisyonsuzdur, toplama 0 katar.
+  const summary = completed.reduce(
+    (t, b) => {
+      const u = satirUcreti(b);
+      return {
+        gross: t.gross + u.gross,
+        commission: t.commission + u.commission,
+        net: t.net + u.net,
+      };
+    },
+    { gross: 0, commission: 0, net: 0 }
   );
-  const summary = calcCommission(totalGross);
 
   // Beklenen (confirmed) brüt
   const upcomingGross = upcoming.reduce(
@@ -211,13 +292,22 @@ export default async function KazanclarimPage() {
                         </thead>
                         <tbody className="divide-y divide-line">
                           {completed.map((b) => {
-                            const c = calcCommission(b.total_amount ?? 0);
+                            const c = satirUcreti(b);
                             return (
                               <tr key={b.id} className="hover:bg-paper-2/30">
                                 <td className="px-4 py-3">
                                   <p className="text-sm text-ink font-medium">
-                                    {customerMap.get(b.customer_id) ?? 'Müşteri'}
+                                    {b.teklifSekli
+                                      ? b.karsiTarafAdi || 'Müşteri'
+                                      : (b.customer_id &&
+                                          customerMap.get(b.customer_id)) ||
+                                        'Müşteri'}
                                   </p>
+                                  {b.teklifSekli && (
+                                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
+                                      Teklif dosyası
+                                    </p>
+                                  )}
                                   {b.event_type && (
                                     <p className="text-[12px] text-ink-50">
                                       {etkinlikTuruEtiketi(b.event_type)}
@@ -264,7 +354,11 @@ export default async function KazanclarimPage() {
                         >
                           <div className="min-w-0">
                             <p className="text-sm text-ink font-medium truncate">
-                              {customerMap.get(b.customer_id) ?? 'Müşteri'}
+                              {b.teklifSekli
+                                ? b.karsiTarafAdi || 'Müşteri'
+                                : (b.customer_id &&
+                                    customerMap.get(b.customer_id)) ||
+                                  'Müşteri'}
                             </p>
                             <p className="text-[12px] text-ink-50">
                               {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}
@@ -302,7 +396,11 @@ export default async function KazanclarimPage() {
                         >
                           <div className="min-w-0">
                             <p className="text-sm text-ink font-medium truncate">
-                              {customerMap.get(b.customer_id) ?? 'Müşteri'}
+                              {b.teklifSekli
+                                ? b.karsiTarafAdi || 'Müşteri'
+                                : (b.customer_id &&
+                                    customerMap.get(b.customer_id)) ||
+                                  'Müşteri'}
                             </p>
                             <p className="text-[12px] text-ink-50">
                               {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}

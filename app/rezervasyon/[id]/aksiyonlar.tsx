@@ -91,8 +91,7 @@ export function RezervasyonAksiyonlari({
               Rezervasyonu iptal etmek istediğinden emin misin?
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
-              Bu işlem geri alınamaz. Karşı tarafa bildirim ve e-posta
-              gönderilecek.
+              Bu işlem geri alınamaz. Karşı tarafa e-posta ile bildirilecek.
             </p>
 
             {cancellationPolicy && (

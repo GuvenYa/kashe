@@ -147,6 +147,15 @@ export type CrewOrg = {
   tasksEnabled: boolean;
   /** FAZ 8a: `settings.manage` — modul ac/kapat, ayarlar sayfasi. */
   canManageSettings: boolean;
+  /**
+   * A7: `members.manage` — davet, rol degistirme, uye cikarma.
+   *
+   * Ekip sayfalari (`/profil/ekibim`, `/profil/kurumsal-ekip`) once PROFIL
+   * SAHIPLIGINE bakiyordu; davetle katilan yonetici kendi ekibini goremiyordu.
+   * Yetki kaynagi RPC (`has_org_permission`) — uygulama yeni kural yazmaz;
+   * davet/rol/cikarma RPC'leri de ayni izni istiyor.
+   */
+  canManageMembers: boolean;
   /** FAZ 8b: `crm` modulu acik mi (yalniz ajansta varsayilan acik). */
   crmEnabled: boolean;
   /** FAZ 8b: `crm.view` — kisi ve firsatlari gorur. */
@@ -230,6 +239,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       tedarikciGorebilir,
       tedarikciYonetir,
       kisaListeModulu,
+      uyeYonetir,
     ] =
       await Promise.all([
         supabase.rpc('has_org_permission', {
@@ -312,6 +322,10 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
           p_org_id: org.id,
           p_module_key: 'supplier_search',
         }),
+        supabase.rpc('has_org_permission', {
+          p_org_id: org.id,
+          p_permission: 'members.manage',
+        }),
       ]);
 
     if (gorebilir.error) console.error('[ekip] yetki kontrolu', gorebilir.error);
@@ -342,6 +356,7 @@ export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
       role: uyelik.role,
       tasksEnabled: gorevModulu.data === true,
       canManageSettings: ayarYonetir.data === true,
+      canManageMembers: uyeYonetir.data === true,
       // FAZ 8b: CRM AJANSA OZEL (karar, 21 Ekim). Modul business'ta kapali
       // dogsa da sahip teorik olarak acabilir; yuzeyi hesap turuyle de
       // kesiyoruz ki kurumsal menude "Musteriler" hic cikmasin.

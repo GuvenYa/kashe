@@ -8,6 +8,7 @@ import type { Message } from '@/app/lib/types';
 import type { Quote } from '../quotes-data';
 import { getTeamContext } from '@/app/lib/business-write';
 import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
+import { briefSatirlari } from '@/app/lib/brief-ozet';
 
 type ConversationParticipant = {
   id: string;
@@ -30,6 +31,8 @@ type ConversationRow = {
   location: string | null;
   guest_count: number | null;
   budget_range: string | null;
+  /** A2: kategoriye ozel brief cevaplari (jsonb; `brief-config.ts` anahtarlari). */
+  brief_data: Record<string, unknown> | null;
   customer: ConversationParticipant | null;
   professional: ConversationParticipant | null;
 };
@@ -115,7 +118,7 @@ export default async function KonusmaPage({
     .select(
       `
       id, customer_id, professional_id,
-      event_date, event_type, location, guest_count, budget_range,
+      event_date, event_type, location, guest_count, budget_range, brief_data,
       customer:customer_id (
         id, full_name, avatar_url, company_name, role, bio, last_seen_at,
         turkish_cities(name),
@@ -302,6 +305,16 @@ export default async function KonusmaPage({
   }
 
   /**
+   * A2 — kategoriye ozel brief alanlari. Etiketler `brief-config.ts`ten;
+   * seritte zaten olan bes alan ve `message` atlanir. Istemciye HAZIR
+   * satirlar gider (sunucu modulu istemciye girmez).
+   */
+  const briefAlanlari = briefSatirlari(
+    conv.brief_data,
+    other.service_categories?.slug ?? null
+  );
+
+  /**
    * YORUM CAGRISI (Duzeltme 01 / #28) — yalniz MUSTERI tarafinda.
    *
    * Tespit METIN ESLESTIRMEYLE DEGIL rezervasyon satiriyla yapilir: konusmanin
@@ -419,6 +432,7 @@ export default async function KonusmaPage({
                 location={conv.location}
                 guestCount={conv.guest_count}
                 budgetRange={conv.budget_range}
+                briefAlanlari={briefAlanlari}
                 initialMessages={messages}
                 initialQuotes={quotesById}
                 bookingIdByQuoteId={bookingIdByQuoteId}

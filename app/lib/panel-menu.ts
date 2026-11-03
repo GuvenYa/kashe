@@ -152,11 +152,11 @@ function musteriGrubu(): PanelMenuMaddesi[] {
  * gunluk is ustte, kadro ortada, para/ayar altta. Yetki kosullari AYNEN
  * korunur — menu yetki kapisi degil, ama girilemeyecek madde de yazilmaz.
  *
- * "Ekip uyeleri" (`/profil/ekibim`) yalniz kullanicinin KENDI ajans profilinde
- * durur: o sayfa kurulusu profil sahipligiyle bulur (`legacy_profile_id`),
- * uyelikle degil — izleyici bir uyeye gosterilse bos ya da yetkisiz acilirdi.
+ * "Ekip uyeleri" (`/profil/ekibim`) A7'den beri UYE YONETME yetkisine bakar
+ * (`members.manage`), profil sahipligine degil: davetle katilan yonetici de
+ * ekibini goruyor. Izleyici uyede madde CIKMAZ (yetki yok).
  */
-function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
+function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
     { href: '/ajans', etiket: 'Gösterge', ikon: 'gosterge', bolum: 'calisma' },
   ];
@@ -211,9 +211,9 @@ function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
       bolum: 'ekip',
     });
   }
-  if (kendiAjansi) {
+  if (org.canManageMembers) {
     maddeler.push({
-      href: '/profil/ekibim',
+      href: `/profil/ekibim?kurulus=${org.id}`,
       etiket: 'Ekip üyeleri',
       ikon: 'havuz',
       bolum: 'ekip',
@@ -262,7 +262,7 @@ function ajansGrubu(org: CrewOrg, kendiAjansi: boolean): PanelMenuMaddesi[] {
 }
 
 /** Kurum (business) kurulusu grubu — bolum sirasi ajansla ayni kuralda. */
-function kurumsalGrubu(org: CrewOrg, kendiKurumu: boolean): PanelMenuMaddesi[] {
+function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
     { href: '/kurumsal', etiket: 'Gösterge', ikon: 'gosterge', bolum: 'calisma' },
   ];
@@ -315,9 +315,10 @@ function kurumsalGrubu(org: CrewOrg, kendiKurumu: boolean): PanelMenuMaddesi[] {
   });
 
   // --- Ekip ve kaynaklar ---
-  if (kendiKurumu) {
+  // A7: sahiplik yerine `members.manage` (davetli yonetici de gorur).
+  if (org.canManageMembers) {
     maddeler.push({
-      href: '/profil/kurumsal-ekip',
+      href: `/profil/kurumsal-ekip?kurulus=${org.id}`,
       etiket: 'Ekip',
       ikon: 'havuz',
       bolum: 'ekip',
@@ -392,7 +393,7 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   for (const org of ajanslar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: ajansGrubu(org, ajansRolu),
+      maddeler: ajansGrubu(org),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
     });
@@ -400,7 +401,7 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   for (const org of kurumlar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: kurumsalGrubu(org, isletmeRolu),
+      maddeler: kurumsalGrubu(org),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
     });

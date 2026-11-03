@@ -9,11 +9,22 @@ import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
 import { getCachedUser } from '@/app/lib/auth';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 
+/**
+ * Takvim satiri — IKI REZERVASYON SEKLI (CLAUDE.md FAZ 7c; A8).
+ *
+ * Eski sekil: `quote_id` + `conversation_id` + `customer_id` dolu, karsi
+ * taraf `customer` embed'inden. Teklif sekli: `proposal_version_id` +
+ * `seller_provider_id` dolu, dort eski sutun NULL olabilir; karsi taraf
+ * teklifin `client_name`i ya da alici kurulusun adi.
+ *
+ * `teklifSekli` alani UYGULAMADA turetilir (DB sutunu degil): kart hangi
+ * sekli cizecegini acikca bilsin, `null` kontrolu her yere dagilmasin.
+ */
 type BookingRow = {
   id: string;
-  quote_id: string;
-  conversation_id: string;
-  customer_id: string;
+  quote_id: string | null;
+  conversation_id: string | null;
+  customer_id: string | null;
   event_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -26,6 +37,10 @@ type BookingRow = {
   created_at: string;
   completed_at: string | null;
   cancelled_at: string | null;
+  /** A8: teklif dosyasindan dogan rezervasyon mu. */
+  teklifSekli?: boolean;
+  /** A8: teklif seklinde karsi tarafin adi (musteri ya da alici kurulus). */
+  karsiTarafAdi?: string | null;
   customer: {
     id: string;
     full_name: string | null;
@@ -76,7 +91,64 @@ export default async function TakvimimPage() {
     .order('event_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  const bookings = (bookingsData ?? []) as unknown as BookingRow[];
+  /**
+   * A8 — TEKLIF SEKLI rezervasyonlar (FAZ 7c).
+   *
+   * Ajansin teklif dosyasindan dogan rezervasyon `professional_id` TASIMIYOR;
+   * satici `seller_provider_id`de duruyor. `providers.id = profiles.id`
+   * (FAZ 2a) oldugu icin kurulus sahibinin saglayici kimligi kendi kullanici
+   * kimligidir — kisisel takvim bu kapsamda dogru.
+   */
+  const { data: teklifData, error: teklifHatasi } = await supabase
+    .from('bookings')
+    .select(
+      `
+      id, quote_id, conversation_id, customer_id, proposal_version_id,
+      event_date, start_time, end_time, event_type, location, guest_count,
+      total_amount, currency, status,
+      created_at, completed_at, cancelled_at,
+      alici:organizations_public!bookings_buyer_organization_id_fkey (
+        display_name
+      ),
+      surum:proposal_versions!bookings_proposal_version_id_fkey (
+        proposal:proposals!proposal_versions_proposal_id_fkey (
+          client_name
+        )
+      )
+    `
+    )
+    .eq('seller_provider_id', user.id)
+    .order('event_date', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
+  if (teklifHatasi) console.error('[takvim] teklif sekli', teklifHatasi);
+
+  type TeklifSatiri = Omit<BookingRow, 'customer'> & {
+    alici: { display_name: string | null } | null;
+    surum: { proposal: { client_name: string | null } | null } | null;
+  };
+
+  const teklifSatirlari: BookingRow[] = (
+    (teklifData ?? []) as unknown as TeklifSatiri[]
+  ).map((t) => ({
+    ...t,
+    teklifSekli: true,
+    karsiTarafAdi:
+      t.surum?.proposal?.client_name?.trim() ||
+      t.alici?.display_name?.trim() ||
+      null,
+    customer: null,
+  }));
+
+  const bookings = [
+    ...((bookingsData ?? []) as unknown as BookingRow[]),
+    ...teklifSatirlari,
+  ].sort((a, b) => {
+    // Tarihsiz satirlar sona; digerleri tarihe gore artan (iki sorgu ayri
+    // siralanmis halde geliyor, birlesince yeniden siralanir).
+    if (!a.event_date) return 1;
+    if (!b.event_date) return -1;
+    return a.event_date.localeCompare(b.event_date);
+  });
 
   // Manuel bloklu günler
   const { data: blocksData } = await supabase
@@ -185,10 +257,12 @@ export default async function TakvimimPage() {
                     </p>
                     <ul className="space-y-2.5">
                       {upcoming.slice(0, 4).map((b) => {
-                        const customerName =
-                          b.customer?.company_name ||
-                          b.customer?.full_name ||
-                          'Müşteri';
+                        // A8: teklif seklinde karsi taraf sunucuda cozuldu.
+                        const customerName = b.teklifSekli
+                          ? b.karsiTarafAdi || 'Müşteri'
+                          : b.customer?.company_name ||
+                            b.customer?.full_name ||
+                            'Müşteri';
                         const dateLabel = b.event_date
                           ? new Date(b.event_date).toLocaleDateString('tr-TR', {
                               timeZone: KASHE_SAAT_DILIMI,

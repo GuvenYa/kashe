@@ -109,7 +109,7 @@ export function TeklifVerModal({
             <em className="text-brand-ink not-italic italic font-medium">
               {customerName}
             </em>
-            &apos;a teklif ver
+            {' '}için teklif ver
           </h2>
           <button
             type="button"

@@ -124,12 +124,26 @@ export async function unbanUser(userId: string): Promise<ActionResult> {
   const { supabase, adminId, error } = await requireAdmin();
   if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
+  // A6 — askidan ONCEKI yayin durumu saklanmiyor: askiya alma `is_published`
+  // alanini kapatiyor ama eski degeri bir yere yazmiyor. Karar: ONAYLI profil
+  // yayina geri doner, onaysiz/revizyonlu profil DONMEZ (yayina alma kapisi
+  // zaten onaydan geciyor). Tahmin uretmiyoruz; kural tek ve acik.
+  const { data: profil } = await supabase
+    .from('profiles')
+    .select('approval_status')
+    .eq('id', userId)
+    .maybeSingle();
+  const onayli =
+    (profil as { approval_status: string | null } | null)?.approval_status ===
+    'approved';
+
   const { error: updateError } = await supabase
     .from('profiles')
     .update({
       suspended_at: null,
       suspension_reason: null,
       suspended_by: null,
+      ...(onayli ? { is_published: true } : {}),
     })
     .eq('id', userId);
 

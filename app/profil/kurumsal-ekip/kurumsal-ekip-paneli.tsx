@@ -13,10 +13,12 @@ type Props = {
   members: BusinessMemberWithProfile[];
   invitations: BusinessInvitation[];
   currentUserId: string;
+  /** A7: sayfanin sectigi kurulus — davet eylemi bu kimlige gider. */
+  orgId: string;
 };
 
 // FAZ 10a: kurulus rolu uyelik satirinin kendisinde (member.role).
-export function KurumsalEkipPaneli({ members, invitations }: Props) {
+export function KurumsalEkipPaneli({ members, invitations, orgId }: Props) {
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   const pendingInvitations = invitations.filter(
@@ -47,7 +49,10 @@ export function KurumsalEkipPaneli({ members, invitations }: Props) {
 
       {/* Davet formu (toggle) */}
       {showInviteForm && (
-        <KurumsalUyeDavetFormu onClose={() => setShowInviteForm(false)} />
+        <KurumsalUyeDavetFormu
+          orgId={orgId}
+          onClose={() => setShowInviteForm(false)}
+        />
       )}
 
       {/* Bekleyen davetler */}

@@ -513,7 +513,7 @@ ${onceki}`
                 <em className="text-brand-ink not-italic italic font-medium">
                   {professionalName}
                 </em>
-                &apos;a talep gönder
+                {' '}için teklif talebi
               </h2>
               <button
                 type="button"

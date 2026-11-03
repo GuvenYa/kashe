@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { isUserSuspended } from '@/app/lib/check-suspension';
 import { getOwnedBusinessIds } from '@/app/lib/business-write';
+import { eskiKurumRolu, uyeliklerim } from '@/app/lib/uyelik';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -11,7 +12,15 @@ type ActionResult<T = void> =
 
 /**
  * Yorum oluştur veya güncelle (upsert).
- * Şart: müşteri ile profesyonel arasında mesajlaşma (conversation) açık olmalı.
+ *
+ * SART (Duzeltme 03-A / A5): yorum yazanin (ya da kurum adina yaziyorsa
+ * kurumunun) o saglayiciyla TAMAMLANMIS bir rezervasyonu olmali. Arayuz bu
+ * sarti zaten uyguluyordu (`yorum-button`), sunucu ise yalniz "ortak sohbet"
+ * ariyordu — yani eylem dogrudan cagrilsa sohbeti olan herkes yorum
+ * yazabiliyordu.
+ *
+ * Konusma kaydi SART OLARAK DEGIL CAPA olarak kalir: `reviews.conversation_id`
+ * zorunlu ve tekillik (conversation_id, customer_id) uzerinden kuruluyor.
  */
 export async function createOrUpdateReview(params: {
   professionalId: string;
@@ -77,7 +86,51 @@ export async function createOrUpdateReview(params: {
   if (!conversation) {
     return {
       success: false,
-      error: 'Yorum yazmak için önce profesyonelle mesajlaşmalısın.',
+      error:
+        'Yorum bırakabilmek için bu profesyonelle tamamlanmış bir rezervasyonun olmalı.',
+    };
+  }
+
+  // A5 — TAMAMLANMIS REZERVASYON SARTI. Iki rezervasyon sekli ayri sorgulanir
+  // (CLAUDE.md FAZ 7c): eski sekil `customer_id` + `professional_id`, teklif
+  // sekli `buyer_organization_id` + `seller_provider_id`. Kullanici kendi
+  // rezervasyonunu RLS ile okur; baska kimsenin satiri gorunmez.
+  const sahipKurumIdleri = (await uyeliklerim(supabase, user.id))
+    .filter(
+      (u) =>
+        u.accountType === 'business' &&
+        eskiKurumRolu(u.role, u.legacySource) === 'owner'
+    )
+    .map((u) => u.organizationId);
+
+  const aliciKimlikleri = [user.id, ...(await getOwnedBusinessIds())];
+
+  const { data: eskiSekil } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('status', 'completed')
+    .in('customer_id', aliciKimlikleri)
+    .eq('professional_id', professionalId)
+    .limit(1);
+
+  let tamamlanmisVar = (eskiSekil ?? []).length > 0;
+
+  if (!tamamlanmisVar && sahipKurumIdleri.length > 0) {
+    const { data: teklifSekli } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('status', 'completed')
+      .in('buyer_organization_id', sahipKurumIdleri)
+      .eq('seller_provider_id', professionalId)
+      .limit(1);
+    tamamlanmisVar = (teklifSekli ?? []).length > 0;
+  }
+
+  if (!tamamlanmisVar) {
+    return {
+      success: false,
+      error:
+        'Yorum bırakabilmek için bu profesyonelle tamamlanmış bir rezervasyonun olmalı.',
     };
   }
 
