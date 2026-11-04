@@ -5,6 +5,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/app/lib/supabase-server';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import {
+  girissizHakKullan,
+  girissizHakMesaji,
+} from '@/app/lib/girissiz-ai';
+import {
   EVENTSPEC_SCHEMA_VERSION,
   EVENT_NEEDS_MODEL_ID,
   EVENT_NEEDS_PARSER_VERSION,
@@ -33,25 +37,31 @@ export type EventAnalysisResult =
       tip: string;
       /**
        * FAZ 4c/P1: kaydedilen EventSpec ve provenance (kayit basarisiz olsa da doner).
-       * P2 sihirbazi formu bunlarla on doldurur; `/etkinlik-planla` kullanmaz.
+       * P2 sihirbazi formu bunlarla on doldurur.
        */
       spec: EventSpecV1;
       provenance: EventSpecProvenance;
-      /** FAZ 4b: EventSpec kaydi — 4c bunlari events.brief_id / spec_version_id icin kullanir. */
+      /**
+       * FAZ 4b: EventSpec kaydi — 4c bunlari events.brief_id / spec_version_id
+       * icin kullanir. GIRISSIZ cagrida ikisi de YOKTUR (kayit yapilmaz).
+       */
       briefId?: string;
       specVersionId?: string;
+      /**
+       * Duzeltme 06: girissiz kullanicinin bugun KALAN hakki (yalniz girissiz
+       * cagrida doner; girisli kullanicida alan hic gelmez).
+       */
+      kalanHak?: number;
     }
-  | { success: false; error: string };
-
-export type ProMatch = {
-  id: string;
-  name: string;
-  reason: string;
-};
-
-export type ProMatchResult =
-  | { success: true; matches: ProMatch[] }
-  | { success: false; error: string };
+  | {
+      success: false;
+      error: string;
+      /**
+       * Duzeltme 06: hata girissiz hak bittigi icinse arayuz "uye ol / giris"
+       * baglantilarini gosterir (baska hata turlerinde gelmez).
+       */
+      girisGerekli?: boolean;
+    };
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 const anthropic = apiKey ? new Anthropic({ apiKey }) : null;
@@ -298,9 +308,6 @@ export async function analyzeEventNeeds(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Giriş yapmalısın.' };
-  }
 
   if (!anthropic) {
     return { success: false, error: 'AI servisi şu an kullanılamıyor.' };
@@ -314,28 +321,53 @@ export async function analyzeEventNeeds(input: {
     };
   }
 
+  /**
+   * Duzeltme 06 — GIRISSIZ HAK KAPISI (bulgu 64).
+   *
+   * Sira onemli: gecersiz girdi (bos / cok kisa metin) HAK YEMEZ, bu yuzden
+   * dogrulamalar yukarida. Hak MODEL CAGRISINDAN ONCE harcanir; izin yoksa
+   * Anthropic'e hic gidilmez.
+   */
+  let kalanHak: number | undefined;
+  if (!user) {
+    const hak = await girissizHakKullan(supabase);
+    if (!hak.izin) {
+      return {
+        success: false,
+        error: girissizHakMesaji(hak.neden),
+        girisGerekli: true,
+      };
+    }
+    kalanHak = hak.kalan;
+  }
+
   // ── FAZ 4b — EventSpec kaydi (Event AI altin kumesinin kaynagi) ──────────────
   // Kayit kullanici akisini HICBIR zaman kesmez: her iki INSERT de hatayi yalniz
   // log'a yazar, analiz normal devam eder. organization_id GONDERILMEZ (kurulus
   // atfi 4c). Her cagri YENI brief acar; surumleme 4c'deki "duzelt" akisiyla gelir.
   let briefId: string | null = null;
-  try {
-    const { data: brief, error: briefErr } = await supabase
-      .from('event_briefs')
-      .insert({
-        created_by_user_id: user.id,
-        source: 'client_web',
-        raw_text: description,
-      })
-      .select('id')
-      .single();
-    if (briefErr) {
-      console.error('[eventspec] brief kaydi', briefErr);
-    } else {
-      briefId = (brief as { id: string } | null)?.id ?? null;
+  // GIRISSIZDE YAZILMAZ (Duzeltme 06): RLS zaten izin vermiyor, denemek
+  // yalniz hata logu uretirdi. `specSurumuYaz` de briefId yoksa cikar,
+  // yani surum ve hata surumu de yazilmaz.
+  if (user) {
+    try {
+      const { data: brief, error: briefErr } = await supabase
+        .from('event_briefs')
+        .insert({
+          created_by_user_id: user.id,
+          source: 'client_web',
+          raw_text: description,
+        })
+        .select('id')
+        .single();
+      if (briefErr) {
+        console.error('[eventspec] brief kaydi', briefErr);
+      } else {
+        briefId = (brief as { id: string } | null)?.id ?? null;
+      }
+    } catch (err) {
+      console.error('[eventspec] brief kaydi', err);
     }
-  } catch (err) {
-    console.error('[eventspec] brief kaydi', err);
   }
 
   /**
@@ -851,6 +883,7 @@ Kurallar:
       provenance,
       ...(briefId ? { briefId } : {}),
       ...(specVersionId ? { specVersionId } : {}),
+      ...(kalanHak !== undefined ? { kalanHak } : {}),
     };
   } catch (err) {
     console.error('[ai] analyzeEventNeeds error:', err);
@@ -858,191 +891,6 @@ Kurallar:
     return {
       success: false,
       error: 'Analiz yapılırken bir sorun oluştu, tekrar dene.',
-    };
-  }
-}
-
-const MATCH_POOL_LIMIT = 12;
-const BIO_SNIPPET_LEN = 240;
-
-/**
- * Müşterinin niteliksel talebine göre profesyonel önerir.
- * MİMARİ: önce DB ön-filtre (kategori + opsiyonel şehir + is_published),
- * en fazla 12 aday çekilir, kısaltılmış profil verisi Claude'a verilir,
- * Claude SADECE bu havuzdan uygunlara göre sıralar + gerekçe yazar.
- * Maliyet: havuz küçük tutulur; aday yoksa Claude'a gidilmez.
- * Gizlilik: sadece yayındaki profiller, kısaltılmış veri (bio özeti + kategori).
- * Adillik: Claude'a premium öne çıkar denmez; saf uygunluk değerlendirir.
- */
-export async function recommendProfessionals(input: {
-  categorySlug: string;
-  cityId: number | null;
-  requirement: string;
-}): Promise<ProMatchResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Giriş yapmalısın.' };
-  }
-
-  if (!anthropic) {
-    return { success: false, error: 'AI servisi şu an kullanılamıyor.' };
-  }
-
-  const requirement = input.requirement.trim().slice(0, 800);
-  if (requirement.length < 10) {
-    return {
-      success: false,
-      error: 'Lütfen ne tür bir profesyonel aradığını biraz anlat.',
-    };
-  }
-
-  // Kategori slug → id
-  const { data: category } = await supabase
-    .from('service_categories')
-    .select('id, name_tr')
-    .eq('slug', input.categorySlug)
-    .eq('is_active', true)
-    .single();
-
-  if (!category) {
-    return { success: false, error: 'Geçerli bir kategori seç.' };
-  }
-
-  // Ön-filtre: kategori + (opsiyonel) şehir + yayında + pro/ajans
-  // FAZ 2c: aday havuzu saglayici gorunumunden; filtreler ve sutunlar ayni.
-  let query = supabase
-    .from('v_providers_public')
-    .select('id, full_name, company_name, role, bio, premium_tier')
-    .eq('is_published', true)
-    .in('role', ['professional', 'agency'])
-    .eq('primary_category_id', category.id)
-    .limit(MATCH_POOL_LIMIT);
-
-  if (input.cityId !== null) {
-    query = query.eq('city_id', input.cityId);
-  }
-
-  const { data: pool } = await query;
-
-  if (!pool || pool.length === 0) {
-    return {
-      success: false,
-      error:
-        'Bu kriterlere uygun yayında profesyonel bulunamadı. Şehir filtresini kaldırıp tekrar dene.',
-    };
-  }
-
-  // Geçerli id kümesi — Claude sadece bunlardan dönebilsin
-  const validIds = new Set(pool.map((p) => p.id));
-
-  // Claude'a verilecek kısaltılmış profil listesi (gizlilik: bio özeti)
-  const profileList = pool
-    .map((p, i) => {
-      const name =
-        (p.role === 'agency' || p.role === 'business') && p.company_name
-          ? p.company_name
-          : p.full_name || 'İsimsiz';
-      const bioSnippet = (p.bio || '')
-        .trim()
-        .slice(0, BIO_SNIPPET_LEN)
-        .replace(/\s+/g, ' ');
-      return `${i + 1}. id: ${p.id}
-   İsim: ${name}
-   Tür: ${p.role === 'agency' ? 'Ajans' : 'Bireysel profesyonel'}
-   Hakkında: ${bioSnippet || '(bilgi yok)'}`;
-    })
-    .join('\n\n');
-
-  const prompt = `Sen Kashe adlı etkinlik ve yetenek pazaryeri için bir eşleştirme asistanısın. Müşteri belirli bir ihtiyaç tarif ediyor, sen aşağıdaki aday profesyoneller arasından en uygun olanları seçiyorsun.
-
-Müşterinin aradığı (${category.name_tr} kategorisinde):
-"${requirement}"
-
-Aday profesyoneller (SADECE bunlar arasından seç, başka kimse uydurma):
-
-${profileList}
-
-Görevin: Müşterinin tarifine en uygun profesyonelleri seç ve neden uygun olduklarını açıkla. Değerlendirmeni yalnızca müşterinin ihtiyacına uygunluğa göre yap. Yanıtını SADECE geçerli bir JSON dizisi olarak ver, başka hiçbir metin veya markdown ekleme. Yapı:
-
-[
-  { "id": "yukarıdaki listeden birebir id", "reason": "Bu profesyonelin neden uygun olduğunu açıklayan 1 kısa cümle" }
-]
-
-Kurallar:
-- Türkçe yaz (id hariç — id yukarıdaki listeden birebir kopyalanmalı).
-- En uygun 1-5 profesyonel seç (uygunluk sırasına göre, en uygun başta). Hiçbiri tam uymuyorsa en yakın olanları seç.
-- "id" MUTLAKA yukarıdaki aday listesindeki id'lerden biri olmalı.
-- "reason" somut ve müşterinin tarifiyle bağlantılı olsun.
-- SADECE JSON dizisi döndür, başına/sonuna hiçbir şey ekleme, markdown kod bloğu (üç backtick) kullanma.`;
-
-  try {
-    const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 700,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const textBlock = message.content.find((b) => b.type === 'text');
-    let raw =
-      textBlock && textBlock.type === 'text' ? textBlock.text.trim() : '';
-
-    if (!raw) {
-      return { success: false, error: 'Öneri üretilemedi, tekrar dene.' };
-    }
-
-    raw = raw
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
-
-    let parsed: { id?: string; reason?: string }[];
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return { success: false, error: 'Öneri sonucu okunamadı, tekrar dene.' };
-    }
-
-    if (!Array.isArray(parsed)) {
-      return { success: false, error: 'Öneri sonucu beklenmedik biçimde.' };
-    }
-
-    // Sadece geçerli (havuzdaki) id'leri al, profil bilgisini DB'den eşle
-    const matches: ProMatch[] = parsed
-      .filter(
-        (m): m is { id: string; reason?: string } =>
-          typeof m?.id === 'string' && validIds.has(m.id)
-      )
-      .map((m) => {
-        const p = pool.find((pp) => pp.id === m.id)!;
-        const name =
-          (p.role === 'agency' || p.role === 'business') && p.company_name
-            ? p.company_name
-            : p.full_name || 'İsimsiz';
-        return {
-          id: m.id,
-          name,
-          reason: (m.reason || '').trim(),
-        };
-      });
-
-    if (matches.length === 0) {
-      return {
-        success: false,
-        error:
-          'Tarifine tam uyan bir profesyonel seçilemedi. Aramanı biraz değiştirip tekrar dene.',
-      };
-    }
-
-    return { success: true, matches };
-  } catch (err) {
-    console.error('[ai] recommendProfessionals error:', err);
-    return {
-      success: false,
-      error: 'Öneri yapılırken bir sorun oluştu, tekrar dene.',
     };
   }
 }

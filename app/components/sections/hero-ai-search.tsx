@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Hero'nun birincil aramasi Kashe AI (9 Ekim 2026): serbest metin sihirbaza
-// tasinir; yapisal arama #hizmetler'de (QuickSearch). Kabuk QuickSearch ile
-// AYNI (beyaz kart, sol etiket + girdi, sagda koyu dugme) — iki arama ayni
-// gorsel dili konussun diye.
+// Hero'nun birincil aramasi Kashe AI (9 Ekim 2026): serbest metin tek AI
+// girisine tasinir; yapisal arama #hizmetler'de (QuickSearch). Kabuk
+// QuickSearch ile AYNI (beyaz kart, sol etiket + girdi, sagda koyu dugme) —
+// iki arama ayni gorsel dili konussun diye.
+//
+// Duzeltme 06-E: hedef artik `/etkinlik-sihirbazi` degil `/kashe-ai` — niyeti
+// (tek rol mu, etkinlik mi) orada Kashe AI belirliyor; sihirbaza gecis
+// kullanicinin kararina kaldi.
 
 /** Top-nav'daki 4 kollu yildiz — Kashe AI isareti. */
 function AiYildiz({ size = 14 }: { size?: number }) {
@@ -36,10 +40,10 @@ export function HeroAiSearch() {
     const m = metin.trim();
     const p = new URLSearchParams();
     if (m) p.set("metin", m);
-    // Sihirbazin analiz esigi 10 karakter; altinda otomatik baslatma istenmez.
+    // Analiz esigi 10 karakter; altinda otomatik baslatma istenmez.
     if (m.length >= 10) p.set("otomatik", "1");
     const qs = p.toString();
-    router.push(qs ? `/etkinlik-sihirbazi?${qs}` : "/etkinlik-sihirbazi");
+    router.push(qs ? `/kashe-ai?${qs}` : "/kashe-ai");
   }
 
   return (

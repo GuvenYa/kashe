@@ -41,7 +41,7 @@ const SECTIONS: Section[] = [
     ],
     ctas: [
       { label: 'Profesyonelleri keşfet', href: '/kesfet' },
-      { label: 'Etkinliğini planla', href: '/etkinlik-planla' },
+      { label: 'Etkinliğini planla', href: '/kashe-ai' },
     ],
   },
   {

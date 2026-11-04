@@ -840,7 +840,9 @@ export default async function KesfetPage({
                         “{searchQuery}” için sonuç çıkmadı; aramayı kaldırıp
                         diğer filtrelerini koruduk.{' '}
                         <Link
-                          href="/kashe-ai"
+                          href={`/kashe-ai?metin=${encodeURIComponent(
+                            searchQuery
+                          )}`}
                           className="underline text-ink hover:text-brand-ink transition-colors"
                         >
                           Kashe AI&apos;a anlat

@@ -423,7 +423,7 @@ export default async function KategoriPage({ params }: Props) {
           <section className="border-t border-line px-6 md:px-12 py-10">
             <div className="max-w-7xl mx-auto">
               <Link
-                href="/pro-bul"
+                href="/kashe-ai"
                 className="kashe-tap group flex items-center gap-4 bg-card border border-line rounded-2xl p-5 md:p-6 hover:border-brand-ink transition"
               >
                 <div className="w-12 h-12 shrink-0 rounded-xl bg-brand-ink/10 flex items-center justify-center">

@@ -31,7 +31,8 @@ type AiKart = {
 
 const KARTLAR: AiKart[] = [
   {
-    href: '/etkinlik-sihirbazi',
+    href: '/kashe-ai?metin=' +
+      encodeURIComponent('250 kişilik bayi toplantısı, 14 Mayıs, Ankara'),
     ikon: 'takvim',
     baslik: 'Etkinlik Planlama',
     aciklama: 'Hangi rollere ihtiyacın var, kaç kişilik bir ekip gerekir?',
@@ -43,21 +44,24 @@ const KARTLAR: AiKart[] = [
       { metin: 'Teknik ekip' },
       { metin: 'Eksik: başlangıç saati?', ton: 'sky' },
     ],
-    bag: 'Sihirbazı aç →',
+    bag: "Kashe AI'a sor →",
   },
   {
-    href: '/pro-bul',
+    href: '/kashe-ai?metin=' +
+      encodeURIComponent(
+        'Düğünde caz repertuvarı olan bir şarkıcı arıyorum, İstanbul'
+      ),
     ikon: 'kisiler',
     baslik: 'Profesyonel Bulma',
-    aciklama: 'Sana en uygun profesyoneli gerekçesiyle önerelim.',
+    aciklama: 'Aradığın profesyoneli anlat, uygun profilleri hemen gösterelim.',
     girdi: 'Düğünde caz repertuvarı olan bir şarkıcı arıyorum, İstanbul',
     cipler: [
       { metin: 'Şarkıcı' },
       { metin: 'İstanbul' },
       { metin: 'Caz repertuvarı' },
-      { metin: 'Gerekçeli 5 öneri' },
+      { metin: 'Uygun profiller' },
     ],
-    bag: 'Profesyonel bul →',
+    bag: "Kashe AI'a sor →",
   },
 ];
 
@@ -88,7 +92,7 @@ export function KasheAiSection() {
           <p className="font-body text-base md:text-lg text-paper-72 leading-[1.6] max-w-xl mb-8">
             Etkinliğini bir iki cümleyle anlat, gerisini Kashe&apos;ye bırak:
             hangi rollere ihtiyacın olduğunu çıkarır, eksik bilgiyi uydurmaz,
-            sorar. Kimi aradığını söyle; en uygun profilleri nedeniyle önersin.
+            sorar. Kimi aradığını söyle; uygun profilleri hemen göstersin.
           </p>
 
           <div className="grid gap-5 md:grid-cols-2">

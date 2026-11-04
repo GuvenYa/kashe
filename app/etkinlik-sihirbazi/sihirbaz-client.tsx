@@ -15,6 +15,11 @@ import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { AnladimOzeti } from './anladim-ozeti';
+import {
+  GirisGerekliKutusu,
+  GirissizHakNotu,
+} from '@/app/components/girissiz-hak';
+import { spectenSihirbazYamasi } from '@/app/lib/sihirbaz-url';
 import { PazarButceKutusu } from './pazar-butce-kutusu';
 import { tarihMetni } from '@/app/lib/tarih';
 import { formatTLAralik } from '@/app/lib/para';
@@ -71,31 +76,6 @@ const BTN_IKINCIL =
 const ALAN =
   'w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 const ETIKET = 'block text-sm text-ink-72 mb-1.5';
-
-/** Anlat adiminda URL'ye yazilan/temizlenen tum anahtarlar. */
-const ANLAT_ANAHTARLARI = [
-  'tur',
-  'sehir',
-  'ilce',
-  'tarih',
-  'bitis',
-  'esnek',
-  'katilimci',
-  'butce_min',
-  'butce_max',
-  'mekan',
-  'baslik',
-  'kategoriler',
-  'adet',
-  'opsiyonel',
-  'brief',
-  'surum',
-  'tarih_notu',
-  'sehir_notu',
-  // EK-4: analizde dolan adimlar atlandiysa '1' olur; "Brief'ten
-  // anladiklarimiz" seridi bu bayrakla gorunur. Yeni analizde sifirlanir.
-  'atlanan',
-];
 
 /**
  * URL'ye bagli metin/sayi kutusu.
@@ -280,6 +260,10 @@ export function SihirbazClient({
   const [metin, setMetin] = useState(params.get('metin') ?? '');
   const [analizYukleniyor, setAnalizYukleniyor] = useState(false);
   const [analizHatasi, setAnalizHatasi] = useState<string | null>(null);
+  /** Duzeltme 06: hata girissiz hak bittigi icin mi (uye ol / giris cikisi). */
+  const [girisGerekli, setGirisGerekli] = useState(false);
+  /** Girissiz basarili analizden sonra bugun kalan hak (girislide null kalir). */
+  const [kalanHak, setKalanHak] = useState<number | null>(null);
   const [onayYukleniyor, setOnayYukleniyor] = useState(false);
   const [onayHatasi, setOnayHatasi] = useState<string | null>(null);
 
@@ -325,6 +309,21 @@ export function SihirbazClient({
     },
     [pathname, metin]
   );
+
+  /**
+   * RENDER yolunda kullanilan giris baglantisi (Duzeltme 06).
+   *
+   * `girisYolu` ref okuyor — olay isleyicisinde dogru ama RENDER sirasinda
+   * ref okumak React kuralini kirar (react-hooks/purity). Bu yuzden cizim
+   * REAKTIF `sorgu` state'inden turetilmis bu degeri kullanir.
+   */
+  const girisBaglantisi = useMemo(() => {
+    const p = new URLSearchParams(sorgu);
+    if (metin.trim()) p.set('metin', metin.trim());
+    const qs = p.toString();
+    const hedef = qs ? `${pathname}?${qs}` : pathname;
+    return `/giris?redirect=${encodeURIComponent(hedef)}`;
+  }, [sorgu, metin, pathname]);
 
   // SAYAÇ — Keşfet filtre semantiğinin birebir istemci karşılığı.
   // Kategori seçimi HARİÇ eşleşme; adım 4'teki kategori sayıları bunun üstüne biner.
@@ -454,14 +453,17 @@ export function SihirbazClient({
     guncelle({ opsiyonel: s.size > 0 ? [...s].join(',') : null });
   }
 
+  /**
+   * Duzeltme 06-D2: ANLAT adiminda giris duvari YOK — girissiz kullanici da
+   * analiz edebilir (hak kapisi sunucuda, `analyzeEventNeeds` icinde).
+   * "Onayla" adimindaki giris duvari AYNEN duruyor.
+   */
   async function analizEt() {
     const girdi = metin.trim();
     if (girdi.length < 10) return;
-    if (!oturumVar) {
-      router.push(girisYolu(true));
-      return;
-    }
     setAnalizHatasi(null);
+    setGirisGerekli(false);
+    setKalanHak(null);
     setAnalizYukleniyor(true);
     const res = await analyzeEventNeeds({
       eventDescription: girdi,
@@ -470,58 +472,20 @@ export function SihirbazClient({
     setAnalizYukleniyor(false);
     if (!res.success) {
       setAnalizHatasi(res.error);
+      setGirisGerekli(res.girisGerekli === true);
       return;
     }
+    if (res.kalanHak !== undefined) setKalanHak(res.kalanHak);
 
-    // Onceki analizden kalan degerler temizlenir; yalniz yeni spec yazilir.
-    // `adim` asagida hesaplanir (dolu adimlar atlanir).
-    const yama: Record<string, string | null> = { metin: girdi };
-    for (const k of ANLAT_ANAHTARLARI) yama[k] = null;
-
-    const s = res.spec;
-    if (s.event_type) yama.tur = s.event_type;
-    if (s.city_id != null) yama.sehir = String(s.city_id);
-    if (s.district) yama.ilce = s.district;
-    if (s.start_date) yama.tarih = s.start_date;
-    if (s.end_date) yama.bitis = s.end_date;
-    if (s.is_date_flexible) yama.esnek = '1';
-    if (s.participant_count != null) yama.katilimci = String(s.participant_count);
-    if (s.budget_min != null) yama.butce_min = String(s.budget_min);
-    if (s.budget_max != null) yama.butce_max = String(s.budget_max);
-    if (s.venue_status) yama.mekan = s.venue_status;
-    if (s.title) yama.baslik = s.title;
-
-    const roller = s.suggested_roles ?? [];
-    const idler: number[] = [];
-    const adetler: string[] = [];
-    const opsiyoneller: string[] = [];
-    for (const r of roller) {
-      const kat = kategoriler.find((k) => k.slug === r.slug);
-      if (!kat) continue; // eslesmeyen rol atlanir
-      idler.push(kat.id);
-      if (r.quantity && r.quantity > 1) adetler.push(`${kat.id}:${r.quantity}`);
-      if (r.is_required === false) opsiyoneller.push(String(kat.id));
-    }
-    if (idler.length > 0) yama.kategoriler = idler.join(',');
-    if (adetler.length > 0) yama.adet = adetler.join(',');
-    if (opsiyoneller.length > 0) yama.opsiyonel = opsiyoneller.join(',');
-
-    if (res.briefId) yama.brief = res.briefId;
-    if (res.specVersionId) yama.surum = res.specVersionId;
-    const ekstra = (s.extra ?? {}) as Record<string, unknown>;
-    if (typeof ekstra.date_note === 'string') yama.tarih_notu = ekstra.date_note;
-    if (typeof ekstra.city_note === 'string') yama.sehir_notu = ekstra.city_note;
-
-    // DOLU ADIMLARI ATLA (EK-4): kullanici zaten anlattigi seyi tekrar
-    // onaylamasin. Ilk EKSIK adima gidilir; eksik yoksa Ihtiyac adimina.
-    // Atlananlar kaybolmaz: serit cipleriyle gorunur ve duzenlenebilir kalir.
-    const turTamam = !!yama.tur;
-    const sehirTamam = !!yama.sehir;
-    const tarihTamam =
-      (!!yama.tarih || yama.esnek === '1') && !!yama.katilimci;
-    const ilkEksik = !turTamam ? 1 : !sehirTamam ? 2 : !tarihTamam ? 3 : 4;
-    yama.adim = String(ilkEksik);
-    if (ilkEksik > 1) yama.atlanan = '1';
+    /**
+     * Yama ORTAK fonksiyondan (Duzeltme 06-D1): ayni donusumu `/kashe-ai` de
+     * kullaniyor, ikisi ayrisamaz. Onceki analizden kalan degerler temizlenir
+     * (`null` yamalar) ve dolu adimlar atlanir.
+     */
+    const yama = spectenSihirbazYamasi(res.spec, kategoriler, girdi, {
+      briefId: res.briefId,
+      specVersionId: res.specVersionId,
+    });
 
     // Adim degisiyor -> gecmis kaydi (geri tusu Anlat adimina donsun).
     guncelle(yama, { gecmis: 'push' });
@@ -724,9 +688,16 @@ export function SihirbazClient({
                 </button>
               </div>
             </div>
-            {analizHatasi && (
+            {analizHatasi && !girisGerekli && (
               <p className="text-sm text-danger mt-3">{analizHatasi}</p>
             )}
+            {analizHatasi && girisGerekli && (
+              <GirisGerekliKutusu
+                mesaj={analizHatasi}
+                girisHref={girisBaglantisi}
+              />
+            )}
+            {kalanHak !== null && <GirissizHakNotu kalan={kalanHak} />}
           </div>
         )}
 
