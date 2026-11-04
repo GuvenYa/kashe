@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Lightbulb, Sparkles } from 'lucide-react';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
-import type { EventSpecV1 } from '@/app/lib/eventspec';
+import { normalizeTr, type EventSpecV1 } from '@/app/lib/eventspec';
 import { spectenSihirbazParametreleri } from '@/app/lib/sihirbaz-url';
 import {
   GirisGerekliKutusu,
@@ -21,11 +21,16 @@ import { kasheAiAdaylar, type KasheAiAdayGrubu } from './actions';
  * cikarir. Profesyonel listesi VERITABANINDAN (`kasheAiAdaylar`) gelir —
  * ikinci bir model cagrisi yok, model kimlik/rakam uretmez.
  *
- * NIYET KURALI (C3): `spec.suggested_roles` sayisi
- *   1  -> "Aradigin: <rol>" + en fazla 6 aday (ikincil cikis: sihirbaz)
- *   >1 -> "Etkinligin icin onerdiklerimiz": her rol + en fazla 3 aday
+ * NIYET KURALI (C3): analiz bir ETKINLIK ihtiyac listesi cikarir; "dugun
+ * fotografcisi ariyorum" gibi tek rol aramasinda da tamamlayici roller
+ * (videograf, makyaj) onerir. Bu yuzden niyet rol SAYISINDAN degil, metinde
+ * ADIYLA anilan rolden okunur (onizleme turu, 5 Kasim):
+ *   tek rol onerildi YA DA metinde tam bir rol adi geciyor
+ *      -> "Aradigin: <rol>" + en fazla 6 aday; diger oneriler kucuk
+ *         "bunlar da isine yarayabilir" baglantilari (ikincil cikis: sihirbaz)
+ *   aksi -> "Etkinligin icin onerdiklerimiz": her rol + en fazla 3 aday
  *         (birincil cikis: sihirbazda etkinligi olustur)
- *   0  -> model hata mesaji ("uygun oneri bulunamadi"); liste cizilmez.
+ *   rol yok -> model hata mesaji ("uygun oneri bulunamadi"); liste cizilmez.
  *
  * SIHIRBAZA GECIS: ayni spec'ten URL kurulur (`spectenSihirbazParametreleri`)
  * — sihirbaz ikinci analiz YAPMAZ, dolu adimdan devam eder.
@@ -40,9 +45,22 @@ const BTN_BIRINCIL =
 const BTN_IKINCIL =
   'kashe-tap inline-flex items-center gap-2 px-5 py-2.5 border border-line-strong text-ink rounded-lg font-display font-semibold text-sm hover:border-brand-ink hover:text-brand-ink transition-colors';
 
+type Rol = { slug: string; name: string; reason: string };
+
+/** Metinde ADIYLA gecen roller (Turkce katlamali: "fotografcisi" -> "fotografci"). */
+function metindeAnilanRoller(metin: string, roller: Rol[]): Rol[] {
+  const m = normalizeTr(metin);
+  return roller.filter((r) => {
+    const ad = normalizeTr(r.name);
+    return ad.length >= 2 && m.includes(ad);
+  });
+}
+
 type Sonuc = {
   spec: EventSpecV1;
-  roller: { slug: string; name: string; reason: string }[];
+  roller: Rol[];
+  /** Tek rol niyeti: aranan rolun slug'i (yoksa etkinlik gorunumu). */
+  odakSlug: string | null;
   tip: string;
   metin: string;
   /** Girisli analizin EventSpec kaydi; sihirbaz onayi bu brief'e baglanir (girissizde yok). */
@@ -146,9 +164,13 @@ export function KasheAiClient({
       name: c.name,
       reason: c.reason,
     }));
+    const anilan = metindeAnilanRoller(girdi, roller);
+    const odak =
+      roller.length === 1 ? roller[0] : anilan.length === 1 ? anilan[0] : null;
     setSonuc({
       spec: res.spec,
       roller,
+      odakSlug: odak?.slug ?? null,
       tip: res.tip,
       metin: girdi,
       kayit: { briefId: res.briefId, specVersionId: res.specVersionId },
@@ -156,10 +178,10 @@ export function KasheAiClient({
 
     // Adaylar: tek rolde 6, cok rolde rol basina 3 (C3).
     const adayliklar = await kasheAiAdaylar({
-      rolSluglari: roller.map((r) => r.slug),
+      rolSluglari: odak ? [odak.slug] : roller.map((r) => r.slug),
       sehirId: res.spec.city_id ?? null,
       etkinlikTuru: res.spec.event_type ?? null,
-      adet: roller.length === 1 ? 6 : 3,
+      adet: odak ? 6 : 3,
     });
     setGruplar(adayliklar.gruplar);
     setYukleniyor(false);
@@ -207,7 +229,14 @@ export function KasheAiClient({
     return qs ? `/etkinlik-sihirbazi?${qs}` : '/etkinlik-sihirbazi';
   }
 
-  const tekRol = sonuc?.roller.length === 1;
+  const odakRol = sonuc?.odakSlug
+    ? (sonuc.roller.find((r) => r.slug === sonuc.odakSlug) ?? null)
+    : null;
+  const tekRol = odakRol !== null;
+  /** Tek rol gorunumunde modelin onerdigi DIGER roller (Kesfet baglantisi). */
+  const digerRoller = odakRol
+    ? (sonuc?.roller ?? []).filter((r) => r.slug !== odakRol.slug)
+    : [];
 
   return (
     <div>
@@ -260,14 +289,14 @@ export function KasheAiClient({
             </p>
           )}
 
-          {tekRol ? (
+          {odakRol ? (
             <>
               <h2 className="font-display font-semibold text-2xl text-ink mb-1">
-                Aradığın: {sonuc.roller[0].name}
+                Aradığın: {odakRol.name}
               </h2>
-              {sonuc.roller[0].reason && (
+              {odakRol.reason && (
                 <p className="text-sm text-ink-72 leading-relaxed mb-5">
-                  {sonuc.roller[0].reason}
+                  {odakRol.reason}
                 </p>
               )}
             </>
@@ -329,6 +358,28 @@ export function KasheAiClient({
               );
             })}
           </div>
+
+          {digerRoller.length > 0 && (
+            <div className="mt-6">
+              <p className="text-sm text-ink-72 mb-2">
+                Etkinliğin için şunlar da işine yarayabilir:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {digerRoller.map((r) => {
+                  const kat = kategoriler.find((k) => k.slug === r.slug);
+                  return (
+                    <Link
+                      key={r.slug}
+                      href={kesfetLinki(kat?.id ?? null)}
+                      className="kashe-tap inline-flex items-center px-3 py-1.5 rounded-full border border-line text-sm text-ink hover:border-brand-ink hover:text-brand-ink transition-colors"
+                    >
+                      {r.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {sonuc.tip && (
             <div className="mt-6 flex items-start gap-3 bg-brand-ink/5 border border-brand-ink/20 rounded-xl p-4">

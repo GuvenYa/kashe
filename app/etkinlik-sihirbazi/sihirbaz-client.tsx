@@ -595,7 +595,7 @@ export function SihirbazClient({
         </h1>
         <p className="text-ink-72 mt-3 leading-relaxed">
           Beş kısa adım; ilki isteğe bağlı. Adımları gezmek için kayıt
-          gerekmiyor; anlatmak ve onaylamak için giriş istenir.
+          gerekmiyor; yalnız onaylamak için giriş istenir.
         </p>
       </div>
 
