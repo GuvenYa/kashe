@@ -314,11 +314,13 @@ ALTER TABLE public.profiles DISABLE TRIGGER protect_profile_fields;
 UPDATE public.profiles SET is_admin = true WHERE id = '5a4e0000-0000-4000-8000-000000090001';
 ALTER TABLE public.profiles ENABLE TRIGGER protect_profile_fields;
 
--- profil alanlari (onay alanlari icin auth.uid() = Sahne yoneticisi)
+-- profil alanlari (onay alanlari icin auth.uid() = Sahne yoneticisi). FAZ 10c-1/03: saglayici hesabinda pazaryeri alanlari
+-- profiles'ta kilitli KOPYA -> ayna bayragiyla yazilir, kaynak taraf (providers / alt profil / birincil rol) blok sonunda esitlenir
 
 DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', '5a4e0000-0000-4000-8000-000000090001', true);
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
   UPDATE public.profiles p SET
     slug = v.slug, bio = v.bio, city_id = pg_temp.sehir(v.sehir), primary_category_id = pg_temp.kat(v.kat),
     attributes = v.attrs, category_attributes = v.cat_attrs, approval_status = v.onay::public.profile_approval_status,
@@ -500,6 +502,21 @@ BEGIN
 ('5a4e0000-0000-4000-8000-000000090001', NULL, NULL, 'İstanbul', NULL, '{}'::jsonb, '{}'::jsonb, 'approved', pg_temp.t(14397.05), NULL, NULL, NULL, false, 'none', NULL, pg_temp.t(1.00), pg_temp.t(14400.00))
   ) AS v(id, slug, bio, sehir, kat, attrs, cat_attrs, onay, onay_at, onay_not, askida_at, askida_neden, yayinda, premium, premium_until, son_gorulme, kayit)
   WHERE p.id = v.id::uuid;
+  -- kaynak taraf: providers (sehir, onay, askiya, yayin, ozellikler), alt profil tanitimi, birincil rol (yeniden turetme)
+  UPDATE public.providers pr
+     SET city_id = p.city_id, approval_status = p.approval_status, approval_note = p.approval_note, approved_at = p.approved_at,
+         suspended_at = p.suspended_at, suspension_reason = p.suspension_reason, suspended_by = p.suspended_by,
+         is_published = p.is_published, attributes = p.attributes, category_attributes = p.category_attributes
+    FROM public.profiles p
+   WHERE p.id = pr.id AND pr.id::text LIKE '5a4e0000-%';
+  UPDATE public.professional_profiles pp SET bio = p.bio
+    FROM public.profiles p
+   WHERE p.id = pp.provider_id AND pp.provider_id::text LIKE '5a4e0000-%' AND pp.bio IS DISTINCT FROM p.bio;
+  UPDATE public.organization_profiles op SET about = p.bio
+    FROM public.profiles p
+   WHERE p.id = op.provider_id AND op.provider_id::text LIKE '5a4e0000-%' AND op.about IS DISTINCT FROM p.bio;
+  PERFORM public.recompute_provider_services(pr.id) FROM public.providers pr WHERE pr.id::text LIKE '5a4e0000-%';
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
   PERFORM set_config('request.jwt.claim.sub', '', true);
 END $$;
 

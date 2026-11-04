@@ -4,6 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
+**Durum (5 Kasim 2026):** **10c-1 DB (01 + 02 + 02b) + P1 + Duzeltme 05 URETIMDE**; 10c-1 / 03 KISITLAYAN harness'ta (bolum 10c,
+"10c-1 / 03 UYGULAMA"); sonra 10c-2.
 **Durum (4 Kasim 2026):** **10b KAPANDI** (DB + P1 uretimde, `main` 568c7b1) + **Duzeltme 04 uretimde** (bolum 6); siradaki **10c-1** (bolum 10c).
 Asagidaki 3 Kasim durumu tarihcedir.
 **Durum (3 Kasim 2026):** **10a + Duzeltme 01 URETIMDE** (merge e4317d5; `supabase db push` 20261028 + 20261030; asama20/5/18/19 uretimde beklendigi gibi; tur 3 Kasim, bulgular 4-38);
@@ -195,11 +197,27 @@ baslik/tanitim da aranir; es anlamli sozluk -> etkinlik turu / kategori / kurums
 "Ad S." `app/lib/kamu-adi.ts` (bireysel profesyonel; tam ad kendisi / admin / onayli-tamamlanmis rezervasyonlu karsi taraf; tarayiciya
 tam ad gonderilmez; API duzeyi gizleme 10c-2 sonrasi). Onizleme turu + uretim anonim kontrol temiz. Not: Vercel 2 push'u almadi
 (webhook), bos commit ile tetiklendi; `main` push'u `git push origin main` ile gitti.
+**10c-1 / 03 UYGULAMA (5 Kasim, harness):** `20261105130000_faz10c_03_profiles_kilidi.sql` (KISITLAYAN; veri degismez, basta ve sonda
+kayma 0 RAISE): `protect_profiles_moved_fields` (BEFORE UPDATE `trg_faz10c_protect_moved_fields`; `providers` satiri olan hesapta 13
+tasinmis alan kullanici VE admin icin sessizce eski degerde, yalniz `kashe.sync_bypass` yazar; musteri / isletme kilitsiz), ileri ayna
+`fn_sync_profile_to_provider` display_name + talents.full_name'e daraldi (tetikleyici UPDATE OF role, full_name, company_name),
+`trg_faz2b_sync_primary_role` + fonksiyonu dustu (birincil rol RPC'de turetilir). asama4: saglayici hazirlik yazimlari saglayici tarafina
+(T0/T99 faz1test birincil NULL ayna bayragiyla; T5c, T7, T11d, T13b/f/h, T14c/d, T19), T38 eski yol bolumu 03 oncesi ileri ayna / 03
+sonrasi kilit, yeni **T39** (yapi, sahip 13 alan, admin profiles yolu, musteri / isletme kilitsiz, ayna ve RPC kilidi gecer, geri alma);
+asama20 **K9** (18). Sahne: `01a` profil blogu ayna bayragiyla + kaynak taraf esitleme (providers, alt profil, recompute) - degismemis
+01a 03 sonrasi 0 gorunur saglayici kurardi; `05` faz1test birincil NULL ayna bayragiyla (degismemis 05 FK'de durur). Uygulama:
+`saglayiciMi` sorgu hatasinda firlatir (profiles'a dusup sessizce kaybolmaz). Yerel: 03 tek islem ve otomatik, ikinci kosu no-op;
+asama4 41/41 iki kipte + ikinci kosu, 03'suz kopyada 40 + T39 ATLANDI; mutasyon: kilit kapali -> T38 + T39 HATA, admin muaf -> T39,
+musteri de kilitli -> T39, ayna bayragi yok sayilir -> 30+ test HATA; asama20 K9 18 ESIT (03'suz BEKLIYOR), K8 37 / K8b 0; asama7 /
+asama9 / asama10 ESIT; Sahne 00-04 03'lu harness'ta yeniden kuruldu -> providers / alt profil / provider_services / profiles ozetleri
+03 oncesiyle birebir (md5), kayma 0. tsc + eslint temiz.
+Sira: dal db push (03) -> asama4 / asama20 / asama10 -> `main` (saglayiciMi + Sahne + belgeler) -> uretim db push (03) -> asama20 /
+asama10 -> uretim anonim kontrol. 10c-2 dosyasi `04`, testleri asama4 **T40** / asama20 **K10**.
 
-**10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
+**10c-2 / DB/02** (`faz10c_04_provider_id_kesimi`, damga yazilirken verilir; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
 `professional_id` doldurur; istemci eski sutunu gondermezse de dolar); eski GIN indeks (`profiles.category_attributes`) duser;
-asama4 **T39**, asama20 **K9**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
+asama4 **T40**, asama20 **K10**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
 ve `favorites.professional_id` dahil), tipler; eski sutunlar FAZ 11'e kadar kalir (tetikleyici doldurur). Tur: portfoy/hizmet/deneyim
 ekle-sil, favori, yorum; /p/[id] ve Kesfet degismez.
 
@@ -251,9 +269,10 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 | **10b-P1** | `EVENT_TYPES` silinir; 46 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`) — **URETIMDE 4 Kasim** (8a85b32) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti — DOGRULANDI (bolum 10b TUR) |
 | **10c-1 DB/01** | providers jsonb sutunlar + views_count, yazma yolu (RLS/GRANT + `provider_set_primary_category`), ters ayna, koruma, ileri ayna daralir | asama4 **T38**; asama20 **K8**; asama10 ESIT |
 | **10c-1 P1** | profil duzenle / kategori bilgileri / admin / yayin / views yazmalari saglayici tarafina | tur: profil duzenle, admin onay, yayin, sayac; Kesfet ve /p/[id] degismez |
-| **10c-2 DB/02** | `provider_id` NOT NULL + CASCADE, `set_provider_id` yon degisimi, eski GIN duser | asama4 **T39**; asama20 **K9** |
+| **10c-1 DB/03** | profiles tasinmis alan kilidi (KISITLAYAN), ileri ayna daralir, birincil rol aynasi duser; Sahne 01a/05 ayna bayragi | asama4 **T39**; asama20 **K9**; asama10 ESIT |
+| **10c-2 DB/02** | `provider_id` NOT NULL + CASCADE, `set_provider_id` yon degisimi, eski GIN duser | asama4 **T40**; asama20 **K10** |
 | **10c-2 P2** | 108 `profile_id`/`professional_id` gecisi `provider_id`'ye | tur: portfoy/hizmet/deneyim/favori/yorum |
-| **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K10 |
+| **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K11 |
 | **Kapanis** | 38 bolum 6, CLAUDE.md FAZ 10 paragrafi, roadmap, 04-goc-plani madde 42-45 | — |
 
 Kirmizi cizgiler: her kesimde once uygulama yeni yola gecer, DB sonra kapatir (ters sira eski sayfalari kirar); fiziksel DROP bu fazda

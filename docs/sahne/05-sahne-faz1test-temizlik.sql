@@ -56,8 +56,11 @@ BEGIN
        ORDER BY nsp.nspname, cls.relname, att.attname
     LOOP
       IF fk.sema = 'public' AND fk.tablo = 'profiles' THEN
+        -- FAZ 10c-1/03: saglayici hesabinda profiles.primary_category_id kilitli (yalniz ayna yazar) -> ayna bayragiyla
+        PERFORM set_config('kashe.sync_bypass', 'on', true);
         EXECUTE format('UPDATE %I.%I SET %I = NULL WHERE %I = ANY($1)', fk.sema, fk.tablo, fk.sutun, fk.sutun) USING ids;
         GET DIAGNOSTICS n = ROW_COUNT;
+        PERFORM set_config('kashe.sync_bypass', 'off', true);
         INSERT INTO sahne05_rapor (tablo, sutun, islem, satir) VALUES (fk.sema || '.' || fk.tablo, fk.sutun, 'NULL yapildi', n);
       ELSE
         EXECUTE format('DELETE FROM %I.%I WHERE %I = ANY($1)', fk.sema, fk.tablo, fk.sutun) USING ids;

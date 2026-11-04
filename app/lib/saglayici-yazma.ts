@@ -36,6 +36,10 @@ export type AltProfilTablosu =
  * Rol kontrolu DEGIL: olcut satirin VARLIGI (FAZ 2a'da saglayici defteri
  * `professional` ve `agency` hesaplari icin dogar). Musteri ve isletme
  * hesaplarinda satir yoktur ve her sey `profiles`'ta kalir.
+ *
+ * Sorgu hatasinda FIRLATIR (10c-1/03): saglayici hesabinda `profiles`'taki
+ * pazaryeri alanlari kilitli kopya; "saglayici degil" varsayimi yazimi
+ * `profiles`'a yonlendirip SESSIZCE kaybettirirdi. Belirsizlikte yazma yok.
  */
 export async function saglayiciMi(
   supabase: SunucuIstemcisi,
@@ -48,7 +52,7 @@ export async function saglayiciMi(
     .maybeSingle();
   if (error) {
     console.error('[saglayici] satir kontrolu', error.code, error.message);
-    return false;
+    throw new Error('Hesap türü doğrulanamadı, lütfen tekrar deneyin.');
   }
   return !!data;
 }

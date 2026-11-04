@@ -22,8 +22,13 @@
 --      authenticated EXECUTE (1) - anon (0) + fn_faz10c_ayna_kaymasi (1) + gorunum attributes'i saglayicidan, primary_category_id'yi
 --      profiles'tan okur (1; PostgREST gomme ipucu profiles_primary_category_id_fkey bu kaynaga bagli - 02b) -> (37)
 --   K8b ayna kaymasi: profiles kopyalari ile providers / alt profil / birincil rol farki toplami (0)
---   10c-1 uygulanmamissa K8/K8b BEKLIYOR. (10c-1/03 profiles kilidi ve 10c-2 sonraki dilimlerde eklenir; D 10d.)
--- Beklenen: K1, K3, K4, K5, K7, K8, K8b ESIT; K2, K6 BILGI.
+--   10c-1 uygulanmamissa K8/K8b BEKLIYOR.
+-- Bolum C2 (10c-1/03 profiles kilidi; 20261105130000_faz10c_03):
+--   K9 kilit: trg_faz10c_protect_moved_fields etkin (1) + protect_profiles_moved_fields anon/authenticated/PUBLIC EXECUTE yok (1)
+--      + trg_faz2b_sync_primary_role ve fn_faz2b_sync_primary_role yok (1) + ileri ayna tetikleyicisi yalniz role/full_name/company_name
+--      (1) + ileri ayna govdesinde city_id yok (1) + kilit fonksiyonu 13 tasinmis alani eski degerine dondurur (13) -> (18)
+--   03 uygulanmamissa K9 BEKLIYOR. Kayma olcumu K8b (03 sonrasi da 0). (10c-2 K10 sonraki dilimde; D 10d.)
+-- Beklenen: K1, K3, K4, K5, K7, K8, K8b, K9 ESIT; K2, K6 BILGI.
 -- =============================================================================
 
 WITH
@@ -153,13 +158,36 @@ k8b AS (
           END)::bigint,
          0::bigint
 ),
+k9 AS (
+  SELECT 'K9 10c-1/03 kilit: tetikleyici 1 + yetki 1 + birincil rol aynasi yok 1 + ileri ayna sutun 1 + govde 1 + kilitli alan 13 (18)' AS kontrol,
+         ((SELECT count(*) FROM pg_trigger WHERE tgrelid = 'public.profiles'::regclass AND tgname = 'trg_faz10c_protect_moved_fields'
+            AND tgenabled <> 'D')
+          + (to_regprocedure('public.protect_profiles_moved_fields()') IS NOT NULL
+             AND NOT EXISTS (SELECT 1 FROM information_schema.routine_privileges WHERE specific_schema = 'public'
+                              AND routine_name = 'protect_profiles_moved_fields' AND grantee IN ('anon', 'authenticated', 'PUBLIC')
+                              AND privilege_type = 'EXECUTE'))::int
+          + (NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_faz2b_sync_primary_role')
+             AND to_regprocedure('public.fn_faz2b_sync_primary_role()') IS NULL)::int
+          + ((SELECT string_agg(a.attname, ',' ORDER BY a.attname)
+                FROM pg_trigger t JOIN pg_attribute a ON a.attrelid = t.tgrelid AND a.attnum = ANY(t.tgattr::int2[])
+               WHERE t.tgrelid = 'public.profiles'::regclass AND t.tgname = 'trg_faz2_sync_profile_to_provider')
+             IS NOT DISTINCT FROM 'company_name,full_name,role')::int
+          + COALESCE((SELECT (prosrc NOT LIKE '%city_id%')::int FROM pg_proc WHERE oid = to_regprocedure('public.fn_sync_profile_to_provider()')), 0)
+          + COALESCE((SELECT count(*) FROM pg_proc pr, unnest(ARRAY['city_id', 'bio', 'primary_category_id', 'attributes', 'category_attributes',
+                        'views_count', 'is_published', 'approval_status', 'approval_note', 'approved_at', 'suspended_at', 'suspension_reason',
+                        'suspended_by']) AS f(alan)
+                       WHERE pr.oid = to_regprocedure('public.protect_profiles_moved_fields()')
+                         AND pr.prosrc ~ ('NEW\.' || f.alan || '\s*:=\s*OLD\.' || f.alan || '\s*;')), 0))::bigint,
+         18::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
-  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k8b
+  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k8b UNION ALL SELECT * FROM k9
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K2 %' OR kontrol LIKE 'K6 %' THEN 'BILGI'
             WHEN kontrol LIKE 'K7 %' AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_fkey') THEN 'BEKLIYOR'
             WHEN (kontrol LIKE 'K8 %' OR kontrol LIKE 'K8b %') AND to_regprocedure('public.provider_set_primary_category(integer)') IS NULL THEN 'BEKLIYOR'
+            WHEN kontrol LIKE 'K9 %' AND to_regprocedure('public.protect_profiles_moved_fields()') IS NULL THEN 'BEKLIYOR'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;
