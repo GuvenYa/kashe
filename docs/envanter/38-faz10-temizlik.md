@@ -250,10 +250,13 @@ yorum birakamaz (reviews.conversation_id zorunlu; urun karari), portalda "Reddet
 **Duzeltme 04 (4 Kasim, dal `duzeltme-04`; bulgu 61-62):** `20261104130000_duzeltme_04_faz7_bayrak.sql` — `fn_faz7_rpc_flag()`
 COALESCE ile false (tanimsiz ayarda NULL donup `NOT flag` dondurma kilitlerini atliyordu: taze baglantida satici uye gonderilmis/onayli
 surumun kalem fiyat/adet/ekle/sil ve tax_rate/valid_until/notes yazabiliyordu; yerelde onayli 11.400 TL teklif 28.500 TL oldu, duzeltmeyle
-22023). Yetkiler/imza ayni. asama4: T0 ve yeni T99 (kosu sonu temizligi; 8 'Faz1 Test' kategorisi artik kalmaz) bayragi acar, T37 govde
+22023). Yetkiler/imza ayni. asama4: T0 ve yeni T99 (kosu sonu temizligi; 8 'Faz1 Test' kategorisi artik kalmaz; SQL Editor dosyayi
+TEK ISLEMDE kostugu icin T99 teklifleri etkinlik/ekip/RFP'den ONCE siler - ilk dal kosusunda 23503 proposals_rfp_id_fkey, yerelde `psql -1` ile
+tekrarlandi) bayragi acar, T37 govde
 + dogrudan yazim 22023 (yerelde 39/39; duzeltmesiz kopyada yalniz T37 HATA; eski T0 duzeltilmis DB'de HATA -> bayrak sart). Sahne 05
 bayraksiz duzeltilmis DB'de durur (crew_members -> proposal_items SET NULL), bayrakla 8+8 siler; 00/01a/02a ayni bayragi alir.
-`asama22-duzeltme-04-kontrol.sql` K1-K3 ESIT, K4/K5 bilgi (gonderimden sonra degismis kalem/surum; Sahne disi 0 beklenir).
+`asama22-duzeltme-04-kontrol.sql` K1-K3 ESIT, K4/K5 bilgi (gonderimden sonra degismis kalem/surum; Sahne disi 0 beklenir; K5 onay
+`approved_at` ve revizyon notu `client_note` yazimlarini saymaz - ilk dal kosusunda bunlar 4 cikmisti).
 **Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
 iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
 yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif

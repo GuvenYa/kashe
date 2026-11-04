@@ -5711,6 +5711,22 @@ DECLARE
 BEGIN
   -- Duzeltme 04: gonderilmis teklif surumlerinin kalemleri bayraksiz silinmez (dondurma kilidi); temizlik bakim isidir
   PERFORM set_config('kashe.faz7_rpc', '1', true);
+  -- SQL Editor dosyanin TAMAMINI tek islemde kosar: bu islemde yaratilmis satirlarda FK kontrolu her guncellemede yeniden
+  -- yapilir. Teklifler etkinlik / ekip / RFP silinmeden ONCE gitmeli; yoksa ayni zincirdeki SET NULL guncellemesi henuz silinmis
+  -- ekibe/RFP'ye bakar ve 23503 verir (T0 bunu yasamaz: satirlar onceki islemden). Rezervasyon (surume RESTRICT) tekliften once.
+  IF to_regclass('public.proposals') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings' AND column_name = 'proposal_version_id') THEN
+      DELETE FROM public.bookings
+       WHERE proposal_version_id IN (SELECT v.id FROM public.proposal_versions v JOIN public.proposals p ON p.id = v.proposal_id
+                                      WHERE p.seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids))
+                                         OR p.buyer_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids))
+                                         OR p.created_by = ANY(ids) OR p.buyer_user_id = ANY(ids));
+    END IF;
+    DELETE FROM public.proposals
+     WHERE seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids))
+        OR buyer_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids))
+        OR created_by = ANY(ids) OR buyer_user_id = ANY(ids);
+  END IF;
   -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik). FAZ 6 match_runs/crews etkinlikle cascade.
   IF to_regclass('public.events') IS NOT NULL THEN
     DELETE FROM public.events WHERE owner_user_id = ANY(ids);

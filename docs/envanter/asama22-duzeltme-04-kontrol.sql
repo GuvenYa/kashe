@@ -9,6 +9,7 @@
 --      0 degilse satirlar birlikte incelenir: acik kullanilmis olabilir)
 --   K5 bilgi: gonderilmis surumlerde gonderimden 5 sn SONRA degismis surum satiri (vergi / gecerlilik / not; 0 beklenir)
 --   (K4/K5 Sahne tekliflerini - id '5a4e...' - saymaz: uretec gecmis tarihli sent_at yazar, kalemler sonra eklenir)
+--   (K5 mesru gonderim sonrasi yazimlari saymaz: onay / RFP secimi approved_at yazar, revizyon istegi client_note yazar)
 -- Beklenen: K1-K3 ESIT; K4-K5 BILGI.
 -- =============================================================================
 
@@ -39,9 +40,10 @@ k4 AS (
          0::bigint
 ),
 k5 AS (
-  SELECT 'K5 gonderimden sonra degismis surum satiri (bilgi: 0)' AS kontrol,
+  SELECT 'K5 gonderimden (ve onaydan) sonra degismis surum, revizyon notsuz (bilgi: 0)' AS kontrol,
          (SELECT count(*) FROM public.proposal_versions v
-           WHERE v.sent_at IS NOT NULL AND v.proposal_id::text NOT LIKE '5a4e%' AND v.updated_at > v.sent_at + interval '5 seconds')::bigint,
+           WHERE v.sent_at IS NOT NULL AND v.proposal_id::text NOT LIKE '5a4e%' AND v.client_note IS NULL
+             AND v.updated_at > GREATEST(v.sent_at, COALESCE(v.approved_at, v.sent_at)) + interval '5 seconds')::bigint,
          0::bigint
 ),
 hepsi AS (
