@@ -39,6 +39,19 @@ export function getRoleLabel(role: string | null | undefined): string {
 }
 
 /**
+ * HIZMET ALANIN gordugu yuzeylerde hesap turu etiketi (Duzeltme 05-C, bulgu 66 f).
+ *
+ * `agency` tipinde ajans, menajer, organizator ve organizasyon firmasi birlikte
+ * duruyor; "Ajans" bu kumeyi dar anlatiyordu. Kullanicinin KENDI paneli
+ * (`panel-kabuk`, `/profil`) `getRoleLabel` ile kalir — orada kisi kendi hesap
+ * turunu gorur ve "Ajans" dogrudur.
+ */
+export function getPublicRoleLabel(role: string | null | undefined): string {
+  if (role === 'agency') return 'Kurumsal hizmet sağlayıcı';
+  return getRoleLabel(role);
+}
+
+/**
  * Profil hangi alanların eksik olduğunu döndürür.
  * Yayınlama için gerekli minimum alanlar.
  * 

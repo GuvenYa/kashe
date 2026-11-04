@@ -28,6 +28,7 @@ import { AKTIF_DURUMLAR } from '@/app/lib/tedarikci';
 import { AktiviteAkisi } from '@/app/components/gorevler/aktivite-akisi';
 import { gorevleriGetir, atanabilirler } from '@/app/lib/gorev-data';
 import { zamanMetni } from '@/app/lib/tarih';
+import { kamuAdi } from '@/app/lib/kamu-adi';
 import { RFP_DURUM_ETIKETLERI } from '@/app/kurumsal/rfp/rfp-data';
 
 /** Butce araligi — ham sayi degil, formatPrice ile Kashe para bicimi. */
@@ -409,7 +410,15 @@ export default async function EtkinlikDetayPage({
       return {
         id: a.id,
         providerId: a.provider_id,
-        ad: s?.display_name?.trim() || 'İsimsiz profil',
+        /**
+         * Duzeltme 05-E: aday listesi REZERVASYON ONCESI bir yuzey — bireysel
+         * profesyonelin adi "Ad S." gorunur. Kurulus adayinda ticari unvan
+         * (provider_type = 'organization') oldugu gibi kalir.
+         */
+        ad:
+          (s?.provider_type === 'professional'
+            ? kamuAdi(s?.display_name)
+            : s?.display_name?.trim()) || 'İsimsiz profil',
         sehir: s?.city_id != null ? (sehirMap.get(s.city_id) ?? null) : null,
         headline: s?.headline?.trim() || null,
         uyum: uyumYuzdesi(a.match_score),

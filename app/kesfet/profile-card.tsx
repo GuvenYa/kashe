@@ -7,6 +7,7 @@ import {
 } from '@/app/lib/filter-config';
 import { isVerified, isPremiumActive } from '@/app/lib/badges';
 import { formatTL } from '@/app/lib/para';
+import { gosterilecekAd } from '@/app/lib/kamu-adi';
 import { CoverMedia } from './cover-media';
 import { HavuzKisaYol } from './havuz-kisa-yol';
 import { KisaListeKisaYol } from './kisa-liste-kisa-yol';
@@ -66,6 +67,14 @@ type Props = {
   havuz?: { orgId: string; durum: 'havuzda' | 'eklenebilir' };
   /** FAZ 8c: kisa liste kisa yolu. Ayni kural: yoksa prop hic gelmez. */
   kisaListe?: { orgId: string; durum: 'listede' | 'eklenebilir' };
+  /**
+   * Duzeltme 05-E: bireysel profesyonelin TAM adi gosterilsin mi?
+   *
+   * Varsayilan `false` — kesif yuzeylerinde ad "Ad S." olur. Karari SUNUCU
+   * verir (`tamAdGorebilirMi`): karta yalniz sonuc gelir, kart kendi basina
+   * rezervasyon sorgusu yapmaz.
+   */
+  tamAd?: boolean;
 };
 
 const QUOTE_MAX = 90;
@@ -164,9 +173,14 @@ function MetaRow({
   );
 }
 
-/** Foto üstü sol overlay: (ajansta) AJANS rozeti + kategori chip'i (nokta + ad).
- *  Sağda kalp (4.5rem) ve varsa PREMİUM rozeti (+5rem) için yer bırakılır; kategori chip'i
- *  daralabilir (min-w-0 + truncate) — üç rozet aynı satırda üst üste binmez (Sahne turu, 27 Ekim). */
+/** Foto üstü sol overlay: (ajansta) KURUMSAL rozeti + kategori chip'i (nokta + ad).
+ *  Sağda kalp (4.5rem) ve varsa PREMİUM rozeti (+5rem) için yer bırakılır — üç rozet aynı
+ *  satırda üst üste binmez (Sahne turu, 27 Ekim).
+ *
+ *  Duzeltme 05-B (bulgu 66 b): kategori adi KESILMEZ. Once `truncate max-w-[130px]`
+ *  vardi ve "Tercüman" -> "Terc..." oluyordu. Simdi cip daraldiginda metin ikinci
+ *  satira duser, rozetle birlikte sigmazsa cipin kendisi alt satira gecer
+ *  (`flex-wrap`); `maxW` korundugu icin kart tasmaz. */
 function TopChips({
   isAgency,
   categoryName,
@@ -184,10 +198,10 @@ function TopChips({
         ? 'max-w-[calc(100%-6rem)]'
         : 'max-w-[calc(100%-4.5rem)]';
   return (
-    <div className={`absolute top-3 left-3 flex items-center gap-2 ${maxW}`}>
+    <div className={`absolute top-3 left-3 flex flex-wrap items-start gap-2 ${maxW}`}>
       {isAgency && (
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0">
-          Ajans
+          Kurumsal
         </span>
       )}
       {categoryName && (
@@ -198,7 +212,7 @@ function TopChips({
             className="w-1.5 h-1.5 rounded-full bg-sky shrink-0"
             aria-hidden="true"
           />
-          <span className="truncate max-w-[130px]">{categoryName}</span>
+          <span className="leading-snug">{categoryName}</span>
         </span>
       )}
     </div>
@@ -235,17 +249,24 @@ export function ProfileCard({
   services,
   havuz,
   kisaListe,
+  tamAd = false,
 }: Props) {
   const isAgencyCard = profile.role === 'agency';
 
   // Kapak: prop verilmişse onu (null=placeholder dahil), verilmemişse avatar'a düş.
   const coverUrl = cover !== undefined ? cover : profile.avatar_url ?? null;
 
+  /**
+   * Duzeltme 05-E: BIREYSEL profesyonelin adi kartta "Ad S." olarak gorunur
+   * (urun karari, bulgu 66 d). Kurulus kartlarinda ticari unvan
+   * (`company_name`) oldugu gibi kalir. Kesfet / ana sayfa / kategori / favori
+   * yuzeyleri kisaltmayi kullanir; tam ad gereken bir yuzey `tamAd` gonderir.
+   */
   const displayName =
     (profile.role === 'business' || profile.role === 'agency') &&
     profile.company_name
       ? profile.company_name
-      : profile.full_name || 'İsimsiz';
+      : gosterilecekAd(profile.role, profile.full_name, tamAd) || 'İsimsiz';
 
   const initials = (profile.full_name || profile.company_name || 'K')
     .split(' ')
@@ -359,8 +380,10 @@ export function ProfileCard({
             </span>
           )}
           <div className="absolute inset-x-0 bottom-0 p-4">
-            <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-center gap-1.5">
-              <span className="truncate">{displayName}</span>
+            {/* Duzeltme 05-B: bir kademe kucuk (text-lg -> text-base) ve ad
+                TEK SATIRDA KESILMEZ, en fazla iki satir olur. */}
+            <h3 className="font-display text-base text-white font-semibold leading-tight flex items-start gap-1.5">
+              <span className="line-clamp-2">{displayName}</span>
               {verified && <VerifiedIcon size={15} />}
             </h3>
             <div className="mt-1">
@@ -394,8 +417,8 @@ export function ProfileCard({
             {PremiumBadge}
             {/* Ad + doğrulanmış (fotonun altında, gradient üstünde) */}
             <div className="absolute inset-x-0 bottom-0 p-4">
-              <h3 className="font-display text-xl text-white font-semibold leading-tight flex items-center gap-1.5">
-                <span className="truncate">{displayName}</span>
+              <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-start gap-1.5">
+                <span className="line-clamp-2">{displayName}</span>
                 {verified && <VerifiedIcon size={15} />}
               </h3>
             </div>
@@ -471,8 +494,8 @@ export function ProfileCard({
 
           {/* Varsayılan alt şerit — hover'da kaybolur */}
           <div className="absolute inset-x-0 bottom-0 p-4 pt-16 bg-gradient-to-t from-black/75 via-black/30 to-transparent transition-opacity duration-300 group-hover:opacity-0">
-            <h3 className="font-display text-xl text-white font-semibold leading-tight flex items-center gap-1.5">
-              <span className="truncate">{displayName}</span>
+            <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-start gap-1.5">
+              <span className="line-clamp-2">{displayName}</span>
               {verified && <VerifiedIcon size={16} />}
             </h3>
             <div className="mt-1">
@@ -497,8 +520,8 @@ export function ProfileCard({
               etiket / alinti blogu kalan yere sigar; sigmayan alttan kirpilir
               (alinti en sonda, ilk o kirpilir). Profil sayfasinda hepsi var. */}
           <div className="absolute inset-0 z-20 flex flex-col bg-paper rounded-2xl p-3.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out shadow-[0_-10px_28px_-14px_rgba(20,61,49,0.35)]">
-            <h3 className="font-display text-base text-ink font-semibold leading-tight flex items-center gap-1.5 shrink-0">
-              <span className="truncate">{displayName}</span>
+            <h3 className="font-display text-sm text-ink font-semibold leading-tight flex items-start gap-1.5 shrink-0">
+              <span className="line-clamp-2">{displayName}</span>
               {verified && <VerifiedIcon size={14} />}
             </h3>
             <div className="mt-1 shrink-0">

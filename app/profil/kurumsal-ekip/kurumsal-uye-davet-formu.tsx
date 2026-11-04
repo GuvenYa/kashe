@@ -18,13 +18,21 @@ type Props = {
   /** A7: davetin gidecegi kurulus (sayfanin sectigi). */
   orgId: string;
   onClose: () => void;
+  /**
+   * Davet gidince cagrilir: form KAPANIR ve basari mesaji LISTENIN USTUNDE
+   * panelde cizilir (Duzeltme 05-A, bulgu 63). Ajans ekibiyle ayni desen.
+   */
+  onSuccess: (bilgi: { email: string; rolEtiketi: string }) => void;
 };
 
-export function KurumsalUyeDavetFormu({ orgId, onClose }: Props) {
+export function KurumsalUyeDavetFormu({
+  orgId,
+  onClose,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const [email, setEmail] = useState('');
   const [memberRole, setMemberRole] = useState<OrgRole>('viewer');
@@ -49,37 +57,17 @@ export function KurumsalUyeDavetFormu({ orgId, onClose }: Props) {
       });
 
       if (result.success) {
-        setSuccess(true);
-        // A9: basari mesaji 2 sn gorunur, SONRA form KAPANIR. Once yalniz
-        // alanlar temizleniyordu; form acik kalinca kullanici ayni daveti
-        // tekrar gonderdigini saniyordu. `router.refresh()` bekleyen davetler
-        // listesini tazeler (davet satiri kapanmadan once listede gorunur).
-        setTimeout(() => {
-          setSuccess(false);
-          setEmail('');
-          setMessage('');
-          setMemberRole('viewer');
-          router.refresh();
-          onClose();
-        }, 2000);
+        // `router.refresh()` bekleyen davetler listesini tazeler; form
+        // kapandigi icin alanlar da birlikte gider (ayri temizlik gereksiz).
+        router.refresh();
+        onSuccess({
+          email: trimmedEmail,
+          rolEtiketi: ORG_ROLE_LABELS[memberRole],
+        });
       } else {
         setError(result.error);
       }
     });
-  }
-
-  if (success) {
-    return (
-      <div className="bg-ink-blue/5 border-2 border-ink-blue/15 rounded-lg p-6 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-blue mb-2">
-          ✓ Davet gönderildi
-        </p>
-        <p className="text-sm text-ink">
-          {email} adresine davet ulaştırıldı. Davet edilen kişi Kashe&apos;de
-          kayıtlıysa bildirim alır, değilse email ile davet edilir.
-        </p>
-      </div>
-    );
   }
 
   return (

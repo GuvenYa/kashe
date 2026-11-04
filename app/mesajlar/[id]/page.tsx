@@ -1,4 +1,5 @@
 import { createClient } from '@/app/lib/supabase-server';
+import { gosterilecekAd } from '@/app/lib/kamu-adi';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
@@ -289,6 +290,14 @@ export default async function KonusmaPage({
   const contactUnlocked = (convBookings ?? []).some(
     (b) => b.status === 'confirmed' || b.status === 'completed'
   );
+  /**
+   * Duzeltme 05-E: tam ad ayni kapiyla acilir. Rezervasyon yoksa bireysel
+   * profesyonel "Ad S." gorunur (panel basligi, sohbet basligi, avatar alt
+   * metni — hepsi bu tek degerden beslenir).
+   */
+  const karsiTarafAdi =
+    gosterilecekAd(other.role, other.full_name, contactUnlocked) ||
+    other.full_name;
   // Telefon/e-posta embed'den değil RPC'den gelir: profiles.email/phone authenticated
   // rolüne kapalı (PII adım 2b). get_contact_info aynı kuralı (onaylı/tamamlanmış
   // rezervasyon) veritabanında da uygular; kilitliyken hiç çağrılmaz.
@@ -423,7 +432,7 @@ export default async function KonusmaPage({
                 senderNames={senderNames}
                 other={{
                   id: other.id,
-                  full_name: other.full_name,
+                  full_name: karsiTarafAdi,
                   avatar_url: other.avatar_url,
                   company_name: other.company_name,
                   role: other.role,
@@ -447,7 +456,7 @@ export default async function KonusmaPage({
             <KarsiTarafPaneli
               other={{
                 id: other.id,
-                full_name: other.full_name,
+                full_name: karsiTarafAdi,
                 avatar_url: other.avatar_url,
                 company_name: other.company_name,
                 role: other.role,

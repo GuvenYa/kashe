@@ -48,6 +48,7 @@ import {
   type SimilarListing,
 } from '../listings-data';
 import { BADGE_TONE_CLASS } from '@/app/lib/badges';
+import { gosterilecekAd, kamuAdi } from '@/app/lib/kamu-adi';
 import {
   closeListing,
   cancelListing,
@@ -1035,10 +1036,13 @@ function ApplicationCard({
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const applicant = application.applicant;
+  // Duzeltme 05-E: basvuran bireysel profesyonelin adi "Ad S." gorunur
+  // (ilan sahibi ile henuz rezervasyon yok). Kurumsal basvuranda unvan kalir.
   const name =
     applicant?.role === 'business' && applicant?.company_name
       ? applicant.company_name
-      : applicant?.full_name || 'İsimsiz';
+      : gosterilecekAd(applicant?.role, applicant?.full_name, false) ||
+        'İsimsiz';
 
   const tone = getApplicationStatusTone(application.status);
   const badgeStyles: Record<typeof tone, string> = {
@@ -1237,10 +1241,13 @@ function ApplicationCompareColumn({
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const applicant = application.applicant;
+  // Duzeltme 05-E: basvuran bireysel profesyonelin adi "Ad S." gorunur
+  // (ilan sahibi ile henuz rezervasyon yok). Kurumsal basvuranda unvan kalir.
   const name =
     applicant?.role === 'business' && applicant?.company_name
       ? applicant.company_name
-      : applicant?.full_name || 'İsimsiz';
+      : gosterilecekAd(applicant?.role, applicant?.full_name, false) ||
+        'İsimsiz';
 
   const tone = getApplicationStatusTone(application.status);
   const badgeStyles: Record<typeof tone, string> = {
@@ -1493,7 +1500,9 @@ function DavetSatiri({ invitation }: { invitation: SentInvitation }) {
   const [confirming, setConfirming] = useState(false);
 
   const pro = invitation.professional;
-  const proName = pro?.company_name || pro?.full_name || 'Profesyonel';
+  // Duzeltme 05-E: davet listesinde de kisaltilmis ad.
+  const proName =
+    pro?.company_name || kamuAdi(pro?.full_name) || 'Profesyonel';
   const statusClass =
     INVITATION_STATUS_CLASS[invitation.status] ??
     INVITATION_STATUS_CLASS.expired;

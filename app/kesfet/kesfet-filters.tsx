@@ -390,19 +390,26 @@ export function KesfetFilters({
       <div>
         <p className="font-display text-base text-ink mb-3">Kim</p>
         <div className="space-y-1.5">
+          {/* Duzeltme 05-C (bulgu 66 f): "Ajanslar" dar kaliyordu — menajer ve
+              organizasyon firmasi da bu tipte. URL parametresi (`?tip=ajans`)
+              ve kod adlari DEGISMEZ, yalniz gorunen metin. */}
           {[
-            { key: '', label: 'Hepsi' },
-            { key: 'profesyonel', label: 'Profesyoneller' },
-            { key: 'ajans', label: 'Ajanslar' },
+            { key: '', label: 'Hepsi', aciklama: null },
+            { key: 'profesyonel', label: 'Profesyoneller', aciklama: null },
+            {
+              key: 'ajans',
+              label: 'Kurumsal hizmet sağlayıcılar',
+              aciklama: 'Ajans, menajer, organizatör, organizasyon firması',
+            },
           ].map((opt) => (
             <button
               key={opt.label}
               type="button"
               onClick={() => setType(opt.key)}
-              className="flex items-center gap-2.5 w-full text-left group"
+              className="flex items-start gap-2.5 w-full text-left group"
             >
               <span
-                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                className={`w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                   type === opt.key ? 'border-brand-ink' : 'border-line-strong group-hover:border-ink-50'
                 }`}
               >
@@ -410,12 +417,19 @@ export function KesfetFilters({
                   <span className="w-2 h-2 rounded-full bg-brand-ink" />
                 )}
               </span>
-              <span
-                className={`text-sm transition-colors ${
-                  type === opt.key ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
-                }`}
-              >
-                {opt.label}
+              <span className="min-w-0">
+                <span
+                  className={`block text-sm transition-colors ${
+                    type === opt.key ? 'text-ink' : 'text-ink-72 group-hover:text-ink'
+                  }`}
+                >
+                  {opt.label}
+                </span>
+                {opt.aciklama && (
+                  <span className="block text-[11px] text-ink-50 mt-0.5 leading-snug">
+                    {opt.aciklama}
+                  </span>
+                )}
               </span>
             </button>
           ))}

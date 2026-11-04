@@ -22,9 +22,9 @@ const FAQ: FaqItem[] = [
       "Her profesyonel başvuruda profil, portföy ve iletişim bilgilerini paylaşır. Ekibimiz bilgileri inceleyip onayladıktan sonra profil yayına alınır. Amacımız Kashe'de gerçek, güvenilir profesyoneller olması — sahte profil yok.",
   },
   {
-    question: "Ajanslar ve organizasyon firmaları Kashe'de nasıl yer alır?",
+    question: "Kurumsal hizmet sağlayıcılar Kashe'de nasıl yer alır?",
     answer:
-      "Kashe'de bağımsız profesyoneller, ekipler ve organizasyon firmaları aynı platformdadır. Hizmet alan; tekil profesyonel, ihtiyacın tamamını üstlenen bir firma ya da ikisinin birleşimi arasından seçim yapar. Ajanslar ekiplerini, özel yetenek havuzlarını ve tekliflerini yönettikleri operasyon araçlarına erken erişimle ulaşır; tüm iletişim ve teklifler platform içinde kalır.",
+      "Kashe'de bağımsız profesyoneller, ekipler ve kurumsal hizmet sağlayıcılar (ajans, menajer, organizatör, organizasyon firması) aynı platformdadır. Hizmet alan; tekil profesyonel, ihtiyacın tamamını üstlenen bir firma ya da ikisinin birleşimi arasından seçim yapar. Kurumsal hizmet sağlayıcılar ekiplerini, özel yetenek havuzlarını ve tekliflerini yönettikleri operasyon araçlarına erken erişimle ulaşır; tüm iletişim ve teklifler platform içinde kalır.",
   },
   {
     question: "Ödeme nasıl güvende?",

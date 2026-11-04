@@ -18,12 +18,17 @@ import FavoriteButton from '@/app/components/FavoriteButton';
 import { isFavorited as checkIsFavorited, getFavoritedIds } from '@/app/favoriler/actions';
 import { ReviewCard } from '@/app/yorumlar/review-card';
 import { ProfileCard } from '@/app/kesfet/profile-card';
+import {
+  gosterilecekAd,
+  kamuAdi,
+  tamAdGorebilirMi,
+} from '@/app/lib/kamu-adi';
 import { SikayetButton } from '@/app/sikayet/sikayet-button';
 import { CategoryIcon } from '@/app/components/ui/category-icon';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import {
   formatPriceRange,
-  getRoleLabel,
+  getPublicRoleLabel,
   formatLastSeen,
   getLastSeenTone,
 } from '@/app/lib/profile-helpers';
@@ -83,10 +88,15 @@ export async function generateMetadata({
     return { title: 'Profil bulunamadı — Kashe' };
   }
 
+  /**
+   * Duzeltme 05-E: sayfa basligi ve OG metni HERKESE ayni gittigi icin
+   * (onbelleklenir, paylasim onizlemesine girer) bireysel profesyonelin adi
+   * BURADA HER ZAMAN kisaltilir — ziyaretciye gore degisemez.
+   */
   const name =
     data.role === 'agency' && data.company_name
       ? data.company_name
-      : data.full_name || 'Profil';
+      : gosterilecekAd(data.role, data.full_name, false) || 'Profil';
 
   return {
     title: `${name} — Kashe`,
@@ -478,11 +488,24 @@ export default async function PublicProfilePage({
   }
 
   const isOwnedByProfessional = user?.id === profile.id;
+
+  /**
+   * Duzeltme 05-E: tam ad yalniz kendisi / admin / ONAYLI-TAMAMLANMIS
+   * rezervasyonu olan karsi tarafa gorunur; digerlerine "Ad S.". Olcut
+   * iletisim bilgisi kapisiyla ayni (`tamAdGorebilirMi`).
+   */
+  const tamAdiGorebilir = await tamAdGorebilirMi(supabase, {
+    providerId: profile.id,
+    viewerId: user?.id ?? null,
+    viewerIsAdmin,
+  });
+
   // Kapi business'i disarida biraktigi icin burada yalniz agency kalir (davranis ayni).
   const displayName =
     profile.role === 'agency' && profile.company_name
       ? profile.company_name
-      : profile.full_name || 'İsimsiz';
+      : gosterilecekAd(profile.role, profile.full_name, tamAdiGorebilir) ||
+        'İsimsiz';
 
   const initials = (profile.full_name || profile.company_name || 'K')
     .split(' ')
@@ -1053,7 +1076,7 @@ export default async function PublicProfilePage({
 
               <div className="flex-1 min-w-0">
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-2">
-                  {getRoleLabel(profile.role)}
+                  {getPublicRoleLabel(profile.role)}
                 </p>
                 <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight flex items-center gap-2">
                   <span>{displayName}</span>
@@ -1204,7 +1227,9 @@ export default async function PublicProfilePage({
                   {agencyTeam.map((member) => {
                     const pro = member.professional;
                     if (!pro) return null;
-                    const proName = pro.full_name || 'İsimsiz';
+                    // Duzeltme 05-E: ajans profilindeki ekip listesi de kamusal
+                    // bir kesif yuzeyi — uye profesyoneller "Ad S." gorunur.
+                    const proName = kamuAdi(pro.full_name) || 'İsimsiz';
                     const proInitials = proName
                       .split(' ')
                       .map((s) => s[0])

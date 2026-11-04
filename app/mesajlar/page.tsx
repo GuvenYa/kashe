@@ -6,6 +6,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { MesajListesi, type ConversationItem } from './mesaj-listesi';
 import { getCachedUser } from '@/app/lib/auth';
 import { getTeamContext } from '@/app/lib/business-write';
+import { gosterilecekAd } from '@/app/lib/kamu-adi';
 
 export const metadata = {
   title: 'Mesajlar — Kashe',
@@ -174,6 +175,27 @@ export default async function MesajlarPage() {
     });
   }
 
+  /**
+   * Duzeltme 05-E: hangi konusmada TAM ad gosterilecek?
+   *
+   * Olcut iletisim kapisiyla ayni (`/mesajlar/[id]` `contactUnlocked`): bu
+   * konusmada onayli ya da tamamlanmis bir rezervasyon varsa karsi tarafin tam
+   * adi gorunur, yoksa bireysel profesyonel "Ad S." olur. Okuma ziyaretcinin
+   * KENDI konusmalari uzerinden (RLS) — ucuncu kisi sayimi yok.
+   */
+  const tamAdliKonusmalar = new Set<string>();
+  if (conversationIds.length > 0) {
+    const { data: rezervasyonSatirlari } = await supabase
+      .from('bookings')
+      .select('conversation_id')
+      .in('conversation_id', conversationIds)
+      .in('status', ['confirmed', 'completed']);
+    (rezervasyonSatirlari ?? []).forEach((b) => {
+      const cid = (b as { conversation_id: string | null }).conversation_id;
+      if (cid) tamAdliKonusmalar.add(cid);
+    });
+  }
+
   // ConversationItem listesini hazırla (karşı tarafı çöz)
   const conversations: ConversationItem[] = rawConversations
     .map((conv): ConversationItem | null => {
@@ -194,7 +216,14 @@ export default async function MesajlarPage() {
         last_message_at: conv.last_message_at,
         other: {
           id: other.id,
-          full_name: other.full_name,
+          // GOSTERILECEK ad (Duzeltme 05-E): rezervasyonsuz konusmada bireysel
+          // profesyonel "Ad S." olur; istemciye ham tam ad GITMEZ.
+          full_name:
+            gosterilecekAd(
+              other.role,
+              other.full_name,
+              tamAdliKonusmalar.has(conv.id)
+            ) || other.full_name,
           avatar_url: other.avatar_url,
           company_name: other.company_name,
           role: other.role,

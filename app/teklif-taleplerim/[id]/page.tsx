@@ -2,6 +2,7 @@ import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
+import { gosterilecekAd } from '@/app/lib/kamu-adi';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
 import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
@@ -271,8 +272,12 @@ export default async function TeklifKarsilastirPage({
           <div className="space-y-4">
             {offers.map(({ recipient, quote }) => {
               const pro = recipient.professional;
+              // Duzeltme 05-E: teklif veren bireysel profesyonelin adi
+              // "Ad S." gorunur; rezervasyon sonrasi yuzeylerde tam ad kalir.
               const proName =
-                pro?.company_name || pro?.full_name || 'Profesyonel';
+                pro?.company_name ||
+                gosterilecekAd(pro?.role, pro?.full_name, false) ||
+                'Profesyonel';
               const isCheapest = quote.total_amount === cheapest;
               const expired = new Date(quote.expires_at) < new Date();
 

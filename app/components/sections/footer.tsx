@@ -69,12 +69,12 @@ export function Footer() {
               </li>
               <li>
                 <a href="/#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
-                  Ajanslar ve organizasyon firmaları
+                  Kurumsal hizmet sağlayıcılar
                 </a>
               </li>
               <li>
                 <a href="/hakkimizda#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
-                  Ajanslar
+                  Kurumsal hizmet sağlayıcılar için
                 </a>
               </li>
               <li>

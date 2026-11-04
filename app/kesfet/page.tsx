@@ -30,6 +30,8 @@ import {
   rolIdleriSlugdan,
 } from '@/app/lib/fiyat-kiyas-data';
 import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
+import { aramaTerimi, esAnlamliEslesme } from '@/app/lib/arama';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Keşfet — Kashe',
@@ -104,7 +106,12 @@ export default async function KesfetPage({
         .filter((n) => !isNaN(n))
     : [];
   const cityId = params.sehir ? parseInt(params.sehir, 10) : null;
-  const searchQuery = params.q?.trim() || '';
+  /**
+   * Arama terimi TEMIZLENMIS gelir (Duzeltme 05-D): PostgREST filtre
+   * sozdizimini kiran karakterler bosluga cevrilir. Kutuda da temizlenmis hali
+   * gosterilir — kullanici neyin arandigini gorur.
+   */
+  const searchQuery = aramaTerimi(params.q);
   const sortBy: 'yeni' | 'puan' = params.sirala === 'puan' ? 'puan' : 'yeni';
   const typeFilter: 'profesyonel' | 'ajans' | null =
     params.tip === 'profesyonel' || params.tip === 'ajans' ? params.tip : null;
@@ -174,61 +181,109 @@ export default async function KesfetPage({
       .filter((v): v is number => v !== null)
   );
 
-  let query = supabase
-    .from('v_providers_public')
-    .select(
-      `
-      ${PROVIDER_LISTING_COLUMNS},
-      turkish_cities(name),
-      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
-    `
-    )
-    .order('updated_at', { ascending: false });
-  // Temel görünürlük koşulu TEK KAYNAKTAN (app/lib/discover-base) — sihirbazın
-  // canlı sayacı da aynı fonksiyonu kullanır, iki taraf ayrışamaz.
-  query = applyDiscoverBase(query);
-
-  if (typeFilter === 'profesyonel') {
-    query = query.eq('role', 'professional');
-  } else if (typeFilter === 'ajans') {
-    query = query.eq('role', 'agency');
-  }
-
-  // Çoklu kategori: tek seçim → eq, çoklu → in
-  if (categoryIds.length === 1) {
-    query = query.eq('primary_category_id', categoryIds[0]);
-  } else if (categoryIds.length > 1) {
-    query = query.in('primary_category_id', categoryIds);
-  }
-  if (cityId) {
-    query = query.eq('city_id', cityId);
-  }
+  /**
+   * ARAMA KOSULLARI (VEYA ile birleşir) — Duzeltme 05-D.
+   *
+   * Kapsam: ad, sirket adi, BASLIK (`headline`), TANITIM (`bio`) ve adi
+   * eslesen kategoriler. Es anlamli sozlugu eslesirse (ornek: "acilis")
+   * o etkinlik turunu beyan edenler, ilgili kategoriler ve gerekiyorsa
+   * kurumsal saglayicilar da ayni VEYA'ya katilir.
+   *
+   * Terim `aramaTerimi` ile temizlendigi icin burada ham kullanici metni yok
+   * (filtre sozdizimi kirilmaz); sozlukten gelen anahtarlar sabit listeden ve
+   * `event_types` tablosundan suzulmus.
+   */
+  const aramaKosullari: string[] = [];
   if (searchQuery) {
     const lowerQuery = searchQuery.toLocaleLowerCase('tr');
     const matchedCategoryIds = (categories || [])
       .filter((c) => c.name_tr.toLocaleLowerCase('tr').includes(lowerQuery))
       .map((c) => c.id);
 
-    const orConditions = [
+    aramaKosullari.push(
       `full_name.ilike.%${searchQuery}%`,
       `company_name.ilike.%${searchQuery}%`,
-    ];
-    if (matchedCategoryIds.length > 0) {
-      orConditions.push(`primary_category_id.in.(${matchedCategoryIds.join(',')})`);
+      `headline.ilike.%${searchQuery}%`,
+      `bio.ilike.%${searchQuery}%`
+    );
+
+    const eslesme = esAnlamliEslesme(searchQuery);
+    const sozlukTurleri = eslesme.etkinlikTurleri.filter((k) =>
+      turAnahtarlari.has(k)
+    );
+    for (const k of sozlukTurleri) {
+      aramaKosullari.push(
+        `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`
+      );
     }
-    query = query.or(orConditions.join(','));
+    const sozlukKategorileri = (categories || [])
+      .filter((c) => eslesme.kategoriSluglari.includes(c.slug))
+      .map((c) => c.id);
+    const tumKategoriIdleri = [
+      ...new Set([...matchedCategoryIds, ...sozlukKategorileri]),
+    ];
+    if (tumKategoriIdleri.length > 0) {
+      aramaKosullari.push(
+        `primary_category_id.in.(${tumKategoriIdleri.join(',')})`
+      );
+    }
+    if (eslesme.kurumsalSaglayici) {
+      aramaKosullari.push('role.eq.agency');
+    }
   }
 
-  // Etkinlik türleri — seçili key'lerin OR'u; her koşul ayrı jsonb @> containment.
-  // GIN (jsonb_path_ops) index → planlayıcı BitmapOr ile birleştirir. Key'ler
-  // `event_types` tablosuna gore dogrulanmis (enjeksiyon yok). Bos beyanli
-  // profiller filtre aktifken elenir.
-  if (eventTypes.length > 0) {
-    const orConds = eventTypes
-      .map((k) => `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`)
-      .join(',');
-    query = query.or(orConds);
-  }
+  /**
+   * Sorgu zinciri TEK YERDE kurulur ve iki kez cagrilabilir: bir kez
+   * ARAMAYLA, sonuc bos kalirsa bir kez ARAMASIZ ("yakin sonuclar", 05-D/4).
+   * Iki yol ayni fonksiyondan dogdugu icin diger suzgecler (sehir, tip,
+   * kategori, etkinlik turu, kategoriye ozel alanlar) ayrisamaz.
+   */
+  const sorguKur = (aramaUygula: boolean) => {
+    let q = supabase
+      .from('v_providers_public')
+      .select(
+        `
+      ${PROVIDER_LISTING_COLUMNS},
+      turkish_cities(name),
+      service_categories!profiles_primary_category_id_fkey(name_tr, emoji, slug)
+    `
+      )
+      .order('updated_at', { ascending: false });
+    // Temel görünürlük koşulu TEK KAYNAKTAN (app/lib/discover-base) — sihirbazın
+    // canlı sayacı da aynı fonksiyonu kullanır, iki taraf ayrışamaz.
+    q = applyDiscoverBase(q);
+
+    if (typeFilter === 'profesyonel') {
+      q = q.eq('role', 'professional');
+    } else if (typeFilter === 'ajans') {
+      q = q.eq('role', 'agency');
+    }
+
+    // Çoklu kategori: tek seçim → eq, çoklu → in
+    if (categoryIds.length === 1) {
+      q = q.eq('primary_category_id', categoryIds[0]);
+    } else if (categoryIds.length > 1) {
+      q = q.in('primary_category_id', categoryIds);
+    }
+    if (cityId) {
+      q = q.eq('city_id', cityId);
+    }
+    if (aramaUygula && aramaKosullari.length > 0) {
+      q = q.or(aramaKosullari.join(','));
+    }
+
+    // Etkinlik türleri — seçili key'lerin OR'u; her koşul ayrı jsonb @> containment.
+    // GIN (jsonb_path_ops) index → planlayıcı BitmapOr ile birleştirir. Key'ler
+    // `event_types` tablosuna gore dogrulanmis (enjeksiyon yok). Bos beyanli
+    // profiller filtre aktifken elenir.
+    if (eventTypes.length > 0) {
+      const orConds = eventTypes
+        .map((k) => `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`)
+        .join(',');
+      q = q.or(orConds);
+    }
+    return q;
+  };
 
   // Detaylı filtreler SADECE tam 1 kategori seçiliyken (A kararı)
   let selectedCategorySlug: string | null = null;
@@ -291,7 +346,7 @@ export default async function KesfetPage({
   //  • 'category_attributes' → sorguya containment koşulları eklenir (DB tarafı)
   //  • 'attributes'          → sorgu değişmez, çekim sonrası jsFilter uygulanır (eski davranış)
   const { query: filteredQuery, jsFilter } = applyCategoryFilters(
-    query,
+    sorguKur(true),
     selectedCategorySlug,
     activeAttrFilters
   );
@@ -301,6 +356,34 @@ export default async function KesfetPage({
 
   if (jsFilter) {
     profiles = profiles.filter((p) => jsFilter(p.attributes));
+  }
+
+  /**
+   * YAKIN SONUCLAR (Duzeltme 05-D/4, bulgu 67).
+   *
+   * Arama sonuc vermediyse aramayi DUSURUP diger suzgecleri koruyarak en fazla
+   * 12 sonuc gosterilir. Zenginlestirme (puan, fiyat, alinti, favori, havuz...)
+   * bu listeyle devam eder — yakin sonuc kartlari eksik cizilmez.
+   *
+   * Yakin sonuc da yoksa `profiles` bos kalir ve bugunku bos durum metni cikar.
+   */
+  const YAKIN_SONUC_SINIRI = 12;
+  let yakinSonuc = false;
+  if (!error && profiles.length === 0 && aramaKosullari.length > 0) {
+    const { query: yakinQuery, jsFilter: yakinJsFilter } = applyCategoryFilters(
+      sorguKur(false),
+      selectedCategorySlug,
+      activeAttrFilters
+    );
+    const { data: yakinData } = await yakinQuery;
+    let yakin = (yakinData || []) as unknown as PublishedProfile[];
+    if (yakinJsFilter) {
+      yakin = yakin.filter((p) => yakinJsFilter(p.attributes));
+    }
+    if (yakin.length > 0) {
+      profiles = yakin.slice(0, YAKIN_SONUC_SINIRI);
+      yakinSonuc = true;
+    }
   }
 
   const profileIds = profiles.map((p) => p.id);
@@ -706,7 +789,11 @@ export default async function KesfetPage({
                 currentOnlyAvailable={onlyAvailable}
                 currentExperience={wantedExperience}
                 currentEventTypes={eventTypes}
-                resultCount={profiles.length}
+                resultCount={
+                  // Yakin sonucta gercek eslesme 0'dir: mobil drawer'in
+                  // "N sonucu goster" dugmesi yakin sonucu SAYMAZ.
+                  yakinSonuc ? 0 : profiles.length
+                }
                 isLoggedIn={isLoggedIn}
               />
             </aside>
@@ -742,13 +829,35 @@ export default async function KesfetPage({
                 </div>
               ) : (
                 <>
+                  {/* Yakın sonuçlar şeridi — aramada tam eşleşme çıkmadı,
+                      diğer filtreler korunarak en fazla 12 profil gösteriliyor. */}
+                  {yakinSonuc && (
+                    <div className="mb-4 bg-card border border-line rounded-lg p-4">
+                      <p className="font-display text-lg text-ink">
+                        Tam eşleşme bulamadık — yakın sonuçlar
+                      </p>
+                      <p className="text-sm text-ink-72 mt-1">
+                        “{searchQuery}” için sonuç çıkmadı; aramayı kaldırıp
+                        diğer filtrelerini koruduk.{' '}
+                        <Link
+                          href="/kashe-ai"
+                          className="underline text-ink hover:text-brand-ink transition-colors"
+                        >
+                          Kashe AI&apos;a anlat
+                        </Link>
+                      </p>
+                    </div>
+                  )}
                   {/* Sonuç sayacı + sıralama — masaüstünde TopNav'ın (z-50) hemen altına
                       yapışır, filtre panelinde gezerken kaç sonuç olduğu görünürde kalır.
                       TÜM yapışkanlık sınıfları lg: önekli — mobil görünüm birebir korunur. */}
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-4 lg:mb-1 lg:py-3 lg:bg-paper lg:sticky lg:top-16 lg:z-20">
                     <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-                      {profiles.length}{' '}
-                      {typeFilter === 'ajans' ? 'kurumsal profil' : 'sonuç'}
+                      {yakinSonuc
+                        ? `${profiles.length} yakın sonuç`
+                        : `${profiles.length} ${
+                            typeFilter === 'ajans' ? 'kurumsal profil' : 'sonuç'
+                          }`}
                     </p>
                     <SortDropdown currentSort={sortBy} />
                   </div>

@@ -1,5 +1,6 @@
 import { getCategoryIcon } from "@/app/lib/category-icon";
 import { getMarqueeProfiles } from "./marquee-profiles";
+import { gosterilecekAd } from "@/app/lib/kamu-adi";
 
 // Avatarsız profiller için 3D hero'nun optimize webp'leri (dönüşümlü atanır).
 // Sıra hero-3d ile aynı (kategoriler harmanlı) → komşu profiller farklı sahne alır.
@@ -48,10 +49,12 @@ export async function CategoryMarquee() {
                 (i % profiles.length) % HERO_FALLBACK_IMAGES.length
               ];
             // İsim seçimi featured-profiles ile birebir (rol-koşullu: company yalnız iş/ajansta)
+            // Duzeltme 05-E: ana sayfa bir kesif yuzeyi — bireysel profesyonel
+            // "Ad S." gorunur (kart ile ayni kural).
             const name =
               (p.role === "business" || p.role === "agency") && p.company_name
                 ? p.company_name
-                : p.full_name || "İsimsiz";
+                : gosterilecekAd(p.role, p.full_name, false) || "İsimsiz";
             const initials = (p.full_name || p.company_name || "K")
               .split(" ")
               .map((s) => s[0])
