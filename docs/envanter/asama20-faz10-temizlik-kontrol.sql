@@ -19,7 +19,8 @@
 -- Bolum C (10c-1 saglayici yazma yolu; 20261105120000_faz10c_01 + 20261105120100_faz10c_02):
 --   K8 yapi: providers 3 yeni sutun (3) + GIN (1) + authenticated UPDATE sutunlari providers 12 / professional_profiles 5 /
 --      organization_profiles 6 (23) + 4 UPDATE politikasi (4) + 3 ters ayna tetikleyicisi (3) + provider_set_primary_category
---      authenticated EXECUTE (1) - anon (0) + fn_faz10c_ayna_kaymasi (1) + gorunum saglayici tarafindan okur (1) -> (37)
+--      authenticated EXECUTE (1) - anon (0) + fn_faz10c_ayna_kaymasi (1) + gorunum attributes'i saglayicidan, primary_category_id'yi
+--      profiles'tan okur (1; PostgREST gomme ipucu profiles_primary_category_id_fkey bu kaynaga bagli - 02b) -> (37)
 --   K8b ayna kaymasi: profiles kopyalari ile providers / alt profil / birincil rol farki toplami (0)
 --   10c-1 uygulanmamissa K8/K8b BEKLIYOR. (10c-1/03 profiles kilidi ve 10c-2 sonraki dilimlerde eklenir; D 10d.)
 -- Beklenen: K1, K3, K4, K5, K7, K8, K8b ESIT; K2, K6 BILGI.
@@ -141,7 +142,7 @@ k8 AS (
               AND routine_name = 'provider_set_primary_category' AND grantee IN ('anon', 'PUBLIC') AND privilege_type = 'EXECUTE')
           + (to_regprocedure('public.fn_faz10c_ayna_kaymasi()') IS NOT NULL)::int
           + (pg_get_viewdef('public.v_providers_public'::regclass) LIKE '%pr.category_attributes%'
-             AND pg_get_viewdef('public.v_providers_public'::regclass) LIKE '%sr.legacy_category_id AS primary_category_id%')::int)::bigint,
+             AND pg_get_viewdef('public.v_providers_public'::regclass) LIKE '%p.primary_category_id,%')::int)::bigint,
          37::bigint
 ),
 k8b AS (

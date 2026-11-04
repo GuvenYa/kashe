@@ -175,6 +175,11 @@ revision istisnasi yok -> T38 HATA. asama10 ESIT, asama20 K8 37 / K8b 0 ESIT (10
 `providers.display_name UPDATE 42501` (yazma yolu acildi; ad hala profiles'tan).
 Sira: `faz10c/db` dal push (01+02) -> asama4 / asama20 / asama10 -> uretim db push (01+02) -> gorev 45 (P1) -> tur -> uretim kod ->
 `03` -> dal -> uretim.
+**10c-1 DALDA (5 Kasim):** 01 (134 kopya, kayma yok) + 02; asama20 K8 37 / K8b 0, asama10 ESIT, asama4 40/40. Ardindan Kesfet dalda
+kirildi (bulgu 69): gorunum primary_category_id'yi birincil rolden okuyunca PostgREST `profiles_primary_category_id_fkey` gomme
+iliskisini kaybetti. `20261105120200_faz10c_02b_gorunum_kategori_baglantisi.sql` sutunu yine profiles'tan okutur (degerler ayni);
+asama20 K8 artik kaynagi da olcer. KURAL: gorunumde yabanci anahtarli bir sutunun kaynagi, uygulamadaki gomme ipuclari
+(`tablo!fk_adi(...)`) degismeden degistirilmez; 10c-2 P2'de once ipuclari, sonra kaynak. Dal Kesfet duzeldi (117 sonuc).
 
 **10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
