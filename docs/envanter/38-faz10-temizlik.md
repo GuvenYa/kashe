@@ -180,6 +180,14 @@ kirildi (bulgu 69): gorunum primary_category_id'yi birincil rolden okuyunca Post
 iliskisini kaybetti. `20261105120200_faz10c_02b_gorunum_kategori_baglantisi.sql` sutunu yine profiles'tan okutur (degerler ayni);
 asama20 K8 artik kaynagi da olcer. KURAL: gorunumde yabanci anahtarli bir sutunun kaynagi, uygulamadaki gomme ipuclari
 (`tablo!fk_adi(...)`) degismeden degistirilmez; 10c-2 P2'de once ipuclari, sonra kaynak. Dal Kesfet duzeldi (117 sonuc).
+**10c-1 URETIMDE (5 Kasim):** uretim db push 01+02+02b (asama20 K8 37 / K8b 0, asama10 ESIT). P1 (gorev 45; `app/lib/saglayici-yazma.ts`,
+profil duzenle / yayin / kategori bilgileri / admin onay-askiya alma) dal turu `faz10c/p1` onizlemesinde (Tolga Dogan, Sevgi Oz, Ekim Kreatif;
+degerler geri alindi): bio, sehir, birincil kategori (RPC) -> /p/ + Kesfet + panel; yayindan kaldir -> Kesfet'ten duser; kategori
+bilgileri providers'a; admin revizyon -> sayac 7/4, sahip duzenler -> "Profilin onay bekliyor" + not temiz (bulgu 68) -> 8/3; askiya
+al/kaldir profesyonel + ajans -> Kesfet'ten duser / doner; konsol temiz. Bulgu 70 (Sahne: avatarsiz saglayici yayindan kalkinca geri
+yayinlayamiyor). Kod uretimde (`main` <- `faz10c/p1` hizli ileri; kashe.net Kesfet 34, profil ve ana sayfa sorunsuz).
+Siradaki: `03` KISITLAYAN (profiles tasinmis alan kilidi, ileri ayna daralir, fn_faz2b_sync_primary_role duser; P1 yardimcisi
+`saglayiciMi` sorgu hatasinda profiles'a DUSMESIN - 03'ten sonra o yazim sessizce geri alinirdi), sonra 10c-2.
 
 **10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
