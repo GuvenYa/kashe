@@ -188,6 +188,13 @@ al/kaldir profesyonel + ajans -> Kesfet'ten duser / doner; konsol temiz. Bulgu 7
 yayinlayamiyor). Kod uretimde (`main` <- `faz10c/p1` hizli ileri; kashe.net Kesfet 34, profil ve ana sayfa sorunsuz).
 Siradaki: `03` KISITLAYAN (profiles tasinmis alan kilidi, ileri ayna daralir, fn_faz2b_sync_primary_role duser; P1 yardimcisi
 `saglayiciMi` sorgu hatasinda profiles'a DUSMESIN - 03'ten sonra o yazim sessizce geri alinirdi), sonra 10c-2.
+**Duzeltme 05 (5 Kasim, URETIMDE - main ff40f83; gorev 46; Fahri bulgulari 63/66/67):** ekip daveti geri bildirimi; Kesfet karti
+(tam kategori, 2 satir ad, baslik bir kademe kucuk); "Ajanslar" -> "Kurumsal hizmet saglayicilar" (kesif yuzeyleri; ust menu ve ajansa
+seslenen ana sayfa bolumu kaldi); arama `app/lib/arama.ts` (`q` PostgREST filtre karakterlerinden temizlenir - once "a,b" 400, "%" 500;
+baslik/tanitim da aranir; es anlamli sozluk -> etkinlik turu / kategori / kurumsal; sonuc yoksa 12 yakin sonuc + Kashe AI baglantisi);
+"Ad S." `app/lib/kamu-adi.ts` (bireysel profesyonel; tam ad kendisi / admin / onayli-tamamlanmis rezervasyonlu karsi taraf; tarayiciya
+tam ad gonderilmez; API duzeyi gizleme 10c-2 sonrasi). Onizleme turu + uretim anonim kontrol temiz. Not: Vercel 2 push'u almadi
+(webhook), bos commit ile tetiklendi; `main` push'u `git push origin main` ile gitti.
 
 **10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /

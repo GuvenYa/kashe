@@ -142,6 +142,13 @@ kilidin `NOT <fonksiyon>()` kosulundaki fonksiyon ASLA NULL donmez (COALESCE); `
 COALESCE ile sarilir. Gonderilmis surume dokunan bakim betikleri (asama4 T0/T99, Sahne 00/01a/02a/05) bayragi
 `set_config('kashe.faz7_rpc', '1', true)` ile acar. Kontrol `asama22-duzeltme-04-kontrol.sql`, test asama4 T37.
 
+**Ad gosterimi ve arama (Duzeltme 05, uretim 5 Kasim 2026).** Bireysel profesyonelin adi iliskisiz herkese "Ad S." gosterilir:
+`app/lib/kamu-adi.ts` (`kamuAdi`, `gosterilecekAd(rol, ad, tamAd)`, sunucuda `tamAdGorebilirMi` - kendisi / admin / onayli ya da tamamlanmis
+rezervasyon). Yeni bir yuzey saglayici adi gosteriyorsa bu yardimcidan gecer; tam ad istemciye gonderilmez (rezervasyon sonrasi yuzeyler
+haric). Ajans/kurulus adi degismez. Kesfet `q` terimi `.or()`/`.ilike` icine HAM GIRMEZ: `aramaTerimi()` (`app/lib/arama.ts`) PostgREST filtre
+karakterlerini (virgul, parantez, yildiz, iki nokta, yuzde, ters bolu, cift tirnak) temizler; es anlamlilar ayni dosyada, etkinlik turu listesi tablodan. Kesif yuzeylerinde ajans tipi
+"Kurumsal hizmet saglayicilar" adiyla anilir (kod adi `agency`, URL `?tip=ajans` degismez).
+
 **Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,
 INSERT/UPDATE/DELETE `events.manage`. Kurallar DB tetikleyicisinde, uygulama YALNIZ anlasilir Turkce mesaj uretir (`app/lib/gorevler.ts`
 hata eslemesi; metinler `RAISE EXCEPTION` govdeleriyle birebir). Ayni kural iki yerde yazilmaz: "atanan kisi aktif uye mi", "etkinlik/havuz
