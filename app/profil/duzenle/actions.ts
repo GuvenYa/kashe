@@ -5,6 +5,13 @@ import { revalidatePath } from 'next/cache';
 import { getMissingPublishFields } from '@/app/lib/profile-helpers';
 import { fetchOwnProfile } from '@/app/lib/own-profile';
 import type { Profile } from '@/app/lib/types';
+import {
+  altProfilGuncelle,
+  altProfilTablosu,
+  saglayiciGuncelle,
+  saglayiciMi,
+  tanitimAlani,
+} from '@/app/lib/saglayici-yazma';
 
 export type UpdateProfileResult = {
   success: boolean;
@@ -22,14 +29,25 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     return { success: false, error: 'Oturum bulunamadı.' };
   }
 
-  // Mevcut onay durumunu al (revision ise kaydetme sonrası tekrar pending'e çekeceğiz)
+  /**
+   * Mevcut durum (revision ise kaydetme sonrasi tekrar pending'e cekilir),
+   * rol ve birincil kategori.
+   *
+   * FAZ 10c-1: OKUMA `profiles`ta KALIR — saglayici tarafi ters aynayla
+   * kopyayi ayni islemde dolduruyor, iki taraf esit (01 migration'i kaymayi
+   * sifirla dogruluyor). Yalniz YAZMA tasindi.
+   */
   const { data: currentProfile } = await supabase
     .from('profiles')
-    .select('approval_status')
+    .select('approval_status, role, primary_category_id')
     .eq('id', user.id)
     .single();
-  const currentApproval = (currentProfile as { approval_status?: string } | null)
-    ?.approval_status;
+  const mevcut = currentProfile as {
+    approval_status?: string;
+    role?: string;
+    primary_category_id?: number | null;
+  } | null;
+  const currentApproval = mevcut?.approval_status;
 
   const fullName = formData.get('full_name')?.toString().trim() || '';
   const bio = formData.get('bio')?.toString().trim() || null;
@@ -89,36 +107,111 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     return { success: false, error: 'Şirket adı 200 karakterden uzun olamaz.' };
   }
 
-  // Model 3: Sadece revision durumundaki profil, düzenlenince tekrar pending'e döner
-  // (otomatik "tekrar incele"). approved/rejected/pending'e dokunulmaz.
-  const updatePayload: Record<string, unknown> = {
-    full_name: fullName,
-    bio,
-    phone,
-    city_id: cityId,
-    primary_category_id: primaryCategoryId,
-    company_name: companyName,
-    attributes,
-  };
+  const saglayici = await saglayiciMi(supabase, user.id);
+  const altTablo = altProfilTablosu(mevcut?.role);
 
-  // İlan başvuru varsayılanını yalnızca form gönderdiyse güncelle
-  // (professional/agency formu bu alanı göndermez → değer korunur)
-  if (defaultApplicantRoles !== null) {
-    updatePayload.default_allowed_applicant_roles = defaultApplicantRoles;
-  }
+  if (saglayici && altTablo) {
+    /**
+     * FAZ 10c-1 — YUK IKIYE BOLUNUR.
+     *
+     * HESAP alanlari `profiles`ta kalir; PAZARYERI alanlari saglayici
+     * tarafina yazilir. Sira: profiles -> providers -> alt profil -> RPC.
+     * Herhangi biri hata verirse Turkce hata doner; onceki yazimlar kalir
+     * (ters ayna kopyalari tutarli tutar).
+     */
+    const hesapYuku: Record<string, unknown> = {
+      full_name: fullName,
+      phone,
+      company_name: companyName,
+    };
+    if (defaultApplicantRoles !== null) {
+      hesapYuku.default_allowed_applicant_roles = defaultApplicantRoles;
+    }
+    const { error: hesapHatasi } = await supabase
+      .from('profiles')
+      .update(hesapYuku)
+      .eq('id', user.id);
+    if (hesapHatasi) {
+      return { success: false, error: 'Kaydedilemedi: ' + hesapHatasi.message };
+    }
 
-  if (currentApproval === 'revision') {
-    updatePayload.approval_status = 'pending';
-    updatePayload.approval_note = null; // eski revizyon notunu temizle
-  }
+    // Model 3: yalniz `revision` durumundaki profil duzenlenince tekrar
+    // incelemeye girer. `approval_note` GONDERILMEZ — DB temizler.
+    const saglayiciYuku: Record<string, unknown> = {
+      city_id: cityId,
+      attributes,
+    };
+    if (currentApproval === 'revision') {
+      saglayiciYuku.approval_status = 'pending';
+    }
+    const saglayiciHatasi = await saglayiciGuncelle(
+      supabase,
+      user.id,
+      saglayiciYuku
+    );
+    if (saglayiciHatasi) return { success: false, error: saglayiciHatasi };
 
-  const { error } = await supabase
-    .from('profiles')
-    .update(updatePayload)
-    .eq('id', user.id);
+    // Tanitim metni: profesyonelde `bio`, ajansta `about`.
+    const altHatasi = await altProfilGuncelle(supabase, altTablo, user.id, {
+      [tanitimAlani(altTablo)]: bio,
+    });
+    if (altHatasi) return { success: false, error: altHatasi };
 
-  if (error) {
-    return { success: false, error: 'Kaydedilemedi: ' + error.message };
+    // Birincil kategori YALNIZ RPC ile (rol turetimi DB'de).
+    if (primaryCategoryId !== (mevcut?.primary_category_id ?? null)) {
+      const { error: rpcHatasi } = await supabase.rpc(
+        'provider_set_primary_category',
+        { p_category_id: primaryCategoryId }
+      );
+      if (rpcHatasi) {
+        console.error(
+          '[profil] provider_set_primary_category',
+          rpcHatasi.code,
+          rpcHatasi.message
+        );
+        return {
+          success: false,
+          error:
+            rpcHatasi.code === '22023'
+              ? 'Seçilen kategori geçersiz.'
+              : 'Kategori kaydedilemedi: ' + rpcHatasi.message,
+        };
+      }
+    }
+  } else {
+    // SAGLAYICI DEGIL (musteri, isletme): her sey `profiles`ta kalir.
+    //
+    // Model 3: Sadece revision durumundaki profil, düzenlenince tekrar pending'e döner
+    // (otomatik "tekrar incele"). approved/rejected/pending'e dokunulmaz.
+    const updatePayload: Record<string, unknown> = {
+      full_name: fullName,
+      bio,
+      phone,
+      city_id: cityId,
+      primary_category_id: primaryCategoryId,
+      company_name: companyName,
+      attributes,
+    };
+
+    // İlan başvuru varsayılanını yalnızca form gönderdiyse güncelle
+    // (professional/agency formu bu alanı göndermez → değer korunur)
+    if (defaultApplicantRoles !== null) {
+      updatePayload.default_allowed_applicant_roles = defaultApplicantRoles;
+    }
+
+    if (currentApproval === 'revision') {
+      updatePayload.approval_status = 'pending';
+      updatePayload.approval_note = null; // eski revizyon notunu temizle
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updatePayload)
+      .eq('id', user.id);
+
+    if (error) {
+      return { success: false, error: 'Kaydedilemedi: ' + error.message };
+    }
   }
 
   revalidatePath('/profil');
@@ -186,13 +279,22 @@ export async function togglePublish(publish: boolean): Promise<UpdateProfileResu
     }
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ is_published: publish })
-    .eq('id', user.id);
+  // FAZ 10c-1: yayin bayragi saglayicida; saglayici olmayan hesapta
+  // `profiles`ta kalir (isletme / musteri).
+  if (await saglayiciMi(supabase, user.id)) {
+    const hata = await saglayiciGuncelle(supabase, user.id, {
+      is_published: publish,
+    });
+    if (hata) return { success: false, error: hata };
+  } else {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_published: publish })
+      .eq('id', user.id);
 
-  if (error) {
-    return { success: false, error: 'İşlem başarısız: ' + error.message };
+    if (error) {
+      return { success: false, error: 'İşlem başarısız: ' + error.message };
+    }
   }
 
   revalidatePath('/profil');

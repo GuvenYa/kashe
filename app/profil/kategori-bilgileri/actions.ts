@@ -17,6 +17,7 @@ import {
   type ModuleKey,
 } from '@/app/lib/category-fields';
 import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
+import { saglayiciGuncelle } from '@/app/lib/saglayici-yazma';
 
 export type SaveResult = { success: boolean; error?: string };
 
@@ -79,10 +80,11 @@ export async function saveCategoryAttributes(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Oturum bulunamadı.' };
 
+  // Rol ve birincil kategori HESAP tarafinda (`profiles`) kalir.
   const { data: prof } = await supabase
     .from('profiles')
     .select(
-      'role, category_attributes, service_categories!profiles_primary_category_id_fkey(slug)'
+      'role, service_categories!profiles_primary_category_id_fkey(slug)'
     )
     .eq('id', user.id)
     .single();
@@ -97,7 +99,32 @@ export async function saveCategoryAttributes(
   if (!preset)
     return { success: false, error: 'Kategori bilgisi bulunamadı.' };
 
-  const current = (prof.category_attributes ?? {}) as Record<string, unknown>;
+  /**
+   * FAZ 10c-1: `category_attributes` SAGLAYICI tarafindan okunur ve oraya
+   * yazilir. MERGE'in tabani da oradan gelir: yoksa (saglayici kaydi olmayan
+   * hesap) kayit yapilmaz — `profiles`taki kopyayi taban alip saglayiciya
+   * yazmak iki tarafi ayirabilirdi.
+   */
+  const { data: saglayiciSatiri, error: saglayiciOkumaHatasi } =
+    await supabase
+      .from('providers')
+      .select('category_attributes')
+      .eq('id', user.id)
+      .maybeSingle();
+  if (saglayiciOkumaHatasi) {
+    return {
+      success: false,
+      error: 'Kategori bilgileri okunamadı: ' + saglayiciOkumaHatasi.message,
+    };
+  }
+  if (!saglayiciSatiri) {
+    return { success: false, error: 'Sağlayıcı kaydı bulunamadı.' };
+  }
+
+  const current = (saglayiciSatiri.category_attributes ?? {}) as Record<
+    string,
+    unknown
+  >;
   const next: Record<string, unknown> = { ...current };
 
   try {
@@ -353,11 +380,10 @@ export async function saveCategoryAttributes(
   // undefined anahtarları düşür (JSON.stringify undefined'ı atlar)
   const cleaned = JSON.parse(JSON.stringify(next));
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ category_attributes: cleaned })
-    .eq('id', user.id);
-  if (error) return { success: false, error: 'Kaydedilemedi: ' + error.message };
+  const hata = await saglayiciGuncelle(supabase, user.id, {
+    category_attributes: cleaned,
+  });
+  if (hata) return { success: false, error: hata };
 
   revalidatePath('/profil/kategori-bilgileri');
   revalidatePath('/profil');

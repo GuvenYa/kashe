@@ -8,6 +8,10 @@ import {
   sendAccountEmail,
 } from '@/app/lib/email/account-emails';
 import { getAdminProfileContacts } from '@/app/lib/admin-contacts';
+import {
+  saglayiciMi,
+  yonetimAlanlariniYaz,
+} from '@/app/lib/saglayici-yazma';
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -98,20 +102,21 @@ export async function banUser(
     return { success: false, error: 'Askıya alma sebebi en fazla 500 karakter olabilir.' };
   }
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
+  // FAZ 10c-1: askiya alma alanlari saglayici hesabinda `providers`ta;
+  // musteri / isletme hesabinda `profiles`ta kalir.
+  const { hata: banHatasi } = await yonetimAlanlariniYaz(
+    supabase,
+    userId,
+    await saglayiciMi(supabase, userId),
+    {
       suspended_at: new Date().toISOString(),
       suspension_reason: trimmedReason,
       suspended_by: adminId,
       is_published: false, // askıdaki profil yayında kalmamalı → yayından çıkar
-    })
-    .eq('id', userId);
-
-  if (updateError) {
-    console.error('[admin] ban error:', updateError);
-    return { success: false, error: 'Askıya alınamadı: ' + updateError.message };
-  }
+    },
+    'Askıya alınamadı'
+  );
+  if (banHatasi) return { success: false, error: banHatasi };
 
   await logAction(supabase, adminId, 'ban_user', 'user', userId, trimmedReason);
 
@@ -137,20 +142,19 @@ export async function unbanUser(userId: string): Promise<ActionResult> {
     (profil as { approval_status: string | null } | null)?.approval_status ===
     'approved';
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
+  const { hata: unbanHatasi } = await yonetimAlanlariniYaz(
+    supabase,
+    userId,
+    await saglayiciMi(supabase, userId),
+    {
       suspended_at: null,
       suspension_reason: null,
       suspended_by: null,
       ...(onayli ? { is_published: true } : {}),
-    })
-    .eq('id', userId);
-
-  if (updateError) {
-    console.error('[admin] unban error:', updateError);
-    return { success: false, error: 'Askı kaldırılamadı: ' + updateError.message };
-  }
+    },
+    'Askı kaldırılamadı'
+  );
+  if (unbanHatasi) return { success: false, error: unbanHatasi };
 
   await logAction(supabase, adminId, 'unban_user', 'user', userId);
 
@@ -318,26 +322,23 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
   // Onay = otomatik YAYIN. Self-view kopyası "Onaylandığında otomatik olarak yayına
   // alınacak" diyor; ayrı bir "yayın niyeti" alanı YOK → onay, profili yayına da alır
   // (kopya ↔ davranış birebir). approval_note onayda TEMİZLENİR.
-  const { data: updated, error: updateError } = await supabase
-    .from('profiles')
-    .update({ approval_status: 'approved', approval_note: null, is_published: true })
-    .eq('id', profileId)
-    .select('id, approval_status, is_published, full_name');
-
-  if (updateError) {
-    console.error('[admin] approve profile error:', updateError);
-    return { success: false, error: 'Profil onaylanamadı: ' + updateError.message };
-  }
-  if (!updated || updated.length === 0) {
-    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
-  }
+  // FAZ 10c-1: onay alanlari saglayici hesabinda `providers`ta (ters ayna
+  // `profiles` kopyasini ayni islemde gunceller; admin listeleri degismez).
+  const onaySonucu = await yonetimAlanlariniYaz(
+    supabase,
+    profileId,
+    await saglayiciMi(supabase, profileId),
+    { approval_status: 'approved', approval_note: null, is_published: true },
+    'Profil onaylanamadı'
+  );
+  if (!onaySonucu.tamam) return { success: false, error: onaySonucu.hata };
   // Değer gerçekten değişti mi? (bir koruma trigger'ı OLD'a geri sarmış olabilir → sessiz başarı YOK)
-  if (updated[0].approval_status !== 'approved') {
+  if (onaySonucu.satir.approval_status !== 'approved') {
     return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
-  // is_published tutmadıysa (protect_sensitive_profile_fields trigger'ı engellemiş olabilir)
-  // onay yine de geçerli; yalnız log'a düş (sessiz kalmasın, Dashboard'da trigger'ı kontrol et).
-  if (updated[0].is_published !== true) {
+  // is_published tutmadıysa (koruma trigger'ı engellemiş olabilir) onay yine de
+  // geçerli; yalnız log'a düş (sessiz kalmasın, Dashboard'da trigger'ı kontrol et).
+  if (onaySonucu.satir.is_published !== true) {
     console.warn('[admin] approveProfile: onay OK ama is_published flip etmedi (koruma trigger?) —', profileId);
   }
 
@@ -345,7 +346,15 @@ export async function approveProfile(profileId: string): Promise<ActionResult> {
 
   // Onay e-postası — inline await: Vercel serverless'te after()/fire-and-forget
   // response sonrası donup gönderim tamamlanmıyordu. Mail hatası aksiyonu bozmaz.
-  const approvedRow = updated[0] as { full_name: string | null };
+  // Ad e-posta govdesi icin: `full_name` HESAP tarafinda (saglayicida yok).
+  const { data: onayliAd } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', profileId)
+    .maybeSingle();
+  const approvedRow = (onayliAd ?? { full_name: null }) as {
+    full_name: string | null;
+  };
   try {
     // profiles.email authenticated rolüne kapalı (PII adım 2b) — adres admin RPC'siyle alınır.
     const approvedEmail = (await getAdminProfileContacts(supabase, [profileId])).get(profileId)?.email;
@@ -380,20 +389,19 @@ export async function rejectProfile(
   }
 
   // Reddedilen profil YAYINDA KALMAMALI → yayından da çıkar.
-  const { data: updated, error: updateError } = await supabase
-    .from('profiles')
-    .update({ approval_status: 'rejected', approval_note: trimmedNote, is_published: false })
-    .eq('id', profileId)
-    .select('id, approval_status');
-
-  if (updateError) {
-    console.error('[admin] reject profile error:', updateError);
-    return { success: false, error: 'Profil reddedilemedi: ' + updateError.message };
-  }
-  if (!updated || updated.length === 0) {
-    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
-  }
-  if (updated[0].approval_status !== 'rejected') {
+  const redSonucu = await yonetimAlanlariniYaz(
+    supabase,
+    profileId,
+    await saglayiciMi(supabase, profileId),
+    {
+      approval_status: 'rejected',
+      approval_note: trimmedNote,
+      is_published: false,
+    },
+    'Profil reddedilemedi'
+  );
+  if (!redSonucu.tamam) return { success: false, error: redSonucu.hata };
+  if (redSonucu.satir.approval_status !== 'rejected') {
     return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
 
@@ -422,20 +430,21 @@ export async function requestProfileRevision(
   }
 
   // Revizyondaki profil yayında kalmamalı → yayından çıkar (yeniden onayda tekrar yayına alınır).
-  const { data: updated, error: updateError } = await supabase
-    .from('profiles')
-    .update({ approval_status: 'revision', approval_note: trimmedNote, is_published: false })
-    .eq('id', profileId)
-    .select('id, approval_status, full_name');
-
-  if (updateError) {
-    console.error('[admin] request profile revision error:', updateError);
-    return { success: false, error: 'Revizyon istenemedi: ' + updateError.message };
+  const revizyonSonucu = await yonetimAlanlariniYaz(
+    supabase,
+    profileId,
+    await saglayiciMi(supabase, profileId),
+    {
+      approval_status: 'revision',
+      approval_note: trimmedNote,
+      is_published: false,
+    },
+    'Revizyon istenemedi'
+  );
+  if (!revizyonSonucu.tamam) {
+    return { success: false, error: revizyonSonucu.hata };
   }
-  if (!updated || updated.length === 0) {
-    return { success: false, error: 'Profil güncellenemedi (kayıt bulunamadı veya izin engeli).' };
-  }
-  if (updated[0].approval_status !== 'revision') {
+  if (revizyonSonucu.satir.approval_status !== 'revision') {
     return { success: false, error: 'Durum güncellenemedi — bir koruma kuralı engellemiş olabilir.' };
   }
 
@@ -443,7 +452,15 @@ export async function requestProfileRevision(
 
   // Revizyon e-postası — inline await (after() Vercel'de gönderimi tamamlamıyordu);
   // admin notu gövdede. Mail hatası aksiyonu bozmaz.
-  const revRow = updated[0] as { full_name: string | null };
+  // Ad e-posta govdesi icin: `full_name` HESAP tarafinda (saglayicida yok).
+  const { data: revizyonAdi } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', profileId)
+    .maybeSingle();
+  const revRow = (revizyonAdi ?? { full_name: null }) as {
+    full_name: string | null;
+  };
   try {
     // profiles.email authenticated rolüne kapalı (PII adım 2b) — adres admin RPC'siyle alınır.
     const revEmail = (await getAdminProfileContacts(supabase, [profileId])).get(profileId)?.email;
