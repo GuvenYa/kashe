@@ -4,6 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
+**Durum (5 Kasim 2026, aksam):** **10c-2 KAPANDI** (DB 04 + P2 uretimde, `main` 6c9fa7b) - **10c tamam**; siradaki Sahne v3
+(bulgu 70), sonra 10d. Asagidaki 5 Kasim durumu tarihcedir.
 **Durum (5 Kasim 2026):** **10c-1 KAPANDI** (DB 01 + 02 + 02b + 03 ve P1 uretimde, `main` a67aa10) + **Duzeltme 05 uretimde**;
 Duzeltme 06 (girissiz AI + tek giris) ve 07 (Turkce arama) uretimde; siradaki 10c-2 (bolum 10c), sonra Sahne v3.
 **Durum (4 Kasim 2026):** **10b KAPANDI** (DB + P1 uretimde, `main` 568c7b1) + **Duzeltme 04 uretimde** (bolum 6); siradaki **10c-1** (bolum 10c).
@@ -259,6 +261,16 @@ islem ve otomatik, ikinci kosu no-op; asama4 44/44 iki kip, 04'suz kopyada 43 + 
 T40 HATA, istemci provider_id'sine guveniliyor -> T13 + T40 HATA; asama7 / 9 / 10 ESIT; Sahne 00-04 04'lu harness'ta ayni sayilar.
 P2 gorevi 48 (25 dosya, ~97 referans; suzgec + yuk provider_id, gomme ipuclari FAZ 11'e kadar ayni).
 Sira: dal db push (04) -> asama4 / asama20 -> uretim db push (04) -> gorev 48 (P2) -> tur -> uretim kod.
+**10c-2 URETIMDE (5 Kasim):** dal `db push` (04) -> asama20 K10 16 ESIT, asama4 44/44 GECTI (T40 dahil), asama10 ESIT; uretim
+`db push` (04) -> asama20 K1-K10 ESIT (K10 16), asama10 ESIT (39 / gorunur 34). P2 (gorev 48, `main` 6c9fa7b): 28 dosya, 63 sorgu
+zinciri; bes tabloda eski sahip sutunu suzgec / yuk / okunan alan olarak 0. Kalan iki gomme ipucu FAZ 11'e kadar
+(`admin/yorumlar` `profiles!reviews_professional_id_fkey`, `favoriler/actions` `professional:professional_id`); tiplere `provider_id`
+(Service, PortfolioItem, Review, ProfileExperience; eski alan tipte kalir). Sapma: favorites'ta upsert yokmus (duz insert + 23505;
+yeni TEKIL indeks ayni hatayi verir). Onizleme turu (Sahne: Bahar Yalcin / Kaan Erol / admin): hizmet ekle-duzenle-pasif-sil + /p +
+Kesfet rozeti, deneyim ekle-tasi-sil, portfoy yukle-aciklama-sil, favori ekle-cikar (/favoriler 5-6-5), yorum yaz-sil (Cem Kilic,
+ozet 4 / 1), admin yorumlar 82 / sikayetler / rapor, kategori, ana sayfa; test kayitlari geri alindi. Uretim anonim kontrol: Kesfet
+34 sonuc / 20 rozet (P2 oncesi olcumle ayni), 34 /p sayfasi 200, portfoy / deneyim / yorum geldi. Ana sayfadaki React #419 uyarisi
+hero'daki iki `ssr: false` bolumden (uretimde de ayni isaretler), P2 ile ilgisiz.
 
 ### 10d — Kucukler
 
