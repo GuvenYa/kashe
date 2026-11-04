@@ -4,8 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
-**Durum (5 Kasim 2026):** **10c-1 DB (01 + 02 + 02b) + P1 + Duzeltme 05 URETIMDE**; 10c-1 / 03 KISITLAYAN harness'ta (bolum 10c,
-"10c-1 / 03 UYGULAMA"); sonra 10c-2.
+**Durum (5 Kasim 2026):** **10c-1 KAPANDI** (DB 01 + 02 + 02b + 03 ve P1 uretimde, `main` a67aa10) + **Duzeltme 05 uretimde**;
+siradaki Duzeltme 06 (girissiz AI hakki + tek AI girisi, bulgu 64/65), sonra 10c-2 (bolum 10c).
 **Durum (4 Kasim 2026):** **10b KAPANDI** (DB + P1 uretimde, `main` 568c7b1) + **Duzeltme 04 uretimde** (bolum 6); siradaki **10c-1** (bolum 10c).
 Asagidaki 3 Kasim durumu tarihcedir.
 **Durum (3 Kasim 2026):** **10a + Duzeltme 01 URETIMDE** (merge e4317d5; `supabase db push` 20261028 + 20261030; asama20/5/18/19 uretimde beklendigi gibi; tur 3 Kasim, bulgular 4-38);
@@ -213,6 +213,13 @@ asama9 / asama10 ESIT; Sahne 00-04 03'lu harness'ta yeniden kuruldu -> providers
 03 oncesiyle birebir (md5), kayma 0. tsc + eslint temiz.
 Sira: dal db push (03) -> asama4 / asama20 / asama10 -> `main` (saglayiciMi + Sahne + belgeler) -> uretim db push (03) -> asama20 /
 asama10 -> uretim anonim kontrol. 10c-2 dosyasi `04`, testleri asama4 **T40** / asama20 **K10**.
+**10c-1 / 03 URETIMDE (5 Kasim) - 10c-1 KAPANDI:** dal db push (03) -> asama4 41/41 (T39 GECTI, T38 "03 kilidinde sessizce eski
+deger"), asama20 K8 37 / K8b 0 / K9 18, asama10 ESIT. Dal turu `faz10c/03` onizlemesinde (Tolga Dogan, Ekim Kreatif, admin; degerler
+geri alindi): tanitim / sehir / ana kategori (RPC) -> /profil + /p/ + Kesfet; yayindan kaldir -> Kesfet'ten duser; admin revizyon
+(sayac 3 -> 4, not) -> sahip duzenler -> "Profilin onay bekliyor", not temiz -> admin onay -> yayinda (8/3); ajans askiya al / kaldir ->
+Kesfet'ten duser / doner; konsol temiz. `main` <- `faz10c/03` (a67aa10, Vercel), sonra uretim db push (03): asama20 K8 37 / K8b 0 /
+K9 18 ESIT, asama10 ESIT (39 saglayici, 34 gorunur). kashe.net anonim: Kesfet 34 profil, /p/ ve ana sayfa sorunsuz. Bulgu 71 (Turkce
+harfsiz arama) acildi.
 
 **10c-2 / DB/02** (`faz10c_04_provider_id_kesimi`, damga yazilirken verilir; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
