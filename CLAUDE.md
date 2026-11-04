@@ -135,6 +135,13 @@ Sohbet teklifleri `quotes_expire_stale()` (pg_cron `quotes-expire-daily` 00:20 U
 doldu" cizer. Yorum INSERT politikasi `fn_duz03_tamamlanmis_rezervasyon_var(musteri, saglayici)` ister (sohbet sarti aynen).
 Bkz. `docs/envanter/38-faz10-temizlik.md` bolum 6, `asama21-duzeltme-03b-kontrol.sql`.
 
+**RPC bayragi (Duzeltme 04, 4 Kasim 2026).** `fn_faz7_rpc_flag()` = `COALESCE(current_setting('kashe.faz7_rpc', true) = '1', false)`.
+Eskiden ayar o oturumda hic set edilmemisse NULL donuyordu; `IF ... AND NOT fn_faz7_rpc_flag() THEN RAISE` NULL olup RAISE calismiyor,
+taze PostgREST baglantisinda gonderilmis/onayli teklif surumunun kalemleri ve vergisi dogrudan degisebiliyordu (bulgu 62). Kural: bir
+kilidin `NOT <fonksiyon>()` kosulundaki fonksiyon ASLA NULL donmez (COALESCE); `current_setting(x, true)` karsilastirmasi hep
+COALESCE ile sarilir. Gonderilmis surume dokunan bakim betikleri (asama4 T0/T99, Sahne 00/01a/02a/05) bayragi
+`set_config('kashe.faz7_rpc', '1', true)` ile acar. Kontrol `asama22-duzeltme-04-kontrol.sql`, test asama4 T37.
+
 **Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,
 INSERT/UPDATE/DELETE `events.manage`. Kurallar DB tetikleyicisinde, uygulama YALNIZ anlasilir Turkce mesaj uretir (`app/lib/gorevler.ts`
 hata eslemesi; metinler `RAISE EXCEPTION` govdeleriyle birebir). Ayni kural iki yerde yazilmaz: "atanan kisi aktif uye mi", "etkinlik/havuz

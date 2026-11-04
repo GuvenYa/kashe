@@ -101,6 +101,12 @@ anahtar disi -> 'other', brief_data dokunulmaz, listings updated_at tetikleyicis
 **10b-P1:** `EVENT_TYPES` sabiti silinir; tek kaynak `event_types` tablosu — sunucu yardimcisi `app/lib/etkinlik-turu.ts`
 (`etkinlikTurleri()`; `unstable_cache` ya da istek basina), istemci bilesenlere prop. 12 dosya. Tur: ilan formu, Kesfet filtresi,
 teklif-topla, kategori bilgileri, mesaj basligi.
+**10b-P1 TUR (4 Kasim, onizleme `faz10b/p1`, commit 8a85b32; Sahne hesaplari Irem / Kerem / Mavi Sahne):** ilan formu 15 tur (tablo
+sirasi), Kesfet "Etkinlik turu" 15 kutu + `?etkinlik=wedding` 64 / `corporate` 92 / `olmayan` yok sayildi (120 = suzgecsiz) / `wedding,olmayan` 64,
+teklif-topla `?kategori=377&tur=corporate` on-dolu, `?tur=activation` bos (hata yok), profilde "Teklif Al" brief 15 tur, sohbet listesi
+ve konusma karti Turkce etiket, profil "ETKINLIK TURLERI", `/rezervasyonlarim`, `/takvimim` Siradaki isler "Kurumsal / Dogum gunu / Dugun"
+(bulgu 55 kapandi), kategori bilgileri ortak alan 15 cip + kayitli 3 secim, sihirbaz adim 2 15 cip, ajans teklif musteri gorunumu "TUR Dugun":
+DOGRULANDI; temiz sekmede konsol hatasi yok. Turda bulgu 61 (asama4 test kategorileri yine listede) ve 62 (guvenlik: RPC bayragi) -> Duzeltme 04.
 
 ### 10c — Saglayici yazma yolu + `profile_id` kesimi (madde 43, 45) — PLAN (kararlar bolum 4; 30 Ekim 2026)
 
@@ -241,6 +247,13 @@ suresi gecmis sohbet teklifleri: 7 gunden eskiler sistem mesajsiz, yeniler mesaj
 yakalandi). Uygulama: bildirim etiketi 'booking', sohbet teklif kartinda suresi gecmis 'pending' = "Suresi doldu", iptal/tamamlama
 pencere metinleri. E-posta kuyruguna 'booking' EKLENMEDI (eski sekil e-postasi uygulamada; cift olmasin). Acik: portal musterisi
 yorum birakamaz (reviews.conversation_id zorunlu; urun karari), portalda "Reddet" dugmesi (urun karari), ekip uyesi kabul/ret (10d/11).
+**Duzeltme 04 (4 Kasim, dal `duzeltme-04`; bulgu 61-62):** `20261104130000_duzeltme_04_faz7_bayrak.sql` — `fn_faz7_rpc_flag()`
+COALESCE ile false (tanimsiz ayarda NULL donup `NOT flag` dondurma kilitlerini atliyordu: taze baglantida satici uye gonderilmis/onayli
+surumun kalem fiyat/adet/ekle/sil ve tax_rate/valid_until/notes yazabiliyordu; yerelde onayli 11.400 TL teklif 28.500 TL oldu, duzeltmeyle
+22023). Yetkiler/imza ayni. asama4: T0 ve yeni T99 (kosu sonu temizligi; 8 'Faz1 Test' kategorisi artik kalmaz) bayragi acar, T37 govde
++ dogrudan yazim 22023 (yerelde 39/39; duzeltmesiz kopyada yalniz T37 HATA; eski T0 duzeltilmis DB'de HATA -> bayrak sart). Sahne 05
+bayraksiz duzeltilmis DB'de durur (crew_members -> proposal_items SET NULL), bayrakla 8+8 siler; 00/01a/02a ayni bayragi alir.
+`asama22-duzeltme-04-kontrol.sql` K1-K3 ESIT, K4/K5 bilgi (gonderimden sonra degismis kalem/surum; Sahne disi 0 beklenir).
 **Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
 iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
 yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif

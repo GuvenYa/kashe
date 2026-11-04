@@ -27,6 +27,7 @@ CREATE OR REPLACE FUNCTION pg_temp.org(p uuid) RETURNS uuid LANGUAGE sql STABLE 
 DO $$
 DECLARE ids uuid[]; orgs uuid[];
 BEGIN
+  PERFORM set_config('kashe.faz7_rpc', '1', true);  -- Duzeltme 04: gonderilmis teklif kalemleri bayraksiz silinmez
   SELECT COALESCE(array_agg(id), '{}') INTO ids FROM public.profiles WHERE email LIKE 'sahne+%';
   SELECT COALESCE(array_agg(id), '{}') INTO orgs FROM public.organizations WHERE legacy_profile_id = ANY(ids);
   DELETE FROM public.bookings WHERE customer_id = ANY(ids) OR professional_id = ANY(ids) OR seller_provider_id = ANY(ids) OR id::text LIKE '5a4e0013-%';

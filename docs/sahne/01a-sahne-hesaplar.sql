@@ -27,6 +27,7 @@ CREATE OR REPLACE FUNCTION pg_temp.org(p uuid) RETURNS uuid LANGUAGE sql STABLE 
 CREATE OR REPLACE FUNCTION pg_temp.sahne_temizle() RETURNS text LANGUAGE plpgsql AS $$
 DECLARE ids uuid[]; orgs uuid[]; n_u int; n_o int;
 BEGIN
+  PERFORM set_config('kashe.faz7_rpc', '1', true);  -- Duzeltme 04: gonderilmis teklif kalemleri bayraksiz silinmez
   SELECT COALESCE(array_agg(id), '{}') INTO ids FROM (
     SELECT id FROM public.profiles WHERE email LIKE 'sahne+%' UNION SELECT id FROM auth.users WHERE email LIKE 'sahne+%'
     UNION SELECT id FROM public.profiles WHERE id::text LIKE '5a4e0000-%') s;

@@ -6,7 +6,7 @@
 -- yapinin ayni oldugunu gosterdi; bu test tetikleyicilerin, RLS'in ve GRANT katmaninin
 -- gercekten calistigini gosterir. Uretimde KOSTURULMAZ (test verisi yazar).
 --
--- Test verisi sabit UUID'lerle yazilir ve her kosuda basta silinir; tekrar guvenlidir.
+-- Test verisi sabit UUID'lerle yazilir; her kosuda basta (T0) ve sonda (T99) silinir; tekrar guvenlidir.
 -- Her test kendi DO blogunda; hata olursa o test HATA olarak raporlanir, digerleri devam eder.
 -- Son SELECT sonuc tablosunu verir: hepsi GECTI olmali.
 --
@@ -79,6 +79,9 @@
 --       ekip bildirimleri (#23) (ON KOSUL: 20261030120000 duzeltme_01 dalda uygulanmis)
 --   T36 FAZ 10b etkinlik turu tek kaynak: 4 FK / 0 CHECK, anahtar disi 23503, NULL serbest, kullanimdaki tur silinemez, anon okur,
 --       veri temiz (ON KOSUL: 20261104120000 faz10b_01 dalda uygulanmis; degilse ATLANDI)
+--   T37 Duzeltme 04: fn_faz7_rpc_flag tanimsiz ayarda false (COALESCE); gonderilmis surumde dogrudan kalem/vergi yazimi 22023
+--       (ON KOSUL: 20261104130000 duzeltme_04 dalda; degilse HATA - acik var demektir)
+--   T99 son temizlik: bu kosunun test verisi (faz1test kategori/rol, test profilleri) sonda da silinir
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -117,6 +120,8 @@ DECLARE
                       'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006',
                       'a0000000-0000-4000-8000-000000000007']::uuid[];
 BEGIN
+  -- Duzeltme 04: gonderilmis teklif surumlerinin kalemleri bayraksiz silinmez (dondurma kilidi); temizlik bakim isidir
+  PERFORM set_config('kashe.faz7_rpc', '1', true);
   -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik). FAZ 6 match_runs/crews etkinlikle cascade.
   IF to_regclass('public.events') IS NOT NULL THEN
     DELETE FROM public.events WHERE owner_user_id = ANY(ids);
@@ -5632,6 +5637,167 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (36, 'T36 FAZ 10b etkinlik turu', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T37) Duzeltme 04: FAZ 7 RPC bayragi tanimsizken false (NULL degil). ON KOSUL: 20261104130000 (duzeltme_04) dalda.
+--      T21 verisine dayanir (T21 teklif: gonderilmis surum; Test Ajans org_a, owner 0004). Yazim denemeleri hata verir, iz kalmaz.
+--      Not: onceki testler bu oturumda bayragi set ettigi icin ayar burada TANIMLI ('' ya da '0'); acigin kosulu (tanimsiz ayar)
+--      ayni oturumda kurulamaz -> 37a govdeyi denetler (mutasyonu yakalayan adim), taze oturum olcumu asama22 K2'de.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ajans uuid := 'a0000000-0000-4000-8000-000000000004';
+  org_a uuid; ver uuid; item uuid; toplam numeric; n int; r record;
+BEGIN
+  -- 37a) govde: COALESCE ile false (taze baglantida NULL donup dondurma kilidini atlamasin)
+  IF pg_get_functiondef('public.fn_faz7_rpc_flag()'::regprocedure) !~* 'coalesce' THEN
+    RAISE EXCEPTION 'fn_faz7_rpc_flag COALESCE icermiyor (Duzeltme 04 dalda uygulanmamis)';
+  END IF;
+  IF public.fn_faz7_rpc_flag() IS DISTINCT FROM false THEN RAISE EXCEPTION 'bayrak RPC disinda false olmali: %', public.fn_faz7_rpc_flag(); END IF;
+  -- 37b) gonderilmis surum: owner dogrudan kalem fiyati / kalem ekleme / kalem silme / surum vergisi -> 22023; toplam degismez
+  SELECT id INTO org_a FROM public.organizations WHERE legacy_profile_id = ajans;
+  SELECT v.id, v.total_amount INTO ver, toplam
+    FROM public.proposals p JOIN public.proposal_versions v ON v.proposal_id = p.id
+   WHERE p.seller_organization_id = org_a AND p.title = 'T21 teklif' AND v.sent_at IS NOT NULL
+   ORDER BY v.version_no LIMIT 1;
+  SELECT id INTO item FROM public.proposal_items WHERE proposal_version_id = ver ORDER BY sort_order LIMIT 1;
+  IF ver IS NULL OR item IS NULL THEN RAISE EXCEPTION 'on kosul: T21 gonderilmis surumu/kalemi yok (surum %, kalem %)', ver, item; END IF;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    UPDATE public.proposal_items SET unit_client_price = unit_client_price * 2 WHERE id = item;
+    GET DIAGNOSTICS n = ROW_COUNT;
+    RAISE EXCEPTION 'gonderilmis surum kalemi guncellendi (% satir)', n;
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    INSERT INTO public.proposal_items (proposal_version_id, description, quantity, unit_client_price, is_visible_to_client, sort_order)
+    VALUES (ver, 'T37 sonradan kalem', 1, 1, true, 99);
+    RAISE EXCEPTION 'gonderilmis surume kalem eklendi';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    DELETE FROM public.proposal_items WHERE id = item;
+    GET DIAGNOSTICS n = ROW_COUNT;
+    RAISE EXCEPTION 'gonderilmis surum kalemi silindi (% satir)', n;
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  BEGIN
+    UPDATE public.proposal_versions SET tax_rate = 0.5 WHERE id = ver;
+    GET DIAGNOSTICS n = ROW_COUNT;
+    RAISE EXCEPTION 'gonderilmis surumun vergisi degisti (% satir)', n;
+  EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  SELECT * INTO r FROM public.proposal_versions WHERE id = ver;
+  IF r.total_amount <> toplam OR r.tax_rate = 0.5 THEN RAISE EXCEPTION 'surum degisti: % -> %', toplam, r.total_amount; END IF;
+  INSERT INTO t_sonuc VALUES (37, 'T37 Duzeltme 04 RPC bayragi', 'GECTI',
+    'govde COALESCE, RPC disinda false; gonderilmis surumde owner kalem fiyati / ekleme / silme / vergi 22023, toplam ' || toplam || ' ayni');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (37, 'T37 Duzeltme 04 RPC bayragi', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T99) Son temizlik - bu kosunun izleri (T0 ile ayni govde; 4 Kasim 2026, bulgu 61)
+--   Dalda asama4 her kosudan sonra 8 'Faz1 Test ...' kategorisi birakiyordu (havuz/match/rfp testleri
+--   kendi kategorilerini silmiyor, bir sonraki T0 siliyordu); Sahne'de kategori listelerine dusuyordu.
+--   Artik kosu sonunda da silinir. T0 yerinde kalir (yarim kalmis bir kosunun izleri icin).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  ids uuid[] := ARRAY['a0000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000002',
+                      'a0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000004',
+                      'a0000000-0000-4000-8000-000000000005','a0000000-0000-4000-8000-000000000006',
+                      'a0000000-0000-4000-8000-000000000007']::uuid[];
+BEGIN
+  -- Duzeltme 04: gonderilmis teklif surumlerinin kalemleri bayraksiz silinmez (dondurma kilidi); temizlik bakim isidir
+  PERFORM set_config('kashe.faz7_rpc', '1', true);
+  -- T15 etkinlik verisi (profil silinince cascade ile de gider; acik temizlik). FAZ 6 match_runs/crews etkinlikle cascade.
+  IF to_regclass('public.events') IS NOT NULL THEN
+    DELETE FROM public.events WHERE owner_user_id = ANY(ids);
+    DELETE FROM public.event_briefs WHERE created_by_user_id = ANY(ids);
+  END IF;
+  -- T13 hizmetleri ve turetilen satirlar: kategori/rol silinmeden ONCE (FK: services.category_id,
+  -- provider_services.role_id RESTRICT). services her zaman var; provider_services 2b'den sonra.
+  DELETE FROM public.services WHERE profile_id = ANY(ids);
+  IF to_regclass('public.provider_services') IS NOT NULL THEN
+    DELETE FROM public.provider_services WHERE provider_id = ANY(ids);
+  END IF;
+  UPDATE public.profiles SET primary_category_id = NULL
+   WHERE id = ANY(ids) AND primary_category_id IN (SELECT id FROM public.service_categories WHERE slug LIKE 'faz1test-%');
+  -- T29 tedarikciler / kisa liste (etkinlik atamasi -> tedarikci; kalemler listeyle cascade)
+  IF to_regclass('public.event_suppliers') IS NOT NULL THEN
+    DELETE FROM public.event_suppliers     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.suppliers           WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.supplier_shortlists WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T28 CRM (firsat -> kisi; teklif bagi SET NULL)
+  IF to_regclass('public.crm_leads') IS NOT NULL THEN
+    DELETE FROM public.crm_leads WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.contacts  WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T26 gorevler/aktivite (done gorev dogrudan silinmez: once iptal)
+  IF to_regclass('public.tasks') IS NOT NULL THEN
+    UPDATE public.tasks SET status = 'cancelled'
+     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids)) AND status NOT IN ('todo', 'cancelled');
+    DELETE FROM public.tasks WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+    DELETE FROM public.activity_logs WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T21 teklifler (kalemler service_roles'a RESTRICT: test rolleri silinmeden ONCE; surum/kalem/ic kalem/baglanti cascade)
+  IF to_regclass('public.proposals') IS NOT NULL THEN
+    -- T23 teklif rezervasyonlari (bookings.proposal_version_id RESTRICT): tekliflerden ONCE
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings' AND column_name = 'proposal_version_id') THEN
+      DELETE FROM public.bookings
+       WHERE proposal_version_id IN (SELECT v.id FROM public.proposal_versions v JOIN public.proposals p ON p.id = v.proposal_id
+                                      WHERE p.seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids)));
+    END IF;
+    DELETE FROM public.proposals
+     WHERE seller_organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T17 havuz kayitlari (roller service_roles'a RESTRICT ile bagli: test rolleri silinmeden ONCE; oranlar cascade)
+  IF to_regclass('public.organization_talent_records') IS NOT NULL THEN
+    DELETE FROM public.organization_talent_records
+     WHERE organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T12/T13 test kategorileri (slug 'faz1test-%'): once rol, sonra kategori
+  IF to_regclass('public.service_roles') IS NOT NULL THEN
+    DELETE FROM public.service_roles WHERE slug LIKE 'faz1test-%';
+    DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-%';
+  END IF;
+  -- T10 denetim kayitlari (FK yok; aktor uzerinden silinir)
+  IF to_regclass('internal.access_audit') IS NOT NULL THEN
+    DELETE FROM internal.access_audit WHERE actor_user_id = ANY(ids);
+  END IF;
+  -- T31 olay zinciri (FK yok; ekle-yalniz): fixture aktor/saglayici/kurulus olaylari silinir — dalda Sahne'nin
+  -- zeka sayfasina test gurultusu birikmesin (27 Ekim 2026); uretimde fixture yok, etkisiz
+  IF to_regclass('public.analytics_events') IS NOT NULL THEN
+    DELETE FROM public.analytics_events
+     WHERE actor_user_id = ANY(ids) OR provider_id = ANY(ids)
+        OR organization_id IN (SELECT id FROM public.organizations WHERE legacy_profile_id = ANY(ids));
+  END IF;
+  -- T8/T9 kurum verisi (tablolar FAZ 0'dan once yoksa sessizce atla)
+  IF to_regclass('public.business_members') IS NOT NULL THEN
+    DELETE FROM public.business_members WHERE business_id = ANY(ids) OR member_user_id = ANY(ids);
+    DELETE FROM public.business_invitations WHERE business_id = ANY(ids) OR invited_by_id = ANY(ids) OR invited_user_id = ANY(ids);
+  END IF;
+  DELETE FROM public.bookings WHERE customer_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.messages WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
+  DELETE FROM public.quotes WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
+  DELETE FROM public.conversation_assignees WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
+  DELETE FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.agency_members WHERE agency_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.agency_invitations WHERE agency_id = ANY(ids) OR invited_by_id = ANY(ids) OR invited_user_id = ANY(ids);
+  DELETE FROM public.notifications WHERE user_id = ANY(ids);
+  DELETE FROM public.profiles WHERE id = ANY(ids);
+  DELETE FROM auth.users WHERE id = ANY(ids);
+  -- Kanit: Sahne'nin kategori listelerinde test kategorisi, Kesfet'te test profili kalmasin
+  IF EXISTS (SELECT 1 FROM public.service_categories WHERE slug LIKE 'faz1test-%')
+     OR (to_regclass('public.service_roles') IS NOT NULL AND EXISTS (SELECT 1 FROM public.service_roles WHERE slug LIKE 'faz1test-%'))
+     OR EXISTS (SELECT 1 FROM public.profiles WHERE id = ANY(ids)) THEN
+    RAISE EXCEPTION 'son temizlikten sonra test kategorisi/rolu/profili kaldi';
+  END IF;
+  INSERT INTO t_sonuc VALUES (99, 'T99 son temizlik', 'GECTI', 'bu kosunun test verisi silindi (faz1test kategori/rol 0, test profili 0)');
+EXCEPTION WHEN OTHERS THEN
+  INSERT INTO t_sonuc VALUES (99, 'T99 son temizlik', 'HATA', SQLERRM);
 END $$;
 
 SELECT sira, test, sonuc, detay FROM t_sonuc ORDER BY sira;

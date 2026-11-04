@@ -31,6 +31,7 @@ DECLARE
   hedef text;
   ids integer[];
 BEGIN
+  PERFORM set_config('kashe.faz7_rpc', '1', true);  -- Duzeltme 04: gonderilmis teklif kalemleri bayraksiz silinmez
   SELECT COALESCE(array_agg(id), '{}') INTO rol_ids FROM public.service_roles      WHERE slug LIKE 'faz1test-%';
   SELECT COALESCE(array_agg(id), '{}') INTO kat_ids FROM public.service_categories WHERE slug LIKE 'faz1test-%';
   INSERT INTO sahne05_rapor (tablo, sutun, islem, satir) VALUES
