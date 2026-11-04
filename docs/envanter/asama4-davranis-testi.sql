@@ -87,6 +87,10 @@
 --   T39 FAZ 10c-1/03 profiles kilidi: saglayici hesabinda 13 tasinmis alan sahip ve admin icin sessizce eski degerde, hesap
 --       alanlari (ad, telefon, premium) serbest, ad ileri aynayla; musteri / isletme kilitsiz; ayna ve RPC kilidi gecer, birincil
 --       rol RPC'de turetilir (fn_faz2b_sync_primary_role yok) (ON KOSUL: 20261105130000 faz10c_03 dalda; degilse ATLANDI)
+--   T40 FAZ 10c-2 icin ayrildi
+--   T41 Duzeltme 06 girissiz Kashe AI hakki: RPC yetkisi, ortak anahtar (yanlis / bos 42501), ham IP 22023, IP basina gunluk
+--       sinir, gunluk toplam ust siniri (IP sayaci geri alinir), kapali (0), 30 gun saklama; ayar test anahtarina alinip geri
+--       konur (ON KOSUL: 20261105140000 duzeltme_06 dalda; degilse ATLANDI)
 --   FAZ 10c-1 sonrasi (2026-11-05): saglayici hazirlik yazimlari (T5, T7, T11, T13, T14, T19) providers / alt profil /
 --       provider_set_primary_category uzerinden; dal 10c-1/02 icermeli
 --   T99 son temizlik: bu kosunun test verisi (faz1test kategori/rol, test profilleri) sonda da silinir
@@ -6178,6 +6182,143 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('kashe.sync_bypass', 'off', true);
   INSERT INTO t_sonuc VALUES (39, 'T39 FAZ 10c-1/03 profiles kilidi', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T41) Duzeltme 06 girissiz Kashe AI hakki. ON KOSUL: 20261105140000 (duzeltme_06) dalda; yoksa ATLANDI.
+--      Gercek anahtar bilinmez: ayar satiri test anahtarina ve test sinirlarina alinir, sonda AYNEN geri konur; test IP
+--      ozetleri ve bugunun sayac degisiklikleri de geri alinir.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  eski_ayar record; eski_gun record; v_gun date := (now() AT TIME ZONE 'Europe/Istanbul')::date;
+  anahtar text := 't41-test-anahtari';
+  ip1 text := encode(sha256(convert_to('t41-ip-1', 'UTF8')), 'hex');
+  ip2 text := encode(sha256(convert_to('t41-ip-2', 'UTF8')), 'hex');
+  ip3 text := encode(sha256(convert_to('t41-ip-3', 'UTF8')), 'hex');
+  ip4 text := encode(sha256(convert_to('t41-ip-4', 'UTF8')), 'hex');
+  r jsonb; n int; i int; v_adet int; v_red int;
+BEGIN
+  IF to_regprocedure('public.ai_girissiz_hak_kullan(text, text)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (41, 'T41 Duzeltme 06 girissiz AI hakki', 'ATLANDI', 'ai_girissiz_hak_kullan yok; duzeltme_06 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 41a) yapi ve yetki: RPC anon + authenticated EXECUTE; internal tablolar anon'a kapali
+  IF NOT has_function_privilege('anon', 'public.ai_girissiz_hak_kullan(text, text)', 'EXECUTE')
+     OR NOT has_function_privilege('authenticated', 'public.ai_girissiz_hak_kullan(text, text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'RPC anon/authenticated EXECUTE yok'; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    EXECUTE 'SELECT count(*) FROM internal.ai_girissiz_kullanim' INTO n;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon internal.ai_girissiz_kullanim OKUDU';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- hazirlik: test anahtari + sinirlar (ayar satiri sonda geri konur)
+  SELECT * INTO eski_ayar FROM internal.ai_girissiz_ayar WHERE id;
+  IF eski_ayar.id IS NULL THEN RAISE EXCEPTION 'ayar satiri yok'; END IF;
+  SELECT * INTO eski_gun FROM internal.ai_girissiz_gun WHERE gun = v_gun;
+  DELETE FROM internal.ai_girissiz_kullanim WHERE ip_ozeti IN (ip1, ip2, ip3, ip4);
+  UPDATE internal.ai_girissiz_ayar
+     SET anahtar_ozeti = encode(sha256(convert_to(anahtar, 'UTF8')), 'hex'), ip_gunluk = 3,
+         toplam_gunluk = COALESCE(eski_gun.adet, 0) + 10
+   WHERE id;
+
+  -- 41b) anahtarsiz / yanlis anahtar 42501, bozuk IP ozeti 22023 (anon rolu)
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    r := public.ai_girissiz_hak_kullan('yanlis', ip1);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'yanlis anahtar kabul edildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    r := public.ai_girissiz_hak_kullan(NULL, ip1);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anahtarsiz cagri kabul edildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    r := public.ai_girissiz_hak_kullan(anahtar, '1.2.3.4');
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'ham IP kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 41c) IP basina 3: kalan 2 / 1 / 0, dorduncu red (neden ip), sayac 3'te kalir
+  FOR i IN 1..3 LOOP
+    EXECUTE 'SET LOCAL ROLE anon';
+    r := public.ai_girissiz_hak_kullan(anahtar, ip1);
+    EXECUTE 'RESET ROLE';
+    IF NOT (r->>'izin')::boolean OR (r->>'kalan')::int <> 3 - i THEN
+      RAISE EXCEPTION 'ip1 %. cagri: %', i, r; END IF;
+  END LOOP;
+  SELECT COALESCE(reddedilen, 0) INTO v_red FROM internal.ai_girissiz_gun WHERE gun = v_gun;
+  EXECUTE 'SET LOCAL ROLE anon';
+  r := public.ai_girissiz_hak_kullan(anahtar, ip1);
+  EXECUTE 'RESET ROLE';
+  IF (r->>'izin')::boolean OR r->>'neden' IS DISTINCT FROM 'ip' THEN RAISE EXCEPTION 'ip1 4. cagri reddedilmedi: %', r; END IF;
+  SELECT adet INTO n FROM internal.ai_girissiz_kullanim WHERE gun = v_gun AND ip_ozeti = ip1;
+  IF n <> 3 THEN RAISE EXCEPTION 'ip1 sayaci % (3 beklenir)', n; END IF;
+  IF (SELECT reddedilen FROM internal.ai_girissiz_gun WHERE gun = v_gun) <> v_red + 1 THEN
+    RAISE EXCEPTION 'reddedilen sayaci artmadi'; END IF;
+
+  -- 41d) gunluk toplam: ust sinir = simdiki toplam + 1 -> ip2 gecer, ip3 reddedilir (neden toplam) ve ip3 sayaci HIC acilmaz
+  SELECT adet INTO v_adet FROM internal.ai_girissiz_gun WHERE gun = v_gun;
+  IF v_adet <> COALESCE(eski_gun.adet, 0) + 3 THEN RAISE EXCEPTION 'gunluk toplam % (beklenen %)', v_adet, COALESCE(eski_gun.adet, 0) + 3; END IF;
+  UPDATE internal.ai_girissiz_ayar SET toplam_gunluk = v_adet + 1 WHERE id;
+  PERFORM set_config('request.jwt.claim.sub', 'a0000000-0000-4000-8000-000000000001', true);   -- authenticated da cagirabilir
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  r := public.ai_girissiz_hak_kullan(anahtar, ip2);
+  EXECUTE 'RESET ROLE';
+  IF NOT (r->>'izin')::boolean OR (r->>'kalan')::int <> 2 THEN RAISE EXCEPTION 'ip2: %', r; END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  r := public.ai_girissiz_hak_kullan(anahtar, ip3);
+  EXECUTE 'RESET ROLE';
+  IF (r->>'izin')::boolean OR r->>'neden' IS DISTINCT FROM 'toplam' THEN RAISE EXCEPTION 'ip3 toplam reddi yok: %', r; END IF;
+  IF EXISTS (SELECT 1 FROM internal.ai_girissiz_kullanim WHERE gun = v_gun AND ip_ozeti = ip3) THEN
+    RAISE EXCEPTION 'toplam reddinde ip3 sayaci acildi (alt islem geri alinmadi)'; END IF;
+  IF (SELECT adet FROM internal.ai_girissiz_gun WHERE gun = v_gun) <> v_adet + 1 THEN RAISE EXCEPTION 'toplam sayaci ust siniri asti'; END IF;
+
+  -- 41e) kapali: ip_gunluk 0 -> neden kapali, sayac acilmaz
+  UPDATE internal.ai_girissiz_ayar SET ip_gunluk = 0 WHERE id;
+  EXECUTE 'SET LOCAL ROLE anon';
+  r := public.ai_girissiz_hak_kullan(anahtar, ip4);
+  EXECUTE 'RESET ROLE';
+  IF (r->>'izin')::boolean OR r->>'neden' IS DISTINCT FROM 'kapali' THEN RAISE EXCEPTION 'kapali: %', r; END IF;
+  IF EXISTS (SELECT 1 FROM internal.ai_girissiz_kullanim WHERE ip_ozeti = ip4) THEN RAISE EXCEPTION 'kapaliyken sayac acildi'; END IF;
+
+  -- 41f) saklama: 31 gunluk satir bir sonraki cagrida silinir
+  INSERT INTO internal.ai_girissiz_kullanim (gun, ip_ozeti, adet) VALUES (v_gun - 31, ip4, 1);
+  UPDATE internal.ai_girissiz_ayar SET ip_gunluk = 3 WHERE id;
+  EXECUTE 'SET LOCAL ROLE anon';
+  r := public.ai_girissiz_hak_kullan(anahtar, ip1);
+  EXECUTE 'RESET ROLE';
+  IF EXISTS (SELECT 1 FROM internal.ai_girissiz_kullanim WHERE gun = v_gun - 31) THEN RAISE EXCEPTION '30 gunden eski satir silinmedi'; END IF;
+
+  -- geri al: test IP satirlari, bugunun sayaclari, ayar satiri
+  DELETE FROM internal.ai_girissiz_kullanim WHERE ip_ozeti IN (ip1, ip2, ip3, ip4);
+  IF eski_gun.gun IS NULL THEN
+    DELETE FROM internal.ai_girissiz_gun WHERE gun = v_gun;
+  ELSE
+    UPDATE internal.ai_girissiz_gun SET adet = eski_gun.adet, reddedilen = eski_gun.reddedilen WHERE gun = v_gun;
+  END IF;
+  UPDATE internal.ai_girissiz_ayar
+     SET anahtar_ozeti = eski_ayar.anahtar_ozeti, ip_gunluk = eski_ayar.ip_gunluk, toplam_gunluk = eski_ayar.toplam_gunluk,
+         updated_at = eski_ayar.updated_at
+   WHERE id;
+  IF (SELECT ROW(anahtar_ozeti, ip_gunluk, toplam_gunluk) FROM internal.ai_girissiz_ayar WHERE id)
+     IS DISTINCT FROM ROW(eski_ayar.anahtar_ozeti, eski_ayar.ip_gunluk, eski_ayar.toplam_gunluk) THEN
+    RAISE EXCEPTION 'ayar satiri geri konmadi'; END IF;
+
+  INSERT INTO t_sonuc VALUES (41, 'T41 Duzeltme 06 girissiz AI hakki', 'GECTI',
+    'RPC anon + authenticated, internal tablolar anon 42501; yanlis / bos anahtar 42501, ham IP 22023; IP basina 3 (kalan 2/1/0), 4. red (ip) + reddedilen sayaci; gunluk toplam ust sinirinda red (toplam), IP sayaci acilmadi; kapali (0); 30 gun saklama; ayar ve sayaclar geri kondu');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (41, 'T41 Duzeltme 06 girissiz AI hakki', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------
