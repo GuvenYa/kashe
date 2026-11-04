@@ -87,7 +87,9 @@
 --   T39 FAZ 10c-1/03 profiles kilidi: saglayici hesabinda 13 tasinmis alan sahip ve admin icin sessizce eski degerde, hesap
 --       alanlari (ad, telefon, premium) serbest, ad ileri aynayla; musteri / isletme kilitsiz; ayna ve RPC kilidi gecer, birincil
 --       rol RPC'de turetilir (fn_faz2b_sync_primary_role yok) (ON KOSUL: 20261105130000 faz10c_03 dalda; degilse ATLANDI)
---   T40 FAZ 10c-2 icin ayrildi
+--   T40 FAZ 10c-2 provider_id kesimi: 5 tabloda NOT NULL + CASCADE, iki yonlu tetikleyici (yalniz provider_id -> eski sutun
+--       dolar; eski yolda farkli provider_id ezilir), baskasi adina RLS 42501, favori upsert (user_id, provider_id), saglayici
+--       olmayan sahip 42501 (ON KOSUL: 20261105160000 faz10c_04 dalda; degilse ATLANDI)
 --   T41 Duzeltme 06 girissiz Kashe AI hakki: RPC yetkisi, ortak anahtar (yanlis / bos 42501), ham IP 22023, IP basina gunluk
 --       sinir, gunluk toplam ust siniri (IP sayaci geri alinir), kapali (0), 30 gun saklama; ayar test anahtarina alinip geri
 --       konur (ON KOSUL: 20261105140000 duzeltme_06 dalda; degilse ATLANDI)
@@ -1381,9 +1383,19 @@ BEGIN
   EXECUTE 'SET LOCAL ROLE authenticated';
   INSERT INTO public.favorites (user_id, professional_id) VALUES (musteri, pro1) RETURNING provider_id INTO v_prov;
   IF v_prov IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'favorites.provider_id=%', v_prov; END IF;
-  INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t13c.jpg', 'image', 'T13 client')
-  RETURNING provider_id INTO v_prov;
-  IF v_prov IS NOT NULL THEN RAISE EXCEPTION 'client portfoyunde provider_id=% (NULL beklenir)', v_prov; END IF;
+  -- 10c-2/04 oncesi: musteri portfoyunde provider_id bos; sonrasi saglayici olmayan sahip 42501 (T40)
+  IF (SELECT is_nullable FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'portfolio_items' AND column_name = 'provider_id') = 'YES' THEN
+    INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t13c.jpg', 'image', 'T13 client')
+    RETURNING provider_id INTO v_prov;
+    IF v_prov IS NOT NULL THEN RAISE EXCEPTION 'client portfoyunde provider_id=% (NULL beklenir)', v_prov; END IF;
+  ELSE
+    BEGIN
+      INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t13c.jpg', 'image', 'T13 client');
+      RAISE EXCEPTION 'client portfoyu acildi (10c-2/04 sonrasi 42501 beklenir)';
+    EXCEPTION WHEN insufficient_privilege THEN NULL;
+    END;
+  END IF;
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
 
@@ -1442,7 +1454,7 @@ BEGIN
   DELETE FROM public.service_categories WHERE slug LIKE 'faz1test-hizmet-%';
 
   INSERT INTO t_sonuc VALUES (13, 'T13 FAZ 2b saglayici hizmetleri', 'GECTI',
-    'birincil kategori -> fiyatsiz birincil satir; hizmet ekle (istemci provider_id ezildi) -> range 1000-2000 per_hour + ozet; kategori b: on_request -> temsilci fixed 500 per_day -> starting max NULL -> pasif on_request; hizmet sil -> birincil fiyatsiz, ozet on_request; birincil degisimi rol_a silindi/rol_b birincil, NULL -> birincil yok; portfoy/deneyim/yorum/favori provider_id otomatik, client NULL; anon yayinda 1 / yayinda degil 0, kendi 1, v_provider_roles; INSERT/UPDATE 42501; sync_log bos; temizlik');
+    'birincil kategori -> fiyatsiz birincil satir; hizmet ekle (istemci provider_id ezildi) -> range 1000-2000 per_hour + ozet; kategori b: on_request -> temsilci fixed 500 per_day -> starting max NULL -> pasif on_request; hizmet sil -> birincil fiyatsiz, ozet on_request; birincil degisimi rol_a silindi/rol_b birincil, NULL -> birincil yok; portfoy/deneyim/yorum/favori provider_id otomatik, client NULL (10c-2 sonrasi 42501); anon yayinda 1 / yayinda degil 0, kendi 1, v_provider_roles; INSERT/UPDATE 42501; sync_log bos; temizlik');
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
@@ -6185,6 +6197,126 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('kashe.sync_bypass', 'off', true);
   INSERT INTO t_sonuc VALUES (39, 'T39 FAZ 10c-1/03 profiles kilidi', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T40) FAZ 10c-2 / 04 provider_id kesimi. ON KOSUL: 20261105160000 (faz10c_04) dalda; yoksa ATLANDI.
+--      T1/T2/T13 verisine dayanir: musteri (0001), pro1 (0002), pro2 (0003), T2 sohbeti (musteri <-> pro1).
+--      Acilan satirlar sonda silinir (yorum denemesi alt islemde geri alinir).
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  kat int; conv uuid; v uuid; v2 uuid; n int; svc uuid; port uuid; den uuid; fav_vardi boolean;
+BEGIN
+  IF (SELECT is_nullable FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'portfolio_items' AND column_name = 'provider_id') <> 'NO' THEN
+    INSERT INTO t_sonuc VALUES (40, 'T40 FAZ 10c-2 provider_id kesimi', 'ATLANDI', 'provider_id hala bos olabilir; faz10c_04 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT c.id INTO kat FROM public.service_categories c JOIN public.service_roles sr ON sr.legacy_category_id = c.id
+   WHERE c.is_active AND c.slug NOT LIKE 'faz1test-%' ORDER BY c.id LIMIT 1;
+  SELECT id INTO conv FROM public.conversations WHERE customer_id = musteri AND professional_id = pro1 ORDER BY created_at LIMIT 1;
+  IF kat IS NULL OR conv IS NULL THEN RAISE EXCEPTION 'on kosul: kategori / T2 sohbeti yok'; END IF;
+
+  -- 40a) yapi: 5 sutun NOT NULL, 5 CASCADE anahtar, yeni indeksler (favorites tekil), eski GIN yok
+  SELECT count(*) INTO n FROM information_schema.columns
+   WHERE table_schema = 'public' AND column_name = 'provider_id' AND is_nullable = 'NO'
+     AND table_name IN ('services', 'portfolio_items', 'profile_experiences', 'reviews', 'favorites');
+  IF n <> 5 THEN RAISE EXCEPTION 'NOT NULL %/5', n; END IF;
+  SELECT count(*) INTO n FROM pg_constraint
+   WHERE contype = 'f' AND confdeltype = 'c' AND confrelid = 'public.providers'::regclass
+     AND conname IN ('services_provider_id_fkey', 'portfolio_items_provider_id_fkey', 'profile_experiences_provider_id_fkey',
+                     'reviews_provider_id_fkey', 'favorites_provider_id_fkey');
+  IF n <> 5 THEN RAISE EXCEPTION 'CASCADE anahtar %/5', n; END IF;
+  IF to_regclass('public.favorites_user_id_provider_id_key') IS NULL OR to_regclass('public.idx_reviews_provider_created') IS NULL
+     OR to_regclass('public.idx_profile_experiences_provider_kind_sort') IS NULL THEN RAISE EXCEPTION 'yeni indeksler eksik'; END IF;
+  IF NOT (SELECT indisunique FROM pg_index WHERE indexrelid = 'public.favorites_user_id_provider_id_key'::regclass) THEN
+    RAISE EXCEPTION 'favorites (user_id, provider_id) tekil degil'; END IF;
+  IF to_regclass('public.idx_profiles_category_attributes_gin') IS NOT NULL THEN RAISE EXCEPTION 'eski GIN hala var'; END IF;
+
+  -- 40b) yeni yol (P2): sahip YALNIZ provider_id gonderir -> eski sahip sutunu dolar (RLS eski sutunla gecer)
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  INSERT INTO public.services (provider_id, category_id, title, price_on_request, price_unit)
+  VALUES (pro1, kat, 'T40 yeni yol', true, 'total') RETURNING id, profile_id INTO svc, v;
+  IF v IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'services.profile_id=% (pro1 beklenir)', v; END IF;
+  INSERT INTO public.portfolio_items (provider_id, media_url, media_type, caption)
+  VALUES (pro1, 'https://example.com/t40.jpg', 'image', 'T40') RETURNING id, profile_id INTO port, v;
+  IF v IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'portfolio_items.profile_id=%', v; END IF;
+  INSERT INTO public.profile_experiences (provider_id, kind, title) VALUES (pro1, 'work', 'T40') RETURNING id, profile_id INTO den, v;
+  IF v IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'profile_experiences.profile_id=%', v; END IF;
+  -- yeni sutunla okuma
+  SELECT count(*) INTO n FROM public.services WHERE provider_id = pro1 AND id = svc;
+  IF n <> 1 THEN RAISE EXCEPTION 'provider_id ile okuma % satir', n; END IF;
+
+  -- 40c) baskasi adina yalniz provider_id: eski sutun pro2 olur, RLS reddeder
+  BEGIN
+    INSERT INTO public.services (provider_id, category_id, title, price_on_request, price_unit)
+    VALUES (pro2, kat, 'T40 baskasi', true, 'total');
+    RAISE EXCEPTION 'baskasi adina hizmet acildi';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  -- 40d) eski yol: eski sutun + farkli provider_id -> provider_id eski sutundan ezilir
+  INSERT INTO public.portfolio_items (profile_id, provider_id, media_url, media_type, caption)
+  VALUES (pro1, pro2, 'https://example.com/t40b.jpg', 'image', 'T40 eski') RETURNING provider_id INTO v;
+  IF v IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'eski yolda provider_id ezilmedi: %', v; END IF;
+  EXECUTE 'RESET ROLE';
+
+  -- 40e) favori: yalniz provider_id + upsert hedefi (user_id, provider_id)
+  SELECT EXISTS (SELECT 1 FROM public.favorites WHERE user_id = musteri AND provider_id = pro1) INTO fav_vardi;
+  PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  DELETE FROM public.favorites WHERE user_id = musteri AND provider_id = pro1;
+  INSERT INTO public.favorites (user_id, provider_id) VALUES (musteri, pro1) RETURNING professional_id INTO v;
+  IF v IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'favorites.professional_id=%', v; END IF;
+  INSERT INTO public.favorites (user_id, provider_id) VALUES (musteri, pro1) ON CONFLICT (user_id, provider_id) DO NOTHING;
+  SELECT count(*) INTO n FROM public.favorites WHERE user_id = musteri AND provider_id = pro1;
+  IF n <> 1 THEN RAISE EXCEPTION 'favori upsert % satir', n; END IF;
+
+  -- 40f) saglayici olmayan sahip: musteri hizmet / portfoy acamaz (42501, acik mesaj)
+  BEGIN
+    INSERT INTO public.services (provider_id, category_id, title, price_on_request, price_unit)
+    VALUES (musteri, kat, 'T40 musteri', true, 'total');
+    RAISE EXCEPTION 'musteri hizmet acti';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.portfolio_items (profile_id, media_url, media_type, caption) VALUES (musteri, 'https://example.com/t40c.jpg', 'image', 'T40');
+    RAISE EXCEPTION 'musteri portfoy acti';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  -- 40g) yorum: yalniz provider_id -> professional_id dolar (alt islemde; T13 yorumu korunur)
+  BEGIN
+    DELETE FROM public.reviews WHERE conversation_id = conv AND customer_id = musteri;
+    INSERT INTO public.reviews (conversation_id, customer_id, provider_id, rating, body)
+    VALUES (conv, musteri, pro1, 4, 'T40 yorum') RETURNING professional_id INTO v2;
+    IF v2 IS DISTINCT FROM pro1 THEN RAISE EXCEPTION 'reviews.professional_id=%', v2; END IF;
+    RAISE EXCEPTION 'T40_GERI_AL';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM <> 'T40_GERI_AL' THEN RAISE; END IF;
+  END;
+
+  -- geri al
+  DELETE FROM public.services WHERE id = svc;
+  DELETE FROM public.portfolio_items WHERE profile_id = pro1 AND caption IN ('T40', 'T40 eski');
+  DELETE FROM public.profile_experiences WHERE id = den;
+  IF NOT fav_vardi THEN DELETE FROM public.favorites WHERE user_id = musteri AND provider_id = pro1; END IF;
+  SELECT count(*) INTO n FROM public.services WHERE title LIKE 'T40%';
+  IF n <> 0 THEN RAISE EXCEPTION 'T40 hizmetleri kaldi (%)', n; END IF;
+
+  INSERT INTO t_sonuc VALUES (40, 'T40 FAZ 10c-2 provider_id kesimi', 'GECTI',
+    'yapi (5 NOT NULL, 5 CASCADE, favori tekil + 2 indeks, eski GIN yok); yeni yol yalniz provider_id -> eski sutun doldu (hizmet / portfoy / deneyim / favori / yorum), provider_id ile okuma; baskasi adina RLS 42501; eski yolda farkli provider_id ezildi; favori upsert (user_id, provider_id); musteri hizmet / portfoy 42501; geri alindi');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (40, 'T40 FAZ 10c-2 provider_id kesimi', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------

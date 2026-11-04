@@ -27,8 +27,13 @@
 --   K9 kilit: trg_faz10c_protect_moved_fields etkin (1) + protect_profiles_moved_fields anon/authenticated/PUBLIC EXECUTE yok (1)
 --      + trg_faz2b_sync_primary_role ve fn_faz2b_sync_primary_role yok (1) + ileri ayna tetikleyicisi yalniz role/full_name/company_name
 --      (1) + ileri ayna govdesinde city_id yok (1) + kilit fonksiyonu 13 tasinmis alani eski degerine dondurur (13) -> (18)
---   03 uygulanmamissa K9 BEKLIYOR. Kayma olcumu K8b (03 sonrasi da 0). (10c-2 K10 sonraki dilimde; D 10d.)
--- Beklenen: K1, K3, K4, K5, K7, K8, K8b, K9 ESIT; K2, K6 BILGI.
+--   03 uygulanmamissa K9 BEKLIYOR. Kayma olcumu K8b (03 sonrasi da 0).
+-- Bolum D (10c-2 provider_id kesimi; 20261105160000_faz10c_04):
+--   K10 yapi: 5 tabloda provider_id NOT NULL (5) + providers'a ON DELETE CASCADE anahtar (5) + favorites (user_id, provider_id)
+--      TEKIL (1) + reviews (provider_id, created_at) ve profile_experiences (provider_id, kind, sort_order) indeksleri (2)
+--      + profiles.category_attributes GIN yok (1) + iki yonlu tetikleyici govdeleri (2) -> (16)
+--   04 uygulanmamissa K10 BEKLIYOR. (D 10d: K11.)
+-- Beklenen: K1, K3, K4, K5, K7, K8, K8b, K9, K10 ESIT; K2, K6 BILGI.
 -- =============================================================================
 
 WITH
@@ -180,14 +185,36 @@ k9 AS (
                          AND pr.prosrc ~ ('NEW\.' || f.alan || '\s*:=\s*OLD\.' || f.alan || '\s*;')), 0))::bigint,
          18::bigint
 ),
+k10 AS (
+  SELECT 'K10 10c-2 yapi: NOT NULL 5 + CASCADE 5 + favori tekil 1 + indeks 2 + eski GIN yok 1 + iki yonlu tetikleyici 2 (16)' AS kontrol,
+         ((SELECT count(*) FROM information_schema.columns
+            WHERE table_schema = 'public' AND column_name = 'provider_id' AND is_nullable = 'NO'
+              AND table_name IN ('services', 'portfolio_items', 'profile_experiences', 'reviews', 'favorites'))
+          + (SELECT count(*) FROM pg_constraint
+              WHERE contype = 'f' AND confdeltype = 'c' AND confrelid = 'public.providers'::regclass
+                AND conname IN ('services_provider_id_fkey', 'portfolio_items_provider_id_fkey', 'profile_experiences_provider_id_fkey',
+                                'reviews_provider_id_fkey', 'favorites_provider_id_fkey'))
+          + COALESCE((SELECT indisunique::int FROM pg_index WHERE indexrelid = to_regclass('public.favorites_user_id_provider_id_key')), 0)
+          + (to_regclass('public.idx_reviews_provider_created') IS NOT NULL)::int
+          + (to_regclass('public.idx_profile_experiences_provider_kind_sort') IS NOT NULL)::int
+          + (to_regclass('public.idx_profiles_category_attributes_gin') IS NULL)::int
+          + COALESCE((SELECT (prosrc LIKE '%NEW.profile_id := NEW.provider_id%')::int FROM pg_proc
+                       WHERE oid = to_regprocedure('public.fn_faz2b_set_provider_id_from_profile()')), 0)
+          + COALESCE((SELECT (prosrc LIKE '%NEW.professional_id := NEW.provider_id%')::int FROM pg_proc
+                       WHERE oid = to_regprocedure('public.fn_faz2b_set_provider_id_from_professional()')), 0))::bigint,
+         16::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k8b UNION ALL SELECT * FROM k9
+  UNION ALL SELECT * FROM k10
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K2 %' OR kontrol LIKE 'K6 %' THEN 'BILGI'
             WHEN kontrol LIKE 'K7 %' AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_fkey') THEN 'BEKLIYOR'
             WHEN (kontrol LIKE 'K8 %' OR kontrol LIKE 'K8b %') AND to_regprocedure('public.provider_set_primary_category(integer)') IS NULL THEN 'BEKLIYOR'
             WHEN kontrol LIKE 'K9 %' AND to_regprocedure('public.protect_profiles_moved_fields()') IS NULL THEN 'BEKLIYOR'
+            WHEN kontrol LIKE 'K10 %' AND (SELECT is_nullable FROM information_schema.columns WHERE table_schema = 'public'
+                   AND table_name = 'portfolio_items' AND column_name = 'provider_id') = 'YES' THEN 'BEKLIYOR'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

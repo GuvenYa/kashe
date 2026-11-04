@@ -242,12 +242,23 @@ sira / kaynaklar 02b ile ayni, security_invoker). Uygulama: `app/lib/arama.ts` `
 yok -> T42 HATA), asama24 K1 5 / K2 0 ESIT (dal + uretim), asama10 ESIT. Dal: fotograf 13, dogan 5, dugun 72, IZMIR 15, acilis 78;
 uretim: fotograf 3, dugun 9, Kesfet 34. Sira degismedi: veritabani once (yeni sutun yoksa Kesfet hata verir), kod sonra.
 
-**10c-2 / DB/02** (`faz10c_04_provider_id_kesimi`, damga yazilirken verilir; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
+**10c-2 / DB/02** (`20261105160000_faz10c_04_provider_id_kesimi.sql`; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
 `professional_id` doldurur; istemci eski sutunu gondermezse de dolar); eski GIN indeks (`profiles.category_attributes`) duser;
 asama4 **T40**, asama20 **K10**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
 ve `favorites.professional_id` dahil), tipler; eski sutunlar FAZ 11'e kadar kalir (tetikleyici doldurur). Tur: portfoy/hizmet/deneyim
 ekle-sil, favori, yorum; /p/[id] ve Kesfet degismez.
+**10c-2 UYGULAMA (5 Kasim, harness):** on kontrol `faz10c2-on-kontrol.sql` (uretim: bes tabloda bos / uyusmaz / saglayici olmayan
+sahip 0; toplam 57 satir). `04`: basta veri RAISE; tetikleyici IKI YONLU (yalniz provider_id gelirse eski sutun ondan dolar - P2;
+eski sutun gelirse provider_id ondan, farkli istemci degeri ezilir - eski uygulama; saglayici olmayan sahip 42501 acik mesaj,
+eskiden provider_id bos kalirdi); 5 tabloda NOT NULL + ON DELETE CASCADE; favorites (user_id, provider_id) TEKIL, reviews /
+profile_experiences provider_id indeksleri; `idx_profiles_category_attributes_gin` duser. RLS ve eski sutunlar FAZ 11'e kadar.
+Eski uygulama aynen calisir -> `04` uretime P2'den ONCE. asama4 **T40** (yapi, yeni yol, baskasi adina RLS 42501, eski yolda
+ezme, favori upsert, musteri 42501, yorum alt islemde) + T13 musteri portfoyu 04 sonrasi 42501; asama20 **K10** (16). Yerel: 04 tek
+islem ve otomatik, ikinci kosu no-op; asama4 44/44 iki kip, 04'suz kopyada 43 + T40 ATLANDI; mutasyon: eski sutun doldurulmuyor ->
+T40 HATA, istemci provider_id'sine guveniliyor -> T13 + T40 HATA; asama7 / 9 / 10 ESIT; Sahne 00-04 04'lu harness'ta ayni sayilar.
+P2 gorevi 48 (25 dosya, ~97 referans; suzgec + yuk provider_id, gomme ipuclari FAZ 11'e kadar ayni).
+Sira: dal db push (04) -> asama4 / asama20 -> uretim db push (04) -> gorev 48 (P2) -> tur -> uretim kod.
 
 ### 10d — Kucukler
 
