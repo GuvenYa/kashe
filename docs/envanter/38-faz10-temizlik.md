@@ -4,6 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
+**Durum (4 Kasim 2026):** **10b KAPANDI** (DB + P1 uretimde, `main` 568c7b1) + **Duzeltme 04 uretimde** (bolum 6); siradaki **10c-1** (bolum 10c).
+Asagidaki 3 Kasim durumu tarihcedir.
 **Durum (3 Kasim 2026):** **10a + Duzeltme 01 URETIMDE** (merge e4317d5; `supabase db push` 20261028 + 20261030; asama20/5/18/19 uretimde beklendigi gibi; tur 3 Kasim, bulgular 4-38);
 10b-DB/01 bekleyen dosya (`docs/envanter/bekleyen/`), 10b-P1 gorevi yazildi (42); **10c plan turu yapildi, kararlar bolum 4, tasarim bolum 10c**. Sira: 10a uyelik -> 10b etkinlik turu -> 10c saglayici yazma yolu ->
 10d kucukler -> kapanis (DROP'lar Hijyen 05'e, 30 gun sonra). Her dilim: migration -> dal (asama4 + asama20) -> uretim -> Claude Code ->
@@ -91,7 +93,7 @@ ani; sonra bilgi), K3 eski tabloya referans veren fonksiyon sayisi (yalniz izinl
 `conversations`, `listings`, `bookings`, `quote_requests` `event_type` -> FK `event_types(key)` ON UPDATE CASCADE; once veri kontrolu
 (anahtar disi deger varsa dosya DURUR ve degerleri listeler — veri degistirmez; on kontrol `faz10b-on-kontrol.sql`); uc CHECK duser.
 **10b-DB URETIMDE (4 Kasim):** dal asama4 37/37 + asama20 K7 ESIT; uretim db push 00 (quote_requests 2 satir activation/fashion
--> other) + 01, asama20 K1-K7 ESIT. Siradaki: 10b-P1 (gorev 42, dal `faz10b/p1`).
+-> other) + 01, asama20 K1-K7 ESIT. 10b-P1 de uretimde (4 Kasim; tur ve uretim notu asagida / bolum 6).
 **4 Kasim uretim denemesi:** 01 durdu — `quote_requests.event_type` icinde `activation`, `fashion` (Temmuz taksonomi duzeltmesi
 3f7ffc5 oncesi model/hostes brief listeleri). Eklenen: **10b-DB/00** `20261104110000_faz10b_00_etkinlik_turu_veri.sql` (VERI:
 anahtar disi -> 'other', brief_data dokunulmaz, listings updated_at tetikleyicisi gecici kapali) + uygulama kontrolu
@@ -143,7 +145,7 @@ experiences 361, reviews 82, favorites 110, portfolio 0); FK'ler `ON DELETE SET 
 - Esitlik kontrolu migration basinda: `profiles` x `providers` tasinmis alanlar farki 0 olmali (FAZ 2a aynasi), fark varsa RAISE.
 - Sahne: uretec v3 — profil guncellemeleri `providers` / alt profillere (admin JWT yerine `kashe.sync_bypass` ya da sahip JWT);
   `01` dosyasinda `attributes`/`category_attributes` `providers`'a.
-- Test: asama4 **T37** (sahip providers/alt profil yazar -> profiles kopyasi dolar; profiles tasinmis alana yazim sessiz geri alinir;
+- Test: asama4 **T38** (T37 Duzeltme 04'un) (sahip providers/alt profil yazar -> profiles kopyasi dolar; profiles tasinmis alana yazim sessiz geri alinir;
   admin onay providers'tan -> kopya; views RPC; birincil kategori RPC; anon/baskasi 42501), asama20 **K8** (GRANT/politika sayilari,
   ayna tetikleyicileri, esitlik), asama10 gorunum sozlesmesi degismez (ESIT).
 
@@ -160,7 +162,7 @@ Kesfet'te gorunur; goruntulenme sayaci; `profiles` dogrudan yazimi (SQL Editor) 
 **10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
 `professional_id` doldurur; istemci eski sutunu gondermezse de dolar); eski GIN indeks (`profiles.category_attributes`) duser;
-asama4 **T38**, asama20 **K9**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
+asama4 **T39**, asama20 **K9**. **P2:** 108 `profile_id`/`professional_id` gecisi `provider_id`'ye (okuma + yazma; `reviews.professional_id`
 ve `favorites.professional_id` dahil), tipler; eski sutunlar FAZ 11'e kadar kalir (tetikleyici doldurur). Tur: portfoy/hizmet/deneyim
 ekle-sil, favori, yorum; /p/[id] ve Kesfet degismez.
 
@@ -209,10 +211,10 @@ tasinmis sutunlar + ters ayna, `profile_id`/`professional_id` eski sutunlar + te
 | **10a-DB/01** | davet/uyelik RPC'leri, bildirim tetikleyicileri yeni tabloda, aynalama kapanir, eski tablolar salt okunur — **YAZILDI** (bolum 6) | asama4 **T34** + T3/T4/T7/T8/T9/T10/T17/T18/T19/T25 uyarlama (35/35); **asama20** K1-K6; asama18 K2/K3 ve asama5 K3-K6 10a'ya uyarlandi |
 | **10a-P1** | 7+7 akis RPC'ye, 12 dosyada okuma yeni tabloya; eski tablo adi 0 (`40-claude-code-gorevi-10a-p1-uyelik.md`) | tur (Sahne): ajans davet -> kabul -> ekipte gorunur -> rol degistir -> cikar; kurum ayni akis; `/davetlerim`; `/p/[id]` ekip |
 | **10b-DB/01** | 4 sutun FK `event_types`; CHECK'ler duser — **4 Kasim: `supabase/migrations/20261104120000_faz10b_01_etkinlik_turu_fk.sql`** (yeniden damgalandi; anahtar disi deger varsa DURUR) + on kontrol `faz10b-on-kontrol.sql` | asama4 **T36** (37/37 harness, 03-B dahil; T13/T23/T24 03-B beklentilerine guncellendi), asama20 **K7** (10b yoksa BEKLIYOR), asama11 K1 EMEKLI |
-| **10b-P1** | `EVENT_TYPES` silinir; 17 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`, bekleyen) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti |
-| **10c-1 DB/01** | providers jsonb sutunlar + views_count, yazma yolu (RLS/GRANT + `provider_set_primary_category`), ters ayna, koruma, ileri ayna daralir | asama4 **T37**; asama20 **K8**; asama10 ESIT |
+| **10b-P1** | `EVENT_TYPES` silinir; 46 dosya tablodan okur (`42-claude-code-gorevi-10b-p1-etkinlik-turu.md`) — **URETIMDE 4 Kasim** (8a85b32) | tur: ilan formu, Kesfet, teklif-topla, kategori bilgileri, konusma karti — DOGRULANDI (bolum 10b TUR) |
+| **10c-1 DB/01** | providers jsonb sutunlar + views_count, yazma yolu (RLS/GRANT + `provider_set_primary_category`), ters ayna, koruma, ileri ayna daralir | asama4 **T38**; asama20 **K8**; asama10 ESIT |
 | **10c-1 P1** | profil duzenle / kategori bilgileri / admin / yayin / views yazmalari saglayici tarafina | tur: profil duzenle, admin onay, yayin, sayac; Kesfet ve /p/[id] degismez |
-| **10c-2 DB/02** | `provider_id` NOT NULL + CASCADE, `set_provider_id` yon degisimi, eski GIN duser | asama4 **T38**; asama20 **K9** |
+| **10c-2 DB/02** | `provider_id` NOT NULL + CASCADE, `set_provider_id` yon degisimi, eski GIN duser | asama4 **T39**; asama20 **K9** |
 | **10c-2 P2** | 108 `profile_id`/`professional_id` gecisi `provider_id`'ye | tur: portfoy/hizmet/deneyim/favori/yorum |
 | **10d** | politikalar, kontrol dosyalari, CLAUDE.md | asama20 K10 |
 | **Kapanis** | 38 bolum 6, CLAUDE.md FAZ 10 paragrafi, roadmap, 04-goc-plani madde 42-45 | — |
@@ -257,6 +259,11 @@ tekrarlandi) bayragi acar, T37 govde
 bayraksiz duzeltilmis DB'de durur (crew_members -> proposal_items SET NULL), bayrakla 8+8 siler; 00/01a/02a ayni bayragi alir.
 `asama22-duzeltme-04-kontrol.sql` K1-K3 ESIT, K4/K5 bilgi (gonderimden sonra degismis kalem/surum; Sahne disi 0 beklenir; K5 onay
 `approved_at` ve revizyon notu `client_note` yazimlarini saymaz - ilk dal kosusunda bunlar 4 cikmisti).
+**URETIME CIKTI (4 Kasim 2026) — 10b-P1 + Duzeltme 04:** `main` <- `duzeltme-04` (hizli ileri: 8a85b32 10b-P1, 029dc86 + 568c7b1 Duzeltme 04),
+`supabase db push` -> 20261104130000; uretim asama22 K1-K3 ESIT, K4 0 / K5 0 (gonderilmis teklif kalemi ya da surumu gonderimden sonra
+degismemis: acik kullanilmamis gorunuyor; SILINMIS kalem bu olcumle gorulmez). Dal: asama22 ESIT, asama4 39/39 (T37, T99; test kategorileri
+silindi). Canli kontrol (kashe.net/kesfet, anonim): Etkinlik turu 15 kutu, `?etkinlik=olmayan` yok sayildi (34 = suzgecsiz), `wedding,olmayan`
+= `wedding` (3). `sahne` = `main`. **10b kapandi.** Siradaki: 10c-1 (DB/01 harness'ta; asama4 test numaralari T38'den baslar, T37 Duzeltme 04'un).
 **Duzeltme 03 (planlandi, 3 Kasim):** Fahri test rehberi (`docs/sahne/test-rehberi/test-rehberi.html`, PDF; kod taramasi bulgular 40-48)
 iki dilim — **03-A yalniz uygulama** (gorev 44: Teklif Al basligi, sohbette brief alanlari, ajans karsi taraf etiketi, iptal metni,
 yorum sunucu sarti, admin askidan donus + sayimlar + etiketler, kurum durum etiketleri + uye Ekip sayfasi, takvim/kazanc teklif
@@ -294,7 +301,7 @@ yoneticisi), Bahar -> Baris Arslan brief konusmasi, Sevgi Tekin portfoy/avatar P
 3. **10b:** `git checkout -b faz10b/db` -> `git mv docs/envanter/bekleyen/20261031120000_faz10b_01_etkinlik_turu_fk.sql supabase/migrations/`
    -> dal `supabase db push` -> asama4 (T36 GECTI), asama20 (K7 ESIT), asama11 (K1 EMEKLI) -> `faz10b/p1` + `42` gorevi -> tur (ilan formu,
    Kesfet, teklif-topla, kategori bilgileri, konusma karti) -> uretim.
-4. **10c:** bolum 10c tasarimina gore DB/01 harness'ta yazilir (T37, K8, asama10 ESIT) -> dal -> P1 -> tur -> uretim; sonra DB/02 + P2.
+4. **10c:** bolum 10c tasarimina gore DB/01 harness'ta yazilir (T38, K8, asama10 ESIT) -> dal -> P1 -> tur -> uretim; sonra DB/02 + P2.
 5. **Sahne v3** (10c-1 ile birlikte): uretec provider tarafina yazar.
 
 ### (eski) KALDIGIMIZ YER (29 Ekim 2026, Cowork haftalik kotasi doldu)
