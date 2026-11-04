@@ -16,8 +16,13 @@
 -- Bolum B (10b etkinlik turu; 20261104120000_faz10b_01):
 --   K7 event_type tek kaynak: conversations/listings/bookings/quote_requests -> event_types(key) FK (4) - eski CHECK (0)
 --      - anahtar disi deger (0) -> (4). 10b uygulanmamissa (FK yok) BEKLIYOR yazar; 10b sonrasi ESIT; asama11 K1 EMEKLI.
--- Bolum C (10c) ve D (10d) sonraki dilimlerde eklenir.
--- Beklenen: K1, K3, K4, K5, K7 ESIT; K2, K6 BILGI.
+-- Bolum C (10c-1 saglayici yazma yolu; 20261105120000_faz10c_01 + 20261105120100_faz10c_02):
+--   K8 yapi: providers 3 yeni sutun (3) + GIN (1) + authenticated UPDATE sutunlari providers 12 / professional_profiles 5 /
+--      organization_profiles 6 (23) + 4 UPDATE politikasi (4) + 3 ters ayna tetikleyicisi (3) + provider_set_primary_category
+--      authenticated EXECUTE (1) - anon (0) + fn_faz10c_ayna_kaymasi (1) + gorunum saglayici tarafindan okur (1) -> (37)
+--   K8b ayna kaymasi: profiles kopyalari ile providers / alt profil / birincil rol farki toplami (0)
+--   10c-1 uygulanmamissa K8/K8b BEKLIYOR. (10c-1/03 profiles kilidi ve 10c-2 sonraki dilimlerde eklenir; D 10d.)
+-- Beklenen: K1, K3, K4, K5, K7, K8, K8b ESIT; K2, K6 BILGI.
 -- =============================================================================
 
 WITH
@@ -112,12 +117,48 @@ k7 AS (
              + (SELECT count(*) FROM public.quote_requests q WHERE q.event_type IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.event_types e WHERE e.key = q.event_type))))::bigint,
          4::bigint
 ),
+k8 AS (
+  SELECT 'K8 10c-1 yapi: sutun 3 + GIN 1 + UPDATE sutunlari 23 + politika 4 + ters ayna 3 + RPC 1 + kayma olcer 1 + gorunum 1 (37)' AS kontrol,
+         ((SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'providers'
+            AND column_name IN ('attributes', 'category_attributes', 'views_count'))
+          + (to_regclass('public.idx_providers_category_attributes_gin') IS NOT NULL)::int
+          + (SELECT count(*) FROM information_schema.column_privileges
+              WHERE table_schema = 'public' AND grantee = 'authenticated' AND privilege_type = 'UPDATE'
+                AND ((table_name = 'providers' AND column_name IN ('city_id', 'district', 'service_radius_km', 'is_published', 'attributes',
+                       'category_attributes', 'approval_status', 'approval_note', 'approved_at', 'suspended_at', 'suspension_reason', 'suspended_by'))
+                  OR (table_name = 'professional_profiles' AND column_name IN ('headline', 'bio', 'experience_years', 'languages', 'equipment'))
+                  OR (table_name = 'organization_profiles' AND column_name IN ('about', 'team_size_range', 'can_full_service', 'subcontracts',
+                       'min_project_budget', 'portfolio_scale'))))
+          + (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND cmd = 'UPDATE'
+              AND policyname IN ('providers_update_own', 'providers_update_admin', 'professional_profiles_update_own', 'organization_profiles_update_own'))
+          + (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid WHERE NOT t.tgisinternal AND t.tgenabled <> 'D'
+              AND ((c.relname = 'providers' AND t.tgname = 'trg_faz10c_sync_provider_to_profile')
+                OR (c.relname = 'professional_profiles' AND t.tgname = 'trg_faz10c_sync_professional_bio')
+                OR (c.relname = 'organization_profiles' AND t.tgname = 'trg_faz10c_sync_organization_about')))
+          + (SELECT count(*) FROM information_schema.routine_privileges WHERE specific_schema = 'public'
+              AND routine_name = 'provider_set_primary_category' AND grantee = 'authenticated' AND privilege_type = 'EXECUTE')
+          - (SELECT count(*) FROM information_schema.routine_privileges WHERE specific_schema = 'public'
+              AND routine_name = 'provider_set_primary_category' AND grantee IN ('anon', 'PUBLIC') AND privilege_type = 'EXECUTE')
+          + (to_regprocedure('public.fn_faz10c_ayna_kaymasi()') IS NOT NULL)::int
+          + (pg_get_viewdef('public.v_providers_public'::regclass) LIKE '%pr.category_attributes%'
+             AND pg_get_viewdef('public.v_providers_public'::regclass) LIKE '%sr.legacy_category_id AS primary_category_id%')::int)::bigint,
+         37::bigint
+),
+k8b AS (
+  -- fn_faz10c_ayna_kaymasi 10c-1 oncesi yok: cagri query_to_xml icinde, yalniz fonksiyon varsa calisir (yoksa NULL -> BEKLIYOR)
+  SELECT 'K8b 10c-1 ayna kaymasi: profiles kopyasi ile saglayici tarafi farki (0)' AS kontrol,
+         (CASE WHEN to_regprocedure('public.fn_faz10c_ayna_kaymasi()') IS NULL THEN NULL
+               ELSE (xpath('/row/n/text()', query_to_xml('SELECT COALESCE(sum(satir), 0) AS n FROM public.fn_faz10c_ayna_kaymasi()', false, true, '')))[1]::text::bigint
+          END)::bigint,
+         0::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
-  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7
+  UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k8b
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K2 %' OR kontrol LIKE 'K6 %' THEN 'BILGI'
             WHEN kontrol LIKE 'K7 %' AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_event_type_fkey') THEN 'BEKLIYOR'
+            WHEN (kontrol LIKE 'K8 %' OR kontrol LIKE 'K8b %') AND to_regprocedure('public.provider_set_primary_category(integer)') IS NULL THEN 'BEKLIYOR'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

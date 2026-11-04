@@ -159,6 +159,23 @@ hesap alanlari full_name/company_name/phone profiles'ta kalir — payload ikiye 
 Tur (Sahne): profesyonel profil duzenle (bio/sehir/kategori/ozellikler) -> /p/[id] ve Kesfet yansir; yayina al/kaldir; admin onay ->
 Kesfet'te gorunur; goruntulenme sayaci; `profiles` dogrudan yazimi (SQL Editor) geri alinir.
 
+**10c-1 UYGULAMA (5 Kasim, harness):** DB/01 deploy kuralina gore UCE bolundu. `20261105120000_faz10c_01_saglayici_sutunlari.sql`
+(VERI + ekleyen: 3 sutun, GIN, okuma yetkisi, kopya + FAZ 2a alanlarinda kayma esitleme (kaynak profiles, NOTICE) + RAISE dogrulama;
+ileri ayna attributes/category_attributes'i da tasir, `kashe.sync_bypass` onceki degerine doner; `ensure_provider_for_profile` yeni
+sutunlari doldurur; kayma olcer `fn_faz10c_ayna_kaymasi()`). `20261105120100_faz10c_02_yazma_yolu.sql` (EKLEYEN: GRANT + 4 UPDATE
+politikasi, ters ayna 3 tetikleyici, `provider_set_primary_category`, `increment_profile_views` -> providers, gorunum saglayicidan;
+koruma: sahip icin TEK gecis revision -> pending, not temizlenir - profiles yolunda da, bulgu 68; ayna bayragi profiles'ta rol/admin
+yazamaz). Eski uygulama 01+02 sonrasi AYNEN calisir (iki ayna birlikte, IS DISTINCT ile dongusuz) -> uretime P1'den ONCE gider.
+KISITLAYAN `03` (profiles tasinmis alanlari kilidi `protect_profiles_moved_fields` - yalniz providers satiri olan hesapta; ileri ayna
+display_name + talents'a daralir; `fn_faz2b_sync_primary_role` duser; asama4 T5/T11/T13/T14 uyarlanir) P1 uretimden sonra. 10c-2 dosyasi
+`04` olur. Isletme hesabinin onayi (providers satiri yok) profiles'ta kalir; P1 admin eylemleri dallanir (gorev 45).
+Yerel: Sahne + asama4 verili harness'ta 01 (134 kopya, kayma yok) + 02, ikinci kosu no-op; asama4 40/40 (T38 GECTI; tek islem ve
+otomatik, ikinci kosu), 10c'siz kopyada T38 ATLANDI; mutasyon: ters ayna kapali -> T38 HATA + asama20 K8 36/37 FARK, profiles
+revision istisnasi yok -> T38 HATA. asama10 ESIT, asama20 K8 37 / K8b 0 ESIT (10c'siz BEKLIYOR). T11 `providers UPDATE 42501` ->
+`providers.display_name UPDATE 42501` (yazma yolu acildi; ad hala profiles'tan).
+Sira: `faz10c/db` dal push (01+02) -> asama4 / asama20 / asama10 -> uretim db push (01+02) -> gorev 45 (P1) -> tur -> uretim kod ->
+`03` -> dal -> uretim.
+
 **10c-2 / DB/02** (`20261102120000_faz10c_02_provider_id_kesimi.sql`, 10c-1 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
 `professional_id` doldurur; istemci eski sutunu gondermezse de dolar); eski GIN indeks (`profiles.category_attributes`) duser;

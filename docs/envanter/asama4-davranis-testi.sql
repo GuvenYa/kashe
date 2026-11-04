@@ -81,6 +81,9 @@
 --       veri temiz (ON KOSUL: 20261104120000 faz10b_01 dalda uygulanmis; degilse ATLANDI)
 --   T37 Duzeltme 04: fn_faz7_rpc_flag tanimsiz ayarda false (COALESCE); gonderilmis surumde dogrudan kalem/vergi yazimi 22023
 --       (ON KOSUL: 20261104130000 duzeltme_04 dalda; degilse HATA - acik var demektir)
+--   T38 FAZ 10c-1 saglayici yazma yolu: sahip providers/alt profil yazar -> profiles kopyasi + gorunum, koruma (onay, guven,
+--       revision->pending istisnasi), admin onayi providers'tan, birincil kategori ve goruntulenme RPC'leri, eski yol aynasi
+--       (ON KOSUL: 20261105120000/120100 faz10c_01/02 dalda; degilse ATLANDI)
 --   T99 son temizlik: bu kosunun test verisi (faz1test kategori/rol, test profilleri) sonda da silinir
 -- =============================================================================
 
@@ -1082,9 +1085,9 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
   BEGIN
     EXECUTE 'SET LOCAL ROLE authenticated';
-    EXECUTE 'UPDATE public.providers SET is_published = false WHERE id = $1' USING pro1;
+    EXECUTE 'UPDATE public.providers SET display_name = ''T11'' WHERE id = $1' USING pro1;
     EXECUTE 'RESET ROLE';
-    RAISE EXCEPTION 'authenticated providers UPDATE yapabildi (yazma yolu FAZ 2c''ye kadar kapali olmali)';
+    RAISE EXCEPTION 'authenticated providers.display_name UPDATE yapabildi (ad profiles''tan aynalanir; FAZ 10c-1 yazma yolu bu sutunu acmaz)';
   EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
   PERFORM set_config('request.jwt.claim.sub', '', true);
   SELECT is_published INTO pr FROM public.providers WHERE id = pro1;
@@ -1107,7 +1110,7 @@ BEGIN
     RAISE EXCEPTION 'sync_log FAZ 2 kaydi var (%): %', n, st; END IF;
 
   INSERT INTO t_sonuc VALUES (11, 'T11 FAZ 2a saglayici defteri', 'GECTI',
-    'pro1: talents+providers+professional_profiles ayni id, onay aynalanmis, slug p-; ajans: organization tipi FAZ 0 kurulusuna bagli; client/business yok; profil guncellemesi (is_published, bio, ad, admin onayi) aynalandi; koruma: pro1 approval/trust/verified geri alindi, is_published degisti, admin trust yazdi; anon approval_note ve talents 42501, pro1 yalniz kendi talents, canonical_email 42501, providers UPDATE 42501; tam-bir kisiti 23514; sync_log bos');
+    'pro1: talents+providers+professional_profiles ayni id, onay aynalanmis, slug p-; ajans: organization tipi FAZ 0 kurulusuna bagli; client/business yok; profil guncellemesi (is_published, bio, ad, admin onayi) aynalandi; koruma: pro1 approval/trust/verified geri alindi, is_published degisti, admin trust yazdi; anon approval_note ve talents 42501, pro1 yalniz kendi talents, canonical_email 42501, providers.display_name UPDATE 42501; tam-bir kisiti 23514; sync_log bos');
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
   PERFORM set_config('request.jwt.claim.sub', '', true);
@@ -5694,6 +5697,273 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   INSERT INTO t_sonuc VALUES (37, 'T37 Duzeltme 04 RPC bayragi', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T38) FAZ 10c-1 saglayici yazma yolu. ON KOSUL: 20261105120000 + 20261105120100 (faz10c_01/02) dalda; yoksa ATLANDI.
+--      T1/T5 verisine dayanir: pro1 (0002, approved), pro2 (0003), ajans (0004, admin + agency), musteri (0001, client).
+--      Degistirilen alanlar sonda eski degerlerine doner; kayma 0 ve sync_log artmamis olmali.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  musteri uuid := 'a0000000-0000-4000-8000-000000000001';
+  pro1    uuid := 'a0000000-0000-4000-8000-000000000002';
+  pro2    uuid := 'a0000000-0000-4000-8000-000000000003';
+  ajans   uuid := 'a0000000-0000-4000-8000-000000000004';
+  eski_pr record; eski_p record; eski_pp_bio text; eski_pp_headline text; eski_op_about text; eski_pro2 record; eski_pro2_p record;
+  kat_b integer; rol_b integer; sehir2 integer; v integer; n int; n_log0 bigint; n_log1 bigint; r record; p record;
+BEGIN
+  IF to_regprocedure('public.provider_set_primary_category(integer)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (38, 'T38 FAZ 10c-1 saglayici yazma yolu', 'ATLANDI', 'provider_set_primary_category yok; faz10c_01/02 dalda uygulanmamis');
+    RETURN;
+  END IF;
+  SELECT count(*) INTO n_log0 FROM public.organization_sync_log;
+  SELECT * INTO eski_pr FROM public.providers WHERE id = pro1;
+  SELECT * INTO eski_p FROM public.profiles WHERE id = pro1;
+  SELECT bio, headline INTO eski_pp_bio, eski_pp_headline FROM public.professional_profiles WHERE provider_id = pro1;
+  SELECT about INTO eski_op_about FROM public.organization_profiles WHERE provider_id = ajans;
+  SELECT * INTO eski_pro2 FROM public.providers WHERE id = pro2;
+  SELECT * INTO eski_pro2_p FROM public.profiles WHERE id = pro2;
+  IF eski_pr.id IS NULL OR eski_pro2.id IS NULL OR eski_op_about IS NULL AND NOT EXISTS (SELECT 1 FROM public.organization_profiles WHERE provider_id = ajans) THEN
+    RAISE EXCEPTION 'on kosul: pro1/pro2/ajans saglayici satirlari yok';
+  END IF;
+  SELECT sr.id, c.id INTO rol_b, kat_b FROM public.service_categories c JOIN public.service_roles sr ON sr.legacy_category_id = c.id
+   WHERE c.is_active AND c.slug NOT LIKE 'faz1test-%' AND c.id IS DISTINCT FROM eski_p.primary_category_id ORDER BY c.id LIMIT 1;
+  SELECT id INTO sehir2 FROM public.turkish_cities WHERE id IS DISTINCT FROM eski_pr.city_id ORDER BY id LIMIT 1;
+
+  -- 38a) yapi: uc sutun + GIN + kayma 0
+  SELECT count(*) INTO n FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'providers' AND column_name IN ('attributes', 'category_attributes', 'views_count');
+  IF n <> 3 THEN RAISE EXCEPTION 'providers yeni sutunlar %/3', n; END IF;
+  IF to_regclass('public.idx_providers_category_attributes_gin') IS NULL THEN RAISE EXCEPTION 'GIN indeksi yok'; END IF;
+  SELECT COALESCE(sum(satir), 0) INTO n FROM public.fn_faz10c_ayna_kaymasi();
+  IF n <> 0 THEN RAISE EXCEPTION 'baslangicta kayma %', n; END IF;
+
+  -- 38b) sahip providers'a yazar -> profiles kopyasi + gorunum
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers
+     SET city_id = sehir2, attributes = '{"t38": 1}'::jsonb,
+         category_attributes = '{"etkinlik_turleri": ["wedding"], "t38": true}'::jsonb, is_published = NOT eski_pr.is_published
+   WHERE id = pro1;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'sahip kendi saglayici satirini guncelleyemedi (% satir)', n; END IF;
+  SELECT * INTO p FROM public.profiles WHERE id = pro1;
+  IF p.city_id IS DISTINCT FROM sehir2 OR p.attributes <> '{"t38": 1}'::jsonb OR NOT (p.category_attributes ? 't38')
+     OR p.is_published IS DISTINCT FROM NOT eski_pr.is_published THEN
+    RAISE EXCEPTION 'profiles kopyasi dolmadi: sehir % attr % yayin %', p.city_id, p.attributes, p.is_published;
+  END IF;
+  SELECT * INTO r FROM public.v_providers_public WHERE id = pro1;
+  IF r.city_id IS DISTINCT FROM sehir2 OR NOT (r.category_attributes ? 't38') OR r.attributes <> '{"t38": 1}'::jsonb THEN
+    RAISE EXCEPTION 'gorunum saglayici degerini gostermiyor';
+  END IF;
+  -- Kesfet sorgusu (containment) yeni GIN'li sutunda
+  IF NOT EXISTS (SELECT 1 FROM public.v_providers_public WHERE id = pro1 AND category_attributes @> '{"etkinlik_turleri": ["wedding"]}') THEN
+    RAISE EXCEPTION 'containment sorgusu saglayiciyi bulmadi';
+  END IF;
+
+  -- 38c) koruma: sahip kendini onaylayamaz; onay / dogrulama / guven alanlari sessizce eski degerde; izinsiz sutun 42501
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET approval_status = 'approved', approved_at = now(), approval_note = 'kendim' WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.providers WHERE id = pro2;
+  IF r.approval_status IS DISTINCT FROM eski_pro2.approval_status OR r.approved_at IS DISTINCT FROM eski_pro2.approved_at
+     OR r.approval_note IS DISTINCT FROM eski_pro2.approval_note THEN
+    RAISE EXCEPTION 'sahip kendi onayini degistirdi: % %', r.approval_status, r.approval_note;
+  END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.providers SET trust_score = 99 WHERE id = pro2;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'trust_score yazildi (GRANT disi)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.providers SET views_count = 1000 WHERE id = pro2;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'views_count dogrudan yazildi (yalniz RPC)';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  -- baskasinin satiri: 0 satir (RLS)
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET city_id = sehir2 WHERE id = pro1;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  UPDATE public.professional_profiles SET headline = 'T38 baskasi' WHERE provider_id = pro1;
+  GET DIAGNOSTICS v = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 0 OR v <> 0 THEN RAISE EXCEPTION 'baskasinin satiri guncellendi (providers %, alt profil %)', n, v; END IF;
+  -- anon: yazma yok
+  BEGIN
+    PERFORM set_config('request.jwt.claim.sub', '', true);
+    EXECUTE 'SET LOCAL ROLE anon';
+    UPDATE public.providers SET city_id = sehir2 WHERE id = pro1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon providers yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 38d) admin onay / revizyon providers'tan -> profiles kopyasi; sahip revision -> pending (Model 3) iki yoldan da
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET approval_status = 'revision', approval_note = 'T38 fotograf ekle' WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO p FROM public.profiles WHERE id = pro2;
+  IF p.approval_status <> 'revision' OR p.approval_note IS DISTINCT FROM 'T38 fotograf ekle' THEN
+    RAISE EXCEPTION 'admin revizyonu profiles kopyasina dusmedi: % %', p.approval_status, p.approval_note;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET approval_status = 'approved' WHERE id = pro2;          -- yasak gecis
+  EXECUTE 'RESET ROLE';
+  IF (SELECT approval_status FROM public.providers WHERE id = pro2) <> 'revision' THEN RAISE EXCEPTION 'revision -> approved gecti'; END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET approval_status = 'pending' WHERE id = pro2;           -- izinli gecis
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.providers WHERE id = pro2;
+  SELECT * INTO p FROM public.profiles WHERE id = pro2;
+  IF r.approval_status <> 'pending' OR r.approval_note IS NOT NULL OR p.approval_status <> 'pending' OR p.approval_note IS NOT NULL THEN
+    RAISE EXCEPTION 'revision -> pending: saglayici % / %, profil % / %', r.approval_status, r.approval_note, p.approval_status, p.approval_note;
+  END IF;
+  -- eski yol (uygulama bugun profiles'a yazar): admin revizyon, sahip pending -> ileri ayna
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.profiles SET approval_status = 'revision', approval_note = 'T38 eski yol' WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro2::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.profiles SET approval_status = 'pending', approval_note = NULL WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  IF (SELECT approval_status FROM public.profiles WHERE id = pro2) <> 'pending'
+     OR (SELECT approval_status FROM public.providers WHERE id = pro2) <> 'pending' THEN
+    RAISE EXCEPTION 'profiles yolunda revision -> pending calismadi (bulgu 68)';
+  END IF;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.profiles SET approval_status = 'approved', role = 'agency', is_admin = true WHERE id = pro2;   -- yasak
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO p FROM public.profiles WHERE id = pro2;
+  IF p.approval_status <> 'pending' OR p.role <> 'professional' OR p.is_admin THEN RAISE EXCEPTION 'profiles korumasi gevsedi: % % %', p.approval_status, p.role, p.is_admin; END IF;
+  -- admin onaylar (providers)
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers SET approval_status = 'approved', approved_at = now(), approval_note = NULL WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  IF (SELECT approval_status FROM public.profiles WHERE id = pro2) <> 'approved' THEN RAISE EXCEPTION 'admin onayi kopyaya dusmedi'; END IF;
+
+  -- 38e) alt profil: sahip bio / headline yazar -> profiles.bio + gorunum; kurulus about -> profiles.bio
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.professional_profiles SET bio = 'T38 bio', headline = 'T38 baslik' WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  IF (SELECT bio FROM public.profiles WHERE id = pro1) IS DISTINCT FROM 'T38 bio' THEN RAISE EXCEPTION 'pro bio kopyaya dusmedi'; END IF;
+  SELECT * INTO r FROM public.v_providers_public WHERE id = pro1;
+  IF r.bio IS DISTINCT FROM 'T38 bio' OR r.headline IS DISTINCT FROM 'T38 baslik' THEN RAISE EXCEPTION 'gorunum bio/headline: % / %', r.bio, r.headline; END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.professional_profiles SET price_min = 1 WHERE provider_id = pro1;
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'turetilmis fiyat ozeti dogrudan yazildi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.organization_profiles SET about = 'T38 kurulus' WHERE provider_id = ajans;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 OR (SELECT bio FROM public.profiles WHERE id = ajans) IS DISTINCT FROM 'T38 kurulus' THEN RAISE EXCEPTION 'kurulus about kopyaya dusmedi (% satir)', n; END IF;
+
+  -- 38f) birincil kategori RPC: sahip B secer -> birincil rol B + profiles kopyasi; gecersiz 22023; musteri/anon 42501; NULL
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v := public.provider_set_primary_category(kat_b);
+  EXECUTE 'RESET ROLE';
+  IF v IS DISTINCT FROM rol_b OR (SELECT primary_category_id FROM public.profiles WHERE id = pro1) IS DISTINCT FROM kat_b
+     OR (SELECT primary_category_id FROM public.v_providers_public WHERE id = pro1) IS DISTINCT FROM kat_b THEN
+    RAISE EXCEPTION 'birincil kategori: rol % (beklenen %), profil %', v, rol_b, (SELECT primary_category_id FROM public.profiles WHERE id = pro1);
+  END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.provider_set_primary_category(-1);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'gecersiz kategori kabul edildi';
+  EXCEPTION WHEN invalid_parameter_value THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    PERFORM set_config('request.jwt.claim.sub', musteri::text, true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.provider_set_primary_category(kat_b);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'musteri birincil kategori yazdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+  BEGIN
+    PERFORM set_config('request.jwt.claim.sub', '', true);
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.provider_set_primary_category(kat_b);
+    EXECUTE 'RESET ROLE';
+    RAISE EXCEPTION 'anon birincil kategori RPC cagirdi';
+  EXCEPTION WHEN insufficient_privilege THEN EXECUTE 'RESET ROLE'; END;
+
+  -- 38g) goruntulenme RPC (anon) -> providers + profiles kopyasi
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  PERFORM public.increment_profile_views(pro1);
+  EXECUTE 'RESET ROLE';
+  IF (SELECT views_count FROM public.providers WHERE id = pro1) <> eski_pr.views_count + 1
+     OR (SELECT views_count FROM public.profiles WHERE id = pro1) <> eski_pr.views_count + 1 THEN
+    RAISE EXCEPTION 'goruntulenme: saglayici % profil % (beklenen %)', (SELECT views_count FROM public.providers WHERE id = pro1),
+      (SELECT views_count FROM public.profiles WHERE id = pro1), eski_pr.views_count + 1;
+  END IF;
+
+  -- 38h) eski yol hala aynalaniyor (P1 oncesi uygulama): sahip profiles'a yazar -> providers
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.profiles SET city_id = eski_pr.city_id, attributes = '{"t38": 2}'::jsonb, bio = 'T38 eski yol' WHERE id = pro1;
+  EXECUTE 'RESET ROLE';
+  SELECT * INTO r FROM public.providers WHERE id = pro1;
+  IF r.city_id IS DISTINCT FROM eski_pr.city_id OR r.attributes <> '{"t38": 2}'::jsonb
+     OR (SELECT bio FROM public.professional_profiles WHERE provider_id = pro1) IS DISTINCT FROM 'T38 eski yol' THEN
+    RAISE EXCEPTION 'ileri ayna: sehir % attr %', r.city_id, r.attributes;
+  END IF;
+
+  -- geri al (ayna yoluyla, admin; sonra dogrudan sayac) ve kanit
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.providers
+     SET city_id = eski_pr.city_id, attributes = eski_pr.attributes, category_attributes = eski_pr.category_attributes,
+         is_published = eski_pr.is_published
+   WHERE id = pro1;
+  UPDATE public.providers
+     SET approval_status = eski_pro2.approval_status, approval_note = eski_pro2.approval_note, approved_at = eski_pro2.approved_at
+   WHERE id = pro2;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.professional_profiles SET bio = eski_pp_bio, headline = eski_pp_headline WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  -- birincil: eski kategori pasif olabilir (RPC reddeder) -> ayna bayragiyla dogrudan + yeniden turetme
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.profiles SET primary_category_id = eski_p.primary_category_id WHERE id = pro1;
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+  PERFORM public.recompute_provider_services(pro1);
+  PERFORM set_config('request.jwt.claim.sub', ajans::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.organization_profiles SET about = eski_op_about WHERE provider_id = ajans;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  UPDATE public.providers SET views_count = eski_pr.views_count WHERE id = pro1;
+
+  SELECT COALESCE(sum(satir), 0) INTO n FROM public.fn_faz10c_ayna_kaymasi();
+  IF n <> 0 THEN RAISE EXCEPTION 'sonda kayma %: %', n, (SELECT string_agg(alan || '=' || satir, ' ') FROM public.fn_faz10c_ayna_kaymasi() WHERE satir > 0); END IF;
+  SELECT * INTO p FROM public.profiles WHERE id = pro1;
+  IF p.city_id IS DISTINCT FROM eski_p.city_id OR p.attributes IS DISTINCT FROM eski_p.attributes OR p.bio IS DISTINCT FROM eski_p.bio
+     OR p.primary_category_id IS DISTINCT FROM eski_p.primary_category_id OR p.views_count IS DISTINCT FROM eski_p.views_count THEN
+    RAISE EXCEPTION 'pro1 eski haline donmedi';
+  END IF;
+  SELECT count(*) INTO n_log1 FROM public.organization_sync_log;
+  IF n_log1 <> n_log0 THEN RAISE EXCEPTION 'sync_log % satir artti', n_log1 - n_log0; END IF;
+
+  INSERT INTO t_sonuc VALUES (38, 'T38 FAZ 10c-1 saglayici yazma yolu', 'GECTI',
+    'yapi (3 sutun, GIN, kayma 0); sahip providers (sehir/attr/kattr/yayin) -> profiles kopyasi + gorunum + containment; kendi onayi sessiz geri, trust_score/views_count 42501, baskasi 0 satir, anon 42501; admin revizyon -> kopya, sahip revision->approved geri / revision->pending + not temiz (providers ve profiles yolu, bulgu 68), rol/admin korumasi; alt profil bio/headline -> kopya + gorunum, fiyat ozeti 42501, kurulus about; birincil kategori RPC (rol + kopya + gorunum, gecersiz 22023, musteri/anon 42501); goruntulenme anon -> iki tarafta +1; eski yol (profiles) ileri aynayla; geri alindi, kayma 0, sync_log bos');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  INSERT INTO t_sonuc VALUES (38, 'T38 FAZ 10c-1 saglayici yazma yolu', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------
