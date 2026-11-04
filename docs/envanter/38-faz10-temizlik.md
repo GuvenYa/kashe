@@ -5,7 +5,7 @@
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
 **Durum (5 Kasim 2026):** **10c-1 KAPANDI** (DB 01 + 02 + 02b + 03 ve P1 uretimde, `main` a67aa10) + **Duzeltme 05 uretimde**;
-siradaki Duzeltme 06 (girissiz AI hakki + tek AI girisi, bulgu 64/65), sonra 10c-2 (bolum 10c).
+Duzeltme 06 (girissiz AI + tek giris) ve 07 (Turkce arama) uretimde; siradaki 10c-2 (bolum 10c), sonra Sahne v3.
 **Durum (4 Kasim 2026):** **10b KAPANDI** (DB + P1 uretimde, `main` 568c7b1) + **Duzeltme 04 uretimde** (bolum 6); siradaki **10c-1** (bolum 10c).
 Asagidaki 3 Kasim durumu tarihcedir.
 **Durum (3 Kasim 2026):** **10a + Duzeltme 01 URETIMDE** (merge e4317d5; `supabase db push` 20261028 + 20261030; asama20/5/18/19 uretimde beklendigi gibi; tur 3 Kasim, bulgular 4-38);
@@ -234,6 +234,13 @@ depoya (`.gitignore` istisnasi). Dal turu (anonim + Derya Celik): kalan 2/1/0, 4
 cok rol -> sihirbaz 5. adim dolu, girissiz onay -> giris (durum korunur), yonlendirmeler; turda bulunan: niyet rol sayisindan
 okunamiyor (analiz tamamlayici rol oneriyor) -> metinde adiyla anilan tek rol = "Aradigin" gorunumu (tur yamasi). kashe.net anonim:
 `/kashe-ai` tek kutu, iki eski adres yonleniyor, ana sayfa kartlari ve Kesfet "Kashe AI'a anlat" metinli.
+**Duzeltme 07 (5 Kasim, URETIMDE - main b7367c1; bulgu 71):** Turkce harf duyarsiz Kesfet aramasi
+`20261105150000_duzeltme_07_turkce_arama.sql` (EKLEYEN: `public.tr_katla(text)` IMMUTABLE - Turkce + sapkali harfler ASCII, kucuk
+harf; `v_providers_public` sonuna `arama_metni` = tr_katla(ad + sirket + baslik + tanitim + birincil kategori adi), mevcut sutunlar /
+sira / kaynaklar 02b ile ayni, security_invoker). Uygulama: `app/lib/arama.ts` `aramaKatla` (DB ile birebir esleme), Kesfet
+`arama_metni.ilike` + katlanmis kategori adi eslemesi, `ProviderPublic.arama_metni`. asama4 **T42** (43/43 iki kip; mutasyon: katlama
+yok -> T42 HATA), asama24 K1 5 / K2 0 ESIT (dal + uretim), asama10 ESIT. Dal: fotograf 13, dogan 5, dugun 72, IZMIR 15, acilis 78;
+uretim: fotograf 3, dugun 9, Kesfet 34. Sira degismedi: veritabani once (yeni sutun yoksa Kesfet hata verir), kod sonra.
 
 **10c-2 / DB/02** (`faz10c_04_provider_id_kesimi`, damga yazilirken verilir; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
