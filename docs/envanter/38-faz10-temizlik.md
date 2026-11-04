@@ -220,6 +220,20 @@ geri alindi): tanitim / sehir / ana kategori (RPC) -> /profil + /p/ + Kesfet; ya
 Kesfet'ten duser / doner; konsol temiz. `main` <- `faz10c/03` (a67aa10, Vercel), sonra uretim db push (03): asama20 K8 37 / K8b 0 /
 K9 18 ESIT, asama10 ESIT (39 saglayici, 34 gorunur). kashe.net anonim: Kesfet 34 profil, /p/ ve ana sayfa sorunsuz. Bulgu 71 (Turkce
 harfsiz arama) acildi.
+**Duzeltme 06 (5 Kasim, URETIMDE - main 4dee081; gorev 47; Fahri bulgulari 64/65):** girissiz Kashe AI hakki
+`20261105140000_duzeltme_06_girissiz_ai_hakki.sql` (EKLEYEN: `internal.ai_girissiz_ayar / _kullanim / _gun`, RPC
+`ai_girissiz_hak_kullan(p_anahtar, p_ip_ozeti)`; IP basina gunde 3 + gunluk toplam 300, atomik, sunucu anahtari
+`AI_GIRISSIZ_ANAHTAR` - Vercel Production + Preview, veritabaninda yalniz SHA-256 ozeti; ham IP yok, ozet gunluk, 30 gun saklama);
+asama4 **T41** (42/42 iki kip; mutasyon: anahtar kontrolu yok / sinir yok / toplam reddinde IP sayaci geri alinmiyor -> T41 HATA),
+asama23 K1 10 ESIT (dal + uretim). Uygulama: `app/lib/girissiz-ai.ts` (KAPALI baslar), `analyzeEventNeeds` girissiz (EventSpec kaydi
+yalniz girisli), `/kashe-ai` tek kutu + `app/kashe-ai/actions.ts` (adaylar veritabanindan: rol + sehir, sehirde yoksa Turkiye geneli,
+tur beyan edenler once; ikinci model cagrisi yok), `app/lib/sihirbaz-url.ts` (sihirbaz ve Kashe AI ortak), sihirbaz Anlat girissiz,
+`/etkinlik-planla` + `/pro-bul` kalici yonlendirme, `recommendProfessionals` silindi. Inceleme yamalari: tur suzgec degil oncelik
+(uretimde "dugun fotografcisi" 0 aday veriyordu), girisli Kashe AI -> sihirbaz brief / surum tasir, sehir notu ek uyumu, `.env.example`
+depoya (`.gitignore` istisnasi). Dal turu (anonim + Derya Celik): kalan 2/1/0, 4. cagri hak doldu + uye ol / giris (metinli donus),
+cok rol -> sihirbaz 5. adim dolu, girissiz onay -> giris (durum korunur), yonlendirmeler; turda bulunan: niyet rol sayisindan
+okunamiyor (analiz tamamlayici rol oneriyor) -> metinde adiyla anilan tek rol = "Aradigin" gorunumu (tur yamasi). kashe.net anonim:
+`/kashe-ai` tek kutu, iki eski adres yonleniyor, ana sayfa kartlari ve Kesfet "Kashe AI'a anlat" metinli.
 
 **10c-2 / DB/02** (`faz10c_04_provider_id_kesimi`, damga yazilirken verilir; 10c-1 / 03 uretimden sonra): 5 tabloda `provider_id` NOT NULL
 (once NULL 0 dogrulanir, RAISE), FK `ON DELETE CASCADE`; `trg_faz2b_set_provider_id` yon degistirir (`provider_id` -> `profile_id` /
