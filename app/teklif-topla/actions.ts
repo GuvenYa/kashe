@@ -6,7 +6,8 @@ import {
   QUOTE_EXPIRY_OPTIONS,
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
-import { budgetToRangeKey, EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
+import { budgetToRangeKey } from '@/app/mesajlar/data';
+import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
@@ -167,7 +168,8 @@ export async function createQuoteRequest(
     return { success: false, error: 'Geçersiz dosya yolu.' };
   }
 
-  // 3) Talebi oluştur
+  // 3) Talebi olustur. Gecerli tur anahtarlari TABLODAN (FAZ 10b).
+  const turAnahtarlari = await etkinlikTuruAnahtarlari();
   const { data: newRequest, error: reqError } = await supabase
     .from('quote_requests')
     .insert({
@@ -177,14 +179,12 @@ export async function createQuoteRequest(
       city_id: input.city_id,
       brief_data: input.brief_data,
       event_date: input.event_date,
-      // FAZ 10b: event_type FK ile event_types'a bagli; liste disi deger (eski
-      // ?tur= on-doldurma) yazilmaz -> NULL (sohbetteki safeEventType kalibi).
-      // 10b-P1 bu kontrolu tablodan okunan listeye tasir.
-      event_type:
-        input.event_type &&
-        (EVENT_TYPE_KEYS as readonly string[]).includes(input.event_type)
-          ? input.event_type
-          : null,
+      // FAZ 10b: `event_type` FK ile `event_types`'a bagli; liste disi deger
+      // (eski `?tur=` on-doldurma) yazilmaz -> NULL (sohbetteki safeEventType
+      // kalibi). Anahtar kumesi TABLODAN okunur.
+      event_type: turAnahtarlari.has(input.event_type ?? '')
+        ? input.event_type
+        : null,
       budget_min: input.budget_min,
       budget_max: input.budget_max,
       share_budget: input.share_budget,

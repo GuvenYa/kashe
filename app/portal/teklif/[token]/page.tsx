@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-server';
 import { PortalIslemleri } from './portal-islemleri';
 import { TeklifBelgesi } from '@/app/components/teklif/teklif-belgesi';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import {
   JETON_KALIBI,
   PORTAL_DURUM_ETIKETLERI,
@@ -76,6 +78,9 @@ export default async function PortalTeklifPage({
   }
 
   const teklif = data as unknown as PortalTeklif;
+  // FAZ 10b: portal ANON — tur etiketi sunucuda cozulur (saglayici hook'u
+  // bir sunucu agacinda cagrilmaz).
+  const turler = await etkinlikTurleri({ hepsi: true });
   const scope = teklif.scope ?? [];
   const islemDurumu = teklif.status === 'sent' || teklif.status === 'viewed';
   const toplamMetni = paraMetni(teklif.total_amount, teklif.currency);
@@ -148,6 +153,7 @@ export default async function PortalTeklifPage({
           valid_until: teklif.valid_until,
           notes: teklif.notes,
         }}
+        etkinlikTuruMetni={etiketle(turler, teklif.event?.event_type ?? null)}
       />
 
       {/* Islemler — kartin ALTINDA, yalniz sent/viewed */}

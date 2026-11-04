@@ -35,6 +35,7 @@ import {
   etkinlikEtiketi,
   teklifEtiketi,
 } from '@/app/lib/secim-etiketi';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Müşteriler — Kashe',
@@ -65,6 +66,8 @@ export default async function MusterilerPage({
   }>;
 }) {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (onbellekli).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/ajans/musteriler');
@@ -182,7 +185,7 @@ export default async function MusterilerPage({
       event_type: string;
       start_date: string | null;
     }[]
-  ).map((e) => ({ id: e.id, ad: etkinlikEtiketi(e) }));
+  ).map((e) => ({ id: e.id, ad: etkinlikEtiketi(e, turler) }));
 
   const teklifSecenekleri = (
     (teklifSonuc.data ?? []) as {

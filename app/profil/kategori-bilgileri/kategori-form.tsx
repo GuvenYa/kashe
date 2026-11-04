@@ -21,7 +21,7 @@ import {
   type ModuleKey,
   type ModuleFieldDef,
 } from '@/app/lib/category-fields';
-import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import { isBlankText } from '@/app/lib/text';
 import { saveCategoryAttributes } from './actions';
 
@@ -133,6 +133,9 @@ export function KategoriForm({
   slug: string;
   initialAttributes: Record<string, unknown>;
 }) {
+  // FAZ 10b: ortak "etkinlik turleri" alaninin secenekleri `event_types`
+  // tablosundan (saglayici; yalniz aktif turler).
+  const etkinlikTurleriListesi = useEtkinlikTurleri();
   const preset = getCategoryFields(slug)!;
   const moduleKeys = preset.modules.map((m) => m.key);
   // TEK-YER: quick bölümü preset.quickInfo'nun tamamını gösterir; türetilmiş anahtarlar
@@ -153,7 +156,7 @@ export function KategoriForm({
         | string
         | undefined) ?? '')
   );
-  // Etkinlik türleri — ORTAK alan (tüm kategoriler); ilanlar taksonomisi (EVENT_TYPES key'leri).
+  // Etkinlik turleri — ORTAK alan (tum kategoriler); anahtarlar `event_types`.
   const [etkinlikTurleri, setEtkinlikTurleri] = useState<string[]>(
     Array.isArray(init.etkinlik_turleri) ? (init.etkinlik_turleri as string[]) : []
   );
@@ -391,7 +394,7 @@ export function KategoriForm({
           <div id="etkinlik-turleri" className="scroll-mt-28">
             <label className={LABEL}>Hizmet verdiğin etkinlik türleri</label>
             <div className="flex flex-wrap gap-2">
-              {EVENT_TYPES.map((et) => {
+              {etkinlikTurleriListesi.map((et) => {
                 const on = etkinlikTurleri.includes(et.key);
                 return (
                   <button

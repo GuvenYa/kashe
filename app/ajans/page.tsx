@@ -15,7 +15,8 @@ import {
   type VeriSatiri,
 } from '@/app/components/panel';
 import { selamlama, tarihMetni, zamanMetni } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { gunMetni, ayAraligi, panelGunBugun } from '@/app/lib/panel-gosterge-data';
 import { gorevSayilari, gecikmisGorevler } from '@/app/lib/gorev-data';
@@ -108,6 +109,9 @@ function surumGecerli(surum: { valid_until: string | null } | null): boolean {
 
 export default async function AjansPanelPage() {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/ajans');
@@ -287,7 +291,7 @@ export default async function AjansPanelPage() {
       baslik:
         e.title?.trim() ||
         e.event_types?.name_tr ||
-        etkinlikTuruEtiketi(e.event_type) ||
+        etiketle(turler, e.event_type) ||
         'Etkinlik',
       tarih: gunMetni(e.start_date, e.end_date),
       sehir: e.turkish_cities?.name ?? '—',

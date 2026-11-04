@@ -1,5 +1,5 @@
 'use client';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useEffect, useState } from 'react';
@@ -75,6 +75,8 @@ const GROUP_LABELS: Record<DateGroup, string> = {
 };
 
 export function MesajListesi({ currentUserId, initialConversations }: Props) {
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
+  const turEtiketi = useEtkinlikTuruEtiketi();
   const [conversations, setConversations] = useState<ConversationItem[]>(
     initialConversations
   );
@@ -285,7 +287,7 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
                         {(conv.event_type || conv.event_date) && (
                           <p className="text-xs text-ink-72 mt-1 font-mono uppercase tracking-[0.1em]">
                             {conv.event_type &&
-                              etkinlikTuruEtiketi(conv.event_type)}
+                              turEtiketi(conv.event_type)}
                             {conv.event_type && conv.event_date && ' · '}
                             {conv.event_date &&
                               new Date(conv.event_date).toLocaleDateString('tr-TR', { timeZone: KASHE_SAAT_DILIMI })}

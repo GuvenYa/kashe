@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 import {
   DAVET_DURUM_ETIKETLERI,
   RFP_DURUM_ETIKETLERI,
@@ -80,6 +80,8 @@ export function RfpEditoru({
    */
   kisaListeAjanslari: { providerId: string; ad: string; listeAdi: string }[];
 }) {
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
+  const turEtiketi = useEtkinlikTuruEtiketi();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [hata, setHata] = useState<string | null>(null);
@@ -263,7 +265,7 @@ export function RfpEditoru({
   const etkinlikSatiri = rfp.event
     ? [
         etkinlikAdi && etkinlikAdi !== rfp.title.trim() ? etkinlikAdi : null,
-        etkinlikTuruEtiketi(rfp.event.event_type),
+        turEtiketi(rfp.event.event_type),
         tarihMetni(rfp.event.start_date),
         [rfp.event.city, rfp.event.district].filter(Boolean).join(' / ') || null,
         rfp.event.participant_count ? `${rfp.event.participant_count} kişi` : null,

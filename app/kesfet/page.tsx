@@ -29,7 +29,7 @@ import {
   pazarKiyaslari,
   rolIdleriSlugdan,
 } from '@/app/lib/fiyat-kiyas-data';
-import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
+import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Keşfet — Kashe',
@@ -136,12 +136,16 @@ export default async function KesfetPage({
     ? params.deneyim.split(',').map((s) => s.trim()).filter(Boolean)
     : [];
 
-  // Etkinlik türleri (ORTAK, tüm kategoriler) — çoklu key (OR); geçersizler ayıklanır.
+  // Etkinlik türleri (ORTAK, tüm kategoriler) — çoklu key (OR); geçersizler
+  // ayiklanir. FAZ 10b: gecerli anahtar kumesi `event_types` TABLOSUNDAN
+  // (aktif + pasif; pasif tur mevcut kayitlarda duruyor). Tabloda olmayan
+  // anahtar suzgece HIC girmez — sayfa 404 vermez, suzgec yok sayilir.
+  const turAnahtarlari = await etkinlikTuruAnahtarlari();
   const eventTypes = params.etkinlik
     ? params.etkinlik
         .split(',')
         .map((s) => s.trim())
-        .filter((k) => (EVENT_TYPE_KEYS as readonly string[]).includes(k))
+        .filter((k) => turAnahtarlari.has(k))
     : [];
 
   const [{ data: categories }, { data: cities }, { data: doluKategoriSatirlari }] =
@@ -216,8 +220,9 @@ export default async function KesfetPage({
   }
 
   // Etkinlik türleri — seçili key'lerin OR'u; her koşul ayrı jsonb @> containment.
-  // GIN (jsonb_path_ops) index → planlayıcı BitmapOr ile birleştirir. Key'ler EVENT_TYPE_KEYS'e
-  // göre doğrulanmış (enjeksiyon yok). Boş beyanlı profiller filtre aktifken elenir.
+  // GIN (jsonb_path_ops) index → planlayıcı BitmapOr ile birleştirir. Key'ler
+  // `event_types` tablosuna gore dogrulanmis (enjeksiyon yok). Bos beyanli
+  // profiller filtre aktifken elenir.
   if (eventTypes.length > 0) {
     const orConds = eventTypes
       .map((k) => `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`)

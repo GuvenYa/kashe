@@ -9,7 +9,8 @@ import { BriefEkButonu } from './brief-ek-butonu';
 import { getBriefFields } from '@/app/lib/brief-config';
 import { tarihMetni } from '@/app/lib/tarih';
 import { formatPrice } from '@/app/lib/profile-helpers';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri, type EtkinlikTuru } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Teklif Talepleri — Kashe',
@@ -27,9 +28,11 @@ type BriefSatiri = { key: string; label: string; value: string };
  */
 function briefSatirlari(
   brief: Record<string, string>,
-  categorySlug: string | null
+  categorySlug: string | null,
+  turler: EtkinlikTuru[]
 ): BriefSatiri[] {
-  const alanlar = getBriefFields(categorySlug);
+  // FAZ 10b: `event_type` alaninin secenekleri calisma zamaninda dolar.
+  const alanlar = getBriefFields(categorySlug, turler);
   const satirlar: BriefSatiri[] = [];
 
   for (const alan of alanlar) {
@@ -43,7 +46,7 @@ function briefSatirlari(
       // Secenek listesinde yoksa etkinlik turu sozlugune bak: kategori
       // tanimlari zaman icinde ayrisabiliyor ('birthday' bir kategoride var,
       // otekinde yok) — ham ingilizce anahtar arayuze dusmesin.
-      deger = esles ?? etkinlikTuruEtiketi(metin) ?? metin;
+      deger = esles ?? etiketle(turler, metin) ?? metin;
     } else if (alan.type === 'date') {
       deger = tarihMetni(metin) ?? metin;
     }
@@ -65,6 +68,9 @@ function butceMetni(
 
 export default async function TeklifTalepleriPage() {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/teklif-talepleri');
@@ -156,7 +162,8 @@ export default async function TeklifTalepleriPage() {
               const brief = (req.brief_data || {}) as Record<string, string>;
               const briefEntries = briefSatirlari(
                 brief,
-                req.service_categories?.slug ?? null
+                req.service_categories?.slug ?? null,
+                turler
               ).slice(0, 4);
 
               const budget =

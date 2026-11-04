@@ -1,5 +1,6 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { paraBirimliMetin } from '@/app/lib/para';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect, notFound } from 'next/navigation';
@@ -158,6 +159,9 @@ export async function generateMetadata({ params }: Props) {
 export default async function RezervasyonDetayPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const {
     data: { user },
@@ -534,7 +538,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                     Tür
                   </dt>
                   <dd className="text-base text-ink">
-                    {etkinlikTuruEtiketi(booking.event_type)}
+                    {etiketle(turler, booking.event_type)}
                   </dd>
                 </div>
               )}

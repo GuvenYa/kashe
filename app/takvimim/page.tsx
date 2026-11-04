@@ -1,4 +1,6 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
@@ -56,6 +58,9 @@ export const metadata = {
 
 export default async function TakvimimPage() {
   const supabase = await createClient();
+  // FAZ 10b: ham anahtar ("gala") ekrana cikmasin — etiket tablodan
+  // (pasif turler dahil; eski kayitlarin etiketi kaybolmaz).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
 
@@ -280,7 +285,7 @@ export default async function TakvimimPage() {
                                 {customerName}
                               </p>
                               <p className="text-xs text-ink-72 truncate">
-                                {[b.event_type, b.location]
+                                {[etiketle(turler, b.event_type), b.location]
                                   .filter(Boolean)
                                   .join(' · ') || 'Detay yok'}
                               </p>
@@ -324,6 +329,7 @@ export default async function TakvimimPage() {
                         key={b.id}
                         booking={b}
                         viewer="professional"
+                        turler={turler}
                       />
                     ))}
                   </div>
@@ -341,6 +347,7 @@ export default async function TakvimimPage() {
                         key={b.id}
                         booking={b}
                         viewer="professional"
+                        turler={turler}
                       />
                     ))}
                   </div>

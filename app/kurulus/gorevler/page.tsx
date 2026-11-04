@@ -19,6 +19,7 @@ import {
   atanabilirler,
 } from '@/app/lib/gorev-data';
 import { etkinlikEtiketi } from '@/app/lib/secim-etiketi';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Görevler — Kashe',
@@ -41,6 +42,8 @@ export default async function KurulusGorevlerPage({
   searchParams: Promise<{ kurulus?: string; gorev?: string; bana?: string }>;
 }) {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (onbellekli).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/kurulus/gorevler');
@@ -113,7 +116,7 @@ export default async function KurulusGorevlerPage({
     }[]
   ).map((e) => ({
     id: e.id,
-    ad: etkinlikEtiketi(e),
+    ad: etkinlikEtiketi(e, turler),
   }));
 
   return (

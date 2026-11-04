@@ -6,12 +6,20 @@ import { isUserSuspended } from '@/app/lib/check-suspension';
 import { sendPushToUser } from '@/app/lib/push-server';
 import { canWriteForBusiness, canOwnForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
-import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
+import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 
-/** FAZ 10b: event_type FK ile event_types'a bagli; liste disi deger yazilmaz
- *  (NULL). 10b-P1 bu kontrolu tablodan okunan listeye tasir. */
-function gecerliEtkinlikTuru(v: string | null | undefined): string | null {
-  return v && (EVENT_TYPE_KEYS as readonly string[]).includes(v) ? v : null;
+/**
+ * FAZ 10b: `event_type` FK ile `event_types`'a bagli — liste disi deger
+ * 23503 ile KAYDI KIRAR. Kontrol kalkmaz, kaynagi TABLO oldu: anahtar kumesi
+ * aktif + pasif turleri kapsar (pasif bir tur mevcut kayitta durabilir).
+ * Davranis ayni: liste disi deger NULL'a duser, hata verilmez.
+ */
+async function gecerliEtkinlikTuru(
+  v: string | null | undefined
+): Promise<string | null> {
+  if (!v) return null;
+  const anahtarlar = await etkinlikTuruAnahtarlari();
+  return anahtarlar.has(v) ? v : null;
 }
 import {
   validateListingInput,
@@ -149,7 +157,7 @@ export async function createListing(
       project_details: input.project_details?.trim() || null,
       work_conditions: input.work_conditions?.trim() || null,
       event_date: input.event_date || null,
-      event_type: gecerliEtkinlikTuru(input.event_type),
+      event_type: await gecerliEtkinlikTuru(input.event_type),
       location: input.location?.trim() || null,
       city_id: input.city_id,
       guest_count: input.guest_count,
@@ -244,7 +252,7 @@ export async function updateListing(
     updateData.work_conditions = input.work_conditions?.trim() || null;
   if (input.event_date !== undefined) updateData.event_date = input.event_date;
   if (input.event_type !== undefined)
-    updateData.event_type = gecerliEtkinlikTuru(input.event_type);
+    updateData.event_type = await gecerliEtkinlikTuru(input.event_type);
   if (input.location !== undefined)
     updateData.location = input.location?.trim() || null;
   if (input.city_id !== undefined) updateData.city_id = input.city_id;

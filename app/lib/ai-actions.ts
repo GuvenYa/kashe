@@ -3,6 +3,7 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/app/lib/supabase-server';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import {
   EVENTSPEC_SCHEMA_VERSION,
   EVENT_NEEDS_MODEL_ID,
@@ -386,20 +387,14 @@ export async function analyzeEventNeeds(input: {
   let eventTypes: { key: string; name_tr: string }[] = [];
   let cities: { id: number; name: string }[] = [];
   try {
-    const [
-      { data: turData, error: turErr },
-      { data: sehirData, error: sehirErr },
-    ] = await Promise.all([
-      supabase
-        .from('event_types')
-        .select('key, name_tr')
-        .eq('is_active', true)
-        .order('sort_order'),
+    // FAZ 10b: tur listesi TEK KAYNAK katmanindan (aktif turler; onbellekli).
+    // Model yalniz bu anahtarlardan secer — gecersiz kimlik uretemez.
+    const [turler, { data: sehirData, error: sehirErr }] = await Promise.all([
+      etkinlikTurleri(),
       supabase.from('turkish_cities').select('id, name').order('name'),
     ]);
-    if (turErr) console.error('[eventspec] referans', turErr);
     if (sehirErr) console.error('[eventspec] referans', sehirErr);
-    eventTypes = (turData as { key: string; name_tr: string }[] | null) ?? [];
+    eventTypes = turler.map((t) => ({ key: t.key, name_tr: t.label }));
     cities = (sehirData as { id: number; name: string }[] | null) ?? [];
   } catch (err) {
     console.error('[eventspec] referans', err);

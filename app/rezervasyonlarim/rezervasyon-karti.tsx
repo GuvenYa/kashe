@@ -1,5 +1,6 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import type { EtkinlikTuru } from '@/app/lib/etkinlik-turleri';
 import { paraBirimliMetin } from '@/app/lib/para';
 import Link from 'next/link';
 import { getCategoryIcon } from '@/app/lib/category-icon';
@@ -107,9 +108,16 @@ const STATUS_STYLES: Record<
 export function RezervasyonKarti({
   booking: b,
   viewer,
+  turler,
 }: {
   booking: Booking;
   viewer: 'customer' | 'professional';
+  /**
+   * FAZ 10b: etkinlik turleri `event_types` tablosundan — cagiran sunucu
+   * sayfasi okur ve gecer (kart kendi sorgusunu atmaz). Verilmezse etiket
+   * ham degere duser.
+   */
+  turler?: EtkinlikTuru[];
 }) {
   const otherParty = viewer === 'customer' ? b.professional : b.customer;
 
@@ -209,7 +217,7 @@ export function RezervasyonKarti({
               </span>
             )}
             {b.event_type && (
-              <span>{etkinlikTuruEtiketi(b.event_type)}</span>
+              <span>{etiketle(turler, b.event_type)}</span>
             )}
             {b.location && (
               <span className="truncate max-w-[200px]">{b.location}</span>

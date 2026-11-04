@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/app/lib/supabase-server';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import {
   EVENTSPEC_SCHEMA_VERSION,
   EVENT_WIZARD_PARSER_VERSION,
@@ -115,13 +117,12 @@ export async function confirmEventFromWizard(
   const eventType = (input.eventType || '').trim();
   if (!eventType) return { success: false, error: 'Once etkinlik turunu sec.' };
 
-  const { data: turSatiri } = await supabase
-    .from('event_types')
-    .select('key')
-    .eq('key', eventType)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (!turSatiri) return { success: false, error: 'Etkinlik turu gecersiz.' };
+  // FAZ 10b: gecerlilik TEK KAYNAK katmanindan. Varsayilan liste YALNIZ AKTIF
+  // turler — yeni etkinlik kapatilmis bir turle acilamaz (eski davranis).
+  const aktifTurler = await etkinlikTurleri();
+  if (!aktifTurler.some((t) => t.key === eventType)) {
+    return { success: false, error: 'Etkinlik turu gecersiz.' };
+  }
 
   if (input.cityId != null) {
     if (!Number.isInteger(input.cityId) || input.cityId <= 0) {
@@ -253,11 +254,10 @@ export async function confirmEventFromWizard(
   // 4) Brief — yoksa form ozetiyle yeni brief
   let briefId = taban?.brief_id ?? input.briefId ?? null;
   if (!briefId) {
-    const { data: turAdiSatiri } = await supabase
-      .from('event_types')
-      .select('name_tr')
-      .eq('key', eventType)
-      .maybeSingle();
+    const turAdi = etiketle(
+      await etkinlikTurleri({ hepsi: true }),
+      eventType
+    );
     let sehirAdi: string | null = null;
     if (input.cityId != null) {
       const { data: sehirAdiSatiri } = await supabase
@@ -268,7 +268,7 @@ export async function confirmEventFromWizard(
       sehirAdi = (sehirAdiSatiri as { name: string } | null)?.name ?? null;
     }
     const ozet = [
-      (turAdiSatiri as { name_tr: string } | null)?.name_tr ?? eventType,
+      turAdi ?? eventType,
       sehirAdi ?? 'sehir belirsiz',
       baslangic ?? 'tarih belirsiz',
       input.participantCount != null

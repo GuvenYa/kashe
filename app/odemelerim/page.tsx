@@ -1,5 +1,6 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import {
@@ -65,6 +66,9 @@ function StatusPill({ status }: { status: string }) {
 
 export default async function OdemelerimPage() {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
 
@@ -176,7 +180,7 @@ export default async function OdemelerimPage() {
     ...bookings.map((b) => ({
       id: b.id,
       karsiTaraf: proMap.get(b.professional_id) ?? 'Profesyonel',
-      etkinlik: etkinlikTuruEtiketi(b.event_type),
+      etkinlik: etiketle(turler, b.event_type),
       event_date: b.event_date,
       total_amount: b.total_amount,
       status: b.status,
@@ -188,7 +192,7 @@ export default async function OdemelerimPage() {
         r.surum?.proposal?.seller?.display_name?.trim() || 'Kuruluş',
       etkinlik:
         r.surum?.proposal?.title?.trim() ||
-        etkinlikTuruEtiketi(r.event_type),
+        etiketle(turler, r.event_type),
       event_date: r.event_date,
       total_amount: r.total_amount,
       status: r.status,

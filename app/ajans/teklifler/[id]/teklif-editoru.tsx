@@ -38,6 +38,7 @@ import {
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { OzetSerit } from '@/app/components/panel';
 import { TeklifBelgesi } from '@/app/components/teklif/teklif-belgesi';
+import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 import { TeklifBaslik, type KisiBagi } from './teklif-baslik';
 import {
   TeklifKalemTablosu,
@@ -135,6 +136,8 @@ export function TeklifEditoru({
    */
   pazarKiyaslari: Record<number, PazarKiyasi>;
 }) {
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
+  const turEtiketi = useEtkinlikTuruEtiketi();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [hata, setHata] = useState<string | null>(null);
@@ -603,6 +606,7 @@ export function TeklifEditoru({
               valid_until: gecerliSurum.valid_until,
               notes: gecerliSurum.notes,
             }}
+            etkinlikTuruMetni={turEtiketi(etkinlikOzeti?.event_type ?? null)}
           />
         </>
       ) : (

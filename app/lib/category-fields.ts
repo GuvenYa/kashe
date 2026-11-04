@@ -425,7 +425,7 @@ export const LANGUAGE_OPTIONS = [
 ] as const;
 export const ENSTRUMAN_OPTIONS = ['Gitar', 'Piyano', 'Keman', 'Vokal', 'Bateri', 'Bas', 'Saksafon', 'Perküsyon'] as const;
 // NOT: etkinlik türleri artık ORTAK bir alan (category_attributes.etkinlik_turleri) ve
-// değer kümesi ilanlar taksonomisinden (app/mesajlar/data → EVENT_TYPES) TEK KAYNAK gelir.
+// deger kumesi TEK KAYNAK `event_types` tablosundan gelir (FAZ 10b).
 // Eski quick-kopya listesi (ETKINLIK_TURLERI_OPTIONS) kaldırıldı (iki kopya yasak).
 
 // Fiziksel modül select setleri (hair serbest eklemeye açık; eyes sabit).

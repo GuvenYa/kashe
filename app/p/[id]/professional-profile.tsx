@@ -25,7 +25,8 @@ import {
   type LeveledSkill,
   type ProfileExperience,
 } from '@/app/lib/category-fields';
-import { getEventTypeLabel } from '@/app/mesajlar/data';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import { ProfilIslemSaglayici } from './profil-islem-baglami';
 import { MobilCtaCubugu } from './mobil-cta-cubugu';
 import type {
@@ -123,7 +124,10 @@ function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
   );
 }
 
-export function ProfessionalProfile(props: ProfessionalProfileProps) {
+export async function ProfessionalProfile(props: ProfessionalProfileProps) {
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan (pasif
+  // turler dahil — eski beyanin etiketi kaybolmasin).
+  const turler = await etkinlikTurleri({ hepsi: true });
   const {
     profile, displayName, initials, categorySubtitle, cityName,
     averageRating, reviewCount, isBusyNow, services, packages,
@@ -270,7 +274,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
     eventTypes.length > 0
       ? eventTypes
           .slice(0, 3)
-          .map((k) => getEventTypeLabel(k))
+          .map((k) => etiketle(turler, k))
           .filter(Boolean)
           .join(', ') || null
       : null,
@@ -774,7 +778,7 @@ export function ProfessionalProfile(props: ProfessionalProfileProps) {
                 <div className={`${EYEBROW} mb-2.5`}>Etkinlik türleri</div>
                 <div className="flex flex-wrap gap-2">
                   {eventTypes.map((k) => {
-                    const label = getEventTypeLabel(k);
+                    const label = etiketle(turler, k);
                     if (!label) return null;
                     return (
                       <span key={k} className="inline-flex items-center px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">

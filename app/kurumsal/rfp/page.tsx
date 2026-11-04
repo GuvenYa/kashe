@@ -7,7 +7,8 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { tarihMetni, zamanMetni, KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { YeniRfp, type RfpEtkinlik } from './yeni-rfp';
 import {
   RFP_DURUM_ETIKETLERI,
@@ -42,6 +43,9 @@ export default async function KurumsalRfpPage({
   searchParams: Promise<{ etkinlik?: string }>;
 }) {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/kurumsal/rfp');
@@ -118,7 +122,7 @@ export default async function KurumsalRfpPage({
       organizationId: e.organization_id ?? '',
       baslik:
         e.title?.trim() ||
-        [etkinlikTuruEtiketi(e.event_type), tarihMetni(e.start_date)]
+        [etiketle(turler, e.event_type), tarihMetni(e.start_date)]
           .filter(Boolean)
           .join(' · ') ||
         'Etkinlik',

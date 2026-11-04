@@ -4,7 +4,6 @@
  */
 
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
-import { EVENT_TYPES, type EventTypeKey } from '../mesajlar/data';
 
 // =============================================================================
 // Status enums
@@ -41,7 +40,8 @@ export type Listing = {
   project_details: string | null;
   work_conditions: string | null;
   event_date: string | null;
-  event_type: EventTypeKey | null;
+  /** FAZ 10b: deger kumesi `event_types` tablosunda (FK); tipte serbest metin. */
+  event_type: string | null;
   location: string | null;
   city_id: number | null;
   guest_count: number | null;
@@ -317,12 +317,6 @@ export function formatProposedAmount(
     maximumFractionDigits: 0,
   }).format(amount);
 }
-
-/**
- * Event type label'ı için mesajlar/data.ts'teki helper'ı re-export ediyoruz.
- * Tek noktadan değişim — Türkçe label tek yerden geliyor.
- */
-export { getEventTypeLabel } from '../mesajlar/data';
 
 /**
  * Listing oluşturma/güncelleme için minimum doğrulamalar.

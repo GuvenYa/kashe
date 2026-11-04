@@ -5,11 +5,8 @@ import { orderCities } from '@/app/lib/city-order';
 import { applyDiscoverBase } from '@/app/lib/discover-base';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
-import {
-  SihirbazClient,
-  type EtkinlikTuru,
-  type SihirbazProfil,
-} from './sihirbaz-client';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { SihirbazClient, type SihirbazProfil } from './sihirbaz-client';
 import type { ProviderPublic } from '@/app/lib/types';
 
 export const metadata = {
@@ -54,11 +51,8 @@ export default async function EtkinlikSihirbaziPage() {
         .eq('is_active', true)
         .order('sort_order'),
       supabase.from('turkish_cities').select('id, name').order('name'),
-      supabase
-        .from('event_types')
-        .select('key, name_tr, group_key, sort_order')
-        .eq('is_active', true)
-        .order('sort_order'),
+      // FAZ 10b: tur listesi TEK KAYNAK katmanindan (bir saat onbellekli).
+      etkinlikTurleri(),
       applyDiscoverBase(
         // FAZ 2c: sayac da gorunumden okur; sutun adlari ve temel filtre ayni oldugu icin
         // kesfet ile parite korunur (ikisi de applyDiscoverBase kullanir).
@@ -118,7 +112,11 @@ export default async function EtkinlikSihirbaziPage() {
             <SihirbazClient
               kategoriler={(categoriesRes.data ?? []) as { id: number; slug: string; name_tr: string }[]}
               sehirler={orderCities((citiesRes.data ?? []) as { id: number; name: string }[])}
-              turler={(eventTypesRes.data ?? []) as unknown as EtkinlikTuru[]}
+              turler={eventTypesRes.map((t) => ({
+                key: t.key,
+                name_tr: t.label,
+                group_key: t.group,
+              }))}
               profiller={profiller}
               kuruluslar={kuruluslar}
               oturumVar={!!user}

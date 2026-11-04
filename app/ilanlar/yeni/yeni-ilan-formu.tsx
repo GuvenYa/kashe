@@ -10,7 +10,7 @@ import {
   type BudgetPresetKey,
   type Listing,
 } from '../listings-data';
-import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import {
   OnBehalfSelector,
   type OnBehalfBusiness,
@@ -55,9 +55,6 @@ type Props = {
     title: string | null;
   } | null;
 };
-
-// Tek kaynak: app/mesajlar/data.ts → EVENT_TYPES (ilan taksonomisi = listings.event_type CHECK).
-const EVENT_TYPE_OPTIONS = EVENT_TYPES;
 
 // Proje-temelli kategoriler (etkinlik türü alakasız: oyuncu, model).
 // Bunlarda "düğün/sünnet" sormak anlamsız — etkinlik türü alanı gizlenir.
@@ -167,6 +164,8 @@ export function YeniIlanFormu({
   editorIsOwner = true,
   onDoldur = null,
 }: Props) {
+  // FAZ 10b: tur listesi `event_types` tablosundan (saglayici; yalniz aktif).
+  const etkinlikTurleri = useEtkinlikTurleri();
   // Etkinlik bagi yalniz YENI ilan modunda anlamli; gizli, kullanici degistiremez.
   const etkinlikId = initialData ? null : onDoldur?.etkinlikId ?? null;
   /** On dolum yalniz yeni ilan modunda uygulanir (duzenleme modu DEGISMEZ). */
@@ -646,7 +645,7 @@ export function YeniIlanFormu({
                   className="w-full px-4 py-3 bg-paper border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                 >
                   <option value="">Seç...</option>
-                  {EVENT_TYPE_OPTIONS.map((opt) => (
+                  {etkinlikTurleri.map((opt) => (
                     <option key={opt.key} value={opt.key}>
                       {opt.label}
                     </option>

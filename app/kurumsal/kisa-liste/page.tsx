@@ -18,6 +18,7 @@ import {
   kisaListeleriListele,
 } from '@/app/lib/tedarikci-data';
 import { etkinlikEtiketi } from '@/app/lib/secim-etiketi';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Kısa liste — Kashe',
@@ -41,6 +42,8 @@ export default async function KisaListePage({
   searchParams: Promise<{ kurulus?: string; liste?: string }>;
 }) {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (onbellekli).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect('/giris?redirect=/kurumsal/kisa-liste');
@@ -134,7 +137,7 @@ export default async function KisaListePage({
     }[]
   ).map((e) => ({
     id: e.id,
-    ad: etkinlikEtiketi(e),
+    ad: etkinlikEtiketi(e, turler),
   }));
 
   const hamSaglayicilar = (saglayiciSonuc.data ?? []) as {

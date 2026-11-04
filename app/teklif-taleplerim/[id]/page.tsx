@@ -5,6 +5,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
 import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { getTeamContext } from '@/app/lib/business-write';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
@@ -159,7 +160,12 @@ export default async function TeklifKarsilastirPage({
 
   // Talep detayları — brief_data'yı kategori config'iyle çevir (config sırasıyla)
   const categorySlug = (request.service_categories as any)?.slug ?? null;
-  const briefFields = getBriefFields(categorySlug);
+  // FAZ 10b: `event_type` secenek etiketleri tablodan (pasifler dahil) —
+  // aksi halde brief satirinda ham anahtar ("wedding") gorunurdu.
+  const briefFields = getBriefFields(
+    categorySlug,
+    await etkinlikTurleri({ hepsi: true })
+  );
   const briefData = (request.brief_data ?? {}) as Record<string, string>;
   const configKeys = new Set(briefFields.map((f) => f.key));
 

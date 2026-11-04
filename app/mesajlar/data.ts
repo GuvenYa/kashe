@@ -1,39 +1,13 @@
 // Pure data/constants — no 'use server' directive
 // Bu dosya hem server actions'tan hem client component'lerden import edilebilir.
 
-// TEK KAYNAK — etkinlik taksonomisi. Bu listeyi güncellemek TÜM türetilen yüzeyleri
-// (Teklif Al brief formu · keşfet etkinlik filtresi · kategori-bilgileri etkinlik_turleri
-// çipleri · ilan formu/filtresi) otomatik genişletir; DB tarafında constraint'ler ayrı
-// migration ile eşlenir. Sıra: sosyal blok → kurumsal blok → Diğer.
-// NOT: Çekim/iş türleri (product, fashion, social, promo, ad, kids, stage, school, mall,
-// family, outdoor, activation) etkinlik DEĞİLDİR ve buraya GİRMEZ (ayrı brief alanı — backlog).
-export const EVENT_TYPES = [
-  // Sosyal
-  { key: 'wedding', label: 'Düğün' },
-  { key: 'engagement', label: 'Nişan' },
-  { key: 'henna', label: 'Kına gecesi' },
-  { key: 'birthday', label: 'Doğum günü' },
-  { key: 'baby_shower', label: 'Baby shower' },
-  { key: 'graduation', label: 'Mezuniyet' },
-  { key: 'circumcision', label: 'Sünnet' },
-  // Kurumsal
-  { key: 'corporate', label: 'Kurumsal' },
-  { key: 'launch', label: 'Lansman' },
-  { key: 'fair', label: 'Fuar' },
-  { key: 'conference', label: 'Konferans' },
-  { key: 'congress', label: 'Kongre' },
-  { key: 'gala', label: 'Gala' },
-  { key: 'concert', label: 'Konser' },
-  // Diğer
-  { key: 'other', label: 'Diğer' },
-] as const;
-
-export type EventTypeKey = (typeof EVENT_TYPES)[number]['key'];
-
-export const EVENT_TYPE_KEYS = EVENT_TYPES.map(
-  (e) => e.key
-) as readonly EventTypeKey[];
-
+// ETKINLIK TURLERI BURADA DEGIL: tek kaynak `event_types` tablosu
+// (FAZ 10b). Sunucu `app/lib/etkinlik-turleri.ts`, istemci
+// `app/components/etkinlik-turleri-provider.tsx` uzerinden okur; etiketleme
+// `app/lib/etkinlik-turu.ts` (`etiketle`). Yeni tur = tabloda satir.
+//
+// Butce araliklari SABIT KALIR: `conversations_budget_range_check` hala CHECK
+// listesi (tablo yok), degeri burasi tasir.
 export const BUDGET_RANGES = [
   { key: 'under_5k', label: '5.000 TL altı' },
   { key: '5k_15k', label: '5.000 - 15.000 TL' },
@@ -50,12 +24,6 @@ export const BUDGET_RANGE_KEYS = BUDGET_RANGES.map(
 ) as readonly BudgetRangeKey[];
 
 // Etiket çevirme yardımcıları (UI'da key → label dönüştürmek için)
-export function getEventTypeLabel(key: EventTypeKey | string | null): string | null {
-  if (!key) return null;
-  const found = EVENT_TYPES.find((e) => e.key === key);
-  return found?.label ?? null;
-}
-
 export function getBudgetRangeLabel(key: BudgetRangeKey | string | null): string | null {
   if (!key) return null;
   const found = BUDGET_RANGES.find((b) => b.key === key);

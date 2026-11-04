@@ -4,6 +4,8 @@ import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { CerezBanner } from "@/app/components/cerez-banner";
 import { SITE_URL } from "@/app/lib/site";
+import { etkinlikTurleri } from "@/app/lib/etkinlik-turleri";
+import { EtkinlikTurleriProvider } from "@/app/components/etkinlik-turleri-provider";
 
 // Gilroy (marka fontu) — next/font/local. Ağırlıklar BİZ atarız: dosyaların OS/2
 // meta'sı bozuk (hepsi 400 der), dosya içeriğine değil bu eşlemeye güvenilir.
@@ -85,18 +87,26 @@ export const viewport = {
   themeColor: "#040D26", /* brand-ink (lacivert) */
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // FAZ 10b: etkinlik turleri TEK KAYNAK `event_types` tablosu. Liste burada
+  // BIR KEZ okunur (bir saat onbellekli, anon) ve istemci bilesenlerine
+  // saglayiciyla gecer; her form kendi sorgusunu atmaz. Pasif turler de gelir
+  // (eski kayitlarin etiketi gorunmeye devam etsin).
+  const turler = await etkinlikTurleri({ hepsi: true });
+
   return (
     <html
       lang="tr"
       className={`${gilroy.variable} ${inter.variable}`}
     >
       <body className="font-body antialiased">
-        {children}
+        <EtkinlikTurleriProvider turler={turler}>
+          {children}
+        </EtkinlikTurleriProvider>
         <Analytics />
         {/* <CerezBanner /> */}
       </body>

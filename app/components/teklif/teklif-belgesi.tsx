@@ -1,4 +1,4 @@
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+
 import { paraBirimliMetin } from '@/app/lib/para';
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 
@@ -125,7 +125,21 @@ function OzetSatiri({
   );
 }
 
-export function TeklifBelgesi({ teklif }: { teklif: TeklifBelgesiVerisi }) {
+/**
+ * FAZ 10b: etkinlik turu etiketi PROP ile gelir.
+ *
+ * Bu bilesen IKI AGACTA kullaniliyor: teklif editoru (istemci) ve portal
+ * (anon sunucu). Ne hook cagirabilir (sunucu agacinda kirardi) ne de async
+ * olabilir (istemci agacinda kirardi) — etiketi cagiran cozer.
+ */
+export function TeklifBelgesi({
+  teklif,
+  etkinlikTuruMetni,
+}: {
+  teklif: TeklifBelgesiVerisi;
+  /** Cagiranin cozdugu tur etiketi; yoksa satir bos gorunur. */
+  etkinlikTuruMetni?: string | null;
+}) {
   const para = (v: BelgeSayisi) =>
     paraBirimliMetin(sayi(v), teklif.currency) || '—';
   const gecerlilikMetni = gunMetni(teklif.valid_until);
@@ -172,7 +186,7 @@ export function TeklifBelgesi({ teklif }: { teklif: TeklifBelgesiVerisi }) {
             <OzetSatiri etiket="Etkinlik" deger={teklif.event.title} />
             <OzetSatiri
               etiket="Tür"
-              deger={etkinlikTuruEtiketi(teklif.event.event_type)}
+              deger={etkinlikTuruMetni ?? null}
             />
             <OzetSatiri etiket="Tarih" deger={gunMetni(teklif.event.start_date)} />
             <OzetSatiri etiket="Şehir" deger={teklif.event.city} />

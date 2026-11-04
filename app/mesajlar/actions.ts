@@ -8,12 +8,15 @@ import { canWriteForBusiness, getTeamContext } from '@/app/lib/business-write';
 import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import {
-  EVENT_TYPE_KEYS,
   BUDGET_RANGE_KEYS,
   isBudgetRangeKey,
-  type EventTypeKey,
   type BudgetRangeKey,
 } from './data';
+import {
+  etkinlikTurleri,
+  etkinlikTuruAnahtarlari,
+} from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -27,7 +30,6 @@ import {
   newMessageEmail,
   newConversationEmail,
 } from '@/app/lib/email/templates';
-import { getEventTypeLabel } from './data';
 import { sendPushToUser } from '@/app/lib/push-server';
 
 export type MessagingActionResult = {
@@ -283,7 +285,10 @@ async function notifyNewConversation(
         ? recipientProfile.company_name
         : recipientProfile?.full_name || '';
 
-    const eventLabel = eventType ? getEventTypeLabel(eventType) : null;
+    // FAZ 10b: etiket `event_types` tablosundan (pasif turler dahil).
+    const eventLabel = eventType
+      ? etiketle(await etkinlikTurleri({ hepsi: true }), eventType)
+      : null;
 
     const template = newConversationEmail({
       recipientName,
@@ -407,11 +412,12 @@ export async function startConversation(
   let conversationId: string;
   const isNewConversation = !existing;
 
-  // Tek-kaynak güvence: taksonomi-dışı event_type DB'ye ulaşmadan null'a indirilir
-  // (kaynak: EVENT_TYPE_KEYS). Ayrıntı brief_data'da korunur → CHECK ihlali olmaz.
+  // Tek-kaynak guvence: taksonomi disi `event_type` DB'ye ulasmadan null'a
+  // indirilir. FAZ 10b: kaynak `event_types` TABLOSU (FK; liste disi deger
+  // 23503 verir). Ayrinti `brief_data`da korunur.
+  const turAnahtarlari = await etkinlikTuruAnahtarlari();
   const safeEventType =
-    data.event_type &&
-    (EVENT_TYPE_KEYS as readonly string[]).includes(data.event_type)
+    data.event_type && turAnahtarlari.has(data.event_type)
       ? data.event_type
       : null;
 

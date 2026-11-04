@@ -52,7 +52,7 @@ import {
 } from './category-fields';
 // NOT: Etkinlik türleri artık bu dosyada FİLTRE OLARAK tanımlı değil (bkz. ~1001.
 // satırdaki KALDIRILDI notu). Keşfet'in üst düzey "Etkinlik türü" bölümü seçenekleri
-// doğrudan ilanlar taksonomisinden (app/mesajlar/data → EVENT_TYPES) okuyor; tek kaynak
+// dogrudan TEK KAYNAK `event_types` tablosundan okuyor (FAZ 10b); tek kaynak
 // kuralı orada korunuyor, burada yerel kopya yok.
 
 export type FilterFieldType = 'multi' | 'single';

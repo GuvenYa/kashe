@@ -1,6 +1,7 @@
 import { gunAyMetni, kisaAyliTarih } from '@/app/lib/tarih';
 import { TEKLIF_DURUM_ETIKETLERI } from '@/app/ajans/teklifler/teklif-data';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import type { EtkinlikTuru } from '@/app/lib/etkinlik-turleri';
 
 /**
  * SECIM KUTUSU ETIKETLERI — tek kaynak (hijyen 04).
@@ -23,14 +24,18 @@ import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
  * Baslik yoksa etkinlik TURU kullanilir (sihirbazdan baslik girilmeden gelen
  * etkinlikler boyle); ikisi de yoksa "Etkinlik".
  */
-export function etkinlikEtiketi(e: {
-  title?: string | null;
-  event_type?: string | null;
-  start_date?: string | null;
-}): string {
+export function etkinlikEtiketi(
+  e: {
+    title?: string | null;
+    event_type?: string | null;
+    start_date?: string | null;
+  },
+  /** FAZ 10b: `event_types` listesi (cagiran sunucuda okur). */
+  turler?: EtkinlikTuru[]
+): string {
   const ad =
     e.title?.trim() ||
-    (e.event_type ? etkinlikTuruEtiketi(e.event_type) : null) ||
+    (e.event_type ? etiketle(turler, e.event_type) : null) ||
     'Etkinlik';
   const tarih = kisaAyliTarih(e.start_date);
   return tarih ? `${ad} · ${tarih}` : ad;

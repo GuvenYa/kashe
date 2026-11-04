@@ -6,6 +6,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { TeklifToplaFormu } from './teklif-topla-formu';
+import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 import { getWritableBusinesses } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 
@@ -14,7 +15,7 @@ export const metadata = {
 };
 
 type OnDolduParams = {
-  /** EVENT_TYPES key'i — brief 'event_type' alanına düşer. */
+  /** `event_types.key` — brief 'event_type' alanina duser. */
   tur?: string;
   /** turkish_cities.id */
   sehir?: string;
@@ -36,6 +37,8 @@ export default async function TeklifToplaPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
+  // FAZ 10b: gecerli tur anahtarlari `event_types` tablosundan.
+  const turAnahtarlari = await etkinlikTuruAnahtarlari();
 
   const user = await getCachedUser();
 
@@ -137,7 +140,12 @@ export default async function TeklifToplaPage({
           onDoldur={{
             kategoriId: params.kategori ? Number(params.kategori) : null,
             sehirId: params.sehir ? Number(params.sehir) : null,
-            etkinlikTuru: params.tur ?? null,
+            // FAZ 10b: on-doldurma yalniz TABLODAKI anahtarla yapilir; liste
+            // disi `?tur=` yok sayilir (form bos baslar, hata yok).
+            etkinlikTuru:
+              params.tur && turAnahtarlari.has(params.tur)
+                ? params.tur
+                : null,
             etkinlikTarihi: params.tarih ?? null,
             // FAZ 4c/P3: id istemciden geliyor ama YAZILMADAN once sunucuda
             // dogrulanir (gorunenEtkinlikId); burada yalniz forma tasinir.

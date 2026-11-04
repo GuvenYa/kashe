@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { ServiceCategory, TurkishCity } from '@/app/lib/types';
 import { getFilterFields } from '@/app/lib/filter-config';
 import { KategoriTalepCta } from '@/app/components/kategori-talep-cta';
-import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 
 const PRICE_OPTIONS = [
   { value: '5000', label: "5.000 TL'ye kadar" },
@@ -108,6 +108,9 @@ export function KesfetFilters({
   resultCount,
   isLoggedIn,
 }: Props) {
+  // FAZ 10b: etkinlik turu suzgeci `event_types` tablosundan (saglayici;
+  // yalniz aktif turler). Yerel sabit liste YOK.
+  const etkinlikTurleriListesi = useEtkinlikTurleri();
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -600,7 +603,7 @@ export function KesfetFilters({
       <div>
         <p className="font-display text-base text-ink mb-3">Etkinlik türü</p>
         <div className="space-y-1.5">
-          {EVENT_TYPES.map((et) => {
+          {etkinlikTurleriListesi.map((et) => {
             const on = eventTypes.includes(et.key);
             return (
               <button

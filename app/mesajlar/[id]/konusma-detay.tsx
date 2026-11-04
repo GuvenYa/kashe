@@ -1,5 +1,5 @@
 'use client';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useRef, useEffect, useMemo, useTransition } from 'react';
@@ -173,6 +173,8 @@ export function KonusmaDetay({
   yorumCagrisi,
   tamamlanmaZamani,
 }: Props) {
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
+  const turEtiketi = useEtkinlikTuruEtiketi();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
@@ -508,7 +510,7 @@ export function KonusmaDetay({
   if (eventType) {
     briefBits.push({
       label: 'Tür',
-      value: etkinlikTuruEtiketi(eventType) ?? 'Belirtilmedi',
+      value: turEtiketi(eventType) ?? 'Belirtilmedi',
     });
   }
   if (eventDate) {

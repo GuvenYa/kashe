@@ -16,7 +16,7 @@ import {
   toQuickList,
   type ModuleKey,
 } from '@/app/lib/category-fields';
-import { EVENT_TYPE_KEYS } from '@/app/mesajlar/data';
+import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 
 export type SaveResult = { success: boolean; error?: string };
 
@@ -123,10 +123,12 @@ export async function saveCategoryAttributes(
           ? v
           : undefined;
     }
-    // etkinlik_turleri — ORTAK çoklu alan (ilanlar taksonomisi; yalnız izinli EVENT_TYPE key'leri)
+    // etkinlik_turleri — ORTAK coklu alan. FAZ 10b: izinli anahtarlar
+    // `event_types` TABLOSUNDAN. `category_attributes` jsonb oldugu icin FK
+    // YOK — dogrulama burada kalir, kaynagi tablo.
     if ('etkinlik_turleri' in payload) {
       const raw = payload.etkinlik_turleri;
-      const allowed = new Set(EVENT_TYPE_KEYS as readonly string[]);
+      const allowed = await etkinlikTuruAnahtarlari();
       const out: string[] = [];
       if (Array.isArray(raw)) {
         for (const v of raw) {

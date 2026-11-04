@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createQuoteRequest } from './actions';
 import { createClient } from '@/app/lib/supabase-browser';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import {
   getBriefFields,
   getBriefIntro,
@@ -64,7 +65,7 @@ const TARGET_ROLE_OPTIONS: {
 export type TeklifOnDoldur = {
   kategoriId: number | null;
   sehirId: number | null;
-  /** EVENT_TYPES key'i → brief 'event_type' alanı */
+  /** `event_types.key` -> brief 'event_type' alani */
   etkinlikTuru: string | null;
   /** ISO tarih → brief 'event_date' alanı */
   etkinlikTarihi: string | null;
@@ -88,6 +89,8 @@ export function TeklifToplaFormu({
   canSelfCreate?: boolean;
   onDoldur?: TeklifOnDoldur;
 }) {
+  // FAZ 10b: etkinlik turleri `event_types` tablosundan (saglayici).
+  const etkinlikTurleriListesi = useEtkinlikTurleri();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +162,12 @@ export function TeklifToplaFormu({
     categoryId === ''
       ? null
       : categories.find((c) => c.id === categoryId)?.slug ?? null;
-  const briefFields: BriefField[] = getBriefFields(selectedSlug);
+  // FAZ 10b: `event_type` alaninin secenekleri `event_types` tablosundan
+  // (saglayici; yalniz aktif turler).
+  const briefFields: BriefField[] = getBriefFields(
+    selectedSlug,
+    etkinlikTurleriListesi
+  );
   const briefIntro = getBriefIntro(selectedSlug);
 
   function setField(key: string, value: string) {

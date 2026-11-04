@@ -7,7 +7,8 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { tarihMetni, zamanMetni } from '@/app/lib/tarih';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { RfpSaticiIslemleri } from './rfp-satici-islemleri';
 import { markRfpViewed } from '../rfp-satici-actions';
 import {
@@ -34,6 +35,9 @@ export default async function AjansRfpDetayPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
   if (!user) redirect(`/giris?redirect=/ajans/rfp/${id}`);
@@ -78,7 +82,7 @@ export default async function AjansRfpDetayPage({
         rfp.event.title.trim() !== rfp.title.trim()
           ? rfp.event.title.trim()
           : null,
-        etkinlikTuruEtiketi(rfp.event.event_type),
+        etiketle(turler, rfp.event.event_type),
         tarihMetni(rfp.event.start_date),
         [rfp.event.city, rfp.event.district].filter(Boolean).join(' / ') || null,
         rfp.event.participant_count

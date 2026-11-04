@@ -4,6 +4,10 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from './rezervasyon-karti';
+import {
+  etkinlikTurleri,
+  type EtkinlikTuru,
+} from '@/app/lib/etkinlik-turleri';
 import { Calendar } from 'lucide-react';
 import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
@@ -97,10 +101,13 @@ function SeatGroup({
   title,
   list,
   viewer,
+  turler,
 }: {
   title: string;
   list: EskiBookingRow[];
   viewer: 'customer' | 'professional';
+  /** FAZ 10b: etkinlik turleri sayfadan gelir, karta gecer. */
+  turler: EtkinlikTuru[];
 }) {
   if (list.length === 0) return null;
   const { upcoming, past } = splitByTime(list);
@@ -121,7 +128,12 @@ function SeatGroup({
             </h3>
             <div className="space-y-3">
               {upcoming.map((b) => (
-                <RezervasyonKarti key={b.id} booking={b} viewer={viewer} />
+                <RezervasyonKarti
+                  key={b.id}
+                  booking={b}
+                  viewer={viewer}
+                  turler={turler}
+                />
               ))}
             </div>
           </div>
@@ -133,7 +145,12 @@ function SeatGroup({
             </h3>
             <div className="space-y-3">
               {past.map((b) => (
-                <RezervasyonKarti key={b.id} booking={b} viewer={viewer} />
+                <RezervasyonKarti
+                  key={b.id}
+                  booking={b}
+                  viewer={viewer}
+                  turler={turler}
+                />
               ))}
             </div>
           </div>
@@ -145,6 +162,8 @@ function SeatGroup({
 
 export default async function RezervasyonlarimPage() {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri tablodan (kart prop ile alir).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
 
@@ -428,11 +447,13 @@ export default async function RezervasyonlarimPage() {
                 title="Aldığın hizmetler"
                 list={asBuyer}
                 viewer="customer"
+                turler={turler}
               />
               <SeatGroup
                 title="Verdiğin hizmetler"
                 list={asSeller}
                 viewer="professional"
+                turler={turler}
               />
 
               {/* Duzeltme 03-B — kisi olarak onaylanan teklif dosyalarindan */}

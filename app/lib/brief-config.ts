@@ -8,8 +8,6 @@
 // - Cevaplar conversations.brief_data (jsonb) içinde { [key]: value } olarak saklanır.
 // - 'message' alanı her formda zorunlu ve sabittir (config'e koymuyoruz, modal kendi ekler).
 
-import { EVENT_TYPES } from '../mesajlar/data';
-
 export type BriefFieldType =
   | 'select'
   | 'text'
@@ -24,6 +22,16 @@ export type BriefFieldOption = {
 
 export type BriefField = {
   key: string; // brief_data içindeki anahtar (örn. 'event_type', 'style')
+  /**
+   * FAZ 10b: secenekleri CALISMA ZAMANINDA dolan alan.
+   *
+   * `event_types` listesi artik sabit degil (tek kaynak tablo), bu yuzden
+   * `options` modul duzeyinde BOS durur ve `getBriefFields(slug, turler)`
+   * ile doldurulur. Istemci formlari listeyi saglayicidan, sunucu sayfalari
+   * `etkinlikTurleri({ hepsi: true })` ile verir. Liste verilmezse alan
+   * secenegi bos kalir — uydurma etiket URETILMEZ.
+   */
+  source?: 'event_types';
   label: string; // kullanıcıya görünen etiket
   type: BriefFieldType;
   required: boolean;
@@ -59,13 +67,11 @@ const BUDGET_OPTIONS: BriefFieldOption[] = [
   { value: 'open', label: 'Açık / Görüşülecek' },
 ];
 
-// TEK KAYNAK: app/mesajlar/data.ts → EVENT_TYPES. Yerel kopya YOK.
-// Değer kümesi conversations/listings event_type CHECK constraint'i + keşfet
-// etkinlik filtresi ile birebir aynıdır (taksonomi değişirse yalnız data.ts güncellenir).
-const EVENT_TYPE_OPTIONS: BriefFieldOption[] = EVENT_TYPES.map((e) => ({
-  value: e.key,
-  label: e.label,
-}));
+// TEK KAYNAK: `event_types` TABLOSU (FAZ 10b). Yerel kopya YOK ve modul
+// duzeyinde liste YOK: `event_type` alanlari `source: 'event_types'` tasir,
+// secenekler `getBriefFields(slug, turler)` ile calisma zamaninda dolar.
+// Deger kumesi DB'de FK ile zorunlu (10b-DB: liste disi deger 23503).
+const EVENT_TYPE_OPTIONS: BriefFieldOption[] = [];
 
 // -----------------------------------------------------------------------------
 // Default fallback — config'de tanımsız kategoriler bunu kullanır
@@ -79,6 +85,7 @@ export const DEFAULT_BRIEF_FIELDS: BriefField[] = [
     type: 'select',
     required: false,
     options: EVENT_TYPE_OPTIONS,
+    source: 'event_types',
     legacyColumn: 'event_type',
   },
   {
@@ -132,6 +139,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -207,6 +215,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -289,6 +298,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -381,6 +391,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -474,6 +485,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -564,6 +576,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -879,6 +892,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -961,6 +975,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1046,6 +1061,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1120,6 +1136,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1213,6 +1230,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1308,6 +1326,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1403,6 +1422,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1492,6 +1512,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1573,6 +1594,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1666,6 +1688,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1757,6 +1780,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1847,6 +1871,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -1946,6 +1971,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -2034,6 +2060,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -2123,6 +2150,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
         required: true,
         legacyColumn: 'event_type',
         options: EVENT_TYPE_OPTIONS,
+        source: 'event_types',
       },
       {
         key: 'event_date',
@@ -2203,11 +2231,31 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
 /**
  * Verilen kategori slug'ına ait brief alanlarını döndürür.
  * Tanımsız slug → DEFAULT_BRIEF_FIELDS (fallback).
+ *
+ * `turler` verilirse `source: 'event_types'` alanlarinin secenekleri o
+ * listeden DOLDURULUR (FAZ 10b). Verilmezse alan secenegi bos kalir: cagiran
+ * ya listeyi gecer ya da etiketi `etiketle` / `useEtkinlikTuruEtiketi` ile
+ * cozer.
  */
-export function getBriefFields(categorySlug: string | null): BriefField[] {
-  if (!categorySlug) return DEFAULT_BRIEF_FIELDS;
-  const found = CATEGORY_BRIEFS.find((c) => c.slug === categorySlug);
-  return found ? found.fields : DEFAULT_BRIEF_FIELDS;
+export function getBriefFields(
+  categorySlug: string | null,
+  turler?: { key: string; label: string }[]
+): BriefField[] {
+  const temel = categorySlug
+    ? (CATEGORY_BRIEFS.find((c) => c.slug === categorySlug)?.fields ??
+      DEFAULT_BRIEF_FIELDS)
+    : DEFAULT_BRIEF_FIELDS;
+  if (!turler || turler.length === 0) return temel;
+  // Yalniz `event_types` kaynakli alanlar yeni nesneye kopyalanir; gerisi
+  // AYNI nesne kalir (gereksiz kopya yok).
+  return temel.map((alan) =>
+    alan.source === 'event_types'
+      ? {
+          ...alan,
+          options: turler.map((t) => ({ value: t.key, label: t.label })),
+        }
+      : alan
+  );
 }
 
 /**

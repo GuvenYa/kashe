@@ -15,6 +15,7 @@ import {
   ATTACHMENT_ACCEPT,
   attachmentKind,
 } from '@/app/lib/attachments';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import {
   getBriefFields,
   getBriefIntro,
@@ -71,6 +72,8 @@ export function IletisimButton({
   etkinlikId = null,
   onDolgu = null,
 }: Props) {
+  // FAZ 10b: etkinlik turleri `event_types` tablosundan (saglayici).
+  const etkinlikTurleriListesi = useEtkinlikTurleri();
   const router = useRouter();
   // Pro-as-buyer: her ziyaretçi (professional dahil) kendi adına — customer koltuğu — teklif isteyebilir.
   const canSelfCreate = true;
@@ -89,7 +92,11 @@ export function IletisimButton({
   const [briefValues, setBriefValues] = useState<Record<string, string>>({});
 
   // Bu profesyonelin kategorisine göre alanlar (config-driven)
-  const briefFields: BriefField[] = getBriefFields(categorySlug);
+  // FAZ 10b: `event_type` secenekleri `event_types` tablosundan (saglayici).
+  const briefFields: BriefField[] = getBriefFields(
+    categorySlug,
+    etkinlikTurleriListesi
+  );
   const briefIntro = getBriefIntro(categorySlug);
 
   function setField(key: string, value: string) {

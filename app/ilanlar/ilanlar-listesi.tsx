@@ -13,7 +13,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { EmptyState } from '@/app/components/EmptyState';
-import { EVENT_TYPES } from '@/app/mesajlar/data';
+import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import { SearchX, Briefcase } from 'lucide-react';
 import {
   formatBudgetRange,
@@ -76,9 +76,6 @@ type Props = {
   canCreateListing: boolean;
   currentUserId: string | null;
 };
-
-// Tek kaynak: app/mesajlar/data.ts → EVENT_TYPES (ilan taksonomisi = listings.event_type CHECK).
-const EVENT_TYPE_OPTIONS = EVENT_TYPES;
 
 // Bütçe tavanı (budget_max bazlı) — Keşfet fiyat kalıbı
 const PRICE_OPTIONS = [
@@ -177,6 +174,9 @@ export function IlanlarListesi({
   canCreateListing,
   currentUserId,
 }: Props) {
+  // FAZ 10b: etkinlik turleri tek kaynak `event_types` tablosu; liste kok
+  // duzende bir kez okunup saglayiciyla geliyor (yalniz aktif turler).
+  const etkinlikTurleri = useEtkinlikTurleri();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -388,7 +388,7 @@ export function IlanlarListesi({
             label="Hepsi"
             onClick={() => setEtkinlik('')}
           />
-          {EVENT_TYPE_OPTIONS.map((opt) => (
+          {etkinlikTurleri.map((opt) => (
             <RadioItem
               key={opt.key}
               on={etkinlik === opt.key}

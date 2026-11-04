@@ -5,7 +5,8 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { calcCommission, formatTRY, COMMISSION_RATE } from '@/app/lib/premium';
-import { etkinlikTuruEtiketi } from '@/app/lib/etkinlik-turu';
+import { etiketle } from '@/app/lib/etkinlik-turu';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 
 export const metadata = {
   title: 'Kazançlarım — Kashe',
@@ -46,6 +47,9 @@ function formatDate(iso: string | null): string {
 
 export default async function KazanclarimPage() {
   const supabase = await createClient();
+  // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
+  // (pasif turler dahil; onbellekli tek okuma).
+  const turler = await etkinlikTurleri({ hepsi: true });
 
   const user = await getCachedUser();
 
@@ -310,7 +314,7 @@ export default async function KazanclarimPage() {
                                   )}
                                   {b.event_type && (
                                     <p className="text-[12px] text-ink-50">
-                                      {etkinlikTuruEtiketi(b.event_type)}
+                                      {etiketle(turler, b.event_type)}
                                     </p>
                                   )}
                                 </td>
@@ -361,7 +365,7 @@ export default async function KazanclarimPage() {
                                   'Müşteri'}
                             </p>
                             <p className="text-[12px] text-ink-50">
-                              {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}
+                              {etiketle(turler, b.event_type) ?? 'Etkinlik'} ·{' '}
                               {formatDate(b.event_date)}
                             </p>
                           </div>
@@ -403,7 +407,7 @@ export default async function KazanclarimPage() {
                                   'Müşteri'}
                             </p>
                             <p className="text-[12px] text-ink-50">
-                              {etkinlikTuruEtiketi(b.event_type) ?? 'Etkinlik'} ·{' '}
+                              {etiketle(turler, b.event_type) ?? 'Etkinlik'} ·{' '}
                               {formatDate(b.event_date)}
                             </p>
                           </div>

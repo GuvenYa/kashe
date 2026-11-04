@@ -1,6 +1,7 @@
 'use client';
 
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,7 +27,6 @@ import {
   formatListingAge,
   formatApplicationDeadline,
   isApplicationOpen,
-  getEventTypeLabel,
   getListingStatusLabel,
   getListingStatusTone,
   getApplicationStatusLabel,
@@ -115,6 +115,8 @@ export function IlanDetay({
   similarListings,
   ownerListingCount,
 }: Props) {
+  // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
+  const etkinlikTuruEtiketleyici = useEtkinlikTuruEtiketi();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -132,9 +134,8 @@ export function IlanDetay({
       ? listing.creator.company_name
       : listing.creator?.full_name || 'İsimsiz';
 
-  const eventTypeLabel = listing.event_type
-    ? getEventTypeLabel(listing.event_type)
-    : null;
+  // FAZ 10b: etiket `event_types` tablosundan (saglayici).
+  const eventTypeLabel = etkinlikTuruEtiketleyici(listing.event_type);
 
   const eventDateFormatted = listing.event_date
     ? new Date(listing.event_date).toLocaleDateString('tr-TR', {
