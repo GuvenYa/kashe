@@ -19,6 +19,13 @@
  *
  * Normalizasyon: Turkce harfler ASCII karsiligina indirilir, boylece "açılış"
  * ve "acilis" ayni girise duser (sozluk tek yazimda durur).
+ *
+ * 3) `aramaKatla` — TURKCE HARF DUYARSIZ ARAMA (Duzeltme 07, bulgu 71).
+ *    Veritabanindaki `public.tr_katla` ile BIREBIR ayni esleme: Kesfet
+ *    `v_providers_public.arama_metni` (katlanmis ad + sirket + baslik +
+ *    tanitim + kategori adi) sutununda katlanmis terimle arar, boylece
+ *    "fotograf" "Fotoğrafçı"yi, "dogan" "Doğan"i bulur. Esleme degisirse
+ *    migration'daki `tr_katla` da ayni commit'te degisir.
  */
 
 /** PostgREST filtre sozdizimini kiran karakterler. */
@@ -34,8 +41,12 @@ export function aramaTerimi(ham: string | null | undefined): string {
   return ham.replace(KIRAN_KARAKTERLER, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Turkce harfleri ASCII'ye indirir ve kucuk harfe cevirir. */
-function sadelestir(s: string): string {
+/**
+ * Turkce ve sapkali harfleri ASCII'ye indirip kucuk harfe cevirir.
+ * `public.tr_katla` (DB) ile ayni sonuc: "Çağrı IŞIK" -> "cagri isik".
+ * Sapkali harfler kaynakta kacis koduyla yazilir.
+ */
+export function aramaKatla(s: string): string {
   return s
     .toLocaleLowerCase('tr')
     .replace(/ç/g, 'c')
@@ -44,8 +55,14 @@ function sadelestir(s: string): string {
     .replace(/ö/g, 'o')
     .replace(/ş/g, 's')
     .replace(/ü/g, 'u')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\u00e2/g, 'a')
+    .replace(/\u00ee/g, 'i')
+    .replace(/\u00fb/g, 'u');
+}
+
+/** Katlanmis + bosluklari sadelestirilmis hal (sozluk eslemesi). */
+function sadelestir(s: string): string {
+  return aramaKatla(s).replace(/\s+/g, ' ').trim();
 }
 
 export type AramaEslesmesi = {

@@ -30,7 +30,7 @@ import {
   rolIdleriSlugdan,
 } from '@/app/lib/fiyat-kiyas-data';
 import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
-import { aramaTerimi, esAnlamliEslesme } from '@/app/lib/arama';
+import { aramaKatla, aramaTerimi, esAnlamliEslesme } from '@/app/lib/arama';
 import Link from 'next/link';
 
 export const metadata = {
@@ -185,7 +185,9 @@ export default async function KesfetPage({
    * ARAMA KOSULLARI (VEYA ile birleşir) — Duzeltme 05-D.
    *
    * Kapsam: ad, sirket adi, BASLIK (`headline`), TANITIM (`bio`) ve adi
-   * eslesen kategoriler. Es anlamli sozlugu eslesirse (ornek: "acilis")
+   * eslesen kategoriler. Duzeltme 07 (bulgu 71): metin sutunlari tek
+   * katlanmis `arama_metni` sutununda, kategori adlari da katlanarak aranir
+   * - Turkce harfsiz yazim ("fotograf", "dogan") ayni sonucu verir. Es anlamli sozlugu eslesirse (ornek: "acilis")
    * o etkinlik turunu beyan edenler, ilgili kategoriler ve gerekiyorsa
    * kurumsal saglayicilar da ayni VEYA'ya katilir.
    *
@@ -195,17 +197,13 @@ export default async function KesfetPage({
    */
   const aramaKosullari: string[] = [];
   if (searchQuery) {
-    const lowerQuery = searchQuery.toLocaleLowerCase('tr');
+    const katliTerim = aramaKatla(searchQuery);
     const matchedCategoryIds = (categories || [])
-      .filter((c) => c.name_tr.toLocaleLowerCase('tr').includes(lowerQuery))
+      .filter((c) => aramaKatla(c.name_tr).includes(katliTerim))
       .map((c) => c.id);
 
-    aramaKosullari.push(
-      `full_name.ilike.%${searchQuery}%`,
-      `company_name.ilike.%${searchQuery}%`,
-      `headline.ilike.%${searchQuery}%`,
-      `bio.ilike.%${searchQuery}%`
-    );
+    // Ad + sirket + baslik + tanitim + kategori adi, katlanmis (DB `tr_katla`).
+    aramaKosullari.push(`arama_metni.ilike.%${katliTerim}%`);
 
     const eslesme = esAnlamliEslesme(searchQuery);
     const sozlukTurleri = eslesme.etkinlikTurleri.filter((k) =>

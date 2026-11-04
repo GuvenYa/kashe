@@ -150,7 +150,7 @@ COALESCE ile sarilir. Gonderilmis surume dokunan bakim betikleri (asama4 T0/T99,
 `app/lib/kamu-adi.ts` (`kamuAdi`, `gosterilecekAd(rol, ad, tamAd)`, sunucuda `tamAdGorebilirMi` - kendisi / admin / onayli ya da tamamlanmis
 rezervasyon). Yeni bir yuzey saglayici adi gosteriyorsa bu yardimcidan gecer; tam ad istemciye gonderilmez (rezervasyon sonrasi yuzeyler
 haric). Ajans/kurulus adi degismez. Kesfet `q` terimi `.or()`/`.ilike` icine HAM GIRMEZ: `aramaTerimi()` (`app/lib/arama.ts`) PostgREST filtre
-karakterlerini (virgul, parantez, yildiz, iki nokta, yuzde, ters bolu, cift tirnak) temizler; es anlamlilar ayni dosyada, etkinlik turu listesi tablodan. Kesif yuzeylerinde ajans tipi
+karakterlerini (virgul, parantez, yildiz, iki nokta, yuzde, ters bolu, cift tirnak) temizler; es anlamlilar ayni dosyada, etkinlik turu listesi tablodan. Arama Turkce harf duyarsiz (Duzeltme 07): metin `v_providers_public.arama_metni` (DB `public.tr_katla` ile katlanmis ad + sirket + baslik + tanitim + kategori adi) sutununda `aramaKatla(terim)` ile aranir; iki katlama birebir ayni esleme - biri degisirse digeri ayni commit'te. Kesif yuzeylerinde ajans tipi
 "Kurumsal hizmet saglayicilar" adiyla anilir (kod adi `agency`, URL `?tip=ajans` degismez).
 
 **Gorevler ve aktivite (FAZ 8a).** Yazma DOGRUDAN TABLOYA (`tasks`; FAZ 7'nin aksine RPC YOK — ticari risk yok): RLS SELECT `events.view`,

@@ -91,6 +91,9 @@
 --   T41 Duzeltme 06 girissiz Kashe AI hakki: RPC yetkisi, ortak anahtar (yanlis / bos 42501), ham IP 22023, IP basina gunluk
 --       sinir, gunluk toplam ust siniri (IP sayaci geri alinir), kapali (0), 30 gun saklama; ayar test anahtarina alinip geri
 --       konur (ON KOSUL: 20261105140000 duzeltme_06 dalda; degilse ATLANDI)
+--   T42 Duzeltme 07 Turkce harf duyarsiz arama: tr_katla eslemesi (Turkce, ASCII I, sapkali, NULL, IMMUTABLE), gorunum
+--       arama_metni son sutun + security_invoker, sahip tanitimi -> harfsiz arama sahip ve anon (ON KOSUL: 20261105150000
+--       duzeltme_07 dalda; degilse ATLANDI)
 --   FAZ 10c-1 sonrasi (2026-11-05): saglayici hazirlik yazimlari (T5, T7, T11, T13, T14, T19) providers / alt profil /
 --       provider_set_primary_category uzerinden; dal 10c-1/02 icermeli
 --   T99 son temizlik: bu kosunun test verisi (faz1test kategori/rol, test profilleri) sonda da silinir
@@ -6319,6 +6322,66 @@ EXCEPTION WHEN OTHERS THEN
   BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
   PERFORM set_config('request.jwt.claim.sub', '', true);
   INSERT INTO t_sonuc VALUES (41, 'T41 Duzeltme 06 girissiz AI hakki', 'HATA', SQLERRM);
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- T42) Duzeltme 07 Turkce harf duyarsiz arama. ON KOSUL: 20261105150000 (duzeltme_07) dalda; yoksa ATLANDI.
+--      T1/T13 verisine dayanir: pro1 (0002). Tanitim sonda eski degerine doner.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  pro1 uuid := 'a0000000-0000-4000-8000-000000000002';
+  eski_bio text; st text; n int; gorunur boolean;
+BEGIN
+  IF to_regprocedure('public.tr_katla(text)') IS NULL THEN
+    INSERT INTO t_sonuc VALUES (42, 'T42 Duzeltme 07 Turkce arama', 'ATLANDI', 'tr_katla yok; duzeltme_07 dalda uygulanmamis');
+    RETURN;
+  END IF;
+
+  -- 42a) katlama: Turkce buyuk / kucuk harfler, ASCII I, sapkali harfler (U& kacis), NULL
+  st := public.tr_katla(U&'\00C7A\011ERI \0130STANBUL \015Eule \00D6Z\00DCM g\00FCl\00FC\015F \00C2\00CE\00DB \00E2\00EE\00FB');
+  IF st IS DISTINCT FROM 'cagri istanbul sule ozum gulus aiu aiu' THEN RAISE EXCEPTION 'tr_katla: %', st; END IF;
+  IF public.tr_katla(NULL) IS NOT NULL THEN RAISE EXCEPTION 'tr_katla(NULL) NULL degil'; END IF;
+  IF (SELECT provolatile FROM pg_proc WHERE oid = 'public.tr_katla(text)'::regprocedure) <> 'i' THEN
+    RAISE EXCEPTION 'tr_katla IMMUTABLE degil'; END IF;
+
+  -- 42b) gorunum: arama_metni son sutun, security_invoker acik, anon okur
+  SELECT attname INTO st FROM pg_attribute WHERE attrelid = 'public.v_providers_public'::regclass AND attnum > 0 AND NOT attisdropped
+   ORDER BY attnum DESC LIMIT 1;
+  IF st <> 'arama_metni' THEN RAISE EXCEPTION 'gorunum son sutunu %', st; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_class WHERE oid = 'public.v_providers_public'::regclass
+                    AND 'security_invoker=true' = ANY(reloptions)) THEN RAISE EXCEPTION 'security_invoker kapandi'; END IF;
+
+  -- 42c) sahip tanitimi Turkce harfle yazar -> arama_metni katli; harfsiz arama bulur (sahip + anon)
+  SELECT bio INTO eski_bio FROM public.professional_profiles WHERE provider_id = pro1;
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.professional_profiles SET bio = U&'T42 D\00FC\011F\00FCn foto\011Fraf\00E7\0131s\0131 \00C7a\011Fr\0131' WHERE provider_id = pro1;
+  SELECT count(*) INTO n FROM public.v_providers_public WHERE id = pro1 AND arama_metni ILIKE '%dugun fotografcisi cagri%';
+  EXECUTE 'RESET ROLE';
+  IF n <> 1 THEN RAISE EXCEPTION 'harfsiz arama sahibin satirini bulmadi (%)', n; END IF;
+  SELECT is_visible INTO gorunur FROM public.v_providers_public WHERE id = pro1;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO n FROM public.v_providers_public WHERE id = pro1 AND arama_metni ILIKE '%dugun fotografcisi%';
+  EXECUTE 'RESET ROLE';
+  IF n <> (CASE WHEN gorunur THEN 1 ELSE 0 END) THEN RAISE EXCEPTION 'anon harfsiz arama % (gorunur %)', n, gorunur; END IF;
+
+  -- geri al
+  PERFORM set_config('request.jwt.claim.sub', pro1::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  UPDATE public.professional_profiles SET bio = eski_bio WHERE provider_id = pro1;
+  EXECUTE 'RESET ROLE';
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  IF (SELECT bio FROM public.professional_profiles WHERE provider_id = pro1) IS DISTINCT FROM eski_bio THEN
+    RAISE EXCEPTION 'tanitim geri donmedi'; END IF;
+
+  INSERT INTO t_sonuc VALUES (42, 'T42 Duzeltme 07 Turkce arama', 'GECTI',
+    'tr_katla (Turkce buyuk/kucuk, ASCII I, sapkali, NULL; IMMUTABLE); gorunum arama_metni son sutun, security_invoker; sahip tanitimi -> harfsiz arama sahip ve anon (gorunurlukle) buldu; geri alindi');
+EXCEPTION WHEN OTHERS THEN
+  BEGIN EXECUTE 'RESET ROLE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  INSERT INTO t_sonuc VALUES (42, 'T42 Duzeltme 07 Turkce arama', 'HATA', SQLERRM);
 END $$;
 
 -- -----------------------------------------------------------------------------

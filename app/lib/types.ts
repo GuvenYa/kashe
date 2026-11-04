@@ -133,6 +133,12 @@ export type ProviderPublic = {
   last_seen_at: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Duzeltme 07: katlanmis arama metni (ad + sirket + baslik + tanitim +
+   * kategori adi; `public.tr_katla`). YALNIZ suzgecte kullanilir, listeye
+   * secilmez.
+   */
+  arama_metni: string | null;
 };
 
 /**
