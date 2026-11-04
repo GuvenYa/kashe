@@ -96,8 +96,8 @@ export default async function AdminReportsPage({
       ? supabase.from('profiles').select('id, full_name, company_name, role').in('id', profileIds)
       : Promise.resolve({ data: [] as { id: string; full_name: string | null; company_name: string | null; role: string }[] }),
     reviewIds.length
-      ? supabase.from('reviews').select('id, body, professional_id').in('id', reviewIds)
-      : Promise.resolve({ data: [] as { id: string; body: string | null; professional_id: string }[] }),
+      ? supabase.from('reviews').select('id, body, provider_id').in('id', reviewIds)
+      : Promise.resolve({ data: [] as { id: string; body: string | null; provider_id: string }[] }),
     reporterIds.length
       ? supabase.from('profiles').select('id, full_name, company_name, role').in('id', reporterIds)
       : Promise.resolve({ data: [] as { id: string; full_name: string | null; company_name: string | null; role: string }[] }),
@@ -144,7 +144,7 @@ export default async function AdminReportsPage({
       : '(metinsiz yorum)';
     return {
       label: snippet,
-      href: rev ? `/p/${rev.professional_id}/yorumlar` : null,
+      href: rev ? `/p/${rev.provider_id}/yorumlar` : null,
     };
   }
 

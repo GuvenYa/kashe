@@ -602,7 +602,7 @@ export async function removeReview(
   // Silmeden önce yorumun professional_id'sini al (revalidate için)
   const { data: review } = await supabase
     .from('reviews')
-    .select('professional_id')
+    .select('provider_id')
     .eq('id', reviewId)
     .single();
 
@@ -635,8 +635,8 @@ export async function removeReview(
   );
 
   revalidatePath('/admin/yorumlar');
-  revalidatePath(`/p/${review.professional_id}`);
-  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  revalidatePath(`/p/${review.provider_id}`);
+  revalidatePath(`/p/${review.provider_id}/yorumlar`);
   return { success: true };
 }
 
@@ -646,10 +646,10 @@ export async function removeReviewReply(
   const { supabase, adminId, error } = await requireAdmin();
   if (error || !adminId) return { success: false, error: error || 'Yetki yok' };
 
-  // Yanıtı bul (var mı + professional_id için)
+  // Yanıtı bul (var mı + provider_id için)
   const { data: review } = await supabase
     .from('reviews')
-    .select('professional_id')
+    .select('provider_id')
     .eq('id', reviewId)
     .single();
 
@@ -679,8 +679,8 @@ export async function removeReviewReply(
   );
 
   revalidatePath('/admin/yorumlar');
-  revalidatePath(`/p/${review.professional_id}`);
-  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  revalidatePath(`/p/${review.provider_id}`);
+  revalidatePath(`/p/${review.provider_id}/yorumlar`);
   return { success: true };
 }
 // =============================================================================

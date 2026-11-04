@@ -89,7 +89,7 @@ export async function GET() {
       .order('created_at', { ascending: false }),
     supabase
       .from('services')
-      .select('profile_id, price_min, price_max, price_on_request')
+      .select('provider_id, price_min, price_max, price_on_request')
       .eq('is_active', true),
     supabase
       .from('professional_rating_summary')
@@ -111,7 +111,7 @@ export async function GET() {
     phone: raporContacts.get(p.id)?.phone ?? null,
   }));
   const services = (servicesRes.data ?? []) as {
-    profile_id: string;
+    provider_id: string;
     price_min: number | null;
     price_max: number | null;
     price_on_request: boolean;
@@ -146,9 +146,9 @@ export async function GET() {
   // Hizmetleri profile göre grupla (fiyat aralığı için)
   const svcByProfile = new Map<string, typeof services>();
   for (const s of services) {
-    const arr = svcByProfile.get(s.profile_id) ?? [];
+    const arr = svcByProfile.get(s.provider_id) ?? [];
     arr.push(s);
-    svcByProfile.set(s.profile_id, arr);
+    svcByProfile.set(s.provider_id, arr);
   }
   const ratingByProfile = new Map(ratings.map((r) => [r.professional_id, r]));
 

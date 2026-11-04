@@ -263,7 +263,7 @@ export async function togglePublish(publish: boolean): Promise<UpdateProfileResu
       const { data: servicesData } = await supabase
         .from('services')
         .select('is_active')
-        .eq('profile_id', user.id);
+        .eq('provider_id', user.id);
       services = servicesData || [];
     }
 

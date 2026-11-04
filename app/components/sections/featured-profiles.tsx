@@ -104,12 +104,12 @@ export async function FeaturedProfiles() {
   const portfolioCoverByProfile: Record<string, string> = {};
   const { data: portfolioData } = await supabase
     .from("portfolio_items")
-    .select("profile_id, media_url")
+    .select("provider_id, media_url")
     .eq("media_type", "image")
-    .in("profile_id", ids)
+    .in("provider_id", ids)
     .order("sort_order", { ascending: true });
   (portfolioData || []).forEach((pi) => {
-    const pid = pi.profile_id as string;
+    const pid = pi.provider_id as string;
     if (!portfolioCoverByProfile[pid] && pi.media_url) {
       portfolioCoverByProfile[pid] = pi.media_url as string;
     }

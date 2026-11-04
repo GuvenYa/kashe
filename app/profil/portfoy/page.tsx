@@ -41,7 +41,7 @@ export default async function PortfoyPage() {
   const { data: itemsData } = await supabase
     .from('portfolio_items')
     .select('*')
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .order('created_at', { ascending: false });
 
   const items = (itemsData || []) as PortfolioItem[];

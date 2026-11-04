@@ -42,7 +42,7 @@ export default async function DeneyimPage() {
   const { data: expData } = await supabase
     .from('profile_experiences')
     .select('*')
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .order('kind', { ascending: true })
     .order('sort_order', { ascending: true });
   const experiences = (expData ?? []) as ProfileExperience[];

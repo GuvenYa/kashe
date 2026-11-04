@@ -47,10 +47,10 @@ export async function createAddon(
   // Hizmet gerçekten bu kullanıcıya mı ait? (güvenlik)
   const { data: service } = await supabase
     .from('services')
-    .select('id, profile_id')
+    .select('id, provider_id')
     .eq('id', data.service_id)
     .single();
-  if (!service || service.profile_id !== user.id) {
+  if (!service || service.provider_id !== user.id) {
     return { success: false, error: 'Bu hizmet sana ait değil.' };
   }
 

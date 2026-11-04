@@ -165,7 +165,7 @@ export async function createOrUpdateReview(params: {
       .insert({
         conversation_id: conversation.id,
         customer_id: customerId,
-        professional_id: professionalId,
+        provider_id: professionalId,
         rating,
         body: trimmedBody,
         created_by: user.id,
@@ -210,7 +210,7 @@ export async function deleteReview(reviewId: string): Promise<ActionResult> {
   // Silmeden önce profesyonel id'yi al (revalidate için)
   const { data: review } = await supabase
     .from('reviews')
-    .select('professional_id')
+    .select('provider_id')
     .eq('id', reviewId)
     .eq('customer_id', user.id)
     .maybeSingle();
@@ -229,8 +229,8 @@ export async function deleteReview(reviewId: string): Promise<ActionResult> {
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/p/${review.professional_id}`);
-  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  revalidatePath(`/p/${review.provider_id}`);
+  revalidatePath(`/p/${review.provider_id}/yorumlar`);
   return { success: true };
 }
 
@@ -264,10 +264,10 @@ export async function createOrUpdateReply(params: {
   }
 
   // Yanıtladığı yorumun gerçekten kendisine ait olduğunu RLS zaten kontrol edecek,
-  // ama revalidate için professional_id'yi alalım
+  // ama revalidate için provider_id'yi alalım
   const { data: review } = await supabase
     .from('reviews')
-    .select('professional_id')
+    .select('provider_id')
     .eq('id', reviewId)
     .maybeSingle();
 
@@ -301,8 +301,8 @@ export async function createOrUpdateReply(params: {
     }
   }
 
-  revalidatePath(`/p/${review.professional_id}`);
-  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  revalidatePath(`/p/${review.provider_id}`);
+  revalidatePath(`/p/${review.provider_id}/yorumlar`);
   return { success: true };
 }
 
@@ -331,7 +331,7 @@ export async function deleteReply(reviewId: string): Promise<ActionResult> {
 
   const { data: review } = await supabase
     .from('reviews')
-    .select('professional_id')
+    .select('provider_id')
     .eq('id', reviewId)
     .maybeSingle();
 
@@ -348,7 +348,7 @@ export async function deleteReply(reviewId: string): Promise<ActionResult> {
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/p/${review.professional_id}`);
-  revalidatePath(`/p/${review.professional_id}/yorumlar`);
+  revalidatePath(`/p/${review.provider_id}`);
+  revalidatePath(`/p/${review.provider_id}/yorumlar`);
   return { success: true };
 }

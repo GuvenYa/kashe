@@ -392,15 +392,15 @@ export default async function KesfetPage({
   if (profileIds.length > 0) {
     const { data: servicesData } = await supabase
       .from('services')
-      .select('profile_id, price_min, price_max, price_on_request')
+      .select('provider_id, price_min, price_max, price_on_request')
       .eq('is_active', true)
-      .in('profile_id', profileIds);
+      .in('provider_id', profileIds);
 
     (servicesData || []).forEach((svc) => {
-      if (!servicesByProfile[svc.profile_id]) {
-        servicesByProfile[svc.profile_id] = [];
+      if (!servicesByProfile[svc.provider_id]) {
+        servicesByProfile[svc.provider_id] = [];
       }
-      servicesByProfile[svc.profile_id].push({
+      servicesByProfile[svc.provider_id].push({
         price_min: svc.price_min,
         price_max: svc.price_max,
         price_on_request: svc.price_on_request,
@@ -429,12 +429,12 @@ export default async function KesfetPage({
   if (profileIds.length > 0) {
     const { data: portfolioData } = await supabase
       .from('portfolio_items')
-      .select('profile_id, media_url')
+      .select('provider_id, media_url')
       .eq('media_type', 'image')
-      .in('profile_id', profileIds)
+      .in('provider_id', profileIds)
       .order('sort_order', { ascending: true });
     (portfolioData || []).forEach((pi) => {
-      const pid = pi.profile_id as string;
+      const pid = pi.provider_id as string;
       if (!portfolioCoverByProfile[pid] && pi.media_url) {
         portfolioCoverByProfile[pid] = pi.media_url as string;
       }
@@ -461,16 +461,16 @@ export default async function KesfetPage({
     const { data: reviewsData } = await supabase
       .from('reviews')
       .select(
-        `professional_id, body, rating, created_at,
+        `provider_id, body, rating, created_at,
          customer:profiles!reviews_customer_id_fkey ( full_name, company_name, role )`
       )
-      .in('professional_id', profileIds)
+      .in('provider_id', profileIds)
       .not('body', 'is', null)
       .order('rating', { ascending: false })
       .order('created_at', { ascending: false });
     (
       (reviewsData || []) as unknown as Array<{
-        professional_id: string;
+        provider_id: string;
         body: string | null;
         customer: {
           full_name: string | null;
@@ -480,8 +480,8 @@ export default async function KesfetPage({
       }>
     ).forEach((rv) => {
       const body = rv.body?.trim();
-      if (!quoteByProfile[rv.professional_id] && body) {
-        quoteByProfile[rv.professional_id] = {
+      if (!quoteByProfile[rv.provider_id] && body) {
+        quoteByProfile[rv.provider_id] = {
           text: body,
           author: formatReviewAuthor(rv.customer),
         };

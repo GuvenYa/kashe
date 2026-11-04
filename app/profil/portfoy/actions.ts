@@ -26,7 +26,7 @@ export async function deletePortfolioItem(
     .from('portfolio_items')
     .select('media_url')
     .eq('id', itemId)
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .single();
 
   if (!item) {
@@ -46,7 +46,7 @@ export async function deletePortfolioItem(
     .from('portfolio_items')
     .delete()
     .eq('id', itemId)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) {
     return { success: false, error: 'Silinemedi: ' + error.message };
@@ -79,7 +79,7 @@ export async function updatePortfolioCaption(
     .from('portfolio_items')
     .update({ caption: caption.trim() || null })
     .eq('id', itemId)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) {
     return { success: false, error: 'Güncellenemedi: ' + error.message };

@@ -18,7 +18,7 @@ type ReviewRow = {
   rating: number;
   body: string | null;
   created_at: string;
-  professional_id: string;
+  provider_id: string;
   customer_id: string;
   customer: {
     id: string;
@@ -131,7 +131,7 @@ export default async function AdminReviewsPage({
     .from('reviews')
     .select(
       `
-      id, rating, body, created_at, professional_id, customer_id,
+      id, rating, body, created_at, provider_id, customer_id,
       customer:profiles!reviews_customer_id_fkey (
         id, full_name, role, company_name
       ),
@@ -167,7 +167,7 @@ export default async function AdminReviewsPage({
   // email authenticated rolüne kapalı (PII adım 2b) — tarafların adresi admin RPC'siyle alınır.
   const reviewContacts = await getAdminProfileContacts(
     supabase,
-    reviewRows.flatMap((r) => [r.customer_id, r.professional_id])
+    reviewRows.flatMap((r) => [r.customer_id, r.provider_id])
   );
   const reviewsBase = reviewRows.map((r) => ({
     ...r,
@@ -175,7 +175,7 @@ export default async function AdminReviewsPage({
       ? { ...r.customer, email: reviewContacts.get(r.customer_id)?.email ?? null }
       : null,
     professional: r.professional
-      ? { ...r.professional, email: reviewContacts.get(r.professional_id)?.email ?? null }
+      ? { ...r.professional, email: reviewContacts.get(r.provider_id)?.email ?? null }
       : null,
   }));
 
@@ -318,7 +318,7 @@ export default async function AdminReviewsPage({
                       <span className="text-ink">{customerName}</span>
                       <span className="text-ink-50 mx-1">→</span>
                       <Link
-                        href={`/p/${review.professional_id}`}
+                        href={`/p/${review.provider_id}`}
                         className="text-ink underline-offset-2 hover:underline"
                         target="_blank"
                       >

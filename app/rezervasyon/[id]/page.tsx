@@ -308,7 +308,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
       const { data: yorumSatirlari } = await supabase
         .from('reviews')
         .select('id')
-        .eq('professional_id', saglayiciId)
+        .eq('provider_id', saglayiciId)
         .eq('customer_id', musteriId)
         .limit(1);
       const yorumVar = (yorumSatirlari ?? []).length > 0;

@@ -128,6 +128,8 @@ export interface CategoryFieldConfig {
 // ---- DB satırı: public.profile_experiences ----
 export interface ProfileExperience {
   id: string;
+  /** FAZ 10c-2: sahip kimligi (eski `profile_id` FAZ 11'de duser). */
+  provider_id: string;
   profile_id: string;
   kind: 'work' | 'education' | 'award';
   group_key: string | null;

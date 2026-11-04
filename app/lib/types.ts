@@ -209,6 +209,11 @@ export type PriceUnit = 'total' | 'hourly' | 'half_day' | 'full_day';
 
 export type Service = {
   id: string;
+  /**
+   * FAZ 10c-2: SAHIP KIMLIGI - uygulama bunu yazar ve bununla suzer.
+   * `profile_id` eski sutun: tetikleyiciyle dolar, FAZ 11'de duser.
+   */
+  provider_id: string;
   profile_id: string;
   category_id: number;
   title: string;
@@ -228,6 +233,8 @@ export type Service = {
 
 export type PortfolioItem = {
   id: string;
+  /** FAZ 10c-2: sahip kimligi (eski `profile_id` FAZ 11'de duser). */
+  provider_id: string;
   profile_id: string;
   media_url: string;
   media_type: 'image' | 'video';
@@ -302,6 +309,8 @@ export type Review = {
   id: string;
   conversation_id: string;
   customer_id: string;
+  /** FAZ 10c-2: sahip kimligi (eski `professional_id` FAZ 11'de duser). */
+  provider_id: string;
   professional_id: string;
   rating: number;
   body: string | null;

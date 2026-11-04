@@ -126,7 +126,7 @@ export async function createExperience(
   const { data: maxRow } = await supabase
     .from('profile_experiences')
     .select('sort_order')
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .eq('kind', data.kind)
     .order('sort_order', { ascending: false })
     .limit(1)
@@ -135,7 +135,7 @@ export async function createExperience(
 
   const { data: inserted, error } = await supabase
     .from('profile_experiences')
-    .insert({ profile_id: user.id, ...toRow(data), sort_order: nextSort })
+    .insert({ provider_id: user.id, ...toRow(data), sort_order: nextSort })
     .select('id')
     .single();
 
@@ -161,7 +161,7 @@ export async function updateExperience(
     .from('profile_experiences')
     .update(toRow(data))
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) return { success: false, error: 'Güncellenemedi: ' + error.message };
   revalidateAll(user.id);
@@ -181,7 +181,7 @@ export async function deleteExperience(
     .from('profile_experiences')
     .delete()
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) return { success: false, error: 'Silinemedi: ' + error.message };
   revalidateAll(user.id);
@@ -207,7 +207,7 @@ export async function moveExperience(
     .from('profile_experiences')
     .select('id, kind, sort_order')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .maybeSingle();
   if (!current) return { success: false, error: 'Kayıt bulunamadı.' };
 
@@ -215,7 +215,7 @@ export async function moveExperience(
   const neighborQuery = supabase
     .from('profile_experiences')
     .select('id, sort_order')
-    .eq('profile_id', user.id)
+    .eq('provider_id', user.id)
     .eq('kind', current.kind);
 
   const { data: neighbor } =
@@ -239,12 +239,12 @@ export async function moveExperience(
       .from('profile_experiences')
       .update({ sort_order: neighbor.sort_order })
       .eq('id', current.id)
-      .eq('profile_id', user.id),
+      .eq('provider_id', user.id),
     supabase
       .from('profile_experiences')
       .update({ sort_order: current.sort_order })
       .eq('id', neighbor.id)
-      .eq('profile_id', user.id),
+      .eq('provider_id', user.id),
   ]);
 
   if (e1 || e2) return { success: false, error: 'Sıralama güncellenemedi.' };

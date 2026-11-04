@@ -140,7 +140,7 @@ export async function createService(data: ServiceFormData): Promise<ServiceActio
   const { data: inserted, error } = await supabase
     .from('services')
     .insert({
-      profile_id: user.id,
+      provider_id: user.id,
       category_id: data.category_id,
       title: data.title.trim(),
       description: data.description?.trim() || null,
@@ -198,7 +198,7 @@ export async function updateService(
       duration_hours: data.duration_hours,
     })
     .eq('id', serviceId)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) {
     return { success: false, error: 'Güncellenemedi: ' + error.message };
@@ -224,7 +224,7 @@ export async function deleteService(serviceId: string): Promise<ServiceActionRes
     .from('services')
     .delete()
     .eq('id', serviceId)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) {
     return { success: false, error: 'Silinemedi: ' + error.message };
@@ -253,7 +253,7 @@ export async function toggleServiceActive(
     .from('services')
     .update({ is_active: isActive })
     .eq('id', serviceId)
-    .eq('profile_id', user.id);
+    .eq('provider_id', user.id);
 
   if (error) {
     return { success: false, error: 'Güncellenemedi: ' + error.message };

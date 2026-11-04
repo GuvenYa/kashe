@@ -44,7 +44,7 @@ export default async function HizmetlerimPage() {
     supabase
       .from('services')
       .select('*, service_categories(name_tr, emoji), service_addons(*)')
-      .eq('profile_id', user.id)
+      .eq('provider_id', user.id)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false }),
     supabase

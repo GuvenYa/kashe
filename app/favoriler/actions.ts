@@ -66,7 +66,7 @@ export async function addFavorite(
   // Insert — UNIQUE constraint ile çift kayıt önleniyor
   const { error } = await supabase.from('favorites').insert({
     user_id: user.id,
-    professional_id: professionalId,
+    provider_id: professionalId,
   });
 
   if (error) {
@@ -102,7 +102,7 @@ export async function removeFavorite(
     .from('favorites')
     .delete()
     .eq('user_id', user.id)
-    .eq('professional_id', professionalId);
+    .eq('provider_id', professionalId);
 
   if (error) {
     return { success: false, error: error.message };
@@ -183,7 +183,7 @@ export async function isFavorited(professionalId: string): Promise<boolean> {
     .from('favorites')
     .select('id')
     .eq('user_id', user.id)
-    .eq('professional_id', professionalId)
+    .eq('provider_id', professionalId)
     .maybeSingle();
 
   if (error) return false;
@@ -206,10 +206,10 @@ export async function getFavoritedIds(): Promise<Set<string>> {
 
   const { data, error } = await supabase
     .from('favorites')
-    .select('professional_id')
+    .select('provider_id')
     .eq('user_id', user.id);
 
   if (error) return new Set();
 
-  return new Set((data ?? []).map((f) => f.professional_id));
+  return new Set((data ?? []).map((f) => f.provider_id));
 }

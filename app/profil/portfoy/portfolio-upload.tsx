@@ -97,7 +97,7 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
 
         const isVideoFile = ALLOWED_VIDEO_TYPES.includes(file.type);
         const { error: dbError } = await supabase.from('portfolio_items').insert({
-          profile_id: userId,
+          provider_id: userId,
           media_url: publicUrl,
           media_type: isVideoFile ? 'video' : 'image',
           caption: null,

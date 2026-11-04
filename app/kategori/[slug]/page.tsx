@@ -150,9 +150,9 @@ export default async function KategoriPage({ params }: Props) {
     const [{ data: servicesData }, { data: ratingsData }] = await Promise.all([
       supabase
         .from('services')
-        .select('profile_id, price_min, price_max, price_on_request')
+        .select('provider_id, price_min, price_max, price_on_request')
         .eq('is_active', true)
-        .in('profile_id', profileIds),
+        .in('provider_id', profileIds),
       supabase
         .from('professional_rating_summary')
         .select('professional_id, review_count, average_rating')
@@ -160,8 +160,8 @@ export default async function KategoriPage({ params }: Props) {
     ]);
 
     (servicesData || []).forEach((svc) => {
-      if (!servicesByProfile[svc.profile_id]) servicesByProfile[svc.profile_id] = [];
-      servicesByProfile[svc.profile_id].push({
+      if (!servicesByProfile[svc.provider_id]) servicesByProfile[svc.provider_id] = [];
+      servicesByProfile[svc.provider_id].push({
         price_min: svc.price_min,
         price_max: svc.price_max,
         price_on_request: svc.price_on_request,

@@ -270,13 +270,13 @@ export default async function ProfilPage() {
         supabase
           .from('services')
           .select('*, service_categories(name_tr, emoji)')
-          .eq('profile_id', user.id)
+          .eq('provider_id', user.id)
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: false }),
         supabase
           .from('portfolio_items')
           .select('*')
-          .eq('profile_id', user.id)
+          .eq('provider_id', user.id)
           .order('created_at', { ascending: false })
           .limit(4),
         supabase
@@ -300,7 +300,7 @@ export default async function ProfilPage() {
         supabase
           .from('favorites')
           .select('id', { count: 'exact', head: true })
-          .eq('professional_id', user.id),
+          .eq('provider_id', user.id),
         supabase
           .from('applications')
           .select('id', { count: 'exact', head: true })
@@ -349,7 +349,7 @@ export default async function ProfilPage() {
     const { data: expRows } = await supabase
       .from('profile_experiences')
       .select('kind')
-      .eq('profile_id', user.id);
+      .eq('provider_id', user.id);
     for (const r of expRows ?? []) {
       const k = r.kind as 'work' | 'education' | 'award';
       if (k in expCounts) expCounts[k] += 1;

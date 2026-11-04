@@ -85,7 +85,7 @@ export default async function YorumlarPage({
     supabase
       .from('reviews')
       .select('id, rating, body, created_at, customer_id')
-      .eq('professional_id', profile.id)
+      .eq('provider_id', profile.id)
       .order('created_at', { ascending: false }),
   ]);
 

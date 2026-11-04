@@ -367,19 +367,19 @@ export default async function EtkinlikDetayPage({
     if (saglayiciIdleri.length > 0) {
       const { data: hizmetData, error: hizmetHatasi } = await supabase
         .from('services')
-        .select('profile_id, price_min, price_on_request')
+        .select('provider_id, price_min, price_on_request')
         .eq('is_active', true)
-        .in('profile_id', saglayiciIdleri);
+        .in('provider_id', saglayiciIdleri);
       if (hizmetHatasi) console.error('[match] hizmet fiyati', hizmetHatasi);
       for (const h of (hizmetData ?? []) as unknown as ({
-        profile_id: string;
+        provider_id: string;
       } & HizmetFiyati)[]) {
-        const liste = hizmetMap.get(h.profile_id) ?? [];
+        const liste = hizmetMap.get(h.provider_id) ?? [];
         liste.push({
           price_min: h.price_min,
           price_on_request: h.price_on_request,
         });
-        hizmetMap.set(h.profile_id, liste);
+        hizmetMap.set(h.provider_id, liste);
       }
     }
 

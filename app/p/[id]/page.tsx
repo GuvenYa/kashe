@@ -304,14 +304,14 @@ export default async function PublicProfilePage({
     supabase
       .from('services')
       .select('*, service_categories(name_tr, emoji), service_addons(*)')
-      .eq('profile_id', profile.id)
+      .eq('provider_id', profile.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false }),
     supabase
       .from('portfolio_items')
       .select('*')
-      .eq('profile_id', profile.id)
+      .eq('provider_id', profile.id)
       .order('created_at', { ascending: false }),
     supabase
       .from('service_packages')
@@ -397,7 +397,7 @@ export default async function PublicProfilePage({
         .from('reviews')
         .select('id, rating, body, customer_id')
         .in('customer_id', reviewCandidateIds)
-        .eq('professional_id', profile.id)
+        .eq('provider_id', profile.id)
         .order('created_at', { ascending: false }),
     ]);
 
@@ -428,7 +428,7 @@ export default async function PublicProfilePage({
     supabase
       .from('reviews')
       .select('id, rating, body, created_at, customer_id')
-      .eq('professional_id', profile.id)
+      .eq('provider_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(3),
   ]);
@@ -656,7 +656,7 @@ export default async function PublicProfilePage({
     const { data: expData } = await supabase
       .from('profile_experiences')
       .select('*')
-      .eq('profile_id', profile.id)
+      .eq('provider_id', profile.id)
       .order('kind', { ascending: true })
       .order('sort_order', { ascending: true });
     const experiences = (expData ?? []) as ProfileExperience[];
@@ -948,9 +948,9 @@ export default async function PublicProfilePage({
       const [{ data: simServices }, { data: simRatings }, favIds] = await Promise.all([
         supabase
           .from('services')
-          .select('profile_id, price_min, price_max, price_on_request')
+          .select('provider_id, price_min, price_max, price_on_request')
           .eq('is_active', true)
-          .in('profile_id', candidateIds),
+          .in('provider_id', candidateIds),
         supabase
           .from('professional_rating_summary')
           .select('professional_id, review_count, average_rating')
@@ -961,9 +961,9 @@ export default async function PublicProfilePage({
       ]);
 
       (simServices ?? []).forEach((svc) => {
-        if (!similarServicesByProfile[svc.profile_id])
-          similarServicesByProfile[svc.profile_id] = [];
-        similarServicesByProfile[svc.profile_id].push({
+        if (!similarServicesByProfile[svc.provider_id])
+          similarServicesByProfile[svc.provider_id] = [];
+        similarServicesByProfile[svc.provider_id].push({
           price_min: svc.price_min,
           price_max: svc.price_max,
           price_on_request: svc.price_on_request,
