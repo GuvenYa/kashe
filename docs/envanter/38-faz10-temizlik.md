@@ -4,6 +4,8 @@
 **Ilke:** FAZ 0-2b'de acilan cift yapilar (eski uyelik tablolari + aynalama, `profiles` -> `providers` aynasi, `profile_id` + `provider_id`
 cift sutunu, `EVENT_TYPES` sabiti + eski CHECK listeleri) tek kaynaga iner. Her kesim: once UYGULAMA yeni yola gecer, sonra DB eski yolu
 kapatir (yazma yetkisi kalkar, tetikleyici duser); fiziksel DROP bir sonraki hijyen turunda. Eski akislar kesilene kadar calisir durur.
+**Durum (5 Kasim 2026, gece):** **FAZ 10 KAPANDI** - 10a, 10b, 10c-1, 10c-2, 10d uretimde (`main` dc53df9). Eski tablolar / sutunlar
+salt okunur ya da tetikleyiciyle dolarak bekliyor; fiziksel silme Hijyen 05 / FAZ 11 (~3 Aralik). Sahne v3 tamam. Asagidaki durumlar tarihcedir.
 **Durum (5 Kasim 2026, aksam):** **10c-2 KAPANDI** (DB 04 + P2 uretimde, `main` 6c9fa7b) - **10c tamam**; siradaki Sahne v3
 (bulgu 70), sonra 10d. Asagidaki 5 Kasim durumu tarihcedir.
 **Durum (5 Kasim 2026):** **10c-1 KAPANDI** (DB 01 + 02 + 02b + 03 ve P1 uretimde, `main` a67aa10) + **Duzeltme 05 uretimde**;
@@ -297,6 +299,17 @@ tasinir; `npx eslint app/components/sections` temiz olmali.
   115 rolsuz politika (Supabase varsayilani; kosullari auth.uid() / yayin durumu) Hijyen 05 adayi, 10d disinda.
 - Sira: `faz10d` dali -> dal `supabase db push` (DB/01) -> asama20 (K11 ESIT) + asama4 (44) + asama13 / asama15 -> uretim
   `supabase db push` -> gorev 49 -> diff + tur -> uretim kod -> **FAZ 10 KAPANIS** (Hijyen 05 ~3 Aralik).
+**10d URETIMDE - FAZ 10 KAPANDI (5 Kasim):** dal `db push` (10d/01) -> asama20 K1-K11 ESIT, asama4 44/44, asama13 K4/K5 EMEKLI,
+asama15 K9 ESIT; uretim `db push` -> ayni uc kontrol temiz. Gorev 49 (`main` ae1069f + dc53df9): `eslint app` 68 -> 0 hata (purity: saf
+`premiumAgirligi` + istek basi `simdiMs`; set-state-in-effect 13 duzeltme - `useSyncExternalStore` kancalari `app/lib/istemci-kancalari.ts`,
+modallar kosullu mount + `key`, 6 gerekceli satir istisnasi: adres cubugu / URL fragmani / realtime esitleme; any -> tip; 9 `<a>` -> `<Link>`),
+CLAUDE.md 5 cumle (provider_services okunur, FAZ 5 havuz 10a sonrasi, sema ozeti `profiles` kimlik), Duzeltme 08 bulgu 17 / 51 / 52 / 53 / 54 /
+56 (38 zaten duzelmisti). Inceleme yamalari: ters tirnakla dusen 4 yorum, sehir secici guncelleyici; tur bulgusu: model "250 bin civari"
+bazen yalniz `budget_min` donuyor -> kural tek taraf dolu tutari da kapsar (dc53df9; onizlemede sihirbaz 210.000 - 290.000). Onizleme turu:
+Kesfet / kategori / ana sayfa siralamasi eski onizlemeyle birebir (117 / 10 / 16), hizmet / paket / yorum yaniti modallari, sehir secici,
+mobil menu, admin arama + aksiyon menusu + istatistik grafikleri, #52 / #53 / #56 ekranlari. Uretim anonim kontrol: yeni dagitim (dpl
+degisti), 10 sayfa 200, Kesfet 34, menu / alt bilgi baglantilari. Kalan kucukler (FAZ 10 disi): ust menu / alt bilgide dinamik `<a href>`
+baglantilar (tam sayfa yenileme), kazanclarim ozet kartinda "Komisyon (%10) −0 TL", #51 / #54 canli tur (taslak ekip / RFP gerektirir).
 
 ### Hijyen 05 (30 gun sonra, ayri)
 
