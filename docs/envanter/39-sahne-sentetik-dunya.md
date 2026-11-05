@@ -167,6 +167,11 @@ uyumlusu v2 3 -> v3 37; uyumsuz rezervasyon 9 -> 0; ilgili rezervasyon bildiriml
 ESIT, Sahne 06 8/8 (`quotes_expire_stale` sonrasi; T6a gece isine bagli). Dal yeniden KURULMADI (Fahri test ediyor; yapisal fark
 yok): #37 bir sonraki kurulumda gelir - kurulumda `--tarih` verilmeden uretilir (bugunun tarihi).
 
+**v3.1 (5 Kasim 2026, bulgu 78):** uzmanlik ozet bandi cipleri (`category_attributes.summary.stats`) DUZ METIN
+(`"8 yıl deneyim"`, `"160+ etkinlik"`, `"8 şehir"`); v3 `{label, value}` nesnesi yaziyordu ve kamu profili istemcide cokuyordu
+(tercuman / konusmaci / etkinlik koordinatoru). Rastgele sira degismedi: `--tarih 2026-10-29` ciktisinda yalniz 01a'daki 20
+cip satiri degisti. Kurulu dal icin `docs/sahne/07-sahne-duzeltme-04-ozet-ciplari.sql` (ayni metinler; tekrar calistirmak guvenli).
+
 ## 9. Senaryo listesi (eksik bulma turu)
 
 A. **Musteri:** Kesfet filtreleri (kategori, sehir, ozellik), profil sayfasi (moduller, portfoy, pazar araligi, guven dokumu), teklif

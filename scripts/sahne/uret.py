@@ -526,9 +526,10 @@ def category_attributes_uret(rnd, slug, p):
             modules[k] = {"delivery": {"Teslim süresi": quick.get("teslim_suresi", p["teslim"]), "Format": rnd.choice(["4K + 1080p", "JPEG + RAW", "Online galeri + USB", "MP4 H.264"]), "Yedekleme": "Çift kart + bulut"}}
     out = {"service_region": rnd.choice(QUICK["SERVICE_REGION_OPTIONS"]), "experience_label": "%d yıl · %d+ etkinlik" % (p["yil"], p["yil"] * rnd.randint(15, 40)),
            "calisma_sekli": rnd.choice(QUICK["CALISMA_SEKLI_OPTIONS"]), "quick": quick, "logistics": logistics, "modules": modules}
+    # bulgu 78: ozet cipleri DUZ METIN (string[]); uygulama nesne cizemez (React #31)
     if cf["archetype"] == "uzmanlik":
         out["summary"] = {"title": rnd.choice(V.BASLIK[slug]), "body": "Kurumun hedefine göre uyarlanan içerik, net teslimat ve zamanında raporlama.",
-                          "stats": [{"label": "Yıl", "value": str(p["yil"])}, {"label": "Etkinlik", "value": "%d+" % (p["yil"] * 20)}, {"label": "Şehir", "value": str(rnd.randint(3, 15))}]}
+                          "stats": ["%d yıl deneyim" % p["yil"], "%d+ etkinlik" % (p["yil"] * 20), "%d şehir" % rnd.randint(3, 15)]}
     if cf["archetype"] == "cast":
         out["skills"] = [{"name": s, "level": rnd.randint(1, 3)} for s in rnd.sample(["Dans", "Şarkı", "Yüzme", "Binicilik", "İngilizce aksan", "Doğaçlama", "Gitar", "Dövüş sanatı"], 3)]
     return out
