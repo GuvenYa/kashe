@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { ReviewCard } from '@/app/yorumlar/review-card';
 import type { ProviderCard, ProviderPublic } from '@/app/lib/types';
+import { gosterilecekAd, tamAdGorebilirMi } from '@/app/lib/kamu-adi';
 
 // FAZ 2c: baslik karti saglayici gorunumunden; yorumcu kartlari profiles'ta kalir.
 type PublicProfile = ProviderCard & Pick<ProviderPublic, 'is_published'>;
@@ -25,10 +26,12 @@ export async function generateMetadata({
     return { title: 'Yorumlar bulunamadı — Kashe' };
   }
 
+  // Bulgu 88: baslik herkese ayni gider (onbellek, paylasim onizlemesi) -
+  // bireysel profesyonelin adi profil sayfasindaki gibi HER ZAMAN "Ad S.".
   const name =
-    data.role === 'business' && data.company_name
+    (data.role === 'agency' || data.role === 'business') && data.company_name
       ? data.company_name
-      : data.full_name || 'Profil';
+      : gosterilecekAd(data.role, data.full_name, false) || 'Profil';
 
   return {
     title: `${name} — Yorumlar — Kashe`,
@@ -59,10 +62,32 @@ export default async function YorumlarPage({
     notFound();
   }
 
+  // Bulgu 88 (Duzeltme 05-E kurali): tam ad yalniz kendisi / yonetici /
+  // onayli-tamamlanmis rezervasyonu olan karsi tarafa; digerlerine "Ad S.".
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let viewerIsAdmin = false;
+  if (user) {
+    const { data: viewer } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+    viewerIsAdmin = viewer?.is_admin === true;
+  }
+  const tamAdiGorebilir = await tamAdGorebilirMi(supabase, {
+    providerId: profile.id,
+    viewerId: user?.id ?? null,
+    viewerIsAdmin,
+  });
+
   const displayName =
-    profile.role === 'business' && profile.company_name
+    (profile.role === 'agency' || profile.role === 'business') &&
+    profile.company_name
       ? profile.company_name
-      : profile.full_name || 'İsimsiz';
+      : gosterilecekAd(profile.role, profile.full_name, tamAdiGorebilir) ||
+        'İsimsiz';
 
   const initials = (profile.full_name || profile.company_name || 'K')
     .split(' ')
@@ -133,11 +158,7 @@ export default async function YorumlarPage({
     });
   }
 
-  // Mevcut kullanıcı bilgisi (profesyonel kendi sayfasında mı?)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  // Profesyonel kendi sayfasında mı? (kullanici yukarida okundu)
   const isOwnedByProfessional = user?.id === profile.id;
 
   // Rating dağılımı (5★: kaç adet, 4★: kaç adet, vs.)

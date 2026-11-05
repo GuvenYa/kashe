@@ -1133,35 +1133,20 @@ async function updateApplicationStatus(
 
 /**
  * İlan görüntülenme sayacını artır.
- * Sahibinin kendi sayfasını ziyaret etmesi sayılmaz.
+ *
+ * Guvenlik 02: sayac yalniz `ilan_goruntulenme_artir` RPC'si ile artar
+ * (`views_count` dogrudan yazilamaz). Sahibin ve kurum uyesinin ziyareti DB'de
+ * sayilmaz; yalniz yayindaki / dolu / kapali ilan. Eskiden ziyaretci RLS'e
+ * takiliyordu (yalniz sahip guncelleyebiliyordu) ve sayac hic artmiyordu.
  */
 export async function incrementListingViews(
   listingId: string
 ): Promise<ActionResult> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Listing'i çek
-  const { data: listing } = await supabase
-    .from('listings')
-    .select('creator_id, views_count')
-    .eq('id', listingId)
-    .single();
-
-  if (!listing) return { success: false, error: 'İlan bulunamadı' };
-
-  // Sahibi kendi sayfasını görüntülüyorsa sayma
-  if (user && listing.creator_id === user.id) {
-    return { success: true };
-  }
-
-  const { error } = await supabase
-    .from('listings')
-    .update({ views_count: (listing.views_count ?? 0) + 1 })
-    .eq('id', listingId);
+  const { error } = await supabase.rpc('ilan_goruntulenme_artir', {
+    p_ilan: listingId,
+  });
 
   if (error) {
     return { success: false, error: error.message };
