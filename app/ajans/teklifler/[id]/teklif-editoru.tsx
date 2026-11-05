@@ -400,7 +400,7 @@ export function TeklifEditoru({
     if (!gecerlilikTarihiVar) {
       const gun = sayi(gecerlilikGun);
       if (gun === null || gun < 1 || gun > 365) {
-        setHata('Geçerlilik 1-365 gün olmalı.');
+        setHata('Teklif geçerliliği 1-365 gün olmalı.');
         return;
       }
       gunDegeri = Math.trunc(gun);
@@ -667,7 +667,11 @@ export function TeklifEditoru({
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="text-xs text-ink-72 w-28">Geçerlilik</label>
+            {/* Duzeltme 08 (#52): teklifin kendi gecerliligi ile baglanti
+                gecerliligi ayni kelimeyle anilmaz. */}
+            <label className="text-xs text-ink-72 w-28">
+              Teklif geçerliliği
+            </label>
             <input
               type="date"
               onClick={takvimiAc}
@@ -839,16 +843,16 @@ export function TeklifEditoru({
                   biri sessizce yok sayilmasin. */}
               {gecerlilikTarihiVar ? (
                 <p className="text-sm text-ink-72">
-                  Geçerlilik: {tarihMetni(gecerlilik) ?? gecerlilik} ·{' '}
+                  Teklif geçerliliği: {tarihMetni(gecerlilik) ?? gecerlilik} ·{' '}
                   <span className="text-ink-50">
-                    Üstteki Geçerlilik alanından değiştirilir.
+                    Üstteki Teklif geçerliliği alanından değiştirilir.
                   </span>
                 </p>
               ) : (
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
                     <label className="text-xs text-ink-72">
-                      Geçerlilik (gün)
+                      Teklif geçerliliği (gün)
                     </label>
                     <input
                       type="text"
@@ -942,7 +946,7 @@ export function TeklifEditoru({
                       {b.last_viewed_at
                         ? `Son görüntüleme: ${zamanMetni(b.last_viewed_at)} · `
                         : ''}
-                      Geçerlilik: {tarihMetni(b.expires_at) ?? '—'}
+                      Bağlantı geçerliliği: {tarihMetni(b.expires_at) ?? '—'}
                     </p>
                   </div>
                   {canManage && !b.revoked_at && (

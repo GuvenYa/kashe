@@ -22,10 +22,9 @@ export function ProfilArama({
   const [isPending, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sekme değişince (dışarıdan URL değişimi) input'u senkronla
-  useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
+  // FAZ 10d: sekme degisince kutuyu esitleyen efekt KALKTI — ebeveyn bu
+  // bileseni `key={durum}` ile ciziyor, sekme degisimi YENIDEN mount demek
+  // (baslangic degeri prop'tan gelir, kademeli render yok).
 
   useEffect(() => {
     // URL'dekiyle aynıysa (mount veya sekme resync) hiçbir şey yapma

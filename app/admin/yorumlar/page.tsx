@@ -181,7 +181,7 @@ export default async function AdminReviewsPage({
 
   // Yanıtları ayrı sorguyla çek
   const reviewIdsInPage = reviewsBase.map((r) => r.id);
-  let repliesMap = new Map<
+  const repliesMap = new Map<
     string,
     { id: string; body: string; created_at: string }
   >();

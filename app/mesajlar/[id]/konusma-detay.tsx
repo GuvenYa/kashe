@@ -191,7 +191,10 @@ export function KonusmaDetay({
   const [assignOpen, setAssignOpen] = useState(false);
   const [isAssigning, startAssignTransition] = useTransition();
 
+  // Gorevlendirme listesi sunucu eyleminden sonra prop olarak tazelenir;
+  // yerel durum iyimser guncelleme tutuyor (tiklamada hemen degisiyor).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucu prop'u ile iyimser durumun esitlenmesi
     setAssigned(assignedIds);
   }, [assignedIds]);
 
@@ -254,7 +257,11 @@ export function KonusmaDetay({
 
   const otherTone = pickTone(other.id);
 
+  // Sunucudan gelen mesajlari YEREL (realtime) listeyle birlestirir: yerel
+  // liste kanaldan da besleniyor, bu yuzden prop dogrudan state'in yerine
+  // konulmaz — eksik olanlar eklenir.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucu prop'u + realtime akis birlesimi
     setMessages((prev) => {
       const existingIds = new Set(prev.map((m) => m.id));
       const incoming = initialMessages.filter((m) => !existingIds.has(m.id));
@@ -266,7 +273,10 @@ export function KonusmaDetay({
     });
   }, [initialMessages]);
 
+  // Teklif kartlari da realtime guncelleniyor; sunucu prop'u tazeleyince
+  // yerel kopya esitlenir.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucu prop'u + realtime akis esitlemesi
     setQuotesById(initialQuotes);
   }, [initialQuotes]);
 

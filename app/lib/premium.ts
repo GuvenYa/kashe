@@ -100,3 +100,43 @@ export function calcCommission(gross: number): {
 export function formatTRY(amount: number): string {
   return formatTL(amount);
 }
+/**
+ * PREMIUM SIRALAMA AGIRLIGI — TEK KAYNAK (FAZ 10d).
+ *
+ * Dort yuzey (Kesfet, kategori sayfasi, ana sayfa one cikanlar, ilan listesi)
+ * ayni agirlik merdivenini KENDI icinde yaziyordu ve her biri render sirasinda
+ * `Date.now()` cagiriyordu; `react-hooks/purity` bunu hakli olarak isaretliyor
+ * (render govdesinde okunan saat ayni girdiyle farkli cikti uretebilir).
+ *
+ * Cozum: agirlik SAF fonksiyon, "simdi" PARAMETRE. Cagiran istegin basinda
+ * zamani bir kez alir (`simdiMs()`); ayni istek icindeki tum karsilastirmalar
+ * ayni ana gore yapilir — siralama sonucu eskisiyle AYNI, ama tekrarlanabilir.
+ *
+ * Merdiven: agency(3) > plus(2) > premium(1) > none/suresi gecmis(0).
+ * Suresiz premium (`until` NULL) AKTIFTIR — `isPremiumActive` ile ayni kural.
+ */
+
+/** Siralamada kullanilacak "simdi" — istek basinda BIR KEZ alinir. */
+export function simdiMs(): number {
+  return Date.now();
+}
+
+/**
+ * Premium kademesinin siralama agirligi.
+ *
+ * @param tier  `premium_tier` (null / 'none' / 'premium' / 'plus' / 'agency')
+ * @param until `premium_until` (ISO; null = suresiz)
+ * @param simdi karsilastirma ani (ms) — `simdiMs()` ile alinir
+ */
+export function premiumAgirligi(
+  tier: string | null | undefined,
+  until: string | null | undefined,
+  simdi: number
+): number {
+  if (!tier || tier === 'none') return 0;
+  if (until && new Date(until).getTime() <= simdi) return 0;
+  if (tier === 'agency') return 3;
+  if (tier === 'plus') return 2;
+  if (tier === 'premium') return 1;
+  return 0;
+}

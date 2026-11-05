@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { createPortal } from 'react-dom';
+import { useMountDurumu } from '@/app/lib/istemci-kancalari';
 import { createCategoryRequest } from '@/app/lib/category-request-actions';
 
 type Props = {
@@ -51,16 +52,12 @@ export function KategoriTalepCta({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false);
+  // FAZ 10d: portal "mount oldu mu" bayragi — `useSyncExternalStore`.
+  const mounted = useMountDurumu();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [eventContext, setEventContext] = useState('');
-
-  // Portal sadece client tarafında mount olunca çalışır (SSR uyumlu)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   function handleOpen() {
     if (!isLoggedIn) {
@@ -129,7 +126,7 @@ export function KategoriTalepCta({
           Aradığın <em className="text-brand-ink">kategori</em> burada yok mu?
         </p>
         <p className="text-xs text-ink-72 leading-relaxed">
-          Bize öner — Kashe'ye eklemeyi değerlendirelim.
+          Bize öner — Kashe&apos;ye eklemeyi değerlendirelim.
         </p>
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink inline-flex items-center gap-1 mt-3 group-hover:translate-x-1 transition-transform">
           Kategori öner →
@@ -168,7 +165,7 @@ export function KategoriTalepCta({
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-5">
               Önerini değerlendireceğiz. Yeterli talep birikince yeni
-              kategori olarak Kashe'ye ekleyeceğiz.
+              kategori olarak Kashe&apos;ye ekleyeceğiz.
             </p>
             <button
               type="button"

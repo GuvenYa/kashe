@@ -81,8 +81,11 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName }: Props) {
 
       setAvatarUrl(finalUrl);
       router.refresh();
-    } catch (err: any) {
-      setError('Yükleme başarısız: ' + (err.message || 'Bilinmeyen hata'));
+    } catch (err: unknown) {
+      setError(
+        'Yükleme başarısız: ' +
+          (err instanceof Error ? err.message : 'Bilinmeyen hata')
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -117,8 +120,11 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName }: Props) {
 
       setAvatarUrl(null);
       router.refresh();
-    } catch (err: any) {
-      setError('Silme başarısız: ' + (err.message || 'Bilinmeyen hata'));
+    } catch (err: unknown) {
+      setError(
+        'Silme başarısız: ' +
+          (err instanceof Error ? err.message : 'Bilinmeyen hata')
+      );
     } finally {
       setUploading(false);
     }

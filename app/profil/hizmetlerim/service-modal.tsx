@@ -15,6 +15,45 @@ type Props = {
   defaultCategoryId?: number | null;
 };
 
+/**
+ * ILK DEGERLER — saf fonksiyon (FAZ 10d).
+ *
+ * Eskiden bu esleme bir efektin icindeydi ve modal her acildiginda setState
+ * ile dolduruluyordu (react-hooks/set-state-in-effect: kademeli render).
+ * Simdi cagiran modali YALNIZ acikken ve `key` ile mount ediyor, degerler de
+ * dogrudan `useState` baslangicina giriyor — ayni sonuc, efekt yok.
+ */
+function ilkDegerler(
+  service: Service | null | undefined,
+  defaultCategoryId: number | null | undefined
+) {
+  if (service) {
+    return {
+      categoryId: String(service.category_id),
+      title: service.title,
+      description: service.description || '',
+      priceOnRequest: service.price_on_request,
+      priceMin: service.price_min !== null ? String(service.price_min) : '',
+      priceMax: service.price_max !== null ? String(service.price_max) : '',
+      priceUnit: (service.price_unit ?? 'total') as PriceUnit,
+      priceStarting: service.price_starting ?? false,
+      durationHours:
+        service.duration_hours !== null ? String(service.duration_hours) : '',
+    };
+  }
+  return {
+    categoryId: defaultCategoryId ? String(defaultCategoryId) : '',
+    title: '',
+    description: '',
+    priceOnRequest: false,
+    priceMin: '',
+    priceMax: '',
+    priceUnit: 'total' as PriceUnit,
+    priceStarting: false,
+    durationHours: '',
+  };
+}
+
 export function ServiceModal({
   open,
   onClose,
@@ -46,49 +85,23 @@ export function ServiceModal({
     setAiSvcLoading(false);
   }
 
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priceOnRequest, setPriceOnRequest] = useState(false);
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [priceUnit, setPriceUnit] = useState<PriceUnit>('total');
-  const [priceStarting, setPriceStarting] = useState(false);
-  const [durationHours, setDurationHours] = useState('');
+  // Cagiran modali her acilista YENIDEN mount ediyor (key) — baslangic
+  // degerleri bu yuzden dogrudan prop'lardan okunur.
+  const ilk = ilkDegerler(service, defaultCategoryId);
+  const [categoryId, setCategoryId] = useState<string>(ilk.categoryId);
+  const [title, setTitle] = useState(ilk.title);
+  const [description, setDescription] = useState(ilk.description);
+  const [priceOnRequest, setPriceOnRequest] = useState(ilk.priceOnRequest);
+  const [priceMin, setPriceMin] = useState(ilk.priceMin);
+  const [priceMax, setPriceMax] = useState(ilk.priceMax);
+  const [priceUnit, setPriceUnit] = useState<PriceUnit>(ilk.priceUnit);
+  const [priceStarting, setPriceStarting] = useState(ilk.priceStarting);
+  const [durationHours, setDurationHours] = useState(ilk.durationHours);
 
   // §11: tek-fiyat modu (birim≠total VEYA başlangıç) → aralık yerine tek fiyat alanı
   const isSinglePrice = priceUnit !== 'total' || priceStarting;
 
   const isEdit = !!service;
-
-  // Modal açıldığında alanları doldur (edit) veya sıfırla (create)
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    if (service) {
-      setCategoryId(String(service.category_id));
-      setTitle(service.title);
-      setDescription(service.description || '');
-      setPriceOnRequest(service.price_on_request);
-      setPriceMin(service.price_min !== null ? String(service.price_min) : '');
-      setPriceMax(service.price_max !== null ? String(service.price_max) : '');
-      setPriceUnit(service.price_unit ?? 'total');
-      setPriceStarting(service.price_starting ?? false);
-      setDurationHours(
-        service.duration_hours !== null ? String(service.duration_hours) : ''
-      );
-    } else {
-      setCategoryId(defaultCategoryId ? String(defaultCategoryId) : '');
-      setTitle('');
-      setDescription('');
-      setPriceOnRequest(false);
-      setPriceMin('');
-      setPriceMax('');
-      setPriceUnit('total');
-      setPriceStarting(false);
-      setDurationHours('');
-    }
-  }, [open, service, defaultCategoryId]);
 
   // ESC ile kapatma
   useEffect(() => {

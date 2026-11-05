@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { Button } from "@/app/components/ui/button";
 import { getCategoryIcon } from "@/app/lib/category-icon";
@@ -115,11 +116,11 @@ export function ProCtaSection({
                   {birincil.label}
                 </Button>
               </a>
-              <a href="/#nasil-calisir">
+              <Link href="/#nasil-calisir">
                 <Button variant="secondary" size="lg" className="border-ink">
                   Nasıl çalışır?
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -187,7 +188,7 @@ export function ProCtaSection({
                     <span className="text-xs text-ink-50">(24)</span>
                   </div>
                   <span className="font-display font-semibold text-sm text-ink">
-                    4.200 TL<span className="text-ink-50 font-normal">'den</span>
+                    4.200 TL<span className="text-ink-50 font-normal">&apos;den</span>
                   </span>
                 </div>
               </div>

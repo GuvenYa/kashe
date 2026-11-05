@@ -25,12 +25,16 @@ export function ReplyButton({ reviewId, existingReply }: Props) {
         {existingReply ? 'Yanıtı düzenle' : 'Yanıtla'}
       </button>
 
-      <ReplyModal
-        reviewId={reviewId}
-        existingReply={existingReply}
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+      {/* FAZ 10d: kosullu mount + key — alanlar mount ile sifirlanir. */}
+      {modalOpen && (
+        <ReplyModal
+          key={existingReply?.id ?? 'yeni'}
+          reviewId={reviewId}
+          existingReply={existingReply}
+          open
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -50,13 +54,7 @@ function ReplyModal({ reviewId, existingReply, open, onClose }: ModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setBody(existingReply?.body ?? '');
-      setError(null);
-      setConfirmDelete(false);
-    }
-  }, [open, existingReply]);
+  // FAZ 10d: sifirlama efekti KALKTI — kosullu mount + `key` ayni isi yapiyor.
 
   useEffect(() => {
     if (!open) return;

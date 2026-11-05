@@ -1,7 +1,11 @@
 import { cn } from "@/app/lib/cn";
 import { InputHTMLAttributes, forwardRef } from "react";
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
+/**
+ * Girdi bileseni, yerel HTML girdisinin TUM ozelliklerini alir.
+ * (Bos arayuz yerine tip takma adi: ek alan yok.)
+ */
+type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", ...props }, ref) => {

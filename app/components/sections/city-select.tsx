@@ -38,9 +38,10 @@ export function CitySelect({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  // FAZ 10d: odaklanma DIS sistem (DOM) — efektte kalir; vurgu sifirlama ise
+  // artik ACMA olayinda yapiliyor (asagidaki `ac()`), efektte setState yok.
   useEffect(() => {
     if (open && inputRef.current) inputRef.current.focus();
-    if (open) setHighlight(0);
   }, [open]);
 
   function select(id: string) {
@@ -74,7 +75,11 @@ export function CitySelect({
     <div className="relative h-full" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Acilirken vurgu ilk siraya doner (eskiden efektte yapiliyordu).
+          if (!open) setHighlight(0);
+          setOpen(!open);
+        }}
         className="w-full text-left px-4 py-2.5 rounded-xl hover:bg-paper-2/40 transition-colors h-full flex flex-col justify-center"
       >
         <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink mb-1">

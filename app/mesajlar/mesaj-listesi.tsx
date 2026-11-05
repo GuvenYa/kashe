@@ -81,8 +81,11 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
     initialConversations
   );
 
-  // Prop güncellenirse (router.refresh sonrası) state'i tazele
+  // Prop güncellenirse (router.refresh sonrası) state'i tazele.
+  // Yerel durum REALTIME akistan da besleniyor (asagidaki kanal); sunucudan
+  // gelen taze liste ile yerel listeyi esitlemenin efektsiz karsiligi yok.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucu prop'u + realtime akis esitlemesi
     setConversations(initialConversations);
   }, [initialConversations]);
 

@@ -181,6 +181,9 @@ export function SihirbazClient({
   useEffect(() => {
     const yeni = aramaParams.toString();
     sorguRef.current = yeni;
+    // Geri/ileri tusu ve giris donusu ADRES CUBUGUNU disaridan degistirir;
+    // sihirbazin tum durumu URL'de yasadigi icin bu esitleme zorunlu.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- adres cubugu (dis sistem) esitlemesi
     setSorgu(yeni);
   }, [aramaParams]);
 

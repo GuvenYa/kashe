@@ -399,8 +399,11 @@ export function RfpEditoru({
             <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72">
               <span className="sm:col-span-3">Rol</span>
               <span className="sm:col-span-1">Adet</span>
-              <span className="sm:col-span-2">Bütçe ipucu (TL)</span>
-              <span className="sm:col-span-4">Not</span>
+              {/* Duzeltme 08 (#54): butce ipucu hucresi 1024 pxe kadar DAR kaliyor
+                  ve iki kutu (min/max) degeri kesiyordu ("18("). Hucre bir sutun
+                  genisledi, "Not" bir sutun daraldi; mobil duzen degismedi. */}
+              <span className="sm:col-span-3">Bütçe ipucu (TL)</span>
+              <span className="sm:col-span-3">Not</span>
               <span className="sm:col-span-2 text-right">Zorunlu</span>
             </div>
 
@@ -449,9 +452,9 @@ export function RfpEditoru({
                       </p>
                     )}
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-3">
                     {duzenlenebilir ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -466,7 +469,7 @@ export function RfpEditoru({
                             })
                           }
                           placeholder="min"
-                          className={`${ALAN} w-full`}
+                          className={`${ALAN} min-w-0 flex-1 px-2`}
                         />
                         <input
                           type="text"
@@ -482,7 +485,7 @@ export function RfpEditoru({
                             })
                           }
                           placeholder="max"
-                          className={`${ALAN} w-full`}
+                          className={`${ALAN} min-w-0 flex-1 px-2`}
                         />
                       </div>
                     ) : (
@@ -494,7 +497,7 @@ export function RfpEditoru({
                       </p>
                     )}
                   </div>
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-3">
                     {duzenlenebilir ? (
                       <input
                         type="text"

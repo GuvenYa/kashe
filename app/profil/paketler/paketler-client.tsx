@@ -70,7 +70,15 @@ export function PaketlerClient({ packages }: Props) {
         </div>
       )}
 
-      <PackageModal open={modalOpen} onClose={close} pkg={editingPackage} />
+      {/* FAZ 10d: kosullu mount + key — alanlar mount ile sifirlanir. */}
+      {modalOpen && (
+        <PackageModal
+          key={editingPackage?.id ?? 'yeni'}
+          open
+          onClose={close}
+          pkg={editingPackage}
+        />
+      )}
     </>
   );
 }

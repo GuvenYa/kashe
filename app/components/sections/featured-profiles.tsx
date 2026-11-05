@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/app/lib/supabase-server";
 import { Eyebrow } from "@/app/components/ui/eyebrow";
 import { ProfileCard } from "@/app/kesfet/profile-card";
+import { premiumAgirligi, simdiMs } from "@/app/lib/premium";
 import { getFavoritedIds } from "@/app/favoriler/actions";
 import { getZiyaretci } from "@/app/lib/ziyaretci";
 import {
@@ -55,20 +56,14 @@ export async function FeaturedProfiles() {
 
   const rawList = (profiles || []) as unknown as ProviderListing[];
 
-  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 16
-  const tierWeight = (tier: string | null, until: string | null): number => {
-    if (!tier || tier === "none") return 0;
-    if (until && new Date(until).getTime() <= Date.now()) return 0;
-    if (tier === "agency") return 3;
-    if (tier === "plus") return 2;
-    if (tier === "premium") return 1;
-    return 0;
-  };
+  // Premium profilleri öne al (stable sort updated_at sırasını korur), ilk 16.
+  // Agirlik SAF yardimcidan (app/lib/premium); "simdi" bir kez alinir.
+  const simdi = simdiMs();
   const list = [...rawList]
     .sort(
       (a, b) =>
-        tierWeight(b.premium_tier, b.premium_until) -
-        tierWeight(a.premium_tier, a.premium_until)
+        premiumAgirligi(b.premium_tier, b.premium_until, simdi) -
+        premiumAgirligi(a.premium_tier, a.premium_until, simdi)
     )
     .slice(0, HOME_LIMIT);
 

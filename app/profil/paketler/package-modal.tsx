@@ -11,65 +11,91 @@ type Props = {
   pkg?: ServicePackage | null; // edit mode
 };
 
+/** Fiyat modu: tek sabit / min-max aralik / talep uzerine. */
+type PaketFiyatModu = 'fixed' | 'range' | 'request';
+
+/**
+ * ILK DEGERLER — saf fonksiyon (FAZ 10d).
+ *
+ * Eskiden bu esleme bir efektin icindeydi ve modal her acildiginda setState ile
+ * dolduruluyordu (react-hooks/set-state-in-effect). Cagiran artik modali YALNIZ
+ * acikken ve `key` ile mount ediyor; degerler dogrudan `useState`
+ * baslangicina giriyor. Fiyat modu cikarimi (talep uzerine / min===max sabit /
+ * aralik) AYNEN korundu.
+ */
+function ilkDegerler(pkg: ServicePackage | null | undefined) {
+  if (!pkg) {
+    return {
+      title: '',
+      description: '',
+      includes: [''] as string[],
+      priceMode: 'fixed' as PaketFiyatModu,
+      priceFixed: '',
+      priceMin: '',
+      priceMax: '',
+      priceStarting: false,
+    };
+  }
+  const ortak = {
+    title: pkg.title,
+    description: pkg.description || '',
+    includes:
+      pkg.includes && pkg.includes.length > 0 ? [...pkg.includes] : [''],
+    priceStarting: pkg.price_starting ?? false,
+  };
+  if (pkg.price_on_request) {
+    return {
+      ...ortak,
+      priceMode: 'request' as PaketFiyatModu,
+      priceFixed: '',
+      priceMin: '',
+      priceMax: '',
+    };
+  }
+  if (
+    pkg.price_min !== null &&
+    pkg.price_max !== null &&
+    pkg.price_min === pkg.price_max
+  ) {
+    // min===max -> sabit fiyat olarak yorumla
+    return {
+      ...ortak,
+      priceMode: 'fixed' as PaketFiyatModu,
+      priceFixed: String(pkg.price_min),
+      priceMin: '',
+      priceMax: '',
+    };
+  }
+  return {
+    ...ortak,
+    priceMode: 'range' as PaketFiyatModu,
+    priceFixed: '',
+    priceMin: pkg.price_min !== null ? String(pkg.price_min) : '',
+    priceMax: pkg.price_max !== null ? String(pkg.price_max) : '',
+  };
+}
+
 export function PackageModal({ open, onClose, pkg }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [includes, setIncludes] = useState<string[]>(['']);
-  // Fiyat modu: 'fixed' (tek sabit) | 'range' (min-max) | 'request' (talep üzerine)
-  const [priceMode, setPriceMode] = useState<'fixed' | 'range' | 'request'>(
-    'fixed'
-  );
-  const [priceFixed, setPriceFixed] = useState('');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [priceStarting, setPriceStarting] = useState(false); // §11 "başlangıç"
+  // Cagiran modali her acilista YENIDEN mount ediyor (key) — baslangic
+  // degerleri bu yuzden dogrudan prop'tan okunur.
+  const ilk = ilkDegerler(pkg);
+  const [title, setTitle] = useState(ilk.title);
+  const [description, setDescription] = useState(ilk.description);
+  const [includes, setIncludes] = useState<string[]>(ilk.includes);
+  const [priceMode, setPriceMode] = useState<PaketFiyatModu>(ilk.priceMode);
+  const [priceFixed, setPriceFixed] = useState(ilk.priceFixed);
+  const [priceMin, setPriceMin] = useState(ilk.priceMin);
+  const [priceMax, setPriceMax] = useState(ilk.priceMax);
+  const [priceStarting, setPriceStarting] = useState(ilk.priceStarting); // §11 "başlangıç"
 
   const isEdit = !!pkg;
 
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    if (pkg) {
-      setTitle(pkg.title);
-      setDescription(pkg.description || '');
-      setIncludes(pkg.includes && pkg.includes.length > 0 ? [...pkg.includes] : ['']);
-      setPriceStarting(pkg.price_starting ?? false);
-      if (pkg.price_on_request) {
-        setPriceMode('request');
-        setPriceFixed('');
-        setPriceMin('');
-        setPriceMax('');
-      } else if (
-        pkg.price_min !== null &&
-        pkg.price_max !== null &&
-        pkg.price_min === pkg.price_max
-      ) {
-        // min===max → sabit fiyat olarak yorumla
-        setPriceMode('fixed');
-        setPriceFixed(String(pkg.price_min));
-        setPriceMin('');
-        setPriceMax('');
-      } else {
-        setPriceMode('range');
-        setPriceFixed('');
-        setPriceMin(pkg.price_min !== null ? String(pkg.price_min) : '');
-        setPriceMax(pkg.price_max !== null ? String(pkg.price_max) : '');
-      }
-    } else {
-      setTitle('');
-      setDescription('');
-      setIncludes(['']);
-      setPriceMode('fixed');
-      setPriceFixed('');
-      setPriceMin('');
-      setPriceMax('');
-      setPriceStarting(false);
-    }
-  }, [open, pkg]);
+  // FAZ 10d: sifirlama efekti KALKTI — kosullu mount + `key` ayni isi yapiyor
+  // (ilk degerler yukarida `ilkDegerler(pkg)` ile prop'tan geliyor).
 
   useEffect(() => {
     if (!open) return;

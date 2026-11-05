@@ -8,6 +8,7 @@ import {
   girissizHakKullan,
   girissizHakMesaji,
 } from '@/app/lib/girissiz-ai';
+import { yaklasikButceAraligi } from '@/app/lib/butce-araligi';
 import {
   EVENTSPEC_SCHEMA_VERSION,
   EVENT_NEEDS_MODEL_ID,
@@ -808,18 +809,37 @@ Kurallar:
       butceMin = butceMax;
       butceMax = gecici;
     }
+    /**
+     * Duzeltme 08 (#17): kullanici YAKLASIK konustuysa ve model tek tutar
+     * cikardiysa aralik +-%15 acilir (5.000'e yuvarlanir). Kural saf bir
+     * fonksiyonda (app/lib/butce-araligi); istem metni ve model DEGISMEDI.
+     * Genisletilen deger `derived` (kural `yaklasik_butce_araligi`) provenance ile yazilir — hangi alanin
+     * modelden, hangisinin kuraldan geldigi altin kumede ayirt edilebilsin.
+     */
+    const yaklasik =
+      hamMin && hamMax
+        ? yaklasikButceAraligi(description, butceMin, butceMax)
+        : null;
+    if (yaklasik) {
+      butceMin = yaklasik.min;
+      butceMax = yaklasik.max;
+    }
     if (hamMin && butceMin !== null) {
       yaz(
         'budget_min',
         butceMin,
-        girdi('extracted', hamMin.confidence, hamMin.evidence)
+        yaklasik
+          ? girdi('derived', hamMin.confidence, hamMin.evidence, 'yaklasik_butce_araligi')
+          : girdi('extracted', hamMin.confidence, hamMin.evidence)
       );
     }
     if (hamMax && butceMax !== null) {
       yaz(
         'budget_max',
         butceMax,
-        girdi('extracted', hamMax.confidence, hamMax.evidence)
+        yaklasik
+          ? girdi('derived', hamMax.confidence, hamMax.evidence, 'yaklasik_butce_araligi')
+          : girdi('extracted', hamMax.confidence, hamMax.evidence)
       );
     }
 

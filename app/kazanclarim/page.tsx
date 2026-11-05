@@ -206,7 +206,9 @@ export default async function KazanclarimPage() {
             altNot={
               <>
                 Tamamlanan rezervasyonlardan elde ettiğin gelir. Platform
-                komisyonu %{Math.round(COMMISSION_RATE * 100)} olarak hesaplanır.
+                komisyonu (%{Math.round(COMMISSION_RATE * 100)}) sohbetteki
+                teklifle açılan rezervasyonlara uygulanır; teklif dosyasıyla
+                aldığın işlerde komisyon alınmaz.
               </>
             }
           >
@@ -325,7 +327,18 @@ export default async function KazanclarimPage() {
                                   {formatTRY(c.gross)}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm text-brand-ink-deep tabular-nums whitespace-nowrap">
-                                  −{formatTRY(c.commission)}
+                                  {/* Duzeltme 08 (#56): teklif seklinde platform
+                                      ucreti YOK; "-0 TL" yerine tire + kisa not. */}
+                                  {b.teklifSekli ? (
+                                    <span className="text-ink-50">
+                                      —
+                                      <span className="block font-mono text-[10px] normal-case tracking-normal">
+                                        Teklif dosyasından komisyon alınmaz
+                                      </span>
+                                    </span>
+                                  ) : (
+                                    <>−{formatTRY(c.commission)}</>
+                                  )}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-semibold text-moss tabular-nums whitespace-nowrap">
                                   {formatTRY(c.net)}

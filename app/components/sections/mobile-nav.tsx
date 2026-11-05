@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
@@ -45,7 +46,12 @@ export function MobileNav({
   const pathname = usePathname();
   const router = useRouter();
 
+  // Adres cubugu (dis sistem) ile esitleme: gezinme olunca acik menu kapanir.
+  // Alternatif `key` ile sifirlama ebeveyni sunucu bileseni oldugu icin
+  // pathname'e erisemiyor; kapatmayi onlarca baglantinin onClick'ine dagitmak
+  // ayni davranisi daha kirilgan yazar.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- route degisimi dis sistem esitlemesi
     setOpen(false);
   }, [pathname]);
 
@@ -172,10 +178,10 @@ export function MobileNav({
                   {/* HESAP — Mesajlar + Bildirimler (rozetli) + hesap satirlari
                       + Admin + Çıkış. Rozetli satirlar baslaticida YOK, burada. */}
                   <p className={groupLabel}>Hesap</p>
-                  <a href="/mesajlar" className={linkClassInlineBadge}>
+                  <Link href="/mesajlar" className={linkClassInlineBadge}>
                     Mesajlar
                     {userId && <UnreadBadge userId={userId} />}
-                  </a>
+                  </Link>
                   <a href="/bildirimler" className={linkClassInlineBadge}>
                     Bildirimler
                     {notificationCount > 0 && (

@@ -118,7 +118,7 @@ type ListingNoAppRow = { listing_id: string; title: string; creator_id: string; 
 type ProNoAppRow = { profile_id: string; name: string; category: string | null }
 
 const num = (v: unknown) => Number(v ?? 0)
-const fmtDate = (s: any) => {
+const fmtDate = (s: unknown) => {
   const parts = String(s ?? '').split('-')
   return parts.length === 3 ? `${parts[2]}.${parts[1]}` : String(s ?? '')
 }
@@ -266,8 +266,12 @@ export default function IstatistiklerPage() {
         setProsNoApps((r19.data ?? []) as ProNoAppRow[])
         setQueue(((r20.data ?? [])[0] ?? null) as QueueRow | null)
         setRecentActions((r21.data ?? []) as AdminActionRow[])
-      } catch (e: any) {
-        setError(e?.message ?? 'İstatistikler yüklenirken bir hata oluştu.')
+      } catch (e: unknown) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'İstatistikler yüklenirken bir hata oluştu.'
+        )
       } finally {
         setLoading(false)
       }
@@ -302,22 +306,35 @@ export default function IstatistiklerPage() {
         setOpsFirstApp(((rO1.data ?? [])[0] ?? null) as OpsListingFirstApp | null)
         setOpsAppResp(((rO2.data ?? [])[0] ?? null) as OpsAppResponse | null)
         setOpsMsgResp(((rO3.data ?? [])[0] ?? null) as OpsMsgResponse | null)
-      } catch (e: any) {
-        setError(e?.message ?? 'Akış verileri yüklenirken bir hata oluştu.')
+      } catch (e: unknown) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Akış verileri yüklenirken bir hata oluştu.'
+        )
       }
     })()
   }, [pDays])
 
   // ---- Kayıtları tarihe göre pivotla (rol bazlı stacked area) ----
-  const regByDate: Record<string, any> = {}
+  // Pivot satiri: tarih + rol bazli sayilar (grafik bu sekli bekliyor).
+  type KayitSatiri = {
+    date: string
+    client: number
+    professional: number
+    business: number
+    agency: number
+  }
+  const regByDate: Record<string, KayitSatiri> = {}
   for (const row of reg) {
     const d = row.bucket
     if (!regByDate[d]) {
       regByDate[d] = { date: d, client: 0, professional: 0, business: 0, agency: 0 }
     }
-    regByDate[d][row.role_key] = num(row.cnt)
+    const rol = row.role_key as keyof Omit<KayitSatiri, 'date'>
+    if (rol in regByDate[d]) regByDate[d][rol] = num(row.cnt)
   }
-  const regData = Object.values(regByDate).sort((a: any, b: any) =>
+  const regData = Object.values(regByDate).sort((a, b) =>
     a.date < b.date ? -1 : 1
   )
 
@@ -1030,8 +1047,12 @@ export default function IstatistiklerPage() {
                       <Tooltip
                         contentStyle={tooltipStyle}
                         labelFormatter={fmtDate}
-                        formatter={(v: any, name: any) =>
-                          name === 'GMV' ? [`${num(v).toLocaleString('tr-TR')} TL`, 'GMV'] : [v, name]
+                        formatter={(v: unknown, name: unknown) =>
+                          // Deger tipleri kutuphaneden genis geliyor; metne
+                          // cevrilir (grafik ikisini de metin olarak ciziyordu).
+                          name === 'GMV'
+                            ? [`${num(v).toLocaleString('tr-TR')} TL`, 'GMV']
+                            : [String(v ?? ''), String(name ?? '')]
                         }
                       />
                       <Area type="monotone" dataKey="GMV" stroke={C.moss} fill="url(#gmvGrad)" strokeWidth={2} />

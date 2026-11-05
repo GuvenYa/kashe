@@ -160,7 +160,9 @@ export async function getUserFavorites() {
 
   // Yayında olmayan profesyonelleri filtrele (favoriliyken yayından çıkmış olabilir)
   const filtered = (data ?? []).filter(
-    (fav) => fav.professional && (fav.professional as any).is_published
+    (fav) =>
+      fav.professional &&
+      (fav.professional as unknown as { is_published: boolean }).is_published
   );
 
   return { favorites: filtered, error: null };

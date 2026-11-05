@@ -112,6 +112,9 @@ export default function GirisForm({
     const code = params.get('error_code') || params.get('error') || '';
     const desc = params.get('error_description') || '';
     if (!code && !desc) return;
+    // Supabase hata fragmani (#error=...) YALNIZ istemcide okunabilir; sunucu
+    // render'inda hash yok. Okuma + temizleme bu yuzden efektte kalir.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL fragmani (dis sistem) okumasi
     setHata(hashErrorToTr(code, desc));
     // Fragmanı temizle — yenilemede tekrar görünmesin, paylaşımda sızmasın.
     window.history.replaceState(

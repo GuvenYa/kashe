@@ -203,7 +203,14 @@ export function EkipPaneli({
         rolAdlari,
       });
       if (!res.success) setHata(res.error);
-      else setBilgi('Ekip durumu güncellendi.');
+      else {
+        setBilgi('Ekip durumu güncellendi.');
+        // Duzeltme 08 (#51): basliktaki durum ("Ekip · Taslak") sunucu
+        // prop'undan geliyor; eylem `revalidatePath` yaziyor ama istemci
+        // agacini kendisi tazelemiyordu — kullanici sayfayi yenileyene kadar
+        // eski durumu goruyordu. Bilgi mesaji aynen kalir.
+        router.refresh();
+      }
     });
   }
 

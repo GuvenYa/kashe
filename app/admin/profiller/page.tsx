@@ -177,7 +177,8 @@ export default async function AdminProfillerPage({
 
       {/* Arama */}
       <div className="mb-7">
-        <ProfilArama initialQuery={rawQ} durum={durum} />
+        {/* key: sekme degisince arama kutusu YENIDEN mount olur (FAZ 10d). */}
+        <ProfilArama key={durum} initialQuery={rawQ} durum={durum} />
       </div>
 
       {list.length === 0 ? (
@@ -196,12 +197,15 @@ export default async function AdminProfillerPage({
       ) : (
         <>
           <div className="space-y-4">
-            {list.map((p: any) => {
+            {list.map((p) => {
               const displayName =
                 (p.role === 'business' || p.role === 'agency') && p.company_name
                   ? p.company_name
                   : p.full_name || 'İsimsiz';
-              const categoryName = p.service_categories?.name_tr;
+              // Gomme alani supabase tipinde dizi gorunuyor (tek satir doner).
+              const categoryName = (
+                p.service_categories as unknown as { name_tr: string } | null
+              )?.name_tr;
               const approval = APPROVAL_BADGE[p.approval_status as string] ?? {
                 label: p.approval_status || '—',
                 cls: 'bg-ink/6 text-ink-72 border-line',

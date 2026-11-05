@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { createPortal } from 'react-dom';
+import { useMountDurumu } from '@/app/lib/istemci-kancalari';
 import {
   banUser,
   unbanUser,
@@ -50,7 +51,9 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
   const [premiumMonths, setPremiumMonths] = useState(6);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false);
+  // FAZ 10d: portal icin "mount oldu mu" bayragi — efekt + setState yerine
+  // `useSyncExternalStore` (app/lib/istemci-kancalari).
+  const mounted = useMountDurumu();
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Portallanan menünün fixed konumu (getBoundingClientRect'ten). top VEYA bottom dolu (flip).
   const [menuPos, setMenuPos] = useState<{
@@ -58,10 +61,6 @@ export function KullaniciAksiyonlar({ user, isCurrentUser }: Props) {
     top: number | null;
     bottom: number | null;
   } | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Menüyü buton konumundan aç; altta yer yoksa yukarı açıl (flip).
   function openMenu() {

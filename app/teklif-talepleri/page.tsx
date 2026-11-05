@@ -66,6 +66,38 @@ function butceMetni(
   return a || b || null;
 }
 
+/**
+ * FAZ 10d: sayfanin okudugu satir sekli — `any` yerine gercek tip.
+ * Alanlar asagidaki `select()` listesiyle birebir.
+ */
+type TalepAlicisi = {
+  id: string;
+  status: string;
+  conversation_id: string | null;
+  created_at: string;
+  quote_requests: {
+    id: string;
+    brief_data: Record<string, unknown> | null;
+    event_date: string | null;
+    event_type: string | null;
+    budget_min: number | null;
+    budget_max: number | null;
+    share_budget: boolean;
+    response_deadline: string | null;
+    status: string;
+    attachment_path: string | null;
+    attachment_name: string | null;
+    attachment_type: string | null;
+    service_categories: { name_tr: string; slug: string } | null;
+    turkish_cities: { name: string } | null;
+    customer: {
+      full_name: string | null;
+      company_name: string | null;
+      role: string;
+    } | null;
+  } | null;
+};
+
 export default async function TeklifTalepleriPage() {
   const supabase = await createClient();
   // FAZ 10b: etkinlik turu etiketleri `event_types` tablosundan
@@ -108,11 +140,16 @@ export default async function TeklifTalepleriPage() {
     .eq('professional_id', user.id)
     .order('created_at', { ascending: false });
 
-  const list = (recipients || []).filter((r: any) => r.quote_requests);
+  // Gomme alanlari supabase tipinde dizi gorunuyor (tek satir donuyor):
+  // iki adimli donusum repo deseni.
+  const list = ((recipients || []) as unknown as TalepAlicisi[]).filter(
+    (r): r is TalepAlicisi & { quote_requests: NonNullable<TalepAlicisi['quote_requests']> } =>
+      !!r.quote_requests
+  );
 
   // Bekleyen (sent/viewed) sayısı
   const pendingCount = list.filter(
-    (r: any) => r.status === 'sent' || r.status === 'viewed'
+    (r) => r.status === 'sent' || r.status === 'viewed'
   ).length;
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
@@ -149,7 +186,7 @@ export default async function TeklifTalepleriPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {list.map((r: any) => {
+            {list.map((r) => {
               const req = r.quote_requests;
               const customer = req.customer;
               const customerName =

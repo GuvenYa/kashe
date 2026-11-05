@@ -6,6 +6,7 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { ProfileCard } from '@/app/kesfet/profile-card';
 import { EmptyState } from '@/app/components/EmptyState';
 import { getFavoritedIds } from '@/app/favoriler/actions';
+import { premiumAgirligi, simdiMs } from '@/app/lib/premium';
 import { getCategoryIcon } from '@/app/lib/category-icon';
 import { isBusy as computeBusy, busyWindowKeys } from '@/app/lib/badges';
 import {
@@ -126,19 +127,13 @@ export default async function KategoriPage({ params }: Props) {
 
   const profiles = (profilesData || []) as unknown as PublishedProfile[];
 
-  // Premium profiller üstte — keşfetle aynı mantık (stable sort sırayı korur)
-  const tierWeight = (tier: string | null, until: string | null): number => {
-    if (!tier || tier === 'none') return 0;
-    if (until && new Date(until).getTime() <= Date.now()) return 0;
-    if (tier === 'agency') return 3;
-    if (tier === 'plus') return 2;
-    if (tier === 'premium') return 1;
-    return 0;
-  };
+  // Premium profiller üstte — keşfetle aynı mantık (stable sort sırayı korur).
+  // Agirlik SAF yardimcidan (app/lib/premium); "simdi" bir kez alinir.
+  const simdi = simdiMs();
   profiles.sort(
     (a, b) =>
-      tierWeight(b.premium_tier, b.premium_until) -
-      tierWeight(a.premium_tier, a.premium_until)
+      premiumAgirligi(b.premium_tier, b.premium_until, simdi) -
+      premiumAgirligi(a.premium_tier, a.premium_until, simdi)
   );
   const profileIds = profiles.map((p) => p.id);
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { KasheMark } from "@/app/components/ui/kashe-mark";
 import { createClient } from "@/app/lib/supabase-server";
@@ -96,12 +97,12 @@ export async function TopNav() {
     <nav className="w-full border-b border-line bg-paper/95 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <a href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
+        <Link href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
           <KasheMark className="w-8 h-8 kashe-logo-mark" />
           <span className="font-display font-semibold text-xl text-ink tracking-tight">
             Kashe
           </span>
-        </a>
+        </Link>
 
         {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}
         {/* Orta nav TEK SATIR kalir: anonim kullanicida 9 baglanti var (gap-5),
@@ -153,10 +154,10 @@ export async function TopNav() {
         <div className="hidden lg:flex items-center gap-4 shrink-0">
           {user ? (
             <>
-              <a href="/mesajlar" className={navLinkClass + " inline-flex items-center gap-1.5"}>
+              <Link href="/mesajlar" className={navLinkClass + " inline-flex items-center gap-1.5"}>
                 Mesajlar
                 <UnreadBadge userId={user.id} />
-              </a>
+              </Link>
               <NotificationBell userId={user.id} initialCount={notificationCount} />
               <UserMenu
                 initials={initials}

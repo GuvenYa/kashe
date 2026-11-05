@@ -120,8 +120,11 @@ export function PortfolioUpload({ userId, currentCount, maxItems }: Props) {
       }
 
       router.refresh();
-    } catch (err: any) {
-      setError('Yükleme başarısız: ' + (err.message || 'Bilinmeyen hata'));
+    } catch (err: unknown) {
+      setError(
+        'Yükleme başarısız: ' +
+          (err instanceof Error ? err.message : 'Bilinmeyen hata')
+      );
     } finally {
       setUploading(false);
       setProgress(null);

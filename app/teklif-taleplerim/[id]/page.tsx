@@ -38,6 +38,42 @@ export const metadata = {
   title: 'Teklif Karşılaştır — Kashe',
 };
 
+/**
+ * FAZ 10d: sayfanin okudugu satir sekilleri — `any` yerine GERCEK tipler.
+ * Alanlar yukaridaki `select()` listeleriyle birebir; bir alan secimden
+ * cikarsa TypeScript burada uyarir.
+ */
+type AliciSatiri = {
+  id: string;
+  conversation_id: string | null;
+  responded_at: string | null;
+  professional: {
+    id: string;
+    full_name: string | null;
+    company_name: string | null;
+    avatar_url: string | null;
+    role: string;
+    slug: string | null;
+  } | null;
+};
+
+type TeklifSatiri = {
+  id: string;
+  conversation_id: string;
+  total_amount: number;
+  currency: string;
+  services_description: string | null;
+  expires_at: string;
+  status: string;
+  created_at: string;
+};
+
+type PuanSatiri = {
+  professional_id: string;
+  average_rating: number | string | null;
+  total_reviews: number | null;
+};
+
 export default async function TeklifKarsilastirPage({
   params,
 }: {
@@ -102,14 +138,14 @@ export default async function TeklifKarsilastirPage({
 
   console.log('[teklif-detay] recipients:', quotedRecipients?.length, 'error:', recError);
 
-  const recipients = quotedRecipients || [];
+  const recipients = (quotedRecipients || []) as unknown as AliciSatiri[];
 
   // Her recipient'ın conversation'ındaki en güncel quote'u çek
   const conversationIds = recipients
-    .map((r: any) => r.conversation_id)
-    .filter(Boolean);
+    .map((r) => r.conversation_id)
+    .filter((v): v is string => !!v);
 
-  let quotesByConv: Record<string, any> = {};
+  const quotesByConv: Record<string, TeklifSatiri> = {};
   if (conversationIds.length > 0) {
     const { data: quotes } = await supabase
       .from('quotes')
@@ -120,7 +156,7 @@ export default async function TeklifKarsilastirPage({
       .order('created_at', { ascending: false });
 
     // Her conversation için en güncel quote (ilk gelen, desc sıralı)
-    (quotes || []).forEach((q: any) => {
+    ((quotes || []) as TeklifSatiri[]).forEach((q) => {
       if (!quotesByConv[q.conversation_id]) {
         quotesByConv[q.conversation_id] = q;
       }
@@ -129,38 +165,47 @@ export default async function TeklifKarsilastirPage({
 
   // Profesyonel puanlarını ayrı sorguyla çek (nested join satır eliyordu)
   const proIds = recipients
-    .map((r: any) => r.professional?.id)
-    .filter(Boolean);
-  let ratingByPro: Record<string, { avg: number; count: number }> = {};
+    .map((r) => r.professional?.id)
+    .filter((v): v is string => !!v);
+  const ratingByPro: Record<string, { avg: number; count: number }> = {};
   if (proIds.length > 0) {
     const { data: ratings } = await supabase
       .from('professional_rating_summary')
       .select('professional_id, average_rating, total_reviews')
       .in('professional_id', proIds);
-    (ratings || []).forEach((r: any) => {
+    ((ratings || []) as PuanSatiri[]).forEach((r) => {
       ratingByPro[r.professional_id] = {
         avg: Number(r.average_rating),
-        count: r.total_reviews,
+        count: Number(r.total_reviews ?? 0),
       };
     });
   }
 
-  const categoryName = (request.service_categories as any)?.name_tr;
-  const cityName = (request.turkish_cities as any)?.name;
+  // Gomme alanlari TEK YERDE cozulur (ucu de ayni iki nesneyi okuyordu).
+  const kategoriEmbed = request.service_categories as unknown as
+    | { name_tr: string; slug: string }
+    | null;
+  const sehirEmbed = request.turkish_cities as unknown as {
+    name: string;
+  } | null;
+  const categoryName = kategoriEmbed?.name_tr;
+  const cityName = sehirEmbed?.name;
 
   // Teklifleri fiyata göre sırala (düşükten yükseğe)
   const offers = recipients
-    .map((r: any) => ({
+    .map((r) => ({
       recipient: r,
       quote: r.conversation_id ? quotesByConv[r.conversation_id] : null,
     }))
-    .filter((o) => o.quote)
+    .filter(
+      (o): o is { recipient: AliciSatiri; quote: TeklifSatiri } => !!o.quote
+    )
     .sort((a, b) => Number(a.quote.total_amount) - Number(b.quote.total_amount));
 
   const cheapest = offers.length > 0 ? offers[0].quote.total_amount : null;
 
   // Talep detayları — brief_data'yı kategori config'iyle çevir (config sırasıyla)
-  const categorySlug = (request.service_categories as any)?.slug ?? null;
+  const categorySlug = kategoriEmbed?.slug ?? null;
   // FAZ 10b: `event_type` secenek etiketleri tablodan (pasifler dahil) —
   // aksi halde brief satirinda ham anahtar ("wedding") gorunurdu.
   const briefFields = getBriefFields(

@@ -33,15 +33,9 @@ export function YorumModal({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Modal açılınca state'i mevcut yoruma göre sıfırla
-  useEffect(() => {
-    if (open) {
-      setRating(existingReview?.rating ?? 0);
-      setBody(existingReview?.body ?? '');
-      setError(null);
-      setConfirmDelete(false);
-    }
-  }, [open, existingReview]);
+  // FAZ 10d: sifirlama efekti KALKTI — cagiran modali yalniz acikken ve
+  // `key` ile mount ediyor, baslangic degerleri yukaridaki `useState`
+  // cagrilarinda prop'tan geliyor (ayni sonuc, kademeli render yok).
 
   // ESC ile kapat
   useEffect(() => {

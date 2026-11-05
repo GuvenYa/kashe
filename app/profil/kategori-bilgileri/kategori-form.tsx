@@ -213,10 +213,16 @@ export function KategoriForm({
   };
   if (preset.archetype === 'uzmanlik') payload.summary = summary;
 
-  // İlk yüklemedeki halin imzası; sonrası onunla karşılaştırılır.
-  // (Kayıt başarılıysa action /profil'e yönlendirdiği için sıfırlamaya gerek yok.)
-  const savedSnapshot = useRef(JSON.stringify(payload));
-  const isDirty = JSON.stringify(payload) !== savedSnapshot.current;
+  /**
+   * Ilk yuklemedeki halin imzasi; sonrasi onunla karsilastirilir.
+   * (Kayit basariliysa action /profil'e yonlendirdigi icin sifirlamaya gerek yok.)
+   *
+   * FAZ 10d: `useRef` yerine `useState` BASLANGIC FONKSIYONU — ref degeri
+   * render sirasinda okunmaz (react-hooks/refs). Deger yine yalniz ilk
+   * render'da hesaplanir, sonra sabit kalir.
+   */
+  const [savedSnapshot] = useState(() => JSON.stringify(payload));
+  const isDirty = JSON.stringify(payload) !== savedSnapshot;
 
   // Adı boş yetenek satırları: sunucu bunları sessizce atıyor (actions.ts).
   // Kaydet ENGELLENMEZ, yalnız kaydet çubuğunda uyarı gösterilir.

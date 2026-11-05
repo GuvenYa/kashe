@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMedyaSorgusu } from "@/app/lib/istemci-kancalari";
 
 type Stat = {
   key: string;
@@ -69,21 +70,26 @@ export function HeroStats({
   categoryCount: number;
   cityCount: number;
 }) {
-  const [run, setRun] = useState(false);
+  /**
+   * FAZ 10d: mobil kontrolu artik medya sorgusu kancasindan geliyor
+   * (`useSyncExternalStore`) — eskiden efektin ICINDE `window.innerWidth`
+   * okunup setState yapiliyordu (kademeli render). Davranis ayni: mobilde
+   * sayac HEMEN baslar (observer mobilde tetiklenmiyor), masaustunde blok
+   * gorus alanina girince.
+   */
+  const mobil = useMedyaSorgusu('(max-width: 767px)');
+  const [gorundu, setGorundu] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const run = mobil || gorundu;
 
   useEffect(() => {
+    if (mobil) return;
     const el = ref.current;
     if (!el) return;
-    // Mobilde direkt başlat — observer mobilde tetiklenmiyor
-    if (window.innerWidth < 768) {
-      setRun(true);
-      return;
-    }
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setRun(true);
+          setGorundu(true);
           obs.disconnect();
         }
       },
@@ -91,7 +97,7 @@ export function HeroStats({
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [mobil]);
 
   const stats: Stat[] = [
     {

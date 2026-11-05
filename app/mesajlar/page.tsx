@@ -143,11 +143,11 @@ export default async function MesajlarPage() {
   }
 
   // Son mesaj + okunmamış sayıları için tek sorgu
-  let lastMessagesByConv: Record<
+  const lastMessagesByConv: Record<
     string,
     { body: string; sender_id: string; created_at: string }
   > = {};
-  let unreadCountsByConv: Record<string, number> = {};
+  const unreadCountsByConv: Record<string, number> = {};
 
   if (conversationIds.length > 0) {
     const { data: allMessages } = await supabase

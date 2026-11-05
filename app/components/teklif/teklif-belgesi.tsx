@@ -183,7 +183,9 @@ export function TeklifBelgesi({
             Etkinlik
           </p>
           <dl className="space-y-2">
-            <OzetSatiri etiket="Etkinlik" deger={teklif.event.title} />
+            {/* Duzeltme 08 (#53): kutunun basligi zaten "Etkinlik" — ilk satir
+                da "Etkinlik" deyince ad tekrar ediyordu. Etiket "Ad". */}
+            <OzetSatiri etiket="Ad" deger={teklif.event.title} />
             <OzetSatiri
               etiket="Tür"
               deger={etkinlikTuruMetni ?? null}

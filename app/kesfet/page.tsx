@@ -9,6 +9,7 @@ import { getFavoritedIds } from '@/app/favoriler/actions';
 import { orderCities } from '@/app/lib/city-order';
 import { getFilterFields, applyCategoryFilters } from '@/app/lib/filter-config';
 import { applyDiscoverBase } from '@/app/lib/discover-base';
+import { premiumAgirligi, simdiMs } from '@/app/lib/premium';
 import {
   matchesAnyBadge,
   isBusy as computeBusy,
@@ -605,18 +606,12 @@ export default async function KesfetPage({
   }
 
   // Premium profiller üstte — Tier: agency(3) > plus(2) > premium(1) > none(0).
-  const tierWeight = (tier: string | null, until: string | null): number => {
-    if (!tier || tier === 'none') return 0;
-    if (until && new Date(until).getTime() <= Date.now()) return 0; // süresi geçmiş
-    if (tier === 'agency') return 3;
-    if (tier === 'plus') return 2;
-    if (tier === 'premium') return 1;
-    return 0;
-  };
+  // Agirlik SAF yardimcidan (app/lib/premium); "simdi" bir kez alinir.
+  const simdi = simdiMs();
   profiles.sort(
     (a, b) =>
-      tierWeight(b.premium_tier, b.premium_until) -
-      tierWeight(a.premium_tier, a.premium_until)
+      premiumAgirligi(b.premium_tier, b.premium_until, simdi) -
+      premiumAgirligi(a.premium_tier, a.premium_until, simdi)
   );
 
   // EN SON: yoğun olanları dibe at (premium bile olsa müsait olanların altında).

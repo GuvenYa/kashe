@@ -69,13 +69,18 @@ export function HizmetlerimClient({ services, categories, primaryCategoryId }: P
         </div>
       )}
 
-      <ServiceModal
-        open={modalOpen}
-        onClose={close}
-        categories={categories}
-        service={editingService}
-        defaultCategoryId={primaryCategoryId}
-      />
+      {/* FAZ 10d: modal YALNIZ acikken mount edilir ve `key` duzenlenen
+          kayda baglidir — alanlar efektle degil, mount ile sifirlanir. */}
+      {modalOpen && (
+        <ServiceModal
+          key={editingService?.id ?? 'yeni'}
+          open
+          onClose={close}
+          categories={categories}
+          service={editingService}
+          defaultCategoryId={primaryCategoryId}
+        />
+      )}
     </>
   );
 }

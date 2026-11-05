@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { KasheMark } from "@/app/components/ui/kashe-mark";
 
 export function Footer() {
@@ -9,12 +10,12 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <a href="/" className="flex items-center gap-2.5 mb-4">
+            <Link href="/" className="flex items-center gap-2.5 mb-4">
               <KasheMark variant="dark" className="w-8 h-8" title="" />
               <span className="font-display font-semibold text-xl text-paper tracking-tight">
                 Kashe
               </span>
-            </a>
+            </Link>
             <p className="text-paper/70 max-w-xs leading-relaxed">
               Türkiye&apos;nin yetenek sahnesi. Etkinliğin için doğru profesyonel,
               ekip ve organizasyon firması — tek yerde.
@@ -68,9 +69,9 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
                   Kurumsal hizmet sağlayıcılar
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/hakkimizda#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
@@ -78,14 +79,14 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/#nasil-calisir" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#nasil-calisir" className="text-paper/80 hover:text-paper transition-colors">
                   Nasıl çalışır
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#profesyoneller" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#profesyoneller" className="text-paper/80 hover:text-paper transition-colors">
                   Profesyoneller için
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/fiyatlandirma" className="text-paper/80 hover:text-paper transition-colors">

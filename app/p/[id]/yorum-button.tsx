@@ -73,13 +73,17 @@ export function YorumButton({
         </p>
       )}
 
-      <YorumModal
-        professionalId={professionalId}
-        professionalName={professionalName}
-        existingReview={existingReview}
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+      {/* FAZ 10d: kosullu mount + key — alanlar mount ile sifirlanir. */}
+      {modalOpen && (
+        <YorumModal
+          key={existingReview?.id ?? 'yeni'}
+          professionalId={professionalId}
+          professionalName={professionalName}
+          existingReview={existingReview}
+          open
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </>
   );
 }

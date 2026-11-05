@@ -746,7 +746,7 @@ export async function addCategory(
   }
 
   // Slug — boş gelirse addan üret, doluysa onu temizle
-  let slug = input.slug.trim() ? slugifyTr(input.slug) : slugifyTr(name);
+  const slug = input.slug.trim() ? slugifyTr(input.slug) : slugifyTr(name);
   if (!slug) {
     return { success: false, error: 'Geçerli bir slug üretilemedi.' };
   }

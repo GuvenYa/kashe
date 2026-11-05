@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { KasheMark } from './kashe-mark';
 
 export function BrandMark({ size = "default" }: { size?: "default" | "lg" }) {
@@ -7,11 +8,11 @@ export function BrandMark({ size = "default" }: { size?: "default" | "lg" }) {
   };
   const d = dimensions[size];
   return (
-    <a href="/" className="inline-flex items-center gap-2.5">
+    <Link href="/" className="inline-flex items-center gap-2.5">
       <KasheMark className={d.box} />
       <span className={`font-display font-semibold ${d.text} text-ink tracking-tight`}>
         Kashe
       </span>
-    </a>
+    </Link>
   );
 }

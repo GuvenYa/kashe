@@ -1,6 +1,14 @@
 'use client';
 
-import { Component, useRef, useMemo, useEffect, useState, useCallback } from 'react';
+import {
+  Component,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
+import { useMedyaSorgusu } from '@/app/lib/istemci-kancalari';
 import type { ReactNode, ErrorInfo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -521,13 +529,14 @@ function CategoryLabel({ label, x, y }: { label: string; x: number; y: number })
 
 /* ─── Dışa aktarılan bileşen ─── */
 export default function Hero3D() {
-  const [reducedMotion, setReducedMotion] = useState(false);
-  // Lazy init (ssr:false → window var) → mobilde ilk render'da doğru, flash yok
-  const [isMobile, setIsMobile] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      window.matchMedia('(max-width: 1023px)').matches
-  );
+  /**
+   * FAZ 10d: iki medya sorgusu state + efekt yerine `useSyncExternalStore`
+   * ile okunur (`app/lib/istemci-kancalari`). Bilesen `ssr: false` ile
+   * yuklendigi icin ilk render'da dogru deger gelir — flash yok, davranis
+   * ayni; kademeli render (set-state-in-effect) ortadan kalkar.
+   */
+  const reducedMotion = useMedyaSorgusu('(prefers-reduced-motion: reduce)');
+  const isMobile = useMedyaSorgusu('(max-width: 1023px)');
   const [hover, setHover] = useState<{ label: string; x: number; y: number } | null>(null);
   const [ready, setReady] = useState(false); // davul ilk frame çizilince fade-in
   // WebGL yeteneği: mount öncesi prob (ssr:false → client). Yoksa Canvas HİÇ kurulmaz.
@@ -539,22 +548,6 @@ export default function Hero3D() {
 
   const handleFirstFrame = useCallback(() => setReady(true), []);
 
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1023px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
   /* reduced-motion: frameloop='demand' → useFrame onFirstFrame tetiklemez.
      Bu durumda davul statik render olur; raf ile ready yap (fade yine yumuşak). */
   useEffect(() => {
@@ -563,10 +556,10 @@ export default function Hero3D() {
     return () => cancelAnimationFrame(id);
   }, [reducedMotion]);
 
-  /* WebGL yetenek güvencesi (SSR safety-net): client'ta prob başarısızsa placeholder. */
-  useEffect(() => {
-    if (!probeWebGL()) setWebglOk(false);
-  }, []);
+  /* WebGL yetenek guvencesi: prob `useState` baslangicinda yapiliyor ve bu
+     bilesen `ssr: false` ile yukleniyor (hero-3d-wrapper) — yani baslangic
+     ISTEMCIDE kosuyor. Mount sonrasi ikinci prob AYNI sonucu veriyordu;
+     FAZ 10d ile dustu (efekt icinde setState yok). */
 
   /* Hover: client koordinatını container'a göreceli pill konumuna çevir */
   const handleHover = useCallback(

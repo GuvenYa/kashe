@@ -697,6 +697,20 @@ function PanoTape({
 }
 
 // =============================================================================
+/**
+ * Acil rozet metni: son basvuru tarihine kalan gun.
+ *
+ * SAAT OKUMASI BURADA (modul duzeyinde): render govdesinde `Date.now()`
+ * cagrilmaz (`react-hooks/purity`). Tarih yoksa ya da gecmisse "ACİL".
+ */
+function acilEtiketi(deadline: string | null | undefined): string {
+  if (!deadline) return 'ACİL';
+  const diffMs = new Date(deadline).getTime() - Date.now();
+  if (diffMs <= 0) return 'ACİL';
+  const days = Math.ceil(diffMs / 86400000);
+  return days <= 1 ? 'SON GÜN' : `SON ${days} GÜN`;
+}
+
 // PanoCard — tasarım sözleşmesi (renderCard) React portu. 8 kabuk stili (hepsi
 // ÜST dekor) + featured (üst şerit + "★ ÖNE ÇIKAN" + glow iğne, ÇEVRE ÇERÇEVE
 // YOK) + urgent rozet + polaroid + hover + tıklamada sağa 3D çevirme. Tüm görsel
@@ -745,15 +759,10 @@ function PanoCard({
 
   // Urgent rozet metni: son başvuru tarihinden gün → "SON X GÜN"; yoksa "ACİL".
   // (Sözleşmede sabit "SON 6 GÜN" idi; React'te gerçek deadline hesabı kullanılır.)
-  let urgentLabel = 'ACİL';
-  if (urgent && listing.application_deadline) {
-    const diffMs =
-      new Date(listing.application_deadline).getTime() - Date.now();
-    if (diffMs > 0) {
-      const days = Math.ceil(diffMs / 86400000);
-      urgentLabel = days <= 1 ? 'SON GÜN' : `SON ${days} GÜN`;
-    }
-  }
+  // FAZ 10d: saat okumasi MODUL duzeyindeki yardimciya tasindi — render
+  // govdesinde `Date.now()` cagirmak `react-hooks/purity` kuralini kiriyor
+  // (ayni girdiyle farkli cikti). Gosterilen metin AYNI.
+  const urgentLabel = urgent ? acilEtiketi(listing.application_deadline) : 'ACİL';
 
   // ── Kabuk (styleIndex 0-7): dekor + polaroid/tint bayrakları (sözleşme birebir) ──
   const centerPin: CSSProperties = { top: -8, left: '50%', marginLeft: -7 };
