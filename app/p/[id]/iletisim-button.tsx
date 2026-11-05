@@ -25,7 +25,6 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
 import {
   BRIEF_ACIKLAMA_SONEKI,
@@ -47,6 +46,7 @@ import {
   BRIEF_TERCIH_UYE_ADI,
 } from '@/app/lib/brief-anahtarlari';
 import { useProfilIslem } from './profil-islem-baglami';
+import { useMountDurumu } from '@/app/lib/istemci-kancalari';
 
 type Props = {
   professionalId: string;
@@ -151,15 +151,23 @@ export function IletisimButton({
   );
   /**
    * Duzeltme 11-B5: `?tercih=` ile gelindiyse modal ACIK baslar — ama yalniz
-   * ISTEMCIDE. Baslangic degeri sunucu cizimde de `true` olunca modal
-   * `createPortal(..., document.body)` cagiriyor ve sayfa sunucuda
-   * "document is not defined" ile dusuyor (olculdu: /p/<ajans>?tercih=...).
-   * Efekt icinde setState (kural: react-hooks/set-state-in-effect) yerine
-   * baslangic degeri: hidrasyondan sonraki ILK cizimde modal acik gelir.
+   * ISTEMCIDE ve HIDRASYONDAN SONRA. Sunucu cizimde portal
+   * (`createPortal(..., document.body)`) "document is not defined" ile
+   * dusuyordu; `useState(typeof document ...)` ise hidrasyonda sunucuyla
+   * ayrisiyor ve modal hic acilmiyordu (onizleme turunda olculdu).
+   * Dogru arac `useMountDurumu` (useSyncExternalStore): sunucuda ve ilk
+   * hidrasyonda `false`, sonra `true`. Kullanici bir kez kapatinca otomatik
+   * acilis bir daha devreye girmez.
    */
-  const [modalOpen, setModalOpen] = useState(
-    acikBaslat && typeof document !== 'undefined'
-  );
+  const mountOldu = useMountDurumu();
+  const [modalAcikDurum, setModalAcikDurum] = useState(false);
+  const [otomatikKapandi, setOtomatikKapandi] = useState(false);
+  const modalOpen =
+    modalAcikDurum || (acikBaslat && mountOldu && !otomatikKapandi);
+  function setModalOpen(acik: boolean) {
+    setModalAcikDurum(acik);
+    if (!acik) setOtomatikKapandi(true);
+  }
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

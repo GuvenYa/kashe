@@ -1343,9 +1343,7 @@ export default async function PublicProfilePage({
 
           {/* BOLUM GEZINTISI (Duzeltme 11-D4) — profesyonel profiliyle AYNI
               serit; yalniz sayfada OLAN bolumlere capa. */}
-          <div className="mb-6">
-            <BolumSeridi bolumler={ajansBolumleri} />
-          </div>
+          <BolumSeridi bolumler={ajansBolumleri} className="mb-6" />
 
           {/* HAKKIMDA (tanitim) — bos olsa da baslik durur: serit capasi. */}
           <div id="hakkimda" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>

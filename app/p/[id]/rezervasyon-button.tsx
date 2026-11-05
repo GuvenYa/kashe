@@ -18,6 +18,7 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { useProfilIslem } from './profil-islem-baglami';
 import {
   IlSecici,
   ilEslestir,
@@ -84,6 +85,7 @@ export function RezervasyonButton({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const profilBaglami = useProfilIslem();
   const [eventDate, setEventDate] = useState(initialDate ?? '');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -333,8 +335,12 @@ export function RezervasyonButton({
         onClick={() => {
           // Kart tarihi MODAL ACILIRKEN uygulanir: useState baslangic degeri
           // yalniz ilk montajda okunur, kartta sonradan secilen gun oraya ulasmazdi.
-          if (initialDate && !eventDate) setEventDate(initialDate);
-          if (initialLocation && !location) setLocation(initialLocation);
+          // Satir dugmeleri (paket rezervasyonu) dolgu almaz: profil sayfasinin
+          // ortak baglami (kartta secilen tarih / il) yedek kaynak olur.
+          const ilkTarih = initialDate ?? profilBaglami.tarih;
+          const ilkKonum = initialLocation ?? profilBaglami.sehir;
+          if (ilkTarih && !eventDate) setEventDate(ilkTarih);
+          if (ilkKonum && !location) setLocation(ilkKonum);
           setModalOpen(true);
         }}
         className={

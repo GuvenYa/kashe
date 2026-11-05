@@ -23,14 +23,25 @@ export type BolumCapasi = { id: string; etiket: string };
  */
 export const BOLUM_CAPA = 'scroll-mt-[128px]';
 
-export function BolumSeridi({ bolumler }: { bolumler: BolumCapasi[] }) {
+export function BolumSeridi({
+  bolumler,
+  className = '',
+}: {
+  bolumler: BolumCapasi[];
+  /**
+   * Ek sinif (or. alt bosluk). Serit bir SARMALAYICIYA konmamali: `sticky`
+   * yalniz ebeveyni icinde yapisir; tek satirlik sarmalayicida etkisiz kalir
+   * (ajans sayfasinda boyle oldu - Duzeltme 11 onizleme turu).
+   */
+  className?: string;
+}) {
   // Tek bolumde gezinti anlamsiz.
   if (bolumler.length < 2) return null;
 
   return (
     <nav
       aria-label="Profil bölümleri"
-      className="sticky top-[73px] z-30 bg-paper/95 backdrop-blur-md border-b border-line"
+      className={`sticky top-[73px] z-30 bg-paper/95 backdrop-blur-md border-b border-line ${className}`}
     >
       <ul className="kashe-no-scrollbar flex items-center gap-5 overflow-x-auto py-2.5">
         {bolumler.map((b) => (
