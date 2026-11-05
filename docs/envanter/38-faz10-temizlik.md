@@ -310,6 +310,10 @@ Kesfet / kategori / ana sayfa siralamasi eski onizlemeyle birebir (117 / 10 / 16
 mobil menu, admin arama + aksiyon menusu + istatistik grafikleri, #52 / #53 / #56 ekranlari. Uretim anonim kontrol: yeni dagitim (dpl
 degisti), 10 sayfa 200, Kesfet 34, menu / alt bilgi baglantilari. Kalan kucukler (FAZ 10 disi): ust menu / alt bilgide dinamik `<a href>`
 baglantilar (tam sayfa yenileme), kazanclarim ozet kartinda "Komisyon (%10) −0 TL", #51 / #54 canli tur (taslak ekip / RFP gerektirir).
+**Duzeltme 09 (5 Kasim, uretimde; `main` 02e96cf; gorev 50):** Kesfet karti bulgu 66 a/c/e (4:5 her yerde, fotograf hep gorunur, hover'da
+serit buyur + "Profili incele", alinti / etiket / `compact` varyanti kalkti, Kesfet yorum alintisi sorgusu silindi) + yukaridaki
+kucukler: ust menu "Saglayicilar", menu / alt bilgi `<Link prefetch={false}>` (mobil menu baglantida kapanir), kazanclarim ozet karti
+"—". Inceleme yamasi: Claude Code'un %45 sinirli ayri paneli dar kartta dugmeyi kirpiyordu -> serit buyur. Yeni bulgu 72 (cip kesilmesi).
 
 ### Hijyen 05 (30 gun sonra, ayri)
 
