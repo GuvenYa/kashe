@@ -158,6 +158,13 @@ DELETE FROM public.service_packages WHERE id::text LIKE '5a4e0000-0000-4000-8000
 """)
 
 # paketler
+def ust_sinir(mn, mx):
+    # Uygulama (profil/paketler) fiyati belli pakette min VE max ister; formatPriceRange
+    # max bossa fiyat yazmaz. "'den baslar" paketlerinde ust sinir min x 1,4 (1000'e yuvarli).
+    if mx is not None:
+        return mx
+    return int(round(mn * 1.4 / 1000.0)) * 1000
+
 w("-- Paketler (saglayicinin mevcut paket sirasinin arkasina)")
 w("INSERT INTO public.service_packages (id, profile_id, title, description, includes, price_min, price_max, price_on_request, price_starting, is_active, sort_order, created_at, updated_at)")
 rows = []
@@ -165,7 +172,7 @@ sira = {}
 for i, (s, t, a, inc, mn, mx, bas) in enumerate(PAKET, 1):
     sira[s] = sira.get(s, 0) + 1
     rows.append("  (%s, %s, %s, %s, %s, %s, %s, false, %s, true, %d, timestamptz '2026-10-29 10:00+03', timestamptz '2026-10-29 10:00+03')" % (
-        q(pid(81000 + i)), q(pid(s)), q(tr(t)), q(tr(a)), arr([tr(x) for x in inc]), mn, 'NULL' if mx is None else mx, 'true' if bas else 'false', 100 + sira[s]))
+        q(pid(81000 + i)), q(pid(s)), q(tr(t)), q(tr(a)), arr([tr(x) for x in inc]), mn, ust_sinir(mn, mx), 'true' if bas else 'false', 100 + sira[s]))
 w("SELECT v.id::uuid, v.profile_id::uuid, v.title, v.description, v.includes, v.pmin::numeric, v.pmax::numeric, v.por, v.pbas, v.akt, v.sira, v.c, v.u FROM (VALUES")
 w(",\n".join(rows))
 w(") AS v(id, profile_id, title, description, includes, pmin, pmax, por, pbas, akt, sira, c, u)")

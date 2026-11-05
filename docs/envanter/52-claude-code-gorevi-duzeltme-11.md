@@ -1,4 +1,4 @@
-# 52 - Claude Code gorevi: Duzeltme 11 - Fahri turu 2, oneriler (bulgu 73, 76 b/d, 77, 80, 72)
+# 52 - Claude Code gorevi: Duzeltme 11 - Fahri turu 2, oneriler (bulgu 73, 76 b/d, 77, 80, 72, 85)
 
 Hazirlayan: Claude (Cowork), 5 Kasim 2026. Kaynak: `docs/sahne/bulgular.md` #72, #73, #76, #77, #80 ve Fahri'nin tablosu
 (satir 6, 9, 10, 13). Karar Guven (5 Kasim): "Fahri'nin onerilerine gore; onerisi yoksa diger talepleriyle uyumlu".
@@ -11,7 +11,7 @@ gorevi uygula" denir.
 
 ## Gorev
 
-Bes bolum (A-E) + kabul. Turkce arayuz metinleri asagida yazildigi gibi; ASCII kod yorumlari; yeni dosyalarda sapkali harf
+Alti bolum (A-F) + kabul. Turkce arayuz metinleri asagida yazildigi gibi; ASCII kod yorumlari; yeni dosyalarda sapkali harf
 yok. Commit ATMA.
 
 ### A) Bulgu 73 - sade ust menu, "Etkinligini planla" one cikar
@@ -103,6 +103,15 @@ Dar kartta (4 sutun, ~210 px) kategori cipi "ORGANIZASYO" diye kesiliyor. Cip en
 kirilmadan), premium rozeti ve kalp yerinde kalsin; 1280 / 1440 / 375 px'te "Organizasyon", "Etkinlik Koordinatörü",
 "Saç & Makyaj & Styling" tam okunur.
 
+### F) Kucukler (Duzeltme 10 onizleme turunda bulundu)
+
+1. Bulgu 85 - `app/mesajlar/[id]/page.tsx` `generateMetadata`: sekme basligi karsi tarafin TAM ADINI yaziyor
+   ("Mesaj — Eda Bozkurt — Kashe") ama sayfa basligi "Eda B."; Duzeltme 05-E kamu ad kurali (rezervasyon kesinlesmeden
+   "Ad S.") baslikta da gecerli olsun - sayfanin kullandigi ayni ad yardimcisi (`gosterilecekAd` ya da esdegeri).
+2. "Diger" aciklama alaninin etiketi uzun ana alan adini tekrar ediyor ("ETKINLIK / CEKIM TURU - KISACA YAZ *", iki satira
+   kiriliyor): etiket `Diğer — kısaca yaz` olsun; hata metni `"<Alan etiketi>" için kısa açıklama yaz.`; brief ozeti
+   etiketi ("<Alan> açıklaması") DEGISMEZ.
+
 ### Kabul olcutleri
 
 - `npx tsc --noEmit`, `npx eslint app` 0 hata, `npm run build` temiz. Kural ayari degismez, kural kapatilmaz.
@@ -115,5 +124,5 @@ kirilmadan), premium rozeti ve kalp yerinde kalsin; 1280 / 1440 / 375 px'te "Org
 Girissiz ve girisli ust menu (1024 / 1280 / 1440 px, 375 px mobil menu), alt bilgi baglantilari; Mavi Sahne: paket secince
 ozet, ekipten tercih (DJ paketi -> DJ'ler ustte), ekip kartindan "Mavi Sahne üzerinden teklif al", Naz G. profilinden
 ajans baglantisi -> modal acik + uye secili, sohbet seridinde "Tercih edilen ekip üyesi"; Kerem Oz paket satirindan teklif ve
-rezervasyon; `/ilanlar` girissiz (12 ilan, "Yeni ilan aç" -> uye ol), ilan detayinda basvuru yolu; profil bolum gezintisi
+rezervasyon; mesaj sekme basligi "Ad S."; `/ilanlar` girissiz (12 ilan, "Yeni ilan aç" -> uye ol), ilan detayinda basvuru yolu; profil bolum gezintisi
 (Hakan Ates dansci, Kerem Oz, Mavi Sahne); Kesfet kart cipi.
