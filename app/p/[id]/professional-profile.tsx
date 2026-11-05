@@ -27,8 +27,14 @@ import {
 } from '@/app/lib/category-fields';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { cizilebilirMetin, ozetCipleri } from '@/app/lib/ozet-cipleri';
+import type { HizmetSecenegi } from '@/app/lib/teklif-secenekleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import { ProfilIslemSaglayici } from './profil-islem-baglami';
+import {
+  BOLUM_CAPA,
+  BolumSeridi,
+  type BolumCapasi,
+} from './bolum-seridi';
 import { MobilCtaCubugu } from './mobil-cta-cubugu';
 import type {
   ServiceWithCategory,
@@ -114,6 +120,8 @@ export type ProfessionalProfileProps = {
 const EYEBROW =
   'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink';
 const CARD = 'bg-card border border-line rounded-2xl';
+/** Veri olmayan ana bolumde tek satir (Duzeltme 11-D2). */
+const BOS_SATIR = 'text-[14px] text-ink-72';
 
 /**
  * BOLUM BASLIGI (Duzeltme 10-F6, bulgu 80)
@@ -194,15 +202,50 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
   const logistics = (attrs.logistics as Record<string, boolean>) ?? {};
   const serviceRegion = attrs.service_region as string | undefined;
   /**
-   * Duzeltme 10-F3: modaldeki "Hangi hizmet ya da paket?" secenekleri —
-   * paketler ustte, sonra hizmetler; tekrarsiz.
+   * Modaldeki "Hangi hizmet ya da paket?" secenekleri — paketler ustte,
+   * sonra hizmetler; ayni baslik bir kez.
+   *
+   * Duzeltme 11-B1: artik yalniz baslik degil fiyat ve icerik de tasinir
+   * (modal secimin altinda kisa ozet cizer). Icerik `includes` jsonb'sinden
+   * gelir: metin olmayan madde ATLANIR (bulgu 78 dersi).
    */
-  const hizmetSecenekleri = [
-    ...new Set([
-      ...packages.map((p2) => p2.title),
-      ...services.map((s2) => s2.title),
-    ]),
-  ].filter(Boolean);
+  const hizmetSecenekleri: HizmetSecenegi[] = [];
+  for (const p2 of packages) {
+    if (!p2.title || hizmetSecenekleri.some((x) => x.baslik === p2.title)) continue;
+    hizmetSecenekleri.push({
+      baslik: p2.title,
+      tur: 'paket',
+      fiyat:
+        formatPriceRange(
+          p2.price_min,
+          p2.price_max,
+          p2.price_on_request,
+          'total',
+          p2.price_starting
+        ) || null,
+      icerik: (Array.isArray(p2.includes) ? p2.includes : [])
+        .map((madde) => cizilebilirMetin(madde))
+        .filter((madde): madde is string => !!madde),
+      kategoriSlug: slug,
+    });
+  }
+  for (const s2 of services) {
+    if (!s2.title || hizmetSecenekleri.some((x) => x.baslik === s2.title)) continue;
+    hizmetSecenekleri.push({
+      baslik: s2.title,
+      tur: 'hizmet',
+      fiyat:
+        formatPriceRange(
+          s2.price_min,
+          s2.price_max,
+          s2.price_on_request,
+          s2.price_unit ?? 'total',
+          s2.price_starting
+        ) || null,
+      icerik: [],
+      kategoriSlug: slug,
+    });
+  }
   /** Duzeltme 10-D2: il secici tek ile kilitlenir mi? */
   const yalnizKendiSehri = serviceRegion === 'Yalnızca kendi şehri';
   const experienceLabel = attrs.experience_label as string | undefined;
@@ -297,6 +340,44 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
 
   const educationRows = experiences.filter((x) => x.kind === 'education');
   const awardRows = experiences.filter((x) => x.kind === 'award');
+
+  /**
+   * ---- Kategori modulleri (Duzeltme 11-D1) ----
+   *
+   * Govde ONCE hesaplanir: bos donen modul hem karttan hem de "<Kategori adı>
+   * bilgileri" basligindan dusr — baslik veri yoksa cizilmez.
+   */
+  const modulKartlari = (preset?.modules ?? [])
+    .map((ref) => ({
+      key: ref.key,
+      title: getModuleTitle(ref),
+      govde: modulGovdesi(
+        ref.key,
+        modulesData[ref.key] ?? null,
+        preset?.labelOverrides
+      ),
+    }))
+    .filter((m) => m.govde !== null);
+  const kategoriBilgileriBasligi = `${
+    profile.service_categories?.name_tr ?? 'Kategori'
+  } bilgileri`;
+
+  /**
+   * ---- Bolum gezinti seridi (Duzeltme 11-D3) ----
+   *
+   * SABIT SIRA: Hakkimda -> Hizmetler -> <Kategori> bilgileri -> Deneyim ->
+   * Yorumlar. Dort ana bolum her profilde var (D2); kategori bilgileri yalniz
+   * dolu modulde. Egitim ve oduller seritte YOK (gorev karari).
+   */
+  const bolumCapalari: BolumCapasi[] = [
+    { id: 'hakkimda', etiket: 'Hakkımda' },
+    { id: 'hizmetler', etiket: 'Hizmetler' },
+    ...(modulKartlari.length > 0
+      ? [{ id: 'kategori-bilgileri', etiket: kategoriBilgileriBasligi }]
+      : []),
+    { id: 'deneyim', etiket: 'Deneyim' },
+    { id: 'yorumlar', etiket: 'Yorumlar' },
+  ];
 
   /**
    * ---- Bolum basliklari (Duzeltme 10-F6, bulgu 80) ----
@@ -565,13 +646,67 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
               />
             </div>
 
-            {/* 4. Hizmetler & Paketler */}
-            {(services.length > 0 || packages.length > 0) && (
-              <section>
-                <BolumBasligi
-                  ad="Hizmetler ve paketler"
-                  slogan={servicesTagline}
-                />
+            {/* BOLUM GEZINTISI (Duzeltme 11-D3) — yalniz SAYFADA OLAN
+                bolumlere capa; ust menunun altinda yapiskan. */}
+            <BolumSeridi bolumler={bolumCapalari} />
+
+            {/* uzmanlik özet bandı */}
+            {archetype === 'uzmanlik' && !preset?.portfolioGrid && ozetGovdesi && (
+              <div className="bg-brand-ink text-paper rounded-2xl p-7">
+                {ozetBasligi && <h2 className="font-display text-2xl font-bold mb-2">{ozetBasligi}</h2>}
+                <p className="text-paper/85 leading-relaxed">{ozetGovdesi}</p>
+                {ozetCipleriListesi.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {ozetCipleriListesi.map((st, i) => (
+                      <span key={i} className="inline-flex items-center bg-white/12 rounded-full px-3 py-1 text-sm font-semibold">
+                        {st}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 1. Hakkımda + quickInfo — HER profilde (Duzeltme 11-D2) */}
+            <section id="hakkimda" className={BOLUM_CAPA}>
+              <BolumBasligi ad="Hakkımda" slogan={hakkimdaTagline} />
+              {profile.bio ? (
+                <p className="text-[14.5px] leading-[1.7] text-ink-72 whitespace-pre-wrap">{profile.bio}</p>
+              ) : (
+                <p className={BOS_SATIR}>Henüz tanıtım eklenmemiş.</p>
+              )}
+                {showQuick && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                    {quickCells.map((c) => (
+                      <div key={c.label} className="bg-card border border-line rounded-xl px-4 py-3.5">
+                        <div className="text-xs text-ink-72">{c.label}</div>
+                        {c.key === 'yeminli' ? (
+                          <div className="flex items-center gap-1.5 font-display text-[15px] font-semibold text-ink mt-1">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                            Yeminli
+                          </div>
+                        ) : (
+                          <div className="font-display text-[15px] font-semibold text-ink mt-1">{c.value}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </section>
+
+            {/* 2. Hizmetler ve paketler — HER profilde (Duzeltme 11-D2):
+                hizmeti olmayan profilde de kullanici teklif isteyebilecegini
+                gorur. */}
+            <section id="hizmetler" className={BOLUM_CAPA}>
+              <BolumBasligi
+                ad="Hizmetler ve paketler"
+                slogan={servicesTagline}
+              />
+              {services.length === 0 && packages.length === 0 ? (
+                <p className={BOS_SATIR}>
+                  Henüz hizmet eklenmemiş; teklif isteyerek fiyat alabilirsin.
+                </p>
+              ) : (
                 <div className="flex flex-col gap-3">
                   {packages.map((pkg) => {
                     const fiyat = formatPriceRange(pkg.price_min, pkg.price_max, pkg.price_on_request, 'total', pkg.price_starting);
@@ -583,22 +718,43 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                       price={fiyat}
                       teklifDugmesi={
                         canTransact ? (
-                          <IletisimButton
-                            professionalId={profile.id}
-                            professionalName={displayName}
-                            categorySlug={slug}
-                            isLoggedIn={isLoggedIn}
-                            currentUserIsProfessional={currentUserIsProfessional}
-                            isOwnProfile={isOwnProfile}
-                            writableBusinesses={writableBusinesses}
-                            etkinlikId={etkinlikId}
-                            variant="package"
-                            packageContext={{ title: pkg.title, price: fiyat || null }}
-                            iller={iller}
-                            saglayiciIli={cityName ?? null}
-                            yalnizKendiSehri={yalnizKendiSehri}
-                            hizmetSecenekleri={hizmetSecenekleri}
-                          />
+                          <>
+                            <IletisimButton
+                              professionalId={profile.id}
+                              professionalName={displayName}
+                              categorySlug={slug}
+                              isLoggedIn={isLoggedIn}
+                              currentUserIsProfessional={currentUserIsProfessional}
+                              isOwnProfile={isOwnProfile}
+                              writableBusinesses={writableBusinesses}
+                              etkinlikId={etkinlikId}
+                              variant="package"
+                              packageContext={{ title: pkg.title, price: fiyat || null }}
+                              iller={iller}
+                              saglayiciIli={cityName ?? null}
+                              yalnizKendiSehri={yalnizKendiSehri}
+                              hizmetSecenekleri={hizmetSecenekleri}
+                            />
+                            {/* Duzeltme 11-B6 (bulgu 76 b): fiyati BELLI paketi
+                                dogrudan rezerve etmeye gider — "talep uzerine"
+                                pakette dugme YOK (tarih vermeden once fiyat
+                                konusulmali). */}
+                            {!pkg.price_on_request && pkg.price_min != null && (
+                              <RezervasyonButton
+                                professionalId={profile.id}
+                                professionalName={displayName}
+                                isLoggedIn={isLoggedIn}
+                                currentUserIsProfessional={currentUserIsProfessional}
+                                isOwnProfile={isOwnProfile}
+                                writableBusinesses={writableBusinesses}
+                                variant="secondary-sm"
+                                secilenHizmet={pkg.title}
+                                iller={iller}
+                                saglayiciIli={cityName ?? null}
+                                yalnizKendiSehri={yalnizKendiSehri}
+                              />
+                            )}
+                          </>
                         ) : undefined
                       }
                     />
@@ -636,69 +792,37 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                     );
                   })}
                 </div>
+              )}
+            </section>
+
+            {/* 3. "<Kategori adı> bilgileri" — TEK baslik, modul adlari ALT
+                BASLIK (Duzeltme 11-D1). Eskiden her modul kendi basligiyla
+                ayri bolum gibi duruyordu ve kategoriye gore sayi degisince
+                profil yapisi tanidik gelmiyordu. Cizilebilir modul yoksa
+                bolum HIC cizilmez. */}
+            {modulKartlari.length > 0 && (
+              <section id="kategori-bilgileri" className={BOLUM_CAPA}>
+                <BolumBasligi ad={kategoriBilgileriBasligi} />
+                <div className="flex flex-col gap-3">
+                  {modulKartlari.map((m) => (
+                    <ModulKarti
+                      key={m.key}
+                      title={m.title}
+                      moduleKey={m.key}
+                      govde={m.govde}
+                    />
+                  ))}
+                </div>
               </section>
             )}
-
-            {/* uzmanlik özet bandı */}
-            {archetype === 'uzmanlik' && !preset?.portfolioGrid && ozetGovdesi && (
-              <div className="bg-brand-ink text-paper rounded-2xl p-7">
-                {ozetBasligi && <h2 className="font-display text-2xl font-bold mb-2">{ozetBasligi}</h2>}
-                <p className="text-paper/85 leading-relaxed">{ozetGovdesi}</p>
-                {ozetCipleriListesi.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {ozetCipleriListesi.map((st, i) => (
-                      <span key={i} className="inline-flex items-center bg-white/12 rounded-full px-3 py-1 text-sm font-semibold">
-                        {st}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 2. Hakkımda + quickInfo */}
-            {(profile.bio || hakkimdaTagline) && (
-              <section>
-                <BolumBasligi ad="Hakkımda" slogan={hakkimdaTagline} />
-                {profile.bio && (
-                  <p className="text-[14.5px] leading-[1.7] text-ink-72 whitespace-pre-wrap">{profile.bio}</p>
-                )}
-                {showQuick && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-                    {quickCells.map((c) => (
-                      <div key={c.label} className="bg-card border border-line rounded-xl px-4 py-3.5">
-                        <div className="text-xs text-ink-72">{c.label}</div>
-                        {c.key === 'yeminli' ? (
-                          <div className="flex items-center gap-1.5 font-display text-[15px] font-semibold text-ink mt-1">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
-                            Yeminli
-                          </div>
-                        ) : (
-                          <div className="font-display text-[15px] font-semibold text-ink mt-1">{c.value}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {/* 3. Kategori modülleri (preset sırasıyla, koşullu) */}
-            {(preset?.modules ?? []).map((ref) => (
-              <ModuleSection
-                key={ref.key}
-                title={getModuleTitle(ref)}
-                moduleKey={ref.key}
-                data={modulesData[ref.key] ?? null}
-                labelOverrides={preset?.labelOverrides}
-              />
-            ))}
 
             {/* 5. Deneyim (work) — çizilebilir gruplar; eşleşmeyenler "Diğer" altında; 0 satırda yok */}
-            {totalWorkRows > 0 && (
-              <section>
-                <BolumBasligi ad="Deneyim" slogan={experienceTagline} />
-                {experienceGroupsToRender.map((g) => (
+            <section id="deneyim" className={BOLUM_CAPA}>
+              <BolumBasligi ad="Deneyim" slogan={experienceTagline} />
+              {totalWorkRows === 0 ? (
+                <p className={BOS_SATIR}>Henüz deneyim eklenmemiş.</p>
+              ) : (
+                experienceGroupsToRender.map((g) => (
                   <div key={g.key} className="mb-5">
                     <div className={`${EYEBROW} opacity-75 mb-2`}>{g.label}</div>
                     <div className="bg-card border border-line rounded-2xl px-5">
@@ -707,13 +831,13 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                       ))}
                     </div>
                   </div>
-                ))}
-              </section>
-            )}
+                ))
+              )}
+            </section>
 
             {/* 6. Eğitim & Sertifikalar */}
             {educationRows.length > 0 && (
-              <section>
+              <section id="egitim" className={BOLUM_CAPA}>
                 <BolumBasligi
                   ad="Eğitim ve sertifikalar"
                   slogan={educationTagline}
@@ -726,17 +850,41 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
               </section>
             )}
 
-            {/* 7. Yorumlar */}
-            {recentReviews.length > 0 && (
-              <section>
-                <BolumBasligi
-                  ad="Yorumlar"
-                  altSatir={
+            {/* 8. Öne çıkanlar / Ödüller */}
+            {awardRows.length > 0 && (
+              <section id="oduller" className={BOLUM_CAPA}>
+                <BolumBasligi ad="Öne çıkanlar ve ödüller" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  {awardRows.map((a) => {
+                    const aPeriod = formatExperiencePeriod(a);
+                    return (
+                      <div key={a.id} className={`${CARD} p-4`}>
+                        <div className="font-display font-semibold text-ink">{a.title}</div>
+                        {a.organization && <div className="text-sm text-ink-72 mt-0.5">{a.organization}</div>}
+                        {aPeriod && <div className="text-xs text-ink-72 mt-1 font-mono">{aPeriod}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* 6. Yorumlar — HER profilde (Duzeltme 11-D2) */}
+            <section id="yorumlar" className={BOLUM_CAPA}>
+              <BolumBasligi
+                ad="Yorumlar"
+                altSatir={
+                  recentReviews.length > 0 ? (
                     <span className="text-sm text-ink-72">
                       {averageRating} ortalama · {reviewCount} yorum
                     </span>
-                  }
-                />
+                  ) : undefined
+                }
+              />
+              {recentReviews.length === 0 ? (
+                <p className={BOS_SATIR}>Henüz yorum yok.</p>
+              ) : (
+                <>
                 <div className="flex flex-col gap-3">
                   {recentReviews.map((r) => {
                     const c = customerMap.get(r.customer_id) ?? null;
@@ -784,27 +932,9 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                     Tüm yorumları gör ({reviewCount}) →
                   </Link>
                 )}
-              </section>
-            )}
-
-            {/* 8. Öne çıkanlar / Ödüller */}
-            {awardRows.length > 0 && (
-              <section>
-                <BolumBasligi ad="Öne çıkanlar ve ödüller" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                  {awardRows.map((a) => {
-                    const aPeriod = formatExperiencePeriod(a);
-                    return (
-                      <div key={a.id} className={`${CARD} p-4`}>
-                        <div className="font-display font-semibold text-ink">{a.title}</div>
-                        {a.organization && <div className="text-sm text-ink-72 mt-0.5">{a.organization}</div>}
-                        {aPeriod && <div className="text-xs text-ink-72 mt-1 font-mono">{aPeriod}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+                </>
+              )}
+            </section>
 
             {/* Yorum bırakma (mevcut akış) */}
             <YorumButton
@@ -932,17 +1062,43 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
               </div>
             )}
 
-            {/* Ajans mini */}
+            {/* Ajans mini — Duzeltme 11-B5 (bulgu 76 d): kart artik iki yolu
+                acikca yaziyor. Fahri "kimle anlasacagimi anlamadim" demisti:
+                dogrudan bu kisiyle mi, ajans uzerinden mi? Baglanti ajans
+                sayfasini bu uye SECILI ve teklif modali ACIK getirir. */}
             {representingAgency && (
-              <Link href={`/p/${representingAgency.id}`} className="flex items-center gap-3 bg-card border border-line rounded-2xl px-4 py-3 hover:border-brand-ink transition-colors">
-                <span className="w-9 h-9 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
-                  {representingAgency.initials}
-                </span>
-                <div>
-                  <div className="text-[11.5px] text-ink-72">Üye olduğu ajans</div>
-                  <div className="text-[13.5px] font-semibold text-ink">{representingAgency.name}</div>
-                </div>
-              </Link>
+              <div className="bg-card border border-line rounded-2xl px-4 py-3">
+                <Link
+                  href={`/p/${representingAgency.id}`}
+                  className="flex items-center gap-3 group"
+                >
+                  <span className="w-9 h-9 rounded-full bg-brand-ink text-paper flex items-center justify-center font-display font-semibold text-[13px] shrink-0">
+                    {representingAgency.initials}
+                  </span>
+                  <div>
+                    <div className="text-[11.5px] text-ink-72">Üye olduğu ajans</div>
+                    <div className="text-[13.5px] font-semibold text-ink group-hover:text-brand-ink transition-colors">
+                      {representingAgency.name}
+                    </div>
+                  </div>
+                </Link>
+                {canTransact && (
+                  <>
+                    <p className="text-[12px] text-ink-72 mt-2.5 leading-snug">
+                      Doğrudan teklif alabilir ya da {representingAgency.name}{' '}
+                      üzerinden çalışabilirsin.
+                    </p>
+                    <Link
+                      href={`/p/${representingAgency.id}?tercih=${profile.id}${
+                        etkinlikId ? `&etkinlik=${etkinlikId}` : ''
+                      }`}
+                      className="inline-block mt-1.5 text-[12.5px] font-display font-semibold text-brand-ink hover:text-brand-ink-deep transition-colors"
+                    >
+                      {representingAgency.name} üzerinden teklif al →
+                    </Link>
+                  </>
+                )}
+              </div>
             )}
 
             {/* FAZ 5/P3 — havuz karti (yalniz talent.manage olan ajans uyesinde dolu) */}
@@ -1093,11 +1249,21 @@ function ExperienceRow({ exp, last }: { exp: ProfileExperience; last: boolean })
   );
 }
 
-// ---- Modül renderer (koşullu; veri yoksa null) ----
-function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: string; moduleKey: string; data: AttrRecord | null; labelOverrides?: Record<string, string> }) {
+/**
+ * ---- Modul GOVDESI — saf fonksiyon, bilesen DEGIL (Duzeltme 11-D1) ----
+ *
+ * Kategori modulleri artik TEK baslik ("<Kategori adı> bilgileri") altinda
+ * toplaniyor; o baslik ancak CIZILEBILIR bir modul varsa yazilmali. Govde
+ * uretimi bu yuzden kart kabugundan ayrildi: cagiran once govdeyi hesaplar,
+ * bos donerse ne baslik ne kart cizilir — "veri yoksa hicbir sey" kurali
+ * tek yerde kalir.
+ */
+function modulGovdesi(
+  moduleKey: string,
+  data: AttrRecord | null,
+  labelOverrides?: Record<string, string>
+): React.ReactNode | null {
   if (!data || Object.keys(data).length === 0) return null;
-  const def = MODULE_REGISTRY[moduleKey as keyof typeof MODULE_REGISTRY];
-  const eyebrow = <div className={EYEBROW}>{title}</div>;
 
   /** Cip listesi — jsonb ogeleri metne cevrilir, cevrilemeyen ATLANIR. */
   const chips = (arr: unknown) => {
@@ -1244,17 +1410,30 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
     body = kv(data.delivery, 3);
   }
 
-  if (!body) return null;
+  return body ?? null;
+}
+
+/** Modul karti — modul adi ALT BASLIK, govde hazir gelir (Duzeltme 11-D1). */
+function ModulKarti({
+  title,
+  moduleKey,
+  govde,
+}: {
+  title: string;
+  moduleKey: string;
+  govde: React.ReactNode;
+}) {
+  const def = MODULE_REGISTRY[moduleKey as keyof typeof MODULE_REGISTRY];
   const isFiziksel = moduleKey === 'fiziksel';
   return (
-    <section className={`${CARD} p-6`}>
+    <div className={`${CARD} p-6`}>
       <div className="flex justify-between items-baseline">
-        {eyebrow}
+        <div className={EYEBROW}>{title}</div>
         {isFiziksel && def?.disclaimer && (
           <span className="text-[11.5px] text-ink-72/70">{def.disclaimer}</span>
         )}
       </div>
-      <div className="mt-3">{body}</div>
-    </section>
+      <div className="mt-3">{govde}</div>
+    </div>
   );
 }

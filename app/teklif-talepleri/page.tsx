@@ -14,6 +14,8 @@ import { etkinlikTurleri, type EtkinlikTuru } from '@/app/lib/etkinlik-turleri';
 import {
   BRIEF_ACIKLAMA_SONEKI,
   BRIEF_ESNEK_SONEKI,
+  BRIEF_GIZLI_ANAHTARLAR,
+  BRIEF_OZEL_ETIKETLER,
 } from '@/app/lib/brief-anahtarlari';
 
 export const metadata = {
@@ -71,6 +73,19 @@ function briefSatirlari(
         value: aciklama.trim(),
       });
     }
+  }
+
+  /**
+   * Duzeltme 11-B2: alan tanimi OLMAYAN ama anlami bilinen anahtarlar
+   * ("Seçilen hizmet", "Tercih edilen ekip üyesi") sonda listelenir —
+   * eskiden bu yuzeyde HIC gorunmuyordu. Ham kimlik (`tercih_uye`)
+   * `BRIEF_OZEL_ETIKETLER`de olmadigi icin zaten dusuyor.
+   */
+  for (const [anahtar, etiket] of Object.entries(BRIEF_OZEL_ETIKETLER)) {
+    if (BRIEF_GIZLI_ANAHTARLAR.has(anahtar)) continue;
+    const ham = brief[anahtar];
+    if (ham == null || String(ham).trim() === '') continue;
+    satirlar.push({ key: anahtar, label: etiket, value: String(ham).trim() });
   }
   return satirlar;
 }

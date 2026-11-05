@@ -7,7 +7,13 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
 import { UnreadBadge } from './unread-badge';
-import { DISCOVERY_LINKS, MARKETING_LINKS } from '@/app/lib/nav-links';
+import {
+  DISCOVERY_LINKS,
+  HAKKINDA_LINKS,
+  MARKETING_LINKS,
+  PLANLA_LINK,
+} from '@/app/lib/nav-links';
+import { IsiltiIkonu } from '@/app/components/ui/isilti-ikonu';
 import type { BaslaticiMenusu } from '@/app/lib/panel-menu-tipler';
 
 type Props = {
@@ -109,18 +115,46 @@ export function MobileNav({
       href={link.href}
       prefetch={false}
       onClick={kapat}
-      className={
-        link.ai ? linkClass + ' inline-flex items-center gap-1.5' : linkClass
-      }
+      className={linkClass}
     >
-      {link.ai && (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink">
-          <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
-        </svg>
-      )}
       {link.label}
     </Link>
   ));
+
+  /**
+   * Duzeltme 11-A3 (bulgu 73): ana eylem menunun EN USTUNDE tam genislik
+   * dugme — iki dalda da ayni. Eskiden "Kashe AI" kesif listesinde sirada
+   * dorduncu satirdi.
+   */
+  const planlaDugmesi = (
+    <Link
+      href={PLANLA_LINK.href}
+      prefetch={false}
+      onClick={kapat}
+      className="flex items-center justify-center gap-2 px-4 py-3 mb-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-center hover:opacity-90 transition-opacity"
+    >
+      <IsiltiIkonu size={16} />
+      {PLANLA_LINK.label}
+    </Link>
+  );
+
+  // "Kashe hakkında" — sayfa ici capalar + Blog (ust barda yok, burada var)
+  const hakkindaGrubu = (
+    <>
+      <p className={groupLabel}>Kashe hakkında</p>
+      {HAKKINDA_LINKS.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          prefetch={false}
+          onClick={kapat}
+          className={linkClass}
+        >
+          {link.label}
+        </Link>
+      ))}
+    </>
+  );
 
   return (
     <>
@@ -157,6 +191,8 @@ export function MobileNav({
             <nav className="px-6 py-4">
               {isLoggedIn ? (
                 <>
+                  {planlaDugmesi}
+
                   {/* PANEL — kisa baslatici (Duzeltme 02): gosterge + en cok
                       kullanilan maddeler. Gerisi panel yan menusunde.
                       Pazarlama linkleri girişli kullanıcıda YOK. */}
@@ -197,9 +233,13 @@ export function MobileNav({
 
                   <div className="border-t border-line my-3" />
 
-                  {/* KEŞİF — tek kaynak (nav-links); üst bar ile parite (Blog dahil) */}
+                  {/* KEŞİF — tek kaynak (nav-links); üst bar ile parite */}
                   <p className={groupLabel}>Keşif</p>
                   {discoveryItems}
+
+                  <div className="border-t border-line my-3" />
+
+                  {hakkindaGrubu}
 
                   <div className="border-t border-line my-3" />
 
@@ -260,6 +300,7 @@ export function MobileNav({
               ) : (
                 <>
                   {/* PUBLIC — tek kaynak (nav-links); üst bar girişsiz seti ile birebir */}
+                  {planlaDugmesi}
                   {discoveryItems}
                   {MARKETING_LINKS.map((link) => (
                     <Link
@@ -272,6 +313,10 @@ export function MobileNav({
                       {link.label}
                     </Link>
                   ))}
+
+                  <div className="border-t border-line my-3" />
+
+                  {hakkindaGrubu}
 
                   <div className="border-t border-line my-3" />
 

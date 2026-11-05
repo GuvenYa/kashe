@@ -46,6 +46,13 @@ export default async function IlanlarPage({
   const canCreateListing = userRole === 'client' || userRole === 'business';
 
   const user = await getCachedUser();
+  /**
+   * Duzeltme 11-C1 (bulgu 77): GIRISSIZ kullaniciya da "Yeni ilan aç"
+   * gosterilir — uye olmaya goturur. Fahri'nin turunda girissizken ilan
+   * acmaya yonlendiren hicbir yol yoktu. Girisli profesyonel / ajansta
+   * dugme yok: onlar BASVURUR.
+   */
+  const isLoggedIn = !!user;
   const currentUserId = user?.id ?? null;
 
   // Kategorileri ve şehirleri filtreler için çek
@@ -156,10 +163,10 @@ export default async function IlanlarPage({
                 etkinlik sahipleri
               </em>
             </h1>
+            {/* Duzeltme 11-C2: tek satir, kimin ne yaptigini soyler. */}
             <p className="mt-3 text-ink-72 text-base max-w-2xl">
-              Etkinliği için profesyonel arayanların açık ilanları. Sen
-              profesyonelsen başvurabilir, müşteriysen kendi ilanını
-              açabilirsin.
+              Müşteri ve kurumların açtığı ilanlar; profesyoneller ve ajanslar
+              başvurur.
             </p>
           </header>
 
@@ -177,6 +184,7 @@ export default async function IlanlarPage({
               sirala: sort,
             }}
             canCreateListing={canCreateListing}
+            isLoggedIn={isLoggedIn}
             currentUserId={currentUserId}
           />
         </div>

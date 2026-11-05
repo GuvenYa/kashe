@@ -2,6 +2,8 @@ import { getBriefFields, type BriefField } from './brief-config';
 import {
   BRIEF_ACIKLAMA_SONEKI,
   BRIEF_ESNEK_SONEKI,
+  BRIEF_GIZLI_ANAHTARLAR,
+  BRIEF_OZEL_ETIKETLER,
   aciklamaAnaAnahtari,
   esnekAnaAnahtari,
 } from './brief-anahtarlari';
@@ -40,17 +42,11 @@ const ATLANAN_ANAHTARLAR = new Set([
   'budget_range',
 ]);
 
-/**
- * Alan tanimi OLMAYAN ama anlami bilinen anahtarlar (Duzeltme 10).
- * `hizmet`: modaldeki "Hangi hizmet ya da paket?" secimi (F3).
- */
-const OZEL_ETIKETLER: Record<string, string> = {
-  hizmet: 'Seçilen hizmet',
-};
-
 /** "delivery_time" -> "Delivery time" (alan tanimi yoksa yedek etiket). */
 function hamEtiket(anahtar: string): string {
-  const ozel = OZEL_ETIKETLER[anahtar];
+  // Alan tanimi olmayan ama anlami bilinen anahtarlar (`hizmet`,
+  // `tercih_uye_adi`) TEK KAYNAKTAN gelir: `BRIEF_OZEL_ETIKETLER`.
+  const ozel = BRIEF_OZEL_ETIKETLER[anahtar];
   if (ozel) return ozel;
   const bosluklu = anahtar.replace(/_/g, ' ').trim();
   if (!bosluklu) return anahtar;
@@ -138,6 +134,8 @@ export function briefSatirlari(
   }
 
   function ekle(anahtar: string) {
+    // Ic anahtar (ham kimlik) arayuze HIC dusmez — Duzeltme 11-B2.
+    if (BRIEF_GIZLI_ANAHTARLAR.has(anahtar)) return;
     // Ek anahtarlar KENDI BASINA satir olmaz: ana alanin arkasinda yazilir.
     if (aciklamaAnaAnahtari(anahtar) || esnekAnaAnahtari(anahtar)) return;
     if (ATLANAN_ANAHTARLAR.has(anahtar)) {

@@ -152,13 +152,22 @@ function MetaRow({
 }
 
 /** Foto üstü sol overlay: (ajansta) KURUMSAL rozeti + kategori chip'i (nokta + ad).
- *  Sağda kalp (4.5rem) ve varsa PREMİUM rozeti (+5rem) için yer bırakılır — üç rozet aynı
- *  satırda üst üste binmez (Sahne turu, 27 Ekim).
  *
- *  Duzeltme 05-B (bulgu 66 b): kategori adi KESILMEZ. Once `truncate max-w-[130px]`
- *  vardi ve "Tercüman" -> "Terc..." oluyordu. Simdi cip daraldiginda metin ikinci
- *  satira duser, rozetle birlikte sigmazsa cipin kendisi alt satira gecer
- *  (`flex-wrap`); `maxW` korundugu icin kart tasmaz. */
+ *  Duzeltme 05-B (bulgu 66 b): kategori adi KESILMEZ (`truncate max-w-[130px]`
+ *  kalkti; "Tercüman" -> "Terc..." oluyordu).
+ *
+ *  Duzeltme 11-E (bulgu 72): dar kartta (xl'de 4 sutun, ~210 px) adin SONU
+ *  kalbin altinda kaliyordu — "ORGANIZASYON" -> "ORGANIZASYO". Iki sebep:
+ *    1. kapsayici tum kart genisligindeydi ve sagdaki kalbi `max-w-[calc(...)]`
+ *       ile "rezerve" ediyordu; metin o siniri astiginda kutunun DISINA tasip
+ *       z-20 kalbin altinda kaliyordu,
+ *    2. metin kutusu esnek kalem olarak `min-width: auto` tasidigi icin
+ *       DARALAMIYOR, dolayisiyla ikinci satira da kirilmiyordu.
+ *  Artik kapsayici kalbin SOLUNDA biter (`right-12` = 48 px: kalp 36 px +
+ *  12 px kenar), her rozet kendi satirinda durur ve cip metni gerektiginde
+ *  en fazla IKI satira kirilir (kelime bolunmez: `line-clamp-2` + `min-w-0`).
+ *  Premium rozeti olan ama kurumsal olmayan kartta ilk satir BOS birakilir —
+ *  cip rozetin altina duser; kalp ve premium rozeti YERINDE kalir. */
 function TopChips({
   isAgency,
   categoryName,
@@ -169,28 +178,34 @@ function TopChips({
   /** Sağda ayrılan alan: 'heart' (kalp), 'heart-premium' (kalp + rozet), 'premium' (yalnız rozet; kompakt). */
   reserve?: 'heart' | 'heart-premium' | 'premium';
 }) {
-  const maxW =
-    reserve === 'heart-premium'
-      ? 'max-w-[calc(100%-9.5rem)]'
-      : reserve === 'premium'
-        ? 'max-w-[calc(100%-6rem)]'
-        : 'max-w-[calc(100%-4.5rem)]';
+  /** Premium rozeti ilk satirin sagini kapatiyor mu? */
+  const premiumRozeti = reserve !== 'heart';
   return (
-    <div className={`absolute top-3 left-3 flex flex-wrap items-start gap-2 ${maxW}`}>
+    <div className="absolute top-3 left-3 right-12 flex flex-col items-start gap-2">
       {isAgency && (
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0">
+        <span
+          className={
+            premiumRozeti
+              ? 'font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0 max-w-[calc(100%-5rem)]'
+              : 'font-mono text-[10px] uppercase tracking-[0.14em] bg-[#0D1F4E] text-[#EAF0F8] px-2 py-1 rounded-md shrink-0'
+          }
+        >
           Kurumsal
         </span>
       )}
+      {/* Premium rozetinin satiri (kurumsal rozeti yoksa bos yer tutucu) */}
+      {!isAgency && premiumRozeti && (
+        <span aria-hidden="true" className="block h-5" />
+      )}
       {categoryName && (
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 min-w-0 shadow-sm">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] bg-paper/95 text-ink px-2 py-1 rounded-md inline-flex items-center gap-1.5 max-w-full shadow-sm">
           {/* Nokta CYAN (`sky`): kategori bir BILGI etiketi, pembe aksan ise
               eylem/vurgu rengi. Ikisi ayni kartta karismasin. */}
           <span
             className="w-1.5 h-1.5 rounded-full bg-sky shrink-0"
             aria-hidden="true"
           />
-          <span className="leading-snug">{categoryName}</span>
+          <span className="min-w-0 leading-snug line-clamp-2">{categoryName}</span>
         </span>
       )}
     </div>

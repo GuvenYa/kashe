@@ -67,6 +67,14 @@ function buildQs(v: {
   return params.toString();
 }
 
+/**
+ * Ilan acma yolu — Duzeltme 11-C1. Girisli musteri / kurum dogrudan forma
+ * gider; girissiz kullanici uye olup AYNI forma doner.
+ */
+const ILAN_AC_YOLU = '/ilanlar/yeni';
+const ILAN_AC_HEDEFI = (girisli: boolean) =>
+  girisli ? ILAN_AC_YOLU : `/uye-ol?redirect=${ILAN_AC_YOLU}`;
+
 type Props = {
   listings: ListingWithRelations[];
   categories: Category[];
@@ -74,6 +82,8 @@ type Props = {
   applicationCounts: Record<string, number>;
   activeFilters: ActiveFilters;
   canCreateListing: boolean;
+  /** Duzeltme 11-C1: girissiz kullanici da ilan acmaya yonlendirilir. */
+  isLoggedIn: boolean;
   currentUserId: string | null;
 };
 
@@ -172,6 +182,7 @@ export function IlanlarListesi({
   applicationCounts,
   activeFilters,
   canCreateListing,
+  isLoggedIn,
   currentUserId,
 }: Props) {
   // FAZ 10b: etkinlik turleri tek kaynak `event_types` tablosu; liste kok
@@ -454,11 +465,12 @@ export function IlanlarListesi({
 
   return (
     <div>
-      {/* CTA — Yeni ilan aç (client/business) */}
-      {canCreateListing && (
+      {/* CTA — Yeni ilan aç: girisli musteri / kurum ve GIRISSIZ kullanici
+          (Duzeltme 11-C1). Girisli profesyonel / ajans gormez. */}
+      {(canCreateListing || !isLoggedIn) && (
         <div className="flex justify-end mb-6">
           <Link
-            href="/ilanlar/yeni"
+            href={ILAN_AC_HEDEFI(canCreateListing)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all"
           >
             <span className="text-base leading-none">+</span>
@@ -511,7 +523,14 @@ export function IlanlarListesi({
               action={
                 activeCount > 0
                   ? { label: 'Filtreleri temizle', href: '/ilanlar' }
-                  : undefined
+                  : canCreateListing
+                    ? { label: 'İlk ilanı aç', href: ILAN_AC_YOLU }
+                    : !isLoggedIn
+                      ? {
+                          label: 'Üye ol ve ilan aç',
+                          href: ILAN_AC_HEDEFI(false),
+                        }
+                      : undefined
               }
             />
           ) : (

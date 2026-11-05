@@ -31,7 +31,17 @@ type Props = {
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   writableBusinesses?: OnBehalfBusiness[];
-  variant?: 'default' | 'outline-ink';
+  variant?:
+    | 'default'
+    | 'outline-ink'
+    /** Duzeltme 11-B6: paket satirindaki kucuk cerceveli dugme. */
+    | 'secondary-sm';
+  /**
+   * Duzeltme 11-B6 (bulgu 76 b): paket satirindan gelindiyse paket BASLIGI.
+   * Modal basliginin altinda "Seçilen: <paket>" yazar ve
+   * `brief_data.hizmet` olarak gider (ozet etiketi "Seçilen hizmet").
+   */
+  secilenHizmet?: string | null;
   /**
    * D2 — fiyat/takvim kartindan gelen tarih. Modalin KENDI alanini
    * doldurur; form alanlari ve action DEGISMEZ, yalniz baslangic degeri.
@@ -55,6 +65,7 @@ export function RezervasyonButton({
   isOwnProfile,
   writableBusinesses = [],
   variant = 'default',
+  secilenHizmet = null,
   initialDate = null,
   initialLocation = null,
   iller = [],
@@ -240,7 +251,12 @@ export function RezervasyonButton({
         null,
       guest_count: null,
       budget_range: null,
-      brief_data: null,
+      // Duzeltme 11-B6: paket satirindan gelindiyse secim tasinir (eskiden
+      // `null` idi; profesyonel hangi paket icin rezervasyon istendigini
+      // gormuyordu). Sunucu `briefVeriTemizle` ile tipi ve uzunlugu sabitler.
+      brief_data: secilenHizmet?.trim()
+        ? { hizmet: secilenHizmet.trim() }
+        : null,
       request_type: 'booking_request' as const,
       start_time: startTime || null,
       end_time: endTime || null,
@@ -324,10 +340,12 @@ export function RezervasyonButton({
         className={
           variant === 'outline-ink'
             ? 'w-full py-3 bg-transparent border-[1.5px] border-brand-ink text-brand-ink rounded-xl font-display font-semibold text-[15px] hover:bg-brand-ink/5 transition-colors text-center'
-            : 'flex-1 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all text-center'
+            : variant === 'secondary-sm'
+              ? 'inline-flex items-center justify-center px-4 py-2.5 border border-line rounded-lg font-display font-semibold text-sm text-ink-72 hover:text-brand-ink hover:border-brand-ink transition-colors text-center'
+              : 'flex-1 px-5 py-3 bg-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-brand-ink)] transition-all text-center'
         }
       >
-        Rezervasyon Talebi
+        {variant === 'secondary-sm' ? 'Rezervasyon talebi' : 'Rezervasyon Talebi'}
       </button>
 
       {modalOpen && createPortal(
@@ -346,6 +364,11 @@ export function RezervasyonButton({
                   {professionalName}
                 </em>
                 {' '}için rezervasyon talebi
+                {secilenHizmet && (
+                  <span className="block text-sm font-body text-ink-72 mt-0.5">
+                    Seçilen: {secilenHizmet}
+                  </span>
+                )}
               </h2>
               <button
                 type="button"

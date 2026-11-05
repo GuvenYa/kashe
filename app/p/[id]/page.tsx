@@ -12,6 +12,17 @@ import {
   getWritableBusinesses,
 } from '@/app/lib/business-write';
 import { HizmetSecici } from './hizmet-secici';
+import { RezervasyonButton } from './rezervasyon-button';
+import { cizilebilirMetin } from '@/app/lib/ozet-cipleri';
+import {
+  BOLUM_CAPA,
+  BolumSeridi,
+  type BolumCapasi,
+} from './bolum-seridi';
+import type {
+  EkipSecenegi,
+  HizmetSecenegi,
+} from '@/app/lib/teklif-secenekleri';
 import { DavetButton } from './davet-button';
 import { YorumButton } from './yorum-button';
 import FavoriteButton from '@/app/components/FavoriteButton';
@@ -108,10 +119,18 @@ export default async function PublicProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ etkinlik?: string; yorum?: string }>;
+  searchParams: Promise<{
+    etkinlik?: string;
+    yorum?: string;
+    tercih?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { etkinlik: etkinlikParam, yorum: yorumParam } = await searchParams;
+  const {
+    etkinlik: etkinlikParam,
+    yorum: yorumParam,
+    tercih: tercihParam,
+  } = await searchParams;
   // Duzeltme 01 (#28): rezervasyon/sohbetteki "Yorum birak" baglantisi.
   // Kosullar YorumButton'da aynen kalir; parametre yalniz modali acar.
   const yorumModaliAcik = yorumParam === '1';
@@ -123,6 +142,20 @@ export default async function PublicProfilePage({
       etkinlikParam
     )
       ? etkinlikParam
+      : null;
+  /**
+   * Duzeltme 11-B5 (bulgu 76 d): uye profilindeki "<Ajans> üzerinden teklif
+   * al" baglantisi `?tercih=<uyeId>` ile gelir. Burada yalniz BICIM
+   * kontrolu; uyenin gercekten bu ajansin ekibinde olup olmadigi asagida
+   * ACIK ekip listesine karsi dogrulanir (gecersizse yok sayilir) ve
+   * sunucu eylemi (`briefTercihUygula`) ayni kontrolu tekrar yapar.
+   */
+  const tercihParamId =
+    tercihParam &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      tercihParam
+    )
+      ? tercihParam
       : null;
   const supabase = await createClient();
 
@@ -313,7 +346,7 @@ export default async function PublicProfilePage({
   ] = await Promise.all([
     supabase
       .from('services')
-      .select('*, service_categories(name_tr, emoji), service_addons(*)')
+      .select('*, service_categories(name_tr, emoji, slug), service_addons(*)')
       .eq('provider_id', profile.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
@@ -553,14 +586,87 @@ export default async function PublicProfilePage({
    * hizmetlerinin ve ekip uyelerinin rollerinden turetilir: tekrarsiz,
    * en fazla 4, " · " ile. Hicbiri yoksa birincil kategoriye duser.
    */
-  /** F3: ajans modalindeki hizmet secenekleri (paket + hizmet basliklari). */
-  const ajansHizmetBasliklari = [
-    ...new Set(
-      [...packages.map((x) => x.title), ...services.map((x) => x.title)].filter(
-        Boolean
-      )
-    ),
+  /**
+   * F3 / Duzeltme 11-B1: ajans modalindeki hizmet secenekleri. Baslik yaninda
+   * fiyat, paket icerigi ve KATEGORI SLUG'I da tasinir: slug ekip tercihini
+   * gruplar (DJ paketi secilince DJ'ler ustte).
+   */
+  const ajansHizmetSecenekleri: HizmetSecenegi[] = [];
+  for (const x of packages) {
+    if (!x.title || ajansHizmetSecenekleri.some((y) => y.baslik === x.title)) continue;
+    ajansHizmetSecenekleri.push({
+      baslik: x.title,
+      tur: 'paket',
+      fiyat:
+        formatPriceRange(
+          x.price_min,
+          x.price_max,
+          x.price_on_request,
+          'total',
+          x.price_starting
+        ) || null,
+      icerik: (Array.isArray(x.includes) ? x.includes : [])
+        .map((madde) => cizilebilirMetin(madde))
+        .filter((madde): madde is string => !!madde),
+      kategoriSlug: profile.service_categories?.slug ?? null,
+    });
+  }
+  for (const x of services) {
+    if (!x.title || ajansHizmetSecenekleri.some((y) => y.baslik === x.title)) continue;
+    ajansHizmetSecenekleri.push({
+      baslik: x.title,
+      tur: 'hizmet',
+      fiyat:
+        formatPriceRange(
+          x.price_min,
+          x.price_max,
+          x.price_on_request,
+          x.price_unit ?? 'total',
+          x.price_starting
+        ) || null,
+      icerik: [],
+      kategoriSlug: x.service_categories?.slug ?? null,
+    });
+  }
+
+  /**
+   * Duzeltme 11-B2: "Ekipten tercih" secenekleri — ACIK ekip listesinden
+   * (`organization_team_public`; yayinda + onayli uyeler). Ad kamu kuraliyla
+   * ("Ad S."), rol uyenin birincil kategorisi. Iletisim bilgisi TASINMAZ.
+   */
+  const ajansEkipSecenekleri: EkipSecenegi[] = agencyTeam
+    .map((m) => m.professional)
+    .filter((pro): pro is NonNullable<typeof pro> => !!pro)
+    .map((pro) => ({
+      id: pro.id,
+      ad: kamuAdi(pro.full_name) || 'İsimsiz',
+      rol: pro.service_categories?.name_tr ?? null,
+      kategoriSlug: pro.service_categories?.slug ?? null,
+    }));
+  /**
+   * Duzeltme 11-D4: ajans sayfasinin bolum seridi. SIRA sayfadaki sirayla
+   * ayni: Hakkimda -> Ekibimiz -> Hizmetler -> Portfoy -> Yorumlar.
+   * Hakkimda her zaman var (bos olsa tek satir); digerleri verisi varsa.
+   */
+  const ajansBolumleri: BolumCapasi[] = [
+    { id: 'hakkimda', etiket: 'Hakkımda' },
+    ...(isAgencyProfile ? [{ id: 'ekibimiz', etiket: 'Ekibimiz' }] : []),
+    ...(packages.length > 0 || services.length > 0
+      ? [{ id: 'hizmetler', etiket: 'Hizmetler' }]
+      : []),
+    ...(portfolioItems.length > 0
+      ? [{ id: 'portfoy', etiket: 'Portföy' }]
+      : []),
+    ...(recentReviews.length > 0
+      ? [{ id: 'yorumlar', etiket: 'Yorumlar' }]
+      : []),
   ];
+
+  /** `?tercih=` yalniz GERCEK bir ekip uyesiyse modali acar. */
+  const tercihUyeId =
+    tercihParamId && ajansEkipSecenekleri.some((u) => u.id === tercihParamId)
+      ? tercihParamId
+      : null;
 
   const ajansKategorileri = [
     ...new Set(
@@ -1224,17 +1330,33 @@ export default async function PublicProfilePage({
               </div>
             </div>
 
-            {profile.bio && (
-              <p className="text-ink mt-6 leading-relaxed whitespace-pre-wrap">
-                {profile.bio}
-              </p>
-            )}
+            {/* Duzeltme 11-D4: tanitim metni kimlik kartindan CIKTI —
+                artik "Hakkımda" basligiyla kendi bolumu (profesyonel
+                profiliyle ayni dil, gezinti seridinde ilk capa). */}
 
             {/* hijyen 04 — "Kisa listeye ekle" banti. Profesyonel dalinda sag
                 sutunda duruyor; ajans dalinda sag sutun yok, bu yuzden kimlik
                 blogunun altinda ayri bir bant olarak cizilir. */}
             {kisaListeSlot && <div className="mt-6">{kisaListeSlot}</div>}
             </div>
+          </div>
+
+          {/* BOLUM GEZINTISI (Duzeltme 11-D4) — profesyonel profiliyle AYNI
+              serit; yalniz sayfada OLAN bolumlere capa. */}
+          <div className="mb-6">
+            <BolumSeridi bolumler={ajansBolumleri} />
+          </div>
+
+          {/* HAKKIMDA (tanitim) — bos olsa da baslik durur: serit capasi. */}
+          <div id="hakkimda" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>
+            <h2 className="font-display text-2xl text-ink mb-4">Hakkımda</h2>
+            {profile.bio ? (
+              <p className="text-ink leading-relaxed whitespace-pre-wrap">
+                {profile.bio}
+              </p>
+            ) : (
+              <p className="text-ink-72">Henüz tanıtım eklenmemiş.</p>
+            )}
           </div>
 
           {/* KATEGORİYE ÖZEL ÖZELLİKLER */}
@@ -1265,7 +1387,7 @@ export default async function PublicProfilePage({
 
           {/* EKİBİMİZ (ajans) */}
           {isAgencyProfile && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
+            <div id="ekibimiz" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>
               <h2 className="font-display text-2xl text-ink mb-1">Ekibimiz</h2>
               <p className="text-sm text-ink-72 mb-6">
                 Bu ajansın çatısı altındaki profesyoneller.
@@ -1296,8 +1418,8 @@ export default async function PublicProfilePage({
                       pro.service_categories?.slug
                     );
                     return (
+                      <div key={member.id} className="flex flex-col gap-2">
                       <Link
-                        key={member.id}
                         href={`/p/${pro.id}`}
                         className="flex items-center gap-3 border border-line rounded-lg p-4 hover:border-brand-ink hover:shadow-[3px_3px_0_var(--color-brand-ink)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all group"
                       >
@@ -1333,6 +1455,31 @@ export default async function PublicProfilePage({
                           )}
                         </div>
                       </Link>
+                      {/* Duzeltme 11-B4 (bulgu 76 d): kart hala uyenin
+                          profiline gider; bu dugme AJANS uzerinden teklif
+                          acar ve uyeyi SECILI getirir. */}
+                      {!isOwnProfile && (
+                        <IletisimButton
+                          professionalId={profile.id}
+                          professionalName={displayName}
+                          categorySlug={profile.service_categories?.slug ?? null}
+                          isLoggedIn={isLoggedIn}
+                          currentUserIsProfessional={currentUserIsProfessional}
+                          isOwnProfile={isOwnProfile}
+                          writableBusinesses={writableBusinesses}
+                          etkinlikId={etkinlikId}
+                          variant="secondary-sm"
+                          dugmeEtiketi={`${displayName} üzerinden teklif al`}
+                          tercihUyeId={pro.id}
+                          iller={iller}
+                          saglayiciIli={cityName ?? null}
+                          yalnizKendiSehri={yalnizKendiSehri}
+                          hizmetSecenekleri={ajansHizmetSecenekleri}
+                          ekipSecenekleri={ajansEkipSecenekleri}
+                          ajansMi
+                        />
+                      )}
+                      </div>
                     );
                   })}
                 </div>
@@ -1343,17 +1490,6 @@ export default async function PublicProfilePage({
           {/* NOT: "Ajans temsili" bloğu professional dalına (yeni redesign) taşındı —
               rail'de mini ajans kartı olarak. Bu fallback yalnız agency/business render eder. */}
 
-          {/* PORTFÖY GALERİ */}
-          {portfolioItems.length > 0 && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
-              <h2 className="font-display text-2xl text-ink mb-6">Portföy</h2>
-              <PortfolioGallery
-                items={portfolioItems}
-                gridClassName="grid grid-cols-2 md:grid-cols-3 gap-3"
-              />
-            </div>
-          )}
-
           {/*
             PAKETLER + HIZMETLER (Duzeltme 10-F6, bulgu 80): iki ayri kart
             ("Paketler" ve "Sunulan hizmetler") ayni seyin iki adiydi —
@@ -1361,7 +1497,7 @@ export default async function PublicProfilePage({
             tek baslik; paketler ustte, hizmetler altta.
           */}
           {(packages.length > 0 || services.length > 0) && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
+            <div id="hizmetler" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>
               <h2 className="font-display text-2xl text-ink mb-6">
                 Hizmetler ve paketler
               </h2>
@@ -1417,25 +1553,46 @@ export default async function PublicProfilePage({
                             </ul>
                           )}
                           {!isOwnProfile && (
-                            <IletisimButton
-                              professionalId={profile.id}
-                              professionalName={displayName}
-                              categorySlug={profile.service_categories?.slug ?? null}
-                              isLoggedIn={isLoggedIn}
-                              currentUserIsProfessional={currentUserIsProfessional}
-                              isOwnProfile={isOwnProfile}
-                              etkinlikId={etkinlikId}
-                              packageContext={{
-                                title: pkg.title,
-                                price: pkgPrice,
-                              }}
-                              iller={iller}
-                              saglayiciIli={cityName ?? null}
-                              yalnizKendiSehri={yalnizKendiSehri}
-                              hizmetSecenekleri={ajansHizmetBasliklari}
-                              ajansMi
-                              variant="package"
-                            />
+                            <div className="flex flex-wrap items-center gap-3">
+                              <IletisimButton
+                                professionalId={profile.id}
+                                professionalName={displayName}
+                                categorySlug={profile.service_categories?.slug ?? null}
+                                isLoggedIn={isLoggedIn}
+                                currentUserIsProfessional={currentUserIsProfessional}
+                                isOwnProfile={isOwnProfile}
+                                writableBusinesses={writableBusinesses}
+                                etkinlikId={etkinlikId}
+                                packageContext={{
+                                  title: pkg.title,
+                                  price: pkgPrice,
+                                }}
+                                iller={iller}
+                                saglayiciIli={cityName ?? null}
+                                yalnizKendiSehri={yalnizKendiSehri}
+                                hizmetSecenekleri={ajansHizmetSecenekleri}
+                                ekipSecenekleri={ajansEkipSecenekleri}
+                                ajansMi
+                                variant="package"
+                              />
+                              {/* Duzeltme 11-B6: fiyati BELLI paket dogrudan
+                                  rezervasyona gider (talep uzerine pakette yok). */}
+                              {!pkg.price_on_request && pkg.price_min != null && (
+                                <RezervasyonButton
+                                  professionalId={profile.id}
+                                  professionalName={displayName}
+                                  isLoggedIn={isLoggedIn}
+                                  currentUserIsProfessional={currentUserIsProfessional}
+                                  isOwnProfile={isOwnProfile}
+                                  writableBusinesses={writableBusinesses}
+                                  variant="secondary-sm"
+                                  secilenHizmet={pkg.title}
+                                  iller={iller}
+                                  saglayiciIli={cityName ?? null}
+                                  yalnizKendiSehri={yalnizKendiSehri}
+                                />
+                              )}
+                            </div>
                           )}
                         </div>
                       );
@@ -1462,8 +1619,9 @@ export default async function PublicProfilePage({
                         iller={iller}
                         saglayiciIli={cityName ?? null}
                         yalnizKendiSehri={yalnizKendiSehri}
-                        hizmetSecenekleri={ajansHizmetBasliklari}
+                        hizmetSecenekleri={ajansHizmetSecenekleri}
                         ajansMi
+                        ekipSecenekleri={ajansEkipSecenekleri}
                         etkinlikId={etkinlikId}
                       />
                     ))}
@@ -1473,9 +1631,20 @@ export default async function PublicProfilePage({
             </div>
           )}
 
+          {/* PORTFÖY GALERİ */}
+          {portfolioItems.length > 0 && (
+            <div id="portfoy" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>
+              <h2 className="font-display text-2xl text-ink mb-6">Portföy</h2>
+              <PortfolioGallery
+                items={portfolioItems}
+                gridClassName="grid grid-cols-2 md:grid-cols-3 gap-3"
+              />
+            </div>
+          )}
+
           {/* YORUMLAR (varsa) */}
           {recentReviews.length > 0 && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
+            <div id="yorumlar" className={`bg-card border border-line rounded-lg p-8 mb-6 ${BOLUM_CAPA}`}>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <h2 className="font-display text-2xl text-ink">
                   Yorumlar
@@ -1527,8 +1696,11 @@ export default async function PublicProfilePage({
                 iller={iller}
                 saglayiciIli={cityName ?? null}
                 yalnizKendiSehri={yalnizKendiSehri}
-                hizmetSecenekleri={ajansHizmetBasliklari}
+                hizmetSecenekleri={ajansHizmetSecenekleri}
                 ajansMi
+                ekipSecenekleri={ajansEkipSecenekleri}
+                tercihUyeId={tercihUyeId}
+                teklifModaliAcik={!!tercihUyeId}
                 cta={
                   !isOwnProfile
                     ? {

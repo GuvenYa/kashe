@@ -5,6 +5,7 @@ import { RezervasyonButton } from './rezervasyon-button';
 import { useProfilIslem } from './profil-islem-baglami';
 import { type OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 import type { Il } from '@/app/components/ui/il-secici';
+import type { HizmetSecenegi } from '@/app/lib/teklif-secenekleri';
 
 /**
  * MOBIL ALT CTA CUBUGU (D2-ek) — `lg` altinda sayfanin dibine sabit.
@@ -44,7 +45,7 @@ export function MobilCtaCubugu({
   iller?: Il[];
   saglayiciIli?: string | null;
   yalnizKendiSehri?: boolean;
-  hizmetSecenekleri?: string[];
+  hizmetSecenekleri?: HizmetSecenegi[];
   /** FAZ 4c/P3 etkinlik bagi (bulgu 84): `?etkinlik=` sohbete tasinir. */
   etkinlikId?: string | null;
 }) {

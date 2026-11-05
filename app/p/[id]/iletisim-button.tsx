@@ -33,6 +33,19 @@ import {
   briefIlAlani,
 } from '@/app/lib/brief-anahtarlari';
 import type { Il } from '@/app/components/ui/il-secici';
+import {
+  EKIP_TERCIH_YOK,
+  HIZMET_ICERIK_EN_FAZLA,
+  ekipGruplari,
+  ekipSecenekEtiketi,
+  hizmetSecenegiBul,
+  type EkipSecenegi,
+  type HizmetSecenegi,
+} from '@/app/lib/teklif-secenekleri';
+import {
+  BRIEF_TERCIH_UYE,
+  BRIEF_TERCIH_UYE_ADI,
+} from '@/app/lib/brief-anahtarlari';
 import { useProfilIslem } from './profil-islem-baglami';
 
 type Props = {
@@ -49,7 +62,15 @@ type Props = {
     addons: { title: string; price: number }[];
     estimatedTotal: number | null;
   } | null;
-  variant?: 'default' | 'package' | 'inline' | 'primary-accent';
+  variant?:
+    | 'default'
+    | 'package'
+    | 'inline'
+    | 'primary-accent'
+    /** Duzeltme 11-B4: ekip karti altindaki kucuk cerceveli dugme. */
+    | 'secondary-sm';
+  /** `secondary-sm` varyantinin etiketi (ornek "Mavi Sahne üzerinden teklif al"). */
+  dugmeEtiketi?: string;
   /** FAZ 4c/P3: etkinlikten gelindiyse events.id — sohbet o etkinlige baglanir. */
   etkinlikId?: string | null;
   /**
@@ -67,11 +88,24 @@ type Props = {
   saglayiciIli?: string | null;
   yalnizKendiSehri?: boolean;
   /**
-   * Duzeltme 10-F3: saglayicinin paket ve hizmet BASLIKLARI. Dolu gelirse
-   * formun basinda istege bagli "Hangi hizmet ya da paket?" secimi cizilir;
-   * secim `brief_data.hizmet` olarak kaydedilir (ozet etiketi "Seçilen hizmet").
+   * Saglayicinin paket ve hizmetleri. Dolu gelirse formun basinda istege bagli
+   * "Hangi hizmet ya da paket?" secimi cizilir; secim `brief_data.hizmet`
+   * olarak BASLIK kaydedilir (ozet etiketi "Seçilen hizmet").
+   *
+   * Duzeltme 11-B1 (bulgu 76 b): tur `string[]` iken secim bir ad'dan
+   * baskasini anlatmiyordu; artik fiyat ve icerik de geliyor ve secimin
+   * ALTINDA kisa ozet cizilir (Fahri: "paketi secince detaylari gelsin").
    */
-  hizmetSecenekleri?: string[];
+  hizmetSecenekleri?: HizmetSecenegi[];
+  /**
+   * Duzeltme 11-B2 (bulgu 76 d): AJANS modalinda "Ekipten tercih" secimi.
+   * Bos dizi gelirse secim HIC cizilmez (ekibi olmayan ajans).
+   */
+  ekipSecenekleri?: EkipSecenegi[];
+  /** Secili baslayacak ekip uyesi (ekip kartindan ya da `?tercih=` ile). */
+  tercihUyeId?: string | null;
+  /** Modal ACIK baslar (`?tercih=` gecerli bir uyeyse ajans sayfasi acar). */
+  acikBaslat?: boolean;
   /**
    * Duzeltme 10-F4: saglayici bir AJANS kurulusu mu? Brief alanlari varsayilan
    * bes soruya duser ve intro ajansa gore yazilir.
@@ -100,7 +134,11 @@ export function IletisimButton({
   saglayiciIli = null,
   yalnizKendiSehri = false,
   hizmetSecenekleri = [],
+  ekipSecenekleri = [],
+  tercihUyeId = null,
+  acikBaslat = false,
   ajansMi = false,
+  dugmeEtiketi,
   onDolgu = null,
 }: Props) {
   // FAZ 10b: etkinlik turleri `event_types` tablosundan (saglayici).
@@ -111,7 +149,17 @@ export function IletisimButton({
   const [onBehalfBusinessId, setOnBehalfBusinessId] = useState<string | null>(
     canSelfCreate ? null : writableBusinesses[0]?.business_id ?? null
   );
-  const [modalOpen, setModalOpen] = useState(false);
+  /**
+   * Duzeltme 11-B5: `?tercih=` ile gelindiyse modal ACIK baslar — ama yalniz
+   * ISTEMCIDE. Baslangic degeri sunucu cizimde de `true` olunca modal
+   * `createPortal(..., document.body)` cagiriyor ve sayfa sunucuda
+   * "document is not defined" ile dusuyor (olculdu: /p/<ajans>?tercih=...).
+   * Efekt icinde setState (kural: react-hooks/set-state-in-effect) yerine
+   * baslangic degeri: hidrasyondan sonraki ILK cizimde modal acik gelir.
+   */
+  const [modalOpen, setModalOpen] = useState(
+    acikBaslat && typeof document !== 'undefined'
+  );
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -129,6 +177,23 @@ export function IletisimButton({
   const secilenBaslangic =
     packageContext?.title ?? serviceContext?.title ?? '';
   const [secilenHizmet, setSecilenHizmet] = useState(secilenBaslangic);
+  /**
+   * Duzeltme 11-B2: tercih edilen ekip uyesinin KIMLIGI. Bos = "Fark etmez".
+   * Kimlik sunucuda ajansin acik ekip listesine karsi dogrulanir; ad da
+   * sunucuda yeniden uretilir (istemci metnine guvenilmez).
+   */
+  const [tercihUye, setTercihUye] = useState(tercihUyeId ?? '');
+
+  /** Secili hizmetin kaydi — ozet (fiyat + icerik) ve ekip gruplamasi icin. */
+  const secilenKayit = hizmetSecenegiBul(hizmetSecenekleri, secilenHizmet);
+  const ozetIcerik = (secilenKayit?.icerik ?? []).slice(
+    0,
+    HIZMET_ICERIK_EN_FAZLA
+  );
+  const { oncelikli: ekipOncelikli, digerleri: ekipDigerleri } = ekipGruplari(
+    ekipSecenekleri,
+    secilenKayit?.kategoriSlug ?? null
+  );
 
   // Bu profesyonelin kategorisine göre alanlar (config-driven)
   // FAZ 10b: `event_type` secenekleri `event_types` tablosundan (saglayici).
@@ -396,7 +461,8 @@ ${onceki}`
           degerler[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] ?? ''
         ).trim();
         if (!aciklama) {
-          setError(`"${f.label} - kısaca yaz" alanı zorunlu.`);
+          // Duzeltme 11-F2: hata metni alanin kendi adini soyler.
+          setError(`"${f.label}" için kısa açıklama yaz.`);
           return;
         }
       }
@@ -452,6 +518,18 @@ ${onceki}`
     }
     // Duzeltme 10-F3: secilen hizmet / paket (ozet etiketi "Seçilen hizmet").
     if (secilenHizmet.trim()) cleanBrief.hizmet = secilenHizmet.trim();
+    /**
+     * Duzeltme 11-B2: tercih edilen ekip uyesi. Ad da gonderilir ki girissiz
+     * akista (sessionStorage) secim okunur kalsin; SUNUCU ikisini de
+     * dogrular ve adi kamu ad kuraliyla yeniden uretir.
+     */
+    if (tercihUye) {
+      const uye = ekipSecenekleri.find((u) => u.id === tercihUye);
+      if (uye) {
+        cleanBrief[BRIEF_TERCIH_UYE] = uye.id;
+        cleanBrief[BRIEF_TERCIH_UYE_ADI] = uye.ad;
+      }
+    }
 
     // Brief payload — hem giriş yapan hem anonim için aynı veri
     const payload = {
@@ -560,6 +638,19 @@ ${onceki}`
               : 'Bu hizmet için teklif al'
             : 'Bu paket için teklif al'}
         </button>
+      ) : variant === 'secondary-sm' ? (
+        /* Duzeltme 11-B4: ekip kartinin altindaki ikincil dugme — kart yine
+           uyenin profiline gider, bu dugme AJANS uzerinden teklif acar. */
+        <button
+          type="button"
+          onClick={() => {
+            dolguyuUygula();
+            setModalOpen(true);
+          }}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-line rounded-lg font-display font-semibold text-[12.5px] text-ink-72 hover:text-brand-ink hover:border-brand-ink transition-colors text-center"
+        >
+          {dugmeEtiketi ?? 'Teklif al'}
+        </button>
       ) : variant === 'primary-accent' ? (
         <button
           type="button"
@@ -665,11 +756,75 @@ ${onceki}`
                   >
                     <option value="">Henüz bilmiyorum</option>
                     {hizmetSecenekleri.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
+                      <option key={h.baslik} value={h.baslik}>
+                        {h.tur === 'paket' ? `Paket: ${h.baslik}` : h.baslik}
                       </option>
                     ))}
                   </select>
+                  {/* Duzeltme 11-B1: secimin ALTINDA kisa ozet — fiyat ve en
+                      fazla dort icerik maddesi. Veri saglayicinin kendi
+                      kaydindan gelir; hicbir sey uydurulmaz. */}
+                  {secilenKayit && (secilenKayit.fiyat || ozetIcerik.length > 0) && (
+                    <div className="mt-2 rounded-lg border border-line bg-card px-3.5 py-3">
+                      {secilenKayit.fiyat && (
+                        <p className="font-display text-sm font-semibold text-brand-ink">
+                          {secilenKayit.fiyat}
+                        </p>
+                      )}
+                      {ozetIcerik.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {ozetIcerik.map((madde, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-1.5 text-[12.5px] text-ink-72"
+                            >
+                              <span aria-hidden="true" className="text-moss">
+                                •
+                              </span>
+                              <span>{madde}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Duzeltme 11-B2: ekipten tercih (yalniz ajans; istege bagli) */}
+              {ajansMi && ekipSecenekleri.length > 0 && (
+                <div>
+                  <label
+                    htmlFor="brief-ekip-tercihi"
+                    className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
+                  >
+                    Ekipten tercih
+                  </label>
+                  <select
+                    id="brief-ekip-tercihi"
+                    value={tercihUye}
+                    onChange={(e) => setTercihUye(e.target.value)}
+                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                  >
+                    <option value="">{EKIP_TERCIH_YOK}</option>
+                    {ekipOncelikli.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {ekipSecenekEtiketi(u)}
+                      </option>
+                    ))}
+                    {ekipDigerleri.length > 0 && (
+                      <optgroup label="Diğer ekip üyeleri">
+                        {ekipDigerleri.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {ekipSecenekEtiketi(u)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <p className="text-xs text-ink-72 mt-1.5">
+                    Tercihin ajansa iletilir; kesin atamayı ajans yapar.
+                  </p>
                 </div>
               )}
 

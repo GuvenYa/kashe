@@ -688,13 +688,19 @@ export function IlanDetay({
                       )}
                     </div>
                   ) : !currentUserId ? (
-                    /* ── ANONİM ── */
+                    /* ── ANONİM (Duzeltme 11-C3) ──
+                       Eskiden dugme duz `/giris`e gidiyordu ve kullanici
+                       girisden sonra ana sayfada kaliyordu; artik ilana
+                       geri doner. */
                     <div className="text-center">
                       <p className="text-sm text-ink mb-3">
-                        Bu ilana başvurmak için giriş yapmalısın.
+                        Bu ilana profesyonel ve ajans hesapları başvurabilir.
                       </p>
-                      <Link href="/giris" className={accentCta}>
-                        Giriş yap
+                      <Link
+                        href={`/giris?redirect=/ilanlar/${listing.id}`}
+                        className={accentCta}
+                      >
+                        Başvurmak için giriş yap
                       </Link>
                     </div>
                   ) : isProfessional ? (

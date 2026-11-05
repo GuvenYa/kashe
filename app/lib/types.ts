@@ -247,7 +247,12 @@ export type PortfolioItem = {
 export type ProfileWithCity = Profile & CityEmbed;
 
 export type ServiceWithCategory = Service & {
-  service_categories: { name_tr: string; emoji: string | null } | null;
+  /**
+   * `slug` ISTEGE BAGLI: sorgular genelde yalniz ad + emoji seciyor. Ajans
+   * profili (Duzeltme 11-B2) slug'i da secer — ekip tercihi gruplamasi
+   * hizmetin kategorisine gore yapiliyor.
+   */
+  service_categories: { name_tr: string; emoji: string | null; slug?: string } | null;
   service_addons?: ServiceAddon[];
 };
 

@@ -10,7 +10,12 @@ import { UserMenu } from "./user-menu";
 import { getUnreadNotificationCount } from "@/app/bildirimler/actions";
 import { getCachedUser } from "@/app/lib/auth";
 import { getWritableBusinesses } from "@/app/lib/business-write";
-import { DISCOVERY_LINKS, MARKETING_LINKS } from "@/app/lib/nav-links";
+import {
+  DISCOVERY_LINKS,
+  MARKETING_LINKS,
+  PLANLA_LINK,
+} from "@/app/lib/nav-links";
+import { IsiltiIkonu } from "@/app/components/ui/isilti-ikonu";
 import { panelMenusu, baslaticiMenusu } from "@/app/lib/panel-menu";
 import { ORG_ROLE_LABELS, type OrgRole } from "@/app/lib/org-roles";
 
@@ -108,46 +113,53 @@ export async function TopNav() {
         </Link>
 
         {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}
-        {/* Orta nav TEK SATIR kalir: anonim kullanicida 9 baglanti var (gap-5),
-            girisli kullanicida 5 (gap-7). Sayfa-ici capalar xl'den itibaren. */}
-        <div className={"hidden lg:flex items-center " + (user ? "gap-7" : "gap-5")}>
+        {/* Duzeltme 11-A2 (bulgu 73): orta nav girissizde uc baglantiya dustu
+            (Kesfet · Ilanlar · Fiyatlandirma), girislide dorde (Kesfet ·
+            Ilanlar · Etkinligini planla · Teklif Topla). Eskiden girissizde 9
+            baglanti vardi, 1024-1279 px'te sigmiyordu ve dordu `xlOnly` ile
+            gizleniyordu; o kural ve sinif artik gereksiz. */}
+        <div className="hidden lg:flex items-center gap-7">
           {/* İşlevsel keşif — her kullanıcıya */}
           {DISCOVERY_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               prefetch={false}
-              className={
-                link.ai
-                  ? navLinkClass + " inline-flex items-center gap-1.5"
-                  : navLinkClass
-              }
+              className={navLinkClass}
             >
-              {link.ai && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink">
-                  <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
-                </svg>
-              )}
               {link.label}
             </Link>
           ))}
           {user ? (
-            // Teklif Topla: girisli + teklif toplayabilen roller (menu modeliyle tutarli)
-            canCollectOffers && (
-              <Link href="/teklif-topla" prefetch={false} className={navLinkClass}>
-                Teklif Topla
+            <>
+              {/* Girislide ana eylem orta nav'da isiltili baglanti olarak
+                  durur; sag blok (Mesajlar, zil, hesap) DEGISMEZ. */}
+              <Link
+                href={PLANLA_LINK.href}
+                prefetch={false}
+                className={
+                  navLinkClass +
+                  " inline-flex items-center gap-1.5 text-brand-ink hover:text-brand-ink-deep"
+                }
+              >
+                <IsiltiIkonu />
+                {PLANLA_LINK.label}
               </Link>
-            )
+              {/* Teklif Topla: girisli + teklif toplayabilen roller (menu modeliyle tutarli) */}
+              {canCollectOffers && (
+                <Link href="/teklif-topla" prefetch={false} className={navLinkClass}>
+                  Teklif Topla
+                </Link>
+              )}
+            </>
           ) : (
-            // Pazarlama — yalnız girişsiz
+            // Pazarlama — yalnız girişsiz (tek satir: Fiyatlandırma)
             MARKETING_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 prefetch={false}
-                className={
-                  link.xlOnly ? navLinkClass + " hidden xl:inline-flex" : navLinkClass
-                }
+                className={navLinkClass}
               >
                 {link.label}
               </Link>
@@ -183,12 +195,21 @@ export async function TopNav() {
             </>
           ) : (
             <>
+              {/* Duzeltme 11-A2: girissiz sag blokta uc kademe — metin baglanti,
+                  cerceveli "Üye ol", en sagda birincil "Etkinliğini planla".
+                  Fahri'nin notu: her sayfada planlamaya giden gorunur bir yol. */}
               <Link href="/giris" prefetch={false} className={navLinkClass}>
                 Giriş yap
               </Link>
               <Link href="/uye-ol" prefetch={false}>
-                <Button variant="primary" size="md">
+                <Button variant="secondary" size="md">
                   Üye ol
+                </Button>
+              </Link>
+              <Link href={PLANLA_LINK.href} prefetch={false}>
+                <Button variant="primary" size="md">
+                  <IsiltiIkonu />
+                  {PLANLA_LINK.label}
                 </Button>
               </Link>
             </>

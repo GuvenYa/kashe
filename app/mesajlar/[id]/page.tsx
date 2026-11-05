@@ -63,17 +63,22 @@ export async function generateMetadata({
     .from('conversations')
     .select(
       `customer_id, professional_id,
-       customer:profiles!conversations_customer_id_fkey (full_name, company_name),
-       professional:profiles!conversations_professional_id_fkey (full_name, company_name)`
+       customer:profiles!conversations_customer_id_fkey (full_name, company_name, role),
+       professional:profiles!conversations_professional_id_fkey (full_name, company_name, role)`
     )
     .eq('id', id)
     .maybeSingle();
 
+  type KonusmaTarafi = {
+    full_name: string | null;
+    company_name: string | null;
+    role: string | null;
+  };
   const konusma = data as unknown as {
     customer_id: string;
     professional_id: string;
-    customer: { full_name: string | null; company_name: string | null } | null;
-    professional: { full_name: string | null; company_name: string | null } | null;
+    customer: KonusmaTarafi | null;
+    professional: KonusmaTarafi | null;
   } | null;
   if (!konusma) return genel;
 
@@ -82,7 +87,25 @@ export async function generateMetadata({
   // olmadigi icin profesyonel adi dogru karsi taraftir.
   const karsi =
     konusma.customer_id === user.id ? konusma.professional : konusma.customer;
-  const ad = karsi?.company_name?.trim() || karsi?.full_name?.trim() || null;
+
+  /**
+   * Duzeltme 11-F1 (bulgu 85): sekme basligi TAM ADI yaziyordu
+   * ("Mesaj — Eda Bozkurt — Kashe") ama sayfa basligi "Eda B." idi.
+   * Kamu ad kurali (Duzeltme 05-E) baslikta da gecerli: ayni yardimci ve
+   * AYNI kapi — onayli / tamamlanmis rezervasyon varsa tam ad.
+   */
+  const { data: rezervasyonlar } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('conversation_id', id)
+    .in('status', ['confirmed', 'completed'])
+    .limit(1);
+  const tamAd = (rezervasyonlar ?? []).length > 0;
+
+  const ad =
+    karsi?.company_name?.trim() ||
+    gosterilecekAd(karsi?.role ?? null, karsi?.full_name ?? null, tamAd) ||
+    null;
   return ad ? { title: `Mesaj — ${ad} — Kashe` } : genel;
 }
 

@@ -201,7 +201,8 @@ export function TeklifToplaFormu({
         briefValues[f.key] === 'other' &&
         !(briefValues[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] ?? '').trim()
       ) {
-        setError(`"${f.label} - kısaca yaz" alanı zorunlu.`);
+        // Duzeltme 11-F2: hata metni alanin kendi adini soyler.
+        setError(`"${f.label}" için kısa açıklama yaz.`);
         return;
       }
       if (f.required && !(briefValues[f.key] && briefValues[f.key].trim())) {

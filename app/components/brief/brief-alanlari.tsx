@@ -170,8 +170,13 @@ export function BriefAlanlari({
                 </select>
                 {value === 'other' && (
                   <div className="mt-2">
+                    {/*
+                      Duzeltme 11-F2: etiket uzun ana alan adini TEKRAR
+                      ediyordu ("ETKINLIK / CEKIM TURU - KISACA YAZ *") ve iki
+                      satira kiriliyordu. Alan zaten o secimin HEMEN altinda.
+                    */}
                     <label htmlFor={`brief-${aciklamaKey}`} className={ETIKET}>
-                      {field.label} - kısaca yaz
+                      Diğer — kısaca yaz
                       <span className="text-danger"> *</span>
                     </label>
                     <input

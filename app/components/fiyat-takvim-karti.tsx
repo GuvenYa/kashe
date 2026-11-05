@@ -10,6 +10,10 @@ import { IletisimButton } from '@/app/p/[id]/iletisim-button';
 import { IlSecici, ilEslestir, type Il } from '@/app/components/ui/il-secici';
 import { RezervasyonButton } from '@/app/p/[id]/rezervasyon-button';
 import type { OnBehalfBusiness } from '@/app/components/on-behalf-selector';
+import type {
+  EkipSecenegi,
+  HizmetSecenegi,
+} from '@/app/lib/teklif-secenekleri';
 
 /**
  * FIYAT / TAKVIM KARTI (D2) — profilin sag sutunundaki islem karti.
@@ -49,6 +53,9 @@ export function FiyatTakvimKarti({
   yalnizKendiSehri = false,
   hizmetSecenekleri = [],
   ajansMi = false,
+  ekipSecenekleri = [],
+  tercihUyeId = null,
+  teklifModaliAcik = false,
 }: {
   /** Sunucuda bulunan en dusuk paket/hizmet fiyati; yoksa null. */
   enDusukFiyat: number | null;
@@ -83,8 +90,14 @@ export function FiyatTakvimKarti({
   /** `service_region` "Yalnizca kendi sehri" ise secici tek ile kilitlenir. */
   yalnizKendiSehri?: boolean;
   /** Duzeltme 10-F3: modaldeki hizmet / paket secenekleri (bosken secim yok). */
-  hizmetSecenekleri?: string[];
+  hizmetSecenekleri?: HizmetSecenegi[];
   ajansMi?: boolean;
+  /** Duzeltme 11-B2: ajans modalindaki "Ekipten tercih" secenekleri. */
+  ekipSecenekleri?: EkipSecenegi[];
+  /** Duzeltme 11-B5: `?tercih=` ile gelen ekip uyesi secili baslar. */
+  tercihUyeId?: string | null;
+  /** Teklif modali ACIK baslar (gecerli `?tercih=` ile gelindiyse). */
+  teklifModaliAcik?: boolean;
 }) {
   // Degerler BAGLAMDAN: mobil alt CTA cubugu ayni durumu okuyor (D2-ek).
   // Kart kendi state ini tutsaydi, cubuktaki dugmeler kartta girilen tarihi
@@ -271,6 +284,9 @@ export function FiyatTakvimKarti({
             yalnizKendiSehri={yalnizKendiSehri}
             hizmetSecenekleri={hizmetSecenekleri}
             ajansMi={ajansMi}
+            ekipSecenekleri={ekipSecenekleri}
+            tercihUyeId={tercihUyeId}
+            acikBaslat={teklifModaliAcik}
             onDolgu={dolgu}
           />
           <RezervasyonButton

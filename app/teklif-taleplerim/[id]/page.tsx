@@ -10,6 +10,8 @@ import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import {
   BRIEF_ACIKLAMA_SONEKI,
   BRIEF_ESNEK_SONEKI,
+  BRIEF_GIZLI_ANAHTARLAR,
+  BRIEF_OZEL_ETIKETLER,
 } from '@/app/lib/brief-anahtarlari';
 import { getTeamContext } from '@/app/lib/business-write';
 
@@ -33,7 +35,11 @@ function formatBriefValue(field: BriefField, value: string): string {
 }
 
 // Config'te tanımı olmayan key'i insan-okur etiket yap (alt çizgi → boşluk, baş harf büyük)
+// Duzeltme 11-B2: anlami bilinen anahtarlar ("hizmet", "tercih_uye_adi") TEK
+// KAYNAKTAN gelir — "Hizmet" gibi yarim etiketler kalkti.
 function humanizeKey(key: string): string {
+  const ozel = BRIEF_OZEL_ETIKETLER[key];
+  if (ozel) return ozel;
   const s = key.replace(/_/g, ' ');
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -249,6 +255,8 @@ export default async function TeklifKarsilastirPage({
   // 2) Config'te olmayan (eski/kalkan) key'ler — kullanıcı verisi kaybolmasın
   for (const [k, v] of Object.entries(briefData)) {
     if (configKeys.has(k)) continue;
+    // Ic anahtar (ham kimlik) gosterilmez — Duzeltme 11-B2.
+    if (BRIEF_GIZLI_ANAHTARLAR.has(k)) continue;
     // Ek anahtarlar yukarida ana alanla yazildi.
     if (k.endsWith(BRIEF_ACIKLAMA_SONEKI) || k.endsWith(BRIEF_ESNEK_SONEKI)) {
       const ana = k.endsWith(BRIEF_ACIKLAMA_SONEKI)

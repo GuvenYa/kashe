@@ -17,7 +17,10 @@ import {
   etkinlikTuruAnahtarlari,
 } from '@/app/lib/etkinlik-turleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
-import { briefVeriTemizle } from '@/app/lib/brief-anahtarlari';
+import {
+  briefTercihUygula,
+  briefVeriTemizle,
+} from '@/app/lib/brief-anahtarlari';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -430,6 +433,18 @@ export async function startConversation(
   // FAZ 4c/P3: etkinlik bagi — istemciden gelen id RLS ile dogrulanir, gorunmuyorsa NULL.
   const etkinlikId = await gorunenEtkinlikId(supabase, data.event_id);
 
+  /**
+   * Duzeltme 11-B3: brief TEK yerde temizlenir ve ekip tercihi burada
+   * dogrulanir — `tercih_uye` sohbetin saglayicisinin (ajansin) ACIK ekip
+   * listesinde degilse iki anahtar da duser, `tercih_uye_adi` istemci
+   * metninden DEGIL sunucudaki profilden (kamu ad kurali) uretilir.
+   */
+  const temizBrief = await briefTercihUygula(
+    supabase,
+    data.professional_id,
+    briefVeriTemizle(data.brief_data)
+  );
+
   // Savunma: `conversations.budget_range` ENUM sutunudur (conversations_budget_range_check).
   // Modal zaten enum anahtari gonderiyor; yine de taksonomi disi bir deger DB'ye
   // ulasmadan null'a indirilir — aksi halde TUM UPDATE 23514 ile sessizce duser.
@@ -450,7 +465,6 @@ export async function startConversation(
       updateFields.location = data.location?.trim() || null;
     if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
     if (safeBudgetRange !== null) updateFields.budget_range = safeBudgetRange;
-    const temizBrief = briefVeriTemizle(data.brief_data);
     if (temizBrief) updateFields.brief_data = temizBrief;
     if (data.start_time !== undefined && data.start_time !== null)
       updateFields.start_time = data.start_time;
@@ -478,7 +492,7 @@ export async function startConversation(
         location: data.location?.trim() || null,
         guest_count: data.guest_count,
         budget_range: safeBudgetRange,
-        brief_data: briefVeriTemizle(data.brief_data),
+        brief_data: temizBrief,
         request_type: data.request_type ?? 'quote',
         start_time: data.start_time ?? null,
         end_time: data.end_time ?? null,

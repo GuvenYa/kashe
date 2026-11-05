@@ -5,6 +5,10 @@ import { useState } from 'react';
 import { formatPriceRange, formatDuration } from '@/app/lib/profile-helpers';
 import { IletisimButton } from './iletisim-button';
 import type { ServiceWithCategory } from '@/app/lib/types';
+import type {
+  EkipSecenegi,
+  HizmetSecenegi,
+} from '@/app/lib/teklif-secenekleri';
 
 type Props = {
   service: ServiceWithCategory;
@@ -18,8 +22,10 @@ type Props = {
   iller?: { id: number; name: string }[];
   saglayiciIli?: string | null;
   yalnizKendiSehri?: boolean;
-  hizmetSecenekleri?: string[];
+  hizmetSecenekleri?: HizmetSecenegi[];
   ajansMi?: boolean;
+  /** Duzeltme 11-B2: ajans modalindaki "Ekipten tercih" secenekleri. */
+  ekipSecenekleri?: EkipSecenegi[];
   /** FAZ 4c/P3 etkinlik bagi: `?etkinlik=` teklif sohbetine tasinir. */
   etkinlikId?: string | null;
 };
@@ -41,6 +47,7 @@ export function HizmetSecici({
   yalnizKendiSehri = false,
   hizmetSecenekleri = [],
   ajansMi = false,
+  ekipSecenekleri = [],
   etkinlikId = null,
 }: Props) {
   // Sadece aktif ekstralar
@@ -201,6 +208,7 @@ export function HizmetSecici({
             yalnizKendiSehri={yalnizKendiSehri}
             hizmetSecenekleri={hizmetSecenekleri}
             ajansMi={ajansMi}
+            ekipSecenekleri={ekipSecenekleri}
             etkinlikId={etkinlikId}
             variant="package"
           />
