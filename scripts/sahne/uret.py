@@ -11,6 +11,11 @@
 #   YAZILMAZ; ayna kalkti), havuz esitleme sync_org_talent_pool, bekleyen/gecmis davetler organization_invitations,
 #   katilim/davet bildirimleri gecmise tarihli; kurum alicilarinda kurumsal etkinlik turu + bulunma eki (#26);
 #   kategoriye ozel performans metni (#32); etkinlik turu 3-6 (#11); eslestirme gecmisi 04 (#8).
+# v3 (5 Kasim 2026, FAZ 10c sonrasi): saglayici hesaplarinda pazaryeri alanlari KAYNAGA yazilir (providers + alt profil;
+#   profiles kopyasi ters aynayla dolar; birincil kategori provider_set_primary_category ile ayni yol); services /
+#   profile_experiences / reviews / favorites sahip kimligi provider_id (FAZ 10c-2; eski sutun tetikleyiciyle dolar);
+#   temizlik ve gecmis silme Duzeltme 04 bayragiyla (kashe.faz7_rpc); ajans teklifinin alici kurumu etkinlik basligindaki
+#   kurum (#37); --tarih ile tekrar uretilebilir cikti (brief tarihleri).
 # =============================================================================
 import argparse, json, os, random, re, sys, datetime
 
@@ -174,6 +179,7 @@ END $$;"""
 TEMIZLIK_FN = """CREATE OR REPLACE FUNCTION pg_temp.sahne_temizle() RETURNS text LANGUAGE plpgsql AS $$
 DECLARE ids uuid[]; orgs uuid[]; n_u int; n_o int;
 BEGIN
+  PERFORM set_config('kashe.faz7_rpc', '1', true);  -- Duzeltme 04: gonderilmis teklif kalemleri bayraksiz silinmez
   SELECT COALESCE(array_agg(id), '{}') INTO ids FROM (
     SELECT id FROM public.profiles WHERE email LIKE 'sahne+%' UNION SELECT id FROM auth.users WHERE email LIKE 'sahne+%'
     UNION SELECT id FROM public.profiles WHERE id::text LIKE '5a4e0000-%') s;
@@ -207,8 +213,8 @@ BEGIN
   IF to_regclass('public.organization_talent_records') IS NOT NULL THEN
     DELETE FROM public.organization_talent_records WHERE organization_id = ANY(orgs) OR talent_id = ANY(ids) OR created_by = ANY(ids);
   END IF;
-  DELETE FROM public.review_replies WHERE review_id IN (SELECT id FROM public.reviews WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
-  DELETE FROM public.reviews WHERE customer_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.review_replies WHERE review_id IN (SELECT id FROM public.reviews WHERE customer_id = ANY(ids) OR provider_id = ANY(ids));
+  DELETE FROM public.reviews WHERE customer_id = ANY(ids) OR provider_id = ANY(ids);
   DELETE FROM public.messages WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids)) OR sender_id = ANY(ids);
   DELETE FROM public.quotes WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
   DELETE FROM public.conversation_assignees WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids)) OR professional_id = ANY(ids);
@@ -220,11 +226,11 @@ BEGIN
   DELETE FROM public.applications WHERE applicant_id = ANY(ids) OR listing_id IN (SELECT id FROM public.listings WHERE creator_id = ANY(ids));
   DELETE FROM public.listing_invitations WHERE listing_id IN (SELECT id FROM public.listings WHERE creator_id = ANY(ids));
   DELETE FROM public.listings WHERE creator_id = ANY(ids);
-  DELETE FROM public.favorites WHERE user_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.favorites WHERE user_id = ANY(ids) OR provider_id = ANY(ids);
   DELETE FROM public.availability_blocks WHERE profile_id = ANY(ids);
-  DELETE FROM public.portfolio_items WHERE profile_id = ANY(ids);
-  DELETE FROM public.profile_experiences WHERE profile_id = ANY(ids);
-  DELETE FROM public.services WHERE profile_id = ANY(ids);
+  DELETE FROM public.portfolio_items WHERE provider_id = ANY(ids);
+  DELETE FROM public.profile_experiences WHERE provider_id = ANY(ids);
+  DELETE FROM public.services WHERE provider_id = ANY(ids);
   IF to_regclass('public.provider_services') IS NOT NULL THEN DELETE FROM public.provider_services WHERE provider_id = ANY(ids); END IF;
   DELETE FROM public.agency_members WHERE agency_id = ANY(ids) OR professional_id = ANY(ids);
   DELETE FROM public.agency_invitations WHERE agency_id = ANY(ids) OR invited_by_id = ANY(ids) OR invited_user_id = ANY(ids);
@@ -591,8 +597,11 @@ END $$;""" % ",".join(q(s) for s in V.KATEGORILER))
     # admin
     L.append("-- Sahne yoneticisi (admin paneli icin); koruma tetikleyicisi gecici kapatilir (asama4 T5 kalibi)")
     L.append("ALTER TABLE public.profiles DISABLE TRIGGER protect_profile_fields;\nUPDATE public.profiles SET is_admin = true WHERE id = %s;\nALTER TABLE public.profiles ENABLE TRIGGER protect_profile_fields;" % q(D.admin["id"]))
-    # profil guncellemeleri (admin olarak)
-    L.append("-- profil alanlari (onay alanlari icin auth.uid() = Sahne yoneticisi)")
+    # profil guncellemeleri (v3: saglayicida kaynak providers + alt profil; profiles kopyasi ters aynayla dolar)
+    L.append("-- profil alanlari (Sahne v3 / FAZ 10c): saglayici hesaplarinda (pro / ajans) pazaryeri alanlarinin KAYNAGI saglayici\n"
+             "-- tarafidir: providers (sehir, onay, askiya, yayin, ozellikler) + alt profil tanitimi; profiles kopyasi ters aynayla dolar,\n"
+             "-- birincil kategori provider_set_primary_category ile ayni yoldan. Saglayici olmayan hesaplar profiles'a yazar.\n"
+             "-- Onay alanlari icin auth.uid() = Sahne yoneticisi.")
     vals = []
     plan = []
     for u in D.kullanicilar:
@@ -627,16 +636,22 @@ END $$;""" % ",".join(q(s) for s in V.KATEGORILER))
         prim = q(u["kat"]) if u["kat"] else "NULL"
         premium_until = t(-24 * rnd.randint(30, 300)) if u["premium"] != "none" else "NULL"
         slug_db = u["slug"] if u["tip"] in ("pro", "ajans", "kurum") else None
-        vals.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
-            q(u["id"]), q(slug_db), q(bio), q(u["sehir"]), prim, qj(attributes), qj(cat_attr), q(onay), (t(onay_saat) if onay_saat else "NULL"),
+        vals.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
+            q(u["id"]), "true" if u["tip"] in ("pro", "ajans") else "false", q(slug_db), q(bio), q(u["sehir"]), prim, qj(attributes), qj(cat_attr), q(onay), (t(onay_saat) if onay_saat else "NULL"),
             q(not_), askida, q("Topluluk kuralları ihlali şikayeti; inceleme sürüyor." if u.get("askida") else None),
             "true" if u["yayinda"] else "false", q(u["premium"]), premium_until, t(u["son_gorulme"]), t(u["kayit_saat"])))
         plan.append(dict(id=u["id"], tip=u["tip"], ad=u.get("sirket") or u["full"], harf=ilk_harfler(u.get("sirket") or u["full"]),
                          renk=RENKLER[u["n"] % len(RENKLER)], kat=u.get("kat"), kat2=u.get("kat2"),
                          adet=(rnd.randint(4, 8) if u["tip"] == "pro" else rnd.randint(6, 8) if u["tip"] == "ajans" else 0)))
-    L.append("""DO $$
+    L.append("""DROP TABLE IF EXISTS pg_temp.sahne_profil;
+CREATE TEMP TABLE sahne_profil AS SELECT * FROM (VALUES
+%s
+) AS v(id, saglayici, slug, bio, sehir, kat, attrs, cat_attrs, onay, onay_at, onay_not, askida_at, askida_neden, yayinda, premium, premium_until, son_gorulme, kayit);
+
+DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', %s, true);
+  -- saglayici olmayan hesaplar (musteri / kurum / uye / yonetici): profiles kaynak
   UPDATE public.profiles p SET
     slug = v.slug, bio = v.bio, city_id = pg_temp.sehir(v.sehir), primary_category_id = pg_temp.kat(v.kat),
     attributes = v.attrs, category_attributes = v.cat_attrs, approval_status = v.onay::public.profile_approval_status,
@@ -644,12 +659,36 @@ BEGIN
     suspended_by = CASE WHEN v.askida_at IS NULL THEN NULL ELSE %s::uuid END,
     is_published = v.yayinda, premium_tier = v.premium::public.premium_tier, premium_until = v.premium_until,
     last_seen_at = v.son_gorulme, created_at = v.kayit, welcome_email_sent_at = v.kayit
-  FROM (VALUES
-%s
-  ) AS v(id, slug, bio, sehir, kat, attrs, cat_attrs, onay, onay_at, onay_not, askida_at, askida_neden, yayinda, premium, premium_until, son_gorulme, kayit)
-  WHERE p.id = v.id::uuid;
+  FROM pg_temp.sahne_profil v
+  WHERE p.id = v.id::uuid AND NOT v.saglayici;
+  -- saglayici: profiles'ta yalniz tasinmamis alanlar
+  UPDATE public.profiles p SET
+    slug = v.slug, premium_tier = v.premium::public.premium_tier, premium_until = v.premium_until,
+    last_seen_at = v.son_gorulme, created_at = v.kayit, welcome_email_sent_at = v.kayit
+  FROM pg_temp.sahne_profil v
+  WHERE p.id = v.id::uuid AND v.saglayici;
+  -- saglayici tarafi (kaynak): providers; ters ayna (trg_faz10c_sync_provider_to_profile) profiles kopyasini doldurur
+  UPDATE public.providers pr SET
+    city_id = pg_temp.sehir(v.sehir), attributes = v.attrs, category_attributes = v.cat_attrs,
+    approval_status = v.onay::public.profile_approval_status, approved_at = v.onay_at, approval_note = v.onay_not,
+    suspended_at = v.askida_at, suspension_reason = v.askida_neden,
+    suspended_by = CASE WHEN v.askida_at IS NULL THEN NULL ELSE %s::uuid END, is_published = v.yayinda
+  FROM pg_temp.sahne_profil v
+  WHERE pr.id = v.id::uuid AND v.saglayici;
+  -- tanitim: alt profil (profesyonel bio, kurulus about); ters ayna profiles.bio
+  UPDATE public.professional_profiles pp SET bio = v.bio FROM pg_temp.sahne_profil v
+   WHERE pp.provider_id = v.id::uuid AND v.saglayici AND pp.bio IS DISTINCT FROM v.bio;
+  UPDATE public.organization_profiles op SET about = v.bio FROM pg_temp.sahne_profil v
+   WHERE op.provider_id = v.id::uuid AND v.saglayici AND op.about IS DISTINCT FROM v.bio;
   PERFORM set_config('request.jwt.claim.sub', '', true);
-END $$;""" % (q(D.admin["id"]), q(D.admin["id"]), ",\n".join(vals)))
+  -- birincil kategori: provider_set_primary_category ile ayni yol (profiles kopyasi ayna bayragiyla, provider_services yeniden)
+  PERFORM set_config('kashe.sync_bypass', 'on', true);
+  UPDATE public.profiles p SET primary_category_id = pg_temp.kat(v.kat) FROM pg_temp.sahne_profil v
+   WHERE p.id = v.id::uuid AND v.saglayici AND p.primary_category_id IS DISTINCT FROM pg_temp.kat(v.kat);
+  PERFORM set_config('kashe.sync_bypass', 'off', true);
+  PERFORM public.recompute_provider_services(v.id::uuid) FROM pg_temp.sahne_profil v WHERE v.saglayici;
+END $$;
+DROP TABLE IF EXISTS pg_temp.sahne_profil;""" % (",\n".join(vals), q(D.admin["id"]), q(D.admin["id"]), q(D.admin["id"])))
     # providers: dogrulama + created_at
     L.append("-- saglayici dogrulama seviyesi (sync_bypass: koruma tetikleyicisi) ve kayit zamani")
     vals = []
@@ -705,7 +744,7 @@ END $$;""" % ",\n".join(vals))
                     q(u["id"]), q(kat), q(ad), q(acik + ". " + rnd.choice(["Ulaşım şehir içi dahildir.", "Fiyat etkinlik süresine göre netleşir.", "Hafta sonu için erken rezervasyon önerilir.", "Paket içeriği ihtiyaca göre uyarlanır."])),
                     "NULL" if talep else num(pmin), "NULL" if talep else num(pmin if baslangic else pmax), "true" if talep else "false", "true" if baslangic else "false",
                     q(birim), si, t(u["kayit_saat"] - rnd.uniform(1, 48))))
-    L.append("INSERT INTO public.services (profile_id, category_id, title, description, price_min, price_max, price_on_request, price_starting, price_unit, sort_order, created_at)\nVALUES\n%s;" % ",\n".join(rows))
+    L.append("INSERT INTO public.services (provider_id, category_id, title, description, price_min, price_max, price_on_request, price_starting, price_unit, sort_order, created_at)\nVALUES\n%s;" % ",\n".join(rows))
     # deneyimler
     rows = []
     for u in D.prolar:
@@ -719,7 +758,7 @@ END $$;""" % ",\n".join(vals))
         for si, (kind, title, orgn, loc, y1, y2, current) in enumerate(kind_list):
             rows.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %d)" % (q(u["id"]), q(kind), q(title), q(orgn), q(loc), num(y1), num(y2) if y2 else "NULL", "true" if current else "false",
                                                                        q("%d – %s" % (y1, "devam" if current else (y2 or y1))), si))
-    L.append("INSERT INTO public.profile_experiences (profile_id, kind, title, organization, location, start_year, end_year, is_current, period_label, sort_order)\nVALUES\n%s;" % ",\n".join(rows))
+    L.append("INSERT INTO public.profile_experiences (provider_id, kind, title, organization, location, start_year, end_year, is_current, period_label, sort_order)\nVALUES\n%s;" % ",\n".join(rows))
     # musaitlik
     rows = []
     for u in D.prolar:
@@ -856,7 +895,7 @@ END $$;""" % ",\n".join(rows))
     for m in D.musteriler + D.kurum_uyeleri:
         for p in rnd.sample(gorunur, rnd.randint(2, 6)):
             rows.append("(%s, %s, %s)" % (q(m["id"]), q(p["id"]), t(rnd.uniform(1, m["kayit_saat"]))))
-    L.append("INSERT INTO public.favorites (user_id, professional_id, created_at)\nVALUES\n%s\nON CONFLICT DO NOTHING;" % ",\n".join(rows))
+    L.append("INSERT INTO public.favorites (user_id, provider_id, created_at)\nVALUES\n%s\nON CONFLICT DO NOTHING;" % ",\n".join(rows))
     # ozet
     L.append("""-- ozet
 SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%') AS hesap,
@@ -865,7 +904,7 @@ SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%') AS hesa
        (SELECT count(*) FROM public.organizations WHERE legacy_profile_id::text LIKE '5a4e0000-%') AS kurulus,
        (SELECT count(*) FROM public.organization_memberships om JOIN public.organizations o ON o.id = om.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS uyelik,
        (SELECT count(*) FROM public.organization_talent_records r JOIN public.organizations o ON o.id = r.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS havuz,
-       (SELECT count(*) FROM public.services WHERE profile_id::text LIKE '5a4e0000-%') AS hizmet,
+       (SELECT count(*) FROM public.services WHERE provider_id::text LIKE '5a4e0000-%') AS hizmet,
        (SELECT count(*) FROM public.provider_services WHERE provider_id::text LIKE '5a4e0000-%') AS saglayici_rol,
        (SELECT count(*) FROM public.turkish_cities) AS il,
        (SELECT count(*) FROM public.organization_invitations i JOIN public.organizations o ON o.id = i.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS davet,
@@ -909,6 +948,7 @@ def yaz_02(D, out):
     L.append("""DO $$
 DECLARE ids uuid[]; orgs uuid[];
 BEGIN
+  PERFORM set_config('kashe.faz7_rpc', '1', true);  -- Duzeltme 04: gonderilmis teklif kalemleri bayraksiz silinmez
   SELECT COALESCE(array_agg(id), '{}') INTO ids FROM public.profiles WHERE email LIKE 'sahne+%';
   SELECT COALESCE(array_agg(id), '{}') INTO orgs FROM public.organizations WHERE legacy_profile_id = ANY(ids);
   DELETE FROM public.bookings WHERE customer_id = ANY(ids) OR professional_id = ANY(ids) OR seller_provider_id = ANY(ids) OR id::text LIKE '5a4e0013-%';
@@ -941,11 +981,14 @@ END $$;""")
             else:
                 tur = secim(rnd, V.KATEGORILER[sahip["kat"]]["turler"])
             gun = rnd.randint(-170, 90)
+            kurum_ad = None
             if tur in ("wedding", "engagement", "henna", "birthday", "baby_shower", "circumcision"):
                 ad1, ad2 = rnd.choice(V.KADIN_ADLAR), rnd.choice(V.ERKEK_ADLAR)
                 baslik = rnd.choice(V.ETKINLIK_BASLIK[tur]).format(ad1=ad1, ad2=ad2, kurum=sahip.get("sirket", ""))
             else:
-                baslik = rnd.choice(V.ETKINLIK_BASLIK[tur]).format(ad1="", ad2="", kurum=(sahip["sirket"] if sahip["tip"] == "kurum" else rnd.choice(V.KURUMLAR)["ad"]))
+                sablon = rnd.choice(V.ETKINLIK_BASLIK[tur])  # once sablon, sonra kurum: v2 rastgele dizisi
+                kurum_ad = sahip["sirket"] if sahip["tip"] == "kurum" else rnd.choice(V.KURUMLAR)["ad"]
+                baslik = sablon.format(ad1="", ad2="", kurum=kurum_ad)
             if gun < -3:
                 status = "completed" if rnd.random() < 0.85 else "cancelled"
             elif gun < 0:
@@ -958,7 +1001,8 @@ END $$;""")
             bmax = yuvarla(bmin * rnd.uniform(1.3, 1.8), 5000)
             sehir = sahip["sehir"] if rnd.random() < 0.8 else D.sehir_sec()
             olusturma = max(gun * -24 + 24 * rnd.randint(20, 90), 24 * 10)  # saat once (en az 10 gun)
-            ev = dict(id=uid(U_EVENT, en), sahip=sahip, tur=tur, gun=gun, status=status, kisi=kisi, sehir=sehir, baslik=baslik, bmin=bmin, bmax=bmax, olusturma=olusturma)
+            ev = dict(id=uid(U_EVENT, en), sahip=sahip, tur=tur, gun=gun, status=status, kisi=kisi, sehir=sehir, baslik=baslik, bmin=bmin, bmax=bmax, olusturma=olusturma,
+                      kurum_ad=kurum_ad)
             D.etkinlikler.append(ev)
             ev_rows.append("(%s, pg_temp.org(%s), %s, %s, %s, %s, %s, %s, pg_temp.sehir(%s), %s, %s, %d, %d, %d, %s, %s, %s, %s)" % (
                 q(ev["id"]), q(sahip["id"]), q(sahip["id"]), q(baslik), q(tur), d(gun), d(gun), q(rnd.choice(["18:00", "19:00", "10:00", "14:00"])), q(sehir), q(rnd.choice(V.ILCELER[sehir])),
@@ -1078,7 +1122,7 @@ END $$;""")
                 gun = rnd.randint(2, 90)
         else:
             gun = rnd.randint(2, 120)
-        tarih = datetime.date.today() + datetime.timedelta(days=gun)
+        tarih = D.bugun + datetime.timedelta(days=gun)
         tarih_str = "%02d.%02d" % (tarih.day, tarih.month)
         brief = brief_uret(rnd, p["kat"], tur, tarih.isoformat(), sehir, ilce, kisi, butce)
         conv_rows.append("(%s, %s, %s, %s, %s, %s, %d, %s, %s, %s, %s, %s, %s)" % (q(cid), q(alici["id"]), q(p["id"]), d(gun), q(tur), q("%s / %s" % (sehir, ilce)), kisi, q(butce), qj(brief), q(rtype),
@@ -1139,7 +1183,7 @@ END $$;""")
         L.append("INSERT INTO public.messages (id, conversation_id, sender_id, body, message_type, quote_id, created_at, read_at)\nSELECT v.id::uuid, v.cid::uuid, v.sender::uuid, v.body, v.tip::public.message_type, v.quote::uuid, v.ts, v.okundu FROM (VALUES\n%s\n) AS v(id, cid, sender, body, tip, quote, ts, okundu) ORDER BY v.ts;" % ",\n".join(msg_rows[i:i + 600]))
     L.append("INSERT INTO public.bookings (id, quote_id, conversation_id, customer_id, professional_id, event_date, event_type, location, guest_count, total_amount, created_at)\nVALUES\n%s;" % ",\n".join(book_rows))
     L.append("\n".join(book_update))
-    L.append("INSERT INTO public.reviews (id, conversation_id, customer_id, professional_id, rating, body, created_at, updated_at)\nVALUES\n%s;" % ",\n".join(rev_rows))
+    L.append("INSERT INTO public.reviews (id, conversation_id, customer_id, provider_id, rating, body, created_at, updated_at)\nVALUES\n%s;" % ",\n".join(rev_rows))
     if reply_rows:
         L.append("INSERT INTO public.review_replies (review_id, body, created_at)\nVALUES\n%s;" % ",\n".join(reply_rows))
     L.append("-- teklif kabul/red olaylari (durum UPDATE tetikleyicisi yerine dogrudan; zaman gecmis)")
@@ -1179,6 +1223,9 @@ END $$;""")
                 vn += 1
                 pid, vid = uid(U_PROP, pn), uid(U_VER, vn)
                 alici_kurum = rnd.choice(D.kurumlar) if (ev["tur"] not in ("wedding", "engagement", "henna", "birthday", "baby_shower", "circumcision") and rnd.random() < 0.7) else None
+                if alici_kurum is not None:
+                    # #37: alici kurum etkinlik basligindaki kurum (yukaridaki secim rastgele diziyi korumak icin kalir)
+                    alici_kurum = next((k for k in D.kurumlar if k["sirket"] == ev.get("kurum_ad")), alici_kurum)
                 alici_kisi = None if alici_kurum else (rnd.choice(D.musteriler) if rnd.random() < 0.6 else None)
                 client_name = None if (alici_kurum or alici_kisi) else "%s %s" % (rnd.choice(V.KADIN_ADLAR + V.ERKEK_ADLAR), rnd.choice(V.SOYADLAR))
                 client_email = None if not client_name else "%s@example.com" % slugla(client_name)
@@ -1266,7 +1313,7 @@ UPDATE public.notifications n SET created_at = c.last_message_at - (random() * i
        read_at = CASE WHEN c.last_message_at < now() - interval '14 days' THEN c.last_message_at + interval '3 hours' END
   FROM public.conversations c WHERE n.link = '/mesajlar/' || c.id::text AND c.id::text LIKE '5a4e0010-%' AND n.user_id::text LIKE '5a4e0000-%' AND n.created_at > now() - interval '1 hour';
 UPDATE public.notifications n SET created_at = r.created_at, read_at = CASE WHEN r.created_at < now() - interval '14 days' THEN r.created_at + interval '5 hours' END
-  FROM public.reviews r WHERE n.type = 'review' AND n.user_id = r.professional_id AND r.id::text LIKE '5a4e0014-%' AND n.created_at > now() - interval '1 hour';
+  FROM public.reviews r WHERE n.type = 'review' AND n.user_id = r.provider_id AND r.id::text LIKE '5a4e0014-%' AND n.created_at > now() - interval '1 hour';
 UPDATE public.notifications SET created_at = now() - interval '2 days' WHERE user_id::text LIKE '5a4e0000-%' AND created_at > now() - interval '1 hour';""")
     L.append("""-- ozet
 SELECT (SELECT count(*) FROM public.events WHERE id::text LIKE '5a4e0002-%') AS etkinlik,
@@ -1319,7 +1366,7 @@ SELECT width_bucket(pr.trust_score, 0, 100, 5) AS dilim, count(*) AS saglayici, 
 -- ozet 3: kategori basina gorunur profil / tamamlanan is / yorum
 SELECT c.slug, count(DISTINCT v.id) FILTER (WHERE v.is_visible) AS gorunur,
        (SELECT count(*) FROM public.bookings b JOIN public.profiles pp ON pp.id = COALESCE(b.professional_id, b.seller_provider_id) WHERE pp.primary_category_id = c.id AND b.status = 'completed' AND pp.email LIKE 'sahne+%%') AS tamamlanan,
-       (SELECT count(*) FROM public.reviews r JOIN public.profiles pp ON pp.id = r.professional_id WHERE pp.primary_category_id = c.id AND pp.email LIKE 'sahne+%%') AS yorum
+       (SELECT count(*) FROM public.reviews r JOIN public.profiles pp ON pp.id = r.provider_id WHERE pp.primary_category_id = c.id AND pp.email LIKE 'sahne+%%') AS yorum
   FROM public.service_categories c JOIN public.v_providers_public v ON v.primary_category_id = c.id JOIN public.profiles p ON p.id = v.id AND p.email LIKE 'sahne+%%'
  GROUP BY c.id, c.slug ORDER BY gorunur DESC;
 """ % GUARD)
@@ -1415,11 +1462,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--out", default=os.path.join(HERE, "..", "..", "docs", "sahne"))
+    ap.add_argument("--tarih", default=None, help="uretim tarihi (YYYY-AA-GG); brief tarihleri buna gore (varsayilan bugun)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     D = Dunya(a.seed)
     D.seed = a.seed
-    D.tarih = datetime.date.today().isoformat()
+    D.bugun = datetime.date.fromisoformat(a.tarih) if a.tarih else datetime.date.today()
+    D.tarih = D.bugun.isoformat()
     plan = yaz_01(D, a.out)
     yaz_02(D, a.out)
     yaz_04(D, a.out)

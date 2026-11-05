@@ -81,7 +81,7 @@ BEGIN
      AND NOT EXISTS (SELECT 1 FROM public.reviews rv WHERE rv.conversation_id = b.conversation_id AND rv.customer_id = b.customer_id) ORDER BY b.completed_at DESC NULLS LAST LIMIT 1;
   PERFORM pg_temp.kim(r.customer_id);
   SET LOCAL ROLE authenticated;
-  INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body) VALUES (r.conversation_id, r.customer_id, r.professional_id, 5, 'Test 03B yorum');
+  INSERT INTO public.reviews (conversation_id, customer_id, provider_id, rating, body) VALUES (r.conversation_id, r.customer_id, r.professional_id, 5, 'Test 03B yorum');
   RESET ROLE;
   -- 3b: yalniz sohbeti olan (tamamlanmis rezervasyonu olmayan) musteri yazamaz
   SELECT c.* INTO r FROM public.conversations c
@@ -91,7 +91,7 @@ BEGIN
   PERFORM pg_temp.kim(r.customer_id);
   BEGIN
     SET LOCAL ROLE authenticated;
-    INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body) VALUES (r.id, r.customer_id, r.professional_id, 4, 'Olmamali');
+    INSERT INTO public.reviews (conversation_id, customer_id, provider_id, rating, body) VALUES (r.id, r.customer_id, r.professional_id, 4, 'Olmamali');
     RESET ROLE;
     RAISE EXCEPTION 'T3b: tamamlanmis rezervasyonsuz yorum GECTI';
   EXCEPTION WHEN insufficient_privilege THEN

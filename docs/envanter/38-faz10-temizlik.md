@@ -409,7 +409,8 @@ yoneticisi), Bahar -> Baris Arslan brief konusmasi, Sevgi Tekin portfoy/avatar P
    -> dal `supabase db push` -> asama4 (T36 GECTI), asama20 (K7 ESIT), asama11 (K1 EMEKLI) -> `faz10b/p1` + `42` gorevi -> tur (ilan formu,
    Kesfet, teklif-topla, kategori bilgileri, konusma karti) -> uretim.
 4. **10c:** bolum 10c tasarimina gore DB/01 harness'ta yazilir (T38, K8, asama10 ESIT) -> dal -> P1 -> tur -> uretim; sonra DB/02 + P2.
-5. **Sahne v3** (10c-1 ile birlikte): uretec provider tarafina yazar.
+5. **Sahne v3** (10c-1 ile birlikte): uretec provider tarafina yazar. **YAPILDI (5 Kasim):** uretec v3 + `foto-yukle --saglayici-avatar`
+   (bulgu 70 dalda kapandi), #37 uretecte; ayrinti `39-sahne-sentetik-dunya.md` bolum 8 (v3 notu). Dal yeniden kurulmadi.
 
 ### (eski) KALDIGIMIZ YER (29 Ekim 2026, Cowork haftalik kotasi doldu)
 

@@ -1249,7 +1249,7 @@ UPDATE public.bookings SET status = 'completed', completed_at = pg_temp.t(3489.7
 UPDATE public.bookings SET status = 'cancelled', cancelled_at = pg_temp.t(795.94), cancelled_by = '5a4e0000-0000-4000-8000-000000010004', cancellation_reason = 'Sağlık nedeniyle' WHERE id = '5a4e0013-0000-4000-8000-000000000269';
 UPDATE public.bookings SET status = 'cancelled', cancelled_at = pg_temp.t(1526.62), cancelled_by = '5a4e0000-0000-4000-8000-000000010040', cancellation_reason = 'Sağlık nedeniyle' WHERE id = '5a4e0013-0000-4000-8000-000000000271';
 
-INSERT INTO public.reviews (id, conversation_id, customer_id, professional_id, rating, body, created_at, updated_at)
+INSERT INTO public.reviews (id, conversation_id, customer_id, provider_id, rating, body, created_at, updated_at)
 VALUES
 ('5a4e0014-0000-4000-8000-000000000001', '5a4e0010-0000-4000-8000-000000000001', '5a4e0000-0000-4000-8000-000000030004', '5a4e0000-0000-4000-8000-000000010031', 5, 'Çok memnun kaldık. Fiyat-performans olarak da gayet iyiydi. Teşekkürler!', pg_temp.t(556.43), pg_temp.t(556.43)),
 ('5a4e0014-0000-4000-8000-000000000002', '5a4e0010-0000-4000-8000-000000000006', '5a4e0000-0000-4000-8000-000000040018', '5a4e0000-0000-4000-8000-000000010009', 5, 'Profesyonel, güler yüzlü ve işinin ehli. Etkinlik boyunca hiçbir aksaklık yaşamadık, teslimat da söz verdiği gibiydi.', pg_temp.t(1977.53), pg_temp.t(1977.53)),

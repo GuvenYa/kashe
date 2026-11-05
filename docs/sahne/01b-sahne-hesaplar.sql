@@ -26,7 +26,7 @@ CREATE OR REPLACE FUNCTION pg_temp.org(p uuid) RETURNS uuid LANGUAGE sql STABLE 
 
 DO $$ DECLARE n int; BEGIN SELECT count(*) INTO n FROM public.profiles WHERE email LIKE 'sahne+%'; IF n < 100 THEN RAISE EXCEPTION 'on kosul: once 01a..01a (profil=%)', n; END IF; END $$;
 
-INSERT INTO public.profile_experiences (profile_id, kind, title, organization, location, start_year, end_year, is_current, period_label, sort_order)
+INSERT INTO public.profile_experiences (provider_id, kind, title, organization, location, start_year, end_year, is_current, period_label, sort_order)
 VALUES
 ('5a4e0000-0000-4000-8000-000000010001', 'work', 'Freelance Fotoğrafçı', 'Serbest', 'İzmir', 2023, NULL, true, '2023 – devam', 0),
 ('5a4e0000-0000-4000-8000-000000010001', 'education', 'Mütercim Tercümanlık', 'Hacettepe Üniversitesi', NULL, 2018, 2022, false, '2018 – 2022', 1),
@@ -1327,7 +1327,7 @@ VALUES
 (pg_temp.org('5a4e0000-0000-4000-8000-000000020012'), 'Teknik ihtiyaç listesi', 'blocked', '5a4e0000-0000-4000-8000-000000010087', pg_temp.t(-456.00), false, '5a4e0000-0000-4000-8000-000000020012'),
 (pg_temp.org('5a4e0000-0000-4000-8000-000000020012'), 'Fatura ve tahsilat takibi', 'todo', '5a4e0000-0000-4000-8000-000000010087', pg_temp.t(-72.00), false, '5a4e0000-0000-4000-8000-000000020012');
 
-INSERT INTO public.favorites (user_id, professional_id, created_at)
+INSERT INTO public.favorites (user_id, provider_id, created_at)
 VALUES
 ('5a4e0000-0000-4000-8000-000000040001', '5a4e0000-0000-4000-8000-000000010120', pg_temp.t(782.84)),
 ('5a4e0000-0000-4000-8000-000000040001', '5a4e0000-0000-4000-8000-000000010102', pg_temp.t(740.86)),
@@ -1448,7 +1448,7 @@ SELECT (SELECT count(*) FROM public.profiles WHERE email LIKE 'sahne+%') AS hesa
        (SELECT count(*) FROM public.organizations WHERE legacy_profile_id::text LIKE '5a4e0000-%') AS kurulus,
        (SELECT count(*) FROM public.organization_memberships om JOIN public.organizations o ON o.id = om.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS uyelik,
        (SELECT count(*) FROM public.organization_talent_records r JOIN public.organizations o ON o.id = r.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS havuz,
-       (SELECT count(*) FROM public.services WHERE profile_id::text LIKE '5a4e0000-%') AS hizmet,
+       (SELECT count(*) FROM public.services WHERE provider_id::text LIKE '5a4e0000-%') AS hizmet,
        (SELECT count(*) FROM public.provider_services WHERE provider_id::text LIKE '5a4e0000-%') AS saglayici_rol,
        (SELECT count(*) FROM public.turkish_cities) AS il,
        (SELECT count(*) FROM public.organization_invitations i JOIN public.organizations o ON o.id = i.organization_id WHERE o.legacy_profile_id::text LIKE '5a4e0000-%') AS davet,

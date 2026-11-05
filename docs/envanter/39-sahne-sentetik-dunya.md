@@ -155,6 +155,17 @@ Avatar: SVG (bas harfler, kategoriye gore 8 renkten biri) -> `sharp` -> 256px PN
 Yeniden kurulum: `00-sahne-temizlik.sql` + `foto-yukle.mjs --sil`, sonra 2-4 (fotograflar diskte duruyorsa `foto-indir` atlanir; `foto-yukle` idempotan).
 **v2 (29 Ekim 2026, FAZ 10a sonrasi) ile zorunlu:** 10a aynayi kapattigi icin eski uretec dosyalari (01 tek parca) ekipleri bos birakir; dalda bir sonraki
 yukleme v2 dosyalariyla yapilir (bulgular #33). Eski `01-sahne-hesaplar.sql` ve `01b-sahne-etkinlik-turleri.sql` kaldirildi.
+**v3 (5 Kasim 2026, FAZ 10c sonrasi):** uretec saglayici hesaplarinda pazaryeri alanlarini KAYNAGA yazar (providers + alt profil;
+profiles kopyasi ters aynayla dolar; birincil kategori `provider_set_primary_category` ile ayni yol: kopya ayna bayragiyla +
+`recompute_provider_services`); services / profile_experiences / reviews / favorites sahip kimligi `provider_id` (10c-2; eski
+sutunlar FAZ 11'de duser, uretec etkilenmez); temizlik Duzeltme 04 bayragiyla; ajans teklifinin alici kurumu etkinlik basligindaki
+kurum (#37); `--tarih YYYY-AA-GG` ile tekrar uretilebilir cikti (repodaki dosyalar `--tarih 2026-10-29` = daldaki dunyanin brief
+tarihleri). `foto-yukle.mjs`: portfoy `provider_id`; saglayici avatari ilk portfoy gorseli (#70); `--saglayici-avatar` dunyayi
+silmeden yalniz avatari bos saglayicilara yazar. Harness (10c-2/04 uzerinde): v2 ve v3 ayni anda yuklendi, 32 tabloda icerik
+karsilastirmasi - fark yalniz rastgele kurulus kimlikleri, eslestirme gecikmesi ve #37 (37 kurum alicili teklifin basligiyla
+uyumlusu v2 3 -> v3 37; uyumsuz rezervasyon 9 -> 0; ilgili rezervasyon bildirimleri dogru kuruma); asama4 44/44, asama7/9/10/16/19/20
+ESIT, Sahne 06 8/8 (`quotes_expire_stale` sonrasi; T6a gece isine bagli). Dal yeniden KURULMADI (Fahri test ediyor; yapisal fark
+yok): #37 bir sonraki kurulumda gelir - kurulumda `--tarih` verilmeden uretilir (bugunun tarihi).
 
 ## 9. Senaryo listesi (eksik bulma turu)
 

@@ -49,8 +49,8 @@ BEGIN
   IF to_regclass('public.organization_talent_records') IS NOT NULL THEN
     DELETE FROM public.organization_talent_records WHERE organization_id = ANY(orgs) OR talent_id = ANY(ids) OR created_by = ANY(ids);
   END IF;
-  DELETE FROM public.review_replies WHERE review_id IN (SELECT id FROM public.reviews WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
-  DELETE FROM public.reviews WHERE customer_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.review_replies WHERE review_id IN (SELECT id FROM public.reviews WHERE customer_id = ANY(ids) OR provider_id = ANY(ids));
+  DELETE FROM public.reviews WHERE customer_id = ANY(ids) OR provider_id = ANY(ids);
   DELETE FROM public.messages WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids)) OR sender_id = ANY(ids);
   DELETE FROM public.quotes WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids));
   DELETE FROM public.conversation_assignees WHERE conversation_id IN (SELECT id FROM public.conversations WHERE customer_id = ANY(ids) OR professional_id = ANY(ids)) OR professional_id = ANY(ids);
@@ -62,11 +62,11 @@ BEGIN
   DELETE FROM public.applications WHERE applicant_id = ANY(ids) OR listing_id IN (SELECT id FROM public.listings WHERE creator_id = ANY(ids));
   DELETE FROM public.listing_invitations WHERE listing_id IN (SELECT id FROM public.listings WHERE creator_id = ANY(ids));
   DELETE FROM public.listings WHERE creator_id = ANY(ids);
-  DELETE FROM public.favorites WHERE user_id = ANY(ids) OR professional_id = ANY(ids);
+  DELETE FROM public.favorites WHERE user_id = ANY(ids) OR provider_id = ANY(ids);
   DELETE FROM public.availability_blocks WHERE profile_id = ANY(ids);
-  DELETE FROM public.portfolio_items WHERE profile_id = ANY(ids);
-  DELETE FROM public.profile_experiences WHERE profile_id = ANY(ids);
-  DELETE FROM public.services WHERE profile_id = ANY(ids);
+  DELETE FROM public.portfolio_items WHERE provider_id = ANY(ids);
+  DELETE FROM public.profile_experiences WHERE provider_id = ANY(ids);
+  DELETE FROM public.services WHERE provider_id = ANY(ids);
   IF to_regclass('public.provider_services') IS NOT NULL THEN DELETE FROM public.provider_services WHERE provider_id = ANY(ids); END IF;
   DELETE FROM public.agency_members WHERE agency_id = ANY(ids) OR professional_id = ANY(ids);
   DELETE FROM public.agency_invitations WHERE agency_id = ANY(ids) OR invited_by_id = ANY(ids) OR invited_user_id = ANY(ids);

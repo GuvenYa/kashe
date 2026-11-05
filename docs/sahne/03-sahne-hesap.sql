@@ -25,6 +25,6 @@ SELECT width_bucket(pr.trust_score, 0, 100, 5) AS dilim, count(*) AS saglayici, 
 -- ozet 3: kategori basina gorunur profil / tamamlanan is / yorum
 SELECT c.slug, count(DISTINCT v.id) FILTER (WHERE v.is_visible) AS gorunur,
        (SELECT count(*) FROM public.bookings b JOIN public.profiles pp ON pp.id = COALESCE(b.professional_id, b.seller_provider_id) WHERE pp.primary_category_id = c.id AND b.status = 'completed' AND pp.email LIKE 'sahne+%') AS tamamlanan,
-       (SELECT count(*) FROM public.reviews r JOIN public.profiles pp ON pp.id = r.professional_id WHERE pp.primary_category_id = c.id AND pp.email LIKE 'sahne+%') AS yorum
+       (SELECT count(*) FROM public.reviews r JOIN public.profiles pp ON pp.id = r.provider_id WHERE pp.primary_category_id = c.id AND pp.email LIKE 'sahne+%') AS yorum
   FROM public.service_categories c JOIN public.v_providers_public v ON v.primary_category_id = c.id JOIN public.profiles p ON p.id = v.id AND p.email LIKE 'sahne+%'
  GROUP BY c.id, c.slug ORDER BY gorunur DESC;
