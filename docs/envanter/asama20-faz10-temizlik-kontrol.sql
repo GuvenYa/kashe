@@ -32,8 +32,12 @@
 --   K10 yapi: 5 tabloda provider_id NOT NULL (5) + providers'a ON DELETE CASCADE anahtar (5) + favorites (user_id, provider_id)
 --      TEKIL (1) + reviews (provider_id, created_at) ve profile_experiences (provider_id, kind, sort_order) indeksleri (2)
 --      + profiles.category_attributes GIN yok (1) + iki yonlu tetikleyici govdeleri (2) -> (16)
---   04 uygulanmamissa K10 BEKLIYOR. (D 10d: K11.)
--- Beklenen: K1, K3, K4, K5, K7, K8, K8b, K9, K10 ESIT; K2, K6 BILGI.
+--   04 uygulanmamissa K10 BEKLIYOR.
+-- Bolum E (10d; 20261105170000_faz10d_01):
+--   K11 bookings: eski bes politika (Assigned pros read team bookings, Bookings visible to participants, Customers read own
+--      bookings, Parties update own bookings, Professionals read own bookings) authenticated (5) + bookings'te rolsuz (public)
+--      politika yok (1) -> (6). 10d/01 uygulanmamissa (bes politika hala public) BEKLIYOR.
+-- Beklenen: K1, K3, K4, K5, K7, K8, K8b, K9, K10, K11 ESIT; K2, K6 BILGI.
 -- =============================================================================
 
 WITH
@@ -204,10 +208,18 @@ k10 AS (
                        WHERE oid = to_regprocedure('public.fn_faz2b_set_provider_id_from_professional()')), 0))::bigint,
          16::bigint
 ),
+k11 AS (
+  SELECT 'K11 10d bookings: eski 5 politika authenticated 5 + rolsuz politika yok 1 (6)' AS kontrol,
+         ((SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'bookings' AND roles = '{authenticated}'
+             AND policyname IN ('Assigned pros read team bookings', 'Bookings visible to participants', 'Customers read own bookings',
+                                'Parties update own bookings', 'Professionals read own bookings'))
+          + (NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'bookings' AND roles = '{public}'))::int)::bigint,
+         6::bigint
+),
 hepsi AS (
   SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3 UNION ALL SELECT * FROM k4 UNION ALL SELECT * FROM k5
   UNION ALL SELECT * FROM k6 UNION ALL SELECT * FROM k7 UNION ALL SELECT * FROM k8 UNION ALL SELECT * FROM k8b UNION ALL SELECT * FROM k9
-  UNION ALL SELECT * FROM k10
+  UNION ALL SELECT * FROM k10 UNION ALL SELECT * FROM k11
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K2 %' OR kontrol LIKE 'K6 %' THEN 'BILGI'
@@ -216,5 +228,7 @@ SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
             WHEN kontrol LIKE 'K9 %' AND to_regprocedure('public.protect_profiles_moved_fields()') IS NULL THEN 'BEKLIYOR'
             WHEN kontrol LIKE 'K10 %' AND (SELECT is_nullable FROM information_schema.columns WHERE table_schema = 'public'
                    AND table_name = 'portfolio_items' AND column_name = 'provider_id') = 'YES' THEN 'BEKLIYOR'
+            WHEN kontrol LIKE 'K11 %' AND (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'bookings'
+                   AND roles = '{public}' AND policyname = 'Bookings visible to participants') = 1 THEN 'BEKLIYOR'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;

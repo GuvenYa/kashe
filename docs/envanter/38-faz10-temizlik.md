@@ -281,6 +281,22 @@ Sahne turunda eklenen (27 Ekim 2026): `app/components/sections/featured-profiles
 eslint `react-hooks/purity` hatasi veriyor (onceden var; derlemeyi engellemiyor) — `Date.now()` bilesen govdesinden once tek sefer
 alinir (`const now = Date.now()` sunucu fonksiyonunun basinda) ya da `premium_until` karsilastirmasi `isPremiumActive` yardimcisina
 tasinir; `npx eslint app/components/sections` temiz olmali.
+**10d PLANI (5 Kasim, Sahne v3'ten sonra; karar: Claude, Guven "karar senin"):**
+- **DB/01** `20261105170000_faz10d_01_bookings_politikalari.sql`: bookings'in rolsuz (public) bes eski politikasi `TO authenticated`
+  (kosullar ayni; anonim zaten 0 satir goruyordu). asama20 **K11** (6; uygulanmamissa BEKLIYOR). Harness (Sahne v3 + 04 uzerinde):
+  once K11 BEKLIYOR, sonra ESIT; ikinci kosu no-op; asama4 44/44; anon bookings 0, musteri kendi 9 satiri.
+- **Kontrol dosyalari:** asama13 K4/K5 `agency_members` dolum/kayma olcumu 10a sonrasi EMEKLI (aynalama tetikleyicisi yoksa; asama5
+  ile ayni kural; Sahne'de K4 67 FARK veriyordu). asama15 K9 Sahne teklifleri haric (uretec gonderim zamanini geriye yazar; asama22 K4
+  kurali; Sahne'de 304 FARK veriyordu). Harness'ta 23 kontrol dosyasi: kalici FARK yok (asama21 K6 yalniz harness - gece isi kosmadi).
+- **Uygulama + Duzeltme 08:** gorev `49-claude-code-gorevi-10d-duzeltme-08.md` - A) `eslint app` 68 hata -> 0 (purity, set-state-in-effect
+  mesru olanlar gerekceli satir istisnasi, any -> tip, `<a>` -> `<Link>`), B) CLAUDE.md FAZ 10 sonrasi eskimis cumleler
+  (`provider_services` "2c'ye kadar", FAZ 5 `agency_members` yazimi / silme kurali, sema ozeti `profiles` uc is), C) bulgu 17, 38, 51,
+  52, 53, 54, 56.
+- **Yapilmayan (gerekce):** `ensure_organization_for_profile` sadelestirme - govde dogru ve idempotan, tek cagiran
+  `trg_faz0_sync_profile_to_organization`; degisiklik kazanc getirmez. `profile_approval_status` enum adi kozmetik. Diger 39 tablodaki
+  115 rolsuz politika (Supabase varsayilani; kosullari auth.uid() / yayin durumu) Hijyen 05 adayi, 10d disinda.
+- Sira: `faz10d` dali -> dal `supabase db push` (DB/01) -> asama20 (K11 ESIT) + asama4 (44) + asama13 / asama15 -> uretim
+  `supabase db push` -> gorev 49 -> diff + tur -> uretim kod -> **FAZ 10 KAPANIS** (Hijyen 05 ~3 Aralik).
 
 ### Hijyen 05 (30 gun sonra, ayri)
 

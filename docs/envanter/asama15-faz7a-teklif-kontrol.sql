@@ -9,7 +9,8 @@
 --   K6  RLS politikasi: proposals 3 (select/update/delete) + versions 2 + items 4 + links 1 (10)
 --   K7  surum toplamlari kalemlerle tutarsiz (subtotal = gorunur kalemler; tax = round(subtotal*rate,2); total = subtotal+tax) (0)
 --   K8  current_version_id olmayan teklif (0)
---   K9  dondurma ihlali: sent_at dolu surumde sent_at sonrasi guncellenen kalem (0)
+--   K9  dondurma ihlali: sent_at dolu surumde sent_at sonrasi guncellenen kalem (0). Sahne teklifleri (id 5a4e...) haric:
+--       uretec kalemleri yazdiktan sonra gonderim zamanini geriye tarihler (FAZ 10d; uretimde Sahne yok, asama22 K4 ile ayni kural)
 --   K10 bilgi: teklif sayisi*100 + portal baglantisi sayisi
 --   K11 bilgi: gecerliligi gecmis ama hala sent/viewed olan teklif (portal acilinca expired olur)
 --   K12 bilgi: ekip kaynakli (crew_member_id dolu) ama ic kalemi olmayan kalem
@@ -98,7 +99,7 @@ k8 AS (
 k9 AS (
   SELECT 'K9 dondurma ihlali: gonderimden sonra degisen kalem (0)' AS kontrol,
          (SELECT count(*) FROM public.proposal_items i JOIN public.proposal_versions v ON v.id = i.proposal_version_id
-           WHERE v.sent_at IS NOT NULL AND i.updated_at > v.sent_at)::bigint,
+           WHERE v.sent_at IS NOT NULL AND i.updated_at > v.sent_at AND v.id::text NOT LIKE '5a4e%')::bigint,
          0::bigint
 ),
 k10 AS (

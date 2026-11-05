@@ -15,7 +15,9 @@
 --   K12 kayit basina >1 birincil rol (0)
 --   K13 invitation_token sutunu authenticated SELECT (0 = kapali)
 --   K14 bilgi: kayit sayisi kaynaga gore marketplace_linked*1e4 + invited*100 + external_manual
--- Beklenen: K1-K13 ESIT, K14 BILGI.
+-- Beklenen: K1-K13 ESIT, K14 BILGI. FAZ 10a sonrasi (agency_members salt okunur, aynalama tetikleyicisi trg_faz0_sync_agency_member
+-- yok): K4 ve K5 EMEKLI - yeni uyelikler agency_members'a yazilmaz, havuz esitlemesi organization_memberships uzerinden
+-- (sync_org_talent_pool; asama20). FAZ 10d.
 -- =============================================================================
 
 WITH
@@ -134,5 +136,7 @@ hepsi AS (
 )
 SELECT kontrol, eski, yeni, abs(eski - yeni) AS fark,
        CASE WHEN kontrol LIKE 'K14%' THEN 'BILGI'
+            WHEN (kontrol LIKE 'K4 %' OR kontrol LIKE 'K5 %')
+                 AND NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_faz0_sync_agency_member') THEN 'EMEKLI'
             WHEN eski = yeni THEN 'ESIT' ELSE 'FARK' END AS durum
   FROM hepsi;
