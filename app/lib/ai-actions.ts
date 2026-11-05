@@ -813,33 +813,40 @@ Kurallar:
      * Duzeltme 08 (#17): kullanici YAKLASIK konustuysa ve model tek tutar
      * cikardiysa aralik +-%15 acilir (5.000'e yuvarlanir). Kural saf bir
      * fonksiyonda (app/lib/butce-araligi); istem metni ve model DEGISMEDI.
-     * Genisletilen deger `derived` (kural `yaklasik_butce_araligi`) provenance ile yazilir — hangi alanin
-     * modelden, hangisinin kuraldan geldigi altin kumede ayirt edilebilsin.
+     * Genisletilen deger `derived` (kural `yaklasik_butce_araligi`) provenance
+     * ile yazilir - hangi alanin modelden, hangisinin kuraldan geldigi altin
+     * kumede ayirt edilebilsin. Model yalniz bir tarafi doldurduysa ("250 bin
+     * civari" -> yalniz budget_min) iki taraf da o kanitla yazilir.
      */
     const yaklasik =
-      hamMin && hamMax
+      hamMin || hamMax
         ? yaklasikButceAraligi(description, butceMin, butceMax)
         : null;
-    if (yaklasik) {
-      butceMin = yaklasik.min;
-      butceMax = yaklasik.max;
+    const hamTutar = hamMin ?? hamMax;
+    if (yaklasik && hamTutar) {
+      yaz(
+        'budget_min',
+        yaklasik.min,
+        girdi('derived', hamTutar.confidence, hamTutar.evidence, 'yaklasik_butce_araligi')
+      );
+      yaz(
+        'budget_max',
+        yaklasik.max,
+        girdi('derived', hamTutar.confidence, hamTutar.evidence, 'yaklasik_butce_araligi')
+      );
     }
-    if (hamMin && butceMin !== null) {
+    if (!yaklasik && hamMin && butceMin !== null) {
       yaz(
         'budget_min',
         butceMin,
-        yaklasik
-          ? girdi('derived', hamMin.confidence, hamMin.evidence, 'yaklasik_butce_araligi')
-          : girdi('extracted', hamMin.confidence, hamMin.evidence)
+        girdi('extracted', hamMin.confidence, hamMin.evidence)
       );
     }
-    if (hamMax && butceMax !== null) {
+    if (!yaklasik && hamMax && butceMax !== null) {
       yaz(
         'budget_max',
         butceMax,
-        yaklasik
-          ? girdi('derived', hamMax.confidence, hamMax.evidence, 'yaklasik_butce_araligi')
-          : girdi('extracted', hamMax.confidence, hamMax.evidence)
+        girdi('extracted', hamMax.confidence, hamMax.evidence)
       );
     }
 

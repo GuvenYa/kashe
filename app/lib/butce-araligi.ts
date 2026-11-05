@@ -6,7 +6,9 @@
  * gosteriyordu. Kullanici yaklasik konustuysa aralik da yaklasik olmali.
  *
  * KURAL (deterministik son isleme; model cagrisi ve istem metni DEGISMEZ):
- *   - sonuc tek tutar ise (min === max) VE metinde yaklasiklik sozcugu varsa
+ *   - sonuc tek tutar ise (min === max, YA DA model yalniz birini doldurdu:
+ *     "250 bin civari" bazen yalniz `budget_min` olarak geliyor) VE metinde
+ *     yaklasiklik sozcugu varsa
  *     VE kesinlik sozcugu YOKSA aralik +-%15 olur,
  *   - alt sinir 5.000'e ASAGI, ust sinir 5.000'e YUKARI yuvarlanir,
  *   - zaten aralik olan ("50-80 bin") ya da kesin ifade ("en fazla 250 bin")
@@ -15,8 +17,8 @@
  * Ornek: "250 bin civari" -> 210.000 - 290.000
  *        (250.000 -+%15 = 212.500 / 287.500 -> 210.000 / 290.000)
  *
- * "TEK TUTAR" olcutu metindeki rakamlari saymak DEGIL, modelin `min === max`
- * cikarimidir: brief'te katilimci sayisi gibi baska sayilar da olabilir
+ * "TEK TUTAR" olcutu metindeki rakamlari saymak DEGIL, modelin cikarimidir
+ * (`min === max` ya da tek taraf dolu): brief'te katilimci sayisi gibi baska sayilar da olabilir
  * ("150 kisilik dugun, 250 bin civari").
  */
 
@@ -65,16 +67,24 @@ export function yaklasikButceAraligi(
   min: number | null,
   max: number | null
 ): { min: number; max: number } | null {
-  if (min === null || max === null) return null;
-  if (min !== max) return null; // zaten aralik
-  if (min <= 0) return null;
+  // Tek tutar: iki taraf esit ya da yalniz biri dolu. Iki farkli deger = zaten aralik.
+  let tutar: number;
+  if (min !== null && max !== null) {
+    if (min !== max) return null; // zaten aralik
+    tutar = min;
+  } else if (min !== null || max !== null) {
+    tutar = (min ?? max) as number;
+  } else {
+    return null;
+  }
+  if (tutar <= 0) return null;
 
   const n = sadelestir(metin);
   if (KESIN.some((k) => k.test(n))) return null;
   if (!YAKLASIK.some((y) => n.includes(y))) return null;
 
-  const alt = Math.floor((min * (1 - ORAN)) / ADIM) * ADIM;
-  const ust = Math.ceil((max * (1 + ORAN)) / ADIM) * ADIM;
+  const alt = Math.floor((tutar * (1 - ORAN)) / ADIM) * ADIM;
+  const ust = Math.ceil((tutar * (1 + ORAN)) / ADIM) * ADIM;
 
   // Cok kucuk tutarda alt sinir 0'a duser — boyle bir aralik bilgi vermez.
   if (alt <= 0 || alt >= ust) return null;
