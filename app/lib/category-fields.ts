@@ -14,7 +14,11 @@
 //   "experience_label": "9 yıl · 400+ etkinlik",        // rozet/başlık için serbest metin — DENEYİM tek kaynağı
 //   "calisma_sekli": "Freelance + Ajansa bağlı",        // ORTAK alan (rail meta). Eski quick.calisma_sekli
 //                                                       // OKUMA sırasında buraya fallback edilir (tek yön; çift yazma YOK).
-//   "summary": { "title": "...", "body": "...", "stats": [{ "label": "...", "value": "..." }] },
+//   "summary": { "title": "...", "body": "...",
+//                "stats": ["9 yil deneyim", "400+ etkinlik", "12 sehir"] },
+//                                                       // stats: DUZ METIN dizisi (string[]), en fazla 3.
+//                                                       // Eski `[{label,value}]` bicimi okunurken metne cevrilir
+//                                                       // (app/lib/ozet-cipleri.ts) — bulgu 78.
 //                                                       // yalnız 'uzmanlik' arketipinde medya hero yerine brand-ink özet bandı
 //                                                       // (başlık + kısa metin + stat çipleri)
 //   "logistics": { "ehliyet": true, "kendi_ekipmani": true }, // logisticsChecks key -> boolean

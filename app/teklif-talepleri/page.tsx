@@ -11,6 +11,10 @@ import { tarihMetni } from '@/app/lib/tarih';
 import { formatPrice } from '@/app/lib/profile-helpers';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import { etkinlikTurleri, type EtkinlikTuru } from '@/app/lib/etkinlik-turleri';
+import {
+  BRIEF_ACIKLAMA_SONEKI,
+  BRIEF_ESNEK_SONEKI,
+} from '@/app/lib/brief-anahtarlari';
 
 export const metadata = {
   title: 'Teklif Talepleri — Kashe',
@@ -36,8 +40,17 @@ function briefSatirlari(
   const satirlar: BriefSatiri[] = [];
 
   for (const alan of alanlar) {
+    // Duzeltme 10-E: ek anahtarlar ana alanla birlikte okunur ("Diger"
+    // aciklamasi, "Tarih henuz belli degil"); ham anahtar arayuze dusmez.
+    const esnek = brief[`${alan.key}${BRIEF_ESNEK_SONEKI}`] as unknown;
+    const aciklama = brief[`${alan.key}${BRIEF_ACIKLAMA_SONEKI}`];
     const ham = brief[alan.key];
-    if (ham === undefined || ham === null || String(ham).trim() === '') continue;
+    if (ham === undefined || ham === null || String(ham).trim() === '') {
+      if (esnek === true || esnek === '1' || esnek === 'true') {
+        satirlar.push({ key: alan.key, label: alan.label, value: 'Esnek / belli değil' });
+      }
+      continue;
+    }
     const metin = String(ham);
 
     let deger = metin;
@@ -51,6 +64,13 @@ function briefSatirlari(
       deger = tarihMetni(metin) ?? metin;
     }
     satirlar.push({ key: alan.key, label: alan.label, value: deger });
+    if (typeof aciklama === 'string' && aciklama.trim()) {
+      satirlar.push({
+        key: `${alan.key}${BRIEF_ACIKLAMA_SONEKI}`,
+        label: `${alan.label} açıklaması`,
+        value: aciklama.trim(),
+      });
+    }
   }
   return satirlar;
 }

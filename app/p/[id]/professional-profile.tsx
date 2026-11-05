@@ -26,6 +26,7 @@ import {
   type ProfileExperience,
 } from '@/app/lib/category-fields';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { cizilebilirMetin, ozetCipleri } from '@/app/lib/ozet-cipleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import { ProfilIslemSaglayici } from './profil-islem-baglami';
 import { MobilCtaCubugu } from './mobil-cta-cubugu';
@@ -51,7 +52,15 @@ export type ProfessionalProfileProps = {
   displayName: string;
   initials: string;
   categorySubtitle: string;
+  /**
+   * FAZ 4c/P3 etkinlik bagi (bulgu 84): `?etkinlik=` ile gelindiyse teklif
+   * sohbete etkinlige BAGLI acilir (sunucu eylemi dogrular). Ajans dali bunu
+   * tasiyordu; profesyonel dali (yeni tasarim) dusuruyordu.
+   */
+  etkinlikId?: string | null;
   cityName: string | undefined;
+  /** Duzeltme 10-D: 81 il (il secici: kart + brief). */
+  iller?: { id: number; name: string }[];
   averageRating: number;
   reviewCount: number;
   isBusyNow: boolean;
@@ -106,6 +115,39 @@ const EYEBROW =
   'font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink';
 const CARD = 'bg-card border border-line rounded-2xl';
 
+/**
+ * BOLUM BASLIGI (Duzeltme 10-F6, bulgu 80)
+ *
+ * Tek kural: buyuk baslik (h2) = kategori slogani varsa O, yoksa bolumun
+ * STANDART adi; kucuk ust etiket (eyebrow) YALNIZ slogan varken cizilir.
+ * Oncesinde her bolum iki ad tasiyordu (eyebrow + uydurma ikinci baslik
+ * "Calisma modelleri" / "One cikan isler" / "Teknik altyapi") ve slogani
+ * olmayan profilde kullanici ayni bolumu iki kez okuyordu.
+ */
+function BolumBasligi({
+  ad,
+  slogan,
+  altSatir,
+}: {
+  ad: string;
+  slogan?: string | null;
+  altSatir?: React.ReactNode;
+}) {
+  return (
+    <>
+      {slogan ? <div className={EYEBROW}>{ad}</div> : null}
+      <h2
+        className={`font-display text-[22px] font-bold text-ink ${
+          slogan ? 'mt-1' : ''
+        } ${altSatir ? 'mb-1' : 'mb-4'}`}
+      >
+        {slogan || ad}
+      </h2>
+      {altSatir ? <div className="mb-4">{altSatir}</div> : null}
+    </>
+  );
+}
+
 function formatReviewDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
@@ -129,12 +171,13 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
   // turler dahil — eski beyanin etiketi kaybolmasin).
   const turler = await etkinlikTurleri({ hepsi: true });
   const {
-    profile, displayName, initials, categorySubtitle, cityName,
+    profile, displayName, initials, categorySubtitle, cityName, iller = [],
     averageRating, reviewCount, isBusyNow, services, packages,
     guvenSinyalleri, blockedDates, bookedDates, enDusukFiyat,
     portfolioItems, experiences, representingAgency, recentReviews,
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
+    etkinlikId = null,
     showFavoriteButton, initialFavorited, canReview, hasCompletedBooking,
     existingReview, yorumModaliAcik = false, havuzSlot, kisaListeSlot,
   } = props;
@@ -150,6 +193,18 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
   const skills = (attrs.skills as LeveledSkill[]) ?? [];
   const logistics = (attrs.logistics as Record<string, boolean>) ?? {};
   const serviceRegion = attrs.service_region as string | undefined;
+  /**
+   * Duzeltme 10-F3: modaldeki "Hangi hizmet ya da paket?" secenekleri —
+   * paketler ustte, sonra hizmetler; tekrarsiz.
+   */
+  const hizmetSecenekleri = [
+    ...new Set([
+      ...packages.map((p2) => p2.title),
+      ...services.map((s2) => s2.title),
+    ]),
+  ].filter(Boolean);
+  /** Duzeltme 10-D2: il secici tek ile kilitlenir mi? */
+  const yalnizKendiSehri = serviceRegion === 'Yalnızca kendi şehri';
   const experienceLabel = attrs.experience_label as string | undefined;
   // Çalışma şekli — ORTAK alan; yoksa eski quick.calisma_sekli'den OKU (tek yön; anayasa: boşsa satır yok).
   const calismaSekli =
@@ -159,7 +214,18 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
       | undefined);
   const taglines = (attrs.section_taglines as Record<string, string>) ?? {};
   const modulesData = (attrs.modules as Record<string, AttrRecord>) ?? {};
-  const summary = attrs.summary as { title?: string; body?: string; stats?: string[] } | undefined;
+  /**
+   * Ozet bandi (uzmanlik arketipi). `stats` bilerek `unknown`: jsonb'de hem
+   * metin dizisi hem eski `{label,value}` nesneleri olabiliyor; cizim
+   * `ozetCipleri` ile metne cevrilir (bulgu 78 — nesne React cocugu olarak
+   * sayfayi istemcide cokertiyordu).
+   */
+  const summary = attrs.summary as
+    | { title?: unknown; body?: unknown; stats?: unknown }
+    | undefined;
+  const ozetCipleriListesi = ozetCipleri(summary?.stats);
+  const ozetBasligi = cizilebilirMetin(summary?.title);
+  const ozetGovdesi = cizilebilirMetin(summary?.body);
   // Etkinlik türleri — ORTAK alan (category_attributes.etkinlik_turleri; ilanlar taksonomisi key'leri).
   const eventTypes = Array.isArray(attrs.etkinlik_turleri)
     ? (attrs.etkinlik_turleri as string[])
@@ -232,10 +298,19 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
   const educationRows = experiences.filter((x) => x.kind === 'education');
   const awardRows = experiences.filter((x) => x.kind === 'award');
 
-  // ---- Bölüm başlıkları: section_taglines doluysa onu, yoksa generic default ----
-  const servicesTitle = taglines.hizmetler || 'Çalışma modelleri';
-  const experienceTitle = taglines.deneyim || 'Öne çıkan işler';
-  const educationTitle = taglines.egitim || 'Teknik altyapı';
+  /**
+   * ---- Bolum basliklari (Duzeltme 10-F6, bulgu 80) ----
+   *
+   * Kural: buyuk baslik = kategori slogani (`section_taglines`) VARSA o, yoksa
+   * bolumun STANDART adi. Varsayilan ikinci basliklar ("Calisma modelleri",
+   * "One cikan isler", "Teknik altyapi") KALKTI: slogan yokken bolum iki ad
+   * tasiyordu (eyebrow + uydurma baslik) ve kullanici ayni bolumu iki kez
+   * okuyordu. Eyebrow artik YALNIZ slogan varken cizilir (asagida).
+   */
+  const hakkimdaTagline = cizilebilirMetin(taglines.hakkimda);
+  const servicesTagline = cizilebilirMetin(taglines.hizmetler);
+  const experienceTagline = cizilebilirMetin(taglines.deneyim);
+  const educationTagline = cizilebilirMetin(taglines.egitim);
 
   const showMediaHero =
     archetype !== 'uzmanlik' || preset?.portfolioGrid === true;
@@ -483,43 +558,95 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                 enDusukFiyat={enDusukFiyat}
                 blockedDates={blockedDates}
                 bookedDates={bookedDates}
+                iller={iller}
+                saglayiciIli={cityName ?? null}
+                yalnizKendiSehri={yalnizKendiSehri}
+                hizmetSecenekleri={hizmetSecenekleri}
               />
             </div>
 
             {/* 4. Hizmetler & Paketler */}
             {(services.length > 0 || packages.length > 0) && (
               <section>
-                <div className={EYEBROW}>Hizmetler &amp; Paketler</div>
-                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">{servicesTitle}</h2>
+                <BolumBasligi
+                  ad="Hizmetler ve paketler"
+                  slogan={servicesTagline}
+                />
                 <div className="flex flex-col gap-3">
-                  {packages.map((pkg) => (
+                  {packages.map((pkg) => {
+                    const fiyat = formatPriceRange(pkg.price_min, pkg.price_max, pkg.price_on_request, 'total', pkg.price_starting);
+                    return (
                     <OfferRow
                       key={`pkg-${pkg.id}`}
                       title={pkg.title}
                       description={pkg.description}
-                      price={formatPriceRange(pkg.price_min, pkg.price_max, pkg.price_on_request, 'total', pkg.price_starting)}
+                      price={fiyat}
+                      teklifDugmesi={
+                        canTransact ? (
+                          <IletisimButton
+                            professionalId={profile.id}
+                            professionalName={displayName}
+                            categorySlug={slug}
+                            isLoggedIn={isLoggedIn}
+                            currentUserIsProfessional={currentUserIsProfessional}
+                            isOwnProfile={isOwnProfile}
+                            writableBusinesses={writableBusinesses}
+                            etkinlikId={etkinlikId}
+                            variant="package"
+                            packageContext={{ title: pkg.title, price: fiyat || null }}
+                            iller={iller}
+                            saglayiciIli={cityName ?? null}
+                            yalnizKendiSehri={yalnizKendiSehri}
+                            hizmetSecenekleri={hizmetSecenekleri}
+                          />
+                        ) : undefined
+                      }
                     />
-                  ))}
-                  {services.map((s) => (
+                    );
+                  })}
+                  {services.map((s) => {
+                    const fiyat = formatPriceRange(s.price_min, s.price_max, s.price_on_request, s.price_unit ?? 'total', s.price_starting);
+                    return (
                     <OfferRow
                       key={`svc-${s.id}`}
                       title={s.title}
                       description={s.description}
-                      price={formatPriceRange(s.price_min, s.price_max, s.price_on_request, s.price_unit ?? 'total', s.price_starting)}
+                      price={fiyat}
+                      teklifDugmesi={
+                        canTransact ? (
+                          <IletisimButton
+                            professionalId={profile.id}
+                            professionalName={displayName}
+                            categorySlug={slug}
+                            isLoggedIn={isLoggedIn}
+                            currentUserIsProfessional={currentUserIsProfessional}
+                            isOwnProfile={isOwnProfile}
+                            writableBusinesses={writableBusinesses}
+                            etkinlikId={etkinlikId}
+                            variant="package"
+                            serviceContext={{ title: s.title, addons: [], estimatedTotal: null }}
+                            iller={iller}
+                            saglayiciIli={cityName ?? null}
+                            yalnizKendiSehri={yalnizKendiSehri}
+                            hizmetSecenekleri={hizmetSecenekleri}
+                          />
+                        ) : undefined
+                      }
                     />
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}
 
             {/* uzmanlik özet bandı */}
-            {archetype === 'uzmanlik' && !preset?.portfolioGrid && summary?.body && (
+            {archetype === 'uzmanlik' && !preset?.portfolioGrid && ozetGovdesi && (
               <div className="bg-brand-ink text-paper rounded-2xl p-7">
-                {summary.title && <h2 className="font-display text-2xl font-bold mb-2">{summary.title}</h2>}
-                <p className="text-paper/85 leading-relaxed">{summary.body}</p>
-                {summary.stats && summary.stats.length > 0 && (
+                {ozetBasligi && <h2 className="font-display text-2xl font-bold mb-2">{ozetBasligi}</h2>}
+                <p className="text-paper/85 leading-relaxed">{ozetGovdesi}</p>
+                {ozetCipleriListesi.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {summary.stats.map((st, i) => (
+                    {ozetCipleriListesi.map((st, i) => (
                       <span key={i} className="inline-flex items-center bg-white/12 rounded-full px-3 py-1 text-sm font-semibold">
                         {st}
                       </span>
@@ -530,12 +657,9 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
             )}
 
             {/* 2. Hakkımda + quickInfo */}
-            {(profile.bio || taglines.hakkimda) && (
+            {(profile.bio || hakkimdaTagline) && (
               <section>
-                <div className={EYEBROW}>Hakkımda</div>
-                {taglines.hakkimda && (
-                  <h2 className="font-display text-[22px] font-bold mt-1 mb-3 text-ink">{taglines.hakkimda}</h2>
-                )}
+                <BolumBasligi ad="Hakkımda" slogan={hakkimdaTagline} />
                 {profile.bio && (
                   <p className="text-[14.5px] leading-[1.7] text-ink-72 whitespace-pre-wrap">{profile.bio}</p>
                 )}
@@ -573,8 +697,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
             {/* 5. Deneyim (work) — çizilebilir gruplar; eşleşmeyenler "Diğer" altında; 0 satırda yok */}
             {totalWorkRows > 0 && (
               <section>
-                <div className={EYEBROW}>Deneyim</div>
-                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">{experienceTitle}</h2>
+                <BolumBasligi ad="Deneyim" slogan={experienceTagline} />
                 {experienceGroupsToRender.map((g) => (
                   <div key={g.key} className="mb-5">
                     <div className={`${EYEBROW} opacity-75 mb-2`}>{g.label}</div>
@@ -591,8 +714,10 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
             {/* 6. Eğitim & Sertifikalar */}
             {educationRows.length > 0 && (
               <section>
-                <div className={EYEBROW}>Eğitim &amp; Sertifikalar</div>
-                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">{educationTitle}</h2>
+                <BolumBasligi
+                  ad="Eğitim ve sertifikalar"
+                  slogan={educationTagline}
+                />
                 <div className="bg-card border border-line rounded-2xl px-5">
                   {educationRows.map((e, i) => (
                     <ExperienceRow key={e.id} exp={e} last={i === educationRows.length - 1} />
@@ -604,10 +729,14 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
             {/* 7. Yorumlar */}
             {recentReviews.length > 0 && (
               <section>
-                <div className={EYEBROW}>Yorumlar</div>
-                <h2 className="font-display text-[22px] font-bold mt-1 mb-4 text-ink">
-                  {averageRating} ortalama · {reviewCount} yorum
-                </h2>
+                <BolumBasligi
+                  ad="Yorumlar"
+                  altSatir={
+                    <span className="text-sm text-ink-72">
+                      {averageRating} ortalama · {reviewCount} yorum
+                    </span>
+                  }
+                />
                 <div className="flex flex-col gap-3">
                   {recentReviews.map((r) => {
                     const c = customerMap.get(r.customer_id) ?? null;
@@ -661,7 +790,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
             {/* 8. Öne çıkanlar / Ödüller */}
             {awardRows.length > 0 && (
               <section>
-                <div className={EYEBROW}>Öne Çıkanlar &amp; Ödüller</div>
+                <BolumBasligi ad="Öne çıkanlar ve ödüller" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                   {awardRows.map((a) => {
                     const aPeriod = formatExperiencePeriod(a);
@@ -703,6 +832,10 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                 enDusukFiyat={enDusukFiyat}
                 blockedDates={blockedDates}
                 bookedDates={bookedDates}
+                iller={iller}
+                saglayiciIli={cityName ?? null}
+                yalnizKendiSehri={yalnizKendiSehri}
+                hizmetSecenekleri={hizmetSecenekleri}
                 cta={
                   canTransact
                     ? {
@@ -713,6 +846,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                         currentUserIsProfessional,
                         isOwnProfile,
                         writableBusinesses,
+                        etkinlikId,
                       }
                     : undefined
                 }
@@ -756,18 +890,25 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
               <div>
                 <div className={`${EYEBROW} mb-2.5`}>Yetenekler</div>
                 <div className="flex flex-wrap gap-2">
-                  {skills.map((s, i) => (
+                  {/* Ad ve seviye jsonb'den geliyor: metin olmayan ad ATLANIR,
+                      seviye sayiya cevrilir (bulgu 78 ile ayni koruma). */}
+                  {skills.map((s, i) => {
+                    const ad = cizilebilirMetin(s?.name);
+                    if (!ad) return null;
+                    const seviye = Number(s?.level) || 0;
+                    return (
                     <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
-                      {s.name}
-                      {s.level > 0 && (
-                        <span className="inline-flex gap-[3px]" aria-label={`Seviye ${Math.min(3, s.level)}/3`}>
-                          {Array.from({ length: Math.min(3, s.level) }).map((_, j) => (
+                      {ad}
+                      {seviye > 0 && (
+                        <span className="inline-flex gap-[3px]" aria-label={`Seviye ${Math.min(3, seviye)}/3`}>
+                          {Array.from({ length: Math.min(3, seviye) }).map((_, j) => (
                             <span key={j} className="w-[5px] h-[5px] rounded-full bg-brand-accent" />
                           ))}
                         </span>
                       )}
                     </span>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -778,7 +919,8 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                 <div className={`${EYEBROW} mb-2.5`}>Etkinlik türleri</div>
                 <div className="flex flex-wrap gap-2">
                   {eventTypes.map((k) => {
-                    const label = etiketle(turler, k);
+                    // Anahtar metin degilse (jsonb'de nesne) hic sorulmaz.
+                    const label = etiketle(turler, cizilebilirMetin(k));
                     if (!label) return null;
                     return (
                       <span key={k} className="inline-flex items-center px-3 py-1.5 bg-card border border-line rounded-full text-[12.5px] font-medium text-ink">
@@ -825,6 +967,11 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
           currentUserIsProfessional={currentUserIsProfessional}
           isOwnProfile={isOwnProfile}
           writableBusinesses={writableBusinesses}
+          iller={iller}
+          saglayiciIli={cityName ?? null}
+          yalnizKendiSehri={yalnizKendiSehri}
+          hizmetSecenekleri={hizmetSecenekleri}
+          etkinlikId={etkinlikId}
         />
         )}
       </div>
@@ -848,14 +995,35 @@ function MetaRow({ label, value, dot, last }: { label: string; value: string | n
   );
 }
 
-function OfferRow({ title, description, price }: { title: string; description: string | null; price: string }) {
+/**
+ * Hizmet / paket satiri.
+ *
+ * Duzeltme 10-F1 (bulgu 79): kendi profili DEGILSE her satirda "Teklif al"
+ * dugmesi var — kullanici hangi hizmeti istedigini satirdan secebiliyor
+ * (eskiden yalniz karttaki genel "Teklif Al" vardi ve secim modalde yoktu).
+ * Dar ekranda dugme ALTA gecer.
+ */
+function OfferRow({
+  title,
+  description,
+  price,
+  teklifDugmesi,
+}: {
+  title: string;
+  description: string | null;
+  price: string;
+  teklifDugmesi?: React.ReactNode;
+}) {
   return (
-    <div className="flex justify-between items-center gap-5 bg-card border border-line border-l-[3px] border-l-brand-ink rounded-xl px-5 py-4">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-5 bg-card border border-line border-l-[3px] border-l-brand-ink rounded-xl px-5 py-4">
       <div className="min-w-0">
         <div className="font-display text-[15.5px] font-semibold text-ink">{title}</div>
         {description && <div className="text-[13px] text-ink-72 mt-1 leading-snug line-clamp-2">{description}</div>}
       </div>
-      {price && <div className="font-display text-[15px] font-bold text-brand-ink whitespace-nowrap shrink-0">{price}</div>}
+      <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        {price && <div className="font-display text-[15px] font-bold text-brand-ink whitespace-nowrap">{price}</div>}
+        {teklifDugmesi}
+      </div>
     </div>
   );
 }
@@ -931,20 +1099,29 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
   const def = MODULE_REGISTRY[moduleKey as keyof typeof MODULE_REGISTRY];
   const eyebrow = <div className={EYEBROW}>{title}</div>;
 
-  const chips = (arr: unknown) =>
-    Array.isArray(arr) && arr.length > 0 ? (
+  /** Cip listesi — jsonb ogeleri metne cevrilir, cevrilemeyen ATLANIR. */
+  const chips = (arr: unknown) => {
+    const liste = Array.isArray(arr)
+      ? arr.map(cizilebilirMetin).filter((v): v is string => !!v)
+      : [];
+    return liste.length > 0 ? (
       <div className="flex flex-wrap gap-2">
-        {(arr as string[]).map((c, i) => (
+        {liste.map((c, i) => (
           <span key={i} className="px-3.5 py-1.5 bg-brand-ink/5 border border-brand-ink/15 rounded-full text-[12.5px] font-medium text-ink">{c}</span>
         ))}
       </div>
     ) : null;
+  };
 
   // Etiket/değer kutuları — TEK bileşen (KvChips): md üstü kutu grid'i aynen, md altı ince satır.
   // null döndürme sözleşmesi korunur (boş-gövde denetimindeki `detailsEl || ...` için).
   const kv = (obj: unknown, cols = 3) => {
     if (!obj || typeof obj !== 'object') return null;
-    const entries = Object.entries(obj as Record<string, string>);
+    // Degerler jsonb'den: metne cevrilemeyen (nesne / dizi) anahtar ATLANIR.
+    const entries = Object.entries(obj as Record<string, unknown>)
+      .map(([k, v]) => [k, cizilebilirMetin(v)] as const)
+      .filter((e): e is readonly [string, string] => !!e[1])
+      .map(([k, v]) => [k, v] as [string, string]);
     if (entries.length === 0) return null;
     return <KvChips entries={entries} cols={cols} />;
   };
@@ -968,9 +1145,12 @@ function ModuleSection({ title, moduleKey, data, labelOverrides }: { title: stri
         <>
           {hasItems && (
             <div className="flex flex-col gap-2 text-sm text-ink-72">
-              {(data.items as string[]).map((it, i) => (
-                <div key={i} className="flex gap-2.5"><span className="text-brand-ink font-bold shrink-0">—</span>{it}</div>
-              ))}
+              {(data.items as unknown[])
+                .map(cizilebilirMetin)
+                .filter((v): v is string => !!v)
+                .map((it, i) => (
+                  <div key={i} className="flex gap-2.5"><span className="text-brand-ink font-bold shrink-0">—</span>{it}</div>
+                ))}
             </div>
           )}
           {hasVenue && (

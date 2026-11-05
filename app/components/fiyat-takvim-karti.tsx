@@ -7,6 +7,7 @@ import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { formatTL } from '@/app/lib/para';
 import { useProfilIslem } from '@/app/p/[id]/profil-islem-baglami';
 import { IletisimButton } from '@/app/p/[id]/iletisim-button';
+import { IlSecici, ilEslestir, type Il } from '@/app/components/ui/il-secici';
 import { RezervasyonButton } from '@/app/p/[id]/rezervasyon-button';
 import type { OnBehalfBusiness } from '@/app/components/on-behalf-selector';
 
@@ -43,6 +44,11 @@ export function FiyatTakvimKarti({
   bookedDates,
   cta,
   altAlan,
+  iller = [],
+  saglayiciIli = null,
+  yalnizKendiSehri = false,
+  hizmetSecenekleri = [],
+  ajansMi = false,
 }: {
   /** Sunucuda bulunan en dusuk paket/hizmet fiyati; yoksa null. */
   enDusukFiyat: number | null;
@@ -67,6 +73,18 @@ export function FiyatTakvimKarti({
   };
   /** Kartin altindaki ek alan (davet / havuz kisa yolu). */
   altAlan?: ReactNode;
+  /**
+   * Duzeltme 10-D: 81 il (il secici). Verilmezse sehir alani CIZILMEZ —
+   * serbest metne geri donulmez (bulgu 82).
+   */
+  iller?: Il[];
+  /** Saglayicinin ili (listenin basinda; sehir disi notu bununla karsilasir). */
+  saglayiciIli?: string | null;
+  /** `service_region` "Yalnizca kendi sehri" ise secici tek ile kilitlenir. */
+  yalnizKendiSehri?: boolean;
+  /** Duzeltme 10-F3: modaldeki hizmet / paket secenekleri (bosken secim yok). */
+  hizmetSecenekleri?: string[];
+  ajansMi?: boolean;
 }) {
   // Degerler BAGLAMDAN: mobil alt CTA cubugu ayni durumu okuyor (D2-ek).
   // Kart kendi state ini tutsaydi, cubuktaki dugmeler kartta girilen tarihi
@@ -83,6 +101,15 @@ export function FiyatTakvimKarti({
     hamKisi,
   } = useProfilIslem();
   const [takvimAcik, setTakvimAcik] = useState(false);
+
+  /**
+   * Secili il: baglam METIN tasiyor (eski dolgu ve mobil CTA cubugu ayni
+   * degeri okuyor). Listeyle eslesmeyen metin secimi BOS gosterir — uydurma
+   * il yazilmaz (Duzeltme 10-D3).
+   */
+  const secilenIl = yalnizKendiSehri && saglayiciIli
+    ? saglayiciIli
+    : ilEslestir(hamSehir, iller);
 
   const dolgu = { tarih, sehir, kisi };
 
@@ -172,13 +199,42 @@ export function FiyatTakvimKarti({
             <label className={ETIKET} htmlFor="fiyat-karti-sehir">
               Şehir
             </label>
-            <input
-              id="fiyat-karti-sehir"
-              type="text"
-              value={hamSehir}
-              onChange={(e) => sehirAta(e.target.value.slice(0, 80))}
-              className={ALAN}
-            />
+            {/* Duzeltme 10-D: serbest metin yerine IL SECICI. Secilen il modala
+                on-dolgu olarak gider (mevcut `onDolgu` yolu); eski metin dolgusu
+                bir il adiyla eslesirse secili baslar. */}
+            {iller.length > 0 ? (
+              <IlSecici
+                id="fiyat-karti-sehir"
+                iller={iller}
+                deger={secilenIl}
+                oncelikliIl={saglayiciIli}
+                sabitIl={yalnizKendiSehri ? saglayiciIli : null}
+                onChange={(ad) => sehirAta(ad)}
+                className={ALAN}
+              />
+            ) : (
+              /* Il listesi gelmediyse eski serbest metin (bos secici yerine). */
+              <input
+                id="fiyat-karti-sehir"
+                type="text"
+                value={hamSehir}
+                onChange={(e) => sehirAta(e.target.value.slice(0, 80))}
+                className={ALAN}
+              />
+            )}
+            {yalnizKendiSehri && saglayiciIli && (
+              <p className="text-[11px] text-ink-72 mt-1">
+                Bu profesyonel yalnız {saglayiciIli} içinde hizmet veriyor.
+              </p>
+            )}
+            {!yalnizKendiSehri &&
+              saglayiciIli &&
+              secilenIl !== '' &&
+              secilenIl !== saglayiciIli && (
+                <p className="text-[11px] text-ink-72 mt-1">
+                  Şehir dışı: ulaşım ve konaklama teklife eklenebilir.
+                </p>
+              )}
           </div>
           <div>
             <label className={ETIKET} htmlFor="fiyat-karti-kisi">
@@ -210,6 +266,11 @@ export function FiyatTakvimKarti({
             writableBusinesses={cta.writableBusinesses}
             variant="primary-accent"
             etkinlikId={cta.etkinlikId ?? null}
+            iller={iller}
+            saglayiciIli={saglayiciIli}
+            yalnizKendiSehri={yalnizKendiSehri}
+            hizmetSecenekleri={hizmetSecenekleri}
+            ajansMi={ajansMi}
             onDolgu={dolgu}
           />
           <RezervasyonButton
@@ -222,6 +283,9 @@ export function FiyatTakvimKarti({
             variant="outline-ink"
             initialDate={dolgu.tarih}
             initialLocation={dolgu.sehir}
+            iller={iller}
+            saglayiciIli={saglayiciIli}
+            yalnizKendiSehri={yalnizKendiSehri}
           />
           {cta.actionBar}
         </div>

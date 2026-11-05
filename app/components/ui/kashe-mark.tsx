@@ -33,7 +33,9 @@ export function KasheMark({
     <img
       src={SRC[variant]}
       alt={title || 'Kashe'}
-      className={className}
+      // Varlik 359x471 (dikey): kare kutuda `fill` ile yatay basiliyordu
+      // (bulgu 74). `object-contain` orani korur; kutu boyutu degismez.
+      className={`object-contain ${className ?? ''}`}
       {...(title ? {} : { 'aria-hidden': true })}
     />
   );

@@ -144,3 +144,33 @@ export function esAnlamliEslesme(terim: string): AramaEslesmesi {
     kurumsalSaglayici,
   };
 }
+
+/**
+ * ETKINLIK TURU ADIYLA ESLESME (Duzeltme 10-C, bulgu 81).
+ *
+ * Arama bugun yalniz metin sutunlarinda ve el yazimi es anlamli sozlugunde
+ * bakiyordu; "Gala" yazan kullanici Gala turunu PROFILINDE BEYAN EDEN
+ * saglayicilari bulamiyordu (dalda metin 17, beyan 38). Burasi tur ADLARINI
+ * da arar — sozluk satirlari ayrica KALIR (es anlamlilar farkli bir is).
+ *
+ * Kural `esAnlamliEslesme` ile AYNI: iki yonlu kapsama, en az 3 karakter.
+ * `other` ("Diger") HARIC — herkesi getiren anlamsiz bir esleme olurdu.
+ * Cagiran yalniz AKTIF turleri gondermeli.
+ */
+export function etkinlikTuruEslesmesi(
+  terim: string,
+  turler: { key: string; name_tr: string }[]
+): string[] {
+  const n = sadelestir(terim);
+  if (n.length < 3) return [];
+  const bulunan = new Set<string>();
+  for (const t of turler) {
+    if (t.key === 'other') continue;
+    const ad = sadelestir(t.name_tr);
+    if (!ad) continue;
+    if (n === ad || n.includes(ad) || (n.length >= 4 && ad.includes(n))) {
+      bulunan.add(t.key);
+    }
+  }
+  return [...bulunan];
+}

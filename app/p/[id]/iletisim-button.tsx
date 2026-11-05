@@ -26,6 +26,14 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
+import {
+  BRIEF_ACIKLAMA_SONEKI,
+  BRIEF_ESNEK_SONEKI,
+  briefIlAlani,
+} from '@/app/lib/brief-anahtarlari';
+import type { Il } from '@/app/components/ui/il-secici';
+import { useProfilIslem } from './profil-islem-baglami';
 
 type Props = {
   professionalId: string;
@@ -51,6 +59,24 @@ type Props = {
    * o alan doldurulur; karsiligi olmayan bilgi mesaj metninin basina tek
    * satir olarak yazilir. Form alanlari ve gonderim action'i DEGISMEZ.
    */
+  /**
+   * Duzeltme 10-D: il secici verisi.  bos gelirse konum alani il
+   * SECICISI olarak cizilir ama liste bos kalir — cagiran listeyi gecmeli.
+   */
+  iller?: Il[];
+  saglayiciIli?: string | null;
+  yalnizKendiSehri?: boolean;
+  /**
+   * Duzeltme 10-F3: saglayicinin paket ve hizmet BASLIKLARI. Dolu gelirse
+   * formun basinda istege bagli "Hangi hizmet ya da paket?" secimi cizilir;
+   * secim `brief_data.hizmet` olarak kaydedilir (ozet etiketi "Seçilen hizmet").
+   */
+  hizmetSecenekleri?: string[];
+  /**
+   * Duzeltme 10-F4: saglayici bir AJANS kurulusu mu? Brief alanlari varsayilan
+   * bes soruya duser ve intro ajansa gore yazilir.
+   */
+  ajansMi?: boolean;
   onDolgu?: {
     tarih?: string | null;
     sehir?: string | null;
@@ -70,6 +96,11 @@ export function IletisimButton({
   serviceContext = null,
   variant = 'default',
   etkinlikId = null,
+  iller = [],
+  saglayiciIli = null,
+  yalnizKendiSehri = false,
+  hizmetSecenekleri = [],
+  ajansMi = false,
   onDolgu = null,
 }: Props) {
   // FAZ 10b: etkinlik turleri `event_types` tablosundan (saglayici).
@@ -90,14 +121,47 @@ export function IletisimButton({
   const [message, setMessage] = useState('');
   // Dinamik brief cevapları: { [field.key]: value }
   const [briefValues, setBriefValues] = useState<Record<string, string>>({});
+  /**
+   * Duzeltme 10-F3: secilen hizmet / paket basligi. Satirdan gelindiyse
+   * (`packageContext` / `serviceContext`) SECILI baslar; kart uzerindeki genel
+   * "Teklif Al"da bos baslar ve kullanici isterse secer.
+   */
+  const secilenBaslangic =
+    packageContext?.title ?? serviceContext?.title ?? '';
+  const [secilenHizmet, setSecilenHizmet] = useState(secilenBaslangic);
 
   // Bu profesyonelin kategorisine göre alanlar (config-driven)
   // FAZ 10b: `event_type` secenekleri `event_types` tablosundan (saglayici).
+  /**
+   * Duzeltme 10-F4 (bulgu 76 a): AJANS brief'i kategori-ozel sorular SORMAZ
+   — ajans bir rolu degil etkinligin tamamini ustleniyor. Slug gecilmeyince
+   * `getBriefFields` varsayilan bes soruyu (`DEFAULT_BRIEF_FIELDS`) dondurur;
+   * intro da ajansa gore yazilir.
+   */
   const briefFields: BriefField[] = getBriefFields(
-    categorySlug,
+    ajansMi ? null : categorySlug,
     etkinlikTurleriListesi
   );
-  const briefIntro = getBriefIntro(categorySlug);
+  const briefIntro = ajansMi
+    ? `Etkinliğinin detaylarını paylaş, ${professionalName} sana uygun bir teklif hazırlasın.`
+    : getBriefIntro(categorySlug);
+
+  /**
+   * On dolgu kaynagi (Duzeltme 10 incelemesi): cagiran `onDolgu` vermediyse
+   * profil sayfasinin ortak baglami (kartta secilen tarih / il / kisi) okunur.
+   * Hizmet / paket satirindaki dugmeler de boylece kart secimini tasir.
+   * Profil disinda (etkinlik aday paneli) baglam bos doner — etkisiz.
+   */
+  const profilBaglami = useProfilIslem();
+  const dolguKaynagi =
+    onDolgu ??
+    (profilBaglami.tarih || profilBaglami.sehir || profilBaglami.kisi != null
+      ? {
+          tarih: profilBaglami.tarih,
+          sehir: profilBaglami.sehir,
+          kisi: profilBaglami.kisi,
+        }
+      : null);
 
   function setField(key: string, value: string) {
     setBriefValues((prev) => ({ ...prev, [key]: value }));
@@ -111,8 +175,8 @@ export function IletisimButton({
    * seyi iki kez yazmasin); yoksa mesajin basina tek satir koyar.
    */
   function dolguyuUygula() {
-    if (!onDolgu) return;
-    const { tarih, sehir, kisi } = onDolgu;
+    if (!dolguKaynagi) return;
+    const { tarih, sehir, kisi } = dolguKaynagi;
     if (!tarih && !sehir && kisi == null) return;
 
     const yama: Record<string, string> = {};
@@ -305,11 +369,36 @@ ${onceki}`
     e.preventDefault();
     setError(null);
 
-    // Zorunlu alan kontrolü (config'de required: true olanlar)
+    // "Yalnizca kendi sehri" saglayicida il secici kilitli ili GOSTERIR ama
+    // kullanici dokunmadiysa alan bos kalir; gonderimde saglayicinin iline
+    // tamamlanir (Duzeltme 10 incelemesi).
+    const degerler: Record<string, string> = { ...briefValues };
+    if (yalnizKendiSehri && saglayiciIli) {
+      for (const f of briefFields) {
+        if (briefIlAlani(f) && !(degerler[f.key] ?? '').trim()) {
+          degerler[f.key] = saglayiciIli;
+        }
+      }
+    }
+
+    // Zorunlu alan kontrolü (config'de required: true olanlar).
+    // Duzeltme 10-E2: tarih alani "henuz belli degil" isaretliyse zorunluluk
+    // KALKAR; E3: "Diger" secildiyse aciklama ZORUNLU olur.
     for (const f of briefFields) {
-      if (f.required && !(briefValues[f.key] && briefValues[f.key].trim())) {
+      const esnek = (degerler[`${f.key}${BRIEF_ESNEK_SONEKI}`] ?? '') === '1';
+      const zorunlu = f.required && !(f.type === 'date' && esnek);
+      if (zorunlu && !(degerler[f.key] && degerler[f.key].trim())) {
         setError(`"${f.label}" alanı zorunlu.`);
         return;
+      }
+      if (f.type === 'select' && degerler[f.key] === 'other') {
+        const aciklama = (
+          degerler[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] ?? ''
+        ).trim();
+        if (!aciklama) {
+          setError(`"${f.label} - kısaca yaz" alanı zorunlu.`);
+          return;
+        }
       }
     }
 
@@ -321,7 +410,7 @@ ${onceki}`
     let legacyBudget: string | null = null;
 
     for (const f of briefFields) {
-      const raw = briefValues[f.key]?.trim();
+      const raw = degerler[f.key]?.trim();
       if (!raw || !f.legacyColumn) continue;
       switch (f.legacyColumn) {
         case 'event_type':
@@ -348,12 +437,21 @@ ${onceki}`
       }
     }
 
-    // brief_data: boş olmayan tüm cevaplar
+    // brief_data: boş olmayan tüm cevaplar.
+    // Duzeltme 10-E: alan basina EK anahtarlar da tasinir
+    // (`<key>_aciklama` metin, `<key>_esnek` mantiksal) — sunucu
+    // `briefVeriTemizle` ile tipi ve uzunlugu sabitler.
     const cleanBrief: Record<string, string> = {};
     for (const f of briefFields) {
-      const raw = briefValues[f.key]?.trim();
+      const raw = degerler[f.key]?.trim();
       if (raw) cleanBrief[f.key] = raw;
+      const aciklama = degerler[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`]?.trim();
+      if (aciklama) cleanBrief[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] = aciklama;
+      const esnek = degerler[`${f.key}${BRIEF_ESNEK_SONEKI}`];
+      if (esnek === '1') cleanBrief[`${f.key}${BRIEF_ESNEK_SONEKI}`] = '1';
     }
+    // Duzeltme 10-F3: secilen hizmet / paket (ozet etiketi "Seçilen hizmet").
+    if (secilenHizmet.trim()) cleanBrief.hizmet = secilenHizmet.trim();
 
     // Brief payload — hem giriş yapan hem anonim için aynı veri
     const payload = {
@@ -458,9 +556,9 @@ ${onceki}`
         >
           {serviceContext
             ? serviceContext.addons.length > 0
-              ? 'Seçili ekstralarla ilet'
-              : 'Bu hizmet için ilet'
-            : 'Bu paket için ilet'}
+              ? 'Seçili ekstralarla teklif al'
+              : 'Bu hizmet için teklif al'
+            : 'Bu paket için teklif al'}
         </button>
       ) : variant === 'primary-accent' ? (
         <button
@@ -521,6 +619,11 @@ ${onceki}`
                   {professionalName}
                 </em>
                 {' '}için teklif talebi
+                {secilenHizmet && (
+                  <span className="block text-sm font-body text-ink-72 mt-0.5">
+                    Seçilen: {secilenHizmet}
+                  </span>
+                )}
               </h2>
               <button
                 type="button"
@@ -545,6 +648,31 @@ ${onceki}`
                 />
               )}
 
+              {/* Duzeltme 10-F3: hangi hizmet / paket? (istege bagli) */}
+              {hizmetSecenekleri.length > 0 && (
+                <div>
+                  <label
+                    htmlFor="brief-hizmet-secimi"
+                    className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
+                  >
+                    Hangi hizmet ya da paket?
+                  </label>
+                  <select
+                    id="brief-hizmet-secimi"
+                    value={secilenHizmet}
+                    onChange={(e) => setSecilenHizmet(e.target.value)}
+                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                  >
+                    <option value="">Henüz bilmiyorum</option>
+                    {hizmetSecenekleri.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* SECTION: Etkinlik detayları */}
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
@@ -554,89 +682,19 @@ ${onceki}`
                   <p className="text-sm text-ink-72 mb-4 -mt-1">{briefIntro}</p>
                 )}
 
+                {/* Duzeltme 10-D/E: alanlar ORTAK cizicide — il secici,
+                    "Tarih henuz belli degil" ve "Diger" aciklamasi tek yerde
+                    (ayni cizici `/teklif-topla` formunda da kullaniliyor). */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {briefFields.map((field) => {
-                    const value = briefValues[field.key] ?? '';
-                    const labelEl = (
-                      <label
-                        htmlFor={`brief-${field.key}`}
-                        className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
-                      >
-                        {field.label}
-                        {field.required && (
-                          <span className="text-danger"> *</span>
-                        )}
-                      </label>
-                    );
-                    const inputClass =
-                      'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
-
-                    // textarea tam satır kaplasın
-                    const wrapperClass =
-                      field.type === 'textarea' ? 'md:col-span-2' : '';
-
-                    return (
-                      <div key={field.key} className={wrapperClass}>
-                        {labelEl}
-                        {field.type === 'select' ? (
-                          <select
-                            id={`brief-${field.key}`}
-                            value={value}
-                            onChange={(e) => setField(field.key, e.target.value)}
-                            className={inputClass}
-                          >
-                            <option value="">Seç...</option>
-                            {field.options?.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : field.type === 'textarea' ? (
-                          <textarea
-                            id={`brief-${field.key}`}
-                            rows={3}
-                            maxLength={1000}
-                            value={value}
-                            onChange={(e) => setField(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className={`${inputClass} resize-none`}
-                          />
-                        ) : field.type === 'date' ? (
-                          <input
-                            id={`brief-${field.key}`}
-                            type="date"
-                            onClick={takvimiAc}
-                            min={todayStr}
-                            value={value}
-                            onChange={(e) => setField(field.key, e.target.value)}
-                            className={inputClass}
-                          />
-                        ) : field.type === 'number' ? (
-                          <input
-                            id={`brief-${field.key}`}
-                            type="number"
-                            min={0}
-                            max={100000}
-                            value={value}
-                            onChange={(e) => setField(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className={inputClass}
-                          />
-                        ) : (
-                          <input
-                            id={`brief-${field.key}`}
-                            type="text"
-                            maxLength={200}
-                            value={value}
-                            onChange={(e) => setField(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className={inputClass}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                  <BriefAlanlari
+                    alanlar={briefFields}
+                    degerler={briefValues}
+                    setAlan={setField}
+                    bugun={todayStr}
+                    iller={iller}
+                    saglayiciIli={saglayiciIli}
+                    yalnizKendiSehri={yalnizKendiSehri}
+                  />
                 </div>
 
                 <p className="text-xs text-ink-72 mt-3">

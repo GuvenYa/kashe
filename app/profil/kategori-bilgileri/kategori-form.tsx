@@ -23,6 +23,7 @@ import {
 } from '@/app/lib/category-fields';
 import { useEtkinlikTurleri } from '@/app/components/etkinlik-turleri-provider';
 import { isBlankText } from '@/app/lib/text';
+import { ozetCipleri } from '@/app/lib/ozet-cipleri';
 import { saveCategoryAttributes } from './actions';
 
 const INPUT =
@@ -177,10 +178,15 @@ export function KategoriForm({
   const [modules, setModules] = useState<ModulesState>(() =>
     initModules(moduleKeys, (init.modules as Record<string, Rec>) ?? {})
   );
+  /**
+   * Duzeltme 10-A: `stats` jsonb'de eski `{label,value}` nesneleri olarak da
+   * durabiliyor (Sahne ureteci boyle yazdi). Duzenleyici METIN bekliyor:
+   * acilista `ozetCipleri` ile metne cevrilir, kaydedince metin yazilir.
+   */
   const summaryInit = (init.summary as {
     title?: string;
     body?: string;
-    stats?: string[];
+    stats?: unknown;
   }) ?? {};
   const [summary, setSummary] = useState<{
     title: string;
@@ -189,7 +195,7 @@ export function KategoriForm({
   }>({
     title: summaryInit.title ?? '',
     body: summaryInit.body ?? '',
-    stats: summaryInit.stats ?? [],
+    stats: ozetCipleri(summaryInit.stats),
   });
 
   const [error, setError] = useState<string | null>(null);

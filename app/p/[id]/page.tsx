@@ -126,6 +126,16 @@ export default async function PublicProfilePage({
       : null;
   const supabase = await createClient();
 
+  /**
+   * Duzeltme 10-D: 81 il — il secici icin (profil karti + brief). Tek sorgu,
+   * iki dal (profesyonel / ajans) da ayni listeyi kullanir.
+   */
+  const { data: illerData } = await supabase
+    .from('turkish_cities')
+    .select('id, name')
+    .order('name');
+  const iller = (illerData ?? []) as { id: number; name: string }[];
+
   const { data: profileData } = await supabase
     .from('v_providers_public')
     .select(
@@ -490,6 +500,14 @@ export default async function PublicProfilePage({
   const isOwnedByProfessional = user?.id === profile.id;
 
   /**
+   * Duzeltme 10-D2: saglayici YALNIZ kendi sehrinde hizmet veriyorsa il secici
+   * tek ile kilitlenir (kart ve brief ayni kurali okur).
+   */
+  const yalnizKendiSehri =
+    ((profile.category_attributes as Record<string, unknown> | null)
+      ?.service_region ?? null) === 'Yalnızca kendi şehri';
+
+  /**
    * Duzeltme 05-E: tam ad yalniz kendisi / admin / ONAYLI-TAMAMLANMIS
    * rezervasyonu olan karsi tarafa gorunur; digerlerine "Ad S.". Olcut
    * iletisim bilgisi kapisiyla ayni (`tamAdGorebilirMi`).
@@ -528,6 +546,36 @@ export default async function PublicProfilePage({
   const categoryLabel = profile.service_categories
     ? `${profile.service_categories.emoji || ''} ${profile.service_categories.name_tr}`.trim()
     : null;
+
+  /**
+   * F5 (bulgu 76 e): AJANS basliginda tek birincil kategori ("Muzisyen")
+   * yaniltiyordu — ajans bir rolu degil bir KUMEYI sunuyor. Etiket artik
+   * hizmetlerinin ve ekip uyelerinin rollerinden turetilir: tekrarsiz,
+   * en fazla 4, " · " ile. Hicbiri yoksa birincil kategoriye duser.
+   */
+  /** F3: ajans modalindeki hizmet secenekleri (paket + hizmet basliklari). */
+  const ajansHizmetBasliklari = [
+    ...new Set(
+      [...packages.map((x) => x.title), ...services.map((x) => x.title)].filter(
+        Boolean
+      )
+    ),
+  ];
+
+  const ajansKategorileri = [
+    ...new Set(
+      [
+        ...services.map((x) => x.service_categories?.name_tr ?? null),
+        ...agencyTeam.map(
+          (m) => m.professional?.service_categories?.name_tr ?? null
+        ),
+      ].filter((v): v is string => !!v)
+    ),
+  ].slice(0, 4);
+  const ajansKategoriEtiketi =
+    ajansKategorileri.length > 0
+      ? ajansKategorileri.join(' · ')
+      : categoryLabel;
 
   const cityName = profile.turkish_cities?.name;
 
@@ -857,6 +905,8 @@ export default async function PublicProfilePage({
           initials={initials}
           categorySubtitle={profile.service_categories?.name_tr ?? 'Profesyonel'}
           cityName={cityName}
+          iller={iller}
+          etkinlikId={etkinlikId}
           averageRating={averageRating}
           reviewCount={reviewCount}
           isBusyNow={isBusyNow}
@@ -1010,17 +1060,19 @@ export default async function PublicProfilePage({
             <Link href="/kesfet" className="hover:text-brand-ink transition-colors">
               Keşfet
             </Link>
-            {profile.service_categories?.slug && (
-              <>
-                <span aria-hidden="true">·</span>
-                <Link
-                  href={`/kategori/${profile.service_categories.slug}`}
-                  className="hover:text-brand-ink transition-colors"
-                >
-                  {profile.service_categories.name_tr}
-                </Link>
-              </>
-            )}
+            {/*
+              Duzeltme 10-F5: orta halka tek birincil kategoriye ("Muzisyen")
+              gidiyordu — ajans o kategorinin listesine ait degil. Artik
+              Kesfet'in KURUMSAL suzgecine gider (Kesfet'in mevcut
+              parametresi: `tip=ajans`).
+            */}
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/kesfet?tip=ajans"
+              className="hover:text-brand-ink transition-colors"
+            >
+              Kurumsal hizmet sağlayıcılar
+            </Link>
             <span aria-hidden="true">·</span>
             <span className="text-ink">{displayName}</span>
           </nav>
@@ -1096,8 +1148,8 @@ export default async function PublicProfilePage({
                     </span>
                   )}
                 </h1>
-                {categoryLabel && (
-                  <p className="text-ink-72 mt-1.5">{categoryLabel}</p>
+                {ajansKategoriEtiketi && (
+                  <p className="text-ink-72 mt-1.5">{ajansKategoriEtiketi}</p>
                 )}
                 {/* GUVEN CIPLERI (D2) — profesyonel profiliyle AYNI bilesen.
                     Premium/onay gibi mevcut rozetler burada tek dille gorunur. */}
@@ -1302,103 +1354,125 @@ export default async function PublicProfilePage({
             </div>
           )}
 
-          {/* PAKETLER */}
-          {packages.length > 0 && (
+          {/*
+            PAKETLER + HIZMETLER (Duzeltme 10-F6, bulgu 80): iki ayri kart
+            ("Paketler" ve "Sunulan hizmetler") ayni seyin iki adiydi —
+            kullanici hangisinden teklif isteyecegini bilemiyordu. Tek kart,
+            tek baslik; paketler ustte, hizmetler altta.
+          */}
+          {(packages.length > 0 || services.length > 0) && (
             <div className="bg-card border border-line rounded-lg p-8 mb-6">
-              <h2 className="font-display text-2xl text-ink mb-1">Paketler</h2>
-              <p className="text-sm text-ink-72 mb-6">
-                Hazır paketler — ihtiyacına en yakınını seçip doğrudan iletişime
-                geç.
-              </p>
-              <div className="space-y-4">
-                {packages.map((pkg) => {
-                  const pkgPrice = formatPriceRange(
-                    pkg.price_min,
-                    pkg.price_max,
-                    pkg.price_on_request,
-                    'total',
-                    pkg.price_starting
-                  );
-                  return (
-                    <div
-                      key={pkg.id}
-                      className="border border-line rounded-xl p-5 hover:border-brand-ink/40 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
-                        <h3 className="font-display text-xl text-ink">
-                          {pkg.title}
-                        </h3>
-                        {pkgPrice && (
-                          <span className="font-display font-semibold text-brand-ink text-lg shrink-0">
-                            {pkgPrice}
-                          </span>
-                        )}
-                      </div>
-                      {pkg.description && (
-                        <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap mb-3">
-                          {pkg.description}
-                        </p>
-                      )}
-                      {pkg.includes && pkg.includes.length > 0 && (
-                        <ul className="space-y-1.5 mb-4">
-                          {pkg.includes.map((item, i) => (
-                            <li
-                              key={i}
-                              className="flex items-start gap-2 text-sm text-ink"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5 text-moss" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5 12l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {!isOwnProfile && (
-                        <IletisimButton
-                          professionalId={profile.id}
-                          professionalName={displayName}
-                          categorySlug={profile.service_categories?.slug ?? null}
-                          isLoggedIn={isLoggedIn}
-                          currentUserIsProfessional={currentUserIsProfessional}
-                          isOwnProfile={isOwnProfile}
-                          etkinlikId={etkinlikId}
-                          packageContext={{
-                            title: pkg.title,
-                            price: pkgPrice,
-                          }}
-                          variant="package"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <h2 className="font-display text-2xl text-ink mb-6">
+                Hizmetler ve paketler
+              </h2>
+              {packages.length > 0 && (
+                <div className="mb-8">
+                  <div className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink mb-1">Paketler</div>
+                  <p className="text-sm text-ink-72 mb-4">
+                    Hazır paketler — ihtiyacına en yakınını seçip doğrudan
+                    iletişime geç.
+                  </p>
+                  <div className="space-y-4">
+                    {packages.map((pkg) => {
+                      const pkgPrice = formatPriceRange(
+                        pkg.price_min,
+                        pkg.price_max,
+                        pkg.price_on_request,
+                        'total',
+                        pkg.price_starting
+                      );
+                      return (
+                        <div
+                          key={pkg.id}
+                          className="border border-line rounded-xl p-5 hover:border-brand-ink/40 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
+                            <h3 className="font-display text-xl text-ink">
+                              {pkg.title}
+                            </h3>
+                            {pkgPrice && (
+                              <span className="font-display font-semibold text-brand-ink text-lg shrink-0">
+                                {pkgPrice}
+                              </span>
+                            )}
+                          </div>
+                          {pkg.description && (
+                            <p className="text-sm text-ink-72 leading-relaxed whitespace-pre-wrap mb-3">
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.includes && pkg.includes.length > 0 && (
+                            <ul className="space-y-1.5 mb-4">
+                              {pkg.includes.map((item, i) => (
+                                <li
+                                  key={i}
+                                  className="flex items-start gap-2 text-sm text-ink"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5 text-moss" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 12l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {!isOwnProfile && (
+                            <IletisimButton
+                              professionalId={profile.id}
+                              professionalName={displayName}
+                              categorySlug={profile.service_categories?.slug ?? null}
+                              isLoggedIn={isLoggedIn}
+                              currentUserIsProfessional={currentUserIsProfessional}
+                              isOwnProfile={isOwnProfile}
+                              etkinlikId={etkinlikId}
+                              packageContext={{
+                                title: pkg.title,
+                                price: pkgPrice,
+                              }}
+                              iller={iller}
+                              saglayiciIli={cityName ?? null}
+                              yalnizKendiSehri={yalnizKendiSehri}
+                              hizmetSecenekleri={ajansHizmetBasliklari}
+                              ajansMi
+                              variant="package"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {services.length > 0 && (
+                <div>
+                  {packages.length > 0 && (
+                    <div className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink mb-3">Hizmetler</div>
+                  )}
+                  <div className="space-y-5">
+                    {services.map((service) => (
+                      <HizmetSecici
+                        key={service.id}
+                        service={service}
+                        professionalId={profile.id}
+                        professionalName={displayName}
+                        categorySlug={profile.service_categories?.slug ?? null}
+                        isLoggedIn={isLoggedIn}
+                        currentUserIsProfessional={currentUserIsProfessional}
+                        isOwnProfile={isOwnProfile}
+                        iller={iller}
+                        saglayiciIli={cityName ?? null}
+                        yalnizKendiSehri={yalnizKendiSehri}
+                        hizmetSecenekleri={ajansHizmetBasliklari}
+                        ajansMi
+                        etkinlikId={etkinlikId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* HİZMETLER */}
-          {services.length > 0 && (
-            <div className="bg-card border border-line rounded-lg p-8 mb-6">
-              <h2 className="font-display text-2xl text-ink mb-6">
-                Sunulan hizmetler
-              </h2>
-              <div className="space-y-5">
-                {services.map((service) => (
-                  <HizmetSecici
-                    key={service.id}
-                    service={service}
-                    professionalId={profile.id}
-                    professionalName={displayName}
-                    categorySlug={profile.service_categories?.slug ?? null}
-                    isLoggedIn={isLoggedIn}
-                    currentUserIsProfessional={currentUserIsProfessional}
-                    isOwnProfile={isOwnProfile}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
           {/* YORUMLAR (varsa) */}
           {recentReviews.length > 0 && (
             <div className="bg-card border border-line rounded-lg p-8 mb-6">
@@ -1450,6 +1524,11 @@ export default async function PublicProfilePage({
                 enDusukFiyat={ajansEnDusukFiyat}
                 blockedDates={blockedDates}
                 bookedDates={[]}
+                iller={iller}
+                saglayiciIli={cityName ?? null}
+                yalnizKendiSehri={yalnizKendiSehri}
+                hizmetSecenekleri={ajansHizmetBasliklari}
+                ajansMi
                 cta={
                   !isOwnProfile
                     ? {

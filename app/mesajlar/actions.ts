@@ -17,6 +17,7 @@ import {
   etkinlikTuruAnahtarlari,
 } from '@/app/lib/etkinlik-turleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
+import { briefVeriTemizle } from '@/app/lib/brief-anahtarlari';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -47,7 +48,12 @@ export type StartConversationData = {
   location: string | null;
   guest_count: number | null;
   budget_range: string | null;
-  brief_data?: Record<string, string> | null;
+  /**
+   * Duzeltme 10-E5: yeni anahtarlar (`<key>_esnek` MANTIKSAL) geldigi icin
+   * deger tipi `unknown`; tip ve uzunluk sunucuda `briefVeriTemizle` ile
+   * sabitlenir (aciklama en fazla 120 karakter).
+   */
+  brief_data?: Record<string, unknown> | null;
   // 'quote' (varsayılan, Teklif Al) | 'booking_request' (Rezervasyon Talebi)
   request_type?: 'quote' | 'booking_request';
   start_time?: string | null;
@@ -444,7 +450,8 @@ export async function startConversation(
       updateFields.location = data.location?.trim() || null;
     if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
     if (safeBudgetRange !== null) updateFields.budget_range = safeBudgetRange;
-    if (data.brief_data) updateFields.brief_data = data.brief_data;
+    const temizBrief = briefVeriTemizle(data.brief_data);
+    if (temizBrief) updateFields.brief_data = temizBrief;
     if (data.start_time !== undefined && data.start_time !== null)
       updateFields.start_time = data.start_time;
     if (data.end_time !== undefined && data.end_time !== null)
@@ -471,7 +478,7 @@ export async function startConversation(
         location: data.location?.trim() || null,
         guest_count: data.guest_count,
         budget_range: safeBudgetRange,
-        brief_data: data.brief_data ?? null,
+        brief_data: briefVeriTemizle(data.brief_data),
         request_type: data.request_type ?? 'quote',
         start_time: data.start_time ?? null,
         end_time: data.end_time ?? null,

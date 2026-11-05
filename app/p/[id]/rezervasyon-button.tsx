@@ -18,6 +18,11 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import {
+  IlSecici,
+  ilEslestir,
+  type Il,
+} from '@/app/components/ui/il-secici';
 
 type Props = {
   professionalId: string;
@@ -32,6 +37,12 @@ type Props = {
    * doldurur; form alanlari ve action DEGISMEZ, yalniz baslangic degeri.
    */
   initialDate?: string | null;
+  /**
+   * Duzeltme 10-D4: il secici verisi (kart ile ayni kural).
+   */
+  iller?: Il[];
+  saglayiciIli?: string | null;
+  yalnizKendiSehri?: boolean;
   /** D2 — karttaki sehir; modalin "Konum" alanini bos ise doldurur. */
   initialLocation?: string | null;
 };
@@ -46,6 +57,9 @@ export function RezervasyonButton({
   variant = 'default',
   initialDate = null,
   initialLocation = null,
+  iller = [],
+  saglayiciIli = null,
+  yalnizKendiSehri = false,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -63,6 +77,17 @@ export function RezervasyonButton({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
+  /**
+   * Duzeltme 10-D4: il ve mekan YEREL; alana birlesik yazilir.
+   * `location` tek gercek kalir (eylem ve legacy sutun ayni degeri okur).
+   */
+  const [mekan, setMekan] = useState('');
+  const secilenIl =
+    yalnizKendiSehri && saglayiciIli ? saglayiciIli : ilEslestir(location, iller);
+  function konumYaz(il: string, m: string) {
+    const t = m.trim();
+    setLocation(il ? (t ? `${t}, ${il}` : il) : t);
+  }
   const [message, setMessage] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -207,7 +232,12 @@ export function RezervasyonButton({
       message: message.trim(),
       event_date: eventDate,
       event_type: null,
-      location: location.trim() || null,
+      // "Yalnizca kendi sehri" saglayicida secici kilitli il gosterir; kullanici
+      // dokunmadiysa alan bos kalabilir -> saglayicinin iline tamamlanir.
+      location:
+        location.trim() ||
+        (yalnizKendiSehri && saglayiciIli ? saglayiciIli : '') ||
+        null,
       guest_count: null,
       budget_range: null,
       brief_data: null,
@@ -429,15 +459,56 @@ export function RezervasyonButton({
                 <label htmlFor="booking-location" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                   Yer / Lokasyon
                 </label>
-                <input
-                  id="booking-location"
-                  type="text"
-                  maxLength={200}
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="örn. İstanbul, Beşiktaş"
-                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                />
+                {/* Duzeltme 10-D4: il SECICI + istege bagli ilce / mekan.
+                    Kaydedilen deger ayni alanda: "<mekan>, <Il>" ya da "<Il>". */}
+                {iller.length === 0 ? (
+                  /* Il listesi gelmediyse eski serbest metin (bos secici yerine). */
+                  <input
+                    id="booking-location"
+                    type="text"
+                    maxLength={200}
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="örn. İstanbul, Beşiktaş"
+                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                  />
+                ) : (
+                <div className="space-y-2">
+                  <IlSecici
+                    id="booking-location"
+                    iller={iller}
+                    deger={secilenIl}
+                    oncelikliIl={saglayiciIli}
+                    sabitIl={yalnizKendiSehri ? saglayiciIli : null}
+                    onChange={(ad) => konumYaz(ad, mekan)}
+                  />
+                  <input
+                    type="text"
+                    maxLength={80}
+                    value={mekan}
+                    onChange={(e) => {
+                      const m = e.target.value.slice(0, 80);
+                      setMekan(m);
+                      konumYaz(secilenIl, m);
+                    }}
+                    placeholder="İlçe / mekan (isteğe bağlı)"
+                    className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                  />
+                  {yalnizKendiSehri && saglayiciIli && (
+                    <p className="text-xs text-ink-72">
+                      Bu profesyonel yalnız {saglayiciIli} içinde hizmet veriyor.
+                    </p>
+                  )}
+                  {!yalnizKendiSehri &&
+                    saglayiciIli &&
+                    secilenIl !== '' &&
+                    secilenIl !== saglayiciIli && (
+                      <p className="text-xs text-ink-72">
+                        Şehir dışı: ulaşım ve konaklama teklife eklenebilir.
+                      </p>
+                    )}
+                </div>
+                )}
               </div>
 
               <div>

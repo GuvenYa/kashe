@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/app/lib/supabase-browser';
 import { KasheMark } from '@/app/components/ui/kashe-mark';
+import { KasheWordmark } from '@/app/components/ui/kashe-wordmark';
 import {
   BOLUM_ETIKETLERI,
   BOLUM_SIRASI,
@@ -348,9 +349,7 @@ export function PanelYanMenu({
           onClick={() => setAcik(false)}
         >
           <KasheMark variant="dark" className="w-7 h-7 shrink-0" title="" />
-          <span className="font-display font-semibold text-xl text-paper tracking-tight">
-            Kashe
-          </span>
+          <KasheWordmark variant="dark" className="h-3.5 shrink-0" />
         </Link>
         {hesap.rozet && (
           <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-paper/72 bg-paper/10 px-2 py-0.5 rounded-full border border-paper/20 shrink-0">
@@ -517,9 +516,7 @@ export function PanelYanMenu({
       <div className="lg:hidden sticky top-0 z-40 bg-ink border-b border-paper/10 flex items-center justify-between px-5 py-3">
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <KasheMark variant="dark" className="w-7 h-7 shrink-0" title="" />
-          <span className="font-display font-semibold text-xl text-paper tracking-tight">
-            Kashe
-          </span>
+          <KasheWordmark variant="dark" className="h-3.5 shrink-0" />
           {hesap.rozet && (
             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-paper/72 bg-paper/10 px-2 py-0.5 rounded-full border border-paper/20 shrink-0">
               {hesap.rozet}

@@ -15,6 +15,11 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
+import {
+  BRIEF_ACIKLAMA_SONEKI,
+  BRIEF_ESNEK_SONEKI,
+} from '@/app/lib/brief-anahtarlari';
 
 type Category = { id: number; slug: string; name_tr: string };
 type City = { id: number; name: string };
@@ -186,6 +191,19 @@ export function TeklifToplaFormu({
     }
 
     for (const f of briefFields) {
+      const esnek =
+        (briefValues[`${f.key}${BRIEF_ESNEK_SONEKI}`] ?? '') === '1';
+      // Duzeltme 10-E2: "tarih henuz belli degil" isaretliyse zorunluluk kalkar.
+      if (f.type === 'date' && esnek) continue;
+      // E3: "Diger" secildiyse aciklama zorunlu.
+      if (
+        f.type === 'select' &&
+        briefValues[f.key] === 'other' &&
+        !(briefValues[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] ?? '').trim()
+      ) {
+        setError(`"${f.label} - kısaca yaz" alanı zorunlu.`);
+        return;
+      }
       if (f.required && !(briefValues[f.key] && briefValues[f.key].trim())) {
         setError(`"${f.label}" alanı zorunlu.`);
         return;
@@ -206,6 +224,13 @@ export function TeklifToplaFormu({
     for (const f of briefFields) {
       const raw = briefValues[f.key]?.trim();
       if (raw) cleanBrief[f.key] = raw;
+      // Duzeltme 10-E: ek anahtarlar da gider ("Diger" aciklamasi, tarih
+      // esnek); sunucu `briefVeriTemizle` ile tip ve uzunlugu sabitler.
+      const aciklama = briefValues[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`]?.trim();
+      if (aciklama) cleanBrief[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`] = aciklama;
+      if (briefValues[`${f.key}${BRIEF_ESNEK_SONEKI}`] === '1') {
+        cleanBrief[`${f.key}${BRIEF_ESNEK_SONEKI}`] = '1';
+      }
     }
 
     // Bütçe parse (Türkçe binlik ayraç temizle)
@@ -400,86 +425,19 @@ export function TeklifToplaFormu({
             <p className="text-sm text-ink-72 mb-4 -mt-1">{briefIntro}</p>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {briefFields
-              .filter(
+            {/* Duzeltme 10-E: alanlar ORTAK cizicide (tarih esnek kutusu,
+                "Diger" aciklamasi). `location` burada HARIC: bu sayfanin kendi
+                il acilir kutusu var (yukarida), butce de ayri sorulur. */}
+            <BriefAlanlari
+              alanlar={briefFields.filter(
                 (field) =>
                   field.legacyColumn !== 'location' &&
                   field.legacyColumn !== 'budget_range'
-              )
-              .map((field) => {
-              const value = briefValues[field.key] ?? '';
-              const wrapperClass =
-                field.type === 'textarea' ? 'md:col-span-2' : '';
-              return (
-                <div key={field.key} className={wrapperClass}>
-                  <label
-                    htmlFor={`brief-${field.key}`}
-                    className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
-                  >
-                    {field.label}
-                    {field.required && (
-                      <span className="text-brand-ink"> *</span>
-                    )}
-                  </label>
-                  {field.type === 'select' ? (
-                    <select
-                      id={`brief-${field.key}`}
-                      value={value}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      className={inputClass}
-                    >
-                      <option value="">Seç...</option>
-                      {field.options?.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      id={`brief-${field.key}`}
-                      rows={3}
-                      maxLength={1000}
-                      value={value}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      className={`${inputClass} resize-none`}
-                    />
-                  ) : field.type === 'date' ? (
-                    <input
-                      id={`brief-${field.key}`}
-                      type="date"
-                      onClick={takvimiAc}
-                      min={todayStr}
-                      value={value}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      className={inputClass}
-                    />
-                  ) : field.type === 'number' ? (
-                    <input
-                      id={`brief-${field.key}`}
-                      type="number"
-                      min={0}
-                      max={100000}
-                      value={value}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      className={inputClass}
-                    />
-                  ) : (
-                    <input
-                      id={`brief-${field.key}`}
-                      type="text"
-                      maxLength={200}
-                      value={value}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      className={inputClass}
-                    />
-                  )}
-                </div>
-              );
-            })}
+              )}
+              degerler={briefValues}
+              setAlan={setField}
+              bugun={todayStr}
+            />
           </div>
           <p className="text-xs text-ink-72 mt-3">
             Yıldızlı (*) alanlar zorunlu — diğerlerini bildiğin kadar doldur.

@@ -4,6 +4,7 @@ import { IletisimButton } from './iletisim-button';
 import { RezervasyonButton } from './rezervasyon-button';
 import { useProfilIslem } from './profil-islem-baglami';
 import { type OnBehalfBusiness } from '@/app/components/on-behalf-selector';
+import type { Il } from '@/app/components/ui/il-secici';
 
 /**
  * MOBIL ALT CTA CUBUGU (D2-ek) — `lg` altinda sayfanin dibine sabit.
@@ -23,6 +24,11 @@ export function MobilCtaCubugu({
   currentUserIsProfessional,
   isOwnProfile,
   writableBusinesses,
+  iller = [],
+  saglayiciIli = null,
+  yalnizKendiSehri = false,
+  hizmetSecenekleri = [],
+  etkinlikId = null,
 }: {
   professionalId: string;
   professionalName: string;
@@ -31,6 +37,16 @@ export function MobilCtaCubugu({
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
   writableBusinesses: OnBehalfBusiness[];
+  /**
+   * Duzeltme 10 incelemesi: kartla AYNI il secici verisi ve hizmet secenekleri.
+   * Verilmezse mobilde brief'in il alani serbest metne duser (bos secici yok).
+   */
+  iller?: Il[];
+  saglayiciIli?: string | null;
+  yalnizKendiSehri?: boolean;
+  hizmetSecenekleri?: string[];
+  /** FAZ 4c/P3 etkinlik bagi (bulgu 84): `?etkinlik=` sohbete tasinir. */
+  etkinlikId?: string | null;
 }) {
   const { tarih, sehir, kisi } = useProfilIslem();
 
@@ -47,6 +63,11 @@ export function MobilCtaCubugu({
             isOwnProfile={isOwnProfile}
             writableBusinesses={writableBusinesses}
             variant="primary-accent"
+            etkinlikId={etkinlikId}
+            iller={iller}
+            saglayiciIli={saglayiciIli}
+            yalnizKendiSehri={yalnizKendiSehri}
+            hizmetSecenekleri={hizmetSecenekleri}
             onDolgu={{ tarih, sehir, kisi }}
           />
         </div>
@@ -61,6 +82,9 @@ export function MobilCtaCubugu({
             variant="outline-ink"
             initialDate={tarih}
             initialLocation={sehir}
+            iller={iller}
+            saglayiciIli={saglayiciIli}
+            yalnizKendiSehri={yalnizKendiSehri}
           />
         </div>
       </div>

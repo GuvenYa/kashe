@@ -30,8 +30,13 @@ import {
   pazarKiyaslari,
   rolIdleriSlugdan,
 } from '@/app/lib/fiyat-kiyas-data';
-import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
-import { aramaKatla, aramaTerimi, esAnlamliEslesme } from '@/app/lib/arama';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import {
+  aramaKatla,
+  aramaTerimi,
+  esAnlamliEslesme,
+  etkinlikTuruEslesmesi,
+} from '@/app/lib/arama';
 import Link from 'next/link';
 
 export const metadata = {
@@ -127,7 +132,13 @@ export default async function KesfetPage({
   // ayiklanir. FAZ 10b: gecerli anahtar kumesi `event_types` TABLOSUNDAN
   // (aktif + pasif; pasif tur mevcut kayitlarda duruyor). Tabloda olmayan
   // anahtar suzgece HIC girmez — sayfa 404 vermez, suzgec yok sayilir.
-  const turAnahtarlari = await etkinlikTuruAnahtarlari();
+  // Duzeltme 10-C: ayni onbellekli okumadan HEM gecerli anahtar kumesi HEM
+  // tur ADLARI (arama eslesmesi) turetilir — ikinci sorgu YOK.
+  const tumTurler = await etkinlikTurleri({ hepsi: true });
+  const turAnahtarlari = new Set(tumTurler.map((t) => t.key));
+  const aktifTurAdlari = tumTurler
+    .filter((t) => t.aktif)
+    .map((t) => ({ key: t.key, name_tr: t.label }));
   const eventTypes = params.etkinlik
     ? params.etkinlik
         .split(',')
@@ -186,9 +197,17 @@ export default async function KesfetPage({
     aramaKosullari.push(`arama_metni.ilike.%${katliTerim}%`);
 
     const eslesme = esAnlamliEslesme(searchQuery);
-    const sozlukTurleri = eslesme.etkinlikTurleri.filter((k) =>
-      turAnahtarlari.has(k)
-    );
+    /**
+     * Duzeltme 10-C (bulgu 81): sozluk es anlamlilari + TUR ADI eslesmesi
+     * birlesir (tekrarsiz). "Gala" yazan artik Gala turunu beyan edenleri de
+     * buluyor; "acilis" sozlukten gelmeye devam ediyor.
+     */
+    const sozlukTurleri = [
+      ...new Set([
+        ...eslesme.etkinlikTurleri,
+        ...etkinlikTuruEslesmesi(searchQuery, aktifTurAdlari),
+      ]),
+    ].filter((k) => turAnahtarlari.has(k));
     for (const k of sozlukTurleri) {
       aramaKosullari.push(
         `category_attributes.cs.{"etkinlik_turleri":["${k}"]}`

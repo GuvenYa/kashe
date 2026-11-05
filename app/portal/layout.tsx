@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { KasheMark } from '@/app/components/ui/kashe-mark';
+import { KasheWordmark } from '@/app/components/ui/kashe-wordmark';
 
 /**
  * FAZ 7a / P2 — misafir portali kabugu.
@@ -29,10 +30,8 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           {/* TopNav ile ayni logo blogu (bilesen degil, yalniz gorunum) */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <KasheMark className="w-8 h-8" />
-            <span className="font-display font-semibold text-lg md:text-xl text-ink tracking-tight">
-              Kashe
-            </span>
+            <KasheMark className="w-8 h-8" title="" />
+            <KasheWordmark className="h-4" />
           </Link>
 
           <nav className="flex items-center gap-3 md:gap-5">

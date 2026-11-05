@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { KasheMark } from "@/app/components/ui/kashe-mark";
+import { KasheWordmark } from "@/app/components/ui/kashe-wordmark";
 import { createClient } from "@/app/lib/supabase-server";
 import { MobileNav } from "./mobile-nav";
 import { UnreadBadge } from "./unread-badge";
@@ -102,10 +103,8 @@ export async function TopNav() {
           prefetch={false}
           className="kashe-logo flex items-center gap-2.5 shrink-0"
         >
-          <KasheMark className="w-8 h-8 kashe-logo-mark" />
-          <span className="font-display font-semibold text-xl text-ink tracking-tight">
-            Kashe
-          </span>
+          <KasheMark className="w-8 h-8 kashe-logo-mark" title="" />
+          <KasheWordmark className="h-4" />
         </Link>
 
         {/* Orta nav — tek kaynak: nav-links (mobil hamburger ile parite) */}

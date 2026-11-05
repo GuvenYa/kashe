@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/app/lib/supabase-server';
+import { briefVeriTemizle } from '@/app/lib/brief-anahtarlari';
 import { revalidatePath } from 'next/cache';
 import {
   QUOTE_EXPIRY_OPTIONS,
@@ -23,7 +24,8 @@ type ActionResult<T = void> =
 type CreateQuoteRequestInput = {
   category_id: number;
   city_id: number | null;
-  brief_data: Record<string, string> | null;
+  /** Duzeltme 10-E5: `_esnek` mantiksal; sunucuda temizlenir. */
+  brief_data: Record<string, unknown> | null;
   event_date: string | null;
   event_type: string | null;
   budget_min: number | null;
@@ -177,7 +179,7 @@ export async function createQuoteRequest(
       created_by: user.id,
       category_id: input.category_id,
       city_id: input.city_id,
-      brief_data: input.brief_data,
+      brief_data: briefVeriTemizle(input.brief_data),
       event_date: input.event_date,
       // FAZ 10b: `event_type` FK ile `event_types`'a bagli; liste disi deger
       // (eski `?tur=` on-doldurma) yazilmaz -> NULL (sohbetteki safeEventType

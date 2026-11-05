@@ -14,6 +14,14 @@ type Props = {
   isLoggedIn: boolean;
   currentUserIsProfessional: boolean;
   isOwnProfile: boolean;
+  /** Duzeltme 10-D/F3: il secici + hizmet secimi verisi (modal icin). */
+  iller?: { id: number; name: string }[];
+  saglayiciIli?: string | null;
+  yalnizKendiSehri?: boolean;
+  hizmetSecenekleri?: string[];
+  ajansMi?: boolean;
+  /** FAZ 4c/P3 etkinlik bagi: `?etkinlik=` teklif sohbetine tasinir. */
+  etkinlikId?: string | null;
 };
 
 function formatPrice(price: number): string {
@@ -28,11 +36,16 @@ export function HizmetSecici({
   isLoggedIn,
   currentUserIsProfessional,
   isOwnProfile,
+  iller = [],
+  saglayiciIli = null,
+  yalnizKendiSehri = false,
+  hizmetSecenekleri = [],
+  ajansMi = false,
+  etkinlikId = null,
 }: Props) {
   // Sadece aktif ekstralar
   const addons = (service.service_addons || []).filter((a) => a.is_active);
   const hasAddons = addons.length > 0;
-   console.log('HizmetSecici', service.title, 'addons:', service.service_addons, 'aktif:', addons.length);
 
   // Seçili ekstra id'leri
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -157,28 +170,40 @@ export function HizmetSecici({
             </div>
           )}
 
-          {/* İletişim — seçili ekstralarla */}
-          {!isOwnProfile && !currentUserIsProfessional && (
-            <div className="mt-3">
-              <IletisimButton
-                professionalId={professionalId}
-                professionalName={professionalName}
-                categorySlug={categorySlug}
-                isLoggedIn={isLoggedIn}
-                currentUserIsProfessional={currentUserIsProfessional}
-                isOwnProfile={isOwnProfile}
-                serviceContext={{
-                  title: service.title,
-                  addons: selectedAddons.map((a) => ({
-                    title: a.title,
-                    price: Number(a.price),
-                  })),
-                  estimatedTotal,
-                }}
-                variant="package"
-              />
-            </div>
-          )}
+        </div>
+      )}
+
+      {/*
+        Duzeltme 10-F2 (bulgu 76 b): teklif dugmesi EKLENTI KUTUSUNUN ICINDEN
+        cikti. Eskiden yalniz eklentisi olan hizmette gorunuyordu; eklentisiz
+        hizmette kullanici o hizmet icin teklif isteyemiyordu. Secili ekstralar
+        varsa yine birlikte gider (`serviceContext`).
+      */}
+      {!isOwnProfile && !currentUserIsProfessional && (
+        <div className="mt-3">
+          <IletisimButton
+            professionalId={professionalId}
+            professionalName={professionalName}
+            categorySlug={categorySlug}
+            isLoggedIn={isLoggedIn}
+            currentUserIsProfessional={currentUserIsProfessional}
+            isOwnProfile={isOwnProfile}
+            serviceContext={{
+              title: service.title,
+              addons: selectedAddons.map((a) => ({
+                title: a.title,
+                price: Number(a.price),
+              })),
+              estimatedTotal,
+            }}
+            iller={iller}
+            saglayiciIli={saglayiciIli}
+            yalnizKendiSehri={yalnizKendiSehri}
+            hizmetSecenekleri={hizmetSecenekleri}
+            ajansMi={ajansMi}
+            etkinlikId={etkinlikId}
+            variant="package"
+          />
         </div>
       )}
     </div>

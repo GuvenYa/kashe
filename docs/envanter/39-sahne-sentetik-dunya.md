@@ -172,6 +172,11 @@ yok): #37 bir sonraki kurulumda gelir - kurulumda `--tarih` verilmeden uretilir 
 (tercuman / konusmaci / etkinlik koordinatoru). Rastgele sira degismedi: `--tarih 2026-10-29` ciktisinda yalniz 01a'daki 20
 cip satiri degisti. Kurulu dal icin `docs/sahne/07-sahne-duzeltme-04-ozet-ciplari.sql` (ayni metinler; tekrar calistirmak guvenli).
 
+**08 (5 Kasim 2026, bulgu 76b / 77):** `scripts/sahne/uret08.py` -> `docs/sahne/08-sahne-ilanlar-paketler.sql`: 12 yayinda ilan
+(kurum + musteri; rehber hesaplari ilan sahibi degil), 18 basvuru (rehber profesyonelleri basvuran degil), 12 ajansa 2'ser + 15
+profesyonele paket (Mavi Sahne ve Kerem Oz dahil), 12 hizmet eklentisi. Sabit kimlik araligi `5a4e0000-0000-4000-8000-00000008xxxx`;
+tekrar calistirmak guvenli (basvuru bildirimleri dahil silinip yazilir). Kurulum sirasi: 00 -> 01a/01b -> 02a..02e -> 03 -> 04 -> 06 -> 08.
+
 ## 9. Senaryo listesi (eksik bulma turu)
 
 A. **Musteri:** Kesfet filtreleri (kategori, sehir, ozellik), profil sayfasi (moduller, portfoy, pazar araligi, guven dokumu), teklif

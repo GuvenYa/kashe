@@ -1,4 +1,10 @@
 import { getBriefFields, type BriefField } from './brief-config';
+import {
+  BRIEF_ACIKLAMA_SONEKI,
+  BRIEF_ESNEK_SONEKI,
+  aciklamaAnaAnahtari,
+  esnekAnaAnahtari,
+} from './brief-anahtarlari';
 
 /**
  * BRIEF OZETI (Duzeltme 03-A / A2) — kategoriye ozel brief cevaplarini
@@ -34,8 +40,18 @@ const ATLANAN_ANAHTARLAR = new Set([
   'budget_range',
 ]);
 
+/**
+ * Alan tanimi OLMAYAN ama anlami bilinen anahtarlar (Duzeltme 10).
+ * `hizmet`: modaldeki "Hangi hizmet ya da paket?" secimi (F3).
+ */
+const OZEL_ETIKETLER: Record<string, string> = {
+  hizmet: 'Seçilen hizmet',
+};
+
 /** "delivery_time" -> "Delivery time" (alan tanimi yoksa yedek etiket). */
 function hamEtiket(anahtar: string): string {
+  const ozel = OZEL_ETIKETLER[anahtar];
+  if (ozel) return ozel;
   const bosluklu = anahtar.replace(/_/g, ' ').trim();
   if (!bosluklu) return anahtar;
   return bosluklu.charAt(0).toLocaleUpperCase('tr') + bosluklu.slice(1);
@@ -81,13 +97,65 @@ export function briefSatirlari(
   const satirlar: BriefSatiri[] = [];
   const yazilan = new Set<string>();
 
+  /**
+   * Duzeltme 10-E4: iki EK anahtar ana alanla birlikte okunur:
+   *   `<key>_aciklama` -> "<Alan etiketi> açıklaması" (ana alanin HEMEN
+   *      arkasinda; "Diger" secildiginde yazilan kisa metin),
+   *   `<key>_esnek`    -> "<Alan etiketi>: Esnek / belli değil".
+   * Ham anahtar ("Event type aciklama") HICBIR yuzeyde gorunmez.
+   */
+  function anaEtiket(anahtar: string): string {
+    const alan = alanHaritasi.get(anahtar);
+    return alan?.label ?? hamEtiket(anahtar);
+  }
+
+  function ekAnahtarlar(anahtar: string) {
+    // aciklama
+    const aciklamaAnahtari = `${anahtar}${BRIEF_ACIKLAMA_SONEKI}`;
+    if (!yazilan.has(aciklamaAnahtari)) {
+      const metin = degerMetni(undefined, briefData![aciklamaAnahtari]);
+      if (metin !== null) {
+        yazilan.add(aciklamaAnahtari);
+        satirlar.push({
+          etiket: `${anaEtiket(anahtar)} açıklaması`,
+          deger: metin,
+        });
+      }
+    }
+    // esnek tarih
+    const esnekAnahtari = `${anahtar}${BRIEF_ESNEK_SONEKI}`;
+    if (!yazilan.has(esnekAnahtari)) {
+      const ham = briefData![esnekAnahtari];
+      const acik = ham === true || ham === '1' || ham === 'true';
+      if (acik) {
+        yazilan.add(esnekAnahtari);
+        satirlar.push({
+          etiket: anaEtiket(anahtar),
+          deger: 'Esnek / belli değil',
+        });
+      }
+    }
+  }
+
   function ekle(anahtar: string) {
-    if (ATLANAN_ANAHTARLAR.has(anahtar) || yazilan.has(anahtar)) return;
+    // Ek anahtarlar KENDI BASINA satir olmaz: ana alanin arkasinda yazilir.
+    if (aciklamaAnaAnahtari(anahtar) || esnekAnaAnahtari(anahtar)) return;
+    if (ATLANAN_ANAHTARLAR.has(anahtar)) {
+      // Seritte olan alanlarin KENDISI atlanir ama ek anahtarlari yazilir
+      // (ornek: tarih seritte var; "Esnek / belli degil" notu burada).
+      ekAnahtarlar(anahtar);
+      return;
+    }
+    if (yazilan.has(anahtar)) return;
     const alan = alanHaritasi.get(anahtar);
     const deger = degerMetni(alan, briefData![anahtar]);
-    if (deger === null) return;
+    if (deger === null) {
+      ekAnahtarlar(anahtar);
+      return;
+    }
     yazilan.add(anahtar);
     satirlar.push({ etiket: alan?.label ?? hamEtiket(anahtar), deger });
+    ekAnahtarlar(anahtar);
   }
 
   for (const alan of alanlar) ekle(alan.key);

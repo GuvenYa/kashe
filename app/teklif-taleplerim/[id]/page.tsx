@@ -7,6 +7,10 @@ import { TopNav } from '@/app/components/sections/top-nav';
 import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
 import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import {
+  BRIEF_ACIKLAMA_SONEKI,
+  BRIEF_ESNEK_SONEKI,
+} from '@/app/lib/brief-anahtarlari';
 import { getTeamContext } from '@/app/lib/business-write';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
@@ -218,17 +222,40 @@ export default async function TeklifKarsilastirPage({
   const briefItems: { label: string; value: string; wide: boolean }[] = [];
   // 1) Config sırasına göre (formdaki sırayla tanıdık)
   for (const f of briefFields) {
+    // Duzeltme 10-E: ek anahtarlar ana alanla birlikte ("Diger" aciklamasi,
+    // "Tarih henuz belli degil"); asagidaki 2. dongu bunlari ATLAR.
+    const esnek = briefData[`${f.key}${BRIEF_ESNEK_SONEKI}`] as unknown;
+    const aciklama = briefData[`${f.key}${BRIEF_ACIKLAMA_SONEKI}`];
     const raw = briefData[f.key];
-    if (raw == null || String(raw).trim() === '') continue;
+    if (raw == null || String(raw).trim() === '') {
+      if (esnek === true || esnek === '1' || esnek === 'true') {
+        briefItems.push({ label: f.label, value: 'Esnek / belli değil', wide: false });
+      }
+      continue;
+    }
     briefItems.push({
       label: f.label,
       value: formatBriefValue(f, String(raw)),
       wide: f.type === 'textarea',
     });
+    if (typeof aciklama === 'string' && aciklama.trim()) {
+      briefItems.push({
+        label: `${f.label} açıklaması`,
+        value: aciklama.trim(),
+        wide: false,
+      });
+    }
   }
   // 2) Config'te olmayan (eski/kalkan) key'ler — kullanıcı verisi kaybolmasın
   for (const [k, v] of Object.entries(briefData)) {
     if (configKeys.has(k)) continue;
+    // Ek anahtarlar yukarida ana alanla yazildi.
+    if (k.endsWith(BRIEF_ACIKLAMA_SONEKI) || k.endsWith(BRIEF_ESNEK_SONEKI)) {
+      const ana = k.endsWith(BRIEF_ACIKLAMA_SONEKI)
+        ? k.slice(0, -BRIEF_ACIKLAMA_SONEKI.length)
+        : k.slice(0, -BRIEF_ESNEK_SONEKI.length);
+      if (configKeys.has(ana)) continue;
+    }
     if (v == null || String(v).trim() === '') continue;
     briefItems.push({
       label: humanizeKey(k),

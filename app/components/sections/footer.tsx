@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { KasheMark } from "@/app/components/ui/kashe-mark";
+import { KasheWordmark } from "@/app/components/ui/kashe-wordmark";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -12,9 +13,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <Link href="/" prefetch={false} className="flex items-center gap-2.5 mb-4">
               <KasheMark variant="dark" className="w-8 h-8" title="" />
-              <span className="font-display font-semibold text-xl text-paper tracking-tight">
-                Kashe
-              </span>
+              <KasheWordmark variant="dark" className="h-4" />
             </Link>
             <p className="text-paper/70 max-w-xs leading-relaxed">
               Türkiye&apos;nin yetenek sahnesi. Etkinliğin için doğru profesyonel,

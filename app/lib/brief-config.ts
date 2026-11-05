@@ -166,6 +166,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'half_day', label: 'Yarım gün' },
           { value: 'full_day', label: 'Tam gün' },
           { value: 'multi_day', label: 'Birden fazla gün' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -428,6 +429,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: '1_2h', label: '1-2 saat' },
           { value: 'half_day', label: 'Yarım gün' },
           { value: 'full_day', label: 'Tam gün' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -518,6 +520,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'hourly', label: 'Birkaç saat' },
           { value: 'full_day', label: 'Tam gün' },
           { value: 'multi_day', label: 'Birden fazla gün' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -603,6 +606,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'half_day', label: 'Yarım gün' },
           { value: 'full_day', label: 'Tam gün' },
           { value: 'multi_day', label: 'Birden fazla gün' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -636,6 +640,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'urgent', label: 'Acil (birkaç gün)' },
           { value: 'normal', label: '1-2 hafta' },
           { value: 'flexible', label: 'Esnek' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -938,6 +943,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: '30m', label: '~30 dakika' },
           { value: '1h', label: '~1 saat' },
           { value: 'flexible', label: 'Esnek / Görüşelim' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -1035,6 +1041,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: '1h', label: '~1 saat' },
           { value: '2h', label: '~2 saat' },
           { value: 'flexible', label: 'Esnek / Görüşelim' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -1386,6 +1393,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'half_day', label: 'Yarım gün' },
           { value: 'full_day', label: 'Tam gün' },
           { value: 'multi_day', label: 'Çok günlü' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
@@ -1825,6 +1833,7 @@ const CATEGORY_BRIEFS: CategoryBrief[] = [
           { value: 'Tam gün', label: 'Tam gün' },
           { value: 'Çok günlü', label: 'Çok günlü' },
           { value: 'Esnek', label: 'Esnek / Görüşelim' },
+          { value: 'no_pref', label: 'Fark etmez' },
         ],
       },
       {
