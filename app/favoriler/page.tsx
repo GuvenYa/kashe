@@ -333,8 +333,6 @@ const user = await getCachedUser();
                     premium_tier: cityCat?.premium_tier ?? null,
                     premium_until: cityCat?.premium_until ?? null,
                     created_at: cityCat?.created_at ?? null,
-                    attributes: cityCat?.attributes ?? null,
-                    category_attributes: cityCat?.category_attributes ?? null,
                     turkish_cities: cityCat?.turkish_cities ?? null,
                     service_categories: cityCat?.service_categories ?? null,
                   }}

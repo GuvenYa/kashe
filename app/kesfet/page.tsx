@@ -38,27 +38,6 @@ export const metadata = {
   title: 'Keşfet — Kashe',
 };
 
-// Yorum yazarı kısaltması: kurumsal müşteri → kurum adı; birey → "Ad S." (soyadın baş
-// harfi — tam ad kamuya yazılmaz). YALNIZ customer_id profili; created_by ASLA.
-function formatReviewAuthor(
-  customer: {
-    full_name: string | null;
-    company_name: string | null;
-    role: string | null;
-  } | null
-): string {
-  if (!customer) return 'Bir müşteri';
-  if (customer.role === 'business' && customer.company_name) {
-    return customer.company_name;
-  }
-  const name = (customer.full_name || '').trim();
-  if (!name) return 'Bir müşteri';
-  const parts = name.split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  const last = parts[parts.length - 1];
-  return `${parts[0]} ${last.charAt(0).toLocaleUpperCase('tr')}.`;
-}
-
 // FAZ 2c: liste artik v_providers_public gorunumunden okunur. Secilen sutunlar
 // PROVIDER_LISTING_COLUMNS ile tek kaynaktan gelir; kategori/[slug] ile ayni sekil.
 type PublishedProfile = ProviderListing;
@@ -456,39 +435,9 @@ export default async function KesfetPage({
     });
   }
 
-  // ---- YORUM ALINTISI: en yüksek puanlı / en yeni, body dolu yorum + yazar kısaltması ----
-  const quoteByProfile: Record<string, { text: string; author: string }> = {};
-  if (profileIds.length > 0) {
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select(
-        `provider_id, body, rating, created_at,
-         customer:profiles!reviews_customer_id_fkey ( full_name, company_name, role )`
-      )
-      .in('provider_id', profileIds)
-      .not('body', 'is', null)
-      .order('rating', { ascending: false })
-      .order('created_at', { ascending: false });
-    (
-      (reviewsData || []) as unknown as Array<{
-        provider_id: string;
-        body: string | null;
-        customer: {
-          full_name: string | null;
-          company_name: string | null;
-          role: string | null;
-        } | null;
-      }>
-    ).forEach((rv) => {
-      const body = rv.body?.trim();
-      if (!quoteByProfile[rv.provider_id] && body) {
-        quoteByProfile[rv.provider_id] = {
-          text: body,
-          author: formatReviewAuthor(rv.customer),
-        };
-      }
-    });
-  }
+  // Duzeltme 09: YORUM ALINTISI kartta cizilmiyor (alinti profil
+  // sayfasinda kaldi) — bu sorgu ve yazar kisaltmasi SILINDI. Kesfet
+  // artik bir sorgu daha az atiyor.
 
   // ---- MÜSAİTLİK (Sıra 3): önümüzdeki 7 gün dolu mu? ----
   // Dolu gün = availability_blocks (manuel) ∪ onaylı bookings event_date.
@@ -869,7 +818,6 @@ export default async function KesfetPage({
                         }
                         rating={ratingsByProfile[profile.id] || null}
                         jobsCount={jobsByProfile[profile.id] ?? 0}
-                        quote={quoteByProfile[profile.id] ?? null}
                         isFavorited={favoritedIds.has(profile.id)}
                         isLoggedIn={isLoggedIn}
                         currentUserRole={currentUserRole}

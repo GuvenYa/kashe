@@ -31,6 +31,8 @@ export const MARKETING_LINKS: NavLink[] = [
   { href: '/#hizmetler', label: 'Hizmetler', xlOnly: true },
   { href: '/#nasil-calisir', label: 'Nasıl çalışır', xlOnly: true },
   { href: '/#kurumsal', label: 'Kurumsal', xlOnly: true },
-  { href: '/#ajanslar', label: 'Ajanslar', xlOnly: true },
+  // Duzeltme 09-B1: etiket "Saglayicilar" — bolum basligi ve alt bilgi
+  // zaten "Kurumsal hizmet sağlayıcılar"; hedef (`/#ajanslar`) DEGISMEZ.
+  { href: '/#ajanslar', label: 'Sağlayıcılar', xlOnly: true },
   { href: '/fiyatlandirma', label: 'Fiyatlandırma' },
 ];

@@ -97,7 +97,11 @@ export async function TopNav() {
     <nav className="w-full border-b border-line bg-paper/95 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <Link href="/" className="kashe-logo flex items-center gap-2.5 shrink-0">
+        <Link
+          href="/"
+          prefetch={false}
+          className="kashe-logo flex items-center gap-2.5 shrink-0"
+        >
           <KasheMark className="w-8 h-8 kashe-logo-mark" />
           <span className="font-display font-semibold text-xl text-ink tracking-tight">
             Kashe
@@ -110,9 +114,10 @@ export async function TopNav() {
         <div className={"hidden lg:flex items-center " + (user ? "gap-7" : "gap-5")}>
           {/* İşlevsel keşif — her kullanıcıya */}
           {DISCOVERY_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
+              prefetch={false}
               className={
                 link.ai
                   ? navLinkClass + " inline-flex items-center gap-1.5"
@@ -125,27 +130,28 @@ export async function TopNav() {
                 </svg>
               )}
               {link.label}
-            </a>
+            </Link>
           ))}
           {user ? (
             // Teklif Topla: girisli + teklif toplayabilen roller (menu modeliyle tutarli)
             canCollectOffers && (
-              <a href="/teklif-topla" className={navLinkClass}>
+              <Link href="/teklif-topla" prefetch={false} className={navLinkClass}>
                 Teklif Topla
-              </a>
+              </Link>
             )
           ) : (
             // Pazarlama — yalnız girişsiz
             MARKETING_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className={
                   link.xlOnly ? navLinkClass + " hidden xl:inline-flex" : navLinkClass
                 }
               >
                 {link.label}
-              </a>
+              </Link>
             ))
           )}
         </div>
@@ -154,7 +160,11 @@ export async function TopNav() {
         <div className="hidden lg:flex items-center gap-4 shrink-0">
           {user ? (
             <>
-              <Link href="/mesajlar" className={navLinkClass + " inline-flex items-center gap-1.5"}>
+              <Link
+                href="/mesajlar"
+                prefetch={false}
+                className={navLinkClass + " inline-flex items-center gap-1.5"}
+              >
                 Mesajlar
                 <UnreadBadge userId={user.id} />
               </Link>
@@ -174,14 +184,14 @@ export async function TopNav() {
             </>
           ) : (
             <>
-              <a href="/giris" className={navLinkClass}>
+              <Link href="/giris" prefetch={false} className={navLinkClass}>
                 Giriş yap
-              </a>
-              <a href="/uye-ol">
+              </Link>
+              <Link href="/uye-ol" prefetch={false}>
                 <Button variant="primary" size="md">
                   Üye ol
                 </Button>
-              </a>
+              </Link>
             </>
           )}
         </div>

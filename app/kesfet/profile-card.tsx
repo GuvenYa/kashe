@@ -1,10 +1,5 @@
 import Link from 'next/link';
 import FavoriteButton from '@/app/components/FavoriteButton';
-import {
-  getFilterFields,
-  getFilterSource,
-  readFilterFieldValues,
-} from '@/app/lib/filter-config';
 import { isVerified, isPremiumActive } from '@/app/lib/badges';
 import { formatTL } from '@/app/lib/para';
 import { gosterilecekAd } from '@/app/lib/kamu-adi';
@@ -24,9 +19,6 @@ type Props = {
     approval_status?: string | null;
     premium_tier?: string | null;
     premium_until?: string | null;
-    attributes?: Record<string, string | string[]> | null;
-    /** Yeni sistem (source: 'category_attributes') kategorilerinde etiket kaynağı. */
-    category_attributes?: Record<string, unknown> | null;
     turkish_cities: { name: string } | null;
     service_categories: { name_tr: string; emoji: string | null; slug: string } | null;
   };
@@ -36,19 +28,7 @@ type Props = {
   rating: { count: number; average: number } | null;
   /** Onaylı/tamamlanan iş sayısı (0/undefined → gizlenir). */
   jobsCount?: number;
-  /** En iyi yorum alıntısı (yoksa/undefined → alıntı kutusu render edilmez, panel kısalır). */
-  quote?: { text: string; author: string } | null;
-  /** 'default' = Keşfet/favoriler/kategori/p[id] (mobil+masaüstü hover paneli, favori kalbi).
-   *  'compact' = ana sayfa öne çıkanlar (tek foto-hero, hover paneli/kalp YOK, whole-card link). */
-  variant?: 'default' | 'compact';
-  /**
-   * ARTIK ETKISIZ (D2): masaustu foto alani `default` varyantta HER ZAMAN
-   * `aspect-[4/3]`. Eskiden kesfet 3:4 (dikey), ana sayfa 4:3 kullaniyordu;
-   * iki farkli oran ayni karti iki ayri urun gibi gosteriyordu. Prop, mevcut
-   * cagiranlari kirmamak icin duruyor.
-   */
-  yogun?: boolean;
-  /** default varyantta favori kalbi için; compact'ta kullanılmaz (opsiyonel). */
+  /** Favori kalbi icin (opsiyonel). */
   isFavorited?: boolean;
   isLoggedIn?: boolean;
   currentUserRole?: string | null;
@@ -76,8 +56,6 @@ type Props = {
    */
   tamAd?: boolean;
 };
-
-const QUOTE_MAX = 90;
 
 function StarIcon({ className = '' }: { className?: string }) {
   return (
@@ -219,29 +197,11 @@ function TopChips({
   );
 }
 
-function ServiceChips({ tags }: { tags: string[] }) {
-  if (tags.length === 0) return null;
-  return (
-    <div className="flex gap-1.5 flex-wrap">
-      {tags.map((tag) => (
-        <span
-          key={tag}
-          className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-72 bg-paper border border-line px-2 py-1 rounded whitespace-nowrap truncate max-w-[130px]"
-        >
-          {tag}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export function ProfileCard({
   profile,
   cover,
   rating,
   jobsCount = 0,
-  quote = null,
-  variant = 'default',
   isFavorited = false,
   isLoggedIn = false,
   currentUserRole = null,
@@ -278,25 +238,6 @@ export function ProfileCard({
 
   const categoryName = profile.service_categories?.name_tr ?? null;
   const cityName = profile.turkish_cities?.name ?? null;
-
-  // Hizmet etiketi chip'leri: kategoriye özel ilk multi alanın ilk 3 değeri.
-  // KAYNAK-FARKINDA: kategori 'category_attributes' sistemindeyse değerler oradan
-  // okunur (attributes o kategorilerde BOŞ olur — ayna yazma yok).
-  const categorySlug = profile.service_categories?.slug ?? null;
-  let attrTags: string[] = [];
-  if (categorySlug) {
-    const source = getFilterSource(categorySlug);
-    const firstMulti = getFilterFields(categorySlug).find((f) => f.type === 'multi');
-    if (firstMulti) {
-      attrTags = readFilterFieldValues(
-        firstMulti,
-        source,
-        profile.attributes,
-        profile.category_attributes
-      ).map((v) => firstMulti.options.find((o) => o.value === v)?.label ?? v);
-    }
-  }
-  const tags = attrTags.slice(0, 3);
 
   const badgeInput = {
     approvalStatus: profile.approval_status,
@@ -336,12 +277,6 @@ export function ProfileCard({
   const showFavoriteButton =
     profile.role === 'professional' || profile.role === 'agency';
 
-  const quoteText = quote
-    ? quote.text.length > QUOTE_MAX
-      ? quote.text.slice(0, QUOTE_MAX).trimEnd() + '…'
-      : quote.text
-    : null;
-
   const profileHref = etkinlikId
     ? `/p/${profile.id}?etkinlik=${etkinlikId}`
     : `/p/${profile.id}`;
@@ -352,49 +287,22 @@ export function ProfileCard({
     </span>
   ) : null;
 
-  // ===================== KOMPAKT (ana sayfa öne çıkanlar) =====================
-  // Tek foto-hero: tam-kanvas foto + alt gradient şerit (ad + doğrulanmış + ★puan(n)·şehir).
-  // Favori kalbi YOK, hover paneli YOK, iş sayısı YOK; kartın TAMAMI profil linki.
-  if (variant === 'compact') {
-    return (
-      <Link
-        href={profileHref}
-        prefetch={false}
-        aria-label={displayName}
-        className={`group relative block rounded-2xl overflow-hidden bg-card border transition-all duration-300 hover:-translate-y-1 ${
-          isPremium
-            ? 'border-[#D9C179] ring-1 ring-[#D9C179]/40 hover:border-[#C9AE5F] hover:shadow-[0_16px_36px_-16px_rgba(138,109,31,0.35)]'
-            : 'border-line hover:border-brand-ink hover:shadow-[0_16px_36px_-18px_rgba(20,61,49,0.35)]'
-        }`}
-      >
-        <div className="relative aspect-[4/5]">
-          <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
-          <div
-            className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
-            aria-hidden="true"
-          />
-          <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'premium' : 'heart'} />
-          {isPremium && (
-            <span className="absolute top-3 right-3 font-mono text-[10px] uppercase tracking-[0.14em] bg-brand-accent text-paper px-2 py-1 rounded-md shadow-sm">
-              Premium
-            </span>
-          )}
-          <div className="absolute inset-x-0 bottom-0 p-4">
-            {/* Duzeltme 05-B: bir kademe kucuk (text-lg -> text-base) ve ad
-                TEK SATIRDA KESILMEZ, en fazla iki satir olur. */}
-            <h3 className="font-display text-base text-white font-semibold leading-tight flex items-start gap-1.5">
-              <span className="line-clamp-2">{displayName}</span>
-              {verified && <VerifiedIcon size={15} />}
-            </h3>
-            <div className="mt-1">
-              <MetaRow light rating={rating} jobsCount={0} cityName={cityName} />
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
-  }
-
+  /**
+   * ===================== VARSAYILAN (Kesfet / kategori / favori / benzer) =====================
+   *
+   * Duzeltme 09 (bulgu 66 a/c/e) — TEK KART DILI:
+   *   - oran 4:5 HER YERDE (ana sayfa dahil); fotograf one cikar,
+   *   - fotograf HEP GORUNUR: beyaz govde ve tam ekran hover paneli kalkti,
+   *   - masaustunde hover/klavye odaginda ALT SERIT buyur: ayni serit altina
+   *     tanitim (tek satir) + "Profili incele" eklenir; serit gradient oldugu
+   *     icin fotograf ustte ve arkada gorunur kalir (ayri panel yok - dar
+   *     kartta sabit yukseklikli panel dugmeyi kirpiyordu),
+   *   - kart dugmesi "Profili incele" (gercek "Teklif Al" profil sayfasinda),
+   *   - alinti, hizmet etiketi ve coklu metin KARTTAN KALKTI (profilde var).
+   *
+   * Katmanlar: fotograf -> ust cipler -> ALT SERIT (gradient; z yok, icindeki
+   * dugme / kisa yol z-20) -> kart baglantisi (z-10) -> kalp (z-20).
+   */
   return (
     <div className="relative group">
       <div
@@ -404,99 +312,25 @@ export function ProfileCard({
             : 'border-line group-hover:shadow-[0_16px_36px_-18px_rgba(20,61,49,0.35)]'
         }`}
       >
-        {/* ======================= MOBİL (≤768px) ======================= */}
-        <div className="md:hidden flex flex-col">
-          {/* Foto (üst) */}
-          <div className="relative aspect-[16/10] shrink-0">
-            <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
-            <div
-              className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/25 to-transparent"
-              aria-hidden="true"
-            />
-            <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'heart-premium' : 'heart'} />
-            {PremiumBadge}
-            {/* Ad + doğrulanmış (fotonun altında, gradient üstünde) */}
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-start gap-1.5">
-                <span className="line-clamp-2">{displayName}</span>
-                {verified && <VerifiedIcon size={15} />}
-              </h3>
-            </div>
-          </div>
-
-          {/* Beyaz gövde */}
-          <div className="flex flex-col flex-1 p-4 gap-2.5">
-            <MetaRow
-              light={false}
-              rating={rating}
-              jobsCount={jobsCount}
-              cityName={cityName}
-            />
-            {altRozet && (
-              <span className="inline-block w-fit font-mono text-[10px] uppercase tracking-[0.14em] text-ink-72 bg-paper-2 border border-line px-2 py-0.5 rounded-md">
-                {altRozet}
-              </span>
-            )}
-            {profile.bio && (
-              <p className="text-sm text-ink-72 leading-relaxed line-clamp-1">
-                {profile.bio}
-              </p>
-            )}
-            {quoteText && (
-              <div className="rounded-lg bg-paper-2/60 border border-line px-3 py-2">
-                <p className="text-xs text-ink-72 italic leading-snug">
-                  “{quoteText}”{' '}
-                  <span className="not-italic font-medium text-ink">
-                    — {quote!.author}
-                  </span>
-                </p>
-              </div>
-            )}
-            <ServiceChips tags={tags} />
-            {/* Teklif Al — mobilde HER ZAMAN görünür, brand-ink, tam genişlik */}
-            <Link
-              href={profileHref}
-              prefetch={false}
-              className="relative z-20 mt-auto block w-full text-center bg-brand-ink text-paper rounded-lg py-2.5 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
-            >
-              Teklif Al
-            </Link>
-            {havuz && (
-              <div className="relative z-20">
-                <HavuzKisaYol
-                  providerId={profile.id}
-                  orgId={havuz.orgId}
-                  durum={havuz.durum}
-                />
-              </div>
-            )}
-            {/* FAZ 8c: kisa liste kisa yolu. HAVUZ ONCELIKLI — ikisi yan yana
-                sigmadigi icin havuz varsa kisa liste kartta cizilmez,
-                `/p/[id]` panelinde kalir. */}
-            {!havuz && kisaListe && (
-              <div className="relative z-20">
-                <KisaListeKisaYol
-                  providerId={profile.id}
-                  orgId={kisaListe.orgId}
-                  durum={kisaListe.durum}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ===================== MASAÜSTÜ (>768px) ===================== */}
-        <div className="hidden md:block relative aspect-[4/3]">
+        {/* ---------- FOTOGRAF (4:5, her kirilimda ayni) ---------- */}
+        <div className="relative aspect-[4/5]">
           <CoverMedia src={coverUrl} alt={displayName} initials={initials} />
 
-          <TopChips isAgency={isAgencyCard} categoryName={categoryName} reserve={isPremium ? 'heart-premium' : 'heart'} />
+          <TopChips
+            isAgency={isAgencyCard}
+            categoryName={categoryName}
+            reserve={isPremium ? 'heart-premium' : 'heart'}
+          />
           {PremiumBadge}
 
-          {/* Varsayılan alt şerit — hover'da kaybolur */}
-          <div className="absolute inset-x-0 bottom-0 p-4 pt-16 bg-gradient-to-t from-black/75 via-black/30 to-transparent transition-opacity duration-300 group-hover:opacity-0">
-            <h3 className="font-display text-lg text-white font-semibold leading-tight flex items-start gap-1.5">
+          {/* ALT SERIT — her zaman gorunur: ad + meta + alt rozet. Gradient
+              seritin kendisinde: serit buyuyunce de metin okunur kalir.
+              Masaustunde hover / klavye odaginda altina tanitim (tek satir) +
+              "Profili incele" (+ varsa havuz / kisa liste kisa yolu) acilir. */}
+          <div className="absolute inset-x-0 bottom-0 p-4 pt-14 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+            <h3 className="font-display text-base text-white font-semibold leading-tight flex items-start gap-1.5">
               <span className="line-clamp-2">{displayName}</span>
-              {verified && <VerifiedIcon size={16} />}
+              {verified && <VerifiedIcon size={15} />}
             </h3>
             <div className="mt-1">
               <MetaRow
@@ -511,76 +345,74 @@ export function ProfileCard({
                 {altRozet}
               </span>
             )}
-          </div>
 
-          {/* Hover paneli — alttan yukarı kayar (z-20: kart linkinin üstünde).
-              KARTIN TAMAMINI kaplar (`inset-0`, dikey flex): 4:3 kartta (D2) panel
-              icerigi karttan uzundu, ustu kesiliyordu (Test Pro: bio + 3 etiket +
-              alinti). Simdi ad/meta ustte ve dugme altta SABIT, ortadaki bio /
-              etiket / alinti blogu kalan yere sigar; sigmayan alttan kirpilir
-              (alinti en sonda, ilk o kirpilir). Profil sayfasinda hepsi var. */}
-          <div className="absolute inset-0 z-20 flex flex-col bg-paper rounded-2xl p-3.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out shadow-[0_-10px_28px_-14px_rgba(20,61,49,0.35)]">
-            <h3 className="font-display text-sm text-ink font-semibold leading-tight flex items-start gap-1.5 shrink-0">
-              <span className="line-clamp-2">{displayName}</span>
-              {verified && <VerifiedIcon size={14} />}
-            </h3>
-            <div className="mt-1 shrink-0">
-              <MetaRow
-                light={false}
-                rating={rating}
-                jobsCount={jobsCount}
-                cityName={cityName}
-              />
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
+            {/* HOVER EKI — yalniz masaustu. Kapaliyken yukseklik 0 (tiklanamaz);
+                hover / odakta acilir. Icerik sabit: tanitim + dugme (+ kisa yol). */}
+            <div className="hidden md:block max-h-0 opacity-0 overflow-hidden transition-all duration-300 ease-out group-hover:max-h-48 group-hover:opacity-100 group-focus-within:max-h-48 group-focus-within:opacity-100">
               {profile.bio && (
-                <p className="text-sm text-ink-72 leading-relaxed line-clamp-1 mt-1.5">
+                <p className="mt-2 text-xs text-white/80 leading-snug line-clamp-1">
                   {profile.bio}
                 </p>
               )}
-              {tags.length > 0 && (
-                <div className="mt-2 h-6 overflow-hidden">
-                  <ServiceChips tags={tags} />
+              <Link
+                href={profileHref}
+                prefetch={false}
+                className="relative z-20 mt-2.5 block w-full text-center bg-paper text-ink rounded-lg py-2 font-display font-semibold text-sm hover:bg-paper-2 transition-colors"
+              >
+                Profili incele
+              </Link>
+              {havuz && (
+                <div className="relative z-20 mt-2">
+                  <HavuzKisaYol
+                    providerId={profile.id}
+                    orgId={havuz.orgId}
+                    durum={havuz.durum}
+                  />
                 </div>
               )}
-              {quoteText && (
-                <div className="mt-2 rounded-lg bg-paper-2/60 border border-line px-3 py-1.5">
-                  <p className="text-xs text-ink-72 italic leading-snug line-clamp-2">
-                    “{quoteText}”{' '}
-                    <span className="not-italic font-medium text-ink">
-                      — {quote!.author}
-                    </span>
-                  </p>
+              {/* FAZ 8c: kisa liste kisa yolu. HAVUZ ONCELIKLI — ikisi yan yana
+                  sigmadigi icin havuz varsa kisa liste kartta cizilmez,
+                  `/p/[id]` panelinde kalir. */}
+              {!havuz && kisaListe && (
+                <div className="relative z-20 mt-2">
+                  <KisaListeKisaYol
+                    providerId={profile.id}
+                    orgId={kisaListe.orgId}
+                    durum={kisaListe.durum}
+                  />
                 </div>
               )}
             </div>
-            {/* Teklif Al — brand-ink (mobil ile tutarlı), tam genişlik; panelin dibinde */}
-            <Link
-              href={profileHref}
-              prefetch={false}
-              className="mt-2 shrink-0 block w-full text-center bg-brand-ink text-paper rounded-lg py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
-            >
-              Teklif Al
-            </Link>
-            {havuz && (
-              <div className="mt-2 shrink-0">
-                <HavuzKisaYol
-                  providerId={profile.id}
-                  orgId={havuz.orgId}
-                  durum={havuz.durum}
-                />
-              </div>
-            )}
-            {!havuz && kisaListe && (
-              <div className="mt-2 shrink-0">
-                <KisaListeKisaYol
-                  providerId={profile.id}
-                  orgId={kisaListe.orgId}
-                  durum={kisaListe.durum}
-                />
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* ---------- MOBIL INCE SATIR ---------- */}
+        {/* Hover olmayan cihazda panel acilmaz; dugme (ve varsa kisa yol)
+            fotografin ALTINDA ince bir seritte durur. Tanitim / alinti /
+            etiket mobilde cizilmez. */}
+        <div className="md:hidden flex items-center justify-between gap-2 p-3">
+          <div className="relative z-20 min-w-0">
+            {havuz ? (
+              <HavuzKisaYol
+                providerId={profile.id}
+                orgId={havuz.orgId}
+                durum={havuz.durum}
+              />
+            ) : kisaListe ? (
+              <KisaListeKisaYol
+                providerId={profile.id}
+                orgId={kisaListe.orgId}
+                durum={kisaListe.durum}
+              />
+            ) : null}
+          </div>
+          <Link
+            href={profileHref}
+            prefetch={false}
+            className="relative z-20 shrink-0 bg-brand-ink text-paper rounded-lg px-4 py-2 font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+          >
+            Profili incele
+          </Link>
         </div>
 
         {/* Kart geneli tıklama → profil (stretched link, z-10; interaktifler z-20) */}

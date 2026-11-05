@@ -73,6 +73,16 @@ export function MobileNav({
     }
   }, [open]);
 
+  /**
+   * Menuyu kapatir — her baglantida cagrilir (Duzeltme 09-B2).
+   *
+   * `pathname` efekti gezinmede kapatiyor; ama AYNI sayfadaki `/#...`
+   * baglantisinda pathname DEGISMEZ ve menu acik kalirdi.
+   */
+  function kapat() {
+    setOpen(false);
+  }
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -94,9 +104,11 @@ export function MobileNav({
 
   // Keşif linkleri (tek kaynak nav-links; üst bar ile parite) — iki dalda da kullanılır
   const discoveryItems = DISCOVERY_LINKS.map((link) => (
-    <a
+    <Link
       key={link.href}
       href={link.href}
+      prefetch={false}
+      onClick={kapat}
       className={
         link.ai ? linkClass + ' inline-flex items-center gap-1.5' : linkClass
       }
@@ -107,7 +119,7 @@ export function MobileNav({
         </svg>
       )}
       {link.label}
-    </a>
+    </Link>
   ));
 
   return (
@@ -150,21 +162,37 @@ export function MobileNav({
                       Pazarlama linkleri girişli kullanıcıda YOK. */}
                   <p className={groupLabel}>Panel</p>
                   {baslatici.panel && (
-                    <a href={baslatici.panel.href} className={linkClass}>
+                    <Link
+                      href={baslatici.panel.href}
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       Panel
-                    </a>
+                    </Link>
                   )}
                   {baslatici.oncelikli.map((madde) => (
-                    <a key={madde.href} href={madde.href} className={linkClass}>
+                    <Link
+                      key={madde.href}
+                      href={madde.href}
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       {madde.etiket}
-                    </a>
+                    </Link>
                   ))}
                   {/* Teklif Topla: yalnız teklif toplayabilen roller (client/business/manager).
                       Pro/ajans canCollectOffers=false → zaten gizli (v1 kararı). */}
                   {canCollectOffers && (
-                    <a href="/teklif-topla" className={linkClass}>
+                    <Link
+                      href="/teklif-topla"
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       Teklif Topla
-                    </a>
+                    </Link>
                   )}
 
                   <div className="border-t border-line my-3" />
@@ -178,27 +206,48 @@ export function MobileNav({
                   {/* HESAP — Mesajlar + Bildirimler (rozetli) + hesap satirlari
                       + Admin + Çıkış. Rozetli satirlar baslaticida YOK, burada. */}
                   <p className={groupLabel}>Hesap</p>
-                  <Link href="/mesajlar" className={linkClassInlineBadge}>
+                  <Link
+                    href="/mesajlar"
+                    prefetch={false}
+                    onClick={kapat}
+                    className={linkClassInlineBadge}
+                  >
                     Mesajlar
                     {userId && <UnreadBadge userId={userId} />}
                   </Link>
-                  <a href="/bildirimler" className={linkClassInlineBadge}>
+                  <Link
+                    href="/bildirimler"
+                    prefetch={false}
+                    onClick={kapat}
+                    className={linkClassInlineBadge}
+                  >
                     Bildirimler
                     {notificationCount > 0 && (
                       <span className="min-w-[18px] h-[18px] px-1.5 bg-brand-ink text-paper text-[10px] font-mono font-bold italic rounded-full flex items-center justify-center leading-none">
                         {notificationCount > 99 ? '99+' : notificationCount}
                       </span>
                     )}
-                  </a>
+                  </Link>
                   {baslatici.hesap.map((madde) => (
-                    <a key={madde.href} href={madde.href} className={linkClass}>
+                    <Link
+                      key={madde.href}
+                      href={madde.href}
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       {madde.etiket}
-                    </a>
+                    </Link>
                   ))}
                   {isAdmin && (
-                    <a href="/admin" className={linkClass}>
+                    <Link
+                      href="/admin"
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       Admin paneli
-                    </a>
+                    </Link>
                   )}
                   <button
                     type="button"
@@ -213,26 +262,36 @@ export function MobileNav({
                   {/* PUBLIC — tek kaynak (nav-links); üst bar girişsiz seti ile birebir */}
                   {discoveryItems}
                   {MARKETING_LINKS.map((link) => (
-                    <a key={link.href} href={link.href} className={linkClass}>
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      prefetch={false}
+                      onClick={kapat}
+                      className={linkClass}
+                    >
                       {link.label}
-                    </a>
+                    </Link>
                   ))}
 
                   <div className="border-t border-line my-3" />
 
                   <div className="flex flex-col gap-3 pt-2">
-                    <a
+                    <Link
                       href="/giris"
+                      prefetch={false}
+                      onClick={kapat}
                       className="px-4 py-3 border border-line text-ink rounded-lg font-display font-medium text-center hover:bg-line transition-colors"
                     >
                       Giriş yap
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/uye-ol"
+                      prefetch={false}
+                      onClick={kapat}
                       className="px-4 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-center hover:opacity-90 transition-opacity"
                     >
                       Üye ol
-                    </a>
+                    </Link>
                   </div>
                 </>
               )}

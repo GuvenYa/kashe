@@ -157,10 +157,10 @@ export async function FeaturedProfiles() {
           })}
         </div>
 
-        {/* Profil kartları — Keşfet ile AYNI standart kart: masaüstünde hover
-            paneli (tanıtım + etiketler + Teklif Al), mobilde açık gövde.
-            4 sütun x 4 satır; `yogun` ile foto alanı aspect-[4/3]'e daralır.
-            9-16. kartlar yalnız lg+ (telefon/tablette 8 kart yeterli). */}
+        {/* Profil kartları — Keşfet ile AYNI standart kart (Duzeltme 09):
+            4:5 fotograf, masaustunde hover'da alt serit buyur (tanitim +
+            "Profili incele"), mobilde fotograf + ince dugme seridi. 4 sutun x 4 satir; 9-16. kartlar yalniz lg+
+            (telefon/tablette 8 kart yeterli). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {list.map((p, i) => (
             <div
@@ -169,7 +169,6 @@ export async function FeaturedProfiles() {
             >
               <ProfileCard
                 profile={p}
-                yogun
                 cover={p.avatar_url || portfolioCoverByProfile[p.id] || null}
                 rating={ratingsByProfile[p.id] || null}
                 isFavorited={favoritedIds.has(p.id)}

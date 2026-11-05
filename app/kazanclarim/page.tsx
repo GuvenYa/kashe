@@ -247,9 +247,22 @@ export default async function KazanclarimPage() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1.5">
                     Komisyon (%{Math.round(COMMISSION_RATE * 100)})
                   </p>
-                  <p className="font-display text-3xl text-brand-ink-deep tabular-nums leading-none">
-                    −{formatTRY(summary.commission)}
-                  </p>
+                  {/* Duzeltme 09-B3: komisyon 0 ise "-0 TL" yerine tire +
+                      kisa not (teklif dosyasi islerinde komisyon yok). */}
+                  {summary.commission === 0 ? (
+                    <>
+                      <p className="font-display text-3xl text-ink-50 tabular-nums leading-none">
+                        —
+                      </p>
+                      <p className="font-mono text-[10px] text-ink-50 mt-1.5">
+                        Teklif dosyası işlerinde komisyon yok
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-display text-3xl text-brand-ink-deep tabular-nums leading-none">
+                      −{formatTRY(summary.commission)}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-[#F0F7F0] border border-moss/30 rounded-2xl p-5">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-moss mb-1.5">

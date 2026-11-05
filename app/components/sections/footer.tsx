@@ -10,7 +10,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
+            <Link href="/" prefetch={false} className="flex items-center gap-2.5 mb-4">
               <KasheMark variant="dark" className="w-8 h-8" title="" />
               <span className="font-display font-semibold text-xl text-paper tracking-tight">
                 Kashe
@@ -30,24 +30,24 @@ export function Footer() {
             </p>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="/kesfet" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/kesfet" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Tüm profesyoneller
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/kesfet?kategori=1" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/kesfet?kategori=1" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   DJ&apos;ler
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/kesfet?kategori=6" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/kesfet?kategori=6" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Fotoğrafçılar
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/kesfet?kategori=4" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/kesfet?kategori=4" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Sunucular
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -59,44 +59,44 @@ export function Footer() {
             </p>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="/hakkimizda" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/hakkimizda" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Hakkımızda
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/hakkimizda#kurumsal" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/hakkimizda#kurumsal" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Kurumsal müşteriler
-                </a>
+                </Link>
               </li>
               <li>
-                <Link href="/#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#ajanslar" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Kurumsal hizmet sağlayıcılar
                 </Link>
               </li>
               <li>
-                <a href="/hakkimizda#ajanslar" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/hakkimizda#ajanslar" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Kurumsal hizmet sağlayıcılar için
-                </a>
+                </Link>
               </li>
               <li>
-                <Link href="/#nasil-calisir" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#nasil-calisir" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Nasıl çalışır
                 </Link>
               </li>
               <li>
-                <Link href="/#profesyoneller" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/#profesyoneller" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Profesyoneller için
                 </Link>
               </li>
               <li>
-                <a href="/fiyatlandirma" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/fiyatlandirma" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Fiyatlandırma
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/yardim" className="text-paper/80 hover:text-paper transition-colors">
+                <Link href="/yardim" prefetch={false} className="text-paper/80 hover:text-paper transition-colors">
                   Yardım
-                </a>
+                </Link>
                 </li>
               <li>
                 <a href="mailto:info@kashe.net" className="text-paper/80 hover:text-paper transition-colors">
@@ -110,15 +110,15 @@ export function Footer() {
         <div className="border-t border-paper/15 mt-12 pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-sm text-paper/50">
           <p>© {year} Kashe. Tüm hakları saklıdır.</p>
           <div className="flex items-center gap-6">
-            <a href="/gizlilik" className="hover:text-paper transition-colors">
+            <Link href="/gizlilik" prefetch={false} className="hover:text-paper transition-colors">
               Gizlilik
-            </a>
-            <a href="/kvkk" className="hover:text-paper transition-colors">
+            </Link>
+            <Link href="/kvkk" prefetch={false} className="hover:text-paper transition-colors">
               KVKK
-            </a>
-            <a href="/kullanim-kosullari" className="hover:text-paper transition-colors">
+            </Link>
+            <Link href="/kullanim-kosullari" prefetch={false} className="hover:text-paper transition-colors">
               Kullanım koşulları
-            </a>
+            </Link>
           </div>
         </div>
       </div>
