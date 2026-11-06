@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { blockDate, unblockDate, blockDateRange } from '@/app/takvimim/availability-actions';
+import { istanbulGunu } from '@/app/lib/tarih';
 
 type Props = {
   /** Manuel bloklu günler: ["2026-06-14", ...] */
@@ -48,10 +49,16 @@ export function AvailabilityCalendar({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Bugun = Istanbul gunu (bulgu 111 kalibi): sunucu (UTC) ve tarayici ayni
+  // gunu ve ayi bulmali; yoksa 21:00-24:00 UTC arasi "bugun / gecmis" ve
+  // acilis ayi farkli cizilir.
+  const bugunIst = istanbulGunu();
+  const bugunYil = Number(bugunIst.slice(0, 4));
+  const bugunAy = Number(bugunIst.slice(5, 7)) - 1; // 0-11
+
   // Görüntülenen ay (bugünün ayıyla başla)
-  const now = new Date();
-  const [viewYear, setViewYear] = useState(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-11
+  const [viewYear, setViewYear] = useState(bugunYil);
+  const [viewMonth, setViewMonth] = useState(bugunAy); // 0-11
 
   // Aralık modu — açıkken iki tık bir aralığı doldurur
   const [rangeMode, setRangeMode] = useState(false);
@@ -60,7 +67,7 @@ export function AvailabilityCalendar({
   const blockedSet = new Set(blockedDates);
   const bookedSet = new Set(bookedDates);
 
-  const todayStr = toDateStr(new Date());
+  const todayStr = bugunIst;
 
   // Ayın günlerini hesapla
   const firstDay = new Date(viewYear, viewMonth, 1);
@@ -134,8 +141,8 @@ export function AvailabilityCalendar({
 
   // Geçmiş ay'a gidişi engelle (yönetimde anlamsız, görüntülemede de gereksiz)
   const viewingPastMonth =
-    viewYear < now.getFullYear() ||
-    (viewYear === now.getFullYear() && viewMonth < now.getMonth());
+    viewYear < bugunYil ||
+    (viewYear === bugunYil && viewMonth < bugunAy);
 
   return (
     <div className="bg-card border border-line rounded-2xl p-5 md:p-6 max-w-md">

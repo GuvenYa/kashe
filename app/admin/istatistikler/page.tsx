@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/app/lib/supabase-browser'
+import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih'
 import {
   C,
   MONO,
@@ -1369,8 +1370,20 @@ function fmtDuration(hours: number): string {
 function fmtDateTime(s: string): string {
   const d = new Date(s)
   if (isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  // Istanbul saati (goruntuleyenin cihaz saat diliminden bagimsiz)
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: KASHE_SAAT_DILIMI,
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(d)
+      .map((x) => [x.type, x.value])
+  )
+  return `${p.day}.${p.month} ${p.hour}:${p.minute}`
 }
 
 // Huni kartı — her adım kayıt tabanına göre yüzde, azalan bar
