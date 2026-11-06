@@ -222,8 +222,11 @@ export function MesajListesi({ currentUserId, initialConversations }: Props) {
             <div className="space-y-3">
               {items.map((conv) => {
                 const other = conv.other;
+                // Kurum ve AJANS karsi tarafta kurulus adi (konusma sayfasiyla
+                // ayni kural, bulgu 50 / 100).
                 const otherName =
-                  other.role === 'business' && other.company_name
+                  (other.role === 'business' || other.role === 'agency') &&
+                  other.company_name
                     ? other.company_name
                     : other.full_name || 'İsimsiz';
 
