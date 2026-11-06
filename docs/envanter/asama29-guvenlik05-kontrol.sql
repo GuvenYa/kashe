@@ -73,6 +73,9 @@ SELECT 'K7 IZ: kaliba uymayan sistem satiri (bilgi)', count(*), 0,
                       'Talebiniz yeniden ajans tarafından yürütülecek.')
    AND m.body NOT LIKE '📅 Rezervasyon talebi — Tarih: %'
    AND m.body NOT LIKE '% talebinizle ilgilenmek üzere eklendi.'
+   -- Eski ekip atamasi tetikleyicisinin kalibi (uretimde 21 May 2026, 6 satir,
+   -- gonderen ajans): 'Talebiniz <ad> tarafindan yurutulecek.'
+   AND m.body NOT LIKE 'Talebiniz % tarafından yürütülecek.'
 UNION ALL
 SELECT 'K8 IZ: yabanci / tekrar teklif mesaji (bilgi)', x.n, 0,
        CASE WHEN x.n = 0 THEN 'ESIT' ELSE 'BILGI' END, NULL
