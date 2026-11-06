@@ -12,6 +12,7 @@ import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
+import { talepButceleri } from '@/app/lib/talep-butcesi';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -324,7 +325,7 @@ export async function submitOffer(
   const { data: request } = await supabase
     .from('quote_requests')
     .select(
-      'id, customer_id, status, brief_data, event_date, event_type, city_id, budget_min, budget_max, share_budget, event_id'
+      'id, customer_id, status, brief_data, event_date, event_type, city_id, share_budget, event_id'
     )
     .eq('id', recipient.request_id)
     .single();
@@ -337,6 +338,13 @@ export async function submitOffer(
     return { success: false, error: 'Kendi talebine teklif veremezsin' };
   }
 
+  // Guvenlik 04 (bulgu 104): butce tablodan okunmaz; paylasildiysa RPC ile.
+  const butce = request.share_budget
+    ? (await talepButceleri(supabase, [request.id])).get(request.id)
+    : undefined;
+  const butceMin = butce?.budget_min ?? null;
+  const butceMax = butce?.budget_max ?? null;
+
  // 3) Conversation: bu customer ↔ professional çifti için zaten var mı?
   // (conversations_unique_pair constraint — çift başına tek conversation)
   // `conversations.budget_range` bir ENUM sutunudur (conversations_budget_range_check).
@@ -344,7 +352,7 @@ export async function submitOffer(
   // dusuyor ve ayni cagridaki tarih/tur/brief/event_id de yazilmiyordu.
   // Paylasim acik ama tutar yoksa `open`.
   const budgetRange = request.share_budget
-    ? budgetToRangeKey(request.budget_min, request.budget_max) ?? 'open'
+    ? budgetToRangeKey(butceMin, butceMax) ?? 'open'
     : null;
 
   let conversationId: string;
@@ -417,8 +425,8 @@ export async function submitOffer(
   // Bütçe yumuşak sınır: paylaşıldıysa VE üst sınır varsa VE teklif aşıyorsa "bütçe üstü"
   const overBudget =
     !!request.share_budget &&
-    request.budget_max != null &&
-    input.total_amount > request.budget_max;
+    butceMax != null &&
+    input.total_amount > butceMax;
 
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')

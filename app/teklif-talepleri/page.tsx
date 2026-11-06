@@ -5,6 +5,7 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 import { getCachedUser } from '@/app/lib/auth';
+import { talepButceleri } from '@/app/lib/talep-butcesi';
 import { BriefEkButonu } from './brief-ek-butonu';
 import { getBriefFields } from '@/app/lib/brief-config';
 import { tarihMetni } from '@/app/lib/tarih';
@@ -115,6 +116,7 @@ type TalepAlicisi = {
     brief_data: Record<string, unknown> | null;
     event_date: string | null;
     event_type: string | null;
+    // Guvenlik 04: butce select'te yok; paylasilan talepler icin RPC ile doldurulur.
     budget_min: number | null;
     budget_max: number | null;
     share_budget: boolean;
@@ -163,7 +165,7 @@ export default async function TeklifTalepleriPage() {
       `
       id, status, conversation_id, created_at,
       quote_requests (
-        id, brief_data, event_date, event_type, budget_min, budget_max,
+        id, brief_data, event_date, event_type,
         share_budget, response_deadline, status,
         attachment_path, attachment_name, attachment_type,
         service_categories (name_tr, slug),
@@ -181,6 +183,18 @@ export default async function TeklifTalepleriPage() {
     (r): r is TalepAlicisi & { quote_requests: NonNullable<TalepAlicisi['quote_requests']> } =>
       !!r.quote_requests
   );
+
+  // Guvenlik 04 (bulgu 104): butce tablodan okunmaz; yalniz musterinin
+  // paylastigi talepler icin RPC ile alinir (paylasilmayan butce bos kalir).
+  const butceler = await talepButceleri(
+    supabase,
+    list.filter((r) => r.quote_requests.share_budget).map((r) => r.quote_requests.id)
+  );
+  for (const r of list) {
+    const b = butceler.get(r.quote_requests.id);
+    r.quote_requests.budget_min = b?.budget_min ?? null;
+    r.quote_requests.budget_max = b?.budget_max ?? null;
+  }
 
   // Bekleyen (sent/viewed) sayısı
   const pendingCount = list.filter(

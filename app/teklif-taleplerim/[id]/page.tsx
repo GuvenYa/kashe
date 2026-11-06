@@ -107,7 +107,7 @@ export default async function TeklifKarsilastirPage({
     .select(
       `
       id, customer_id, status, recipient_count, brief_data, created_at,
-      response_deadline, share_budget, budget_min, budget_max,
+      response_deadline, share_budget,
       service_categories (name_tr, slug),
       turkish_cities (name)
     `
