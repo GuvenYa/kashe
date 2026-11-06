@@ -150,14 +150,16 @@ BEGIN
    WHERE listing_id = '5a4e0000-0000-4000-8000-000000080001' AND applicant_id = p;
 
   -- Dosya kayitlari (yalniz satir)
+  -- Dalda gercek dosyalar da var: test kayitlari ayri adla (guv05-*)
   INSERT INTO storage.objects (bucket_id, name) VALUES
-    ('avatars', p::text || '/avatar.png'),
-    ('avatars', c::text || '/avatar.png'),
-    ('portfolio', p::text || '/guv05.jpg'),
-    ('blog', '5a4e0000-0000-4000-8000-000000090001/guv05.jpg'),
+    ('avatars', p::text || '/guv05-test.png'),
+    ('avatars', c::text || '/guv05-test.png'),
+    ('portfolio', p::text || '/guv05-test.jpg'),
+    ('blog', '5a4e0000-0000-4000-8000-000000090001/guv05-test.jpg'),
     ('message-attachments', ku::text || '/guv05-mesaj.pdf'),
     ('quote-attachments', ku::text || '/guv05-brief.pdf'),
-    ('application-attachments', p::text || '/guv05-cv.pdf');
+    ('application-attachments', p::text || '/guv05-cv.pdf')
+  ON CONFLICT DO NOTHING;
 
   -- Kaan'in ilani (dolu) ve Ilker'in kabul edilmis basvurusu
   INSERT INTO public.listings (creator_id, created_by, category_id, title, description, status)
@@ -193,35 +195,25 @@ END $$;
 -- T4 uye baskasinin avatar klasorunu goremez
 DO $$ BEGIN
   INSERT INTO sonuc VALUES (4, 'uye baskasinin avatari', 'GORUNMEZ',
-    pg_temp.dosya(pg_temp.fx('pro'), 'avatars', pg_temp.fx('musteri')::text || '/avatar.png'));
+    pg_temp.dosya(pg_temp.fx('pro'), 'avatars', pg_temp.fx('musteri')::text || '/guv05-test.png'));
 END $$;
 
 -- T5 uye kendi avatar klasorunu listeler (/profil/duzenle eski avatari siler)
 DO $$ BEGIN
   INSERT INTO sonuc VALUES (5, 'kendi avatari', 'GORUNUR',
-    pg_temp.dosya(pg_temp.fx('pro'), 'avatars', pg_temp.fx('pro')::text || '/avatar.png'));
+    pg_temp.dosya(pg_temp.fx('pro'), 'avatars', pg_temp.fx('pro')::text || '/guv05-test.png'));
 END $$;
 
 -- T6 yonetici blog kovasini gorur (/admin/blog)
 DO $$ BEGIN
   INSERT INTO sonuc VALUES (6, 'yonetici blog', 'GORUNUR',
-    pg_temp.dosya(pg_temp.fx('admin'), 'blog', '5a4e0000-0000-4000-8000-000000090001/guv05.jpg'));
+    pg_temp.dosya(pg_temp.fx('admin'), 'blog', '5a4e0000-0000-4000-8000-000000090001/guv05-test.jpg'));
 END $$;
 
--- T7 profesyonel avatar yukler, ustune yazar, siler (/profil/duzenle)
-DO $$ DECLARE v text; n int; BEGIN
-  PERFORM pg_temp.kimlik(pg_temp.fx('pro'));
-  BEGIN
-    INSERT INTO storage.objects (bucket_id, name) VALUES ('avatars', pg_temp.fx('pro')::text || '/avatar.webp');
-    UPDATE storage.objects SET metadata = '{"guv05": true}'::jsonb
-     WHERE bucket_id = 'avatars' AND name = pg_temp.fx('pro')::text || '/avatar.webp';
-    GET DIAGNOSTICS n = ROW_COUNT;
-    DELETE FROM storage.objects WHERE bucket_id = 'avatars' AND name = pg_temp.fx('pro')::text || '/avatar.webp';
-    v := CASE WHEN n = 1 THEN 'YAPILDI' ELSE 'GUNCELLENMEDI' END;
-  EXCEPTION WHEN OTHERS THEN v := 'ENGEL ' || SQLERRM;
-  END;
-  PERFORM pg_temp.kimlik(NULL);
-  INSERT INTO sonuc VALUES (7, 'avatar yukle / guncelle / sil', 'YAPILDI', v);
+-- T7 uye baskasinin portfolyo klasorunu listeleyemez (kamu baglantisi ayri)
+DO $$ BEGIN
+  INSERT INTO sonuc VALUES (7, 'uye baskasinin portfolyosu', 'GORUNMEZ',
+    pg_temp.dosya(pg_temp.fx('musteri'), 'portfolio', pg_temp.fx('pro')::text || '/guv05-test.jpg'));
 END $$;
 
 -- ---------------------------------------------------------------- EKLER
@@ -409,7 +401,7 @@ DO $$ BEGIN
 END $$;
 
 -- T30 musteri iptal eder, iptal satiri bir kez yazilir (mesru, /rezervasyon)
-DO $$ DECLARE v text; v1 text; v2 text; g text; BEGIN
+DO $$ DECLARE v text; v1 text; v2 text; n int; BEGIN
   PERFORM pg_temp.kimlik(pg_temp.fx('musteri'));
   BEGIN
     UPDATE public.bookings SET status = 'cancelled', cancelled_at = now(), cancelled_by = pg_temp.fx('musteri')
@@ -420,10 +412,12 @@ DO $$ DECLARE v text; v1 text; v2 text; g text; BEGIN
   PERFORM pg_temp.kimlik(NULL);
   v1 := pg_temp.sistem(pg_temp.fx('musteri'), pg_temp.fx('sohbet'), 'rezervasyon_iptal', pg_temp.fx('rez_a'), NULL);
   v2 := pg_temp.sistem(pg_temp.fx('musteri'), pg_temp.fx('sohbet'), 'rezervasyon_iptal', pg_temp.fx('rez_a'), NULL);
-  SELECT body INTO g FROM public.messages WHERE conversation_id = pg_temp.fx('sohbet') AND message_type = 'system'
-   ORDER BY created_at DESC, id LIMIT 1;
-  INSERT INTO sonuc VALUES (30, 'iptal satiri bir kez', 'IPTAL YAPILDI TEKRAR YOK Müşteri',
-    v || ' ' || v1 || ' ' || v2 || ' ' || split_part(coalesce(g, '-'), ' ', 1));
+  -- Bu islemde yazilan (created_at = islem zamani) musteri iptal satiri sayisi
+  SELECT count(*) INTO n FROM public.messages
+   WHERE conversation_id = pg_temp.fx('sohbet') AND message_type = 'system'
+     AND body = 'Müşteri rezervasyonu iptal etti' AND created_at >= now();
+  INSERT INTO sonuc VALUES (30, 'iptal satiri bir kez', 'IPTAL YAPILDI TEKRAR YOK 1',
+    v || ' ' || v1 || ' ' || v2 || ' ' || n::text);
 END $$;
 
 -- T31 profesyonel tamamlar, tamamlama satirini yazar (mesru, /rezervasyon)

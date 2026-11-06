@@ -954,6 +954,12 @@ export async function sendMessageWithAttachment(
     hasAccess = !!assignee;
   }
 
+  // Guvenlik 05 (bulgu 106): kurum adina yazabilen uye (sendMessage ile ayni
+  // kural) dosya da gonderebilir.
+  if (conv && !hasAccess && conv.customer_id) {
+    hasAccess = await canWriteForBusiness(conv.customer_id);
+  }
+
   if (!conv || !hasAccess) {
     // Erişim yoksa yüklenen dosyayı temizle (best effort)
     await supabase.storage.from('message-attachments').remove([attachment.path]);
