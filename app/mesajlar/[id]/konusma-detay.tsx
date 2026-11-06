@@ -1,7 +1,7 @@
 'use client';
 import { useEtkinlikTuruEtiketi } from '@/app/components/etkinlik-turleri-provider';
 
-import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { KASHE_SAAT_DILIMI, istanbulGunu } from '@/app/lib/tarih';
 import { useState, useRef, useEffect, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -115,18 +115,19 @@ function formatMessageTime(isoDate: string): string {
   });
 }
 
+// Bulgu 111: gun anahtari Istanbul gununden uretilir. Sunucu (UTC) ve tarayici
+// (Istanbul) ayni gunu bulmali; yoksa 00:00-03:00 arasi mesajlarda "Bugun / Dun"
+// ve gun ayiraclari farkli cizilir (hidrasyon uyusmazligi).
 function formatDayLabel(isoDate: string): string {
   const date = new Date(isoDate);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const gun = istanbulGunu(date);
+  const bugun = istanbulGunu();
+  const dun = istanbulGunu(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
-  if (dateOnly.getTime() === today.getTime()) return 'Bugün';
-  if (dateOnly.getTime() === yesterday.getTime()) return 'Dün';
+  if (gun === bugun) return 'Bugün';
+  if (gun === dun) return 'Dün';
 
-  if (date.getFullYear() === now.getFullYear()) {
+  if (gun.slice(0, 4) === bugun.slice(0, 4)) {
     return date.toLocaleDateString('tr-TR', {
       timeZone: KASHE_SAAT_DILIMI,
       day: 'numeric',
@@ -142,8 +143,7 @@ function formatDayLabel(isoDate: string): string {
 }
 
 function getDateKey(isoDate: string): string {
-  const d = new Date(isoDate);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return istanbulGunu(new Date(isoDate));
 }
 
 export function KonusmaDetay({
@@ -301,8 +301,11 @@ export function KonusmaDetay({
       }
       if (isCancelled) return;
 
+      // Guvenlik 07 (bulgu 109): ozel kanal. Katilma ve "yaziyor / cevrimici"
+      // yayini yalniz sohbeti gorebilene (realtime.messages kurali); yeni mesaj
+      // akisi (postgres_changes) zaten mesaj satir kuralina bagli.
       channel = supabase.channel(`messages:${conversationId}`, {
-        config: { presence: { key: currentUserId } },
+        config: { private: true, presence: { key: currentUserId } },
       });
       channelRef.current = channel;
 

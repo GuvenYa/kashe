@@ -187,7 +187,9 @@ export function QuoteCard({
           </p>
           {isPendingStatus ? (
             <>
-              <p className="text-base text-ink font-medium">
+              {/* Kalan sure sunucu ve tarayicida dakika siniri asilirsa farkli
+                  cikabilir (bulgu 111); metin tarayicida yenilenir. */}
+              <p className="text-base text-ink font-medium" suppressHydrationWarning>
                 {formatExpiresIn(quote.expires_at)}
               </p>
               <p className="text-[10px] text-ink-50 font-mono mt-0.5">
