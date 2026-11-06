@@ -526,11 +526,12 @@ export async function startConversation(
       data.start_time
         ? ` · Saat: ${data.start_time.slice(0, 5)}${data.end_time ? `–${data.end_time.slice(0, 5)}` : ''}`
         : '';
-    await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      body: `📅 Rezervasyon talebi — Tarih: ${dateText}${timeText}${data.location ? ` · Yer: ${data.location}` : ''}`,
-      message_type: 'system',
+    // Guvenlik 05 (bulgu 91): sistem satiri istemciden eklenmez; RPC yalniz
+    // musteri tarafinin rezervasyon talebi notunu kabul eder.
+    await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: conversationId,
+      p_tur: 'rezervasyon_talebi',
+      p_metin: `📅 Rezervasyon talebi — Tarih: ${dateText}${timeText}${data.location ? ` · Yer: ${data.location}` : ''}`,
     });
   }
 
@@ -992,7 +993,7 @@ export async function sendMessageWithAttachment(
 
 /**
  * Bir mesaj ekinin signed URL'ini üretir (kısa ömürlü, imzalı).
- * Sadece konuşmanın tarafı erişebilir — erişim doğrulanır.
+ * Mesaji gorebilen (taraf, atanan uye, kurum uyesi) erisebilir; erisim RLS ile dogrulanir.
  */
 export async function getAttachmentUrl(
   conversationId: string,
@@ -1006,32 +1007,9 @@ export async function getAttachmentUrl(
 
   if (!user) return { error: 'Oturum bulunamadı.' };
 
-  // Konuşma erişim kontrolü
-  const { data: conv } = await supabase
-    .from('conversations')
-    .select('customer_id, professional_id')
-    .eq('id', conversationId)
-    .single();
-
-  let hasAccess =
-    !!conv &&
-    (conv.customer_id === user.id || conv.professional_id === user.id);
-
-  if (conv && !hasAccess) {
-    const { data: assignee } = await supabase
-      .from('conversation_assignees')
-      .select('id')
-      .eq('conversation_id', conversationId)
-      .eq('professional_id', user.id)
-      .maybeSingle();
-    hasAccess = !!assignee;
-  }
-
-  if (!conv || !hasAccess) {
-    return { error: 'Bu eke erişimin yok.' };
-  }
-
-  // Ekin gerçekten bu konuşmaya ait olduğunu doğrula
+  // Guvenlik 05 (bulgu 106): ek, mesaj satirini okuyabilen herkese acilir
+  // (RLS: taraf, atanan uye, kurum uyesi; dosya kurali ayni). Ekin bu
+  // konusmaya ait oldugu ayni sorguda dogrulanir.
   const { data: msg } = await supabase
     .from('messages')
     .select('id')
@@ -1040,7 +1018,7 @@ export async function getAttachmentUrl(
     .maybeSingle();
 
   if (!msg) {
-    return { error: 'Ek bulunamadı.' };
+    return { error: 'Bu eke erişimin yok.' };
   }
 
   // Signed URL — 1 saat geçerli

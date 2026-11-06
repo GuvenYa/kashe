@@ -546,7 +546,7 @@ export async function markRequestViewed(
 
 /**
  * Teklif talebi ekinin signed URL'ini üretir.
- * Sadece talebi oluşturan müşteri ya da talebin gönderildiği profesyonel erişebilir.
+ * Talebi gorebilen (musteri, alici profesyonel, kurum uyesi) erisebilir.
  */
 export async function getQuoteAttachmentUrl(
   requestId: string
@@ -569,21 +569,8 @@ export async function getQuoteAttachmentUrl(
     return { error: 'Ek bulunamadı.' };
   }
 
-  // Erişim: müşteri (sahip) VEYA bu talebin gönderildiği profesyonel
-  let hasAccess = request.customer_id === user.id;
-  if (!hasAccess) {
-    const { data: rec } = await supabase
-      .from('quote_request_recipients')
-      .select('id')
-      .eq('request_id', requestId)
-      .eq('professional_id', user.id)
-      .maybeSingle();
-    hasAccess = !!rec;
-  }
-
-  if (!hasAccess) {
-    return { error: 'Bu eke erişimin yok.' };
-  }
+  // Guvenlik 05 (bulgu 106): talebi okuyabilen (RLS: musteri, alici
+  // profesyonel, kurum uyesi) eki de acar; dosya kurali ayni kisileri tanir.
 
   const { data, error } = await supabase.storage
     .from('quote-attachments')

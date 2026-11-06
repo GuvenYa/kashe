@@ -875,11 +875,12 @@ export async function acceptApplication(
   // tarafında ad kurum olarak görünür (konuşma customer_id = kurum). messages
   // RLS'i manager+ üyeye kendi sender_id'siyle insert izni verir (dilim 1).
   if (conversationId) {
-    await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      body: 'Başvurun kabul edildi. Detayları buradan konuşabilirsiniz.',
-      message_type: 'system',
+    // Guvenlik 05 (bulgu 91): sistem satiri istemciden eklenmez; RPC kabulu
+    // dogrular, metni sunucuda yazar (gonderen yine kabul eden kisi).
+    await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: conversationId,
+      p_tur: 'basvuru_kabul',
+      p_kayit: applicationId,
     });
     revalidatePath(`/mesajlar/${conversationId}`);
   }
@@ -1160,7 +1161,7 @@ export async function incrementListingViews(
 
 /**
  * Bir başvuru ekinin signed URL'ini üretir.
- * Sadece başvuran ya da ilan sahibi erişebilir.
+ * Basvuruyu gorebilen (basvuran, ilan sahibi, kurum yoneticisi) erisebilir.
  */
 export async function getApplicationAttachmentUrl(
   applicationId: string,
@@ -1185,15 +1186,8 @@ export async function getApplicationAttachmentUrl(
     return { error: 'Ek bulunamadı.' };
   }
 
-  const listingCreator = (app.listings as unknown as { creator_id: string })
-    ?.creator_id;
-
-  const hasAccess =
-    app.applicant_id === user.id || listingCreator === user.id;
-
-  if (!hasAccess) {
-    return { error: 'Bu eke erişimin yok.' };
-  }
+  // Guvenlik 05 (bulgu 106): satiri okuyabilen (RLS: basvuran, ilan sahibi,
+  // kurum yoneticisi) eki de acar; dosya kurali ayni kisileri tanir.
 
   // İstenen path gerçekten bu başvurunun eki mi?
   if (app.attachment_path !== attachmentPath) {

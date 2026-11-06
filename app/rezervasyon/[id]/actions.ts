@@ -157,19 +157,13 @@ export async function cancelBooking(
   // FAZ 7c: teklif seklinde sohbet YOK (conversation_id NULL) — sistem mesaji ve
   // karsi tarafa e-posta atlanir (alici bildirimi acik kalem).
   if (booking.conversation_id && booking.professional_id && booking.customer_id) {
-  // Sistem mesajı
-  const systemBody = isCustomer
-    ? 'Müşteri rezervasyonu iptal etti'
-    : 'Profesyonel rezervasyonu iptal etti';
-
-  await supabase
-    .from('messages')
-    .insert({
-      conversation_id: booking.conversation_id,
-      sender_id: user.id,
-      body: systemBody,
-      message_type: 'system',
-    });
+  // Sistem mesajı — Guvenlik 05 (bulgu 91): RPC iptali dogrular, metni
+  // (musteri / profesyonel) sunucuda secer.
+  await supabase.rpc('sistem_mesaji_ekle', {
+    p_sohbet: booking.conversation_id,
+    p_tur: 'rezervasyon_iptal',
+    p_kayit: bookingId,
+  });
 
   // E-posta — karşı tarafa
   const recipientId = isCustomer
@@ -286,15 +280,12 @@ export async function completeBooking(
 
   // FAZ 7c: teklif seklinde sohbet YOK -> sistem mesaji ve yorum e-postasi atlanir.
   if (booking.conversation_id && booking.customer_id && booking.professional_id) {
-    // Sistem mesajı
-    await supabase
-      .from('messages')
-      .insert({
-        conversation_id: booking.conversation_id,
-        sender_id: user.id,
-        body: 'Profesyonel işi tamamlandı olarak işaretledi',
-        message_type: 'system',
-      });
+    // Sistem mesajı — Guvenlik 05 (bulgu 91): RPC tamamlamayi dogrular.
+    await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: booking.conversation_id,
+      p_tur: 'rezervasyon_tamam',
+      p_kayit: bookingId,
+    });
 
     // E-posta — müşteriye "yorum bırak"
     try {
