@@ -341,21 +341,22 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   }
 
   /**
-   * ILETISIM (Duzeltme 12-I, bulgu 120). Sohbetteki kilitle ayni kural:
-   * telefon / e-posta yalniz onayli ya da tamamlanmis rezervasyonda acilir,
-   * iptalde kapanir. `get_contact_info` ayni kurali veritabaninda uygular.
+   * ILETISIM (Duzeltme 12-I, bulgu 120). Sohbetteki kilitle ayni kural ve
+   * ayni kaynak: `get_contact_info` iki taraf arasinda onayli ya da
+   * tamamlanmis BIR rezervasyon varsa satir dondurur, yoksa hic dondurmez.
+   * Bu yuzden iptal edilmis bir rezervasyonun sayfasinda da, ayni kisiyle
+   * baska aktif is varsa iletisim gorunur (sohbet paneliyle tutarli).
    * Teklif seklinde (sohbetsiz) kurulus iletisimi teklif ekranindadir.
    */
-  const iletisimAcik =
-    !teklifSekli && (booking.status === 'confirmed' || booking.status === 'completed');
   let karsiIletisim: { email: string | null; phone: string | null } | null = null;
-  if (iletisimAcik && otherParty?.id) {
+  if (!teklifSekli && otherParty?.id) {
     const { data: iletisimVerisi } = await supabase
       .rpc('get_contact_info', { p_profile_id: otherParty.id })
       .maybeSingle();
     karsiIletisim =
       (iletisimVerisi as { email: string | null; phone: string | null } | null) ?? null;
   }
+  const iletisimAcik = !!karsiIletisim;
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
@@ -694,7 +695,9 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 )
               ) : (
                 <p className="text-sm text-ink-72 leading-relaxed">
-                  Rezervasyon iptal edildiği için iletişim bilgileri kapandı.
+                  {booking.status === 'cancelled'
+                    ? 'Rezervasyon iptal edildiği için iletişim bilgileri kapandı. '
+                    : ''}
                   Telefon ve e-posta, onaylı bir rezervasyon varken iki taraf için
                   açılır; yeni bir anlaşma için sohbetten devam edebilirsin.
                 </p>

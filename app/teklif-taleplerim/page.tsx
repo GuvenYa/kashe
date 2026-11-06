@@ -36,6 +36,7 @@ type SohbetTeklifi = {
   request_no: number | null;
   conversations: {
     customer_id: string;
+    professional_id: string;
     professional: {
       full_name: string | null;
       company_name: string | null;
@@ -141,7 +142,7 @@ export default async function TeklifTaleplerimPage() {
       id, conversation_id, total_amount, currency, status, created_at,
       expires_at, event_date, request_no,
       conversations!inner (
-        customer_id,
+        customer_id, professional_id,
         professional:profiles!conversations_professional_id_fkey (full_name, company_name, role)
       )
     `
@@ -162,6 +163,28 @@ export default async function TeklifTaleplerimPage() {
           ? 1
           : 0
     );
+
+  /**
+   * Kamu ad kurali (Duzeltme 05-E) KISI bazinda: bu profesyonelle onayli ya
+   * da tamamlanmis rezervasyon varsa tum tekliflerinde tam ad (teklif teklif
+   * degisirse ayni kisi listede iki farkli adla gorunuyordu). Onaylanan
+   * tekliflerin tarihsiz olanlarina rezervasyon tarihi yazilir.
+   */
+  const tamAdliProlar = new Set<string>();
+  const rezervasyonTarihi: Record<string, string | null> = {};
+  if (sohbetTeklifleri.length > 0) {
+    const { data: rezervasyonlar } = await supabase
+      .from('bookings')
+      .select('quote_id, professional_id, status, event_date')
+      .in('customer_id', customerIds)
+      .in('status', ['confirmed', 'completed', 'cancelled']);
+    for (const r of rezervasyonlar ?? []) {
+      if (r.professional_id && (r.status === 'confirmed' || r.status === 'completed')) {
+        tamAdliProlar.add(r.professional_id);
+      }
+      if (r.quote_id) rezervasyonTarihi[r.quote_id] = r.event_date;
+    }
+  }
 
   const ownRequests = list.filter((r) => r.is_own);
   const teamRequests = list.filter((r) => !r.is_own);
@@ -278,9 +301,11 @@ export default async function TeklifTaleplerimPage() {
                     : gosterilecekAd(
                         pro?.role ?? null,
                         pro?.full_name ?? null,
-                        q.status === 'accepted'
+                        tamAdliProlar.has(q.conversations?.professional_id ?? '')
                       ) || 'Profesyonel';
-                const tarih = teklifTarihiMetni(q.event_date);
+                const tarih =
+                  teklifTarihiMetni(q.event_date) ??
+                  teklifTarihiMetni(rezervasyonTarihi[q.id] ?? null);
                 const kurumAdina =
                   q.conversations && q.conversations.customer_id !== user.id
                     ? businessNames[q.conversations.customer_id] ?? 'Kurum'

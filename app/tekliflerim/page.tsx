@@ -130,14 +130,23 @@ export default async function TekliflerimPage({
   const onaylananIdler = satirlar
     .filter((q) => q.status === 'accepted')
     .map((q) => q.id);
-  const rezervasyonByTeklif: Record<string, { id: string; status: string }> = {};
+  const rezervasyonByTeklif: Record<
+    string,
+    { id: string; status: string; event_date: string | null }
+  > = {};
   if (onaylananIdler.length > 0) {
     const { data: rezervasyonlar } = await supabase
       .from('bookings')
-      .select('id, quote_id, status')
+      .select('id, quote_id, status, event_date')
       .in('quote_id', onaylananIdler);
     for (const b of rezervasyonlar ?? []) {
-      if (b.quote_id) rezervasyonByTeklif[b.quote_id] = { id: b.id, status: b.status };
+      if (b.quote_id) {
+        rezervasyonByTeklif[b.quote_id] = {
+          id: b.id,
+          status: b.status,
+          event_date: b.event_date,
+        };
+      }
     }
   }
 
@@ -222,9 +231,13 @@ export default async function TekliflerimPage({
               const tur = q.conversations?.event_type
                 ? etiketle(turler, q.conversations.event_type)
                 : null;
-              const tarih = teklifTarihiMetni(q.event_date);
-              const saat = teklifSaatiMetni(q.start_time, q.end_time);
               const rezervasyon = rezervasyonByTeklif[q.id] ?? null;
+              // Duzeltme 12 oncesi tekliflerde tarih yok; onaylandiysa
+              // rezervasyonun tarihi gosterilir.
+              const tarih =
+                teklifTarihiMetni(q.event_date) ??
+                teklifTarihiMetni(rezervasyon?.event_date ?? null);
+              const saat = teklifSaatiMetni(q.start_time, q.end_time);
               return (
                 <li key={q.id} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">

@@ -470,6 +470,12 @@ export async function startConversation(
       updateFields.start_time = data.start_time;
     if (data.end_time !== undefined && data.end_time !== null)
       updateFields.end_time = data.end_time;
+    // Duzeltme 12-A: yeni tarih saatsiz geldiyse onceki talebin saatleri bu
+    // tarihe ait degildir; teklif formu eski saatle dolu acilmasin.
+    if (data.event_date !== null && !data.start_time) {
+      updateFields.start_time = null;
+      updateFields.end_time = null;
+    }
     // Etkinlik bagi yalniz DOLU gelirse yazilir (bos deger eskisini ezmesin — Yol A).
     if (etkinlikId) updateFields.event_id = etkinlikId;
 
