@@ -15,7 +15,7 @@ import {
 } from '../actions';
 import { getBudgetRangeLabel } from '../data';
 import type { Quote } from '../quotes-data';
-import { QuoteModal } from './quote-modal';
+import { QuoteModal, type TeklifVarsayilanlari } from './quote-modal';
 import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
 import { MediaLightbox } from '@/app/components/media-lightbox';
@@ -76,7 +76,23 @@ type Props = {
   yorumCagrisi: { href: string; etiket: string } | null;
   /** Tamamlanma zamani — cagri bu zamandan SONRAKI ilk sistem mesajina asilir. */
   tamamlanmaZamani: string | null;
+  /** Duzeltme 12-A: teklif formu sohbetteki musteri secimiyle dolu acilir. */
+  teklifVarsayilanlari: TeklifVarsayilanlari;
+  /** Duzeltme 12-B: sohbetteki talep sayisi (1'den buyukse kartta "Talep #n"). */
+  talepSayisi: number;
 };
+
+type BekleyenDosya = {
+  file: File;
+  kind: 'image' | 'pdf' | 'doc';
+  /** Gorselde tarayici ici onizleme adresi (blob:), digerlerinde null. */
+  onizleme: string | null;
+};
+
+function dosyaBoyutu(bayt: number): string {
+  if (bayt < 1024 * 1024) return `${Math.max(1, Math.round(bayt / 1024))} KB`;
+  return `${(bayt / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+}
 
 const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
 const ATTACHMENT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -172,6 +188,8 @@ export function KonusmaDetay({
   bookingIdByQuoteId,
   yorumCagrisi,
   tamamlanmaZamani,
+  teklifVarsayilanlari,
+  talepSayisi,
 }: Props) {
   // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
   const turEtiketi = useEtkinlikTuruEtiketi();
@@ -180,6 +198,9 @@ export function KonusmaDetay({
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  // Duzeltme 12-C (bulgu 114): secilen dosya once kutuda onizlenir, "Gonder"e
+  // basinca yuklenir ve gider; "x" ile vazgecilir.
+  const [bekleyenDosya, setBekleyenDosya] = useState<BekleyenDosya | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [quotesById, setQuotesById] =
@@ -230,6 +251,14 @@ export function KonusmaDetay({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [assignOpen]);
+
+  // Onizleme adresi dosya degisince ya da bilesen kapaninca birakilir.
+  useEffect(() => {
+    const adres = bekleyenDosya?.onizleme;
+    return () => {
+      if (adres) URL.revokeObjectURL(adres);
+    };
+  }, [bekleyenDosya]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -415,7 +444,7 @@ export function KonusmaDetay({
     return formatViolationMessage(v.violations);
   }, [body]);
 
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (!file) return;
@@ -431,17 +460,26 @@ export function KonusmaDetay({
       return;
     }
 
+    // Hemen gondermez: onizleme kutusuna alir (Duzeltme 12-C).
+    setBekleyenDosya({
+      file,
+      kind,
+      onizleme: kind === 'image' ? URL.createObjectURL(file) : null,
+    });
+  }
+
+  async function dosyayiGonder(dosya: BekleyenDosya, aciklama: string) {
     setUploadingFile(true);
     try {
       const supabase = createClient();
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+      const ext = dosya.file.name.split('.').pop()?.toLowerCase() || 'bin';
       const path = `${currentUserId}/${conversationId}/${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 8)}.${ext}`;
 
       const { error: upErr } = await supabase.storage
         .from('message-attachments')
-        .upload(path, file, { cacheControl: '3600', upsert: false });
+        .upload(path, dosya.file, { cacheControl: '3600', upsert: false });
 
       if (upErr) {
         setError('Yükleme başarısız: ' + upErr.message);
@@ -450,16 +488,19 @@ export function KonusmaDetay({
 
       const result = await sendMessageWithAttachment(
         conversationId,
-        { path, type: kind, name: file.name },
-        body.trim()
+        { path, type: dosya.kind, name: dosya.file.name },
+        aciklama
       );
 
       if (result.success) {
         setBody('');
+        setBekleyenDosya(null);
+        broadcastTyping(false);
         router.refresh();
       } else {
         setError(result.error || 'Dosya gönderilemedi.');
-        // Başarısızsa yüklenen dosyayı temizle
+        // Başarısızsa yüklenen dosyayı temizle (Guvenlik 07: yukleyen kendi
+        // klasorunu gorebildigi icin silme artik calisiyor)
         await supabase.storage.from('message-attachments').remove([path]);
       }
     } catch (err) {
@@ -489,13 +530,21 @@ export function KonusmaDetay({
     setError(null);
 
     const text = body.trim();
-    if (!text) return;
 
     // Client-side son kontrol — eğer güvenlik uyarısı varsa gönderme
     if (securityWarning) {
       setError(securityWarning);
       return;
     }
+
+    // Bekleyen dosya varsa metin dosyanin aciklamasi olarak gider.
+    if (bekleyenDosya) {
+      if (uploadingFile) return;
+      void dosyayiGonder(bekleyenDosya, text);
+      return;
+    }
+
+    if (!text) return;
 
     startTransition(async () => {
       const result = await sendMessage(conversationId, text);
@@ -565,7 +614,11 @@ export function KonusmaDetay({
     setTemplatesOpen(false);
   }
 
-  const canSend = body.trim().length > 0 && !isPending && !securityWarning;
+  const canSend =
+    (body.trim().length > 0 || !!bekleyenDosya) &&
+    !isPending &&
+    !uploadingFile &&
+    !securityWarning;
 
   return (
     <div className="bg-card border border-line rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)] min-h-[500px]">
@@ -792,6 +845,7 @@ export function KonusmaDetay({
                     currentUserId={currentUserId}
                     canAct={!isTeam || canWrite}
                     bookingId={bookingIdByQuoteId[quote.id] ?? null}
+                    talepNoGoster={talepSayisi > 1}
                   />
                 </div>
               );
@@ -999,6 +1053,43 @@ export function KonusmaDetay({
           <p className="text-xs text-danger mb-2">{error}</p>
         )}
 
+        {/* Secilen dosya: onizleme + vazgec (Duzeltme 12-C) */}
+        {bekleyenDosya && (
+          <div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-paper px-3 py-2">
+            {bekleyenDosya.onizleme ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={bekleyenDosya.onizleme}
+                alt=""
+                className="w-14 h-14 rounded-lg object-cover border border-line shrink-0"
+              />
+            ) : (
+              <span className="shrink-0 w-14 h-14 rounded-lg bg-brand-ink/10 flex items-center justify-center font-mono text-[10px] uppercase tracking-[0.12em] text-brand-ink">
+                {bekleyenDosya.kind === 'pdf' ? 'PDF' : 'Word'}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-ink truncate">
+                {bekleyenDosya.file.name}
+              </p>
+              <p className="text-[11px] text-ink-50 mt-0.5">
+                {dosyaBoyutu(bekleyenDosya.file.size)} · &quot;Gönder&quot;e basınca
+                gider; istersen yanına açıklama yaz.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBekleyenDosya(null)}
+              disabled={uploadingFile}
+              aria-label="Dosyayı kaldır"
+              title="Dosyayı kaldır"
+              className="kashe-tap shrink-0 w-8 h-8 rounded-full border border-line text-ink-72 hover:text-brand-ink hover:border-brand-ink transition flex items-center justify-center text-lg leading-none disabled:opacity-50"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <div className="flex items-end gap-2 md:gap-3">
           {(isProfessional || isAssignedPro) && (
             <button
@@ -1053,7 +1144,9 @@ export function KonusmaDetay({
                 }, 1500);
               }
             }}
-            placeholder="Mesajını yaz..."
+            placeholder={
+              bekleyenDosya ? 'Açıklama ekle (isteğe bağlı)...' : 'Mesajını yaz...'
+            }
             rows={1}
             maxLength={2000}
             onKeyDown={(e) => {
@@ -1077,7 +1170,7 @@ export function KonusmaDetay({
                 : 'bg-brand-ink/40 text-paper cursor-not-allowed'
             }`}
           >
-            {isPending ? '...' : 'Gönder'}
+            {uploadingFile ? 'Yükleniyor...' : isPending ? '...' : 'Gönder'}
           </button>
         </div>
       </form>
@@ -1085,10 +1178,13 @@ export function KonusmaDetay({
 
       {(isProfessional || isAssignedPro) && (
         <QuoteModal
+          // Her aciliste sohbetin guncel secimiyle yeniden kurulur (12-A)
+          key={quoteModalOpen ? 'acik' : 'kapali'}
           conversationId={conversationId}
           categorySlug={categorySlug}
           open={quoteModalOpen}
           onClose={() => setQuoteModalOpen(false)}
+          varsayilan={teklifVarsayilanlari}
         />
       )}
 

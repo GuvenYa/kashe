@@ -13,6 +13,7 @@ import { selectQuoteRecipients, type PoolItem } from './select-recipients';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import { talepButceleri } from '@/app/lib/talep-butcesi';
+import { istanbulGunu } from '@/app/lib/tarih';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -417,6 +418,18 @@ export async function submitOffer(
     conversationId = newConv.id;
   }
 
+  // Duzeltme 12-B (bulgu 114): mevcut sohbette onceki talep teklif aldiysa bu
+  // teklif topla yaniti YENI talep acar ("Yeni talep #n" karti, sayac artar);
+  // teklif yeni talep numarasini alir. Yeni sohbette RPC bir sey yazmaz.
+  if (existingConv) {
+    const { error: talepHatasi } = await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: conversationId,
+      p_tur: 'teklif_topla',
+      p_kayit: request.id,
+    });
+    if (talepHatasi) console.error('[teklif] yeni talep karti', talepHatasi);
+  }
+
   // 4) Quote oluştur
   const expiresAt = new Date(
     Date.now() + expiryOption.hours * 60 * 60 * 1000
@@ -439,6 +452,11 @@ export async function submitOffer(
       expires_at: expiresAt,
       status: 'pending',
       over_budget: overBudget,
+      // Duzeltme 12-A: teklif talebin tarihini tasir (gecmis tarih yazilmaz)
+      event_date:
+        request.event_date && request.event_date >= istanbulGunu()
+          ? request.event_date
+          : null,
     })
     .select('id')
     .single();

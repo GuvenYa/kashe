@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { canWriteForBusiness } from '@/app/lib/business-write';
+import { istanbulGunu } from '@/app/lib/tarih';
 import {
   QUOTE_EXPIRY_OPTIONS,
   formatQuoteAmount,
@@ -15,6 +16,7 @@ import {
 import {
   newQuoteEmail,
   quoteAcceptedEmail,
+  quoteAcceptedCustomerEmail,
 } from '@/app/lib/email/templates';
 import { sendPushToUser } from '@/app/lib/push-server';
 import { formatQuoteAmount as fmtPush } from './quotes-data';
@@ -25,6 +27,14 @@ type CreateQuoteInput = {
   servicesDescription: string;
   cancellationPolicy: string | null;
   expiryKey: QuoteExpiryKey;
+  /**
+   * Duzeltme 12-A (bulgu 115): teklifin tarihi / saati / yeri. Form sohbetteki
+   * musteri secimiyle dolu gelir; bos birakilirsa rezervasyon sohbetinkini alir.
+   */
+  eventDate?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
 };
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -78,6 +88,30 @@ export async function createQuote(
     return { success: false, error: 'Geçersiz süre seçimi' };
   }
 
+  // Duzeltme 12-A: tarih / saat / yer (veritabani da gecmis tarihi reddeder)
+  const eventDate = input.eventDate?.trim() || null;
+  if (eventDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
+      return { success: false, error: 'Geçersiz tarih' };
+    }
+    if (eventDate < istanbulGunu()) {
+      return { success: false, error: 'Teklif tarihi geçmişte olamaz' };
+    }
+  }
+  const saatGecerli = (v: string | null) => !v || /^\d{2}:\d{2}(:\d{2})?$/.test(v);
+  const startTime = input.startTime?.trim() || null;
+  const endTime = input.endTime?.trim() || null;
+  if (!saatGecerli(startTime) || !saatGecerli(endTime)) {
+    return { success: false, error: 'Geçersiz saat' };
+  }
+  if (endTime && !startTime) {
+    return { success: false, error: 'Bitiş saati için başlangıç saati de gir' };
+  }
+  const location = input.location?.trim() || null;
+  if (location && location.length > 200) {
+    return { success: false, error: 'Yer en fazla 200 karakter' };
+  }
+
   const { data: conv } = await supabase
     .from('conversations')
     .select('professional_id, customer_id')
@@ -124,6 +158,10 @@ export async function createQuote(
       cancellation_policy: input.cancellationPolicy?.trim() || null,
       expires_at: expiresAt,
       status: 'pending',
+      event_date: eventDate,
+      start_time: startTime,
+      end_time: endTime,
+      location,
     })
     .select('id, total_amount, currency')
     .single();
@@ -181,7 +219,7 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
 
   const { data: quote } = await supabase
     .from('quotes')
-    .select('id, conversation_id, sender_id, status, expires_at, total_amount, currency')
+    .select('id, conversation_id, sender_id, status, expires_at, total_amount, currency, request_no')
     .eq('id', quoteId)
     .single();
 
@@ -220,11 +258,14 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     return { success: false, error: 'Onaylama başarısız: ' + error.message };
   }
 
-  // Aynı konuşmadaki diğer bekleyen teklifleri reddet (çift rezervasyonu önle)
+  // Ayni TALEBIN diger bekleyen tekliflerini reddet (cift rezervasyonu onle).
+  // Duzeltme 12-B (bulgu 114): ayni profesyonelle ikinci isin teklifi
+  // (baska talep numarasi) bu kabulden etkilenmez.
   await supabase
     .from('quotes')
     .update({ status: 'declined' })
     .eq('conversation_id', quote.conversation_id)
+    .eq('request_no', quote.request_no ?? 1)
     .neq('id', quoteId)
     .eq('status', 'pending');
 
@@ -242,7 +283,28 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
     console.error('[mail:quote-accepted]', e);
   }
 
+  // Duzeltme 12-E (bulgu 119): musteriye de rezervasyon ozeti. Uygulama ici
+  // bildirimi veritabani yazar (fn_duz12_kabul_bildirimi); e-posta onaylayan
+  // kisinin kendi adresine gider.
+  try {
+    await notifyQuoteAcceptedCustomer(
+      supabase,
+      quote.id,
+      quote.conversation_id,
+      user.id,
+      user.email ?? null,
+      conv.professional_id,
+      quote.total_amount,
+      quote.currency ?? 'TRY'
+    );
+  } catch (e) {
+    console.error('[mail:quote-accepted-customer]', e);
+  }
+
   revalidatePath(`/mesajlar/${quote.conversation_id}`);
+  revalidatePath('/rezervasyonlarim');
+  revalidatePath('/tekliflerim');
+  revalidatePath('/teklif-taleplerim');
   return { success: true };
 }
 
@@ -475,5 +537,71 @@ async function notifyQuoteAccepted(
     });
   } catch (err) {
     console.error('[email] notifyQuoteAccepted error:', err);
+  }
+}
+
+async function notifyQuoteAcceptedCustomer(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  quoteId: string,
+  conversationId: string,
+  accepterId: string,
+  accepterEmail: string | null,
+  professionalId: string,
+  totalAmount: number,
+  currency: string
+): Promise<void> {
+  if (!accepterEmail) return;
+  try {
+    const [{ data: accepterProfile }, { data: proProfile }, { data: booking }] =
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', accepterId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name, company_name, role')
+          .eq('id', professionalId)
+          .single(),
+        supabase
+          .from('bookings')
+          .select('id, event_date')
+          .eq('quote_id', quoteId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+    // Kabulden sonra rezervasyon onayli: tam ad (kamu ad kurali, Duzeltme 05-E)
+    const proName =
+      (proProfile?.role === 'agency' || proProfile?.role === 'business') &&
+      proProfile?.company_name
+        ? proProfile.company_name
+        : proProfile?.full_name || 'Profesyonel';
+
+    const template = quoteAcceptedCustomerEmail({
+      recipientName: accepterProfile?.full_name || '',
+      proName,
+      amount: formatQuoteAmount(totalAmount, currency),
+      bookingId: booking?.id ?? null,
+      conversationId,
+      eventDate: booking?.event_date ?? null,
+    });
+
+    await sendNotificationEmail({
+      supabase,
+      toUserId: accepterId,
+      toEmail: accepterEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      conversationId,
+      eventType: 'booking_confirmed',
+      islemOnayi: true,
+    });
+  } catch (err) {
+    console.error('[email] notifyQuoteAcceptedCustomer error:', err);
   }
 }

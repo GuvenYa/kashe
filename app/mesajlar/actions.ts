@@ -528,11 +528,23 @@ export async function startConversation(
         : '';
     // Guvenlik 05 (bulgu 91): sistem satiri istemciden eklenmez; RPC yalniz
     // musteri tarafinin rezervasyon talebi notunu kabul eder.
+    // Duzeltme 12-B: onceki talep teklif aldiysa bu satir yeni talebi acar
+    // (sayac RPC'de artar).
     await supabase.rpc('sistem_mesaji_ekle', {
       p_sohbet: conversationId,
       p_tur: 'rezervasyon_talebi',
       p_metin: `📅 Rezervasyon talebi — Tarih: ${dateText}${timeText}${data.location ? ` · Yer: ${data.location}` : ''}`,
     });
+  } else if (!isNewConversation) {
+    // Duzeltme 12-B (bulgu 114): ayni profesyonele yeni brief. Onceki talep
+    // teklif aldiysa "Yeni talep #n" karti yazilir ve sayac artar; sonraki
+    // teklif bu talebe baglanir, ilk isin kabulunde reddedilmez. Teklif
+    // almamis talepte ayni talebin guncellemesidir (kart yazilmaz).
+    const { error: talepHatasi } = await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: conversationId,
+      p_tur: 'yeni_talep',
+    });
+    if (talepHatasi) console.error('[mesaj] yeni talep karti', talepHatasi);
   }
 
   const { error: msgError } = await supabase.from('messages').insert({

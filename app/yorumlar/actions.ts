@@ -126,6 +126,16 @@ export async function createOrUpdateReview(params: {
     tamamlanmisVar = (teklifSekli ?? []).length > 0;
   }
 
+  // Duzeltme 12-G (bulgu 117): profesyonelin iptal ettigi onayli is de yorum
+  // hakki verir. Kural veritabanindaki yorum ekleme kosuluyla AYNI fonksiyon.
+  if (!tamamlanmisVar) {
+    const { data: iptalHakki } = await supabase.rpc(
+      'fn_duz03_tamamlanmis_rezervasyon_var',
+      { p_customer: conversation.customer_id, p_provider: professionalId }
+    );
+    tamamlanmisVar = iptalHakki === true;
+  }
+
   if (!tamamlanmisVar) {
     return {
       success: false,

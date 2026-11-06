@@ -32,6 +32,10 @@ type ConversationRow = {
   location: string | null;
   guest_count: number | null;
   budget_range: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  /** Duzeltme 12-B: sohbetteki talep sayisi. */
+  request_count: number | null;
   /** A2: kategoriye ozel brief cevaplari (jsonb; `brief-config.ts` anahtarlari). */
   brief_data: Record<string, unknown> | null;
   customer: ConversationParticipant | null;
@@ -143,6 +147,7 @@ export default async function KonusmaPage({
       `
       id, customer_id, professional_id,
       event_date, event_type, location, guest_count, budget_range, brief_data,
+      start_time, end_time, request_count,
       customer:customer_id (
         id, full_name, avatar_url, company_name, role, bio, last_seen_at,
         turkish_cities(name),
@@ -307,7 +312,9 @@ export default async function KonusmaPage({
   //  - bookingIdByQuoteId (köprü): kabul edilmiş teklif kartından /rezervasyon/[id]
   const { data: convBookings } = await supabase
     .from('bookings')
-    .select('id, quote_id, status, completed_at, customer_id, professional_id')
+    .select(
+      'id, quote_id, status, completed_at, cancelled_at, cancelled_by, customer_id, professional_id'
+    )
     .eq('conversation_id', id);
 
   const contactUnlocked = (convBookings ?? []).some(
@@ -357,18 +364,31 @@ export default async function KonusmaPage({
    * zamanindan SONRAKI ilk sistem mesajinin altina cizilir (tamamlama
    * mesajini yazan eylem ayni islemde ekliyor). Musteri kendi rezervasyonunu
    * ve kendi yorumunu RLS ile okur.
+   *
+   * Duzeltme 12-G (bulgu 117): profesyonelin IPTAL ettigi onayli is de yorum
+   * hakki verir (veritabani kurali fn_duz03_tamamlanmis_rezervasyon_var);
+   * cagri iptal sistem satirinin altina asilir.
    */
   let yorumCagrisi: { href: string; etiket: string } | null = null;
   let tamamlanmaZamani: string | null = null;
-  const tamamlanan = (convBookings ?? []).find(
-    (b) => b.status === 'completed' && b.completed_at
-  ) as
-    | {
-        completed_at: string;
-        customer_id: string | null;
-        professional_id: string | null;
-      }
-    | undefined;
+  type YorumluRezervasyon = {
+    status: string;
+    completed_at: string | null;
+    cancelled_at: string | null;
+    cancelled_by: string | null;
+    customer_id: string | null;
+    professional_id: string | null;
+  };
+  const yorumluRezervasyonlar = (convBookings ?? []) as YorumluRezervasyon[];
+  const tamamlanan =
+    yorumluRezervasyonlar.find((b) => b.status === 'completed' && b.completed_at) ??
+    yorumluRezervasyonlar.find(
+      (b) =>
+        b.status === 'cancelled' &&
+        !!b.cancelled_at &&
+        !!b.cancelled_by &&
+        b.cancelled_by === (b.professional_id ?? conv.professional_id)
+    );
   if (isCustomerSide && tamamlanan) {
     const saglayiciId = tamamlanan.professional_id ?? conv.professional_id;
     const musteriId = tamamlanan.customer_id;
@@ -382,10 +402,19 @@ export default async function KonusmaPage({
         .eq('customer_id', musteriId)
         .limit(1);
       const yorumVar = (yorumSatirlari ?? []).length > 0;
-      tamamlanmaZamani = tamamlanan.completed_at;
+      tamamlanmaZamani =
+        tamamlanan.status === 'completed'
+          ? tamamlanan.completed_at
+          : tamamlanan.cancelled_at;
       yorumCagrisi = yorumVar
         ? { href: `/p/${saglayiciId}#yorumlar`, etiket: 'Yorumun yayında →' }
-        : { href: `/p/${saglayiciId}?yorum=1`, etiket: 'Yorum bırak →' };
+        : {
+            href: `/p/${saglayiciId}?yorum=1`,
+            etiket:
+              tamamlanan.status === 'completed'
+                ? 'Yorum bırak →'
+                : 'Deneyimini yorumla →',
+          };
     }
   }
 
@@ -473,6 +502,13 @@ export default async function KonusmaPage({
                 bookingIdByQuoteId={bookingIdByQuoteId}
                 yorumCagrisi={yorumCagrisi}
                 tamamlanmaZamani={tamamlanmaZamani}
+                teklifVarsayilanlari={{
+                  eventDate: conv.event_date,
+                  startTime: conv.start_time,
+                  endTime: conv.end_time,
+                  location: conv.location,
+                }}
+                talepSayisi={conv.request_count ?? 1}
               />
             </div>
 
@@ -491,6 +527,10 @@ export default async function KonusmaPage({
               }}
               viewerRole={isCustomerSide ? 'customer' : 'professional'}
               contactUnlocked={contactUnlocked}
+              iptalNedeniyle={
+                !contactUnlocked &&
+                (convBookings ?? []).some((b) => b.status === 'cancelled')
+              }
             />
           </div>
         </div>

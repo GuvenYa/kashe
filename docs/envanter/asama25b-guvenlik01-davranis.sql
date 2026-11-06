@@ -68,8 +68,13 @@ BEGIN
   INSERT INTO public.messages (conversation_id, sender_id, body, message_type)
   VALUES (v_conv, c, 'Merhaba, test mesaji', 'text') RETURNING id INTO v_id;
   INSERT INTO fx VALUES ('m1', v_id);
+  -- Dalda bu sohbete onizleme turunda gercek yorum birakilmis olabilir
+  -- (sohbet + musteri basina tek yorum): varsa o kullanilir, islem sonunda
+  -- geri alinir.
   INSERT INTO public.reviews (conversation_id, customer_id, professional_id, rating, body)
-  VALUES (v_conv, c, p, 5, 'Test yorumu, guvenlik denemesi') RETURNING id INTO v_id;
+  VALUES (v_conv, c, p, 5, 'Test yorumu, guvenlik denemesi')
+  ON CONFLICT (conversation_id, customer_id) DO NOTHING;
+  SELECT id INTO v_id FROM public.reviews WHERE conversation_id = v_conv AND customer_id = c;
   INSERT INTO fx VALUES ('yorum', v_id);
 
   -- Basvuru testlerinin baslangic durumu (Fahri dalda degistirmis olabilir;
@@ -222,7 +227,11 @@ DO $$ DECLARE v text; BEGIN
 END $$;
 
 -- T12 profesyonel rezervasyonu tamamlar (mesru)
+-- Duzeltme 12: tarih gecmeden dogrudan tamamlama musteri onayi ister;
+-- burada etkinlik tarihi gecmis sayilir (sistem damgasi).
 DO $$ DECLARE v text; BEGIN
+  UPDATE public.bookings SET event_date = (now() AT TIME ZONE 'Europe/Istanbul')::date - 1
+   WHERE id = (SELECT id FROM fx WHERE ad = 'b1');
   PERFORM pg_temp.kimlik((SELECT id FROM fx WHERE ad = 'pro'));
   BEGIN
     UPDATE public.bookings SET status = 'completed', completed_at = now() WHERE id = (SELECT id FROM fx WHERE ad = 'b1');

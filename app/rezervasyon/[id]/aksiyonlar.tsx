@@ -2,18 +2,30 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { cancelBooking, completeBooking } from './actions';
+import { cancelBooking, completeBooking, confirmCompletion } from './actions';
 
 type Props = {
   bookingId: string;
   viewer: 'customer' | 'professional';
   cancellationPolicy: string | null;
+  /**
+   * Duzeltme 12-F: etkinlik tarihi geldi mi (Istanbul gunu). Gelmediyse
+   * profesyonelin "Is tamamlandi"si musteriden onay ister.
+   */
+  tarihGeldi?: boolean;
+  /** Profesyonel tamamlanma onayi istedi, musteri henuz onaylamadi. */
+  tamamlamaIstendi?: boolean;
+  /** Musteri tarafi onaylayabilir mi (musteri ya da alici kurulus yoneticisi). */
+  onaylayabilir?: boolean;
 };
 
 export function RezervasyonAksiyonlari({
   bookingId,
   viewer,
   cancellationPolicy,
+  tarihGeldi = true,
+  tamamlamaIstendi = false,
+  onaylayabilir = false,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -49,15 +61,55 @@ export function RezervasyonAksiyonlari({
     });
   }
 
+  function handleConfirm() {
+    setError(null);
+    startTransition(async () => {
+      const result = await confirmCompletion(bookingId);
+      if (result.success) {
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
   return (
     <>
       <div className="bg-card border border-line rounded-2xl p-6 md:p-8">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-4">
           Aksiyonlar
         </p>
+        {/* Duzeltme 12-F: tamamlanma onayi bekleniyor */}
+        {tamamlamaIstendi && (
+          <div className="mb-4 rounded-xl border border-moss/30 bg-moss/[0.06] px-4 py-3">
+            <p className="text-sm text-ink font-medium">
+              {viewer === 'professional'
+                ? 'Müşterinin onayı bekleniyor.'
+                : 'Profesyonel işin tamamlandığını bildirdi.'}
+            </p>
+            <p className="text-xs text-ink-72 mt-1 leading-relaxed">
+              {viewer === 'professional'
+                ? 'Etkinlik tarihi gelmeden bildirdiğin için iş, müşteri onaylayınca tamamlanır.'
+                : 'Hizmeti aldıysan onayla; iş tamamlanır ve yorum bırakabilirsin. Bir sorun varsa önce sohbetten yaz.'}
+            </p>
+            {viewer === 'customer' && onaylayabilir && (
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={isPending}
+                className="kashe-tap mt-3 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-ink/85 transition disabled:opacity-60 shadow-[3px_3px_0_rgba(26,18,14,0.12)]"
+              >
+                {isPending ? '...' : 'Tamamlandığını onayla'}
+              </button>
+            )}
+            {error && !cancelOpen && !completeOpen && (
+              <p className="text-xs text-danger mt-2">{error}</p>
+            )}
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Profesyonel "İş tamamlandı" diyebilir */}
-          {viewer === 'professional' && (
+          {/* Profesyonel "İş tamamlandı" diyebilir (onay istendiyse bekler) */}
+          {viewer === 'professional' && !tamamlamaIstendi && (
             <button
               type="button"
               onClick={() => setCompleteOpen(true)}
@@ -93,6 +145,16 @@ export function RezervasyonAksiyonlari({
             <p className="text-sm text-ink-72 leading-relaxed mb-4">
               Bu işlem geri alınamaz. Karşı tarafa bildirim gönderilecek.
             </p>
+
+            {/* Duzeltme 12-G (bulgu 117): saglayici iptalinin sonucu acik yazilir */}
+            {viewer === 'professional' && (
+              <div className="rounded-xl border border-brand-ink/25 bg-brand-ink/[0.05] px-4 py-3 mb-4">
+                <p className="text-xs text-ink leading-relaxed">
+                  Onaylı rezervasyonu iptal etmek <strong>güven puanını düşürür</strong>{' '}
+                  ve müşteri bu rezervasyon için <strong>deneyimini yorumlayabilir</strong>.
+                </p>
+              </div>
+            )}
 
             {cancellationPolicy && (
               <div className="bg-paper-2 rounded-xl p-4 mb-4 border border-line">
@@ -157,11 +219,14 @@ export function RezervasyonAksiyonlari({
               Tamamlama
             </p>
             <h3 className="font-display font-semibold text-xl text-ink mb-3 leading-tight">
-              İşi tamamlandı olarak işaretle.
+              {tarihGeldi
+                ? 'İşi tamamlandı olarak işaretle.'
+                : 'Müşteriden tamamlanma onayı iste.'}
             </h3>
             <p className="text-sm text-ink-72 leading-relaxed mb-2">
-              Bu işlem geri alınamaz. Müşteriye bildirim gönderilecek ve
-              senin için yorum bırakabilir hale gelecek.
+              {tarihGeldi
+                ? 'Bu işlem geri alınamaz. Müşteriye bildirim gönderilecek ve senin için yorum bırakabilir hale gelecek.'
+                : 'Etkinlik tarihi henüz gelmedi (ya da tarih belirlenmedi). Müşteriye onay isteği gider; müşteri onaylayınca iş tamamlanır ve yorum bırakabilir.'}
             </p>
 
             {error && (
@@ -186,7 +251,7 @@ export function RezervasyonAksiyonlari({
                 disabled={isPending}
                 className="kashe-tap flex-1 px-4 py-2.5 bg-ink text-paper rounded-xl font-display font-semibold text-sm hover:bg-ink/85 transition disabled:opacity-60 shadow-[3px_3px_0_rgba(26,18,14,0.12)]"
               >
-                {isPending ? '...' : 'Tamamlandı'}
+                {isPending ? '...' : tarihGeldi ? 'Tamamlandı' : 'Onay iste'}
               </button>
             </div>
           </div>

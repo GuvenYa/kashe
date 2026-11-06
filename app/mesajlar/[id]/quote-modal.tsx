@@ -9,15 +9,42 @@ import {
 } from '../quotes-data';
 import { createQuote } from '../quote-actions';
 import { getQuoteTemplates } from '@/app/lib/message-templates';
+import { istanbulGunu } from '@/app/lib/tarih';
+
+/**
+ * Duzeltme 12-A (bulgu 115): teklif kendi tarihini, saatini ve yerini tasir.
+ * Alanlar sohbetteki musteri secimiyle DOLU gelir; musteri belirtmediyse
+ * profesyonel secer ya da bos birakir (rezervasyon sohbetinkini alir).
+ */
+export type TeklifVarsayilanlari = {
+  eventDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  location: string | null;
+};
 
 type Props = {
   conversationId: string;
   categorySlug: string | null;
   open: boolean;
   onClose: () => void;
+  varsayilan: TeklifVarsayilanlari;
 };
 
-export function QuoteModal({ conversationId, categorySlug, open, onClose }: Props) {
+/** Sohbetteki tarih gecmisse formu doldurmaz (veritabani da reddeder). */
+function gelecekTarih(gun: string | null): string {
+  if (!gun) return '';
+  const g = gun.slice(0, 10);
+  return g >= istanbulGunu() ? g : '';
+}
+
+export function QuoteModal({
+  conversationId,
+  categorySlug,
+  open,
+  onClose,
+  varsayilan,
+}: Props) {
   const quoteTemplates = getQuoteTemplates(categorySlug);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -30,6 +57,12 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
   const [policyKey, setPolicyKey] = useState<string>('standard');
   const [customPolicy, setCustomPolicy] = useState('');
   const [useCustomPolicy, setUseCustomPolicy] = useState(false);
+  // Tarih / saat / yer — sohbetteki musteri seciminden (bkz. TeklifVarsayilanlari)
+  const musteriTarihi = gelecekTarih(varsayilan.eventDate);
+  const [eventDate, setEventDate] = useState(musteriTarihi);
+  const [startTime, setStartTime] = useState(varsayilan.startTime?.slice(0, 5) ?? '');
+  const [endTime, setEndTime] = useState(varsayilan.endTime?.slice(0, 5) ?? '');
+  const [location, setLocation] = useState(varsayilan.location ?? '');
 
   if (!open) return null;
 
@@ -40,6 +73,10 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
     setPolicyKey('standard');
     setCustomPolicy('');
     setUseCustomPolicy(false);
+    setEventDate(musteriTarihi);
+    setStartTime(varsayilan.startTime?.slice(0, 5) ?? '');
+    setEndTime(varsayilan.endTime?.slice(0, 5) ?? '');
+    setLocation(varsayilan.location ?? '');
     setError(null);
   }
 
@@ -61,6 +98,10 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
       setError('Hizmet açıklaması en az 10 karakter olmalı');
       return;
     }
+    if (endTime && !startTime) {
+      setError('Bitiş saati için başlangıç saati de gir');
+      return;
+    }
 
     const policyText = useCustomPolicy
       ? customPolicy.trim()
@@ -73,6 +114,10 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
         servicesDescription: description.trim(),
         cancellationPolicy: policyText || null,
         expiryKey,
+        eventDate: eventDate || null,
+        startTime: startTime || null,
+        endTime: endTime || null,
+        location: location.trim() || null,
       });
 
       if (result.success) {
@@ -136,6 +181,59 @@ export function QuoteModal({ conversationId, categorySlug, open, onClose }: Prop
                 TL
               </span>
             </div>
+          </div>
+
+          {/* Tarih / saat / yer (Duzeltme 12-A) */}
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-1">
+              Tarih, saat ve yer
+            </p>
+            <p className="text-[11px] text-ink-50 mb-2.5 leading-relaxed">
+              {musteriTarihi
+                ? 'Müşterinin seçtiği tarihle dolu geldi; gerekirse değiştir.'
+                : 'Müşteri tarih belirtmedi. Sen seçebilir ya da boş bırakabilirsin; boş kalırsa rezervasyon "Tarih belirlenmedi" olur.'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <label className="block">
+                <span className="text-[11px] text-ink-72 block mb-1">Tarih</span>
+                <input
+                  type="date"
+                  value={eventDate}
+                  min={istanbulGunu()}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-ink-72 block mb-1">Başlangıç</span>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-ink-72 block mb-1">Bitiş</span>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                />
+              </label>
+            </div>
+            <label className="block mt-2">
+              <span className="text-[11px] text-ink-72 block mb-1">Yer</span>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                maxLength={200}
+                placeholder="Örn: Kadıköy, Moda Sahnesi"
+                className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+              />
+            </label>
           </div>
 
           {/* Hizmet açıklaması */}

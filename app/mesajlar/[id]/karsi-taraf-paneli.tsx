@@ -21,6 +21,12 @@ type Props = {
   // false ise other.phone/email zaten null gelir (data katmanı) — burada sadece
   // "neden gizli" notunu çiziyoruz.
   contactUnlocked: boolean;
+  /**
+   * Duzeltme 12-I (bulgu 120): kilit bir iptal yuzunden mi kapandi? Fahri
+   * once rezervasyonu iptal edip sonra telefonu aradi; kilidin neden yeniden
+   * kapandigini yazmak icin.
+   */
+  iptalNedeniyle?: boolean;
 };
 
 /**
@@ -38,7 +44,12 @@ const ROL_ETIKETLERI: Record<string, string> = {
 /** Halka acik profil sayfasi olan roller (`/p/<id>` bu ucunde aciliyor). */
 const ACIK_PROFIL_ROLLERI = ['professional', 'agency', 'business'];
 
-export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) {
+export function KarsiTarafPaneli({
+  other,
+  viewerRole,
+  contactUnlocked,
+  iptalNedeniyle = false,
+}: Props) {
   const displayName =
     (other.role === 'business' || other.role === 'agency') && other.company_name
       ? other.company_name
@@ -171,8 +182,12 @@ export function KarsiTarafPaneli({ other, viewerRole, contactUnlocked }: Props) 
                 İletişim kilitli
               </p>
               <p className="text-xs text-ink-72 leading-relaxed">
-                Telefon ve e-posta, rezervasyon onaylandıktan sonra görünür.
-                Anlaşana kadar mesajlaşma Kashe üzerinden devam eder.
+                {iptalNedeniyle
+                  ? 'Rezervasyon iptal edildiği için iletişim bilgileri yeniden kapandı. '
+                  : ''}
+                Telefon ve e-posta, rezervasyon onaylanınca iki taraf için açılır;
+                rezervasyon iptal edilirse kapanır. Anlaşana kadar mesajlaşma
+                Kashe üzerinden devam eder.
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
+import { KASHE_SAAT_DILIMI, istanbulGunu } from '@/app/lib/tarih';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { paraBirimliMetin } from '@/app/lib/para';
@@ -42,6 +42,8 @@ type BookingDetay = {
   cancelled_by: string | null;
   cancellation_reason: string | null;
   completed_at: string | null;
+  /** Duzeltme 12-F: satici tarihten once tamamlanma onayi istedi. */
+  completion_requested_at: string | null;
   customer: {
     id: string;
     full_name: string | null;
@@ -188,6 +190,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
       event_date, start_time, end_time, event_type, location, guest_count,
       total_amount, currency, status,
       created_at, cancelled_at, cancelled_by, cancellation_reason, completed_at,
+      completion_requested_at,
       customer:profiles!bookings_customer_id_fkey (
         id, full_name, avatar_url, company_name, role
       ),
@@ -279,8 +282,24 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     .toUpperCase();
 
   const tone = pickTone(otherParty?.id ?? booking.id);
-  const statusStyle = STATUS_STYLES[booking.status];
+  // Duzeltme 12-F: onayli ama tamamlanma onayi bekleyen is ayri etiketle
+  const tamamlamaIstendi =
+    booking.status === 'confirmed' && !!booking.completion_requested_at;
+  const statusStyle = tamamlamaIstendi
+    ? { label: 'Onay bekliyor', classes: 'bg-moss/10 text-moss border-moss/30' }
+    : STATUS_STYLES[booking.status];
+  const tarihGeldi =
+    !!booking.event_date && booking.event_date.slice(0, 10) <= istanbulGunu();
   const cancelledByCustomer = booking.cancelled_by === booking.customer_id;
+  // Duzeltme 12-G: saglayici tarafinin iptali musteriye yorum hakki verir.
+  // Yalniz sohbet sekli: teklif seklinde iptal eden kurulus uyesi burada
+  // ayirt edilemez (yetki veritabaninda: fn_duz03_tamamlanmis_rezervasyon_var).
+  const saticiIptali =
+    !teklifSekli &&
+    booking.status === 'cancelled' &&
+    !!booking.cancelled_by &&
+    !cancelledByCustomer &&
+    booking.cancelled_by === booking.professional_id;
   const backHref =
     teklifSekli || viewer === 'customer' ? '/rezervasyonlarim' : '/takvimim';
   const backLabel =
@@ -299,7 +318,7 @@ export default async function RezervasyonDetayPage({ params }: Props) {
    * kendi satirini RLS ile okur; baska kimsenin yorumu sorgulanmaz.
    */
   let yorumCagrisi: { href: string; etiket: string } | null = null;
-  if (booking.status === 'completed') {
+  if (booking.status === 'completed' || saticiIptali) {
     const saglayiciId = booking.professional_id ?? booking.seller_provider_id;
     const musteriId = booking.customer_id;
     const musteriTarafi =
@@ -314,8 +333,28 @@ export default async function RezervasyonDetayPage({ params }: Props) {
       const yorumVar = (yorumSatirlari ?? []).length > 0;
       yorumCagrisi = yorumVar
         ? { href: `/p/${saglayiciId}#yorumlar`, etiket: 'Yorumun yayında →' }
-        : { href: `/p/${saglayiciId}?yorum=1`, etiket: 'Yorum bırak →' };
+        : {
+            href: `/p/${saglayiciId}?yorum=1`,
+            etiket: saticiIptali ? 'Deneyimini yorumla →' : 'Yorum bırak →',
+          };
     }
+  }
+
+  /**
+   * ILETISIM (Duzeltme 12-I, bulgu 120). Sohbetteki kilitle ayni kural:
+   * telefon / e-posta yalniz onayli ya da tamamlanmis rezervasyonda acilir,
+   * iptalde kapanir. `get_contact_info` ayni kurali veritabaninda uygular.
+   * Teklif seklinde (sohbetsiz) kurulus iletisimi teklif ekranindadir.
+   */
+  const iletisimAcik =
+    !teklifSekli && (booking.status === 'confirmed' || booking.status === 'completed');
+  let karsiIletisim: { email: string | null; phone: string | null } | null = null;
+  if (iletisimAcik && otherParty?.id) {
+    const { data: iletisimVerisi } = await supabase
+      .rpc('get_contact_info', { p_profile_id: otherParty.id })
+      .maybeSingle();
+    karsiIletisim =
+      (iletisimVerisi as { email: string | null; phone: string | null } | null) ?? null;
   }
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
@@ -478,6 +517,15 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                   {booking.cancellation_reason}
                 </p>
               )}
+              {/* Duzeltme 12-G: saglayici iptalinde musteri yorumlayabilir */}
+              {saticiIptali && yorumCagrisi && (
+                <Link
+                  href={yorumCagrisi.href}
+                  className="kashe-tap inline-block mt-3 font-display font-semibold text-sm text-brand-ink hover:underline"
+                >
+                  {yorumCagrisi.etiket}
+                </Link>
+              )}
             </div>
           )}
 
@@ -599,6 +647,61 @@ export default async function RezervasyonDetayPage({ params }: Props) {
             </p>
           </div>
 
+          {/* İLETİŞİM — Duzeltme 12-I (sohbet sekli) */}
+          {!teklifSekli && (
+            <div className="bg-card border border-line rounded-2xl p-6 md:p-8 mb-6">
+              <Eyebrow variant="inline" className="mb-3">
+                İletişim
+              </Eyebrow>
+              {iletisimAcik ? (
+                karsiIletisim?.phone || karsiIletisim?.email ? (
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                    {karsiIletisim?.phone && (
+                      <div>
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1">
+                          Telefon
+                        </dt>
+                        <dd className="text-base text-ink">
+                          <a
+                            href={`tel:${karsiIletisim.phone.replace(/\s+/g, '')}`}
+                            className="hover:text-brand-ink hover:underline"
+                          >
+                            {karsiIletisim.phone}
+                          </a>
+                        </dd>
+                      </div>
+                    )}
+                    {karsiIletisim?.email && (
+                      <div className="min-w-0">
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-50 mb-1">
+                          E-posta
+                        </dt>
+                        <dd className="text-base text-ink break-all">
+                          <a
+                            href={`mailto:${karsiIletisim.email}`}
+                            className="hover:text-brand-ink hover:underline"
+                          >
+                            {karsiIletisim.email}
+                          </a>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                ) : (
+                  <p className="text-sm text-ink-72">
+                    {otherName} iletişim bilgisi eklememiş; sohbetten yazabilirsin.
+                  </p>
+                )
+              ) : (
+                <p className="text-sm text-ink-72 leading-relaxed">
+                  Rezervasyon iptal edildiği için iletişim bilgileri kapandı.
+                  Telefon ve e-posta, onaylı bir rezervasyon varken iki taraf için
+                  açılır; yeni bir anlaşma için sohbetten devam edebilirsin.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* TEKLİFE GİT — FAZ 7c, yalniz kurulus uyesine */}
           {teklifSekli && isSellerOrg && teklif?.id && (
             <Link
@@ -659,12 +762,15 @@ export default async function RezervasyonDetayPage({ params }: Props) {
           {booking.status === 'confirmed' &&
             (teklifSekli ? (
               sellerOrgManage || isCustomer || buyerOrgManage ? (
-                // Tamamlama YALNIZ saticida: alici kurulus ve musteri yalniz
-                // iptal eder ('customer' gorunumu tek dugme gosterir).
+                // Tamamlama saticida; alici kurulus ve musteri iptal eder ve
+                // (Duzeltme 12-F) saticinin tamamlanma istegini onaylar.
                 <RezervasyonAksiyonlari
                   bookingId={booking.id}
                   viewer={sellerOrgManage ? 'professional' : 'customer'}
                   cancellationPolicy={null}
+                  tarihGeldi={tarihGeldi}
+                  tamamlamaIstendi={tamamlamaIstendi}
+                  onaylayabilir={!sellerOrgManage && (isCustomer || buyerOrgManage)}
                 />
               ) : null
             ) : (
@@ -672,6 +778,9 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 bookingId={booking.id}
                 viewer={viewer}
                 cancellationPolicy={booking.quote?.cancellation_policy ?? null}
+                tarihGeldi={tarihGeldi}
+                tamamlamaIstendi={tamamlamaIstendi}
+                onaylayabilir={isCustomer}
               />
             ))}
         </div>

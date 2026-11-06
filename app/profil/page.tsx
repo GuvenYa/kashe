@@ -382,6 +382,10 @@ export default async function ProfilPage() {
   let kpiBekleyenTalep = 0;
   let kpiYaklasanRezervasyon = 0;
   let kpiAyKazanc = 0;
+  // Duzeltme 12-H (bulgu 116): beklenen ve toplam gelir (net)
+  let kpiBeklenenGelir = 0;
+  let kpiBeklenenIs = 0;
+  let kpiToplamKazanc = 0;
   let kpiAcikIlan = 0;
   let kpiGelenTeklif = 0;
   let kpiEtkinlik = 0;
@@ -500,6 +504,18 @@ export default async function ProfilPage() {
       )
       .reduce((toplam, b) => toplam + (b.total_amount ?? 0), 0);
     kpiAyKazanc = calcCommission(ayBrut).net;
+    // Duzeltme 12-H: beklenen = onayli (henuz tamamlanmamis) islerin neti;
+    // toplam = tum tamamlanan islerin neti. /kazanclarim ile ayni kaynak.
+    const onayli = rezervasyonlar.filter((b) => b.status === 'confirmed');
+    kpiBeklenenIs = onayli.length;
+    kpiBeklenenGelir = calcCommission(
+      onayli.reduce((toplam, b) => toplam + (b.total_amount ?? 0), 0)
+    ).net;
+    kpiToplamKazanc = calcCommission(
+      rezervasyonlar
+        .filter((b) => b.status === 'completed')
+        .reduce((toplam, b) => toplam + (b.total_amount ?? 0), 0)
+    ).net;
   }
 
   if (isClientUser) {
@@ -630,22 +646,21 @@ export default async function ProfilPage() {
             altNot="Onaylı, tarihi gelmemiş"
             href="/rezervasyonlarim"
           />
+          {/* Duzeltme 12-H (bulgu 116): beklenen ve kazanilan gelir. Profil
+              tamligi kutusu buradan kalkti; eksik profilde asagidaki
+              tamlik karti zaten gorunuyor. */}
           <KpiKutu
-            etiket="Bu ay kazanç"
-            deger={formatTRY(kpiAyKazanc)}
-            altNot="Tamamlanan işler, net"
-            vurgu={kpiAyKazanc > 0 ? 'moss' : 'none'}
+            etiket="Beklenen gelir"
+            deger={formatTRY(kpiBeklenenGelir)}
+            altNot={`${kpiBeklenenIs} onaylı iş · net`}
             href="/kazanclarim"
           />
           <KpiKutu
-            etiket="Profil tamlığı"
-            deger={`%${completeness}`}
-            altNot={
-              completeness < 100
-                ? `${missingFields.length} madde eksik`
-                : 'Tamamlandı'
-            }
-            href={completeness < 100 ? '/profil/duzenle' : undefined}
+            etiket="Toplam kazanç"
+            deger={formatTRY(kpiToplamKazanc)}
+            altNot={`Bu ay ${formatTRY(kpiAyKazanc)} · net`}
+            vurgu={kpiToplamKazanc > 0 ? 'moss' : 'none'}
+            href="/kazanclarim"
           />
         </KpiSatir>
       )}

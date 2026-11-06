@@ -366,3 +366,41 @@ export function bookingCompletedEmail(opts: {
     text: `Selam ${opts.recipientName},\n\n${opts.proName} işinizi tamamlandı olarak işaretledi.\n\nDeneyimini paylaşmak için: ${url}\n\n— Kashe`,
   };
 }
+
+// ---------- Teklif onaylandi: musteriye (Duzeltme 12-E, bulgu 119) ----------
+// Kabulde profesyonele "teklifin onaylandi" gidiyordu; musteri yalniz sohbetteki
+// karti goruyordu. Musteriye de rezervasyon baglantili ozet gider.
+export function quoteAcceptedCustomerEmail(opts: {
+  recipientName: string;
+  proName: string;
+  amount: string;
+  bookingId: string | null;
+  conversationId: string;
+  eventDate: string | null;
+}) {
+  const url = opts.bookingId
+    ? `${SITE_URL}/rezervasyon/${opts.bookingId}`
+    : `${SITE_URL}/mesajlar/${opts.conversationId}`;
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">Selam ${escapeHtml(opts.recipientName)},</p>
+    <p style="margin:0 0 18px 0;"><strong style="color:${COLORS.ink};">${escapeHtml(opts.proName)}</strong> teklifini onayladın; rezervasyonun oluştu. Rezervasyon onaylandığı için iki tarafın iletişim bilgileri de açıldı.</p>
+    <div style="background-color:${COLORS.paper2};border-radius:10px;padding:18px 22px;margin:0 0 6px 0;">
+      <p style="margin:0 0 4px 0;font-size:11px;font-family:'SFMono-Regular',Consolas,monospace;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.ink50};">Onaylanan tutar</p>
+      <p style="margin:0 0 10px 0;font-size:24px;font-weight:500;color:${COLORS.ink};">${escapeHtml(opts.amount)}</p>
+      <p style="margin:0;font-size:13px;color:${COLORS.ink72};">Etkinlik · ${escapeHtml(formatEventDate(opts.eventDate))}</p>
+    </div>
+  `;
+  return {
+    subject: `Rezervasyonun oluştu — ${opts.proName}`,
+    html: baseLayout({
+      preheader: `Teklifi onayladın · ${opts.amount}`,
+      eyebrow: 'Rezervasyon',
+      eyebrowColor: COLORS.moss,
+      title: 'Rezervasyonun oluştu.',
+      bodyHtml,
+      ctaText: 'Rezervasyonu aç →',
+      ctaUrl: url,
+    }),
+    text: `Selam ${opts.recipientName},\n\n${opts.proName} teklifini onayladın; rezervasyonun oluştu.\n\nTutar: ${opts.amount}\nEtkinlik: ${formatEventDate(opts.eventDate)}\n\nRezervasyonu aç: ${url}\n\n— Kashe`,
+  };
+}

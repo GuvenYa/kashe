@@ -430,6 +430,8 @@ DO $$ DECLARE v text; v_q uuid; v_b uuid; BEGIN
   PERFORM pg_temp.kimlik(NULL);
   SELECT id INTO v_b FROM public.bookings WHERE quote_id = v_q;
   INSERT INTO fx VALUES ('rez_b', v_b, NULL);
+  -- Duzeltme 12: tarih gecmeden dogrudan tamamlama musteri onayi ister; tarih gecmis sayilir
+  UPDATE public.bookings SET event_date = (now() AT TIME ZONE 'Europe/Istanbul')::date - 1 WHERE id = v_b;
   PERFORM pg_temp.kimlik(pg_temp.fx('pro'));
   BEGIN
     UPDATE public.bookings SET status = 'completed', completed_at = now() WHERE id = v_b;

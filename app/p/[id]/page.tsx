@@ -376,6 +376,19 @@ export default async function PublicProfilePage({
     (b) => b.blocked_date as string
   );
 
+  /**
+   * Duzeltme 12-A (bulgu 115): takvimde rezervasyonlu gunler. Bugune dek
+   * `bookedDates` bos gidiyordu; `bookings` girissize kapali oldugu icin
+   * yalniz TARIH donduren kimliksiz RPC (yayindaki saglayici, onayli /
+   * tamamlanmis, bugun ve sonrasi).
+   */
+  const { data: doluGunVerisi } = await supabase.rpc('saglayici_dolu_gunler', {
+    p_provider: profile.id,
+  });
+  const bookedDates = ((doluGunVerisi as string[] | null) ?? []).map((g) =>
+    String(g).slice(0, 10)
+  );
+
   // (user + currentUserRole + viewerIsAdmin yukarıda, is_published guard'ından önce alındı)
   const isLoggedIn = !!user;
 
@@ -430,12 +443,14 @@ export default async function PublicProfilePage({
 
   if (canReview) {
     const [{ data: bookingData }, { data: reviewData }] = await Promise.all([
+      // Duzeltme 12-G (bulgu 117): profesyonelin iptal ettigi onayli is de
+      // yorum hakki verir (veritabani kurali ile ayni).
       supabase
         .from('bookings')
-        .select('customer_id')
+        .select('customer_id, status, cancelled_by')
         .in('customer_id', reviewCandidateIds)
         .eq('professional_id', profile.id)
-        .eq('status', 'completed'),
+        .in('status', ['completed', 'cancelled']),
       supabase
         .from('reviews')
         .select('id, rating, body, customer_id')
@@ -444,7 +459,11 @@ export default async function PublicProfilePage({
         .order('created_at', { ascending: false }),
     ]);
 
-    hasCompletedBooking = (bookingData ?? []).length > 0;
+    hasCompletedBooking = (bookingData ?? []).some(
+      (b) =>
+        b.status === 'completed' ||
+        (b.status === 'cancelled' && b.cancelled_by === profile.id)
+    );
     // Bağlam önceliği = aday sırası (self önce, sonra owner kurumlar).
     const reviews = reviewData ?? [];
     const ctxId = reviewCandidateIds.find((id) =>
@@ -1020,7 +1039,7 @@ export default async function PublicProfilePage({
           packages={packages}
           guvenSinyalleri={guvenSinyalleri}
           blockedDates={blockedDates}
-          bookedDates={[]}
+          bookedDates={bookedDates}
           enDusukFiyat={enDusukFiyat}
           portfolioItems={portfolioItems}
           experiences={experiences}
@@ -1690,7 +1709,7 @@ export default async function PublicProfilePage({
               <FiyatTakvimKarti
                 enDusukFiyat={ajansEnDusukFiyat}
                 blockedDates={blockedDates}
-                bookedDates={[]}
+                bookedDates={bookedDates}
                 iller={iller}
                 saglayiciIli={cityName ?? null}
                 yalnizKendiSehri={yalnizKendiSehri}

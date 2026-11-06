@@ -7,9 +7,41 @@ import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 import { getTeamContext } from '@/app/lib/business-write';
+import { gosterilecekAd } from '@/app/lib/kamu-adi';
+import {
+  formatQuoteAmount,
+  getQuoteStatusLabel,
+  teklifTarihiMetni,
+  type QuoteStatus,
+} from '@/app/mesajlar/quotes-data';
 
 export const metadata = {
-  title: 'Teklif Taleplerim — Kashe',
+  title: 'Gelen teklifler — Kashe',
+};
+
+/**
+ * Duzeltme 12-D (bulgu 119): sohbetten gelen teklifler de burada. Fahri
+ * "talebime iliskin gelen teklifler"i tek yerde gormek istedi; once yalniz
+ * teklif topla talepleri listeleniyordu.
+ */
+type SohbetTeklifi = {
+  id: string;
+  conversation_id: string;
+  total_amount: number;
+  currency: string;
+  status: QuoteStatus;
+  created_at: string;
+  expires_at: string;
+  event_date: string | null;
+  request_no: number | null;
+  conversations: {
+    customer_id: string;
+    professional: {
+      full_name: string | null;
+      company_name: string | null;
+      role: string;
+    } | null;
+  } | null;
 };
 
 /** Talep durum etiketleri — tek kaynak; etkinlik detay sayfasi da bunu kullanir. */
@@ -19,6 +51,17 @@ export const STATUS_LABELS: Record<string, string> = {
   expired: 'Süresi doldu',
   fulfilled: 'Tamamlandı',
 };
+
+/**
+ * Teklif kartiyla ayni kural (Duzeltme 03-B): gunluk is 'expired' yazana kadar
+ * suresi gecmis bekleyen teklif "Suresi doldu" gorunur. Bilesen disinda: saat
+ * okumasi render saflik kuralina takilmasin.
+ */
+function gorunenDurum(status: QuoteStatus, expiresAt: string): QuoteStatus {
+  return status === 'pending' && new Date(expiresAt).getTime() < Date.now()
+    ? 'expired'
+    : status;
+}
 
 export default async function TeklifTaleplerimPage() {
   const supabase = await createClient();
@@ -89,6 +132,36 @@ export default async function TeklifTaleplerimPage() {
       owner_business_name: isOwn ? null : businessNames[r.customer_id] ?? 'Kurum',
     };
   });
+
+  // Sohbetlerden gelen teklifler (RLS: sohbetin tarafi + kurum uyesi okur)
+  const { data: sohbetTeklifVerisi } = await supabase
+    .from('quotes')
+    .select(
+      `
+      id, conversation_id, total_amount, currency, status, created_at,
+      expires_at, event_date, request_no,
+      conversations!inner (
+        customer_id,
+        professional:profiles!conversations_professional_id_fkey (full_name, company_name, role)
+      )
+    `
+    )
+    .in('conversations.customer_id', customerIds)
+    .order('created_at', { ascending: false })
+    .limit(40);
+  const sohbetTeklifleri = ((sohbetTeklifVerisi ?? []) as unknown as SohbetTeklifi[])
+    .map((q) => ({
+      ...q,
+      durum: gorunenDurum(q.status, q.expires_at),
+    }))
+    // Bekleyenler once, sonra en yeni
+    .sort((a, b) =>
+      a.durum === 'pending' && b.durum !== 'pending'
+        ? -1
+        : b.durum === 'pending' && a.durum !== 'pending'
+          ? 1
+          : 0
+    );
 
   const ownRequests = list.filter((r) => r.is_own);
   const teamRequests = list.filter((r) => !r.is_own);
@@ -169,8 +242,8 @@ export default async function TeklifTaleplerimPage() {
     <PanelKabugu {...kabuk}>
       <div className="max-w-3xl">
         <PanelBaslik
-          eyebrow="Teklif Taleplerim"
-          altNot="Oluşturduğun teklif talepleri ve gelen teklifler."
+          eyebrow="Gelen teklifler"
+          altNot="Teklif topla taleplerin ve sohbetlerde gelen teklifler."
           sagAlan={
             <>
               <Link
@@ -184,10 +257,83 @@ export default async function TeklifTaleplerimPage() {
           }
         >
           <em className="not-italic font-medium text-brand-accent">
-          Topladığın
+          Gelen
           </em>{' '}
           teklifler
         </PanelBaslik>
+
+        {/* Sohbetlerden gelen teklifler (Duzeltme 12-D) */}
+        {sohbetTeklifleri.length > 0 && (
+          <section className="mb-12">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+              Sohbetlerden gelen teklifler
+            </p>
+            <ul className="bg-card border border-line rounded-lg divide-y divide-line">
+              {sohbetTeklifleri.map((q) => {
+                const pro = q.conversations?.professional ?? null;
+                const proAdi =
+                  (pro?.role === 'agency' || pro?.role === 'business') &&
+                  pro?.company_name
+                    ? pro.company_name
+                    : gosterilecekAd(
+                        pro?.role ?? null,
+                        pro?.full_name ?? null,
+                        q.status === 'accepted'
+                      ) || 'Profesyonel';
+                const tarih = teklifTarihiMetni(q.event_date);
+                const kurumAdina =
+                  q.conversations && q.conversations.customer_id !== user.id
+                    ? businessNames[q.conversations.customer_id] ?? 'Kurum'
+                    : null;
+                return (
+                  <li key={q.id}>
+                    <Link
+                      href={`/mesajlar/${q.conversation_id}`}
+                      className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-paper-2/60 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-display font-semibold text-sm text-ink truncate">
+                          {proAdi}
+                          {q.request_no && q.request_no > 1 ? (
+                            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-50 ml-2">
+                              Talep #{q.request_no}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-xs text-ink-72 mt-0.5">
+                          {tarih ?? 'Tarih belirtilmedi'}
+                          {kurumAdina ? ` · ${kurumAdina} adına` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-display font-semibold text-base text-ink">
+                          {formatQuoteAmount(q.total_amount, q.currency)}
+                        </p>
+                        <p
+                          className={`font-mono text-[10px] uppercase tracking-[0.12em] mt-0.5 ${
+                            q.durum === 'pending'
+                              ? 'text-brand-accent'
+                              : q.durum === 'accepted'
+                                ? 'text-moss'
+                                : 'text-ink-50'
+                          }`}
+                        >
+                          {getQuoteStatusLabel(q.durum)}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {sohbetTeklifleri.length > 0 && list.length > 0 && (
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
+            Teklif topla taleplerin
+          </p>
+        )}
 
         {list.length === 0 ? (
           <div className="bg-card border border-line rounded-lg p-12 text-center">

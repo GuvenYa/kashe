@@ -76,6 +76,13 @@ function saticiGrubu(): PanelMenuMaddesi[] {
       bolum: 'calisma',
       oncelik: true,
     },
+    // Duzeltme 12-D (bulgu 119): sohbetlerde verilen tekliflerin tek listesi
+    {
+      href: '/tekliflerim',
+      etiket: 'Verdiğim teklifler',
+      ikon: 'teklif',
+      bolum: 'calisma',
+    },
     {
       href: '/rezervasyonlarim',
       etiket: 'Rezervasyonlar',
@@ -124,7 +131,7 @@ function musteriGrubu(): PanelMenuMaddesi[] {
     },
     {
       href: '/teklif-taleplerim',
-      etiket: 'Pro teklifleri',
+      etiket: 'Gelen teklifler',
       ikon: 'teklif',
       bolum: 'calisma',
       oncelik: true,
@@ -303,7 +310,7 @@ function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
   });
   maddeler.push({
     href: '/teklif-taleplerim',
-    etiket: 'Pro teklifleri',
+    etiket: 'Gelen teklifler',
     ikon: 'teklif',
     bolum: 'calisma',
   });

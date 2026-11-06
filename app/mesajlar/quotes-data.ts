@@ -28,6 +28,16 @@ export type Quote = {
   responded_at: string | null;
   /** §bütçe — teklif müşterinin paylaştığı üst bütçeyi aşıyor mu (submit anında hesaplanır) */
   over_budget?: boolean;
+  /**
+   * Duzeltme 12-A: teklifin kendi tarihi / saati / yeri. Bos ise rezervasyon
+   * sohbetteki musteri secimini alir.
+   */
+  event_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  /** Duzeltme 12-B: sohbetteki talep numarasi (ayni profesyonelle kacinci is). */
+  request_no?: number;
 };
 
 export type Booking = {
@@ -48,6 +58,8 @@ export type Booking = {
   cancelled_at: string | null;
   completed_at: string | null;
   cancellation_reason: string | null;
+  /** Duzeltme 12-F: satici tarihten once tamamlanma onayi istedi. */
+  completion_requested_at?: string | null;
 };
 
 /**
@@ -160,4 +172,28 @@ export function canAcceptQuote(quote: Quote, currentUserId: string): boolean {
  */
 export function canWithdrawQuote(quote: Quote, currentUserId: string): boolean {
   return quote.status === 'pending' && quote.sender_id === currentUserId;
+}
+
+/**
+ * Duzeltme 12-A: tarih-YALNIZ deger ("2026-11-27") -> "27 Kasım 2026".
+ * Gun kaymasin diye UTC gece yarisi + `timeZone: 'UTC'` (bkz. app/lib/tarih.ts).
+ */
+export function teklifTarihiMetni(gun: string | null | undefined): string | null {
+  if (!gun || !/^\d{4}-\d{2}-\d{2}$/.test(gun)) return null;
+  return new Date(`${gun}T00:00:00Z`).toLocaleDateString('tr-TR', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** "20:00" / "20:00–02:00" (bitis ertesi gune tasabilir). */
+export function teklifSaatiMetni(
+  baslangic: string | null | undefined,
+  bitis: string | null | undefined
+): string | null {
+  if (!baslangic) return null;
+  const b = baslangic.slice(0, 5);
+  return bitis ? `${b}–${bitis.slice(0, 5)}` : b;
 }

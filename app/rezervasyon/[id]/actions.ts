@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/lib/supabase-server';
 import { isUserSuspended } from '@/app/lib/check-suspension';
+import { istanbulGunu } from '@/app/lib/tarih';
 import {
   sendNotificationEmail,
   getUserEmail,
@@ -14,6 +15,14 @@ import {
 } from '@/app/lib/email/templates';
 
 type ActionResult = { success: true } | { success: false; error: string };
+
+/**
+ * Duzeltme 12-F: tamamlama iki sonuc verebilir — is tamamlandi ya da
+ * (etkinlik tarihi gelmemisse) musteriden onay istendi.
+ */
+type TamamlamaSonucu =
+  | { success: true; onayIstendi: boolean }
+  | { success: false; error: string };
 
 /**
  * Bir tarafın rezervasyonu iptal etmesi.
@@ -202,10 +211,15 @@ export async function cancelBooking(
  * - completed_at kaydedilir
  * - Sistem mesajı atılır
  * - Müşteriye "yorum bırak" e-postası gider
+ *
+ * Duzeltme 12-F (bulgu 118): etkinlik tarihi gelmemisse (ya da tarih yoksa)
+ * dogrudan tamamlanmaz; musteriden onay istenir (`completion_requested_at`).
+ * Musteri `confirmCompletion` ile onaylar. Kural veritabaninda da var
+ * (fn_guv01_rezervasyon_gecis).
  */
 export async function completeBooking(
   bookingId: string
-): Promise<ActionResult> {
+): Promise<TamamlamaSonucu> {
   const supabase = await createClient();
 
   const {
@@ -226,7 +240,7 @@ export async function completeBooking(
     .select(
       `
       id, conversation_id, customer_id, professional_id,
-      status, total_amount, currency, event_date,
+      status, total_amount, currency, event_date, completion_requested_at,
       proposal_version_id,
       surum:proposal_versions!bookings_proposal_version_id_fkey (
         proposal:proposals!proposal_versions_proposal_id_fkey (seller_organization_id)
@@ -261,6 +275,44 @@ export async function completeBooking(
       success: false,
       error: 'Sadece onaylanmış rezervasyon tamamlanabilir',
     };
+  }
+
+  // Duzeltme 12-F: tarih gelmediyse musteri onayi istenir.
+  const tarihGeldi =
+    !!booking.event_date && booking.event_date.slice(0, 10) <= istanbulGunu();
+  if (!tarihGeldi) {
+    if (booking.completion_requested_at) {
+      return {
+        success: false,
+        error: 'Onay zaten istendi; müşterinin onayı bekleniyor.',
+      };
+    }
+    const { error: istekHatasi } = await supabase
+      .from('bookings')
+      .update({ completion_requested_at: new Date().toISOString() })
+      .eq('id', bookingId);
+    if (istekHatasi) {
+      return {
+        success: false,
+        error: 'Onay isteği gönderilemedi: ' + istekHatasi.message,
+      };
+    }
+    // Musteriye uygulama ici bildirim veritabanindan (fn_duz12_tamamlama_bildirimi);
+    // sohbete sistem satiri:
+    if (booking.conversation_id) {
+      await supabase.rpc('sistem_mesaji_ekle', {
+        p_sohbet: booking.conversation_id,
+        p_tur: 'tamamlama_talebi',
+        p_kayit: bookingId,
+      });
+    }
+    revalidatePath('/rezervasyonlarim');
+    revalidatePath('/takvimim');
+    revalidatePath(`/rezervasyon/${bookingId}`);
+    if (booking.conversation_id) {
+      revalidatePath(`/mesajlar/${booking.conversation_id}`);
+    }
+    return { success: true, onayIstendi: true };
   }
 
   const { error: updateError } = await supabase
@@ -299,6 +351,84 @@ export async function completeBooking(
     } catch (e) {
       console.error('[mail:booking-completed]', e);
     }
+  }
+
+  revalidatePath('/rezervasyonlarim');
+  revalidatePath('/takvimim');
+  revalidatePath(`/rezervasyon/${bookingId}`);
+  if (booking.conversation_id) {
+    revalidatePath(`/mesajlar/${booking.conversation_id}`);
+  }
+  return { success: true, onayIstendi: false };
+}
+
+/**
+ * Duzeltme 12-F: musteri, profesyonelin "is tamamlandi" bildirimini onaylar.
+ * Yetki: musterinin kendisi ya da (teklif seklinde) alici kurulusta
+ * events.manage. Asil kapi veritabani gecis kuralidir.
+ */
+export async function confirmCompletion(
+  bookingId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Giriş yapmalısın' };
+  }
+  if (await isUserSuspended(user.id)) {
+    return { success: false, error: 'Hesabın askıya alındı. İletişim: info@kashe.net' };
+  }
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select(
+      'id, conversation_id, customer_id, professional_id, buyer_organization_id, status, completion_requested_at'
+    )
+    .eq('id', bookingId)
+    .single();
+
+  if (!booking) {
+    return { success: false, error: 'Rezervasyon bulunamadı' };
+  }
+
+  const musteri = !!booking.customer_id && booking.customer_id === user.id;
+  const aliciKurulus =
+    !musteri && booking.buyer_organization_id
+      ? await yetkiVarMi(supabase, booking.buyer_organization_id, 'events.manage')
+      : false;
+  if (!musteri && !aliciKurulus) {
+    return { success: false, error: 'Tamamlanmayı yalnız müşteri onaylar' };
+  }
+  if (booking.status !== 'confirmed' || !booking.completion_requested_at) {
+    return { success: false, error: 'Onay bekleyen bir tamamlama yok' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId);
+
+  if (updateError) {
+    return {
+      success: false,
+      error: 'Onaylama başarısız: ' + updateError.message,
+    };
+  }
+
+  // Sohbete sistem satiri; saticiya uygulama ici bildirim veritabanindan.
+  if (booking.conversation_id && musteri) {
+    await supabase.rpc('sistem_mesaji_ekle', {
+      p_sohbet: booking.conversation_id,
+      p_tur: 'rezervasyon_tamam',
+      p_kayit: bookingId,
+    });
   }
 
   revalidatePath('/rezervasyonlarim');

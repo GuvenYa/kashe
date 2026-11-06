@@ -12,6 +12,8 @@ import {
   canWithdrawQuote,
   getQuoteStatusLabel,
   getQuoteStatusTone,
+  teklifTarihiMetni,
+  teklifSaatiMetni,
 } from '../quotes-data';
 import { acceptQuote, declineQuote, withdrawQuote } from '../quote-actions';
 
@@ -24,6 +26,11 @@ type QuoteCardProps = {
   canAct?: boolean;
   /** Kabul edilmiş teklife bağlı booking id (varsa) → rezervasyona köprü (her iki koltuk) */
   bookingId?: string | null;
+  /**
+   * Duzeltme 12-B: sohbette birden fazla talep varsa kartta "Talep #n"
+   * yazilir (tek talepli sohbette gereksiz gurultu olmasin).
+   */
+  talepNoGoster?: boolean;
 };
 
 export function QuoteCard({
@@ -31,6 +38,7 @@ export function QuoteCard({
   currentUserId,
   canAct = true,
   bookingId = null,
+  talepNoGoster = false,
 }: QuoteCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -52,6 +60,10 @@ export function QuoteCard({
   const isPendingStatus = durum === 'pending';
   const tone = getQuoteStatusTone(durum);
   const isMine = quote.sender_id === currentUserId;
+  // Duzeltme 12-A: teklifin kendi tarihi / saati / yeri
+  const tarihMetni = teklifTarihiMetni(quote.event_date);
+  const saatMetni = teklifSaatiMetni(quote.start_time, quote.end_time);
+  const yerMetni = quote.location?.trim() || null;
 
   function handleAccept() {
     if (confirmingAction !== 'accept') {
@@ -130,6 +142,9 @@ export function QuoteCard({
         <div className="bg-brand-ink-08 border-b border-brand-ink/15 px-5 py-3 flex items-center justify-between">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand-ink font-semibold">
             Teklif
+            {talepNoGoster && quote.request_no ? (
+              <span className="text-ink-72 font-medium"> · Talep #{quote.request_no}</span>
+            ) : null}
           </p>
           <span
             className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] font-medium border ${badgeStyles[tone]}`}
@@ -154,6 +169,36 @@ export function QuoteCard({
             )}
           </div>
         </div>
+
+        {/* Tarih / saat / yer (Duzeltme 12-A) */}
+        {(tarihMetni || saatMetni || yerMetni) && (
+          <dl className="px-5 pb-4 grid grid-cols-2 gap-x-4 gap-y-2">
+            {tarihMetni && (
+              <div>
+                <dt className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 mb-0.5">
+                  Tarih
+                </dt>
+                <dd className="text-sm text-ink">{tarihMetni}</dd>
+              </div>
+            )}
+            {saatMetni && (
+              <div>
+                <dt className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 mb-0.5">
+                  Saat
+                </dt>
+                <dd className="text-sm text-ink">{saatMetni}</dd>
+              </div>
+            )}
+            {yerMetni && (
+              <div className="col-span-2">
+                <dt className="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-72 mb-0.5">
+                  Yer
+                </dt>
+                <dd className="text-sm text-ink break-words">{yerMetni}</dd>
+              </div>
+            )}
+          </dl>
+        )}
 
         {/* Hizmet kapsamı */}
         <div className="px-5 pb-4">

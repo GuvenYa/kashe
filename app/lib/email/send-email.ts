@@ -7,6 +7,7 @@ export type EmailEventType =
   | 'new_message'
   | 'new_quote'
   | 'quote_accepted'
+  | 'booking_confirmed'
   | 'new_conversation';
 
 type SendEmailParams = {
@@ -19,6 +20,12 @@ type SendEmailParams = {
   text: string;
   conversationId: string | null;
   eventType: EmailEventType;
+  /**
+   * Duzeltme 12-E: islem onayi (ornek: "rezervasyonun olustu"). Kisi o an
+   * sitede olsa da kayit niteliginde gider; cevrimici ve 15 dk sinirlari
+   * uygulanmaz.
+   */
+  islemOnayi?: boolean;
 };
 
 export async function sendNotificationEmail(
@@ -32,16 +39,19 @@ export async function sendNotificationEmail(
     html,
     text,
     conversationId,
+    islemOnayi = false,
   } = params;
 
   if (!toEmail) return { sent: false, reason: 'no_email' };
 
-  // 1. Online kontrolü
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('last_seen_at')
-    .eq('id', toUserId)
-    .single();
+  // 1. Online kontrolü (islem onayinda yok)
+  const { data: profile } = islemOnayi
+    ? { data: null }
+    : await supabase
+        .from('profiles')
+        .select('last_seen_at')
+        .eq('id', toUserId)
+        .single();
 
   if (profile?.last_seen_at) {
     const lastSeen = new Date(profile.last_seen_at).getTime();
@@ -52,7 +62,7 @@ export async function sendNotificationEmail(
   }
 
   // 2. Throttle — son 15 dakikada aynı konuşmadan email atıldı mı?
-  if (conversationId) {
+  if (conversationId && !islemOnayi) {
     const throttleCutoff = new Date(
       Date.now() - THROTTLE_MINUTES * 60 * 1000
     ).toISOString();
@@ -88,7 +98,7 @@ export async function sendNotificationEmail(
     }
 
     // 4. İşaretle
-    if (conversationId) {
+    if (conversationId && !islemOnayi) {
       const { data: latestNotif } = await supabase
         .from('notifications')
         .select('id')
