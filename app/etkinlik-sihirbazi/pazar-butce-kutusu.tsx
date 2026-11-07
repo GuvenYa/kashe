@@ -130,18 +130,24 @@ export function PazarButceKutusu({
       {/* Duzeltme 01 (#18): eksik roller ACIKCA yazilir; tahmin uretilmez. */}
       {!tamKapsam && (
         <p className="text-sm text-ink-72 mt-1.5 break-words">
-          Veri olmayan rol: {eksikRoller.map((r) => r.ad).join(', ')}
+          Fiyatı belirlenemeyen roller: {eksikRoller.map((r) => r.ad).join(', ')}
         </p>
       )}
 
       <ul className="mt-3 space-y-1">
         {satirlar.map((s) => (
           <li key={s.rol.slug} className="text-sm text-ink-72 break-words">
-            {s.rol.ad} × {Math.max(1, s.rol.adet)} · medyan{' '}
+            {s.rol.ad} × {Math.max(1, s.rol.adet)} · ortalama{' '}
             {formatTL(s.kiyas.median)} · {ornekMetni(s.kiyas)}
           </li>
         ))}
       </ul>
+      {/* Duzeltme 13-D (bulgu 123): "medyan" anlasilmadi. Hesap degismedi
+          (ortanca); okura "ortalama" denir, ne oldugu bir satirla yazar. */}
+      <p className="text-[11px] text-ink-50 mt-2 leading-relaxed">
+        Ortalama: pazardaki fiyatların ortanca değeri (medyan); en yüksek ve en
+        düşük uç fiyatlardan etkilenmez.
+      </p>
     </div>
   );
 }

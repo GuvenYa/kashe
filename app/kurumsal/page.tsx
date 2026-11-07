@@ -326,11 +326,12 @@ export default async function KurumsalPanelPage() {
         <aside className="space-y-5">
           <PanelKart baslik="Hızlı başlangıç">
             <div className="space-y-1.5">
+              {/* Duzeltme 13-E: sihirbaz kurulus adina acilir; ilk adim Kashe AI */}
               <Link
-                href="/etkinlik-sihirbazi"
+                href={`/etkinlik-sihirbazi?kurulus=${kurulus.id}`}
                 className="kashe-tap block text-sm text-brand-ink hover:underline"
               >
-                Yeni etkinlik tanımla →
+                Yeni etkinlik — Kashe AI ile anlat →
               </Link>
               {kurulus.canManageEvents && (
                 <Link

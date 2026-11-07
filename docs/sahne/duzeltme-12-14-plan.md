@@ -217,9 +217,26 @@ sonrasi ayri tasarim turu.
    - B: Yalniz buyuksehir illerinde (30) ilce listesi.
    - C: Ilce serbest metin kalir.
 
-## Durum (6 Kasim 2026)
-Duzeltme 12 kodda ve yerel testte: migration
-`20261106160000_duzeltme_12_teklif_rezervasyon.sql`, kontrol `asama31`,
-davranis `asama31b` (33 test); asama25b-30b regresyonlari gecti (asama25b T12
-ve asama29b T31, tarihi gecmis isin dogrudan tamamlanmasina gore
-guncellendi). Dal bekliyor.
+## Durum (7 Kasim 2026)
+Duzeltme 12 uretimde. Migration `20261106160000_duzeltme_12_teklif_rezervasyon.sql`;
+kontrol `asama31` dal ve uretimde K1-K10 ESIT; davranis `asama31b` dalda
+33/33 (fikstur dalin onceki tur verisinden bagimsiz musteri secer); eski
+turlar dalda gecti (asama25b 25/25 - yorum fiksturu mevcut yorumu kullanir,
+asama29b 32/32). Onizleme turu (Kaan + Ilker): tarihli teklif, kabulde
+rezervasyonun teklif tarihini almasi ve musteri bildirimi, profil takviminde
+dolu gunler, "Yeni talep #2" karti ve Talep #2 teklifi, dosya onizleme +
+kaldirma + aciklamali gonderim, tarihten once tamamlama onayi (Onay bekliyor
+-> musteri onayi), profesyonel iptal uyarisi ve iptal kaydinda yorum
+baglantisi, panel gelir kutulari, Verdigim / Gelen teklifler. Turda dort
+kucuk duzeltme yapildi (rezervasyon sayfasinda iletisim sohbetle ayni kural;
+listelerde eski tekliflere rezervasyon tarihi, kisi bazinda tam ad, tur
+rezervasyondan ya da kendi talebinden; yeni tarih saatsiz gelirse eski saat
+temizlenir). Uretimde girissiz dolu gun RPC'si 200, talep fonksiyonu 401,
+profil sayfasi hatasiz.
+
+Duzeltme 13 kodda ve yerel testte (7 Kasim): migration
+`20261107100000_duzeltme_13_ajans_rol_kapsami.sql` (ajansin hangi rolu
+kapsadigi, eslestirme kuraliyla; uye kimligi donmez), kontrol `asama32`,
+davranis `asama32b` (9 test); onceki 182 test gecti. 13-A..13-F uygulamada.
+Dal bekliyor. Fahri kararlari (yukarida) hala bekleniyor; 13 bunlara bagli
+degil.

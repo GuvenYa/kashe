@@ -439,11 +439,34 @@ export default async function EtkinlikDetayPage({
           ? gunEtiketi
           : null,
         onerilen: a.final_rank === 1,
+        ajans: s?.provider_type === 'organization',
       };
     };
 
     // Siralama DB'den (`final_rank`); filtreleme sirayi korur.
     ajansAdaylari = adaylar.filter((a) => a.role_id === null).map(kart);
+
+    /**
+     * Duzeltme 13-C (bulgu 125): hangi ajansin hangi rolu kapsadigi —
+     * eslestirmenin kuraliyla ayni (kendi hizmeti ya da aktif ekip uyesi).
+     * Uye listesi baska kurulusa kapali; definer RPC yalniz (saglayici, rol)
+     * ciftini dondurur. Hata olursa rol sutunlarinda ajans gorunmez (akis
+     * kesilmez, "Tum isi ajansa ver" listesi yine var).
+     */
+    const ajansRolleri = new Map<number, Set<string>>();
+    if (ajansAdaylari.length > 0) {
+      const { data: kapsamData, error: kapsamHatasi } = await supabase.rpc(
+        'fn_duz13_ajans_rol_kapsami',
+        { p_run: sonKosu.id }
+      );
+      if (kapsamHatasi) console.error('[match] ajans rol kapsami', kapsamHatasi);
+      for (const k of (kapsamData ?? []) as { provider_id: string; role_id: number }[]) {
+        const kume = ajansRolleri.get(k.role_id) ?? new Set<string>();
+        kume.add(k.provider_id);
+        ajansRolleri.set(k.role_id, kume);
+      }
+    }
+
     rolGruplari = gereksinimler
       .filter((g) => g.service_roles != null)
       .map((g) => ({
@@ -454,6 +477,9 @@ export default async function EtkinlikDetayPage({
         adaylar: adaylar
           .filter((a) => a.role_id === g.service_roles!.id)
           .map(kart),
+        ajanslar: ajansAdaylari.filter((a) =>
+          ajansRolleri.get(g.service_roles!.id)?.has(a.providerId)
+        ),
       }));
   }
 
@@ -724,6 +750,23 @@ export default async function EtkinlikDetayPage({
   const adayEkipYazilir = ekip
     ? sahip || !!ekipKurulusu?.canManageCrew
     : sahip || ekipKurmaKurulusu !== null;
+
+  // Duzeltme 13-B: "Bu rolden kac kisi?" — gereksinim yazma kurali (RLS):
+  // etkinlik sahibi ya da etkinligin kurulusunda events.manage.
+  const ihtiyacDuzenlenir = sahip || rfpAcilabilir;
+
+  // Duzeltme 13-C: "Havuzdan ekle" — havuz yalniz ajans kurulusu ekibinde
+  // (Ekip sekmesindeki ile ayni kosul); kisisel etkinlikte baglanti yok.
+  const havuzYolu =
+    etkinlik.organization_id &&
+    ekipKuruluslari.some(
+      (o) =>
+        o.id === etkinlik.organization_id &&
+        o.canViewTalent &&
+        o.talentPoolEnabled
+    )
+      ? `/etkinliklerim/${etkinlik.id}?sekme=ekip`
+      : null;
 
   // "Teklif Al" (IletisimButton) yalniz RFP yolu YOKKEN cizilir; "kimin
   // adina" listesi de yalniz o durumda okunur (gereksiz sorgu acilmaz).
@@ -1183,6 +1226,8 @@ export default async function EtkinlikDetayPage({
                 mevcutEkipId={ekip?.id ?? null}
                 ekipKurulusId={ekipKurmaKurulusu}
                 ekipYazilir={adayEkipYazilir}
+                ihtiyacDuzenlenir={ihtiyacDuzenlenir}
+                havuzYolu={havuzYolu}
                 rfpYolu={
                   rfpAcilabilir
                     ? `/kurumsal/rfp?etkinlik=${etkinlik.id}`

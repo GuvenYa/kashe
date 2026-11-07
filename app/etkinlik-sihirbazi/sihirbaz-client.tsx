@@ -137,12 +137,16 @@ function UrlKutusu({
   );
 }
 
+/** Duzeltme 13-D: "Kendi adima" secimi (varsayilan kurulusu ezer). */
+const KISISEL = 'kisisel';
+
 export function SihirbazClient({
   kategoriler,
   sehirler,
   turler,
   profiller,
   kuruluslar,
+  varsayilanKurulus = '',
   oturumVar,
   rolIdler,
 }: {
@@ -152,6 +156,11 @@ export function SihirbazClient({
   profiller: SihirbazProfil[];
   /** events.manage yetkili kuruluslar (FAZ 7b/P1-ek). Girissizde bos dizi. */
   kuruluslar: { id: string; name: string }[];
+  /**
+   * Duzeltme 13-D (bulgu 123): ajans / kurum hesabinda kurulus VARSAYILAN
+   * secili gelir; kullanici "Kendi adima" diyebilir (URL'de `kurulus=kisisel`).
+   */
+  varsayilanKurulus?: string;
   oturumVar: boolean;
   /** FAZ 9b: kategori/rol slug -> `service_roles.id` (pazar kiyasi RPC'si icin). */
   rolIdler: Record<string, number>;
@@ -218,10 +227,16 @@ export function SihirbazClient({
    * yeni analiz secimi sifirlamaz. URL'den gelen deger listede yoksa yok sayilir
    * (kisisel) — baskasinin kurulus kimligi elle yazilarak secilemez.
    */
-  const kurulusParam = params.get('kurulus') ?? '';
-  const kurulus = kuruluslar.some((k) => k.id === kurulusParam)
-    ? kurulusParam
-    : '';
+  const kurulusParam = params.get('kurulus');
+  const kurulus =
+    kurulusParam === KISISEL
+      ? ''
+      : kurulusParam !== null && kuruluslar.some((k) => k.id === kurulusParam)
+        ? kurulusParam
+        : kurulusParam === null &&
+            kuruluslar.some((k) => k.id === varsayilanKurulus)
+          ? varsayilanKurulus
+          : '';
   const butceMin = params.get('butce_min') ?? '';
   const butceMax = params.get('butce_max') ?? '';
   const mekan = params.get('mekan') ?? '';
@@ -1003,9 +1018,14 @@ export function SihirbazClient({
                 secim yapilmazsa etkinlik bugunku gibi kisisel kalir. */}
             {kuruluslar.length > 0 && (
               <fieldset className="mt-6">
-                <legend className={ETIKET}>Bu etkinlik kimin adına?</legend>
+                {/* Duzeltme 13-D (bulgu 123): "Bu etkinlik kimin adina?"
+                    anlasilmadi; soru ve secenekler sade. */}
+                <legend className={ETIKET}>Etkinliği nasıl düzenleyeceksin?</legend>
                 <div className="flex flex-wrap gap-2">
-                  {[{ id: '', name: 'Kişisel' }, ...kuruluslar].map((k) => (
+                  {[
+                    { id: '', name: 'Kendi adıma' },
+                    ...kuruluslar.map((k) => ({ id: k.id, name: `${k.name} adına` })),
+                  ].map((k) => (
                     <label
                       key={k.id || 'kisisel'}
                       className={
@@ -1019,7 +1039,7 @@ export function SihirbazClient({
                         name="sihirbaz-kurulus"
                         value={k.id}
                         checked={kurulus === k.id}
-                        onChange={() => guncelle({ kurulus: k.id || null })}
+                        onChange={() => guncelle({ kurulus: k.id || KISISEL })}
                         className="sr-only"
                       />
                       {k.name}
@@ -1027,8 +1047,9 @@ export function SihirbazClient({
                   ))}
                 </div>
                 <p className="text-xs text-ink-72 mt-2">
-                  Kuruluş seçersen etkinlik o kuruluşa ait olur; teklif talebi
-                  (RFP) yalnız kuruluş etkinliklerinde açılabilir.
+                  Kuruluş adına düzenlersen etkinlik kuruluşun olur: ekibin, teklif
+                  talebi (RFP) ve görevler kuruluş üzerinden yürür. Kendi adına
+                  düzenlersen etkinlik kişisel kalır.
                 </p>
               </fieldset>
             )}
@@ -1075,8 +1096,10 @@ export function SihirbazClient({
                   // digerlerinde ozete "Kişisel" diye bir oge eklemek gurultu.
                   ...(kuruluslar.length > 0
                     ? [
-                        kuruluslar.find((k) => k.id === kurulus)?.name ??
-                          'Kişisel',
+                        (() => {
+                          const ad = kuruluslar.find((k) => k.id === kurulus)?.name;
+                          return ad ? `${ad} adına` : 'Kendi adına';
+                        })(),
                       ]
                     : []),
                 ].join(' · ')}

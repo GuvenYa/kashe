@@ -269,6 +269,14 @@ export default async function TeklifTaleplerimPage() {
           altNot="Teklif topla taleplerin ve sohbetlerde gelen teklifler."
           sagAlan={
             <>
+              {/* Duzeltme 13-F (bulgu 121): anlat, Kashe AI rolleri ve
+                  profesyonelleri bulsun; rol icin teklif topla oradan. */}
+              <Link
+                href="/kashe-ai"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-line-strong text-ink rounded-lg font-display font-semibold text-sm hover:border-brand-ink hover:text-brand-ink transition-colors whitespace-nowrap"
+              >
+                Kashe AI ile anlat
+              </Link>
               <Link
               href="/teklif-topla"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] transition-all whitespace-nowrap"

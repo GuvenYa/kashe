@@ -82,6 +82,16 @@ export type AdayKarti = {
   musaitlikEtiketi: string | null;
   /** `final_rank === 1` — rolun en yuksek puanli adayi ("ONERILEN"). */
   onerilen: boolean;
+  /**
+   * Duzeltme 13-C: aday bir AJANS (kurulus saglayicisi). Rol sutununda
+   * "Ajans" rozetiyle gorunur ve ekibe o rolun uyesi olarak secilebilir.
+   */
+  ajans: boolean;
+  /**
+   * Duzeltme 13-C: eslestirmeden degil "Kashe'den ara" ile eklendi. Uyum
+   * puani yoktur (halka cizilmez); `id` bir eslestirme adayi kimligi degildir.
+   */
+  aramadan?: boolean;
 };
 
 export type AdayRolGrubu = {
@@ -91,6 +101,24 @@ export type AdayRolGrubu = {
   ihtiyac: number;
   zorunlu: boolean;
   adaylar: AdayKarti[];
+  /**
+   * Duzeltme 13-C: bu rolu kapsayan ajans adaylari (kendi hizmeti ya da ekip
+   * uyesi; `fn_duz13_ajans_rol_kapsami`). Eslestirme sirasini korur.
+   */
+  ajanslar: AdayKarti[];
+};
+
+/**
+ * Duzeltme 13-C: "Kashe'den ara" sonucu — sunucuda kurulur, panel AdayKarti'na
+ * cevirir.
+ */
+export type AramaSonucu = {
+  providerId: string;
+  ad: string;
+  sehir: string | null;
+  avatarUrl: string | null;
+  baslangicFiyati: number | null;
+  ajans: boolean;
 };
 
 /**

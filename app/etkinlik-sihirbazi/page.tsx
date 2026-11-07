@@ -73,6 +73,23 @@ export default async function EtkinlikSihirbaziPage() {
     .filter((o) => o.canManageEvents)
     .map((o) => ({ id: o.id, name: o.name }));
 
+  /**
+   * Duzeltme 13-D (bulgu 123): ajans ya da kurum hesabinda etkinlik
+   * varsayilan olarak kurulus adina acilir (Fahri ajans oturumunda "kimin
+   * adina" sorusunda takildi). Bireysel hesapta varsayilan kendi adina.
+   */
+  let varsayilanKurulus = '';
+  if (user && kuruluslar.length > 0) {
+    const { data: hesap } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (hesap?.role === 'agency' || hesap?.role === 'business') {
+      varsayilanKurulus = kuruluslar[0].id;
+    }
+  }
+
   // slug -> rol kimligi (yalniz aktif roller; bulunamayan slug kutuya girmez).
   const rolIdler: Record<string, number> = Object.fromEntries(
     ((rolRes.data ?? []) as { id: number; slug: string }[]).map((r) => [
@@ -119,6 +136,7 @@ export default async function EtkinlikSihirbaziPage() {
               }))}
               profiller={profiller}
               kuruluslar={kuruluslar}
+              varsayilanKurulus={varsayilanKurulus}
               oturumVar={!!user}
               rolIdler={rolIdler}
             />

@@ -216,6 +216,23 @@ export function KasheAiClient({
     return qs ? `/kesfet?${qs}` : '/kesfet';
   }
 
+  /**
+   * Duzeltme 13-F (bulgu 121): rol icin teklif topla — kategori, sehir,
+   * etkinlik turu, tarih ve butce dolu `/teklif-topla` (mevcut on-doldurma
+   * parametreleri). Musteri suzgecle ugrasmadan uygun profesyonellere gider.
+   */
+  function teklifToplaLinki(kategoriId: number | null): string {
+    const p = new URLSearchParams();
+    if (kategoriId != null) p.set('kategori', String(kategoriId));
+    if (spec?.city_id != null) p.set('sehir', String(spec.city_id));
+    if (spec?.event_type) p.set('tur', spec.event_type);
+    if (spec?.start_date) p.set('tarih', spec.start_date);
+    if (spec?.budget_min != null) p.set('butce_min', String(spec.budget_min));
+    if (spec?.budget_max != null) p.set('butce_max', String(spec.budget_max));
+    const qs = p.toString();
+    return qs ? `/teklif-topla?${qs}` : '/teklif-topla';
+  }
+
   /** Sihirbaz cikisi — AYNI spec, ikinci analiz yok (D1 ortak yardimci). */
   function sihirbazLinki(): string {
     if (!sonuc) return '/etkinlik-sihirbazi';
@@ -348,12 +365,20 @@ export function KasheAiClient({
                     </div>
                   )}
 
-                  <Link
-                    href={kesfetLinki(grup.kategoriId)}
-                    className="inline-block mt-3 text-sm text-brand-ink underline hover:text-brand-ink-deep transition-colors"
-                  >
-                    {tekRol ? "Keşfet'te tümünü gör" : 'Tümü'}
-                  </Link>
+                  <div className="mt-3 flex items-center gap-4 flex-wrap">
+                    <Link
+                      href={teklifToplaLinki(grup.kategoriId)}
+                      className="kashe-tap inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-brand-ink text-brand-ink rounded-lg font-display font-semibold text-sm hover:bg-brand-ink hover:text-paper transition-colors"
+                    >
+                      Bu rol için teklif topla →
+                    </Link>
+                    <Link
+                      href={kesfetLinki(grup.kategoriId)}
+                      className="text-sm text-brand-ink underline hover:text-brand-ink-deep transition-colors"
+                    >
+                      {tekRol ? "Keşfet'te tümünü gör" : 'Tümü'}
+                    </Link>
+                  </div>
                 </section>
               );
             })}

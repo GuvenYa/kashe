@@ -93,6 +93,32 @@ export default async function AjansRfpDetayPage({
         .join(' · ')
     : null;
 
+  /**
+   * Duzeltme 13-E (bulgu 122): gelen talebi sihirbazda planla. Talebin
+   * metni (baslik, etkinlik satiri, aciklama, roller) sihirbazin "Anlat"
+   * kutusuna dolar ve analiz kendiliginden baslar (`otomatik=1`). Butce
+   * ipucu saticiya gelmedigi icin metne girmez.
+   */
+  const planlaMetni = [
+    rfp.title,
+    etkinlikSatiri,
+    rfp.description,
+    rfp.items.length > 0
+      ? 'Roller: ' +
+        rfp.items.map((k) => `${k.role} ×${k.quantity}`).join(', ')
+      : null,
+  ]
+    .filter(Boolean)
+    .join('. ')
+    .slice(0, 1000);
+  const planlaYolu = kurulus
+    ? `/etkinlik-sihirbazi?${new URLSearchParams({
+        kurulus: kurulus.id,
+        metin: planlaMetni,
+        otomatik: '1',
+      }).toString()}`
+    : null;
+
   const secildi =
     rfp.status === 'awarded' &&
     !!davet?.proposal_id &&
@@ -159,6 +185,21 @@ export default async function AjansRfpDetayPage({
                   <p className="text-sm text-ink whitespace-pre-wrap">
                     {rfp.description}
                   </p>
+                </div>
+              )}
+
+              {planlaYolu && (
+                <div className="mt-5 pt-5 border-t border-line flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-sm text-ink-72 min-w-0 flex-1 basis-64">
+                    Talebi etkinlik olarak kur: Kashe AI rolleri ve kişi
+                    sayılarını çıkarır, ekibini adaylardan seçersin.
+                  </p>
+                  <Link
+                    href={planlaYolu}
+                    className="kashe-tap shrink-0 px-4 py-2 border border-brand-ink text-brand-ink rounded-lg font-display font-semibold text-sm hover:bg-brand-ink hover:text-paper transition-colors"
+                  >
+                    Bu talebi Kashe AI&apos;da planla →
+                  </Link>
                 </div>
               )}
             </div>

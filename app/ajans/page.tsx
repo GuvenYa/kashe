@@ -460,6 +460,23 @@ export default async function AjansPanelPage() {
         </div>
 
         <aside className="space-y-5">
+          {/* Duzeltme 13-E (bulgu 122): sihirbaza gostergeden yol. Sihirbazin
+              ilk adimi Kashe AI analizi; ayri bir urun gibi gorunmez. */}
+          {kurulus.canManageEvents && (
+            <PanelKart baslik="Yeni etkinlik">
+              <p className="text-sm text-ink-72 leading-relaxed">
+                Etkinliği birkaç cümleyle anlat; Kashe AI rolleri, kişi
+                sayılarını ve bütçeyi çıkarsın, sen onayla.
+              </p>
+              <Link
+                href={`/etkinlik-sihirbazi?kurulus=${kurulus.id}`}
+                className="kashe-tap mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+              >
+                Kashe AI ile anlat →
+              </Link>
+            </PanelKart>
+          )}
+
           <PanelKart baslik="Ekip ve havuz">
             <dl className="space-y-3">
               <div className="flex items-baseline justify-between gap-3">

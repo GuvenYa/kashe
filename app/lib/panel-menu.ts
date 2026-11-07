@@ -178,6 +178,15 @@ function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
       oncelik: true,
     });
   }
+  // Duzeltme 13-E (bulgu 122): sihirbaza menuden yol (Fahri adresi elle yazdi).
+  if (org.canManageEvents) {
+    maddeler.push({
+      href: `/etkinlik-sihirbazi?kurulus=${org.id}`,
+      etiket: 'Yeni etkinlik',
+      ikon: 'ai',
+      bolum: 'calisma',
+    });
+  }
   if (org.canViewProposals) {
     maddeler.push({
       href: '/ajans/rfp',
@@ -283,6 +292,15 @@ function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
       bolum: 'calisma',
       oncelik: true,
     });
+    // Duzeltme 13-E: sihirbaza menuden yol
+    if (org.canManageEvents) {
+      maddeler.push({
+        href: `/etkinlik-sihirbazi?kurulus=${org.id}`,
+        etiket: 'Yeni etkinlik',
+        ikon: 'ai',
+        bolum: 'calisma',
+      });
+    }
     maddeler.push({
       href: '/kurumsal/rfp',
       etiket: 'Teklif talepleri',
