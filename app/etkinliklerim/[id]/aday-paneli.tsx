@@ -249,6 +249,7 @@ function KasheArama({
   const [acik, setAcik] = useState(false);
   const [sorgu, setSorgu] = useState('');
   const [sonuclar, setSonuclar] = useState<AramaSonucu[] | null>(null);
+  const [aranan, setAranan] = useState('');
   const [hata, setHata] = useState<string | null>(null);
   const [araniyor, startAra] = useTransition();
 
@@ -267,6 +268,7 @@ function KasheArama({
         return;
       }
       setSonuclar(res.sonuclar);
+      setAranan(sorgu.trim());
     });
   }
 
@@ -323,7 +325,11 @@ function KasheArama({
       </div>
       {hata && <p className="text-xs text-danger">{hata}</p>}
       {sonuclar !== null && gorunen.length === 0 && !araniyor && (
-        <p className="text-xs text-ink-72">Bu rolde yeni sonuç yok.</p>
+        <p className="text-xs text-ink-72">
+          {aranan
+            ? `“${aranan}” için listede olmayan sonuç yok.`
+            : 'Bu rolde listede olmayan başka profesyonel yok.'}
+        </p>
       )}
       {gorunen.length > 0 && (
         <ul className="space-y-1.5">
