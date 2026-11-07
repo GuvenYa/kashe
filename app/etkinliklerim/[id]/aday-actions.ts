@@ -174,6 +174,8 @@ export async function kasheRolAra(input: {
   eventId: string;
   roleId: number;
   sorgu: string;
+  /** Sutunda zaten olan saglayicilar (sonuca girmez; 8'lik liste onlarla dolmasin). */
+  haric?: string[];
 }): Promise<{ success: true; sonuclar: AramaSonucu[] } | { success: false; error: string }> {
   if (!UUID_KALIBI.test(input.eventId)) {
     return { success: false, error: 'Etkinlik geçersiz.' };
@@ -206,7 +208,7 @@ export async function kasheRolAra(input: {
     .select('provider_id, provider_type, display_name, city_id, pricing_mode, price_min')
     .eq('role_id', input.roleId)
     .eq('is_visible', true)
-    .limit(40);
+    .limit(200);
   if (sorgu) q = q.ilike('display_name', `%${sorgu}%`);
   const { data: roller, error } = await q;
   if (error) {
@@ -222,7 +224,12 @@ export async function kasheRolAra(input: {
     pricing_mode: string | null;
     price_min: number | string | null;
   };
-  const satirlar = ((roller ?? []) as Satir[]).filter((r) => r.provider_id !== user.id);
+  const haric = new Set(
+    (input.haric ?? []).filter((v) => UUID_KALIBI.test(v)).slice(0, 300)
+  );
+  const satirlar = ((roller ?? []) as Satir[]).filter(
+    (r) => r.provider_id !== user.id && !haric.has(r.provider_id)
+  );
   const sehirId = (etkinlik as { city_id: number | null }).city_id;
   satirlar.sort((a, b) => {
     const as = sehirId != null && a.city_id === sehirId ? 0 : 1;

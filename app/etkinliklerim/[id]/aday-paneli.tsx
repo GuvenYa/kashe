@@ -255,7 +255,12 @@ function KasheArama({
   function ara() {
     setHata(null);
     startAra(async () => {
-      const res = await kasheRolAra({ eventId, roleId, sorgu });
+      const res = await kasheRolAra({
+        eventId,
+        roleId,
+        sorgu,
+        haric: [...mevcutIdler],
+      });
       if (!res.success) {
         setHata(res.error);
         setSonuclar(null);

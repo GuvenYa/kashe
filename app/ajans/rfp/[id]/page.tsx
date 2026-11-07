@@ -108,6 +108,8 @@ export default async function AjansRfpDetayPage({
         rfp.items.map((k) => `${k.role} ×${k.quantity}`).join(', ')
       : null,
   ]
+    // Parcanin sonundaki nokta / bosluk birlestirmede ".." uretmesin
+    .map((v) => (v ?? '').trim().replace(/[.\s]+$/, ''))
     .filter(Boolean)
     .join('. ')
     .slice(0, 1000);
