@@ -234,9 +234,19 @@ rezervasyondan ya da kendi talebinden; yeni tarih saatsiz gelirse eski saat
 temizlenir). Uretimde girissiz dolu gun RPC'si 200, talep fonksiyonu 401,
 profil sayfasi hatasiz.
 
-Duzeltme 13 kodda ve yerel testte (7 Kasim): migration
+Duzeltme 13 uretimde (7 Kasim). Migration
 `20261107100000_duzeltme_13_ajans_rol_kapsami.sql` (ajansin hangi rolu
-kapsadigi, eslestirme kuraliyla; uye kimligi donmez), kontrol `asama32`,
-davranis `asama32b` (9 test); onceki 182 test gecti. 13-A..13-F uygulamada.
-Dal bekliyor. Fahri kararlari (yukarida) hala bekleniyor; 13 bunlara bagli
-degil.
+kapsadigi, eslestirme kuraliyla; uye kimligi donmez); kontrol `asama32` dal ve
+uretimde K1-K3 ESIT (K4 bilgi: dal 19, uretim 10 ajans adayli kosu); davranis
+`asama32b` dalda 9/9. Onizleme turu (Lumen): kartlar 1440 / 1280 / 375 px'te
+dikey ve tasmasiz, secili kart ile "Onerilen" ayrimi, hibritte ajansin rol
+sutununda secilmesi (2/2), "Kac kisi?" kaydi ve geri alinmasi, sihirbazda
+kurulus varsayilani ve "Kendi adima", RFP'den "Kashe AI'da planla" (analiz
+kendiliginden), Kashe AI'dan rol bazinda teklif topla, ajans / kurum menusu ve
+gosterge baglantilari. Turda iki kucuk duzeltme: "Kashe'den ara" sutundakileri
+sunucuda haric tutar (ilk 8 sonuc sutunda oldugu icin bos donuyordu); RFP
+planlama metninde cift nokta yok. Sahne'de bu rollerdeki herkes zaten aday
+oldugu icin arama bos doner; bos sonuc metni bunu soyler ("listede olmayan
+baska profesyonel yok"). Ekibi olustur turda tiklanmadi (rehber hesaplara
+bildirim gitmesin). Uretimde girissiz kapsam fonksiyonu 401. Fahri kararlari
+(yukarida) hala bekleniyor.
