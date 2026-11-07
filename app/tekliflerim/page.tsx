@@ -45,6 +45,7 @@ type Satir = {
   conversations: {
     customer_id: string;
     event_type: string | null;
+    request_count: number | null;
     customer: {
       full_name: string | null;
       company_name: string | null;
@@ -112,7 +113,7 @@ export default async function TekliflerimPage({
       id, conversation_id, total_amount, currency, status, created_at,
       expires_at, event_date, start_time, end_time, location, request_no,
       conversations!inner (
-        customer_id, event_type,
+        customer_id, event_type, request_count,
         customer:profiles!conversations_customer_id_fkey (full_name, company_name, role)
       )
     `
@@ -132,12 +133,17 @@ export default async function TekliflerimPage({
     .map((q) => q.id);
   const rezervasyonByTeklif: Record<
     string,
-    { id: string; status: string; event_date: string | null }
+    {
+      id: string;
+      status: string;
+      event_date: string | null;
+      event_type: string | null;
+    }
   > = {};
   if (onaylananIdler.length > 0) {
     const { data: rezervasyonlar } = await supabase
       .from('bookings')
-      .select('id, quote_id, status, event_date')
+      .select('id, quote_id, status, event_date, event_type')
       .in('quote_id', onaylananIdler);
     for (const b of rezervasyonlar ?? []) {
       if (b.quote_id) {
@@ -145,6 +151,7 @@ export default async function TekliflerimPage({
           id: b.id,
           status: b.status,
           event_date: b.event_date,
+          event_type: b.event_type,
         };
       }
     }
@@ -228,10 +235,16 @@ export default async function TekliflerimPage({
                 musteri?.company_name
                   ? musteri.company_name
                   : musteri?.full_name || 'Müşteri';
-              const tur = q.conversations?.event_type
-                ? etiketle(turler, q.conversations.event_type)
-                : null;
               const rezervasyon = rezervasyonByTeklif[q.id] ?? null;
+              // Etkinlik turu: rezervasyon olustuysa onunki (kabul anindaki
+              // talep); yoksa yalniz sohbetin GUNCEL talebindeki teklifte
+              // sohbetinki. Eski talebin teklifine yeni talebin turu yazilmaz.
+              const turAnahtari =
+                rezervasyon?.event_type ??
+                ((q.request_no ?? 1) === (q.conversations?.request_count ?? 1)
+                  ? q.conversations?.event_type ?? null
+                  : null);
+              const tur = turAnahtari ? etiketle(turler, turAnahtari) : null;
               // Duzeltme 12 oncesi tekliflerde tarih yok; onaylandiysa
               // rezervasyonun tarihi gosterilir.
               const tarih =
