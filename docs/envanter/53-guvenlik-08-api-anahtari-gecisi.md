@@ -1,6 +1,6 @@
 # Guvenlik 08 - API anahtari gecisi (uretim)
 
-Tarih: 10 Kasim 2026. Durum: PLAN + kod hazir (dal `guvenlik-08`).
+Tarih: 10 Kasim 2026. Durum: A-D uretimde, E0 Sahne'de dogrulandi (10 Kas); E siradaki.
 
 ## 1. Neden
 
@@ -51,6 +51,19 @@ C. **Dal:** `db push` (migration dalda is olmadigi icin bir sey yapmaz; gecmis e
 D. **Uretim, arka arkaya:** fonksiyon dagitimi (`functions deploy`, `verify_jwt = false`
    config.toml'dan) ve `db push` (gorev yeni basliga gecer). Kontrol: `asama33` K1-K3 ESIT;
    5-10 dk sonra K4 `succeeded`, K5 `200 {"processed":..}`. 401 `yetkisiz` = iki yerdeki deger farkli.
+
+   SONUC (10 Kas): asama33 uretimde K1-K3 ESIT; 12:45 / 12:50 / 12:55 kosulari `succeeded`, HTTP 200
+   `{"processed":0,"sent":0,...}` (hata yok: fonksiyon veritabanini okuyabiliyor). Anahtarsiz istek
+   401 `{"error":"yetkisiz"}` (yeni kod yayinda, eski `verify_jwt` cevabi degil).
+
+E0. **Once Sahne (onizleme):** Sahne projesinde publishable `web_sitesi`; Vercel Preview
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Sahne publishable; `guvenlik-08` onizlemesini onbelleksiz yeniden
+   dagit; Sahne hesaplariyla giris, Kesfet, profil, mesajlar (canli kanal), dosya / gorsel denenir.
+   Boylece uygulamanin yeni anahtarla calistigi uretimden once gorulur (Sahne'nin gecisi de baslar).
+   SONUC (10 Kas): `guvenlik-08` onizlemesinin paketinde yalniz `sb_publishable_` (eski anon yok);
+   Kesfet 351 kart; Kaan ile giris, mesajlar; Ilker'in (eski anahtarli sahne derlemesi) mesaji Kaan'in
+   acik sohbetine sayfa yenilenmeden geldi (canli kanal); Kaan'in gorsel eki tarayicidan Storage'a
+   yuklendi ve Ilker'de gorundu; konsol hatasiz.
 
 E. **Site:** Vercel > Production ortam degiskeni `NEXT_PUBLIC_SUPABASE_ANON_KEY` = publishable
    anahtar (Preview dal'da kalir), ardindan Production yeniden dagitim; `.env.local` da. Deneme:
