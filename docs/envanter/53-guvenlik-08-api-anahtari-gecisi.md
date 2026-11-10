@@ -17,8 +17,8 @@ Tarih: 10 Kasim 2026. Durum: PLAN + kod hazir (dal `guvenlik-08`).
 
 | Yer | Bugun | Yeni |
 |---|---|---|
-| Site (Vercel Production + `.env.local`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` = eski anon JWT | publishable anahtar (`sb_publishable_...`); supabase-js 2.105 destekler |
-| Edge Function `send-message-notification` | `SUPABASE_SERVICE_ROLE_KEY`, supabase-js 2.45 | `SUPABASE_SECRET_KEYS.default` (Supabase kendiliginden verir), supabase-js 2.105.4; gecis suresince eski anahtar yedek |
+| Site (Vercel Production + `.env.local`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` = eski anon JWT | publishable anahtar `web_sitesi` (`sb_publishable_...`); supabase-js 2.105 destekler |
+| Edge Function `send-message-notification` | `SUPABASE_SERVICE_ROLE_KEY`, supabase-js 2.45 | secret anahtar `bildirim_fonksiyonu` (`SUPABASE_SECRET_KEYS` icinden; yoksa `default`), supabase-js 2.105.4; gecis suresince eski anahtar yedek |
 | pg_cron `send-message-notifications` (*/5 dk, yalniz uretim) | `Authorization: Bearer <eski anon>`, fonksiyonda `verify_jwt = true` | `x-kashe-cron: <Vault bildirim_cron_anahtari>`, `verify_jwt = false`, fonksiyon basligi kendisi dogrular |
 | Sahne betikleri (dal) | dal anahtari | etkilenmez (dal anahtari acilmadi); dal gecisi ayri (bolum 5) |
 
@@ -38,8 +38,9 @@ kullanan baska bir sey kalmamali; adim F'den once).
 
 ## 4. Adimlar (uretim)
 
-A. **Yeni anahtarlar:** Dashboard (uretim) > Settings > API Keys > "Publishable and secret API keys"
-   sekmesi > "Create new API keys" (zaten varsa atla). Anahtarlar sohbete yazilmaz.
+A. **Yeni anahtarlar:** Dashboard (uretim) > Settings > API Keys > "Publishable and secret API keys".
+   Bilesen basina ayri anahtar (biri sizarsa yalniz o degisir): publishable `web_sitesi` (site),
+   secret `bildirim_fonksiyonu` (Edge Function). Eski anahtarlar silinmez. Anahtarlar sohbete yazilmaz.
 
 B. **Cagri anahtari:** PowerShell'de rastgele deger uret, iki yere ayni degeri gir:
    1. Edge Functions > Secrets ("Edge Function Secrets"): `BILDIRIM_CRON_ANAHTARI`
