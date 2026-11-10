@@ -394,12 +394,12 @@ export function RezervasyonButton({
                 <div className="space-y-2.5">
                   {/* Başlangıç */}
                   <div className="flex items-center gap-3">
-                    <span className="w-16 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Başlangıç</span>
+                    <span className="w-20 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Başlangıç</span>
                     <SaatSecici deger={startTime} onDegis={setStartTime} etiket="Başlangıç" />
                   </div>
                   {/* Bitiş */}
                   <div className="flex items-center gap-3">
-                    <span className="w-16 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Bitiş</span>
+                    <span className="w-20 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Bitiş</span>
                     <SaatSecici deger={endTime} onDegis={setEndTime} etiket="Bitiş" />
                   </div>
                 </div>

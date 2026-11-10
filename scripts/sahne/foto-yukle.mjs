@@ -4,6 +4,10 @@
 //   node scripts/sahne/foto-yukle.mjs            -> yukle (idempotan: ayni yollara upsert, portfoy satirlari yenilenir; hata alan hesap icin tekrar calistir)
 //   node scripts/sahne/foto-yukle.mjs --sil      -> Storage nesneleri + portfoy satirlari + avatar_url temizlenir
 //   secenek: --yalniz-avatar  (portfoy atlanir)
+//   node scripts/sahne/foto-yukle.mjs --cikar="<altyazi metni>" -> altyazisinda bu metin gecen Sahne portfoy gorsellerini
+//            (portfolio_items satiri + Storage nesnesi) kaldirir; diger gorseller ve avatar dokunulmaz. Ornek (10 Kas,
+//            uygunsuz oyuncu/19-22): --cikar=baratta. Ilk portfoy gorseli kaldirilirsa avatar o gorselin kopyasi
+//            olabilir: betik uyarir (avatar_url temizlenip --saglayici-avatar ile yenilenir).
 //   node scripts/sahne/foto-yukle.mjs --saglayici-avatar -> Sahne v3 / bulgu 70: avatar_url'i BOS saglayicilara (pro/ajans) ilk
 //            portfoy gorseli avatar olur (avatars/<id>/avatar.jpg). Portfoya ve dolu avatara dokunmaz; tekrar calistirmak guvenli.
 // Girdi: docs/sahne/foto-plan.json (uret.py), docs/sahne/foto/lisans.json + gorseller (foto-indir.mjs)
@@ -25,6 +29,7 @@ const args = process.argv.slice(2);
 const SIL = args.includes('--sil');
 const YALNIZ_AVATAR = args.includes('--yalniz-avatar');
 const SAGLAYICI_AVATAR = args.includes('--saglayici-avatar');
+const CIKAR = (args.find((a) => a.startsWith('--cikar=')) || '').slice('--cikar='.length).trim();
 
 const URL_ = process.env.SAHNE_SUPABASE_URL || PLAN.proje_url;
 const KEY = process.env.SAHNE_SERVICE_ROLE_KEY;
@@ -173,4 +178,22 @@ async function saglayiciAvatar() {
   if (hatalar.length) { console.log('--- hatali hesaplar (betigi yeniden calistirmak yeterli):'); for (const h of hatalar) console.log('  ' + h); }
 }
 
-(SIL ? sil() : SAGLAYICI_AVATAR ? saglayiciAvatar() : yukle()).catch((e) => { console.error(e); process.exit(1); });
+// --cikar: altyazisinda metin gecen Sahne portfoy gorselleri (satir + Storage nesnesi). Yalniz `sahne-NN.jpg` yollari
+// (uretecin yukledikleri); kullanicinin kendi yukledigi gorsele dokunulmaz.
+async function cikar(metin) {
+  if (metin.length < 4) { console.error('--cikar en az 4 karakterlik bir altyazi metni ister'); process.exit(2); }
+  const { data } = await dene('portfoy ara', () => sb.from('portfolio_items').select('id, provider_id, media_url, sort_order')
+    .ilike('caption', `%${metin}%`).like('media_url', '%/portfolio/%/sahne-%'));
+  let n = 0;
+  for (const r of data || []) {
+    const m = (r.media_url || '').match(/\/object\/public\/portfolio\/([^?]+)/);
+    if (m) await dene('storage sil', () => sb.storage.from('portfolio').remove([decodeURIComponent(m[1])]));
+    await dene('portfoy satiri sil', () => sb.from('portfolio_items').delete().eq('id', r.id));
+    n += 1;
+    console.log(`  kaldirildi: ${r.provider_id} ${m ? m[1] : r.media_url}`);
+    if (r.sort_order === 0) console.warn(`  UYARI ${r.provider_id}: ilk portfoy gorseliydi; avatar bu gorselin kopyasi olabilir (avatar_url temizlenip --saglayici-avatar)`);
+  }
+  console.log(`${n} Sahne portfoy gorseli kaldirildi (altyazi: "${metin}")`);
+}
+
+(CIKAR ? cikar(CIKAR) : SIL ? sil() : SAGLAYICI_AVATAR ? saglayiciAvatar() : yukle()).catch((e) => { console.error(e); process.exit(1); });

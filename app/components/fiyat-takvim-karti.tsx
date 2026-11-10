@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
 import { TarihSecici } from '@/app/components/ui/tarih-secici';
@@ -114,6 +114,17 @@ export function FiyatTakvimKarti({
     hamKisi,
   } = useProfilIslem();
   const [takvimAcik, setTakvimAcik] = useState(false);
+  // Duzeltme 14-A: tarih alani kartin KENDI takvimini gosterir (ikinci bir
+  // takvim acilmaz): lg'de gorunen takvime kaydirir, altinda acilir bolumu acar.
+  const genisTakvim = useRef<HTMLDivElement>(null);
+  const darTakvim = useRef<HTMLDivElement>(null);
+  function takvimiGoster() {
+    setTakvimAcik(true);
+    const hedef = [genisTakvim.current, darTakvim.current].find(
+      (el) => el && el.offsetParent !== null
+    );
+    hedef?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 
   /**
    * Secili il: baglam METIN tasiyor (eski dolgu ve mobil CTA cubugu ayni
@@ -178,8 +189,8 @@ export function FiyatTakvimKarti({
       </div>
 
       {/* Takvim — lg+ acik, altinda acilir bolum */}
-      <div className="hidden lg:block border-t border-line pt-4">{takvim}</div>
-      <div className="lg:hidden border-t border-line pt-4">
+      <div ref={genisTakvim} className="hidden lg:block border-t border-line pt-4">{takvim}</div>
+      <div ref={darTakvim} className="lg:hidden border-t border-line pt-4">
         <button
           type="button"
           onClick={() => setTakvimAcik((v) => !v)}
@@ -198,14 +209,14 @@ export function FiyatTakvimKarti({
           <label className={ETIKET} htmlFor="fiyat-karti-tarih">
             Tarih
           </label>
-          {/* Duzeltme 14-A: Turkce tarih secici; dolu gunler takvimdeki gibi
-              secilemez, hizli secimler ilk musait gune kayar. */}
+          {/* Duzeltme 14-A: Turkce tarih metni + hizli secimler (dolu gune denk
+              gelirse ilk musait gune kayar); dugme kartin takvimini gosterir. */}
           <TarihSecici
             id="fiyat-karti-tarih"
             deger={hamTarih}
             onDegis={tarihAta}
             doluGunler={[...blockedDates, ...bookedDates]}
-            temizlenebilir
+            disTakvim={takvimiGoster}
             className={ALAN}
           />
         </div>

@@ -126,6 +126,10 @@ Konteyner ve cihaz VM'inden Commons/Openverse'e erisim yok (proxy); bu yuzden in
    `portfolio_items` satirlari (altyazi: "Foto: <sanatci> — <lisans>, Wikimedia Commons") ve `profiles.avatar_url` guncellemesi.
    Gerekli ortam: `SAHNE_SUPABASE_URL` + `SAHNE_SERVICE_ROLE_KEY` (PowerShell `$env:`; dosyaya yazilmaz, paylasilmaz). `--sil` ile
    Storage nesneleri + portfoy satirlari kaldirilir.
+   `--cikar="<altyazi metni>"` yalniz altyazisinda o metin gecen Sahne portfoy gorsellerini (satir + nesne) kaldirir (bulgu 127).
+3. Icerik denetimi (10 Kas, bulgu 127): Commons aramasi uygunsuz gorsel getirebilir ("film set actors shooting" -> yetiskin film
+   seti). `foto-indir.mjs` baslik, Commons kategorileri ve aciklamada yetiskin icerik izi olani almaz; yine de her indirmeden sonra
+   `onizleme-<kategori>.jpg` gozle kontrol edilir. Cikarilan gorsel `lisans.json`dan silinir (secim havuzundan duser).
 
 Avatar: SVG (bas harfler, kategoriye gore 8 renkten biri) -> `sharp` -> 256px PNG (`avatars` bucket 2 MB / jpeg-png-webp sinirina uyar).
 

@@ -78,6 +78,12 @@ export type TarihSeciciProps = {
   devreDisi?: boolean;
   /** Dugme sinifi (formun alan sinifi); verilmezse varsayilan. */
   className?: string;
+  /**
+   * Takvim zaten sayfada (profil fiyat / takvim karti): dugme kendi takvimini
+   * ACMAZ, bunu cagirir (cagiran kendi takvimini acar / gosterir). Hizli
+   * secimler aynen calisir.
+   */
+  disTakvim?: () => void;
 };
 
 export function TarihSecici({
@@ -93,6 +99,7 @@ export function TarihSecici({
   yerTutucu = 'Tarih seç',
   devreDisi = false,
   className,
+  disTakvim,
 }: TarihSeciciProps) {
   const [acik, setAcik] = useState(false);
   const [bugun, setBugun] = useState<string | null>(null);
@@ -261,12 +268,16 @@ export function TarihSecici({
         id={id}
         type="button"
         disabled={devreDisi}
-        onClick={() => (acik ? kapat(false) : ac())}
-        aria-haspopup="dialog"
-        aria-expanded={acik}
+        onClick={() => (disTakvim ? disTakvim() : acik ? kapat(false) : ac())}
+        aria-haspopup={disTakvim ? undefined : 'dialog'}
+        aria-expanded={disTakvim ? undefined : acik}
+        aria-describedby={id ? `${id}-deger` : undefined}
         className={`${className ?? DUGME} text-left flex items-center justify-between gap-2 disabled:opacity-50`}
       >
-        <span className={metin ? 'text-ink' : 'text-ink-72/60'}>{metin || yerTutucu}</span>
+        {/* Etiket (`htmlFor`) dugmenin adi olur; secili deger ayrica okunsun. */}
+        <span id={id ? `${id}-deger` : undefined} className={metin ? 'text-ink' : 'text-ink-72/60'}>
+          {metin || yerTutucu}
+        </span>
         <svg
           width="16"
           height="16"

@@ -264,3 +264,11 @@ Escape modali kapatmaz, disari tiklama, belirsiz cipi, temizle, 31 Ocak + 1 ay
 = 28 Subat). Ic araclarin tarih kutulari (ajans teklif editoru, havuz, CRM,
 gorev, ilan, kurum RFP) bu turda degismedi. 14-B ve 14-C Fahri'nin 4. ve 5.
 kararlarini bekliyor (tabloda 10 Kasim itibariyla isaret yok).
+Onizleme turu (10 Kasim, Kaan + Ilker, 1280 / 375 px): profil kartinda hizli
+secim kartin takvimini de isaretliyor; rezervasyon modalinda dolu gunler (27-28
+Kasim) ustu cizili ve tiklanmiyor, Escape yalniz takvimi kapatiyor; "Teklif al"
+ve `/teklif-topla`da "Tarih henuz belli degil" cipi; teklif formunda musterinin
+tarihi ve saati dolu geliyor, "Temizle"; sihirbazda bitis takvimi baslangictan
+oncesini kapatiyor. Turda uc kucuk duzeltme: profil kartinda ikinci takvim
+acilmiyor (alan kartin takvimini gosterir), rezervasyon modalinda "Baslangic"
+etiketi sigiyor, tarih dugmesi ekran okuyucuda secili tarihi de okuyor.

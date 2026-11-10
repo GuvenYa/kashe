@@ -7,6 +7,9 @@
 //        docs/sahne/foto/onizleme-<kategori>.jpg (kontak sayfasi; kalite kontrolu icin)
 // Lisans filtresi: CC0, CC BY, CC BY-SA, kamu mali. NC / ND / belirsiz lisans ALINMAZ. Atif lisans.json'da ve
 // portfoy altyazisinda ("Foto: <sanatci> — <lisans>, Wikimedia Commons") tasinir.
+// Icerik filtresi (10 Kas): baslik, Commons kategorileri ve aciklamada yetiskin icerik izi olan gorsel ALINMAZ
+// ("film set actors shooting" aramasi "Kink porn shoot" serisini getirmisti; oyuncu/19-22 cikarildi). Filtre bir
+// on elemedir: indirmeden sonra onizleme-<kategori>.jpg kontak sayfasi yine gozle kontrol edilir.
 // Yalniz Guven'in makinesinde kosar (konteyner/cihaz VM'inden Commons'a erisim yok). Bagimlilik: sharp (repoda var).
 // =============================================================================
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -29,6 +32,8 @@ const kategoriler = Object.keys(PLAN.kategoriler).filter((k) => secilen.length =
 
 const IZINLI = /^(CC0|CC BY(-SA)?( \d\.\d)?|Public domain|CC-BY(-SA)?-\d\.\d|CC BY \d\.\d|CC BY-SA \d\.\d)/i;
 const YASAK = /(NC|ND|GFDL only|Fair use|Non-free)/i;
+// Yetiskin / uygunsuz icerik izi (baslik + Commons kategorileri + aciklama). Kelime sinirli: "Sussex", "sextet" takilmaz.
+const UYGUNSUZ = /\b(porn\w*|kink\w*|nud(e|es|ity|ism|ist)|naked|sex(ual|uality|y)?|erotic\w*|fetish\w*|bdsm|bondage|topless|lingerie|strip(per|tease)\w*|nsfw|xxx|hentai|playboy)\b/i;
 
 const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
 const temizle = (html) => (html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -56,6 +61,8 @@ async function ara(terim, limit) {
     const lisans = temizle(md.LicenseShortName?.value);
     const lisansUrl = temizle(md.LicenseUrl?.value);
     if (!IZINLI.test(lisans) || YASAK.test(lisans)) continue;
+    const icerik = [s.title, md.Categories?.value, md.ImageDescription?.value, md.ObjectName?.value].map(temizle).join(' ');
+    if (UYGUNSUZ.test(icerik)) continue;
     if (!/^image\/(jpeg|png)$/.test(ii.mime || '')) continue;
     if (Math.min(ii.width || 0, ii.height || 0) < MIN) continue;
     out.push({
