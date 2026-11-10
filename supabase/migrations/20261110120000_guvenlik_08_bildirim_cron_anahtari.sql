@@ -48,7 +48,7 @@ SELECT net.http_post(
   url := 'https://qydsooqmflrrwtgawhsv.supabase.co/functions/v1/send-message-notification',
   headers := jsonb_build_object(
     'Content-Type', 'application/json',
-    'x-kashe-cron', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'bildirim_cron_anahtari')
+    'x-kashe-cron', btrim((SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'bildirim_cron_anahtari'), E' \t\r\n')
   ),
   body := '{}'::jsonb,
   timeout_milliseconds := 30000

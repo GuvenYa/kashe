@@ -34,7 +34,8 @@ function veritabaniAnahtari(): string {
  * Bu anahtar yalniz bu fonksiyonu tetikler; veritabani yetkisi tasimaz.
  * Sir tanimli degilse fonksiyon kapali kalir (401).
  */
-const CRON_ANAHTARI = Deno.env.get('BILDIRIM_CRON_ANAHTARI') ?? '';
+// Panodan yapistirmada sonda kalabilecek bosluk / satir sonu yok sayilir.
+const CRON_ANAHTARI = (Deno.env.get('BILDIRIM_CRON_ANAHTARI') ?? '').trim();
 
 /** Sabit sureli karsilastirma (anahtar uzunlugu disinda bilgi sizdirmaz). */
 function anahtarEsit(gelen: string, beklenen: string): boolean {
@@ -455,7 +456,7 @@ async function processNotifications(): Promise<BlokSonucu> {
 }
 
 Deno.serve(async (req: Request) => {
-  if (!anahtarEsit(req.headers.get('x-kashe-cron') ?? '', CRON_ANAHTARI)) {
+  if (!anahtarEsit((req.headers.get('x-kashe-cron') ?? '').trim(), CRON_ANAHTARI)) {
     return new Response(JSON.stringify({ error: 'yetkisiz' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
