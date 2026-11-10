@@ -251,7 +251,8 @@ baska profesyonel yok"). Ekibi olustur turda tiklanmadi (rehber hesaplara
 bildirim gitmesin). Uretimde girissiz kapsam fonksiyonu 401. Fahri kararlari
 (yukarida) hala bekleniyor.
 
-Duzeltme 14-A kodda (10 Kasim, dal `duzeltme-14`; migration yok). Ortak
+Duzeltme 14-A uretimde (10 Kasim; migration yok, main = sahne). Uretimde girissiz
+profil sayfasinda tarih alani yeni secici, hizli secimler gorunuyor, konsol hatasiz. Ortak
 `app/components/ui/tarih-secici.tsx` (deger bicimi ayni "YYYY-MM-DD", eylemler
 degismedi), saf yardimcilar `app/lib/tarih-secim.ts`, 24 saatlik
 `app/components/ui/saat-secici.tsx`. Kullanildigi yerler: rezervasyon talebi
