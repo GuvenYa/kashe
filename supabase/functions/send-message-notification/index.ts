@@ -1,14 +1,54 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 // @ts-ignore Deno runtime import
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.105.4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+/**
+ * GUVENLIK 08 (10 Kas): veritabani erisimi yeni "secret" anahtarla
+ * (`SUPABASE_SECRET_KEYS`, Supabase'in kendiliginden verdigi JSON; ad `default`).
+ * Gecis suresince yoksa eski service_role anahtarina duser; eski anahtarlar
+ * kapatildiginda yedek kullanilmaz olur. Anahtar YAZDIRILMAZ.
+ */
+function veritabaniAnahtari(): string {
+  const ham = Deno.env.get('SUPABASE_SECRET_KEYS');
+  if (ham) {
+    try {
+      const anahtarlar = JSON.parse(ham) as Record<string, string>;
+      const secilen = anahtarlar['default'] ?? Object.values(anahtarlar)[0];
+      if (secilen) return secilen;
+    } catch {
+      // bicim bozuksa yedege duser
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+}
+
+/**
+ * GUVENLIK 08: fonksiyonu yalniz zamanlanmis gorev cagirir. Eskiden istek
+ * herkese acik anon JWT ile geliyordu (`verify_jwt = true`, anahtar sitede de
+ * var); yeni anahtarlar JWT olmadigi icin `verify_jwt = false` ve cagri, Vault'ta
+ * ve fonksiyon sirlarinda duran AYRI bir anahtarla (`x-kashe-cron`) dogrulanir.
+ * Bu anahtar yalniz bu fonksiyonu tetikler; veritabani yetkisi tasimaz.
+ * Sir tanimli degilse fonksiyon kapali kalir (401).
+ */
+const CRON_ANAHTARI = Deno.env.get('BILDIRIM_CRON_ANAHTARI') ?? '';
+
+/** Sabit sureli karsilastirma (anahtar uzunlugu disinda bilgi sizdirmaz). */
+function anahtarEsit(gelen: string, beklenen: string): boolean {
+  if (!beklenen || gelen.length !== beklenen.length) return false;
+  let fark = 0;
+  for (let i = 0; i < beklenen.length; i++) {
+    fark |= gelen.charCodeAt(i) ^ beklenen.charCodeAt(i);
+  }
+  return fark === 0;
+}
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://kashe.net';
 const FROM_EMAIL = Deno.env.get('EMAIL_FROM') ?? 'Kashe <onboarding@resend.dev>';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, veritabaniAnahtari(), {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 interface PendingMessage {
   id: string;
@@ -411,7 +451,13 @@ async function processNotifications(): Promise<BlokSonucu> {
   return { processed: notifications.length, sent: sentCount, errors };
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
+  if (!anahtarEsit(req.headers.get('x-kashe-cron') ?? '', CRON_ANAHTARI)) {
+    return new Response(JSON.stringify({ error: 'yetkisiz' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
   try {
     const mesajlar = await processMessages();
     const bildirimler = await processNotifications();

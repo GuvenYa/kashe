@@ -410,7 +410,9 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.send-message-notification]
 enabled = true
-verify_jwt = true
+# Guvenlik 08 (10 Kas): yeni API anahtarlari JWT degil; cagri fonksiyon icinde
+# `x-kashe-cron` anahtariyla dogrulanir (docs/envanter/53-guvenlik-08-api-anahtari-gecisi.md).
+verify_jwt = false
 import_map = "./functions/send-message-notification/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
