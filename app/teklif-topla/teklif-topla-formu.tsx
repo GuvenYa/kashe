@@ -14,7 +14,6 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
 import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
 import {
   BRIEF_ACIKLAMA_SONEKI,
@@ -178,8 +177,6 @@ export function TeklifToplaFormu({
   function setField(key: string, value: string) {
     setBriefValues((prev) => ({ ...prev, [key]: value }));
   }
-
-  const todayStr = new Date().toISOString().split('T')[0];
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -437,7 +434,6 @@ export function TeklifToplaFormu({
               )}
               degerler={briefValues}
               setAlan={setField}
-              bugun={todayStr}
             />
           </div>
           <p className="text-xs text-ink-72 mt-3">

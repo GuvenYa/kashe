@@ -1171,7 +1171,10 @@ export default async function PublicProfilePage({
   return (
     // Fiyat/takvim karti Tarih/Sehir/Kisi degerlerini BAGLAMDAN okur; ajans
     // dalinda da saglayici gerekir (sunucu yalniz `children` gecer).
-    <ProfilIslemSaglayici varsayilanSehir={cityName ?? null}>
+    <ProfilIslemSaglayici
+      varsayilanSehir={cityName ?? null}
+      doluGunler={[...blockedDates, ...bookedDates]}
+    >
       <TopNav />
       {previewBand}
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">

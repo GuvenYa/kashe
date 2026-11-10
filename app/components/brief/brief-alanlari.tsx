@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { TarihSecici } from '@/app/components/ui/tarih-secici';
 import type { BriefField } from '@/app/lib/brief-config';
 import {
   BRIEF_ACIKLAMA_SONEKI,
@@ -22,8 +22,10 @@ import { IlSecici, ilEslestir, type Il } from '@/app/components/ui/il-secici';
  *      secim + istege bagli "Ilce / mekan" metni; kaydedilen deger ayni
  *      ANAHTARDA `"<mekan>, <Il>"` ya da `"<Il>"` (legacy sutun degismez).
  *   2. TARIH ESNEK — her `date` alaninin altinda "Tarih henuz belli degil"
- *      kutusu; isaretliyse tarih bos + devre disi, `<key>_esnek = true` ve
- *      zorunluluk kalkar.
+ *      secimi; seciliyse tarih bos, `<key>_esnek = true` ve zorunluluk kalkar.
+ *      Duzeltme 14-A: alan Turkce tarih secici (`TarihSecici`); "henuz belli
+ *      degil" hizli secimlerin yaninda bir cip, tarih secilince kalkar. Alt
+ *      sinir Istanbul gunu (eskiden cagiranin UTC gunu geliyordu).
  *   3. "DIGER" ACIKLAMASI — `select`te `other` secilince zorunlu kisa metin
  *      (`<key>_aciklama`, en fazla 120); baska secenege donulunce temizlenir.
  *
@@ -41,8 +43,11 @@ export type BriefAlanlariProps = {
   degerler: Record<string, string>;
   /** Tek alan yazimi (bos metin anahtari siler — cagiranin kurali aynen). */
   setAlan: (key: string, value: string) => void;
-  /** Mantiksal anahtarlar (`<key>_esnek`) icin; metin '1' / '' olarak tasinir. */
-  bugun: string;
+  /**
+   * Profilin dolu gunleri (elle dolu + rezervasyonlu); tarih secicide
+   * secilemez. Profil disinda (teklif topla) verilmez.
+   */
+  doluGunler?: readonly string[];
   iller?: Il[];
   saglayiciIli?: string | null;
   yalnizKendiSehri?: boolean;
@@ -52,7 +57,7 @@ export function BriefAlanlari({
   alanlar,
   degerler,
   setAlan,
-  bugun,
+  doluGunler,
   iller = [],
   saglayiciIli = null,
   yalnizKendiSehri = false,
@@ -203,32 +208,22 @@ export function BriefAlanlari({
                 className={`${ALAN} resize-none`}
               />
             ) : field.type === 'date' ? (
-              /* ---- 2) tarih + "henuz belli degil" ---- */
-              <>
-                <input
-                  id={`brief-${field.key}`}
-                  type="date"
-                  onClick={takvimiAc}
-                  min={bugun}
-                  value={esnek ? '' : value}
-                  disabled={esnek}
-                  onChange={(e) => setAlan(field.key, e.target.value)}
-                  className={`${ALAN} ${esnek ? 'opacity-50' : ''}`}
-                />
-                <label className="flex items-center gap-2 mt-2 text-sm text-ink-72">
-                  <input
-                    type="checkbox"
-                    checked={esnek}
-                    onChange={(e) => {
-                      const acik = e.target.checked;
-                      setAlan(esnekKey, acik ? '1' : '');
-                      if (acik) setAlan(field.key, '');
-                    }}
-                    className="w-4 h-4 accent-[var(--color-brand-ink)]"
-                  />
-                  Tarih henüz belli değil
-                </label>
-              </>
+              /* ---- 2) tarih + "henuz belli degil" (Duzeltme 14-A) ---- */
+              <TarihSecici
+                id={`brief-${field.key}`}
+                deger={esnek ? '' : value}
+                onDegis={(gun) => setAlan(field.key, gun)}
+                doluGunler={doluGunler}
+                belirsiz={{
+                  secili: esnek,
+                  onDegis: (acik) => {
+                    setAlan(esnekKey, acik ? '1' : '');
+                    if (acik) setAlan(field.key, '');
+                  },
+                  etiket: 'Tarih henüz belli değil',
+                }}
+                className={ALAN}
+              />
             ) : field.type === 'number' ? (
               <input
                 id={`brief-${field.key}`}

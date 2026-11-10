@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { AvailabilityCalendar } from '@/app/components/availability-calendar';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { TarihSecici } from '@/app/components/ui/tarih-secici';
 import { formatTL } from '@/app/lib/para';
 import { useProfilIslem } from '@/app/p/[id]/profil-islem-baglami';
 import { IletisimButton } from '@/app/p/[id]/iletisim-button';
@@ -198,12 +198,14 @@ export function FiyatTakvimKarti({
           <label className={ETIKET} htmlFor="fiyat-karti-tarih">
             Tarih
           </label>
-          <input
+          {/* Duzeltme 14-A: Turkce tarih secici; dolu gunler takvimdeki gibi
+              secilemez, hizli secimler ilk musait gune kayar. */}
+          <TarihSecici
             id="fiyat-karti-tarih"
-            type="date"
-            value={hamTarih}
-            onClick={takvimiAc}
-            onChange={(e) => tarihAta(e.target.value)}
+            deger={hamTarih}
+            onDegis={tarihAta}
+            doluGunler={[...blockedDates, ...bookedDates]}
+            temizlenebilir
             className={ALAN}
           />
         </div>

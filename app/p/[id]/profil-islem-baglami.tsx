@@ -34,7 +34,14 @@ type Baglam = ProfilIslemDegerleri & {
   hamTarih: string;
   hamSehir: string;
   hamKisi: string;
+  /**
+   * Duzeltme 14-A: secilemeyen gunler (elle dolu + rezervasyonlu). Modallardaki
+   * tarih secicileri profil takvimiyle ayni kurali uygular.
+   */
+  doluGunler: readonly string[];
 };
+
+const BOS_GUNLER: readonly string[] = [];
 
 const BOS: Baglam = {
   tarih: null,
@@ -46,15 +53,19 @@ const BOS: Baglam = {
   hamTarih: '',
   hamSehir: '',
   hamKisi: '',
+  doluGunler: BOS_GUNLER,
 };
 
 const ProfilIslemContext = createContext<Baglam>(BOS);
 
 export function ProfilIslemSaglayici({
   varsayilanSehir,
+  doluGunler = BOS_GUNLER,
   children,
 }: {
   varsayilanSehir: string | null;
+  /** Elle dolu + rezervasyonlu gunler ("YYYY-MM-DD"). */
+  doluGunler?: readonly string[];
   /** Sunucu bileseninin govdesi — fonksiyon DEGIL, hazir elemanlar. */
   children: ReactNode;
 }) {
@@ -74,8 +85,9 @@ export function ProfilIslemSaglayici({
       hamTarih,
       hamSehir,
       hamKisi,
+      doluGunler,
     };
-  }, [hamTarih, hamSehir, hamKisi]);
+  }, [hamTarih, hamSehir, hamKisi, doluGunler]);
 
   return (
     <ProfilIslemContext.Provider value={deger}>

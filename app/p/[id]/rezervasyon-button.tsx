@@ -17,7 +17,8 @@ import {
   OnBehalfSelector,
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { TarihSecici } from '@/app/components/ui/tarih-secici';
+import { SaatSecici } from '@/app/components/ui/saat-secici';
 import { useProfilIslem } from './profil-islem-baglami';
 import {
   IlSecici,
@@ -103,37 +104,6 @@ export function RezervasyonButton({
   }
   const [message, setMessage] = useState('');
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  // Saat seçimi — saat (00-23) + dakika (00/15/30/45) ayrı select.
-  // State "HH:MM" formatında tutulur; parçalanıp birleştirilir.
-  const HOURS = Array.from({ length: 24 }, (_, i) =>
-    String(i).padStart(2, '0')
-  );
-  const MINUTES = ['00', '15', '30', '45'];
-
-  function splitTime(t: string): { h: string; m: string } {
-    if (!t) return { h: '', m: '' };
-    const [h, m] = t.split(':');
-    return { h: h ?? '', m: m ?? '' };
-  }
-
-  function setTimePart(
-    current: string,
-    setter: (v: string) => void,
-    part: 'h' | 'm',
-    value: string
-  ) {
-    const { h, m } = splitTime(current);
-    const newH = part === 'h' ? value : h;
-    const newM = part === 'm' ? value : m;
-    // İkisi de boşsa temizle; biri seçildiyse diğerine varsayılan ver
-    if (!newH && !newM) {
-      setter('');
-      return;
-    }
-    setter(`${newH || '00'}:${newM || '00'}`);
-  }
 
   // Body scroll lock
   useEffect(() => {
@@ -407,14 +377,13 @@ export function RezervasyonButton({
                 <label htmlFor="booking-date" className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                   Tarih <span className="text-danger">*</span>
                 </label>
-                <input
+                {/* Duzeltme 14-A: Turkce tarih secici + hizli secimler; dolu
+                    gunler profil takvimiyle ayni kuralla secilemez. */}
+                <TarihSecici
                   id="booking-date"
-                  type="date"
-                  onClick={takvimiAc}
-                  min={todayStr}
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+                  deger={eventDate}
+                  onDegis={setEventDate}
+                  doluGunler={profilBaglami.doluGunler}
                 />
               </div>
 
@@ -426,60 +395,12 @@ export function RezervasyonButton({
                   {/* Başlangıç */}
                   <div className="flex items-center gap-3">
                     <span className="w-16 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Başlangıç</span>
-                    <div className="flex items-center gap-1.5">
-                      <select
-                        value={splitTime(startTime).h}
-                        onChange={(e) => setTimePart(startTime, setStartTime, 'h', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                        aria-label="Başlangıç saati"
-                      >
-                        <option value="">--</option>
-                        {HOURS.map((h) => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="text-ink-72 font-medium">:</span>
-                      <select
-                        value={splitTime(startTime).m}
-                        onChange={(e) => setTimePart(startTime, setStartTime, 'm', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                        aria-label="Başlangıç dakikası"
-                      >
-                        <option value="">--</option>
-                        {MINUTES.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <SaatSecici deger={startTime} onDegis={setStartTime} etiket="Başlangıç" />
                   </div>
                   {/* Bitiş */}
                   <div className="flex items-center gap-3">
                     <span className="w-16 shrink-0 text-[11px] font-mono uppercase tracking-[0.12em] text-ink-72">Bitiş</span>
-                    <div className="flex items-center gap-1.5">
-                      <select
-                        value={splitTime(endTime).h}
-                        onChange={(e) => setTimePart(endTime, setEndTime, 'h', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                        aria-label="Bitiş saati"
-                      >
-                        <option value="">--</option>
-                        {HOURS.map((h) => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="text-ink-72 font-medium">:</span>
-                      <select
-                        value={splitTime(endTime).m}
-                        onChange={(e) => setTimePart(endTime, setEndTime, 'm', e.target.value)}
-                        className="flex-1 px-3 py-3 bg-card border border-line rounded-lg text-ink focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                        aria-label="Bitiş dakikası"
-                      >
-                        <option value="">--</option>
-                        {MINUTES.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <SaatSecici deger={endTime} onDegis={setEndTime} etiket="Bitiş" />
                   </div>
                 </div>
               </div>

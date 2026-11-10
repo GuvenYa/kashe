@@ -352,9 +352,6 @@ ${onceki}`
     return () => window.removeEventListener('keydown', onKey);
   }, [modalOpen]);
 
-  // Bugünün tarihi — date input'un min değeri için
-  const todayStr = new Date().toISOString().split('T')[0];
-
   // MODEL A — Otomatik gönderim:
   // Kullanıcı anonimken brief doldurup kayda yönlendirildiyse, kayıt/giriş
   // sonrası bu profile döndüğünde sessionStorage'daki brief'i otomatik gönder.
@@ -853,7 +850,7 @@ ${onceki}`
                     alanlar={briefFields}
                     degerler={briefValues}
                     setAlan={setField}
-                    bugun={todayStr}
+                    doluGunler={profilBaglami.doluGunler}
                     iller={iller}
                     saglayiciIli={saglayiciIli}
                     yalnizKendiSehri={yalnizKendiSehri}

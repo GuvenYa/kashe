@@ -250,3 +250,17 @@ oldugu icin arama bos doner; bos sonuc metni bunu soyler ("listede olmayan
 baska profesyonel yok"). Ekibi olustur turda tiklanmadi (rehber hesaplara
 bildirim gitmesin). Uretimde girissiz kapsam fonksiyonu 401. Fahri kararlari
 (yukarida) hala bekleniyor.
+
+Duzeltme 14-A kodda (10 Kasim, dal `duzeltme-14`; migration yok). Ortak
+`app/components/ui/tarih-secici.tsx` (deger bicimi ayni "YYYY-MM-DD", eylemler
+degismedi), saf yardimcilar `app/lib/tarih-secim.ts`, 24 saatlik
+`app/components/ui/saat-secici.tsx`. Kullanildigi yerler: rezervasyon talebi
+modali, profil "Teklif al" ve `/teklif-topla` brief tarihi ("Tarih henuz belli
+degil" artik cip), profil fiyat / takvim karti, profesyonelin teklif formu
+(tarih + saat), sihirbaz baslangic / bitis. Profilde dolu gunler (elle dolu +
+rezervasyonlu) profil islem baglamindan gelir; takvimdeki kuralla secilemez.
+Bilesen ayri bir sayfada Playwright ile denendi (hizli secim kaymasi, oklar,
+Escape modali kapatmaz, disari tiklama, belirsiz cipi, temizle, 31 Ocak + 1 ay
+= 28 Subat). Ic araclarin tarih kutulari (ajans teklif editoru, havuz, CRM,
+gorev, ilan, kurum RFP) bu turda degismedi. 14-B ve 14-C Fahri'nin 4. ve 5.
+kararlarini bekliyor (tabloda 10 Kasim itibariyla isaret yok).

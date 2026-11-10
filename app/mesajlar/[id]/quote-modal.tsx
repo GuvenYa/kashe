@@ -10,6 +10,13 @@ import {
 import { createQuote } from '../quote-actions';
 import { getQuoteTemplates } from '@/app/lib/message-templates';
 import { istanbulGunu } from '@/app/lib/tarih';
+import { TarihSecici } from '@/app/components/ui/tarih-secici';
+import { SaatSecici } from '@/app/components/ui/saat-secici';
+
+const KUCUK_ALAN =
+  'w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
+const KUCUK_KUTU =
+  'flex-1 min-w-0 px-2.5 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
 /**
  * Duzeltme 12-A (bulgu 115): teklif kendi tarihini, saatini ve yerini tasir.
@@ -193,35 +200,47 @@ export function QuoteModal({
                 ? 'Müşterinin seçtiği tarihle dolu geldi; gerekirse değiştir.'
                 : 'Müşteri tarih belirtmedi. Sen seçebilir ya da boş bırakabilirsin; boş kalırsa rezervasyon "Tarih belirlenmedi" olur.'}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <label className="block">
-                <span className="text-[11px] text-ink-72 block mb-1">Tarih</span>
-                <input
-                  type="date"
-                  value={eventDate}
-                  min={istanbulGunu()}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+            {/* Duzeltme 14-A: Turkce tarih secici ve 24 saatlik saat kutulari
+                (tarayicinin dili "ay / gun / yil" ya da AM / PM gostermesin). */}
+            <div className="space-y-2.5">
+              <div>
+                <label htmlFor="teklif-tarih" className="text-[11px] text-ink-72 block mb-1">
+                  Tarih
+                </label>
+                <TarihSecici
+                  id="teklif-tarih"
+                  deger={eventDate}
+                  onDegis={setEventDate}
+                  temizlenebilir
+                  className={KUCUK_ALAN}
                 />
-              </label>
-              <label className="block">
-                <span className="text-[11px] text-ink-72 block mb-1">Başlangıç</span>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                />
-              </label>
-              <label className="block">
-                <span className="text-[11px] text-ink-72 block mb-1">Bitiş</span>
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
-                />
-              </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="teklif-baslangic" className="text-[11px] text-ink-72 block mb-1">
+                    Başlangıç
+                  </label>
+                  <SaatSecici
+                    id="teklif-baslangic"
+                    deger={startTime}
+                    onDegis={setStartTime}
+                    etiket="Başlangıç"
+                    kutuSinifi={KUCUK_KUTU}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="teklif-bitis" className="text-[11px] text-ink-72 block mb-1">
+                    Bitiş
+                  </label>
+                  <SaatSecici
+                    id="teklif-bitis"
+                    deger={endTime}
+                    onDegis={setEndTime}
+                    etiket="Bitiş"
+                    kutuSinifi={KUCUK_KUTU}
+                  />
+                </div>
+              </div>
             </div>
             <label className="block mt-2">
               <span className="text-[11px] text-ink-72 block mb-1">Yer</span>

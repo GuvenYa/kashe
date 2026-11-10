@@ -511,7 +511,10 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
     // ProfilIslemSaglayici: fiyat/takvim karti ile mobil CTA cubugu ayni
     // Tarih/Sehir/Kisi durumunu paylasir. Sunucu govdesi `children` olarak
     // gecer; FONKSIYON prop gecirilmez.
-    <ProfilIslemSaglayici varsayilanSehir={cityName ?? null}>
+    <ProfilIslemSaglayici
+      varsayilanSehir={cityName ?? null}
+      doluGunler={[...blockedDates, ...bookedDates]}
+    >
       <div className="bg-paper min-h-screen pb-24 lg:pb-12">
       {/* JSON-LD */}
       <script

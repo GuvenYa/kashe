@@ -13,7 +13,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { sonucEtiketi } from '@/app/lib/discover-base';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
-import { takvimiAc } from '@/app/lib/tarih-girdisi';
+import { TarihSecici } from '@/app/components/ui/tarih-secici';
 import { AnladimOzeti } from './anladim-ozeti';
 import {
   GirisGerekliKutusu,
@@ -821,12 +821,11 @@ export function SihirbazClient({
                 <label htmlFor="sihirbaz-tarih" className={ETIKET}>
                   Başlangıç tarihi
                 </label>
-                <input
+                {/* Duzeltme 14-A: Turkce tarih secici + hizli secimler. */}
+                <TarihSecici
                   id="sihirbaz-tarih"
-                  type="date"
-                  onClick={takvimiAc}
-                  value={tarih}
-                  onChange={(e) => guncelle({ tarih: e.target.value || null })}
+                  deger={tarih}
+                  onDegis={(g) => guncelle({ tarih: g || null })}
                   className={ALAN}
                 />
               </div>
@@ -834,12 +833,13 @@ export function SihirbazClient({
                 <label htmlFor="sihirbaz-bitis" className={ETIKET}>
                   Bitiş tarihi (çok günlükse)
                 </label>
-                <input
+                <TarihSecici
                   id="sihirbaz-bitis"
-                  type="date"
-                  onClick={takvimiAc}
-                  value={bitis}
-                  onChange={(e) => guncelle({ bitis: e.target.value || null })}
+                  deger={bitis}
+                  onDegis={(g) => guncelle({ bitis: g || null })}
+                  min={tarih || undefined}
+                  hizli={false}
+                  temizlenebilir
                   className={ALAN}
                 />
               </div>
