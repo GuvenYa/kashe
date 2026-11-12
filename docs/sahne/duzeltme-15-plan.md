@@ -112,7 +112,7 @@ Fahri'nin onerisi: tek "Islerim"; sekmeler **Yanit bekleyen** (gelen talepler, y
 talepleri) / **Teklif verdiklerim** / **Anlasilan** (yaklasan rezervasyonlar) / **Tamamlanan**.
 15-A ile ayni kart ve detay yapisi (iki taraf ayni dili konusur).
 
-YAPILDI (12 Kas, dal `duzeltme-15b`; onizleme turu bekliyor). Migration yok, yalniz okuma.
+YAPILDI (12 Kas, dal `duzeltme-15b`; onizleme turu asagida). Migration yok, yalniz okuma.
 - Sayfa: yeni `/islerim`. Kimde: rol `professional`, ya da ajans kurulusu olmayan `agency`
   (olcut tek yerde, `app/lib/satici-merkezi.ts`; menudeki satici grubuyla ayni). Digerleri
   `/profil`e doner. Ajans panelinde sayfalar ve menu oldugu gibi.
@@ -134,8 +134,27 @@ YAPILDI (12 Kas, dal `duzeltme-15b`; onizleme turu bekliyor). Migration yok, yal
   geri baglantisi ve Merkez'deki iki kutu profesyonelde "Islerim"e gider.
 - Model: `IsAsamasi`ya `teklif` eklendi (yalniz profesyonel merkezinde dolar).
 - Test: tsc + eslint temiz; satici modulu sahte veriyle (6 alici, 6 sohbet, 7 teklif, 5 rezervasyon)
-  calistirildi, 12 kart beklenen asamada. Onizlemede Ilker (profesyonel) ve Kaan (musteri
-  merkezinde gerileme var mi) ile bakilacak.
+  calistirildi, 12 kart beklenen asamada.
+
+### Onizleme turu 15-B (12 Kas, dal `duzeltme-15b`; 1280 ve 375 px)
+
+Hesaplar: Ilker Sezer (profesyonel + Lumen uyesi), Kaan Erol (musteri), Lumen sahibi (ajans).
+Rehber hesaplara girilmedi; yeni veri uretilmedi.
+
+- Ilker `/islerim`: Yanit bekleyen 2 (biri "Yeni talep", biri "Son tarih gecti"), Teklif
+  verdiklerim 0 (bos metin), Anlasilan 1 (Kaan / 8.500 TL / 12 Aralik), Tamamlanan 3,
+  Sonuclanmayan 6 (4 iptal, 2 reddedilen teklif). Kaan'la arasindaki 8 rezervasyonun hepsi
+  gorunuyor; ayni isler Kaan'in merkezindeki kartlarla ortusuyor.
+- "Teklif ver" -> `/teklif-talepleri#talep-<id>`: dogru karta iniyor. Kart ISARETLENMIYORDU
+  (`:target` uygulama ici geciste calismiyor) -> kucuk istemci bileseni (`HedefVurgusu`) karti
+  isaretleyip ortaya getiriyor; ikinci derlemede bakilacak.
+- Menu: Profesyonel grubunda Merkez / Islerim / Takvim / Basvurularim (+ Kazanclar); Lumen grubu
+  ayni. Hesap menusu: Panel / Islerim / Takvim / Lumen paneli / Etkinlikler.
+- Rezervasyonun geri baglantisi "Islerim" (Anlasilan sekmesi); Merkez'de "Bekleyen teklif talebi" 2
+  ve "Yaklasan rezervasyon" 1 kutulari merkeze gidiyor (sayilar merkezle ayni).
+- 375 px: yatay tasma yok, kutu etiketleri sigiyor, bes sekme uc satira sariyor.
+- Gerileme: Kaan'da `/etkinliklerim` sayilari uretimdekiyle ayni (7 / 8 / 6 / 8), kartlar ayni;
+  Kaan ve Lumen sahibi `/islerim`e girince kendi merkezine donuyor; ajans menusu degismedi.
 
 ## 15-C Ajans uyesi menusu (satir 35-36)
 

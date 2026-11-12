@@ -7,6 +7,7 @@ import { TalepKartiAksiyonlari } from './talep-karti-aksiyonlari';
 import { getCachedUser } from '@/app/lib/auth';
 import { talepButceleri } from '@/app/lib/talep-butcesi';
 import { BriefEkButonu } from './brief-ek-butonu';
+import { HedefVurgusu } from './hedef-vurgusu';
 import { getBriefFields } from '@/app/lib/brief-config';
 import { tarihMetni } from '@/app/lib/tarih';
 import { formatPrice } from '@/app/lib/profile-helpers';
@@ -235,6 +236,7 @@ export default async function TeklifTalepleriPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            <HedefVurgusu onEk="talep-" />
             {list.map((r) => {
               const req = r.quote_requests;
               const customer = req.customer;
@@ -258,11 +260,12 @@ export default async function TeklifTalepleriPage() {
                   : null;
 
               return (
-                // Capa: "Islerim" merkezindeki kart bu talebe iner (15-B).
+                // Capa: "Islerim" merkezindeki kart bu talebe iner (15-B);
+                // isaretleme `HedefVurgusu`ndan (`:target` calismiyor).
                 <div
                   key={r.id}
                   id={`talep-${r.id}`}
-                  className="bg-card border border-line rounded-lg p-6 scroll-mt-24 target:border-brand-ink"
+                  className="bg-card border border-line rounded-lg p-6 scroll-mt-24 data-[hedef-vurgu]:border-brand-ink data-[hedef-vurgu]:ring-2 data-[hedef-vurgu]:ring-brand-ink/25"
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
                     <div>
