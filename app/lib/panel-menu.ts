@@ -156,7 +156,13 @@ function ajansGrubu(
    * ikisi de kisisel sayfaya (`/takvimim`, `/kazanclarim`) gittigi icin ajans
    * grubunda ikinci kez yazilmaz.
    */
-  kisiselSaticiGrubuVar = false
+  kisiselSaticiGrubuVar = false,
+  /**
+   * Duzeltme 15-E: ajansin KENDI hesabi (pazaryeri kimligi). Teklif topla
+   * talepleri ve "ajansim uzerinden" yonlendirilen talepler bu hesaba duser;
+   * uyelerde liste bos kalacagi icin madde yalniz burada yazilir.
+   */
+  ajansHesabi = false
 ): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
     // "Gosterge" -> "Genel bakis" (Duzeltme 15-C, Fahri karari 2-A).
@@ -195,6 +201,16 @@ function ajansGrubu(
       ikon: 'teklif',
       bolum: 'calisma',
       oncelik: true,
+    });
+  }
+  if (ajansHesabi) {
+    // Menude yolu yoktu (yalniz bildirimden gidiliyordu); 15-E ile ajansa
+    // daha cok talep dusecegi icin gorunur olmali.
+    maddeler.push({
+      href: '/teklif-talepleri',
+      etiket: 'Teklif talepleri',
+      ikon: 'rfp',
+      bolum: 'calisma',
     });
   }
   if (!kisiselSaticiGrubuVar) {
@@ -417,7 +433,11 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   for (const org of ajanslar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: ajansGrubu(org, kisiselSaticiGrubuVar),
+      maddeler: ajansGrubu(
+        org,
+        kisiselSaticiGrubuVar,
+        ajansRolu && org.role === 'owner'
+      ),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
       baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,

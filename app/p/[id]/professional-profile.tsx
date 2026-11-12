@@ -1112,8 +1112,18 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                 {canTransact && (
                   <>
                     <p className="text-[12px] text-ink-72 mt-2.5 leading-snug">
-                      Doğrudan teklif alabilir ya da {representingAgency.name}{' '}
-                      üzerinden çalışabilirsin.
+                      {/* Duzeltme 15-E: tercih aciksa talep zaten ajansa gider. */}
+                      {ajansYonlendirme ? (
+                        <>
+                          Talepleri {representingAgency.name} üzerinden
+                          yanıtlanıyor; teklifi ajans verir.
+                        </>
+                      ) : (
+                        <>
+                          Doğrudan teklif alabilir ya da {representingAgency.name}{' '}
+                          üzerinden çalışabilirsin.
+                        </>
+                      )}
                     </p>
                     <Link
                       href={`/p/${representingAgency.id}?tercih=${profile.id}${

@@ -192,7 +192,7 @@ teklif akisina duser ve teklifi ajans verir; musteri ayni kisi icin iki ayri tek
 Veritabani (uyelik tercihi + talep yonlendirme) ve davranis testi gerektirir; 15-A / 15-B ile
 birlikte ya da hemen ardindan.
 
-YAPILDI (12 Kas, dal `duzeltme-15e`; dal veritabani ve onizleme turu bekliyor).
+YAPILDI (12 Kas, dal `duzeltme-15e`; dal veritabani ve onizleme turu asagida).
 - Veritabani (`20261112150000_duzeltme_15e_ajans_uzerinden_teklif.sql`):
   `organization_memberships.offers_via_agency` (varsayilan false); tutarlilik tetikleyicisi (yalniz
   ajans kurulusunun, kurulusun kendi hesabi olmayan profesyonel uyesinde ve aktif uyelikte acilir;
@@ -217,6 +217,27 @@ YAPILDI (12 Kas, dal `duzeltme-15e`; dal veritabani ve onizleme turu bekliyor).
   gerileme: asama30b 10 / 10, asama31b 33 / 33, asama32b 9 / 9. tsc + eslint temiz.
 - Acik: ajansin ekip kurma / teklif tarafinda "bu talep uyeniz X icin geldi" vurgusu sohbet
   brief'inde yaziyor; ajans panelinde ayrica rozet yok (gerekirse sonraki tur).
+
+### Dal veritabani ve onizleme turu 15-E (12 Kas, dal `duzeltme-15e`)
+
+Sahne veritabani (Guven): migration uygulandi; asama34 K1-K7 ESIT (K8 = 0), asama34b 14 / 14.
+
+Onizleme (Ilker = Lumen ekip koordinatoru, Kaan = musteri, Lumen sahibi):
+- Ilker `/kurulus/uyelik`: "Teklif tercihin" bolumu; "Ajansim uzerinden" secildi -> "Tercihin
+  kaydedildi", "Baglanti nasil calisir" metni degisti. `/islerim`de bilgi satiri ("yeni talepler
+  Lumen Produksiyon uzerinden") ve kendi profilinde not.
+- Kaan, Ilker'in profilinde: kartin ustunde "taleplerini Lumen Produksiyon uzerinden aliyor" notu.
+  "Teklif Al" ile talep gonderildi -> sohbet LUMEN ile acildi (mevcut Kaan - Lumen sohbeti),
+  cubukta "Tercih edilen ekip uyesi: Ilker S."; Lumen sahibi ayni sohbette talebi ve tercihi goruyor.
+- Kaan teklif topla (Drone Pilotu / Istanbul; havuzda yalniz Ilker var): alici Lumen oldu
+  (Lumen sahibinin `/teklif-talepleri` listesinde "Yeni"), Ilker'e dusmedi.
+- Turda bulunup duzeltilenler: (1) ajans menusunde "Teklif talepleri" yolu yoktu (yalniz
+  bildirimden gidiliyordu) -> ajansin kendi hesabinda menuye eklendi; (2) profildeki "Uye oldugu
+  ajans" kutusu tercih acikken de "Dogrudan teklif alabilir..." diyordu -> "Talepleri <Ajans>
+  uzerinden yanitlaniyor". Ikinci derlemede bakilacak; tur sonunda Ilker'in tercihi "kendim"e
+  donecek.
+- Sahne'de kalan tur verisi: Kaan - Lumen sohbetinde bir test mesaji (tercih edilen uye Ilker),
+  Kaan'in Lumen'e dusen Drone Pilotu teklif topla talebi.
 
 ## Gorsel dil (12 Kas, Guven + Fahri)
 
