@@ -91,10 +91,12 @@ export function DurumKarti({
             {kutular.map((k) => (
               <div
                 key={k.etiket}
-                className="rounded-xl border border-line px-3 py-2.5 sm:min-w-24"
+                className="rounded-xl border border-line px-2.5 sm:px-3 py-2.5 sm:min-w-24"
               >
-                {/* `truncate`: uzun etiket kutudan tasmaz (dar ekranda uc kutu). */}
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50 truncate">
+                {/* Dar ekranda uc kutu yan yana: harf araligi ve ic bosluk
+                    biraz daralir ki sekiz harfli etiket ("YAKLASAN") sigsin;
+                    `truncate` daha uzun etiketin kutudan tasmasini onler. */}
+                <p className="font-mono text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.14em] text-ink-50 truncate">
                   {k.etiket}
                 </p>
                 <p className="font-display text-lg sm:text-xl text-ink mt-1 leading-tight break-words tabular-nums">
