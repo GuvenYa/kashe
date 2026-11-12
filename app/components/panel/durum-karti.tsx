@@ -93,7 +93,8 @@ export function DurumKarti({
                 key={k.etiket}
                 className="rounded-xl border border-line px-3 py-2.5 sm:min-w-24"
               >
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
+                {/* `truncate`: uzun etiket kutudan tasmaz (dar ekranda uc kutu). */}
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50 truncate">
                   {k.etiket}
                 </p>
                 <p className="font-display text-lg sm:text-xl text-ink mt-1 leading-tight break-words tabular-nums">

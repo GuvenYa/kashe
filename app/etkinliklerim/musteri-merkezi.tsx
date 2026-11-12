@@ -172,10 +172,12 @@ export function MusteriMerkezi({
               ozet.acikIs > 0 ? (ozet.teklifGelenIs / ozet.acikIs) * 100 : 100
             }
             satirlar={satirlar}
+            // Kutu etiketi kisa tutulur: dar ekranda uc kutu yan yana ve
+            // "Tamamlanan" kutuya sigmiyordu (375 px turu).
             kutular={[
               { etiket: 'Bekleyen', deger: sayi.bekleyen },
               { etiket: 'Yaklaşan', deger: sayi.yaklasan },
-              { etiket: 'Tamamlanan', deger: sayi.tamamlanan },
+              { etiket: 'Biten', deger: sayi.tamamlanan },
             ]}
           />
 
