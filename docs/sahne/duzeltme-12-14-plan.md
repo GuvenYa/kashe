@@ -173,8 +173,10 @@ ay / Tarih belli degil"; gosterim "27 Kasim 2026".
 
 ### 14-B Ilce listesi (satir 27; bulgu 126)
 Ilce bugun serbest metin (Duzeltme 10 il secici + istege bagli ilce / mekan).
-VERI GEREKLI: 81 il - 973 ilce listesi (resmi kaynak). Liste gelince il
-secince ilce acilir kutusu; mekan serbest metin kalir.
+KARAR 5-B (12 Kas): yalniz 30 buyuksehir ilinde ilce listesi (resmi kaynaktan
+derlenir, repoda statik veri); il secilince ilce acilir kutusu, mekan serbest
+metin; diger 51 ilde bugunku serbest "ilce / mekan" alani kalir. Kaydedilen
+deger bicimi ayni ("<ilce / mekan>, <Il>").
 
 ### 14-C Renkler, bolum gecisleri, scorecard (satir 24)
 Tasarim yonu karari (Fahri + Guven): "daha canli renkler", izleme sayfalarinin
@@ -182,6 +184,10 @@ farklilasmasi, dikey balanced scorecard. Bu turlarda kod degismez; karar
 sonrasi ayri tasarim turu.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
+
+KARARLAR (12 Kas, Guven + Fahri): 4 (tasarim yonu) = A, ekip kurma ekraninin diliyle sayfa sayfa
+(ayrinti `docs/sahne/duzeltme-15-plan.md` "Gorsel dil"); 5 (ilce verisi) = B, yalniz 30 buyuksehir
+ilinde ilce listesi, diger illerde ilce / mekan serbest metin. 1-3 hala acik.
 
 1. Musteri puani / iptal gecmisi (12-G)
    - (*) A: Profesyonele gorunen "musteri iptal gecmisi" gostergesi (sohbet ve

@@ -96,7 +96,7 @@ export function DurumKarti({
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-50">
                   {k.etiket}
                 </p>
-                <p className="font-display text-xl text-ink mt-1 leading-tight break-words tabular-nums">
+                <p className="font-display text-lg sm:text-xl text-ink mt-1 leading-tight break-words tabular-nums">
                   {k.deger}
                 </p>
               </div>

@@ -79,9 +79,35 @@ ayni dile tasinir; her Duzeltme turunda dokunulan sayfalar da gecirilir. Ortak p
 segment / kutu / cip secimler, koyu gonder seridi; alanlar ve eylem ayni). Sirada: 15-A / 15-B
 merkez sayfalari bu dille kurulur; ardindan gelen teklifler, teklif talepleri, rezervasyonlar.
 
+## Onizleme turu (12 Kas, dal `duzeltme-15`; 1280 ve 375 px)
+
+Hesaplar: Ilker Sezer (profesyonel + Lumen ekip koordinatoru), Kaan Erol (musteri), Lumen sahibi.
+Rehber hesaplara girilmedi; "Ajanstan ayril" onaylanmadi.
+
+- Menu (Ilker): Lumen grubunda "Takvim" / "Kazanclar" yok, "Genel bakis", "Ekip yonetimi", baslik
+  `/kurulus/uyelik`e gidiyor. Lumen sahibinde "Takvim" ve "Kazanclar" duruyor (kisisel grup yok).
+- Uyelik sayfasi: Ilker'de rol "Ekip koordinatoru", baslangic 28 Agustos 2026, acik / kapali
+  yetkiler, baglanti aciklamasi, ayrilma; sahipte "sahip kurulustan ayrilamaz".
+- Ekip yonetimi: sahipte "Yeni etkinlik"; sihirbazla acilan ekipsiz etkinlik "Yeni ekip kur"
+  listesine dustu ("Ekip kur" -> Adaylar sekmesi); kurulan ekip altta.
+- Teklif topla: durum karti (8 / 55 / 100), segment, secili kutu (ok tuslariyla da), cipler, koyu
+  serit ve ozet; eksik zorunlu alanda hata gorunur alana geliyor; talep gonderildi (yalniz Ilker'e).
+  375 px'te yatay tasma yok, serit tek satir ("Gonder").
+- 15-D: 48 saatlik talepte son tarih notu, varsayilan "3 gun"; "24 saat" secilince uyari.
+- Uretilen CSS'te yeni siniflar var (`has-[:focus-visible]:ring-2`, `sm:min-w-24` vb.).
+
+Turda uc kucuk duzeltme: son tarihi GECMIS talepte not "son tarih gecti, talep acik duruyor" der
+(eskiden gelecekmis gibi yaziyordu); gecerlilik alt notu secime gore dogru kalir ("secili geldi"
+yerine yonerge); durum kartindaki sayi kutusu dar ekranda kucuk punto. Bu ucu onizlemede degil,
+kod + tsc / eslint ile kontrol edildi; Sahne adresinde bakilacak.
+
+Sahne'de kalan tur verisi: Kaan'in Drone Pilotu / Istanbul teklif topla talebi (alici yalniz
+Ilker), Lumen'in "Istanbul'da 80 kisilik kurumsal urun tanitimi" etkinligi (ekipsiz).
+
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 
 KARARLAR (12 Kas, Guven + Fahri): 1-A, 2-A, 3-A.
+Ayni gun: 14-C = A (gorsel dil sayfa sayfa, yukarida), 14-B = B (30 buyuksehirde ilce listesi).
 
 1. Ajansa bagli profesyonelin teklifi (satir 36)
    - (*) A: Profesyonel secer: profilde "Bana gelen talepler: kendim teklif veririm / ajansim

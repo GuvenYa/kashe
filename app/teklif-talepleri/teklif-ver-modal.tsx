@@ -27,6 +27,13 @@ function varsayilanGecerlilik(sonTarih: string | null): QuoteExpiryKey {
   return uygun?.key ?? '30d';
 }
 
+/** Musterinin son tarihi gecmis mi? (Talep acik kalir; yalniz metin degisir.) */
+function sonTarihGecti(sonTarih: string | null): boolean {
+  if (!sonTarih) return false;
+  const son = new Date(sonTarih).getTime();
+  return Number.isFinite(son) && son <= Date.now();
+}
+
 /** Secilen gecerlilik musterinin son tarihinden ONCE mi doluyor? */
 function sonTarihtenOnceDolar(
   anahtar: QuoteExpiryKey,
@@ -68,6 +75,7 @@ export function TeklifVerModal({
   );
   const sonTarihMetni = zamanMetni(responseDeadline);
   const erkenDoluyor = sonTarihtenOnceDolar(expiryKey, responseDeadline);
+  const gecti = sonTarihGecti(responseDeadline);
   const [message, setMessage] = useState('');
 
   // Bütçe yumuşak sınır uyarısı (sadece paylaşıldıysa + üst sınır + tutar aşıyorsa)
@@ -167,9 +175,19 @@ export function TeklifVerModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {sonTarihMetni && (
             <p className="text-sm text-ink bg-brand-ink-08 border border-brand-ink/25 rounded-lg px-4 py-2.5">
-              Müşterinin teklif beklediği son tarih:{' '}
-              <span className="font-semibold">{sonTarihMetni}</span>. Sonra
-              gelen teklifleri karşılaştıracak.
+              {gecti ? (
+                <>
+                  Müşterinin teklif beklediği son tarih geçti (
+                  <span className="font-semibold">{sonTarihMetni}</span>). Talep
+                  açık duruyor; teklif verebilirsin.
+                </>
+              ) : (
+                <>
+                  Müşterinin teklif beklediği son tarih:{' '}
+                  <span className="font-semibold">{sonTarihMetni}</span>. Sonra
+                  gelen teklifleri karşılaştıracak.
+                </>
+              )}
             </p>
           )}
           {/* Fiyat */}
@@ -264,10 +282,11 @@ export function TeklifVerModal({
                 karşılaştırmaya kalmayabilir.
               </p>
             ) : (
-              sonTarihMetni && (
+              sonTarihMetni &&
+              !gecti && (
                 <p className="text-xs text-ink-72 mt-1.5">
-                  Teklifin, müşteri karşılaştırma yaparken de geçerli olsun
-                  diye son tarihten sonrasına uzanan süre seçili geldi.
+                  Müşteri teklifleri son tarihten sonra karşılaştırır; teklifin
+                  o sırada da geçerli olsun diye son tarihi aşan bir süre seç.
                 </p>
               )
             )}
