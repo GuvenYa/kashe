@@ -15,6 +15,7 @@ import {
 } from '@/app/lib/org-roles';
 import { tarihMetni } from '@/app/lib/tarih';
 import { UyeliktenAyril } from './uyelikten-ayril';
+import { TeklifTercihi } from './teklif-tercihi';
 
 export const metadata = {
   title: 'Kuruluş üyeliğim — Kashe',
@@ -79,7 +80,7 @@ export default async function KurulusUyelikPage({
 
   const { data: uyelikData } = await supabase
     .from('organization_memberships')
-    .select('id, role, joined_at')
+    .select('id, role, joined_at, offers_via_agency')
     .eq('organization_id', org.id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -87,7 +88,10 @@ export default async function KurulusUyelikPage({
     id: string;
     role: string;
     joined_at: string | null;
+    /** Duzeltme 15-E: talepler ajans uzerinden mi yanitlaniyor. */
+    offers_via_agency: boolean | null;
   } | null;
+  const ajansUzerinden = uyelik?.offers_via_agency === true;
 
   const ajans = org.accountType === 'agency';
   const turAdi = ajans ? 'Ajans' : 'Kurum';
@@ -198,8 +202,9 @@ export default async function KurulusUyelikPage({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-moss shrink-0" aria-hidden="true">✓</span>
-                Sana doğrudan gelen talepleri sen yanıtlarsın; teklif ve
-                rezervasyon senin adına oluşur.
+                {ajansUzerinden
+                  ? `Sana gelen talepler ${org.name} hesabına gider; teklifi ajans verir, rezervasyon ajans adına oluşur (aşağıdaki tercihin).`
+                  : 'Sana doğrudan gelen talepleri sen yanıtlarsın; teklif ve rezervasyon senin adına oluşur.'}
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-moss shrink-0" aria-hidden="true">✓</span>
@@ -208,6 +213,18 @@ export default async function KurulusUyelikPage({
                 isteyebilir.
               </li>
             </ul>
+          </section>
+        )}
+
+        {/* Teklif tercihi (Duzeltme 15-E, karar 1-A): ajans uyesi profesyonel */}
+        {ajans && profesyonel && !sahip && uyelik && (
+          <section className="bg-card border border-line rounded-xl p-5">
+            <VurguEtiketi>Teklif tercihin</VurguEtiketi>
+            <TeklifTercihi
+              orgId={org.id}
+              ajansAdi={org.name}
+              ajansUzerinden={ajansUzerinden}
+            />
           </section>
         )}
 

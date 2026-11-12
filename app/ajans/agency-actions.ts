@@ -272,3 +272,43 @@ export async function leaveAgency(membershipId: string): Promise<ActionResult> {
   revalidatePath('/profil/ekibim');
   return { success: true };
 }
+
+/**
+ * Duzeltme 15-E (karar 1-A): uye "bana gelen talepler ajansim uzerinden"
+ * tercihini acar / kapatir. Yazma yolu RPC (`org_member_set_offer_routing`):
+ * uye yalniz KENDI tercihini yazar; uygunluk (ajans kurulusu + profesyonel
+ * uye) veritabaninda dogrulanir.
+ */
+export async function setOfferRouting(
+  orgId: string,
+  viaAgency: boolean
+): Promise<ActionResult> {
+  if (!UUID_KALIBI.test(orgId)) {
+    return { success: false, error: 'Kuruluş geçersiz.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Giriş yapmalısın' };
+
+  const { error } = await supabase.rpc('org_member_set_offer_routing', {
+    p_org: orgId,
+    p_via_agency: viaAgency,
+  });
+  if (error) {
+    console.error('[uyelik] teklif tercihi', error.code, error.message);
+    return {
+      success: false,
+      error:
+        error.code === '22023'
+          ? 'Bu tercih yalnız ajansın profesyonel üyesinde açılabilir.'
+          : 'Tercih kaydedilemedi. Biraz sonra yeniden dene.',
+    };
+  }
+
+  revalidatePath('/kurulus/uyelik');
+  revalidatePath('/islerim');
+  return { success: true };
+}

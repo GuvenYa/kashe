@@ -5,6 +5,7 @@ import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 import { saticiMerkeziAcik } from '@/app/lib/satici-merkezi';
+import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
 import { saticiIsleri } from './satici-isleri';
 import { SaticiMerkezi } from './satici-merkezi';
 
@@ -39,14 +40,20 @@ export default async function IslerimPage({
 
   if (!(await saticiMerkeziAcik())) redirect('/profil');
 
-  const [veri, kabuk] = await Promise.all([
+  const [veri, kabuk, yonlendirmeler] = await Promise.all([
     saticiIsleri(supabase, user.id),
     panelKabukProps(),
+    // Duzeltme 15-E: yeni talepler ajans uzerinden geliyorsa merkezde yazar.
+    teklifYonlendirmeleri(supabase, [user.id]),
   ]);
 
   return (
     <PanelKabugu {...kabuk}>
-      <SaticiMerkezi veri={veri} sekme={sekme} />
+      <SaticiMerkezi
+        veri={veri}
+        sekme={sekme}
+        ajansUzerinden={yonlendirmeler.get(user.id)?.ajansAdi ?? null}
+      />
     </PanelKabugu>
   );
 }

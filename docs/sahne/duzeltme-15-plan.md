@@ -192,6 +192,32 @@ teklif akisina duser ve teklifi ajans verir; musteri ayni kisi icin iki ayri tek
 Veritabani (uyelik tercihi + talep yonlendirme) ve davranis testi gerektirir; 15-A / 15-B ile
 birlikte ya da hemen ardindan.
 
+YAPILDI (12 Kas, dal `duzeltme-15e`; dal veritabani ve onizleme turu bekliyor).
+- Veritabani (`20261112150000_duzeltme_15e_ajans_uzerinden_teklif.sql`):
+  `organization_memberships.offers_via_agency` (varsayilan false); tutarlilik tetikleyicisi (yalniz
+  ajans kurulusunun, kurulusun kendi hesabi olmayan profesyonel uyesinde ve aktif uyelikte acilir;
+  uyelik aktif degilse kendiliginden kapanir); kisi basina tek ajans (kismi tekil indeks);
+  `org_member_set_offer_routing` (uye yalniz kendi tercihini yazar, ikinci ajansta acinca ilki
+  kapanir); `fn_duz15_teklif_yonlendirme` (talebin gidecegi ajans; yalniz acik ekip, giris gerekir).
+  Uyelik tablosuna istemciden yazma yetkisi yoktu, degismedi.
+- Ayar: `/kurulus/uyelik` sayfasinda ajans uyesi profesyonele "Teklif tercihin": "Kendim teklif
+  veririm" / "Ajansim uzerinden" (secim aninda kaydedilir); "Baglanti nasil calisir" metni secime
+  gore degisir.
+- Yonlendirme (uygulama):
+  - Profilden dogrudan talep / rezervasyon talebi (`startConversation`): tercih aciksa sohbet
+    AJANSLA acilir, profesyonel "tercih edilen ekip uyesi" olarak yazilir (mevcut 11-B3 yolu; ad
+    sunucuda uretilir). Profil sayfasinda kartin ustunde "taleplerini <Ajans> uzerinden aliyor" notu.
+  - Teklif topla alici secimi: tercihi acik profesyonelin yerine ajansi alici olur; ajans zaten
+    havuzdaysa ikinci kez eklenmez. Musteri "yalniz profesyoneller" secmis olsa da yer ajansa gecer
+    (profesyonelin tercihi).
+  - Suren sohbetler ve verilmis teklifler etkilenmez. Okuma hata verirse yonlendirme yapilmaz,
+    talep profesyonele gider (eski davranis).
+- "Islerim" merkezinde tercih acikken bilgi satiri (yeni talepler ajans uzerinden).
+- Test: yerel PG'de migration iki kez (idempotan); asama34 K1-K7 ESIT; asama34b 14 / 14;
+  gerileme: asama30b 10 / 10, asama31b 33 / 33, asama32b 9 / 9. tsc + eslint temiz.
+- Acik: ajansin ekip kurma / teklif tarafinda "bu talep uyeniz X icin geldi" vurgusu sohbet
+  brief'inde yaziyor; ajans panelinde ayrica rozet yok (gerekirse sonraki tur).
+
 ## Gorsel dil (12 Kas, Guven + Fahri)
 
 "Ekip kurma sayfasindaki gorunum iyi; tum sayfalara uygulayalim." Calisma yuzeyleri sayfa sayfa
@@ -236,7 +262,12 @@ dogru. Durum karti puntosu (dar ekran) musteri hesabiyla sonraki turda bakilacak
 Uretimde girissiz: yeni derleme yayinda (yeni CSS siniflari var, `/etkinliklerim` girise
 yonlendiriyor, ana sayfa ve konsol temiz). Sahne adresinde Kaan ile merkez onizlemedeki sayilarla
 ayni (7 / 8 / 6 / 8), menu tek "Etkinliklerim". Ayrinti yukarida, 15-A basligi altinda.
-Sirada: 15-B, 15-E, 14-B; kurum panelinde ayni merkez.
+15-B (profesyonel "Islerim" merkezi) uretimde (12 Kas): main = sahne = 251cc92, migration yok.
+Uretimde girissiz: yeni derleme yayinda (`/islerim` girise yonlendiriyor, yeni CSS siniflari var,
+ana sayfa ve konsol temiz). Sahne adresinde Ilker ile `/islerim` (2 / 0 / 1 / 3 / 6) ve Kaan ile
+`/etkinliklerim` (7 / 8 / 6 / 8) onizlemedeki sayilarla ayni.
+15-E dalda: `duzeltme-15e` (migration var; once dal veritabani, sonra onizleme turu).
+Sirada: 14-B; kurum ve ajans panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

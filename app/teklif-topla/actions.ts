@@ -14,6 +14,7 @@ import { canWriteForBusiness } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 import { talepButceleri } from '@/app/lib/talep-butcesi';
 import { istanbulGunu } from '@/app/lib/tarih';
+import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -99,7 +100,7 @@ export async function createQuoteRequest(
   // (premium_tier, premium_until, created_at) ayni adlarla gelir; algoritma degismedi.
   let matchQuery = supabase
     .from('v_providers_public')
-    .select('id, premium_tier, premium_until, created_at')
+    .select('id, role, premium_tier, premium_until, created_at')
     .in('role', roles)
     .eq('approval_status', 'approved')
     .eq('is_published', true)
@@ -119,9 +120,31 @@ export async function createQuoteRequest(
   // kurum adına oluşturan üyenin pro/ajans profili eşleşebilir → kendi talebinin
   // alıcısı olmasın. Kendi adına oluşturmada ownerId === user.id (tek eleme).
   const excludedFromPool = new Set<string>([ownerId, user.id]);
-  const matchedList = (matched || []).filter(
-    (m) => !excludedFromPool.has(m.id)
+  const eslesenler = (matched || []).filter((m) => !excludedFromPool.has(m.id));
+
+  /**
+   * Duzeltme 15-E (bulgu 131, karar 1-A): "bana gelen talepler ajansim
+   * uzerinden" tercihi acik profesyonelin yerine AJANSI alici olur; teklifi
+   * ajans verir, musteri ayni kisi icin iki teklif almaz. Ajans zaten
+   * havuzdaysa (ya da bir baska uyesi onu eklediyse) ikinci kez eklenmez.
+   * Siralama olcutleri (premium, kayit tarihi) uyeden kalir: yer onundur.
+   */
+  const yonlendirmeler = await teklifYonlendirmeleri(
+    supabase,
+    eslesenler.filter((m) => m.role === 'professional').map((m) => m.id)
   );
+  const havuzdakiler = new Set(eslesenler.map((m) => m.id));
+  const matchedList: typeof eslesenler = [];
+  for (const m of eslesenler) {
+    const y = yonlendirmeler.get(m.id);
+    if (!y) {
+      matchedList.push(m);
+      continue;
+    }
+    if (havuzdakiler.has(y.ajansId) || excludedFromPool.has(y.ajansId)) continue;
+    havuzdakiler.add(y.ajansId);
+    matchedList.push({ ...m, id: y.ajansId });
+  }
   if (matchedList.length === 0) {
     return {
       success: false,

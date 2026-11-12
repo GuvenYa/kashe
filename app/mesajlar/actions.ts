@@ -18,9 +18,11 @@ import {
 } from '@/app/lib/etkinlik-turleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import {
+  BRIEF_TERCIH_UYE,
   briefTercihUygula,
   briefVeriTemizle,
 } from '@/app/lib/brief-anahtarlari';
+import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -411,11 +413,37 @@ export async function startConversation(
     return { success: false, error: 'Bu profil yayında değil.' };
   }
 
+  /**
+   * Duzeltme 15-E (bulgu 131, karar 1-A): profesyonel "bana gelen talepler
+   * ajansim uzerinden" tercihini actiysa talep AJANSA gider: sohbet ajansla
+   * acilir, profesyonel "tercih edilen ekip uyesi" olarak yazilir (ad sunucuda
+   * uretilir, `briefTercihUygula`). Teklifi ajans verir; musteri ayni kisi
+   * icin iki teklif almaz. Mevcut sohbetler etkilenmez.
+   */
+  let hedefId = data.professional_id;
+  let briefGirdisi = data.brief_data;
+  if (targetProfile.role === 'professional') {
+    const yonlendirme = (
+      await teklifYonlendirmeleri(supabase, [data.professional_id])
+    ).get(data.professional_id);
+    if (
+      yonlendirme &&
+      yonlendirme.ajansId !== user.id &&
+      yonlendirme.ajansId !== ownerId
+    ) {
+      hedefId = yonlendirme.ajansId;
+      briefGirdisi = {
+        ...(data.brief_data ?? {}),
+        [BRIEF_TERCIH_UYE]: data.professional_id,
+      };
+    }
+  }
+
   const { data: existing } = await supabase
     .from('conversations')
     .select('id')
     .eq('customer_id', ownerId)
-    .eq('professional_id', data.professional_id)
+    .eq('professional_id', hedefId)
     .maybeSingle();
 
   let conversationId: string;
@@ -441,8 +469,8 @@ export async function startConversation(
    */
   const temizBrief = await briefTercihUygula(
     supabase,
-    data.professional_id,
-    briefVeriTemizle(data.brief_data)
+    hedefId,
+    briefVeriTemizle(briefGirdisi)
   );
 
   // Savunma: `conversations.budget_range` ENUM sutunudur (conversations_budget_range_check).
@@ -492,7 +520,7 @@ export async function startConversation(
       .from('conversations')
       .insert({
         customer_id: ownerId,
-        professional_id: data.professional_id,
+        professional_id: hedefId,
         event_date: data.event_date,
         event_type: safeEventType,
         location: data.location?.trim() || null,
@@ -570,7 +598,7 @@ export async function startConversation(
         supabase,
         conversationId,
         ownerId,
-        data.professional_id,
+        hedefId,
         data.message.trim(),
         safeEventType
       );

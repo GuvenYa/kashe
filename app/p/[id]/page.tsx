@@ -71,6 +71,7 @@ import { kisaListedekiKuruluslar } from '@/app/lib/tedarikci-data';
 import type { ProfileExperience } from '@/app/lib/category-fields';
 import { PortfolioGallery } from '@/app/components/portfolio-gallery';
 import { incrementProfileViews } from './profile-views-actions';
+import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
 
 // FAZ 2c: detay sayfasi v_providers_public gorunumunden okunur.
 // ProviderListing + is_published + last_seen_at (sorgunun sectigi alanlarla birebir).
@@ -400,6 +401,13 @@ export default async function PublicProfilePage({
   ) : null;
   const isOwnProfile = user?.id === profile.id;
   const currentUserIsProfessional = currentUserRole === 'professional';
+  // Duzeltme 15-E (karar 1-A): bu profesyonel taleplerini ajansi uzerinden
+  // aliyorsa ziyaretci talep gondermeden once bilir (okuma giris ister).
+  const ajansYonlendirme =
+    isLoggedIn && profile.role === 'professional'
+      ? ((await teklifYonlendirmeleri(supabase, [profile.id])).get(profile.id) ??
+        null)
+      : null;
   // manager+ kurum üyeliği — kurum adına rezervasyon/konuşma için
   const writableBusinesses = isLoggedIn ? await getWritableBusinesses() : [];
 
@@ -1051,6 +1059,7 @@ export default async function PublicProfilePage({
           reviewsHref={`/p/${profile.id}/yorumlar`}
           isLoggedIn={isLoggedIn}
           isOwnProfile={isOwnProfile}
+          ajansYonlendirme={ajansYonlendirme}
           currentUserIsProfessional={currentUserIsProfessional}
           currentUserRole={currentUserRole}
           writableBusinesses={writableBusinesses}

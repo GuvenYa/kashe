@@ -61,9 +61,15 @@ const IKINCIL_DUGME =
 export function SaticiMerkezi({
   veri,
   sekme,
+  ajansUzerinden = null,
 }: {
   veri: SaticiIsleri;
   sekme: string | undefined;
+  /**
+   * Duzeltme 15-E: "ajansim uzerinden" tercihi aciksa ajansin adi. Yeni
+   * talepler ajansa gittigi icin burada gorunmez; kullanici bunu bilsin.
+   */
+  ajansUzerinden?: string | null;
 }) {
   const { isler, ozet } = veri;
   const sayi: Record<IsAsamasi, number> = {
@@ -139,6 +145,18 @@ export function SaticiMerkezi({
         <em className="not-italic font-medium text-brand-accent">İşlerin</em> tek
         yerde
       </PanelBaslik>
+
+      {ajansUzerinden && (
+        <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
+          Sana gelen yeni talepler{' '}
+          <span className="font-semibold text-ink">{ajansUzerinden}</span>{' '}
+          üzerinden yanıtlanıyor; burada kendi sohbetlerin ve önceki işlerin
+          görünür.{' '}
+          <Link href="/kurulus/uyelik" className="kashe-tap text-brand-ink hover:underline">
+            Tercihi değiştir
+          </Link>
+        </p>
+      )}
 
       {hicYok ? (
         <div className="bg-card border border-line rounded-xl p-8 sm:p-12 text-center">

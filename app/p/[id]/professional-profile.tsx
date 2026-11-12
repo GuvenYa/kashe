@@ -101,6 +101,11 @@ export type ProfessionalProfileProps = {
   // etkileşim
   isLoggedIn: boolean;
   isOwnProfile: boolean;
+  /**
+   * Duzeltme 15-E: profesyonel taleplerini ajansi uzerinden aliyorsa ajans
+   * (pazaryeri profil kimligi + ad); yoksa null.
+   */
+  ajansYonlendirme?: { ajansId: string; ajansAdi: string } | null;
   currentUserIsProfessional: boolean;
   currentUserRole: string | null;
   writableBusinesses: OnBehalfBusiness[];
@@ -184,6 +189,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
     guvenSinyalleri, blockedDates, bookedDates, enDusukFiyat,
     portfolioItems, experiences, representingAgency, recentReviews,
     verifiedCustomerIds, customerMap, replyMap, reviewsHref, isLoggedIn, isOwnProfile,
+    ajansYonlendirme = null,
     currentUserIsProfessional, currentUserRole, writableBusinesses,
     etkinlikId = null,
     showFavoriteButton, initialFavorited, canReview, hasCompletedBooking,
@@ -412,6 +418,22 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
   // Üyeliksiz professional ziyaretçi → yalnız bilgi kutusu (mevcut davranış korunur).
   // Pro-as-buyer: professional ziyaretçi de alıcı koltuğuna oturur → Teklif Al / Rezervasyon.
   const canTransact = !isOwnProfile;
+
+  // Duzeltme 15-E (karar 1-A): talep ajansa gidecekse kartin ustunde yazar.
+  const ajansNotu = ajansYonlendirme ? (
+    <p className="mb-3 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
+      {isOwnProfile ? 'Taleplerin ' : 'Bu profesyonel taleplerini '}
+      <Link
+        href={`/p/${ajansYonlendirme.ajansId}`}
+        className="kashe-tap font-semibold text-brand-ink hover:underline"
+      >
+        {ajansYonlendirme.ajansAdi}
+      </Link>
+      {isOwnProfile
+        ? ' üzerinden geliyor; teklifi ajans veriyor (üyelik sayfandaki tercihin).'
+        : ' üzerinden alıyor. Talebin ajansa iletilir, teklifi ajans verir.'}
+    </p>
+  ) : null;
   // "İlanıma Davet Et" MEVCUT davranışında kalır (plain professional'da gösterilmez).
   const canInvite =
     !isOwnProfile && (!currentUserIsProfessional || writableBusinesses.length > 0);
@@ -638,6 +660,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
                 alt sabit cubukta). Degerler baglamdan: iki kopya ayni durumu
                 paylasir, masaustu kopyasi sag sutunda (`hidden lg:block`). */}
             <div className="lg:hidden">
+              {ajansNotu}
               <FiyatTakvimKarti
                 enDusukFiyat={enDusukFiyat}
                 blockedDates={blockedDates}
@@ -961,6 +984,7 @@ export async function ProfessionalProfile(props: ProfessionalProfileProps) {
               {/* Masaustu kopyasi (CTA'li). `lg` altinda kart kimligin altinda
                   CTA'siz; dugmeler alt sabit cubukta ve ayni degerleri BAGLAMDAN
                   okur — kart ile cubuk tek durum paylasir. */}
+              {ajansNotu}
               <FiyatTakvimKarti
                 enDusukFiyat={enDusukFiyat}
                 blockedDates={blockedDates}
