@@ -11,6 +11,7 @@ import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
 import { getCrewContext } from '@/app/lib/org-context';
 import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
+import { saticiMerkeziAcik, ISLERIM_YOLU } from '@/app/lib/satici-merkezi';
 import { canOwnForBusiness } from '@/app/lib/business-write';
 
 type Props = {
@@ -305,20 +306,32 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   // merkezinde; geri baglantisi rezervasyonun durdugu sekmeye doner.
   const merkezeDon =
     !teklifSekli && viewer === 'customer' && (await musteriMerkeziAcik());
-  const backHref = merkezeDon
-    ? booking.status === 'confirmed'
-      ? `${MERKEZ_YOLU}?sekme=yaklasan`
+  // Duzeltme 15-B (bulgu 129): profesyonelin KENDI rezervasyonu "Islerim"de.
+  const islerimeDon =
+    !teklifSekli &&
+    viewer === 'professional' &&
+    booking.professional_id === user.id &&
+    (await saticiMerkeziAcik());
+  const merkezSekmesi =
+    booking.status === 'confirmed'
+      ? '?sekme=yaklasan'
       : booking.status === 'completed'
-        ? `${MERKEZ_YOLU}?sekme=tamamlanan`
-        : MERKEZ_YOLU
-    : teklifSekli || viewer === 'customer'
-      ? '/rezervasyonlarim'
-      : '/takvimim';
+        ? '?sekme=tamamlanan'
+        : '';
+  const backHref = merkezeDon
+    ? `${MERKEZ_YOLU}${merkezSekmesi}`
+    : islerimeDon
+      ? `${ISLERIM_YOLU}${merkezSekmesi}`
+      : teklifSekli || viewer === 'customer'
+        ? '/rezervasyonlarim'
+        : '/takvimim';
   const backLabel = merkezeDon
     ? 'Etkinliklerim'
-    : teklifSekli || viewer === 'customer'
-      ? 'Rezervasyonlarım'
-      : 'Takvimim';
+    : islerimeDon
+      ? 'İşlerim'
+      : teklifSekli || viewer === 'customer'
+        ? 'Rezervasyonlarım'
+        : 'Takvimim';
 
   /**
    * YORUM CAGRISI (Duzeltme 01 / #28).

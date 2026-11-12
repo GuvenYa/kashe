@@ -12,6 +12,17 @@ import {
   type QuoteStatus,
 } from '@/app/mesajlar/quotes-data';
 import type { Is, IsAsamasi, IsTeklifi, IsTonu } from '@/app/lib/isler';
+import {
+  birimleriKur,
+  gorunenDurum,
+  iyiRezervasyon,
+  ms,
+  type IsBirimi,
+  type IsRezervasyonu,
+  type IsSohbeti,
+  type IsTeklifSatiri,
+  type KisiOzeti,
+} from '@/app/lib/is-birimleri';
 
 /**
  * MUSTERI IS MERKEZI VERISI (Duzeltme 15-A, bulgu 128 - Fahri satir 33).
@@ -20,14 +31,9 @@ import type { Is, IsAsamasi, IsTeklifi, IsTonu } from '@/app/lib/isler';
  * talepleri, sohbetlerdeki dogrudan talepler ve rezervasyonlar. Bu modul
  * hepsini okuyup AYNI ISE AIT PARCALARI TEK KARTTA birlestirir:
  *
- *   - Sohbetteki is birimi = (sohbet, talep numarasi) icinde, kabul edilen her
- *     teklifle kapanan parca. Teklifler `request_no` ile, rezervasyon
- *     `quote_id` ile birime baglanir (Duzeltme 12-B). Parcalama, talep
- *     numarasi olmayan eski kayitlar icin: ayni profesyonelle yapilan birkac is
- *     tek numarada duruyordu, her kabul ayri bir istir.
- *   - Teklif topla talebi, alicilarinin sohbetlerindeki ilgili birimleri
- *     sahiplenir: alicinin yanit anindan hemen onceki teklif o talebin
- *     yanitidir ve kendi parcasini baslatir.
+ *   - Sohbetteki is birimi, teklif ve rezervasyon baglari ve teklif topla
+ *     yanitinin eslesmesi ORTAK moduldedir (`app/lib/is-birimleri.ts`);
+ *     profesyonelin "Islerim" merkezi ayni birimleri kullanir.
  *   - Etkinlige bagli talep / birim / rezervasyon etkinlik kartinin altina
  *     girer (`event_id`); ayrica kart acilmaz.
  *
@@ -36,11 +42,11 @@ import type { Is, IsAsamasi, IsTeklifi, IsTonu } from '@/app/lib/isler';
  */
 type SunucuIstemcisi = Awaited<ReturnType<typeof createClient>>;
 
-type ProOzeti = {
-  full_name: string | null;
-  company_name: string | null;
-  role: string;
-} | null;
+type ProOzeti = KisiOzeti;
+type SohbetSatiri = IsSohbeti;
+type TeklifSatiri = IsTeklifSatiri;
+type RezervasyonSatiri = IsRezervasyonu;
+type Birim = IsBirimi;
 
 type EtkinlikSatiri = {
   id: string;
@@ -78,67 +84,6 @@ type TalepSatiri = {
         responded_at: string | null;
       }[]
     | null;
-};
-
-type SohbetSatiri = {
-  id: string;
-  customer_id: string;
-  professional_id: string;
-  event_date: string | null;
-  event_type: string | null;
-  location: string | null;
-  event_id: string | null;
-  request_count: number | null;
-  last_message_at: string | null;
-  professional: ProOzeti;
-};
-
-type TeklifSatiri = {
-  id: string;
-  conversation_id: string;
-  total_amount: number;
-  currency: string;
-  status: QuoteStatus;
-  created_at: string;
-  expires_at: string;
-  event_date: string | null;
-  request_no: number | null;
-};
-
-type RezervasyonSatiri = {
-  id: string;
-  quote_id: string | null;
-  customer_id: string | null;
-  professional_id: string | null;
-  event_date: string | null;
-  event_type: string | null;
-  location: string | null;
-  total_amount: number;
-  currency: string;
-  status: 'confirmed' | 'cancelled' | 'completed';
-  event_id: string | null;
-  conversation_id: string | null;
-  completion_requested_at: string | null;
-  created_at: string;
-  professional: ProOzeti;
-};
-
-/**
- * Sohbetteki tek is: (sohbet, talep numarasi) icindeki bir parca. Parca,
- * kabul edilen teklifle kapanir; sonraki teklif yeni parcadir.
- */
-type Birim = {
-  anahtar: string;
-  sohbet: SohbetSatiri;
-  no: number;
-  /**
-   * Sohbetin GUNCEL talebinin son parcasi. Sohbetin tur / tarih / yer /
-   * etkinlik bagi "en son is"e aittir (Yol A); yalniz bu birim onlari kullanir.
-   */
-  guncel: boolean;
-  /** En yeni once. */
-  teklifler: TeklifSatiri[];
-  rezervasyon: RezervasyonSatiri | null;
 };
 
 type TalepDugumu = { talep: TalepSatiri; birimler: Birim[] };
@@ -197,20 +142,9 @@ const TALEP_DURUMU: Record<string, string> = {
   fulfilled: 'Tamamlandı',
 };
 
-function ms(iso: string | null | undefined): number {
-  if (!iso) return 0;
-  const t = new Date(iso).getTime();
-  return isNaN(t) ? 0 : t;
-}
-
 function parcalar(...p: (string | null | undefined | false)[]): string | null {
   const dolu = p.filter((x): x is string => !!x);
   return dolu.length > 0 ? dolu.join(' · ') : null;
-}
-
-/** Gunluk is 'expired' yazana kadar suresi gecmis bekleyen teklif dolmus gorunur. */
-function gorunenDurum(t: TeklifSatiri, simdi: number): QuoteStatus {
-  return t.status === 'pending' && ms(t.expires_at) < simdi ? 'expired' : t.status;
 }
 
 function teklifTonu(d: QuoteStatus): IsTonu {
@@ -223,25 +157,6 @@ function proAdi(pro: ProOzeti, tamAd: boolean): string {
     return pro.company_name;
   }
   return gosterilecekAd(pro.role, pro.full_name, tamAd) || 'Profesyonel';
-}
-
-const REZ_SIRASI: Record<RezervasyonSatiri['status'], number> = {
-  confirmed: 0,
-  completed: 1,
-  cancelled: 2,
-};
-
-/** Onayli > tamamlanan > iptal; esitlikte en yeni. */
-function iyiRezervasyon(
-  liste: (RezervasyonSatiri | null)[]
-): RezervasyonSatiri | null {
-  const dolu = liste.filter((r): r is RezervasyonSatiri => !!r);
-  dolu.sort(
-    (a, b) =>
-      REZ_SIRASI[a.status] - REZ_SIRASI[b.status] ||
-      ms(b.created_at) - ms(a.created_at)
-  );
-  return dolu[0] ?? null;
 }
 
 function rezervasyonDurumu(
@@ -322,7 +237,7 @@ export async function musteriIsleri(
           `
           id, customer_id, professional_id, event_date, event_type, location,
           event_id, request_count, last_message_at,
-          professional:profiles!conversations_professional_id_fkey (full_name, company_name, role)
+          karsi:profiles!conversations_professional_id_fkey (full_name, company_name, role)
         `
         )
         .in('customer_id', musteriIdleri)
@@ -347,7 +262,7 @@ export async function musteriIsleri(
           id, quote_id, conversation_id, customer_id, professional_id,
           event_date, event_type, location, total_amount, currency, status,
           event_id, completion_requested_at, created_at,
-          professional:profiles!bookings_professional_id_fkey (full_name, company_name, role)
+          karsi:profiles!bookings_professional_id_fkey (full_name, company_name, role)
         `
         )
         .in('customer_id', musteriIdleri)
@@ -393,154 +308,30 @@ export async function musteriIsleri(
   const simdi = Date.now();
   const bugun = istanbulGunu();
 
-  // --- 1) Sohbet birimleri -------------------------------------------------
-  const sohbetler = new Map<string, SohbetSatiri>();
-  for (const s of sohbetListesi) sohbetler.set(s.id, s);
+  // --- 1-3) Is birimleri (ortak mantik: app/lib/is-birimleri.ts) -------------
+  const { birimler, talepBirimleri, sahiplenilen, bagimsizRez } = birimleriKur({
+    sohbetler: sohbetListesi,
+    teklifler: teklifListesi,
+    rezervasyonlar: rezListesi,
+    yanitlar: talepListesi.flatMap((talep) =>
+      (talep.quote_request_recipients ?? []).map((alici) => ({
+        talepId: talep.id,
+        talepAcilis: talep.created_at,
+        conversationId: alici.conversation_id,
+        respondedAt: alici.responded_at,
+      }))
+    ),
+  });
 
-  const birimler: Birim[] = [];
-  const teklifBirimi = new Map<string, Birim>();
-
-  // Teklif topla YANITLARI: hangi teklif hangi talebin yaniti.
-  // Yanit akisi once teklifi yazar, hemen ardindan aliciya `responded_at`
-  // koyar (app/teklif-topla/actions.ts); bu yuzden yanit anindan onceki SON
-  // teklif o talebin teklifidir. Genis bir zaman payi kullanilmaz: ayni
-  // profesyonel dakikalar icinde iki talebe yanit verince ikisi de ilk teklife
-  // baglaniyor, ikinci talep teklifsiz gorunuyordu (15-A onizleme turu).
-  // `responded_at` bos ise (eski kayit) talepten sonraki ilk bos teklif alinir.
-  const sohbetTeklifleri = new Map<string, TeklifSatiri[]>();
-  for (const t of teklifListesi) {
-    const liste = sohbetTeklifleri.get(t.conversation_id);
-    if (liste) liste.push(t);
-    else sohbetTeklifleri.set(t.conversation_id, [t]);
-  }
-  for (const liste of sohbetTeklifleri.values()) {
-    liste.sort((a, b) => ms(a.created_at) - ms(b.created_at));
-  }
-  /** teklif id -> yaniti oldugu talep id */
-  const yanitTeklifi = new Map<string, string>();
-  // Eski talep once: ayni teklife iki talep baglanmaz.
-  for (const talep of [...talepListesi].reverse()) {
-    const alt = ms(talep.created_at);
-    for (const alici of talep.quote_request_recipients ?? []) {
-      if (!alici.conversation_id) continue;
-      const liste = sohbetTeklifleri.get(alici.conversation_id) ?? [];
-      let aday: TeklifSatiri | null = null;
-      if (alici.responded_at) {
-        // Pay: uygulama sunucusu ile veritabani saati arasindaki fark icin.
-        const ust = ms(alici.responded_at) + 30_000;
-        for (const t of liste) {
-          const z = ms(t.created_at);
-          if (z < alt || z > ust || yanitTeklifi.has(t.id)) continue;
-          aday = t; // liste eskiden yeniye: son uygun teklif kalir
-        }
-      } else {
-        aday =
-          liste.find((t) => ms(t.created_at) >= alt && !yanitTeklifi.has(t.id)) ??
-          null;
-      }
-      if (aday) yanitTeklifi.set(aday.id, talep.id);
-    }
-  }
-
-  // Teklifler once (sohbet, talep no) grubuna toplanir...
-  const gruplar = new Map<
-    string,
-    { sohbet: SohbetSatiri; no: number; teklifler: TeklifSatiri[] }
-  >();
-  for (const t of teklifListesi) {
-    const s = sohbetler.get(t.conversation_id);
-    if (!s) continue;
-    const no = t.request_no ?? 1;
-    const anahtar = `${s.id}#${no}`;
-    let g = gruplar.get(anahtar);
-    if (!g) {
-      g = { sohbet: s, no, teklifler: [] };
-      gruplar.set(anahtar, g);
-    }
-    g.teklifler.push(t);
-  }
-  // ...sonra eskiden yeniye okunup parcalanir. Iki sinir var: KABUL EDILEN
-  // teklif isi kapatir (ardindan gelen teklif yeni istir) ve bir teklif topla
-  // talebinin YANITI yeni is baslatir. Duzeltme 12 oncesi kayitlarda (ve tur
-  // verisinde) ayni profesyonelle yapilan butun isler 1 numarada duruyor;
-  // parcalanmazsa tek karta sikisip rezervasyonlar gorunmez oluyordu.
-  for (const [anahtar, g] of gruplar) {
-    const eskidenYeniye = [...g.teklifler].sort(
-      (a, b) => ms(a.created_at) - ms(b.created_at)
-    );
-    let acik: Birim | null = null;
-    let son: Birim | null = null;
-    let parca = 0;
-    for (const t of eskidenYeniye) {
-      if (!acik || yanitTeklifi.has(t.id)) {
-        acik = {
-          anahtar: `${anahtar}#${parca}`,
-          sohbet: g.sohbet,
-          no: g.no,
-          guncel: false,
-          teklifler: [],
-          rezervasyon: null,
-        };
-        parca += 1;
-        birimler.push(acik);
-        son = acik;
-      }
-      acik.teklifler.unshift(t);
-      teklifBirimi.set(t.id, acik);
-      if (t.status === 'accepted') acik = null;
-    }
-    if (son && g.no === (g.sohbet.request_count ?? 1)) son.guncel = true;
-  }
-  // Sohbetin GUNCEL talebi teklif almamis olsa da bir istir ("teklif bekleniyor").
-  for (const s of sohbetListesi) {
-    const no = s.request_count ?? 1;
-    if (gruplar.has(`${s.id}#${no}`)) continue;
-    birimler.push({
-      anahtar: `${s.id}#${no}#0`,
-      sohbet: s,
-      no,
-      guncel: true,
-      teklifler: [],
-      rezervasyon: null,
-    });
-  }
-
-  // --- 2) Rezervasyonlar birime baglanir ------------------------------------
   // Kamu ad kurali (Duzeltme 05-E) KISI bazinda: onayli ya da tamamlanmis
   // rezervasyonu olan profesyonelin tam adi gorunur.
   const tamAdliProlar = new Set<string>();
-  const bagimsizRez: RezervasyonSatiri[] = [];
   for (const r of rezListesi) {
     if (r.professional_id && (r.status === 'confirmed' || r.status === 'completed')) {
       tamAdliProlar.add(r.professional_id);
     }
-    const b = r.quote_id ? teklifBirimi.get(r.quote_id) : undefined;
-    if (!b) {
-      bagimsizRez.push(r);
-    } else if (!b.rezervasyon) {
-      b.rezervasyon = r;
-    } else {
-      // Ayni birime ikinci rezervasyon (iptal sonrasi yeniden anlasma gibi):
-      // iyisi birimde kalir, digeri KAYBOLMAZ, kendi kartiyla gorunur.
-      const iyi = iyiRezervasyon([b.rezervasyon, r]) ?? r;
-      bagimsizRez.push(iyi === r ? b.rezervasyon : r);
-      b.rezervasyon = iyi;
-    }
   }
 
-  // --- 3) Teklif topla talepleri birimleri sahiplenir -----------------------
-  // Yanit teklifi kendi parcasini baslattigi icin (1. adim) her yanitin birimi
-  // ayridir; birim o talebin kartina girer, ayrica kart acmaz.
-  const sahiplenilen = new Set<string>();
-  const talepBirimleri = new Map<string, Birim[]>();
-  for (const [teklifId, talepId] of yanitTeklifi) {
-    const b = teklifBirimi.get(teklifId);
-    if (!b || sahiplenilen.has(b.anahtar)) continue;
-    sahiplenilen.add(b.anahtar);
-    const liste = talepBirimleri.get(talepId);
-    if (liste) liste.push(b);
-    else talepBirimleri.set(talepId, [b]);
-  }
   const talepDugumleri: TalepDugumu[] = talepListesi.map((talep) => ({
     talep,
     birimler: talepBirimleri.get(talep.id) ?? [],
@@ -587,7 +378,7 @@ export async function musteriIsleri(
     musteriId && musteriId !== userId ? (kurumAdlari[musteriId] ?? 'Kurum') : null;
 
   const birimProAdi = (b: Birim): string =>
-    proAdi(b.sohbet.professional, tamAdliProlar.has(b.sohbet.professional_id));
+    proAdi(b.sohbet.karsi, tamAdliProlar.has(b.sohbet.professional_id));
 
   /**
    * `iptal`: teklif kabul edilmis ama rezervasyonu iptal olmus. Teklifin kendi
@@ -849,7 +640,7 @@ export async function musteriIsleri(
         tur: 'rezervasyon',
         asama,
         baslik: proAdi(
-          r.professional,
+          r.karsi,
           !!r.professional_id && tamAdliProlar.has(r.professional_id)
         ),
         ayrinti: parcalar(
@@ -1026,9 +817,10 @@ export async function musteriIsleri(
     s.gun ? ms(`${s.gun}T00:00:00Z`) : s.zaman;
   const ASAMA_SIRASI: Record<IsAsamasi, number> = {
     bekleyen: 0,
-    yaklasan: 1,
-    tamamlanan: 2,
-    sonuclanmayan: 3,
+    teklif: 1, // musteri merkezinde kullanilmaz
+    yaklasan: 2,
+    tamamlanan: 3,
+    sonuclanmayan: 4,
   };
   hepsi.sort((a, b) => {
     if (a.is.asama !== b.is.asama) {

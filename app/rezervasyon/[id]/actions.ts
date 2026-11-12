@@ -199,6 +199,7 @@ export async function cancelBooking(
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/etkinliklerim');
   revalidatePath('/takvimim');
+  revalidatePath('/islerim');
   revalidatePath(`/rezervasyon/${bookingId}`);
   if (booking.conversation_id) {
     revalidatePath(`/mesajlar/${booking.conversation_id}`);
@@ -310,6 +311,7 @@ export async function completeBooking(
     revalidatePath('/rezervasyonlarim');
     revalidatePath('/etkinliklerim');
     revalidatePath('/takvimim');
+    revalidatePath('/islerim');
     revalidatePath(`/rezervasyon/${bookingId}`);
     if (booking.conversation_id) {
       revalidatePath(`/mesajlar/${booking.conversation_id}`);
@@ -358,6 +360,7 @@ export async function completeBooking(
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/etkinliklerim');
   revalidatePath('/takvimim');
+  revalidatePath('/islerim');
   revalidatePath(`/rezervasyon/${bookingId}`);
   if (booking.conversation_id) {
     revalidatePath(`/mesajlar/${booking.conversation_id}`);
@@ -437,6 +440,7 @@ export async function confirmCompletion(
   revalidatePath('/rezervasyonlarim');
   revalidatePath('/etkinliklerim');
   revalidatePath('/takvimim');
+  revalidatePath('/islerim');
   revalidatePath(`/rezervasyon/${bookingId}`);
   if (booking.conversation_id) {
     revalidatePath(`/mesajlar/${booking.conversation_id}`);

@@ -306,6 +306,7 @@ export async function acceptQuote(quoteId: string): Promise<ActionResult> {
   revalidatePath('/tekliflerim');
   revalidatePath('/teklif-taleplerim');
   revalidatePath('/etkinliklerim');
+  revalidatePath('/islerim');
   return { success: true };
 }
 

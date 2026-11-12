@@ -112,6 +112,31 @@ Fahri'nin onerisi: tek "Islerim"; sekmeler **Yanit bekleyen** (gelen talepler, y
 talepleri) / **Teklif verdiklerim** / **Anlasilan** (yaklasan rezervasyonlar) / **Tamamlanan**.
 15-A ile ayni kart ve detay yapisi (iki taraf ayni dili konusur).
 
+YAPILDI (12 Kas, dal `duzeltme-15b`; onizleme turu bekliyor). Migration yok, yalniz okuma.
+- Sayfa: yeni `/islerim`. Kimde: rol `professional`, ya da ajans kurulusu olmayan `agency`
+  (olcut tek yerde, `app/lib/satici-merkezi.ts`; menudeki satici grubuyla ayni). Digerleri
+  `/profil`e doner. Ajans panelinde sayfalar ve menu oldugu gibi.
+- Sekmeler: Yanit bekleyen / Teklif verdiklerim / Anlasilan / Tamamlanan (+ doluysa Sonuclanmayan).
+  Ustte durum karti: acik taleplerin kacina teklif verildi, yanit bekleyen talep, "tamamlandi"
+  isaretlenmeyi bekleyen is; kutular Bekleyen / Teklif / Onayli.
+- Kartlar musteri merkeziyle ayni (`IsKarti`); kartta musterinin adi yazar. Pembe durum
+  profesyonelden is beklenen yerdir: "Yeni talep" / "Teklif bekliyor" (teklif ver), tarihi gecmis
+  onayli iste "Tamamlanmayi bekliyor". Teklif verilince "Yanit bekleniyor" (sira musteride);
+  onayli rezervasyon Anlasilan; tamamlanma onayi istendiyse "Musteri onayi bekleniyor".
+- Ortak mantik: is birimleri, teklif / rezervasyon baglari ve teklif topla yanit eslesmesi
+  `app/lib/is-birimleri.ts`e tasindi; musteri merkezi de onu kullanir (iki taraf ayni isi ayni
+  kartta gorur). Tasima sonrasi musteri modulunun sahte veri ciktisi birebir ayni (27 kart).
+- Kapsam: kisinin KENDI sohbetleri (`professional_id` = kendisi). Ajansin atadigi sohbetler ajans
+  panelinde kalir.
+- Menu: satici grubunda "Teklif talepleri", "Verdigim teklifler", "Rezervasyonlar" kalkti; tek
+  "Islerim". Sayfalar duruyor (merkezin altinda "Ayri listeler"). Teklif topla karti
+  `/teklif-talepleri#talep-<id>` capasina iner (brief, ek ve teklif formu orada). Rezervasyonun
+  geri baglantisi ve Merkez'deki iki kutu profesyonelde "Islerim"e gider.
+- Model: `IsAsamasi`ya `teklif` eklendi (yalniz profesyonel merkezinde dolar).
+- Test: tsc + eslint temiz; satici modulu sahte veriyle (6 alici, 6 sohbet, 7 teklif, 5 rezervasyon)
+  calistirildi, 12 kart beklenen asamada. Onizlemede Ilker (profesyonel) ve Kaan (musteri
+  merkezinde gerileme var mi) ile bakilacak.
+
 ## 15-C Ajans uyesi menusu (satir 35-36)
 
 Burcu, Ekim Kreatif'in "izleyici" uyesi; menude kendi profesyonel grubu + Ekim Kreatif grubu ust uste.
@@ -187,9 +212,11 @@ Ilk tur (15-C, 15-D, teklif topla gorsel dil) uretimde: main = sahne = 8edb3a2, 
 Uretimde girissiz: yeni derleme yayinda (yeni CSS siniflari var, `/kurulus/uyelik` girise
 yonlendiriyor, olmayan sayfa 404). Sahne'de Ilker ile: gecmis son tarih notu ve gecerlilik alt notu
 dogru. Durum karti puntosu (dar ekran) musteri hesabiyla sonraki turda bakilacak.
-15-A (musteri "Etkinliklerim" merkezi) dalda: `duzeltme-15a`, onizlemede dogrulandi (ayrinti
-yukarida, 15-A basligi altinda); main ve sahne'ye alinacak. Sirada: 15-B, 15-E, 14-B; kurum
-panelinde ayni merkez.
+15-A (musteri "Etkinliklerim" merkezi) uretimde (12 Kas): main = sahne = 5b16d33, migration yok.
+Uretimde girissiz: yeni derleme yayinda (yeni CSS siniflari var, `/etkinliklerim` girise
+yonlendiriyor, ana sayfa ve konsol temiz). Sahne adresinde Kaan ile merkez onizlemedeki sayilarla
+ayni (7 / 8 / 6 / 8), menu tek "Etkinliklerim". Ayrinti yukarida, 15-A basligi altinda.
+Sirada: 15-B, 15-E, 14-B; kurum panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

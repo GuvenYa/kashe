@@ -59,6 +59,11 @@ import {
   MERKEZ_BEKLEYEN_YOLU,
   MERKEZ_YAKLASAN_YOLU,
 } from '@/app/lib/musteri-merkezi';
+import {
+  saticiMerkeziAcik,
+  ISLERIM_BEKLEYEN_YOLU,
+  ISLERIM_ANLASILAN_YOLU,
+} from '@/app/lib/satici-merkezi';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -103,6 +108,10 @@ export default async function ProfilPage() {
 
   // D1a — kurulus baglami: hem yonlendirme hem "Kuruluslarim" karti icin.
   const { orgs } = await getCrewContext();
+  // Duzeltme 15-B: profesyonelde iki kutu "Islerim" merkezine gider; ajans
+  // panelinde eski sayfalar (olcut: app/lib/satici-merkezi.ts).
+  const saticiMerkezi =
+    isPro || isAgencyUser ? await saticiMerkeziAcik() : false;
   const ajansKurulusu =
     orgs.find((o) => o.accountType === 'agency' && o.canViewProposals) ?? null;
   const kurumKurulusu =
@@ -644,13 +653,13 @@ export default async function ProfilPage() {
             deger={kpiBekleyenTalep}
             altNot="Yanıt bekliyor"
             vurgu={kpiBekleyenTalep > 0 ? 'accent' : 'none'}
-            href="/teklif-talepleri"
+            href={saticiMerkezi ? ISLERIM_BEKLEYEN_YOLU : '/teklif-talepleri'}
           />
           <KpiKutu
             etiket="Yaklaşan rezervasyon"
             deger={kpiYaklasanRezervasyon}
             altNot="Onaylı, tarihi gelmemiş"
-            href="/rezervasyonlarim"
+            href={saticiMerkezi ? ISLERIM_ANLASILAN_YOLU : '/rezervasyonlarim'}
           />
           {/* Duzeltme 12-H (bulgu 116): beklenen ve kazanilan gelir. Profil
               tamligi kutusu buradan kalkti; eksik profilde asagidaki

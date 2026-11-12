@@ -21,8 +21,11 @@ import type { MusteriIsleri } from './musteri-isleri';
  * Gorsel dil ekip kurma ekranindan (DESIGN.md bolum 9, "Ortak parcalar").
  * Saf gorunum: veri `musteri-isleri.ts`ten hazir gelir.
  */
+// `teklif` asamasi yalniz profesyonel merkezinde dolar (bkz. app/lib/isler.ts);
+// burada tip tam olsun diye yazili, sekmesi gosterilmez.
 const SEKME_ETIKETI: Record<IsAsamasi, string> = {
   bekleyen: 'Teklif bekleyen',
+  teklif: 'Teklif verilen',
   yaklasan: 'Yaklaşan',
   tamamlanan: 'Tamamlanan',
   sonuclanmayan: 'Sonuçlanmayan',
@@ -32,6 +35,10 @@ const BOS_METIN: Record<IsAsamasi, { baslik: string; metin: string }> = {
   bekleyen: {
     baslik: 'Teklif bekleyen işin yok',
     metin: 'Bir kez anlat, profesyonellerden teklif topla; gelenler burada kart kart görünür.',
+  },
+  teklif: {
+    baslik: 'Teklif verilen işin yok',
+    metin: 'Bu sekme profesyonel hesaplarında kullanılır.',
   },
   yaklasan: {
     baslik: 'Yaklaşan işin yok',
@@ -65,6 +72,7 @@ export function MusteriMerkezi({
   const { isler, ozet } = veri;
   const sayi: Record<IsAsamasi, number> = {
     bekleyen: 0,
+    teklif: 0,
     yaklasan: 0,
     tamamlanan: 0,
     sonuclanmayan: 0,

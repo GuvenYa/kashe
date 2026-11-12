@@ -9,8 +9,17 @@
  * Sekmeler. Fahri satir 33: "tamamlanan, yaklasan veya talep bekleyen".
  * `sonuclanmayan` ayri tutulur: iptal edilen ya da teklifsiz kapanan is
  * "tamamlanan" sayilmaz. Sekmesi yalniz doluysa gosterilir.
+ *
+ * `teklif` yalniz profesyonel merkezinde (Fahri satir 34): teklif verilmis,
+ * musterinin karari bekleniyor ("Teklif verdiklerim"). Musteri merkezinde
+ * teklif gelen is "bekleyen"de kalir (karar musteride), bu asama bos durur.
  */
-export type IsAsamasi = 'bekleyen' | 'yaklasan' | 'tamamlanan' | 'sonuclanmayan';
+export type IsAsamasi =
+  | 'bekleyen'
+  | 'teklif'
+  | 'yaklasan'
+  | 'tamamlanan'
+  | 'sonuclanmayan';
 
 export type IsTuru = 'teklif-topla' | 'talep' | 'rezervasyon' | 'etkinlik';
 
@@ -60,6 +69,7 @@ export const IS_TURU_ETIKETI: Record<IsTuru, string> = {
 
 export const IS_ASAMALARI: readonly IsAsamasi[] = [
   'bekleyen',
+  'teklif',
   'yaklasan',
   'tamamlanan',
   'sonuclanmayan',

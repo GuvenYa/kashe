@@ -499,6 +499,8 @@ export async function submitOffer(
   }
 
   revalidatePath('/teklif-talepleri');
+
+  revalidatePath('/islerim');
   revalidatePath('/mesajlar');
   return { success: true, data: { conversationId } };
 }
@@ -535,6 +537,8 @@ export async function declineQuoteRequest(
   if (error) return { success: false, error: 'İşlem başarısız: ' + error.message };
 
   revalidatePath('/teklif-talepleri');
+
+  revalidatePath('/islerim');
   return { success: true };
 }
 

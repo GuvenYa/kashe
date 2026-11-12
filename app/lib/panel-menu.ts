@@ -65,28 +65,20 @@ const PROFIL_ICERIGI: PanelMenuMaddesi[] = [
  *
  * Madde sirasi BOLUM sirasini izler (calisma -> yonetim); `oncelik` isaretli
  * maddeler kisa baslaticiya cikar.
+ *
+ * Duzeltme 15-B (bulgu 129, Fahri satir 34): "Teklif talepleri", "Verdigim
+ * teklifler" ve "Rezervasyonlar" maddeleri KALKTI; ucu de "Islerim" merkezinin
+ * sekmeleri oldu (yanit bekleyen / teklif verdiklerim / anlasilan /
+ * tamamlanan). Sayfalarin kendisi yasiyor: kartlar ve bildirimler oraya
+ * gitmeye devam eder.
  */
 function saticiGrubu(): PanelMenuMaddesi[] {
   return [
     { href: '/profil', etiket: 'Merkez', ikon: 'gosterge', bolum: 'calisma' },
     {
-      href: '/teklif-talepleri',
-      etiket: 'Teklif talepleri',
-      ikon: 'rfp',
-      bolum: 'calisma',
-      oncelik: true,
-    },
-    // Duzeltme 12-D (bulgu 119): sohbetlerde verilen tekliflerin tek listesi
-    {
-      href: '/tekliflerim',
-      etiket: 'Verdiğim teklifler',
+      href: '/islerim',
+      etiket: 'İşlerim',
       ikon: 'teklif',
-      bolum: 'calisma',
-    },
-    {
-      href: '/rezervasyonlarim',
-      etiket: 'Rezervasyonlar',
-      ikon: 'rezervasyon',
       bolum: 'calisma',
       oncelik: true,
     },

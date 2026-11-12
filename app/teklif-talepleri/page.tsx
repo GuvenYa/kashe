@@ -258,9 +258,11 @@ export default async function TeklifTalepleriPage() {
                   : null;
 
               return (
+                // Capa: "Islerim" merkezindeki kart bu talebe iner (15-B).
                 <div
                   key={r.id}
-                  className="bg-card border border-line rounded-lg p-6"
+                  id={`talep-${r.id}`}
+                  className="bg-card border border-line rounded-lg p-6 scroll-mt-24 target:border-brand-ink"
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
                     <div>
