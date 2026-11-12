@@ -561,6 +561,28 @@ karşılığı yok; gösterilmezler. Eşleşme kartındaki ✓ satırları da ya
 gerçekleşmiş işi yazar: etkinlikte tarih yoksa "müsaitlik kontrol edildi"
 satırı çizilmez (`run_event_match` o kontrolü gerçekten atlar).
 
+**Ortak parçalar (Düzeltme 15, 12 Kasım 2026).** Ekip kurma ekranının dili
+(pembe çizgili etiket, durum kartı, segment, seçili kutu, koyu şerit) artık
+ortak bileşenlerde; çalışma yüzeyleri sayfa sayfa bu dile taşınır (karar:
+Güven + Fahri, "ekip kurma sayfasındaki görüntü tüm sayfalara"). İlk taşınan:
+`/teklif-topla`.
+
+- `VurguEtiketi` (`app/components/ui/vurgu-etiketi.tsx`): pembe çizgi + mono
+  etiket. Bölüm ve kart başlıklarının önünde; adımlı formda "1 · Ne arıyorsun?".
+- `DurumKarti` (`app/components/panel/durum-karti.tsx`): "Eşleşme hazır"
+  kartının ortak hali: durum noktası (tamam moss, sürüyor accent),
+  `bg-gradient-brand` ilerleme çizgisi, ✓ / ○ satırları, sağda en çok üç sayı
+  kutusu. Satırlar **gerçek durumu** yazar ("uydurma sayaç yok" kuralı aynen).
+- `SegmentSecici` / `SecimKutulari` / `SecimCipleri`
+  (`app/components/ui/secim.tsx`): tek seçimli üç görünüm; üçü de görünmez
+  yerel `radio` kullanır (klavye ve ekran okuyucu tarayıcıdan). Segment 2-4 kısa
+  seçenek, kutu açıklamalı seçenek (seçili: `border-brand-ink` +
+  `ring-2 ring-brand-ink` + "✓ Seçili"), çip kısa değer (süre, adet). Etkinlik
+  sayfasındaki segment `tablist` olarak kalır (orada görünüm süzgeci).
+- Form gönderimi `OzetSerit koyu herGenislik` içinde: özet solda, pembe eylem
+  sağda. Şerit formun içinde durur (`type="submit"`), dar ekranda düğme metni
+  kısalır ki şerit tek satırda kalsın.
+
 ---
 
 ### Koyu kapanış (desen 8, D4)

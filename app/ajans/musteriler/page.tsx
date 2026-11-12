@@ -124,7 +124,7 @@ export default async function MusterilerPage({
             href="/ajans"
             className="kashe-tap mt-4 inline-block text-sm text-brand-ink hover:underline"
           >
-            Göstergeye dön →
+            Genel bakışa dön →
           </Link>
         </div>
       </PanelKabugu>

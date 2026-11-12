@@ -7,9 +7,18 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { getCrewContext } from '@/app/lib/org-context';
 import { EKIP_DURUM_ETIKETLERI } from '@/app/etkinliklerim/[id]/ekip-data';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
+
+/** Ekip kurulabilecek etkinlik durumlari (liste satirindaki kisa etiket). */
+const ETKINLIK_DURUMU: Record<string, string> = {
+  confirmed: 'Onaylandı',
+  matching: 'Eşleştiriliyor',
+  booked: 'Rezerve',
+  running: 'Devam ediyor',
+};
 
 export const metadata = {
-  title: 'Ekipler — Kashe',
+  title: 'Ekip yönetimi — Kashe',
 };
 
 function gunMetni(g: string): string {
@@ -94,9 +103,39 @@ export default async function AjansEkiplerPage() {
     for (const e of (evData ?? []) as EtkinlikRow[]) etkinlikMap.set(e.id, e);
   }
 
+  /**
+   * Duzeltme 15-C (bulgu 130): "Yeni ekip" buradan baslar. Ekip kurulabilecek
+   * etkinlikler = ekip yonetme yetkisi olan kurulusun, suren (onayli /
+   * eslesen / rezerve / devam eden) ve HENUZ ekibi olmayan etkinlikleri. Ekip
+   * etkinligin Adaylar sekmesinde kurulur; satir dogrudan oraya gider.
+   */
+  const yonetilebilir = gorulebilir.filter((o) => o.canManageCrew);
+  type AdayEtkinlik = EtkinlikRow & {
+    status: string;
+    organization_id: string | null;
+  };
+  let ekipsizEtkinlikler: AdayEtkinlik[] = [];
+  if (yonetilebilir.length > 0) {
+    const { data: adayData } = await supabase
+      .from('events')
+      .select('id, title, start_date, city_id, status, organization_id')
+      .in(
+        'organization_id',
+        yonetilebilir.map((o) => o.id)
+      )
+      .in('status', ['confirmed', 'matching', 'booked', 'running'])
+      .order('start_date', { ascending: true, nullsFirst: false })
+      .limit(50);
+    const ekipliEtkinlikler = new Set(ekipler.map((e) => e.event_id));
+    ekipsizEtkinlikler = ((adayData ?? []) as AdayEtkinlik[]).filter(
+      (e) => !ekipliEtkinlikler.has(e.id)
+    );
+  }
+  const yeniEtkinlikKurulusu = gorulebilir.find((o) => o.canManageEvents);
+
   const sehirIdleri = [
     ...new Set(
-      [...etkinlikMap.values()]
+      [...etkinlikMap.values(), ...ekipsizEtkinlikler]
         .map((e) => e.city_id)
         .filter((v): v is number => typeof v === 'number')
     ),
@@ -123,17 +162,78 @@ export default async function AjansEkiplerPage() {
       <div className="max-w-4xl">
           <PanelBaslik
             eyebrow={<>{gorulebilir.map((o) => o.name).join(' · ')}</>}
-            altNot="Kuruluşunun etkinlikler için kurduğu ekipler. Ekip ayrıntısı etkinlik sayfasında."
+            altNot="Etkinliklerin için kurduğun ekipler ve ekip bekleyen etkinlikler. Bir ekibe tıklayınca etkinliğin ekip ayrıntısı açılır."
           >
-            <em className="not-italic font-medium text-brand-accent">
-            Ekipler
-            </em>
+            <em className="not-italic font-medium text-brand-accent">Ekip</em>{' '}
+            yönetimi
           </PanelBaslik>
 
+          {/* Duzeltme 15-C: yeni ekip bu sayfadan baslar. */}
+          {yonetilebilir.length > 0 && (
+            <section className="bg-card border border-line rounded-xl p-5 mb-8">
+              <VurguEtiketi>Yeni ekip kur</VurguEtiketi>
+              {ekipsizEtkinlikler.length === 0 ? (
+                <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
+                  <p className="text-sm text-ink-72">
+                    Ekip bekleyen etkinlik yok. Ekip bir etkinlik için kurulur;
+                    önce etkinliği oluştur.
+                  </p>
+                  {yeniEtkinlikKurulusu && (
+                    <Link
+                      href={`/etkinlik-sihirbazi?kurulus=${yeniEtkinlikKurulusu.id}`}
+                      className="kashe-tap shrink-0 px-4 py-2 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:bg-brand-ink-deep transition-colors"
+                    >
+                      Yeni etkinlik →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-ink-72 mt-2 mb-3">
+                    Ekibi olmayan {ekipsizEtkinlikler.length} etkinlik var.
+                    Birini seç; Kashe AI adayları önerir, ekibi oradan kurarsın.
+                  </p>
+                  <ul className="divide-y divide-line border border-line rounded-lg">
+                    {ekipsizEtkinlikler.map((e) => (
+                      <li
+                        key={e.id}
+                        className="flex items-center justify-between gap-4 px-4 py-3 flex-wrap"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-display font-semibold text-sm text-ink break-words">
+                            {e.title?.trim() || 'Başlıksız etkinlik'}
+                          </p>
+                          <p className="text-xs text-ink-72 mt-0.5">
+                            {[
+                              e.city_id != null
+                                ? (sehirMap.get(e.city_id) ?? null)
+                                : null,
+                              e.start_date ? gunMetni(e.start_date) : 'Tarih belli değil',
+                              ETKINLIK_DURUMU[e.status] ?? null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/etkinliklerim/${e.id}?sekme=adaylar`}
+                          className="kashe-tap shrink-0 px-3.5 py-2 bg-brand-accent text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+                        >
+                          Ekip kur →
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+
+          <VurguEtiketi>Kurulan ekipler</VurguEtiketi>
+          <div className="h-3" />
           {ekipler.length === 0 ? (
             <div className="bg-card border border-line rounded-lg p-6 text-sm text-ink-72">
-              Henüz ekip yok. Ekip, etkinlik sayfasındaki &quot;Ekip&quot;
-              bölümünden kurulur.
+              Henüz ekip kurulmadı.
             </div>
           ) : (
             <div className="space-y-3">
@@ -192,7 +292,7 @@ export default async function AjansEkiplerPage() {
                 return etkinlik ? (
                   <Link
                     key={e.id}
-                    href={`/etkinliklerim/${e.event_id}`}
+                    href={`/etkinliklerim/${e.event_id}?sekme=ekip`}
                     className="block hover:opacity-90 transition-opacity"
                   >
                     {govde}

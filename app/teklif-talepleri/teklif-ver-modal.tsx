@@ -8,12 +8,43 @@ import {
   CANCELLATION_POLICY_TEMPLATES,
   type QuoteExpiryKey,
 } from '@/app/mesajlar/quotes-data';
+import { zamanMetni } from '@/app/lib/tarih';
+
+/**
+ * Duzeltme 15-D (bulgu 129): musterinin "teklif donus suresi" formda gorunur.
+ *
+ * Musteri teklifleri son tarihe kadar toplar, SONRA karsilastirir; bu yuzden
+ * gecerlilik varsayilani son tarihten en az bir gun sonrasina uzanan ilk
+ * secenektir (musterinin suresiyle AYNI olsaydi erken verilen teklif tam
+ * karsilastirma aninda dolardi). Son tarih yoksa ya da gectiyse 3 gun.
+ * Bilesen disinda: saat okumasi render saflik kuralina takilmasin.
+ */
+function varsayilanGecerlilik(sonTarih: string | null): QuoteExpiryKey {
+  if (!sonTarih) return '3d';
+  const kalanSaat = (new Date(sonTarih).getTime() - Date.now()) / 3_600_000;
+  if (!Number.isFinite(kalanSaat) || kalanSaat <= 0) return '3d';
+  const uygun = QUOTE_EXPIRY_OPTIONS.find((o) => o.hours >= kalanSaat + 24);
+  return uygun?.key ?? '30d';
+}
+
+/** Secilen gecerlilik musterinin son tarihinden ONCE mi doluyor? */
+function sonTarihtenOnceDolar(
+  anahtar: QuoteExpiryKey,
+  sonTarih: string | null
+): boolean {
+  if (!sonTarih) return false;
+  const son = new Date(sonTarih).getTime();
+  const saat = QUOTE_EXPIRY_OPTIONS.find((o) => o.key === anahtar)?.hours ?? 0;
+  return Number.isFinite(son) && son > Date.now() && Date.now() + saat * 3_600_000 < son;
+}
 
 type Props = {
   recipientId: string;
   customerName: string;
   budgetMax: number | null;
   shareBudget: boolean;
+  /** Musterinin teklif donus son tarihi (`quote_requests.response_deadline`). */
+  responseDeadline?: string | null;
   onClose: () => void;
 };
 
@@ -22,6 +53,7 @@ export function TeklifVerModal({
   customerName,
   budgetMax,
   shareBudget,
+  responseDeadline = null,
   onClose,
 }: Props) {
   const router = useRouter();
@@ -31,7 +63,11 @@ export function TeklifVerModal({
   const [amount, setAmount] = useState('');
   const [servicesDescription, setServicesDescription] = useState('');
   const [cancellationPolicy, setCancellationPolicy] = useState('');
-  const [expiryKey, setExpiryKey] = useState<QuoteExpiryKey>('3d');
+  const [expiryKey, setExpiryKey] = useState<QuoteExpiryKey>(() =>
+    varsayilanGecerlilik(responseDeadline)
+  );
+  const sonTarihMetni = zamanMetni(responseDeadline);
+  const erkenDoluyor = sonTarihtenOnceDolar(expiryKey, responseDeadline);
   const [message, setMessage] = useState('');
 
   // Bütçe yumuşak sınır uyarısı (sadece paylaşıldıysa + üst sınır + tutar aşıyorsa)
@@ -129,6 +165,13 @@ export function TeklifVerModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {sonTarihMetni && (
+            <p className="text-sm text-ink bg-brand-ink-08 border border-brand-ink/25 rounded-lg px-4 py-2.5">
+              Müşterinin teklif beklediği son tarih:{' '}
+              <span className="font-semibold">{sonTarihMetni}</span>. Sonra
+              gelen teklifleri karşılaştıracak.
+            </p>
+          )}
           {/* Fiyat */}
           <div>
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
@@ -215,6 +258,19 @@ export function TeklifVerModal({
                 </option>
               ))}
             </select>
+            {erkenDoluyor ? (
+              <p className="text-xs text-danger mt-1.5">
+                Bu süre müşterinin son tarihinden önce doluyor; teklifin
+                karşılaştırmaya kalmayabilir.
+              </p>
+            ) : (
+              sonTarihMetni && (
+                <p className="text-xs text-ink-72 mt-1.5">
+                  Teklifin, müşteri karşılaştırma yaparken de geçerli olsun
+                  diye son tarihten sonrasına uzanan süre seçili geldi.
+                </p>
+              )
+            )}
           </div>
 
           {/* Mesaj */}

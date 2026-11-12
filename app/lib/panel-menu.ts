@@ -163,9 +163,19 @@ function musteriGrubu(): PanelMenuMaddesi[] {
  * (`members.manage`), profil sahipligine degil: davetle katilan yonetici de
  * ekibini goruyor. Izleyici uyede madde CIKMAZ (yetki yok).
  */
-function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
+function ajansGrubu(
+  org: CrewOrg,
+  /**
+   * Duzeltme 15-C (bulgu 130): kullanicinin kendi satici grubu varsa
+   * (profesyonel + ajans uyesi) "Takvim" ve "Kazanclar" ORADA zaten duruyor;
+   * ikisi de kisisel sayfaya (`/takvimim`, `/kazanclarim`) gittigi icin ajans
+   * grubunda ikinci kez yazilmaz.
+   */
+  kisiselSaticiGrubuVar = false
+): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
-    { href: '/ajans', etiket: 'Gösterge', ikon: 'gosterge', bolum: 'calisma' },
+    // "Gosterge" -> "Genel bakis" (Duzeltme 15-C, Fahri karari 2-A).
+    { href: '/ajans', etiket: 'Genel bakış', ikon: 'gosterge', bolum: 'calisma' },
   ];
 
   // --- Calisma ---
@@ -202,18 +212,20 @@ function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
       oncelik: true,
     });
   }
-  maddeler.push({
-    href: '/takvimim',
-    etiket: 'Takvim',
-    ikon: 'takvim',
-    bolum: 'calisma',
-  });
+  if (!kisiselSaticiGrubuVar) {
+    maddeler.push({
+      href: '/takvimim',
+      etiket: 'Takvim',
+      ikon: 'takvim',
+      bolum: 'calisma',
+    });
+  }
 
   // --- Ekip ve kaynaklar ---
   if (org.canViewCrew) {
     maddeler.push({
       href: '/ajans/ekipler',
-      etiket: 'Ekipler',
+      etiket: 'Ekip yönetimi',
       ikon: 'ekip',
       bolum: 'ekip',
       oncelik: true,
@@ -266,7 +278,7 @@ function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
       bolum: 'yonetim',
     });
   }
-  if (org.canViewFinance) {
+  if (org.canViewFinance && !kisiselSaticiGrubuVar) {
     maddeler.push({
       href: '/kazanclarim',
       etiket: 'Kazançlar',
@@ -280,7 +292,7 @@ function ajansGrubu(org: CrewOrg): PanelMenuMaddesi[] {
 /** Kurum (business) kurulusu grubu — bolum sirasi ajansla ayni kuralda. */
 function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
-    { href: '/kurumsal', etiket: 'Gösterge', ikon: 'gosterge', bolum: 'calisma' },
+    { href: '/kurumsal', etiket: 'Genel bakış', ikon: 'gosterge', bolum: 'calisma' },
   ];
 
   // --- Calisma ---
@@ -398,7 +410,9 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   // kurulus grubu ayni yuzeyleri zaten tasiyor, iki "Merkez" satiri olurdu.
   // Kurulussuz ajans rolunde (panel yok) satici grubu gosterilir ki menu bos
   // kalmasin.
-  if (profesyonel || (ajansRolu && ajanslar.length === 0)) {
+  const kisiselSaticiGrubuVar =
+    profesyonel || (ajansRolu && ajanslar.length === 0);
+  if (kisiselSaticiGrubuVar) {
     gruplar.push({ baslik: 'Profesyonel', maddeler: saticiGrubu() });
   }
   if (musteri || (isletmeRolu && kurumlar.length === 0)) {
@@ -418,9 +432,10 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   for (const org of ajanslar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: ajansGrubu(org),
+      maddeler: ajansGrubu(org, kisiselSaticiGrubuVar),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
+      baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,
     });
   }
   for (const org of kurumlar) {
@@ -429,6 +444,7 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
       maddeler: kurumsalGrubu(org),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
+      baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,
     });
   }
 

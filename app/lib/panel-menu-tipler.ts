@@ -64,6 +64,11 @@ export type PanelMenuGrubu = {
   uyeKurulus?: boolean;
   /** Uyelik rolu (`organization_memberships.role`) — yalniz `uyeKurulus` ise. */
   uyelikRolu?: string;
+  /**
+   * Grup basligi baglantisi (Duzeltme 15-C, bulgu 131): kurulus gruplarinda
+   * baslik "bu kurulustaki uyeligim" sayfasina gider. Yoksa baslik duz metin.
+   */
+  baslikHref?: string;
 };
 
 /**

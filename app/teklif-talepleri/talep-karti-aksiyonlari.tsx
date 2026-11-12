@@ -13,6 +13,7 @@ type Props = {
   status: string;
   budgetMax: number | null;
   shareBudget: boolean;
+  responseDeadline?: string | null;
 };
 
 export function TalepKartiAksiyonlari({
@@ -23,6 +24,7 @@ export function TalepKartiAksiyonlari({
   status,
   budgetMax,
   shareBudget,
+  responseDeadline = null,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -98,6 +100,7 @@ export function TalepKartiAksiyonlari({
           customerName={customerName}
           budgetMax={budgetMax}
           shareBudget={shareBudget}
+          responseDeadline={responseDeadline}
           onClose={() => setModalOpen(false)}
         />
       )}

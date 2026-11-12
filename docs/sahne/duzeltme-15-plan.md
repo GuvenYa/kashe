@@ -39,23 +39,49 @@ talepleri) / **Teklif verdiklerim** / **Anlasilan** (yaklasan rezervasyonlar) / 
 
 Burcu, Ekim Kreatif'in "izleyici" uyesi; menude kendi profesyonel grubu + Ekim Kreatif grubu ust uste.
 
-- Tekrarlar: uyede ajans grubunda "Takvim" ve "Kazanclar" gizlenir (kisisel olanlar zaten var);
-  kurulus sahibinde degisiklik yok.
-- "Gosterge" -> **"Genel bakis"** (Fahri "Analiz" onerdi; sayfa analizden cok ozet: ilk satirda
-  ne oldugu yazar). KARAR 2.
-- "Ekipler" -> **"Ekip yonetimi"**: sayfadan dogrudan "Yeni ekip" (etkinlik secerek), bugunku
-  "etkinliklere git" yonlendirmesi yerine.
-- Grup basligi (kurulus adi) tiklanir: kurulusun profili + **"Bu ajanstaki uyeligin"** (rol,
-  katilma tarihi, neleri gorebildigin, ajanstan cikma).
+YAPILDI (12 Kas):
+- Tekrarlar: kullanicinin kendi satici grubu varsa ajans grubunda "Takvim" ve "Kazanclar"
+  yazilmaz (ikisi de zaten kisisel sayfaya gidiyordu); kurulus sahibinde degisiklik yok.
+- "Gosterge" -> **"Genel bakis"** (karar 2-A): ajans ve kurum menusu, sayfa ust basliklari,
+  "Genel bakisa don" baglantilari.
+- "Ekipler" -> **"Ekip yonetimi"** (`/ajans/ekipler`): ustte "Yeni ekip kur" - ekibi olmayan,
+  suren etkinlikler listelenir, "Ekip kur" dogrudan etkinligin Adaylar sekmesine gider; etkinlik
+  yoksa "Yeni etkinlik". Altta kurulan ekipler (satir etkinligin Ekip sekmesine gider).
+- Grup basligi (kurulus adi) tiklanir -> yeni `/kurulus/uyelik?kurulus=<id>`: kurulus, rol,
+  uyelik baslangici, acik / kapali yetkiler (sunucudaki yetki bayraklarindan), ajans uyesi
+  profesyonele "baglanti nasil calisir", ve ayrilma (iki adimli onay; eylem FAZ 10a'dan beri
+  vardi, ekrani yoktu).
 
 ## 15-D Teklif gecerliligi: 48 saat (satir 34)
 
 Musteri teklif topla'da "Teklif donus suresi" 24 saat / 48 saat / 3 gun / 1 hafta seciyor;
 profesyonelin teklif formunda gecerlilik 24 saat / 3 gun / 7 / 14 / 30 gun, 48 saat yok.
-Yapilacak: 48 saat secenegi; teklif topla talebinden acilan formda gecerlilik musterinin
-suresiyle dolu gelir ve ustte "Musteri 48 saat icinde donus bekliyor" yazar.
+YAPILDI (12 Kas): gecerlilik seceneklerine 48 saat (sohbetteki teklif formunda da); teklif topla
+talebinden acilan formun ustunde "Musterinin teklif bekledigi son tarih: ..." yazar. Gecerlilik
+varsayilani musterinin suresiyle AYNI degil, son tarihten en az bir gun sonrasina uzanan ilk
+secenek: musteri teklifleri son tarihe kadar toplayip sonra karsilastiriyor, ayni sure secilseydi
+erken verilen teklif tam o anda dolardi. Daha kisa secilirse form uyarir (engellemez).
+
+## 15-E Ajansa bagli profesyonelin teklifi (karar 1-A; SONRAKI TUR)
+
+Profesyonel secer: uyelik sayfasinda "Bana gelen talepler: kendim teklif veririm / ajansim
+uzerinden" (varsayilan kendim). "Ajansim uzerinden" secilirse profesyonele gelen talep ajansin
+teklif akisina duser ve teklifi ajans verir; musteri ayni kisi icin iki ayri teklif almaz.
+Veritabani (uyelik tercihi + talep yonlendirme) ve davranis testi gerektirir; 15-A / 15-B ile
+birlikte ya da hemen ardindan.
+
+## Gorsel dil (12 Kas, Guven + Fahri)
+
+"Ekip kurma sayfasindaki gorunum iyi; tum sayfalara uygulayalim." Calisma yuzeyleri sayfa sayfa
+ayni dile tasinir; her Duzeltme turunda dokunulan sayfalar da gecirilir. Ortak parcalar:
+`VurguEtiketi`, `DurumKarti`, `SegmentSecici` / `SecimKutulari` / `SecimCipleri`, koyu `OzetSerit`
+(DESIGN.md bolum 9, "Ortak parcalar"). Ilk sayfa: `/teklif-topla` (durum karti, adimli bolumler,
+segment / kutu / cip secimler, koyu gonder seridi; alanlar ve eylem ayni). Sirada: 15-A / 15-B
+merkez sayfalari bu dille kurulur; ardindan gelen teklifler, teklif talepleri, rezervasyonlar.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
+
+KARARLAR (12 Kas, Guven + Fahri): 1-A, 2-A, 3-A.
 
 1. Ajansa bagli profesyonelin teklifi (satir 36)
    - (*) A: Profesyonel secer: profilde "Bana gelen talepler: kendim teklif veririm / ajansim

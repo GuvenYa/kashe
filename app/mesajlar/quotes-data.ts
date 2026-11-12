@@ -67,6 +67,8 @@ export type Booking = {
  */
 export const QUOTE_EXPIRY_OPTIONS = [
   { key: '24h', label: '24 saat', hours: 24 },
+  // Duzeltme 15-D (bulgu 129): musteri teklif topla'da 48 saat secebiliyor.
+  { key: '2d', label: '48 saat', hours: 48 },
   { key: '3d', label: '3 gün', hours: 72 },
   { key: '7d', label: '7 gün', hours: 168 },
   { key: '14d', label: '14 gün', hours: 336 },

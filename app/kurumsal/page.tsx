@@ -204,7 +204,7 @@ export default async function KurumsalPanelPage() {
         rozet: 'Kurumsal',
       }}
       ustBaslik={{
-        eyebrow: 'Kurumsal panel · Gösterge',
+        eyebrow: 'Kurumsal panel · Genel bakış',
         baslik: (
           <>
             {selamlama()},{' '}

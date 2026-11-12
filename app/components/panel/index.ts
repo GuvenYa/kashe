@@ -9,6 +9,7 @@ export { PanelBaslik } from './panel-baslik';
 export { KpiKutu, KpiSatir } from './kpi-kutu';
 export { OzetKutuSatiri, type OzetKutusu } from './ozet-kutu-satiri';
 export { OzetSerit } from './ozet-serit';
+export { DurumKarti, type DurumSatiri, type DurumKutusu } from './durum-karti';
 export { UyumHalkasi } from './uyum-halkasi';
 export {
   VeriTablosu,

@@ -6,6 +6,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
 import { TeklifToplaFormu } from './teklif-topla-formu';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 import { getWritableBusinesses } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
@@ -114,20 +115,19 @@ export default async function TeklifToplaPage({
     <TopNav />
     <div className="bg-paper min-h-screen">
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
-        <header className="mb-10">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Teklif Topla
-          </p>
-          <h1 className="font-display text-4xl text-ink leading-tight">
-            Birden fazla profesyonelden{' '}
-            <em className="text-brand-ink not-italic italic font-medium">
-              özel teklif
-            </em>{' '}
-            al
+        {/* Duzeltme 15 (gorsel dil): ekip kurma ekranindaki baslik kalibi. */}
+        <header className="mb-8">
+          <VurguEtiketi>Kashe · Teklif topla</VurguEtiketi>
+          <h1 className="font-display font-semibold text-3xl md:text-4xl text-ink tracking-tight leading-tight mt-2 break-words">
+            Bir kez anlat,{' '}
+            <em className="not-italic text-brand-accent">
+              teklifler sana gelsin
+            </em>
+            .
           </h1>
           <p className="mt-3 text-ink-72 text-base max-w-2xl">
-            İhtiyacını bir kez anlat, sistem uygun profesyonellere özel olarak
-            iletsin. Talebin ilan tahtasında görünmez — sadece seçilen
+            İhtiyacını bir kez yaz; Kashe uygun profesyonellere özel olarak
+            iletsin. Talebin ilan tahtasında görünmez, yalnız seçilen
             profesyoneller görür ve sana teklif verir.
           </p>
         </header>

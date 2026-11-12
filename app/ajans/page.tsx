@@ -311,7 +311,7 @@ export default async function AjansPanelPage() {
         altSatir: `${kurulusHesabi.altSatir} · ${uyeSayisi} kişilik ekip`,
       }}
       ustBaslik={{
-        eyebrow: 'Ajans paneli · Gösterge',
+        eyebrow: 'Ajans paneli · Genel bakış',
         baslik: (
           <>
             {selamlama()},{' '}
@@ -508,7 +508,7 @@ export default async function AjansPanelPage() {
                   href="/ajans/ekipler"
                   className="kashe-tap block text-sm text-brand-ink hover:underline"
                 >
-                  Ekipler →
+                  Ekip yönetimi →
                 </Link>
               )}
             </div>

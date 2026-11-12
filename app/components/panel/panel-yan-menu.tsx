@@ -393,6 +393,22 @@ export function PanelYanMenu({
                     }
                   />
                 </button>
+              ) : grup.baslikHref ? (
+                // Duzeltme 15-C (bulgu 131): kurulus adi tiklanir -> uyeligim.
+                <Link
+                  href={grup.baslikHref}
+                  onClick={() => setAcik(false)}
+                  title={`${grup.baslik}: üyeliğin ve kuruluş bilgisi`}
+                  className="group flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-paper/40 hover:text-paper/72 px-3 pb-1 transition-colors"
+                >
+                  <span className="min-w-0 truncate">{grup.baslik}</span>
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 ml-auto opacity-60 group-hover:opacity-100"
+                  >
+                    →
+                  </span>
+                </Link>
               ) : (
                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper/40 px-3 pb-1">
                   {grup.baslik}

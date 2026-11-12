@@ -266,7 +266,7 @@ export default async function TedarikcilerPage({
           href={`/ajans?kurulus=${kurulus.id}`}
           className="text-brand-ink hover:underline"
         >
-          Göstergeye dön →
+          Genel bakışa dön →
         </Link>
       </p>
     </PanelKabugu>

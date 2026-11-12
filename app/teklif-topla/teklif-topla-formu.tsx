@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createQuoteRequest } from './actions';
 import { createClient } from '@/app/lib/supabase-browser';
@@ -15,6 +15,15 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
+import {
+  SegmentSecici,
+  SecimKutulari,
+  SecimCipleri,
+  type Secenek,
+} from '@/app/components/ui/secim';
+import { DurumKarti } from '@/app/components/panel/durum-karti';
+import { OzetSerit } from '@/app/components/panel/ozet-serit';
 import {
   BRIEF_ACIKLAMA_SONEKI,
   BRIEF_ESNEK_SONEKI,
@@ -38,28 +47,37 @@ function briefAttachmentKind(mime: string): 'image' | 'pdf' | 'doc' | null {
   return null;
 }
 
-const RECIPIENT_OPTIONS = [
-  { value: 5, label: '5 profesyonel', hint: 'Dar ve kontrollü' },
-  { value: 10, label: '10 profesyonel', hint: 'Önerilen' },
-  { value: 20, label: '20 profesyonel', hint: 'Daha fazla teklif' },
+/**
+ * Duzeltme 15 (gorsel dil): gonderim ayarlari ekip kurma ekranindaki
+ * kaliplarla secilir (segment, secili kutu, cip); degerler ve eylem ayni.
+ */
+const RECIPIENT_OPTIONS: Secenek<number>[] = [
+  { deger: 5, etiket: '5 profesyonel', ipucu: 'Dar ve kontrollü' },
+  { deger: 10, etiket: '10 profesyonel', ipucu: 'Önerilen' },
+  { deger: 20, etiket: '20 profesyonel', ipucu: 'Daha fazla teklif' },
 ];
 
-const DEADLINE_OPTIONS = [
-  { value: 1, label: '24 saat' },
-  { value: 2, label: '48 saat' },
-  { value: 3, label: '3 gün' },
-  { value: 7, label: '1 hafta' },
+const DEADLINE_OPTIONS: Secenek<number>[] = [
+  { deger: 1, etiket: '24 saat' },
+  { deger: 2, etiket: '48 saat' },
+  { deger: 3, etiket: '3 gün' },
+  { deger: 7, etiket: '1 hafta' },
 ];
 
-const TARGET_ROLE_OPTIONS: {
-  value: 'both' | 'professional' | 'agency';
-  label: string;
-  hint: string;
-}[] = [
-  { value: 'both', label: 'Hepsi', hint: 'Profesyonel + ajans' },
-  { value: 'professional', label: 'Profesyonel', hint: 'Bireysel' },
-  { value: 'agency', label: 'Ajans', hint: 'Sadece ajanslar' },
+type HedefRol = 'both' | 'professional' | 'agency';
+
+const TARGET_ROLE_OPTIONS: Secenek<HedefRol>[] = [
+  { deger: 'both', etiket: 'Hepsi' },
+  { deger: 'professional', etiket: 'Profesyoneller' },
+  { deger: 'agency', etiket: 'Ajanslar' },
 ];
+
+/** Serit ozetindeki "10 profesyonele" eki. */
+const HEDEF_METNI: Record<HedefRol, string> = {
+  both: 'profesyonel ve ajansa',
+  professional: 'profesyonele',
+  agency: 'ajansa',
+};
 
 /**
  * Sihirbazdan (/etkinlik-sihirbazi) gelen ön-doldurma. Hepsi OPSİYONEL ve
@@ -129,7 +147,7 @@ export function TeklifToplaFormu({
   const [recipientCount, setRecipientCount] = useState(10);
   const [deadlineDays, setDeadlineDays] = useState(3);
   const [shareBudget, setShareBudget] = useState(true);
-  const [targetRole, setTargetRole] = useState<'both' | 'professional' | 'agency'>('both');
+  const [targetRole, setTargetRole] = useState<HedefRol>('both');
   const [budgetMin, setBudgetMin] = useState(
     onDoldur?.butceMin != null ? String(onDoldur.butceMin) : ''
   );
@@ -330,11 +348,83 @@ export function TeklifToplaFormu({
     });
   }
 
+  // --- Duzeltme 15: ustteki durum karti ve alttaki serit icin ozet ---
+  const kategoriAdi =
+    categoryId === ''
+      ? null
+      : (categories.find((c) => c.id === categoryId)?.name_tr ?? null);
+  const sehirAdi =
+    cityId === '' ? null : (cities.find((c) => c.id === cityId)?.name ?? null);
+  const eksikZorunlu = briefFields.filter((f) => {
+    const esnek = (briefValues[`${f.key}${BRIEF_ESNEK_SONEKI}`] ?? '') === '1';
+    if (f.type === 'date' && esnek) return false;
+    return f.required && !(briefValues[f.key] ?? '').trim();
+  }).length;
+  const kategoriSecili = categoryId !== '';
+  const detayTamam = kategoriSecili && eksikZorunlu === 0;
+  const sureEtiketi =
+    DEADLINE_OPTIONS.find((o) => o.deger === deadlineDays)?.etiket ?? '';
+  const butceGirildi = !!(budgetMin.trim() || budgetMax.trim());
+  const gonderimOzeti = `${recipientCount} ${HEDEF_METNI[targetRole]} · ${sureEtiketi} içinde dönüş`;
+
+  // Hata formun sonunda yazilir; gonder seridi sabit oldugu icin kullanici
+  // yukaridayken gorunmuyordu. Hata cikinca gorunur alana kaydirilir.
+  const hataKutusu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) {
+      hataKutusu.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [error]);
+
   const inputClass =
     'w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <DurumKarti
+        baslik={
+          !kategoriSecili
+            ? 'Talebini hazırla'
+            : detayTamam
+              ? 'Talep gönderilmeye hazır'
+              : 'Talep hazırlanıyor'
+        }
+        tamam={detayTamam}
+        ilerleme={!kategoriSecili ? 8 : detayTamam ? 100 : 55}
+        satirlar={[
+          {
+            tamam: kategoriSecili,
+            metin: kategoriAdi ? `Kategori: ${kategoriAdi}` : 'Kategori seç',
+          },
+          {
+            tamam: kategoriSecili,
+            metin: sehirAdi
+              ? `Şehir: ${sehirAdi}`
+              : 'Şehir seçilmedi: tüm şehirlere gider',
+          },
+          {
+            tamam: detayTamam,
+            metin: !kategoriSecili
+              ? 'Etkinlik detayları'
+              : eksikZorunlu > 0
+                ? `Etkinlik detayları: ${eksikZorunlu} zorunlu alan eksik`
+                : 'Etkinlik detayları tamam',
+          },
+          {
+            tamam: kategoriSecili,
+            metin: `Gönderim: ${gonderimOzeti}`,
+          },
+        ]}
+        kutular={[
+          { etiket: 'Kime', deger: recipientCount },
+          { etiket: 'Dönüş', deger: sureEtiketi },
+          {
+            etiket: 'Bütçe',
+            deger: butceGirildi ? (shareBudget ? 'Açık' : 'Gizli') : '—',
+          },
+        ]}
+      />
+
       {etkinlikId && (
         <p className="text-sm text-ink-72 bg-brand-ink-08 border border-brand-ink/25 rounded-lg px-4 py-2.5">
           Bu talep{' '}
@@ -349,7 +439,7 @@ export function TeklifToplaFormu({
       )}
       {/* Kimin adına (manager+ kurum üyesine görünür) */}
       {writableBusinesses.length > 0 && (
-        <section className="bg-card border border-line rounded-lg p-6">
+        <section className="bg-card border border-line rounded-xl p-6">
           <OnBehalfSelector
             businesses={writableBusinesses}
             canSelfCreate={canSelfCreate}
@@ -360,10 +450,10 @@ export function TeklifToplaFormu({
       )}
 
       {/* Bölüm 1: Kategori + şehir */}
-      <section className="bg-card border border-line rounded-lg p-6">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
-          Ne arıyorsun?
-        </p>
+      <section className="bg-card border border-line rounded-xl p-6">
+        <div className="mb-5">
+          <VurguEtiketi>1 · Ne arıyorsun?</VurguEtiketi>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
@@ -415,10 +505,10 @@ export function TeklifToplaFormu({
 
       {/* Bölüm 2: Brief */}
       {categoryId !== '' && (
-        <section className="bg-card border border-line rounded-lg p-6">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-3">
-            Etkinlik detayları
-          </p>
+        <section className="bg-card border border-line rounded-xl p-6">
+          <div className="mb-3">
+            <VurguEtiketi>2 · Etkinlik detayları</VurguEtiketi>
+          </div>
           {briefIntro && (
             <p className="text-sm text-ink-72 mb-4 -mt-1">{briefIntro}</p>
           )}
@@ -444,98 +534,53 @@ export function TeklifToplaFormu({
 
       {/* Bölüm 3: Gönderim ayarları */}
       {categoryId !== '' && (
-        <section className="bg-card border border-line rounded-lg p-6">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-5">
-            Gönderim ayarları
-          </p>
+        <section className="bg-card border border-line rounded-xl p-6">
+          <div className="mb-5">
+            <VurguEtiketi>3 · Gönderim ayarları</VurguEtiketi>
+          </div>
 
           <div className="space-y-5">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <p className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                 Kimlere gönderilsin?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {TARGET_ROLE_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
-                      targetRole === opt.value
-                        ? 'border-brand-ink'
-                        : 'border-line hover:border-brand-ink/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="targetRole"
-                        checked={targetRole === opt.value}
-                        onChange={() => setTargetRole(opt.value)}
-                        className="accent-brand-ink"
-                      />
-                      <span className="text-sm text-ink font-medium">
-                        {opt.label}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-ink-72 mt-1 ml-6 font-mono uppercase tracking-[0.1em]">
-                      {opt.hint}
-                    </p>
-                  </label>
-                ))}
-              </div>
-              <p className="text-[10px] text-ink-72 mt-1.5 font-mono">
-                Premium profesyoneller önce listelenir
+              </p>
+              <SegmentSecici
+                etiket="Kimlere gönderilsin?"
+                secenekler={TARGET_ROLE_OPTIONS}
+                deger={targetRole}
+                onDegis={setTargetRole}
+              />
+              <p className="text-xs text-ink-72 mt-1.5">
+                Premium profesyoneller önce listelenir.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <p className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                 Kaç profesyonele gönderilsin?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {RECIPIENT_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`block bg-paper border rounded-lg p-3 cursor-pointer transition ${
-                      recipientCount === opt.value
-                        ? 'border-brand-ink'
-                        : 'border-line hover:border-brand-ink/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="recipientCount"
-                        checked={recipientCount === opt.value}
-                        onChange={() => setRecipientCount(opt.value)}
-                        className="accent-brand-ink"
-                      />
-                      <span className="text-sm text-ink font-medium">
-                        {opt.label}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-ink-72 mt-1 ml-6 font-mono uppercase tracking-[0.1em]">
-                      {opt.hint}
-                    </p>
-                  </label>
-                ))}
-              </div>
+              </p>
+              <SecimKutulari
+                etiket="Kaç profesyonele gönderilsin?"
+                secenekler={RECIPIENT_OPTIONS}
+                deger={recipientCount}
+                onDegis={setRecipientCount}
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
+              <p className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2">
                 Teklif dönüş süresi
-              </label>
-              <select
-                value={deadlineDays}
-                onChange={(e) => setDeadlineDays(parseInt(e.target.value, 10))}
-                className={inputClass}
-              >
-                {DEADLINE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              </p>
+              <SecimCipleri
+                etiket="Teklif dönüş süresi"
+                secenekler={DEADLINE_OPTIONS}
+                deger={deadlineDays}
+                onDegis={setDeadlineDays}
+              />
+              <p className="text-xs text-ink-72 mt-1.5">
+                Profesyoneller bu süre içinde teklif verir; süre dolunca gelen
+                teklifleri karşılaştırırsın.
+              </p>
             </div>
 
             <div>
@@ -639,25 +684,53 @@ export function TeklifToplaFormu({
       )}
 
       {error && (
-        <div className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3">
+        <div
+          ref={hataKutusu}
+          role="alert"
+          className="bg-danger-08 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3"
+        >
           {error}
         </div>
       )}
 
-      {categoryId !== '' && (
-        <div className="flex gap-3 sticky bottom-4 bg-paper/95 backdrop-blur-sm border border-line rounded-lg p-3">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="flex-1 px-6 py-3 bg-brand-ink text-paper rounded-lg font-display font-semibold text-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-ink)] disabled:opacity-50 transition-all"
-          >
-            {uploading
-              ? 'Dosya yükleniyor...'
-              : isPending
-              ? 'Gönderiliyor...'
-              : 'Teklif talebini gönder'}
-          </button>
-        </div>
+      {/* Duzeltme 15: gonder dugmesi ekip kurma ekranindaki koyu seritte;
+          ozet solda, eylem sagda. Serit formun ICINDE: dugme formu gonderir. */}
+      {kategoriSecili && (
+        <OzetSerit
+          koyu
+          herGenislik
+          etiket="Talep özeti"
+          deger={`${kategoriAdi ?? ''} · ${sehirAdi ?? 'Tüm şehirler'}`}
+          orta={
+            <p className="text-sm text-paper-72 truncate">
+              {gonderimOzeti}
+              {butceGirildi
+                ? shareBudget
+                  ? ' · bütçe paylaşılıyor'
+                  : ' · bütçe gizli'
+                : ''}
+            </p>
+          }
+          aksiyon={
+            <button
+              type="submit"
+              disabled={isPending}
+              className="kashe-tap px-5 py-2.5 bg-brand-accent text-paper rounded-lg font-display font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+            >
+              {uploading ? (
+                'Dosya yükleniyor…'
+              ) : isPending ? (
+                'Gönderiliyor…'
+              ) : (
+                <>
+                  {/* Dar ekranda serit tek satirda kalsin. */}
+                  <span className="sm:hidden">Gönder →</span>
+                  <span className="hidden sm:inline">Teklif talebini gönder →</span>
+                </>
+              )}
+            </button>
+          }
+        />
       )}
     </form>
   );
