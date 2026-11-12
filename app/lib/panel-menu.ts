@@ -204,12 +204,14 @@ function ajansGrubu(
     });
   }
   if (ajansHesabi) {
-    // Menude yolu yoktu (yalniz bildirimden gidiliyordu); 15-E ile ajansa
-    // daha cok talep dusecegi icin gorunur olmali.
+    // Duzeltme 16-A: pazaryerinden gelen talepler, sohbet teklifleri ve
+    // rezervasyonlar "Islerim" merkezinde (profesyonelle ayni sayfa). 15-E'de
+    // eklenen "Teklif talepleri" maddesi merkezin "Yanit bekleyen" sekmesi
+    // oldu; sayfa yasiyor, merkezin altindaki "Ayri listeler"den acilir.
     maddeler.push({
-      href: '/teklif-talepleri',
-      etiket: 'Teklif talepleri',
-      ikon: 'rfp',
+      href: '/islerim',
+      etiket: 'İşlerim',
+      ikon: 'teklif',
       bolum: 'calisma',
     });
   }

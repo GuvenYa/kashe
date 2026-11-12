@@ -240,7 +240,7 @@ Onizleme (Ilker = Lumen ekip koordinatoru, Kaan = musteri, Lumen sahibi):
 - Sahne'de kalan tur verisi: Kaan - Lumen sohbetinde bir test mesaji (tercih edilen uye Ilker),
   Kaan'in Lumen'e dusen Drone Pilotu teklif topla talebi.
 
-## 15-F Yeni talep onceki isin bilgisini devralmasin (bulgu 133)
+## 15-F Yeni talep onceki isin bilgisini devralmasin (bulgu 133; URETIMDE 13 Kas)
 
 14-B onizleme turunda bulundu (12 Kas). Kaan, daha once anlastigi Ilker'e profilden TARIHSIZ yeni
 bir talep gonderdi; sohbet cubugu ve "Yeni talep #4" karti onceki isin tarihiyle (12 Aralik 2026,
@@ -349,9 +349,13 @@ turunda Lumen'e dusen talepler listede) ve Ilker'in profili (ajans notu yok, kut
 ve uretim dogrulamasi `docs/sahne/duzeltme-12-14-plan.md` "14-B". Sahne'de 14-B turundan kalan veri:
 Kaan - Ilker sohbetinde "Yeni talep #4" (Ilker `/islerim` 3 / 0 / 1 / 3 / 6; Kaan merkezi 8 / 8 / 6 / 8,
 talep eski etkinligin kartinda - bulgu 133).
-15-F (bulgu 133: yeni talep eski isin tarihini ve etkinlik bagini devralmasin) onizlemede
-dogrulandi: `duzeltme-15f`, migration yok.
-Sirada: kurum ve ajans panelinde ayni merkez.
+15-F (bulgu 133: yeni talep eski isin tarihini ve etkinlik bagini devralmasin) uretimde (13 Kas):
+main = sahne = d4e03fa, migration yok. Degisiklik yalniz sunucu eyleminde; disaridan yeni derlemeyi
+ayirt eden bir isaret yok, davranis girisli talep gonderimi gerektirdigi icin uretimde DENENMEDI
+(davranis onizlemede dogrulandi). Uretimde girissiz, salt okuma: ana sayfa ve profil aciliyor,
+"Teklif Al" penceresi geliyor (gonderilmedi), `/mesajlar` girise yonlendiriyor, konsol temiz.
+Sahne adresinde Ilker ile sohbet cubugu ve `/islerim` (3 / 1 / 1 / 3 / 6) onizlemedeki gibi.
+Sirada: kurum ve ajans panelinde ayni merkez -> `docs/sahne/duzeltme-16-plan.md` (16-A ajans dalda).
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

@@ -4,7 +4,10 @@ import { PanelKabugu } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
-import { saticiMerkeziAcik } from '@/app/lib/satici-merkezi';
+import {
+  ajansPanelindeMerkez,
+  saticiMerkeziAcik,
+} from '@/app/lib/satici-merkezi';
 import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
 import { saticiIsleri } from './satici-isleri';
 import { SaticiMerkezi } from './satici-merkezi';
@@ -19,6 +22,7 @@ export const metadata = {
  * Profesyonelin is merkezi: gelen talepler, verdigi teklifler ve
  * rezervasyonlar tek sayfada, sekmelerle. Kimde acik oldugu tek yerde
  * (`app/lib/satici-merkezi.ts`); digerleri kendi merkezine doner.
+ * Duzeltme 16-A: ajansin kendi hesabi da ayni sayfayi kullanir.
  */
 export default async function IslerimPage({
   searchParams,
@@ -40,11 +44,13 @@ export default async function IslerimPage({
 
   if (!(await saticiMerkeziAcik())) redirect('/profil');
 
-  const [veri, kabuk, yonlendirmeler] = await Promise.all([
+  const [veri, kabuk, yonlendirmeler, ajansHesabi] = await Promise.all([
     saticiIsleri(supabase, user.id),
     panelKabukProps(),
     // Duzeltme 15-E: yeni talepler ajans uzerinden geliyorsa merkezde yazar.
     teklifYonlendirmeleri(supabase, [user.id]),
+    // Duzeltme 16-A: ajansin kendi hesabi (ajans panelinden acildi).
+    ajansPanelindeMerkez(),
   ]);
 
   return (
@@ -53,6 +59,7 @@ export default async function IslerimPage({
         veri={veri}
         sekme={sekme}
         ajansUzerinden={yonlendirmeler.get(user.id)?.ajansAdi ?? null}
+        ajansHesabi={ajansHesabi}
       />
     </PanelKabugu>
   );

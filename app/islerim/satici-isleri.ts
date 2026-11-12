@@ -8,6 +8,7 @@ import {
   teklifTarihiMetni,
 } from '@/app/mesajlar/quotes-data';
 import type { Is, IsAsamasi, IsTeklifi, IsTonu } from '@/app/lib/isler';
+import { BRIEF_TERCIH_UYE_ADI } from '@/app/lib/brief-anahtarlari';
 import {
   birimleriKur,
   gorunenDurum,
@@ -92,6 +93,17 @@ const GUN_MS = 86_400_000;
 const ACIK_TALEP_GUNU = 30;
 const KART_TEKLIF_SINIRI = 3;
 
+/** Satici sorgusu sohbetin brief'ini de okur (tercih edilen ekip uyesi). */
+type SaticiSohbeti = IsSohbeti & {
+  brief_data?: Record<string, unknown> | null;
+};
+
+/** Brief'teki "tercih edilen ekip uyesi" adi (sunucunun yazdigi kamu adi). */
+function tercihUyesi(s: IsSohbeti): string | null {
+  const ad = (s as SaticiSohbeti).brief_data?.[BRIEF_TERCIH_UYE_ADI];
+  return typeof ad === 'string' && ad.trim() ? ad.trim() : null;
+}
+
 function parcalar(...p: (string | null | undefined | false)[]): string | null {
   const dolu = p.filter((x): x is string => !!x);
   return dolu.length > 0 ? dolu.join(' · ') : null;
@@ -140,7 +152,7 @@ export async function saticiIsleri(
       .select(
         `
         id, customer_id, professional_id, event_date, event_type, location,
-        event_id, request_count, last_message_at,
+        event_id, request_count, last_message_at, brief_data,
         karsi:profiles!conversations_customer_id_fkey (full_name, company_name, role)
       `
       )
@@ -188,7 +200,7 @@ export async function saticiIsleri(
   const aliciListesi = ((aliciSonuc.data ?? []) as unknown as AliciSatiri[]).filter(
     (a): a is DoluAlici => !!a.quote_requests
   );
-  const sohbetListesi = (sohbetSonuc.data ?? []) as unknown as IsSohbeti[];
+  const sohbetListesi = (sohbetSonuc.data ?? []) as unknown as SaticiSohbeti[];
   const teklifListesi = (teklifSonuc.data ?? []) as unknown as IsTeklifSatiri[];
   // Teklif sekli rezervasyonlar (FAZ 7c, `quote_id` bos) kurulus yuzeylerinde.
   const rezListesi = ((rezSonuc.data ?? []) as unknown as IsRezervasyonu[]).filter(
@@ -355,6 +367,10 @@ export async function saticiIsleri(
   const birimKarti = (b: IsBirimi): Sirali => {
     const s = b.sohbet;
     const rez = b.rezervasyon;
+    // Duzeltme 16-A: ajans hesabinda musterinin tercih ettigi ekip uyesi
+    // (profilden "ajans uzerinden teklif al" ya da 15-E yonlendirmesi) kartta
+    // yazar; brief sohbetin GUNCEL talebine aittir.
+    const tercih = b.guncel ? tercihUyesi(s) : null;
     const d = birimDurumu(b);
     const sohbetYolu = `/mesajlar/${s.id}`;
     const satirlar = teklifSatirlari(b, !!rez && rez.status !== 'cancelled');
@@ -368,6 +384,7 @@ export async function saticiIsleri(
           etiketle(turler, rez?.event_type ?? (b.guncel ? s.event_type : null)),
           teklifTarihiMetni(birimGunu(b)) ?? 'Tarih belirtilmedi',
           (rez?.location ?? (b.guncel ? s.location : null))?.trim(),
+          tercih ? `Tercih: ${tercih}` : null,
           (s.request_count ?? 1) > 1 ? `Talep #${b.no}` : null
         ),
         durum: d.durum,

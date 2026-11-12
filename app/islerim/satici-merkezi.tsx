@@ -62,6 +62,7 @@ export function SaticiMerkezi({
   veri,
   sekme,
   ajansUzerinden = null,
+  ajansHesabi = false,
 }: {
   veri: SaticiIsleri;
   sekme: string | undefined;
@@ -70,6 +71,11 @@ export function SaticiMerkezi({
    * talepler ajansa gittigi icin burada gorunmez; kullanici bunu bilsin.
    */
   ajansUzerinden?: string | null;
+  /**
+   * Duzeltme 16-A: merkez ajans panelinden acildi (ajansin kendi hesabi).
+   * Kurumsal RFP teklifleri ayri akista; kullanici nerede oldugunu bilsin.
+   */
+  ajansHesabi?: boolean;
 }) {
   const { isler, ozet } = veri;
   const sayi: Record<IsAsamasi, number> = {
@@ -154,6 +160,17 @@ export function SaticiMerkezi({
           görünür.{' '}
           <Link href="/kurulus/uyelik" className="kashe-tap text-brand-ink hover:underline">
             Tercihi değiştir
+          </Link>
+        </p>
+      )}
+
+      {ajansHesabi && (
+        <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
+          Burada pazaryerinden ajansına gelen talepler, sohbetten verdiğin
+          teklifler ve rezervasyonlar görünür. Kurumsal RFP&apos;lere
+          verdiğin teklifler ayrı sayfada:{' '}
+          <Link href="/ajans/teklifler" className="kashe-tap text-brand-ink hover:underline">
+            Teklifler
           </Link>
         </p>
       )}
