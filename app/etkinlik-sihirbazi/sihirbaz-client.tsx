@@ -411,6 +411,13 @@ export function SihirbazClient({
   // Duzeltme 14-B: sehir 30 buyuksehirden biriyse ilce LISTEDEN secilir;
   // diger illerde (ve sehir secilmemisken) "ilce / semt" serbest metin kalir.
   const sehirIlceleri = ilceListesi(sehirAdi);
+  // Listeyle eslesen ilce LISTEDEKI yazimiyla kullanilir ("kadikoy" ->
+  // "Kadikoy", "Eyup" -> "Eyupsultan"): kutu, ozet ve kaydedilen deger ayni
+  // olsun (onizleme turunda kutu duzgun, ozet ham yazimla gorunuyordu).
+  // Eslesmeyen serbest metin (semt) oldugu gibi kalir.
+  const ilceDegeri = sehirIlceleri
+    ? ilceEslestir(ilce, sehirAdi) || ilce
+    : ilce;
 
   /**
    * OZET PANELI (D3) — eski "Brief'ten anladiklarimiz" cip seridinin yerine.
@@ -581,7 +588,7 @@ export function SihirbazClient({
       eventType: tur,
       title: baslik || undefined,
       cityId: sehir ? Number(sehir) : undefined,
-      district: ilce || undefined,
+      district: ilceDegeri || undefined,
       startDate: tarih || undefined,
       endDate: bitis || undefined,
       isDateFlexible: esnek ? true : undefined,
@@ -650,7 +657,7 @@ export function SihirbazClient({
         <AnladimOzeti
           turEtiketi={turEtiketi}
           sehirAdi={sehirAdi}
-          ilce={ilce}
+          ilce={ilceDegeri}
           tarih={tarih}
           bitis={bitis}
           esnek={esnek}
@@ -817,7 +824,7 @@ export function SihirbazClient({
                   key={sehirAdi}
                   id="sihirbaz-ilce"
                   ilceler={sehirIlceleri}
-                  deger={ilceEslestir(ilce, sehirAdi) || ilce}
+                  deger={ilceDegeri}
                   onChange={(ad) => guncelle({ ilce: ad || null })}
                   placeholder="İlçe seç"
                   className={ALAN}
@@ -1109,7 +1116,9 @@ export function SihirbazClient({
               <p className="text-ink text-sm leading-relaxed">
                 {[
                   turEtiketi || 'Tür seçilmedi',
-                  [sehirAdi || 'Tüm şehirler', ilce].filter(Boolean).join(' / '),
+                  [sehirAdi || 'Tüm şehirler', ilceDegeri]
+                    .filter(Boolean)
+                    .join(' / '),
                   // Tarih ve butce ozet panelindeki (AnladimOzeti) bicimle ayni:
                   // "12 Mart 2027", "150.000 TL" — ham ISO / sayi yazilmaz.
                   [tarihMetni(tarih) ?? 'Tarih belirtilmedi', tarihMetni(bitis)]

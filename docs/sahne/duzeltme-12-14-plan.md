@@ -192,9 +192,11 @@ YAPILDI (12 Kas, dal `duzeltme-14b`; migration yok).
   degisince), `konumBirlestir` / `konumCoz` ("<mekan>, <ilce>, <Il>").
 - Bilesen: `IlceSecici` (`app/components/ui/il-secici.tsx`) - il secicinin
   ayni aranabilir kutusu ("Ilce ara", "Secimi temizle"); secim istege bagli.
-- Formlar: profil "Teklif al" ve `/teklif-topla` (`BriefAlanlari`), rezervasyon
-  talebi modali: il buyuksehirse il kutusunun altinda ilce kutusu, metin alani
-  "Mekan (istege bagli)"; diger illerde "Ilce / mekan (istege bagli)" aynen.
+- Formlar: profil "Teklif al" (`BriefAlanlari`) ve rezervasyon talebi modali:
+  il buyuksehirse il kutusunun altinda ilce kutusu, metin alani "Mekan (istege
+  bagli)"; diger illerde "Ilce / mekan (istege bagli)" aynen. `/teklif-topla`
+  ayni ciziciyi kullaniyor ama konum alanini DISARIDA birakiyor (sayfanin kendi
+  sehir kutusu var; ilce / mekan orada hic sorulmuyor) - bu turda degismedi.
   Il degisince ilce yeni ilin listesinde yoksa bosalir, mekan kalir. Kaydedilen
   deger "<mekan>, <ilce>, <Il>" (il sonda; eski kayitlar ayni yardimciyla
   cozulur, "Besiktas, Istanbul" ilce secili gelir). "Yalniz kendi sehrinde"
@@ -208,9 +210,36 @@ YAPILDI (12 Kas, dal `duzeltme-14b`; migration yok).
 - Yerel deneme: yardimcilar 51 / 51 (519 ilce x 3 mekan gidis-donus dahil);
   bilesen ayri sayfada Playwright ile 36 / 36 (arama, Enter, Escape, il
   degisimi, temizle, kilitli il, dolu gelen deger). tsc + eslint temiz.
-- Bu turda degismeyenler: profil kartindaki sehir kutusu (yalniz il), ic
-  araclar. Sunucu dogrulamasi ayni (konum serbest metin; ilce listesi
-  istemcide yonlendirir, zorlamaz).
+- Bu turda degismeyenler: profil kartindaki sehir kutusu (yalniz il),
+  `/teklif-topla` (sehir kutusu, ilce yok), ic araclar. Sunucu dogrulamasi ayni
+  (konum serbest metin; ilce listesi istemcide yonlendirir, zorlamaz).
+
+#### Onizleme turu 14-B (12 Kas, dal `duzeltme-14b`; Kaan; 1280 ve 375 px)
+
+- Profil "Teklif Al" (Ilker): il Istanbul dolu geliyor, altinda "Ilce sec
+  (istege bagli)" (39 ilce, "Ilce ara"), metin alani "Mekan". "kadik" + Enter
+  Kadikoy'u seciyor, form gonderilmiyor. Ankara'ya gecince ilce bosaliyor (25
+  ilce), mekan kaliyor, "Sehir disi" notu cikiyor; Bolu'da ilce kutusu kalkiyor,
+  alan "Ilce / mekan". Talep gonderildi: sohbet cubugunda ve "Yeni talep #4"
+  kartinda konum "Moda Sahnesi, Kadikoy, Istanbul".
+- Rezervasyon talebi modali: kartta secili il (Istanbul) modala geliyor, ilce
+  kutusu acik; Besiktas + "Zorlu PSM" -> bilesen durumunda konum "Zorlu PSM,
+  Besiktas, Istanbul"; Bolu'ya gecince ilce kutusu kalkiyor, mekan kaliyor;
+  Istanbul'a donunce ilce bos. Talep gonderilmedi.
+- Sihirbaz 2. adim: sehirsizken "Ilce / semt" serbest metin; "Moda" yazip
+  Istanbul secilince deger korunuyor ve kutuda gorunuyor; listeden Kadikoy
+  secilince adres `ilce=Kadikoy`; Ankara'ya gecince ilce temizleniyor; Bolu'da
+  yine serbest metin.
+- 375 px: ilce listesi modalin icinde tam genislikte, tasma yok; sihirbazda
+  kutu satira sigiyor. Konsol temiz.
+- Turda bulunup duzeltilen: sihirbazda adresle gelen ham yazim (`ilce=kadikoy`)
+  kutuda "Kadikoy" gorunurken ozet panelinde ve kaydedilecek degerde ham
+  kaliyordu -> eslesen ilce her yerde listedeki yazimiyla kullaniliyor (ikinci
+  derlemede bakilacak).
+- Turda gorulen, 14-B disi: tarihsiz yeni talep onceki isin tarihini tasiyor
+  (bulgu 133, acik).
+- Sahne'de kalan tur verisi: Kaan - Ilker sohbetinde "Yeni talep #4" (dogum
+  gunu, "Moda Sahnesi, Kadikoy, Istanbul") ve bir test mesaji.
 
 ### 14-C Renkler, bolum gecisleri, scorecard (satir 24)
 Tasarim yonu karari (Fahri + Guven): "daha canli renkler", izleme sayfalarinin
