@@ -104,11 +104,30 @@ YAPILDI (13 Kas, dal `duzeltme-16b`; migration yok).
   teklifinin etkinlik kartinda "N ajans teklifi geldi" olarak gorunmesi; ajans hesabinin ALICI
   oldugu isler (ajansin `/etkinliklerim`i eski liste); kurum uyelerinin kurum grubundaki iki madde.
 
-Onizleme turu plani: Anadolu Ilac sahibi (`sahne+kurum-anadolu-ilac@kashe.net`) - menude
-"Rezervasyonlar" / "Gelen teklifler" yok; `/etkinliklerim` merkez (not, sekmeler, kurulus
-etkinlikleri, varsa ajans teklifi rezervasyonu satiri); `/kurumsal` kutusu merkeze gidiyor;
-rezervasyon geri baglantisi; 1280 / 375 px. Deniz Erol (uye): kisisel merkez ve kurum grubu
-menusu ayni. Kaan (bireysel): sayilar ayni (teklif sekli rezervasyonu yoksa).
+### Onizleme turu 16-B (13 Kas, dal `duzeltme-16b`; 1280 ve 375 px)
+
+- Anadolu Ilac sahibi: kurum grubunda "Rezervasyonlar" ve "Gelen teklifler" yok. `/etkinliklerim`
+  merkezi aciyor: ustte kurum notu ve "Teklif talepleri" baglantisi, "Yeni etkinlik"
+  `?kurulus=<kurulus>` ile; sekmeler 5 / 0 / 7 / 3 (dogrudan talepler, dort sohbet sekli
+  rezervasyon, "Anadolu Ilac adina" uc kurulus etkinligi). `/kurumsal`daki "Onayli rezervasyon"
+  kutusu `/etkinliklerim?sekme=yaklasan`a gidiyor. Bu kurumun gorunen ajans teklifi rezervasyonu
+  yok (eski "Rezervasyonlarim" sayfasinda da yok).
+- Ajans teklifi rezervasyonu, ALICI KISI yolu - Yigit Soylu (bireysel): eski sayfadaki "Teklif
+  dosyasiyla aldigin (2)" merkezde "Tamamlanan"da iki kart: "Ritim Muzik Ajansi - ... Tam kapsam
+  teklifi - 20 Mayis 2026 - Antalya - 84.000 TL - Tamamlandi" ve "Zirve Teknik Produksiyon - ...
+  Teknik paket - 24 Eylul 2026 - Ankara - 180.000 TL - Tarihi gecti". Rezervasyon sayfasinin geri
+  baglantisi "Etkinliklerim" (`?sekme=tamamlanan`).
+- Ajans teklifi rezervasyonu, ALICI KURULUS yolu - Baskent Egitim sahibi: eski sayfadaki
+  "Kurulusunuz adina alinan (1)" merkezde "Tamamlanan"da: "Baskent Egitim Kurumlari adina - Arti
+  Bir Ajans - ... Organizasyon teklifi - Gala - 7 Kasim 2026 - Istanbul - 45.600 TL - Tarihi gecti".
+  Sekmeler 1 / 4 / 8 / 2; kurum notu var.
+- 375 px: not ve kartlar sigiyor, tasma yok. Konsol butun hesaplarda temiz.
+- Gerileme: Deniz Erol (Anadolu Ilac uyesi) kisisel merkezi aciliyor (kurum notu yok, "Yeni
+  etkinlik" kurulussuz), kurum grubunda "Rezervasyonlar" ve "Gelen teklifler" duruyor. Kaan
+  (bireysel) 10 / 8 / 6 / 8 - ayni.
+- GERCEK VERIYLE GORULMEDI: etkinlik kartinin icindeki ajans satiri (Sahne'de alicinin kendi
+  etkinligine bagli ajans rezervasyonu yok; gorulen iki ornek de kendi kartiyla cikti). Bu parca
+  yalniz sahte veri testinde dogrulandi.
 
 ## Durum (13 Kas)
 
@@ -117,5 +136,5 @@ ana sayfa aciliyor, `/islerim` ve `/ajans` girise yonlendiriyor, konsol temiz; y
 dogrulamasindakinden farkli (yeni yayin). Ajans hesabi uretimde DENENMEDI (giris gerekir). Sahne
 adresinde Lumen sahibi ile: menude "Islerim", `/islerim` aciliyor (ajans notu, yanit bekleyen 3,
 "Tercih: Ilker S.").
-16-B dalda: `duzeltme-16b`, migration yok; onizleme turu bekliyor. Sonra: RFP tekliflerinin
+16-B onizlemede dogrulandi: `duzeltme-16b`, migration yok. Sonra: RFP tekliflerinin
 etkinlik kartinda gorunmesi, ajansin alici oldugu isler.
