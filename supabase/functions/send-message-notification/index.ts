@@ -7,9 +7,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
  * GUVENLIK 08 (10 Kas): veritabani erisimi yeni "secret" anahtarla
  * (`SUPABASE_SECRET_KEYS`, Supabase'in kendiliginden verdigi JSON). Once bu
  * fonksiyona ayrilan `bildirim_fonksiyonu` anahtari (tek basina degistirilebilir),
- * yoksa `default`, o da yoksa ilk anahtar.
- * Gecis suresince yoksa eski service_role anahtarina duser; eski anahtarlar
- * kapatildiginda yedek kullanilmaz olur. Anahtar YAZDIRILMAZ.
+ * yoksa `default`, o da yoksa ilk anahtar. Eski service_role yedegi 12 Kas'ta
+ * kalkti (eski anahtarlar uretimde kapali); secret anahtar yoksa fonksiyon
+ * acikca hata verir. Anahtar YAZDIRILMAZ.
  */
 function veritabaniAnahtari(): string {
   const ham = Deno.env.get('SUPABASE_SECRET_KEYS');
@@ -20,10 +20,10 @@ function veritabaniAnahtari(): string {
         anahtarlar['bildirim_fonksiyonu'] ?? anahtarlar['default'] ?? Object.values(anahtarlar)[0];
       if (secilen) return secilen;
     } catch {
-      // bicim bozuksa yedege duser
+      // bicim bozuksa asagidaki hata
     }
   }
-  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  throw new Error('SUPABASE_SECRET_KEYS yok ya da bos: fonksiyon veritabanina baglanamaz');
 }
 
 /**

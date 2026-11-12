@@ -124,7 +124,9 @@ Konteyner ve cihaz VM'inden Commons/Openverse'e erisim yok (proxy); bu yuzden in
 2. `node scripts/sahne/foto-yukle.mjs` — `foto-plan.json`'a gore her saglayiciya kategori havuzundan 4-8 gorsel (ayni gorsel birden
    cok profilde olabilir; her profil kendi yolunda: `portfolio/<uid>/sahne-NN.jpg`), harf avatari PNG (`avatars/<uid>/avatar.png`),
    `portfolio_items` satirlari (altyazi: "Foto: <sanatci> — <lisans>, Wikimedia Commons") ve `profiles.avatar_url` guncellemesi.
-   Gerekli ortam: `SAHNE_SUPABASE_URL` + `SAHNE_SERVICE_ROLE_KEY` (PowerShell `$env:`; dosyaya yazilmaz, paylasilmaz). `--sil` ile
+   Gerekli ortam: `SAHNE_SUPABASE_URL` (istege bagli) + `SAHNE_SERVICE_ROLE_KEY` = dal projesinin secret anahtari
+   (`sahne_betikleri`, Guvenlik 08; `$env:SAHNE_SERVICE_ROLE_KEY = Read-Host "Sahne secret"`, dosyaya ve gecmise yazilmaz,
+   paylasilmaz). Betik dal disi JWT'yi ve publishable anahtari istek atmadan reddeder. `--sil` ile
    Storage nesneleri + portfoy satirlari kaldirilir.
    `--cikar="<altyazi metni>"` yalniz altyazisinda o metin gecen Sahne portfoy gorsellerini (satir + nesne) kaldirir (bulgu 127).
 3. Icerik denetimi (10 Kas, bulgu 127): Commons aramasi uygunsuz gorsel getirebilir ("film set actors shooting" -> yetiskin film

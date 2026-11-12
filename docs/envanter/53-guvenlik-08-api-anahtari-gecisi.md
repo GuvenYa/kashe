@@ -105,11 +105,17 @@ G. **Eski JWT secret:** Project Settings > JWT Keys > "JWT Signing Keys": (gerek
    publishable 200, profil acik. asama33'e K6 / K7 (e-posta bekleyen mesaj / bildirim sayisi) eklendi:
    sifirdan buyukken K5 hep processed 0 diyorsa fonksiyon satirlari goremiyor demektir.
 
-## 5. Sonra
+## 5. Kapanis (12 Kas): Sahne ve fonksiyon yedegi
 
-- Dal (Sahne) de 2026 sonundan once ayni gecisi yapar: Vercel Preview anahtari, Sahne betikleri
-  (`SAHNE_SERVICE_ROLE_KEY` yerine dal secret anahtari; koruma `sb_secret_` bicimini kabul eder).
-- Eski anahtarlar kapandiktan sonra fonksiyondaki `SUPABASE_SERVICE_ROLE_KEY` yedegi kaldirilir.
+- Sahne onizlemeleri yeni anahtarda: Vercel Preview `NEXT_PUBLIC_SUPABASE_ANON_KEY` = dal publishable
+  (`sahne` derlemesinde yalniz `sb_publishable_`, Kesfet 351 kart).
+- Sahne betikleri: dal secret anahtari `sahne_betikleri` (`SAHNE_SERVICE_ROLE_KEY` adi korunur; betik
+  publishable ve dal disi JWT anahtari reddeder). Deneme: `foto-yukle.mjs --cikar=<olmayan metin>` -> 0.
+- Dal: ayni tarama (webhook / cron / gomulu JWT / Vault), eski anahtarlari kapat, eski HS256 secret'i
+  iptal et (dal test ortami, bekleme gerekmez), Vault'ta eski kopya varsa sil. Eski onizleme
+  derlemeleri (yeni anahtardan once derlenenler) bundan sonra veri okuyamaz; `sahne` yeniden derlendi.
+- Fonksiyondaki `SUPABASE_SERVICE_ROLE_KEY` yedegi kaldirildi: secret anahtar yoksa acik hata
+  (`asama33` K5'te 200 olmayan yanit olarak gorunur). Uretime `functions deploy` ile.
 
 ## 6. Dosyalar
 

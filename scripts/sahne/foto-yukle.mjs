@@ -1,6 +1,7 @@
 // =============================================================================
 // SAHNE — avatar + portfoy yukleme (dal projesi Storage) ve portfolio_items / profiles.avatar_url yazimi
-//   $env:SAHNE_SERVICE_ROLE_KEY = Read-Host "Sahne service_role"   (PowerShell; anahtar gecmise ve dosyaya YAZILMAZ)
+//   $env:SAHNE_SERVICE_ROLE_KEY = Read-Host "Sahne secret"   (dal projesinin secret anahtari `sahne_betikleri`, sb_secret_...;
+//   eski service_role da kabul edilir; PowerShell'de anahtar gecmise ve dosyaya YAZILMAZ)
 //   node scripts/sahne/foto-yukle.mjs            -> yukle (idempotan: ayni yollara upsert, portfoy satirlari yenilenir; hata alan hesap icin tekrar calistir)
 //   node scripts/sahne/foto-yukle.mjs --sil      -> Storage nesneleri + portfoy satirlari + avatar_url temizlenir
 //   secenek: --yalniz-avatar  (portfoy atlanir)
@@ -34,7 +35,9 @@ const CIKAR = (args.find((a) => a.startsWith('--cikar=')) || '').slice('--cikar=
 const URL_ = process.env.SAHNE_SUPABASE_URL || PLAN.proje_url;
 const KEY = process.env.SAHNE_SERVICE_ROLE_KEY;
 if (!/ukqhgspaallzjscjodbb/.test(URL_)) { console.error('URETIM KORUMASI: yalniz dal projesi (ukqhgspaallzjscjodbb) kabul edilir: ' + URL_); process.exit(2); }
-if (!KEY) { console.error('SAHNE_SERVICE_ROLE_KEY ortam degiskeni gerekli (PowerShell: $env:SAHNE_SERVICE_ROLE_KEY = "...")'); process.exit(2); }
+if (!KEY) { console.error('SAHNE_SERVICE_ROLE_KEY ortam degiskeni gerekli (PowerShell: $env:SAHNE_SERVICE_ROLE_KEY = Read-Host "Sahne secret")'); process.exit(2); }
+// Publishable anahtar satir guvenligini asamaz; betik secret anahtar ister.
+if (KEY.startsWith('sb_publishable_')) { console.error('ANAHTAR KORUMASI: bu publishable anahtar; dal projesinin SECRET anahtari (sb_secret_...) gerekir.'); process.exit(2); }
 // ANAHTAR KORUMASI (10 Kas): eski bicim (JWT) anahtarin hangi projeye ait oldugu icinde yazar; dal disi anahtar
 // hicbir istek atilmadan reddedilir (uretim anahtari yanlislikla girilirse ag cagrisi yapilmaz). Anahtar YAZDIRILMAZ.
 if (KEY.startsWith('eyJ')) {
