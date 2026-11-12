@@ -42,10 +42,21 @@ YAPILDI (13 Kas, dal `duzeltme-16a`; migration yok).
 - Bu turda degismeyenler: `/ajans` genel bakis kutulari (merkeze baglanti yok; menuden gidilir),
   kurumsal RFP / teklif akisi, ajans uyelerinin menusu.
 
-Onizleme turu plani (Lumen sahibi, 1280 / 375 px): menude "Islerim"; `/islerim` aciliyor, ustte
-ajans notu; "Yanit bekleyen"de Kaan'in dogrudan talebi ("Tercih: Ilker S.") ve Lumen'e dusen
-teklif topla talebi; diger sekmelerde Lumen'in gecmis isleri; rezervasyon sayfasindan geri
-baglantisi "Islerim". Ilker ile gerileme: `/islerim` sayilari ayni, ajans notu yok.
+### Onizleme turu 16-A (13 Kas, dal `duzeltme-16a`; Lumen sahibi + Ilker; 1280 ve 375 px)
+
+- Lumen sahibi: ajans grubunda "Islerim" var, "Teklif talepleri" yok. `/islerim` aciliyor (eskiden
+  `/profil` -> `/ajans`a donuyordu); ustte ajans notu ve "Teklifler" baglantisi. Sekmeler: Yanit
+  bekleyen 3, Teklif verdiklerim 0, Anlasilan 0, Tamamlanan 0 (Lumen'in sohbet sekli teklifi /
+  rezervasyonu yok; gecmis isleri RFP / teklif akisinda).
+- Yanit bekleyen: Kaan'in teklif topla talebi ("Drone Pilotu, Lansman, Istanbul", "Yeni talep"),
+  Kaan'in dogrudan talebi ("Lansman, 10 Nisan 2027, Istanbul, Tercih: Ilker S.", "Teklif bekliyor")
+  ve Beren Kara'nin dogrudan talebi (rehber hesabi; yalniz goruntulendi).
+- `/ajans` genel bakis ve `/teklif-talepleri` aciliyor; 375 px'te not ve kartlar sigiyor, tasma
+  yok; konsol temiz.
+- Ilker ile gerileme: `/islerim` 3 / 1 / 1 / 3 / 6 (ayni), ajans notu ve "Tercih" yazisi yok;
+  menusu ayni (kisisel grupta "Islerim", Lumen grubunda uye olarak yok).
+- DENENEMEDI: ajans hesabinda rezervasyon sayfasinin "Islerim" geri baglantisi (Lumen'in sohbet
+  sekli rezervasyonu yok). Kapi profesyonelle ortak; profesyonelde 15-B turunda dogrulanmisti.
 
 ## 16-B Kurum hesabinda "Etkinliklerim" (PLAN - once inceleme)
 
@@ -64,5 +75,5 @@ rezervasyonlar ayri sayfalarda. Merkeze gecis icin bakilacaklar:
 
 ## Durum (13 Kas)
 
-16-A dalda: `duzeltme-16a`, migration yok; onizleme turu bekliyor.
+16-A onizlemede dogrulandi: `duzeltme-16a`, migration yok.
 16-B: inceleme ve plan sonraki turda.
