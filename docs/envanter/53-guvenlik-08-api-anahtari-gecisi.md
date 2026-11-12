@@ -1,6 +1,6 @@
 # Guvenlik 08 - API anahtari gecisi (uretim)
 
-Tarih: 10 Kasim 2026. Durum: TAMAM (A-G uretimde, 10-12 Kas). Kalan: bolum 5 (Sahne gecisi, fonksiyondaki eski anahtar yedegi).
+Tarih: 10 Kasim 2026. Durum: TAMAM (A-G uretimde 10-12 Kas; Sahne ve fonksiyon yedegi 12 Kas).
 
 ## 1. Neden
 
@@ -111,11 +111,21 @@ G. **Eski JWT secret:** Project Settings > JWT Keys > "JWT Signing Keys": (gerek
   (`sahne` derlemesinde yalniz `sb_publishable_`, Kesfet 351 kart).
 - Sahne betikleri: dal secret anahtari `sahne_betikleri` (`SAHNE_SERVICE_ROLE_KEY` adi korunur; betik
   publishable ve dal disi JWT anahtari reddeder). Deneme: `foto-yukle.mjs --cikar=<olmayan metin>` -> 0.
+- Dal taramasi (12 Kas): webhook yok, 4 cron isinde eski anahtar izi yok, gomulu JWT yok, Vault bos.
+  ANCAK dalda da `send-message-notification` Edge Function'i var (6 ay once olusturulmus, 3 ay once
+  guncellenmis, 11 dagitim; repo belgeleri "dalda Edge Function yok" diyordu). Onu cagiran gorev yok;
+  eski surum (eski anahtar, `verify_jwt` acik). Dal tasarimina gore kaldirilir (kod repoda; gerekirse
+  yeniden dagitilir): `functions delete --project-ref ukqhgspaallzjscjodbb`.
 - Dal: ayni tarama (webhook / cron / gomulu JWT / Vault), eski anahtarlari kapat, eski HS256 secret'i
   iptal et (dal test ortami, bekleme gerekmez), Vault'ta eski kopya varsa sil. Eski onizleme
   derlemeleri (yeni anahtardan once derlenenler) bundan sonra veri okuyamaz; `sahne` yeniden derlendi.
 - Fonksiyondaki `SUPABASE_SERVICE_ROLE_KEY` yedegi kaldirildi: secret anahtar yoksa acik hata
   (`asama33` K5'te 200 olmayan yanit olarak gorunur). Uretime `functions deploy` ile.
+- SONUC (12 Kas): dal fonksiyonu silindi (`functions list` bos); `sahne_betikleri` ile
+  `foto-yukle --cikar=olmayanmetin` -> 0 (hatasiz); dalda eski anahtarlar kapali (eski onizleme
+  paketindeki anon anahtar: 401 "Legacy API keys are disabled", 12 Kas 10:09 UTC) ve eski HS256
+  iptal; `sahne` adresinde var olan oturum ve yeni giris (Kaan) calisiyor. Yedeksiz fonksiyon uretimde:
+  asama33 K1-K3 ESIT, 13:15-13:25 kosulari 200, K6 / K7 0. CLI 3.1: `--project-ref` yerine `--remote=<ref>`.
 
 ## 6. Dosyalar
 
