@@ -14,6 +14,12 @@ import { sonucEtiketi } from '@/app/lib/discover-base';
 import { analyzeEventNeeds } from '@/app/lib/ai-actions';
 import { confirmEventFromWizard } from './actions';
 import { TarihSecici } from '@/app/components/ui/tarih-secici';
+import { IlceSecici } from '@/app/components/ui/il-secici';
+import {
+  ilceEslestir,
+  ilceListesi,
+  ilceMetniTasi,
+} from '@/app/lib/ilceler';
 import { AnladimOzeti } from './anladim-ozeti';
 import {
   GirisGerekliKutusu,
@@ -402,6 +408,9 @@ export function SihirbazClient({
 
   const turEtiketi = turler.find((t) => t.key === tur)?.name_tr ?? '';
   const sehirAdi = sehirler.find((c) => String(c.id) === sehir)?.name ?? '';
+  // Duzeltme 14-B: sehir 30 buyuksehirden biriyse ilce LISTEDEN secilir;
+  // diger illerde (ve sehir secilmemisken) "ilce / semt" serbest metin kalir.
+  const sehirIlceleri = ilceListesi(sehirAdi);
 
   /**
    * OZET PANELI (D3) — eski "Brief'ten anladiklarimiz" cip seridinin yerine.
@@ -774,7 +783,17 @@ export function SihirbazClient({
             <select
               id="sihirbaz-sehir"
               value={sehir}
-              onChange={(e) => guncelle({ sehir: e.target.value || null })}
+              onChange={(e) => {
+                const yeni = e.target.value;
+                const yeniAd =
+                  sehirler.find((c) => String(c.id) === yeni)?.name ?? '';
+                // Ilce sehre baglidir: eski sehrin listesinden secilen ilce
+                // yeni sehre tasinmaz; serbest yazilan semt korunur.
+                guncelle({
+                  sehir: yeni || null,
+                  ilce: ilceMetniTasi(sehirAdi, yeniAd, ilce) || null,
+                });
+              }}
               className={ALAN}
             >
               <option value="">Tüm şehirler</option>
@@ -787,15 +806,31 @@ export function SihirbazClient({
 
             <div className="mt-4">
               <label htmlFor="sihirbaz-ilce" className={ETIKET}>
-                İlçe / semt (isteğe bağlı)
+                {sehirIlceleri
+                  ? 'İlçe (isteğe bağlı)'
+                  : 'İlçe / semt (isteğe bağlı)'}
               </label>
-              <UrlKutusu
-                id="sihirbaz-ilce"
-                urlDegeri={ilce}
-                onYaz={(v) => guncelle({ ilce: v || null })}
-                maxLength={100}
-                placeholder="Örn: Kadıköy"
-              />
+              {sehirIlceleri ? (
+                /* Listede olmayan eski / metinden cikan deger (semt) kutuda
+                   oldugu gibi gorunur; kullanici listeden secer ya da temizler. */
+                <IlceSecici
+                  key={sehirAdi}
+                  id="sihirbaz-ilce"
+                  ilceler={sehirIlceleri}
+                  deger={ilceEslestir(ilce, sehirAdi) || ilce}
+                  onChange={(ad) => guncelle({ ilce: ad || null })}
+                  placeholder="İlçe seç"
+                  className={ALAN}
+                />
+              ) : (
+                <UrlKutusu
+                  id="sihirbaz-ilce"
+                  urlDegeri={ilce}
+                  onYaz={(v) => guncelle({ ilce: v || null })}
+                  maxLength={100}
+                  placeholder="Örn: Kadıköy"
+                />
+              )}
             </div>
           </div>
         )}

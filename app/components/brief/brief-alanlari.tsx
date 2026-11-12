@@ -8,7 +8,18 @@ import {
   BRIEF_ESNEK_SONEKI,
   briefIlAlani,
 } from '@/app/lib/brief-anahtarlari';
-import { IlSecici, ilEslestir, type Il } from '@/app/components/ui/il-secici';
+import {
+  IlSecici,
+  IlceSecici,
+  ilEslestir,
+  type Il,
+} from '@/app/components/ui/il-secici';
+import {
+  ilceListesi,
+  ilceTasi,
+  konumBirlestir,
+  konumCoz,
+} from '@/app/lib/ilceler';
 
 /**
  * BRIEF ALANLARI — TEK CIZICI (Duzeltme 10-D/E).
@@ -21,6 +32,9 @@ import { IlSecici, ilEslestir, type Il } from '@/app/components/ui/il-secici';
  *   1. IL SECICI — `location` / `city` anahtarli metin alanlari artik 81 ilden
  *      secim + istege bagli "Ilce / mekan" metni; kaydedilen deger ayni
  *      ANAHTARDA `"<mekan>, <Il>"` ya da `"<Il>"` (legacy sutun degismez).
+ *      Duzeltme 14-B: il 30 buyuksehirden biriyse araya ILCE acilir kutusu
+ *      girer (`app/lib/ilceler.ts`), metin alani yalniz "Mekan" olur; deger
+ *      `"<mekan>, <ilce>, <Il>"`. Diger illerde "Ilce / mekan" metni aynen.
  *   2. TARIH ESNEK — her `date` alaninin altinda "Tarih henuz belli degil"
  *      secimi; seciliyse tarih bos, `<key>_esnek = true` ve zorunluluk kalkar.
  *      Duzeltme 14-A: alan Turkce tarih secici (`TarihSecici`); "henuz belli
@@ -63,32 +77,32 @@ export function BriefAlanlari({
   yalnizKendiSehri = false,
 }: BriefAlanlariProps) {
   /**
-   * Il + mekan YEREL durumda tutulur, alana BIRLESIK yazilir. Ilk degerler
-   * mevcut metinden cozulur (eski dolgu bir il adiyla eslesirse secili gelir).
+   * Il + ilce + mekan YEREL durumda tutulur, alana BIRLESIK yazilir. Ilk
+   * degerler mevcut metinden cozulur (eski dolgu bir il adiyla eslesirse
+   * secili gelir; buyuksehirde ilce adi da listeyle eslesirse secili gelir).
    */
   const ilkIller: Record<string, string> = {};
+  const ilkIlceler: Record<string, string> = {};
   const ilkMekanlar: Record<string, string> = {};
   for (const a of alanlar) {
     if (!briefIlAlani(a)) continue;
     const ham = degerler[a.key] ?? '';
     const il = yalnizKendiSehri && saglayiciIli ? saglayiciIli : ilEslestir(ham, iller);
     ilkIller[a.key] = il;
-    // "Kadikoy, Istanbul" -> mekan "Kadikoy"
-    const mekan = il && ham.toLocaleLowerCase('tr').endsWith(il.toLocaleLowerCase('tr'))
-      ? ham.slice(0, ham.length - il.length).replace(/[,\s]+$/, '').trim()
-      : il
-        ? ''
-        : ham;
-    ilkMekanlar[a.key] = mekan;
+    // "Zorlu PSM, Besiktas, Istanbul" -> ilce "Besiktas", mekan "Zorlu PSM";
+    // "Mengen, Bolu" (ilce listesi yok) -> mekan "Mengen".
+    const cozum = konumCoz(ham, il);
+    ilkIlceler[a.key] = cozum.ilce;
+    ilkMekanlar[a.key] = cozum.mekan;
   }
   const [ilSecimi, setIlSecimi] = useState<Record<string, string>>(ilkIller);
+  const [ilceSecimi, setIlceSecimi] =
+    useState<Record<string, string>>(ilkIlceler);
   const [mekanlar, setMekanlar] = useState<Record<string, string>>(ilkMekanlar);
 
-  /** Il + mekan -> alan degeri. */
-  function konumYaz(key: string, il: string, mekan: string) {
-    const m = mekan.trim();
-    const birlesik = il ? (m ? `${m}, ${il}` : il) : m;
-    setAlan(key, birlesik);
+  /** Il + ilce + mekan -> alan degeri. */
+  function konumYaz(key: string, il: string, ilce: string, mekan: string) {
+    setAlan(key, konumBirlestir(il, ilce, mekan));
   }
 
   return (
@@ -104,6 +118,10 @@ export function BriefAlanlari({
         // Il listesi gelmediyse (cagiran gecmediyse) secici BOS kalirdi;
         // eski serbest metin girisine dusulur.
         const ilAlani = briefIlAlani(field) && iller.length > 0;
+        const seciliIl = ilSecimi[field.key] ?? '';
+        // Buyuksehirse ilce listesi; degilse null (serbest "ilce / mekan").
+        const ilceler = ilAlani ? ilceListesi(seciliIl) : null;
+        const seciliIlce = ilceler ? (ilceSecimi[field.key] ?? '') : '';
 
         return (
           <div key={field.key} className={wrapperClass}>
@@ -118,14 +136,30 @@ export function BriefAlanlari({
                 <IlSecici
                   id={`brief-${field.key}`}
                   iller={iller}
-                  deger={ilSecimi[field.key] ?? ''}
+                  deger={seciliIl}
                   oncelikliIl={saglayiciIli}
                   sabitIl={yalnizKendiSehri ? saglayiciIli : null}
                   onChange={(ad) => {
+                    // Ilce yeni ilin listesinde yoksa bosalir.
+                    const yeniIlce = ilceTasi(ad, ilceSecimi[field.key] ?? '');
                     setIlSecimi((s) => ({ ...s, [field.key]: ad }));
-                    konumYaz(field.key, ad, mekanlar[field.key] ?? '');
+                    setIlceSecimi((s) => ({ ...s, [field.key]: yeniIlce }));
+                    konumYaz(field.key, ad, yeniIlce, mekanlar[field.key] ?? '');
                   }}
                 />
+                {ilceler && (
+                  /* Duzeltme 14-B: buyuksehirde ilce listeden secilir. */
+                  <IlceSecici
+                    key={seciliIl}
+                    id={`brief-${field.key}-ilce`}
+                    ilceler={ilceler}
+                    deger={seciliIlce}
+                    onChange={(ad) => {
+                      setIlceSecimi((s) => ({ ...s, [field.key]: ad }));
+                      konumYaz(field.key, seciliIl, ad, mekanlar[field.key] ?? '');
+                    }}
+                  />
+                )}
                 <input
                   type="text"
                   maxLength={80}
@@ -133,9 +167,14 @@ export function BriefAlanlari({
                   onChange={(e) => {
                     const m = e.target.value.slice(0, 80);
                     setMekanlar((s) => ({ ...s, [field.key]: m }));
-                    konumYaz(field.key, ilSecimi[field.key] ?? '', m);
+                    konumYaz(field.key, seciliIl, seciliIlce, m);
                   }}
-                  placeholder="İlçe / mekan (isteğe bağlı)"
+                  aria-label={ilceler ? 'Mekan' : 'İlçe / mekan'}
+                  placeholder={
+                    ilceler
+                      ? 'Mekan (isteğe bağlı)'
+                      : 'İlçe / mekan (isteğe bağlı)'
+                  }
                   className={ALAN}
                 />
                 {yalnizKendiSehri && saglayiciIli && (

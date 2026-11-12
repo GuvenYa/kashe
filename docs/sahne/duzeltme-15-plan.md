@@ -184,7 +184,7 @@ varsayilani musterinin suresiyle AYNI degil, son tarihten en az bir gun sonrasin
 secenek: musteri teklifleri son tarihe kadar toplayip sonra karsilastiriyor, ayni sure secilseydi
 erken verilen teklif tam o anda dolardi. Daha kisa secilirse form uyarir (engellemez).
 
-## 15-E Ajansa bagli profesyonelin teklifi (karar 1-A; SONRAKI TUR)
+## 15-E Ajansa bagli profesyonelin teklifi (karar 1-A; URETIMDE 12 Kas)
 
 Profesyonel secer: uyelik sayfasinda "Bana gelen talepler: kendim teklif veririm / ajansim
 uzerinden" (varsayilan kendim). "Ajansim uzerinden" secilirse profesyonele gelen talep ajansin
@@ -288,8 +288,16 @@ ayni (7 / 8 / 6 / 8), menu tek "Etkinliklerim". Ayrinti yukarida, 15-A basligi a
 Uretimde girissiz: yeni derleme yayinda (`/islerim` girise yonlendiriyor, yeni CSS siniflari var,
 ana sayfa ve konsol temiz). Sahne adresinde Ilker ile `/islerim` (2 / 0 / 1 / 3 / 6) ve Kaan ile
 `/etkinliklerim` (7 / 8 / 6 / 8) onizlemedeki sayilarla ayni.
-15-E dalda: `duzeltme-15e` (migration var; once dal veritabani, sonra onizleme turu).
-Sirada: 14-B; kurum ve ajans panelinde ayni merkez.
+15-E (ajans uzerinden teklif tercihi) uretimde (12 Kas): main = sahne = 8eadf8d. Uretim veritabani
+(Guven): migration `20261112150000` uygulandi, asama34 K1-K7 ESIT, K8 = 0 (tercihi acik uyelik yok;
+asama34b uretimde calistirilmadi). Uretimde girissiz: yeni derleme yayinda (yeni CSS sinifi var;
+`/islerim`, `/kurulus/uyelik`, `/teklif-talepleri` girise yonlendiriyor; ajans uyesi bir
+profesyonelin acik profili aciliyor, "Uye oldugu ajans" kutusu varsayilan metinle; konsol temiz).
+Sahne adresinde Ilker ile uyelik sayfasi (tercih "kendim") ve `/islerim` (2 / 0 / 1 / 3 / 6, bilgi
+satiri yok); Kaan ile `/etkinliklerim` (8 / 8 / 6 / 8; teklif bekleyen 7'den 8'e cikti, 15-E
+turunda Lumen'e dusen talepler listede) ve Ilker'in profili (ajans notu yok, kutu varsayilan metinle).
+14-B (30 buyuksehirde ilce listesi) dalda: `duzeltme-14b`, migration yok; ayrinti
+`docs/sahne/duzeltme-12-14-plan.md` "14-B". Sirada: kurum ve ajans panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

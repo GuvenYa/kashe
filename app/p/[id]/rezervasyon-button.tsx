@@ -22,9 +22,16 @@ import { SaatSecici } from '@/app/components/ui/saat-secici';
 import { useProfilIslem } from './profil-islem-baglami';
 import {
   IlSecici,
+  IlceSecici,
   ilEslestir,
   type Il,
 } from '@/app/components/ui/il-secici';
+import {
+  ilceListesi,
+  ilceTasi,
+  konumBirlestir,
+  konumCoz,
+} from '@/app/lib/ilceler';
 
 type Props = {
   professionalId: string;
@@ -94,13 +101,33 @@ export function RezervasyonButton({
   /**
    * Duzeltme 10-D4: il ve mekan YEREL; alana birlesik yazilir.
    * `location` tek gercek kalir (eylem ve legacy sutun ayni degeri okur).
+   *
+   * Duzeltme 14-B: il 30 buyuksehirden biriyse araya ILCE acilir kutusu girer
+   * (`app/lib/ilceler.ts`); deger "<mekan>, <ilce>, <Il>". Diger illerde
+   * "ilce / mekan" metni aynen kalir.
    */
   const [mekan, setMekan] = useState('');
+  const [ilce, setIlce] = useState('');
   const secilenIl =
     yalnizKendiSehri && saglayiciIli ? saglayiciIli : ilEslestir(location, iller);
-  function konumYaz(il: string, m: string) {
-    const t = m.trim();
-    setLocation(il ? (t ? `${t}, ${il}` : il) : t);
+  // Buyuksehirse ilce listesi; degilse null (serbest "ilce / mekan").
+  const ilceler = ilceListesi(secilenIl);
+  const secilenIlce = ilceler ? ilce : '';
+  function konumYaz(il: string, ilc: string, m: string) {
+    setLocation(konumBirlestir(il, ilc, m));
+  }
+  /**
+   * Disaridan gelen konum metni (kart on dolgusu, giris sonrasi bekleyen
+   * talep): `location` ile birlikte ilce ve mekan kutulari da dolar; yoksa
+   * kutular bos gorunup gonderilen metinde gizli parca kalirdi.
+   */
+  function konumYukle(metin: string) {
+    setLocation(metin);
+    const il =
+      yalnizKendiSehri && saglayiciIli ? saglayiciIli : ilEslestir(metin, iller);
+    const cozum = konumCoz(metin, il);
+    setIlce(cozum.ilce);
+    setMekan(cozum.mekan);
   }
   const [message, setMessage] = useState('');
 
@@ -166,7 +193,7 @@ export function RezervasyonButton({
         setEventDate(payload!.event_date || '');
         setStartTime(payload!.start_time || '');
         setEndTime(payload!.end_time || '');
-        setLocation(payload!.location || '');
+        konumYukle(payload!.location || '');
         setMessage(payload!.message || '');
         setError(result.error || 'Rezervasyon talebin otomatik gönderilemedi. Lütfen tekrar dene.');
         setModalOpen(true);
@@ -310,7 +337,7 @@ export function RezervasyonButton({
           const ilkTarih = initialDate ?? profilBaglami.tarih;
           const ilkKonum = initialLocation ?? profilBaglami.sehir;
           if (ilkTarih && !eventDate) setEventDate(ilkTarih);
-          if (ilkKonum && !location) setLocation(ilkKonum);
+          if (ilkKonum && !location) konumYukle(ilkKonum);
           setModalOpen(true);
         }}
         className={
@@ -430,8 +457,26 @@ export function RezervasyonButton({
                     deger={secilenIl}
                     oncelikliIl={saglayiciIli}
                     sabitIl={yalnizKendiSehri ? saglayiciIli : null}
-                    onChange={(ad) => konumYaz(ad, mekan)}
+                    onChange={(ad) => {
+                      // Ilce yeni ilin listesinde yoksa bosalir.
+                      const yeniIlce = ilceTasi(ad, ilce);
+                      setIlce(yeniIlce);
+                      konumYaz(ad, yeniIlce, mekan);
+                    }}
                   />
+                  {ilceler && (
+                    /* Duzeltme 14-B: buyuksehirde ilce listeden secilir. */
+                    <IlceSecici
+                      key={secilenIl}
+                      id="booking-location-ilce"
+                      ilceler={ilceler}
+                      deger={secilenIlce}
+                      onChange={(ad) => {
+                        setIlce(ad);
+                        konumYaz(secilenIl, ad, mekan);
+                      }}
+                    />
+                  )}
                   <input
                     type="text"
                     maxLength={80}
@@ -439,9 +484,14 @@ export function RezervasyonButton({
                     onChange={(e) => {
                       const m = e.target.value.slice(0, 80);
                       setMekan(m);
-                      konumYaz(secilenIl, m);
+                      konumYaz(secilenIl, secilenIlce, m);
                     }}
-                    placeholder="İlçe / mekan (isteğe bağlı)"
+                    aria-label={ilceler ? 'Mekan' : 'İlçe / mekan'}
+                    placeholder={
+                      ilceler
+                        ? 'Mekan (isteğe bağlı)'
+                        : 'İlçe / mekan (isteğe bağlı)'
+                    }
                     className="w-full px-4 py-3 bg-card border border-line rounded-lg text-ink placeholder:text-ink-72/50 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
                   />
                   {yalnizKendiSehri && saglayiciIli && (

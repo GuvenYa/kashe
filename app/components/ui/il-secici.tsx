@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { aramaKatla } from '@/app/lib/arama';
 
 /**
@@ -20,6 +20,9 @@ import { aramaKatla } from '@/app/lib/arama';
  * SAGLAYICI KURALI (`category_attributes.service_region`): cagiran
  * `sabitIl` verirse liste O ILDEN ibarettir (secili gelir, degistirilemez);
  * `oncelikliIl` verirse o il listenin BASINDA durur.
+ *
+ * ILCE (Duzeltme 14-B): ayni kutu `IlceSecici` ile ilce listesinde de
+ * kullanilir; arama etiketi ve "bulunamadi" metni bu yuzden prop.
  */
 
 export type Il = { id: number; name: string };
@@ -33,6 +36,8 @@ export function IlSecici({
   oncelikliIl = null,
   sabitIl = null,
   className,
+  aramaEtiketi = 'İl ara',
+  bosMetin = 'İl bulunamadı.',
 }: {
   iller: Il[];
   /** Secili il ADI ('' = secim yok). */
@@ -45,6 +50,10 @@ export function IlSecici({
   /** Yalniz bu il secilebilir (saglayici yalniz kendi sehrinde hizmet veriyor). */
   sabitIl?: string | null;
   className?: string;
+  /** Arama kutusunun etiketi ve yer tutucusu ("Il ara" / "Ilce ara"). */
+  aramaEtiketi?: string;
+  /** Arama sonuc vermeyince gorunen satir. */
+  bosMetin?: string;
 }) {
   const [acik, setAcik] = useState(false);
   const [sorgu, setSorgu] = useState('');
@@ -157,11 +166,11 @@ export function IlSecici({
             role="combobox"
             aria-expanded={acik}
             aria-autocomplete="list"
-            aria-label="İl ara"
+            aria-label={aramaEtiketi}
             aria-activedescendant={
               suzulmus[vurgu] ? `${id ?? 'il'}-secenek-${suzulmus[vurgu].id}` : undefined
             }
-            placeholder="İl ara…"
+            placeholder={aramaEtiketi + '…'}
             autoFocus
             className="w-full px-3 py-2 bg-paper border-b border-line text-sm text-ink focus:outline-none"
           />
@@ -196,12 +205,56 @@ export function IlSecici({
               </li>
             ))}
             {suzulmus.length === 0 && (
-              <li className="px-3 py-2 text-sm text-ink-72">İl bulunamadı.</li>
+              <li className="px-3 py-2 text-sm text-ink-72">{bosMetin}</li>
             )}
           </ul>
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * ILCE SECICI (Duzeltme 14-B) - buyuksehir ilinin ilce listesi, aranabilir.
+ *
+ * `IlSecici`nin ayni kutusu; liste `app/lib/ilceler.ts`ten gelir (cagiran
+ * `ilceListesi(il)` sonucunu verir). Secim istege bagli: secili ilce varken
+ * listenin basinda "Secimi temizle" durur. Deger ilce ADIDIR ('' = secim yok).
+ *
+ * Il degisince kutunun arama metni ve acik / kapali durumu eskisinden
+ * kalmasin diye cagiran `key={il}` verir.
+ */
+export function IlceSecici({
+  ilceler,
+  deger,
+  onChange,
+  id,
+  placeholder = 'İlçe seç (isteğe bağlı)',
+  className,
+}: {
+  ilceler: readonly string[];
+  /** Secili ilce ADI ('' = secim yok). */
+  deger: string;
+  onChange: (ad: string) => void;
+  id?: string;
+  placeholder?: string;
+  className?: string;
+}) {
+  const secenekler = useMemo(
+    () => ilceler.map((name, sira) => ({ id: sira + 1, name })),
+    [ilceler]
+  );
+  return (
+    <IlSecici
+      id={id}
+      iller={secenekler}
+      deger={deger}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={className}
+      aramaEtiketi="İlçe ara"
+      bosMetin="İlçe bulunamadı."
+    />
   );
 }
 

@@ -178,6 +178,40 @@ derlenir, repoda statik veri); il secilince ilce acilir kutusu, mekan serbest
 metin; diger 51 ilde bugunku serbest "ilce / mekan" alani kalir. Kaydedilen
 deger bicimi ayni ("<ilce / mekan>, <Il>").
 
+YAPILDI (12 Kas, dal `duzeltme-14b`; migration yok).
+- Veri: `app/lib/ilceler.ts` - 30 il, 519 ilce, Turkce alfabe sirasinda. Kaynak
+  PTT posta kodu listesi (`turkey-neighbourhoods` 4.0.3 paketi, Mart 2024);
+  il basina sayilar 6360 sayili Kanun sonrasi yapiyla ayni. Resmi sayfalar
+  (Harita Genel Mudurlugu, Icisleri) otomatik okumaya kapali oldugu icin
+  birebir karsilastirma yapilamadi. Fahri'nin gozden gecirecegi liste:
+  `docs/sahne/ilce-listesi-14b.md`. Veritabaninda ilce tablosu yok; yeni ilce
+  ya da ad degisikligi yalniz bu dosyada yapilir.
+- Yardimcilar (ayni dosya): `ilceListesi(il)` (buyuksehir degilse null),
+  `ilceEslestir` (Turkce harf duyarsiz; eski yazimlar - Eyup, Kazan,
+  Ondokuzmayis - listedeki ada eslesir), `ilceTasi` / `ilceMetniTasi` (il
+  degisince), `konumBirlestir` / `konumCoz` ("<mekan>, <ilce>, <Il>").
+- Bilesen: `IlceSecici` (`app/components/ui/il-secici.tsx`) - il secicinin
+  ayni aranabilir kutusu ("Ilce ara", "Secimi temizle"); secim istege bagli.
+- Formlar: profil "Teklif al" ve `/teklif-topla` (`BriefAlanlari`), rezervasyon
+  talebi modali: il buyuksehirse il kutusunun altinda ilce kutusu, metin alani
+  "Mekan (istege bagli)"; diger illerde "Ilce / mekan (istege bagli)" aynen.
+  Il degisince ilce yeni ilin listesinde yoksa bosalir, mekan kalir. Kaydedilen
+  deger "<mekan>, <ilce>, <Il>" (il sonda; eski kayitlar ayni yardimciyla
+  cozulur, "Besiktas, Istanbul" ilce secili gelir). "Yalniz kendi sehrinde"
+  calisan profesyonelde il kilitli, ilce o ilin listesinden secilir.
+  Rezervasyon modalinda disaridan gelen konum (kart on dolgusu, giris sonrasi
+  bekleyen talep) artik ilce ve mekan kutularini da dolduruyor.
+- Sihirbaz (2. adim): sehir buyuksehirse "Ilce (istege bagli)" listeden; diger
+  illerde "Ilce / semt" serbest metin. Sehir degisince eski sehrin listesinden
+  secilen ilce tasinmaz; Kashe AI'nin metinden cikardigi ilce listeyle
+  eslesirse listedeki yazimiyla, eslesmezse (semt) oldugu gibi gorunur.
+- Yerel deneme: yardimcilar 51 / 51 (519 ilce x 3 mekan gidis-donus dahil);
+  bilesen ayri sayfada Playwright ile 36 / 36 (arama, Enter, Escape, il
+  degisimi, temizle, kilitli il, dolu gelen deger). tsc + eslint temiz.
+- Bu turda degismeyenler: profil kartindaki sehir kutusu (yalniz il), ic
+  araclar. Sunucu dogrulamasi ayni (konum serbest metin; ilce listesi
+  istemcide yonlendirir, zorlamaz).
+
 ### 14-C Renkler, bolum gecisleri, scorecard (satir 24)
 Tasarim yonu karari (Fahri + Guven): "daha canli renkler", izleme sayfalarinin
 farklilasmasi, dikey balanced scorecard. Bu turlarda kod degismez; karar
