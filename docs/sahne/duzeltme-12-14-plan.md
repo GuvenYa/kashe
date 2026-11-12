@@ -178,7 +178,11 @@ derlenir, repoda statik veri); il secilince ilce acilir kutusu, mekan serbest
 metin; diger 51 ilde bugunku serbest "ilce / mekan" alani kalir. Kaydedilen
 deger bicimi ayni ("<ilce / mekan>, <Il>").
 
-YAPILDI (12 Kas, dal `duzeltme-14b`; migration yok).
+YAPILDI ve URETIMDE (12 Kas, dal `duzeltme-14b`; migration yok; main = sahne =
+ecee542). Uretimde girissiz, salt okuma: sihirbazda Istanbul secili adreste
+ilce kutusu (39 ilce, `ilce=kadikoy` -> "Kadikoy"), Bolu'da serbest metin; bir
+profesyonelin profilinde "Teklif Al" penceresinde il + ilce kutusu + "Mekan"
+(talep gonderilmedi); konsol temiz. Sahne adresinde Kaan ile ayni iki ekran.
 - Veri: `app/lib/ilceler.ts` - 30 il, 519 ilce, Turkce alfabe sirasinda. Kaynak
   PTT posta kodu listesi (`turkey-neighbourhoods` 4.0.3 paketi, Mart 2024);
   il basina sayilar 6360 sayili Kanun sonrasi yapiyla ayni. Resmi sayfalar

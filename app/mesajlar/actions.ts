@@ -23,6 +23,7 @@ import {
   briefVeriTemizle,
 } from '@/app/lib/brief-anahtarlari';
 import { teklifYonlendirmeleri } from '@/app/lib/teklif-yonlendirme';
+import { sohbetTalepAlanlari } from '@/app/lib/sohbet-talep-alanlari';
 import {
   validateMessageContent,
   formatViolationMessage,
@@ -483,29 +484,33 @@ export async function startConversation(
   if (existing) {
     conversationId = existing.id;
     // Mevcut konuşmaya yeni talep geldi — çubuğu en güncel talebe göre güncelle.
-    // Yalnızca gelen talepte dolu olan alanları yaz (boş alan eskisini ezmesin).
-    const updateFields: Record<string, unknown> = {
-      request_type: data.request_type ?? 'quote',
-    };
-    if (data.event_date !== null) updateFields.event_date = data.event_date;
-    if (safeEventType !== null) updateFields.event_type = safeEventType;
-    if (data.location !== null)
-      updateFields.location = data.location?.trim() || null;
-    if (data.guest_count !== null) updateFields.guest_count = data.guest_count;
-    if (safeBudgetRange !== null) updateFields.budget_range = safeBudgetRange;
-    if (temizBrief) updateFields.brief_data = temizBrief;
-    if (data.start_time !== undefined && data.start_time !== null)
-      updateFields.start_time = data.start_time;
-    if (data.end_time !== undefined && data.end_time !== null)
-      updateFields.end_time = data.end_time;
-    // Duzeltme 12-A: yeni tarih saatsiz geldiyse onceki talebin saatleri bu
-    // tarihe ait degildir; teklif formu eski saatle dolu acilmasin.
-    if (data.event_date !== null && !data.start_time) {
-      updateFields.start_time = null;
-      updateFields.end_time = null;
-    }
-    // Etkinlik bagi yalniz DOLU gelirse yazilir (bos deger eskisini ezmesin — Yol A).
-    if (etkinlikId) updateFields.event_id = etkinlikId;
+    // Duzeltme 15-F (bulgu 133): onceki talep teklif aldiysa bu gonderim YENI
+    // bir istir (asagida sayac artar, "Yeni talep #n" karti yazilir) ve onceki
+    // isin tarihini / saatini / yerini / etkinlik bagini devralmaz: bos gelen
+    // alan temizlenir. Teklif almamis talepte ayni talebin guncellemesidir;
+    // yalniz dolu gelen alan yazilir (bos alan eskisini ezmesin). Kural:
+    // app/lib/sohbet-talep-alanlari.ts.
+    // Sorgu hata verirse eski davranis (guncelleme) uygulanir.
+    const { data: oncekiYanitlandi, error: yanitHatasi } = await supabase.rpc(
+      'fn_duz12_talep_yanitlandi',
+      { p_sohbet: conversationId }
+    );
+    if (yanitHatasi) console.error('[mesaj] talep yanit sorgusu', yanitHatasi);
+    const updateFields = sohbetTalepAlanlari(
+      {
+        talepTuru: data.request_type,
+        tarih: data.event_date,
+        tur: safeEventType,
+        yer: data.location,
+        kisiSayisi: data.guest_count,
+        butce: safeBudgetRange,
+        brief: temizBrief,
+        baslangic: data.start_time,
+        bitis: data.end_time,
+        etkinlikId,
+      },
+      oncekiYanitlandi === true
+    );
 
     const { error: sohbetHatasi } = await supabase
       .from('conversations')

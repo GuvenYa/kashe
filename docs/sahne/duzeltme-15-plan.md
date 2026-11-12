@@ -240,6 +240,39 @@ Onizleme (Ilker = Lumen ekip koordinatoru, Kaan = musteri, Lumen sahibi):
 - Sahne'de kalan tur verisi: Kaan - Lumen sohbetinde bir test mesaji (tercih edilen uye Ilker),
   Kaan'in Lumen'e dusen Drone Pilotu teklif topla talebi.
 
+## 15-F Yeni talep onceki isin bilgisini devralmasin (bulgu 133)
+
+14-B onizleme turunda bulundu (12 Kas). Kaan, daha once anlastigi Ilker'e profilden TARIHSIZ yeni
+bir talep gonderdi; sohbet cubugu ve "Yeni talep #4" karti onceki isin tarihiyle (12 Aralik 2026,
+onayli rezervasyonun gunu) gorundu. Sohbetin etkinlik bagi da kaldigi icin musteri merkezinde yeni
+talep ayri "teklif bekleniyor" karti acmadi, eski etkinligin kartina "2 talep" olarak girdi.
+Profesyonelin `/islerim`inde talep dogru yerde ("Yanit bekleyen", "Talep #4") ama eski tarihle.
+
+Neden: `startConversation` mevcut sohbette yalniz DOLU gelen alanlari yaziyordu ("bos alan eskisini
+ezmesin"). Bu kural ayni talebin guncellemesi icin dogru; onceki talep teklif aldiysa gonderim
+yeni bir istir (sayac artar, "Yeni talep #n" karti yazilir) ve eski isin bilgisini tasimamali.
+
+YAPILDI (12 Kas, dal `duzeltme-15f`; migration yok).
+- `app/lib/sohbet-talep-alanlari.ts` (saf fonksiyon): onceki talep teklif aldiysa (YENI IS) tarih,
+  saat, tur, yer, kisi sayisi, butce, brief ve etkinlik bagi gelen talepten yazilir, bos gelen
+  TEMIZLENIR; teklif almamissa (AYNI TALEBIN GUNCELLEMESI) eski kural birebir kalir (yalniz dolu
+  alan yazilir, Duzeltme 12-A saat kurali dahil).
+- `app/mesajlar/actions.ts` `startConversation`: guncellemeden once `fn_duz12_talep_yanitlandi`
+  sorulur (sayaci artiran kosulla ayni; sorgu hata verirse eski davranis). Profilden "Teklif Al" ve
+  "Rezervasyon Talebi" ayni yoldan gecer.
+- Onceki isin teklifi ve rezervasyonu kendi tarihini / etkinlik bagini kendi satirinda tasir
+  (merkez karti `rezervasyon.event_id`yi kullanir); sohbet alanlarinin temizlenmesi onlari etkilemez.
+- Yerel deneme: saf fonksiyon 17 / 17 (guncelleme kurali eskisiyle birebir, yeni iste 10 alanin
+  hepsi yazilir). Yerel veritabaninda `conversations` uzerinde UPDATE tetikleyicisi yok, alanlar
+  NULL kabul ediyor. tsc + eslint temiz.
+- Degismeyenler: teklif topla yaniti (`app/teklif-topla/actions.ts`) talebin tarih / tur / butce /
+  brief'ini zaten yaziyor; yer, saat ve etkinlik bagi orada eskisi gibi (talepte bag yoksa mevcut
+  bag ezilmez). Sahne'deki mevcut "Talep #4" kaydi duzelmez (veri eski kuralla yazildi).
+- Onizleme turu plani: Ilker Talep #4'e teklif verir -> Kaan profilden tarihsiz ve etkinliksiz
+  yeni talep gonderir -> cubukta eski tarih olmamali, Kaan'in merkezinde ayri "teklif bekleniyor"
+  karti, "Tur 15-A" etkinlik kartinda onayli rezervasyon yerinde; ardindan ayni talep (teklif
+  almadan) yalniz mesajla yeniden gonderilince alanlar korunmali.
+
 ## Gorsel dil (12 Kas, Guven + Fahri)
 
 "Ekip kurma sayfasindaki gorunum iyi; tum sayfalara uygulayalim." Calisma yuzeyleri sayfa sayfa
@@ -296,8 +329,13 @@ profesyonelin acik profili aciliyor, "Uye oldugu ajans" kutusu varsayilan metinl
 Sahne adresinde Ilker ile uyelik sayfasi (tercih "kendim") ve `/islerim` (2 / 0 / 1 / 3 / 6, bilgi
 satiri yok); Kaan ile `/etkinliklerim` (8 / 8 / 6 / 8; teklif bekleyen 7'den 8'e cikti, 15-E
 turunda Lumen'e dusen talepler listede) ve Ilker'in profili (ajans notu yok, kutu varsayilan metinle).
-14-B (30 buyuksehirde ilce listesi) onizlemede dogrulandi: `duzeltme-14b`, migration yok; ayrinti
-`docs/sahne/duzeltme-12-14-plan.md` "14-B". Sirada: kurum ve ajans panelinde ayni merkez.
+14-B (30 buyuksehirde ilce listesi) uretimde (12 Kas): main = sahne = ecee542, migration yok; ayrinti
+ve uretim dogrulamasi `docs/sahne/duzeltme-12-14-plan.md` "14-B". Sahne'de 14-B turundan kalan veri:
+Kaan - Ilker sohbetinde "Yeni talep #4" (Ilker `/islerim` 3 / 0 / 1 / 3 / 6; Kaan merkezi 8 / 8 / 6 / 8,
+talep eski etkinligin kartinda - bulgu 133).
+15-F (bulgu 133: yeni talep eski isin tarihini ve etkinlik bagini devralmasin) dalda:
+`duzeltme-15f`, migration yok; onizleme turu bekliyor.
+Sirada: kurum ve ajans panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 
