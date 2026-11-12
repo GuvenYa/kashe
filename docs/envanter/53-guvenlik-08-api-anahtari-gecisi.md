@@ -1,6 +1,6 @@
 # Guvenlik 08 - API anahtari gecisi (uretim)
 
-Tarih: 10 Kasim 2026. Durum: A-D uretimde, E0 Sahne'de dogrulandi (10 Kas); E siradaki.
+Tarih: 10 Kasim 2026. Durum: TAMAM (A-G uretimde, 10-12 Kas). Kalan: bolum 5 (Sahne gecisi, fonksiyondaki eski anahtar yedegi).
 
 ## 1. Neden
 
@@ -9,8 +9,8 @@ Tarih: 10 Kasim 2026. Durum: A-D uretimde, E0 Sahne'de dogrulandi (10 Kas); E si
   baglandigi icin uretime istek gitmedi (dal anahtari reddetti); gecmis dosyasi temizlendi. Anahtar
   yine de acikta sayilir.
 - Supabase'e gore eski service_role anahtari TEK BASINA iptal edilemez: eski anahtarlar birlikte
-  kapatilir (anon dahil) ve eski JWT secret da iptal edilmelidir. Eski anahtarlar 2026 sonunda zaten
-  kullanimdan kalkiyor.
+  kapatilir (anon dahil) ve eski JWT secret da iptal edilmelidir. Dashboard: "Legacy API keys will be
+  retired in early 2027".
 - `foto-yukle.mjs` artik dal disi JWT anahtari istek atmadan reddeder (proje ve rol anahtarin icinde).
 
 ## 2. Eski anahtari kullanan yerler (repo + uretim)
@@ -69,13 +69,41 @@ E. **Site:** Vercel > Production ortam degiskeni `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    anahtar (Preview dal'da kalir), ardindan Production yeniden dagitim; `.env.local` da. Deneme:
    giris / cikis, mesaj gonderme ve canli bildirim, dosya yukleme, Kesfet, profil.
 
+   SONUC (10 Kas): ilk derlemede Production degiskenine yanlislikla Sahne'nin publishable anahtari
+   girildi; uretim "Invalid API key" aldi (Kesfet "Bir sorun olustu", profiller 404) - main birlestirmesinden
+   duzeltilmis yeniden derlemeye kadar. Dogru anahtar (`sb_publishable_atf...`) ve onbelleksiz yeniden
+   derlemeyle duzeldi: paket yalniz uretim publishable anahtarini tasiyor, uretime 200, Kesfet 102 kart,
+   profil ve ana sayfa acik; `.env.local` da uretim anahtarinda. Ders: publishable anahtar herkese acik
+   oldugu icin kaydetmeden once onekiyle hangi projeye ait oldugu kontrol edilir (Sahne `sb_publishable_-9e...`).
+
+   F oncesi tarama (10 Kas, uretim SQL Editor, salt okuma): veritabani webhook'u yok; 5 cron isinde eski
+   anahtar izi yok; fonksiyon govdelerinde gomulu JWT yok; Edge Function yalniz send-message-notification.
+   Vault'ta ESKI bir `service_role_key` sirri var (eski anahtarin kopyasi olabilir): kullanan bir sey yoksa
+   F'den sonra Vault'tan silinir. Dashboard dugmesi: "Disable JWT-based API keys".
+
 F. **Eski anahtarlari kapat:** Settings > API Keys > eski anahtarlari devre disi birak. Ayni denemeler
    tekrar; bildirim gorevi K5 200. Geri alinabilir (yeniden etkinlestirme), ama bu sizan anahtari da
    geri acar - yalniz acil durumda.
 
-G. **Eski JWT secret:** Project Settings > JWT Keys > imzalama anahtarlarina gecis, "Rotate Keys",
-   en az bir oturum jetonu suresi (1 saat) bekle, eski secret'i "Revoke". Beklemeden iptal edilirse
-   acik oturumlar dusebilir; az trafikli saatte.
+   SONUC (10 Kas): `service_role_key` Vault sirrini kullanan fonksiyon / cron / tetikleyici yok (olusturma
+   2026-05-16); "Disable JWT-based API keys" yapildi. Sonra: Kesfet 102 kart, uretime publishable 200;
+   asama33 K1-K3 ESIT, 17:25-17:35 kosulari 200 (fonksiyon yeni secret anahtarla calisiyor).
+   Vault'taki eski `service_role_key` kopyasi silinir.
+
+G. **Eski JWT secret:** Project Settings > JWT Keys > "JWT Signing Keys": (gerekirse "Migrate JWT
+   secret") > "Rotate Keys" (yeni anahtar imzalar, eski secret "Previously used keys"e gecer ve eski
+   oturumlari dogrulamaya devam eder) > EN AZ bir erisim jetonu suresi (1 saat) bekle > eski secret'i
+   "Revoke". Bekleme F'den degil Rotate'ten sonra sayilir; beklemeden iptal edilirse acik oturumlar duser.
+   DURUM (10 Kas): proje 6 ay once imzalama anahtarlarina gecmis ve donmus: "Current" ECC (P-256),
+   "Previously used keys" altinda eski HS256 paylasimli secret. Kullanici jetonlari 6 aydir ECC ile
+   imzalandigi icin bekleme gerekmez. Eski secret hala dogrulamada oldugu icin sizan service_role JWT'si
+   `Authorization` basliginda (herkese acik publishable anahtarla birlikte) gecerli kalabilir: "Revoke"
+   bu yuzden zorunlu. Repoda kendi JWT imzalayan kod yok (JWT_SECRET / jose / jsonwebtoken taramasi bos).
+   Vault'taki eski `service_role_key` silindi (kalan yalniz `bildirim_cron_anahtari`).
+   SONUC (12 Kas): eski HS256 secret "Revoke" edildi; sizan service_role JWT'si ve eski anon anahtar
+   kalici olarak gecersiz. Sonra: asama33 K1-K3 ESIT, 11:50-12:00 kosulari 200; Kesfet 102 kart,
+   publishable 200, profil acik. asama33'e K6 / K7 (e-posta bekleyen mesaj / bildirim sayisi) eklendi:
+   sifirdan buyukken K5 hep processed 0 diyorsa fonksiyon satirlari goremiyor demektir.
 
 ## 5. Sonra
 

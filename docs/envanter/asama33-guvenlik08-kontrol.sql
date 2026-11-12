@@ -10,6 +10,10 @@
 --   K5  BILGI: son 3 HTTP yaniti (kod, yanitin basi). Beklenen 200 ve
 --       {"processed":..}; 401 {"error":"yetkisiz"} fonksiyon sirri ile Vault
 --       anahtarinin farkli oldugunu gosterir.
+--   K6  BILGI: e-posta bekleyen mesaj (okunmamis, 5 dk'dan eski, gonderilmemis)
+--   K7  BILGI: e-posta bekleyen bildirim (rfp / proposal / task / crm, 2 dk'dan eski)
+--       K6 / K7 sifirdan buyukken K5 hep processed 0 diyorsa fonksiyon satirlari
+--       goremiyor demektir (anahtar yetkisi) - bakilmali.
 -- K1-K3 ESIT olmali. Dalda is olmadigi icin K1-K3 0 doner (beklenen; dalda
 -- calistirmak gerekmez).
 -- =============================================================================
@@ -54,4 +58,14 @@ SELECT kontrol, deger, beklenen,
 UNION ALL
 SELECT kontrol, deger, beklenen, sonuc FROM (SELECT * FROM kosular ORDER BY zaman DESC) a
 UNION ALL
-SELECT kontrol, deger, beklenen, sonuc FROM (SELECT * FROM yanitlar ORDER BY zaman DESC) b;
+SELECT kontrol, deger, beklenen, sonuc FROM (SELECT * FROM yanitlar ORDER BY zaman DESC) b
+UNION ALL
+SELECT 'K6 BILGI: e-posta bekleyen mesaj',
+       (SELECT count(*) FROM public.messages
+         WHERE read_at IS NULL AND email_notified_at IS NULL
+           AND created_at < now() - interval '5 minutes'), 0, 'BILGI'
+UNION ALL
+SELECT 'K7 BILGI: e-posta bekleyen bildirim',
+       (SELECT count(*) FROM public.notifications
+         WHERE type IN ('rfp', 'proposal', 'task', 'crm') AND email_notified_at IS NULL
+           AND created_at < now() - interval '2 minutes'), 0, 'BILGI';
