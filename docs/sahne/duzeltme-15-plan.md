@@ -268,10 +268,26 @@ YAPILDI (12 Kas, dal `duzeltme-15f`; migration yok).
 - Degismeyenler: teklif topla yaniti (`app/teklif-topla/actions.ts`) talebin tarih / tur / butce /
   brief'ini zaten yaziyor; yer, saat ve etkinlik bagi orada eskisi gibi (talepte bag yoksa mevcut
   bag ezilmez). Sahne'deki mevcut "Talep #4" kaydi duzelmez (veri eski kuralla yazildi).
-- Onizleme turu plani: Ilker Talep #4'e teklif verir -> Kaan profilden tarihsiz ve etkinliksiz
-  yeni talep gonderir -> cubukta eski tarih olmamali, Kaan'in merkezinde ayri "teklif bekleniyor"
-  karti, "Tur 15-A" etkinlik kartinda onayli rezervasyon yerinde; ardindan ayni talep (teklif
-  almadan) yalniz mesajla yeniden gonderilince alanlar korunmali.
+
+### Onizleme turu 15-F (13 Kas, dal `duzeltme-15f`; Ilker + Kaan)
+
+- Hazirlik: Ilker, eski kuralla yazilmis Talep #4'e teklif verdi (6.500 TL). Teklif formu onceki
+  isin tarihiyle (12 Aralik) ve "Musterinin sectigi tarihle dolu geldi" notuyla acildi (bulgunun
+  profesyonel tarafindaki etkisi); tarih 13 Aralik'a alindi. Bu sirada Kaan'in merkezinde "Tur 15-A"
+  etkinlik karti bekleyen teklif yuzunden Yaklasan'dan Teklif bekleyen'e gecmisti (9 / 7).
+- YENI IS: Kaan profilden tarihsiz, etkinliksiz yeni talep gonderdi (Mezuniyet, Besiktas / Istanbul,
+  30 kisi). Sohbet cubugu: "Tur: Mezuniyet, Lokasyon: Besiktas, Istanbul, Kisi: 30" - eski tarih ve
+  eski butce yok; kart "Yeni talep #5 - Mezuniyet - Tarih belli degil - Besiktas, Istanbul".
+  Kaan'in merkezi 10 / 8 / 6 / 8: Teklif bekleyen'de iki ayri kart ("Talep #4, 6.500 TL, teklif
+  geldi" ve "Talep #5, Mezuniyet, tarih belirtilmedi, teklif bekleniyor"); "Tur 15-A" etkinlik karti
+  Yaklasan'a dondu ("1 talep", onayli rezervasyon 8.500 TL yerinde).
+- AYNI TALEBIN GUNCELLEMESI: Kaan, Talep #5 teklif almadan formu yeniden gonderdi (tarih 15 Aralik,
+  kisi sayisi bos, ilce bos). Cubuk: "Tarih: 15 Aralik 2026, Lokasyon: Istanbul, Kisi: 30" - tarih
+  eklendi, bos gelen kisi sayisi korundu, dolu gelen yer yazildi; yeni "Yeni talep" karti acilmadi.
+- Ilker `/islerim` 3 / 1 / 1 / 3 / 6: Yanit bekleyen'de "Mezuniyet, 15 Aralik 2026, Istanbul,
+  Talep #5", Teklif verdiklerim'de "13 Aralik 2026, Talep #4, 6.500 TL". Konsol temiz.
+- Sahne'de kalan tur verisi: Ilker'in Talep #4'e bekleyen teklifi (6.500 TL, 13 Aralik), Kaan'in
+  Talep #5'i ve iki test mesaji.
 
 ## Gorsel dil (12 Kas, Guven + Fahri)
 
@@ -333,8 +349,8 @@ turunda Lumen'e dusen talepler listede) ve Ilker'in profili (ajans notu yok, kut
 ve uretim dogrulamasi `docs/sahne/duzeltme-12-14-plan.md` "14-B". Sahne'de 14-B turundan kalan veri:
 Kaan - Ilker sohbetinde "Yeni talep #4" (Ilker `/islerim` 3 / 0 / 1 / 3 / 6; Kaan merkezi 8 / 8 / 6 / 8,
 talep eski etkinligin kartinda - bulgu 133).
-15-F (bulgu 133: yeni talep eski isin tarihini ve etkinlik bagini devralmasin) dalda:
-`duzeltme-15f`, migration yok; onizleme turu bekliyor.
+15-F (bulgu 133: yeni talep eski isin tarihini ve etkinlik bagini devralmasin) onizlemede
+dogrulandi: `duzeltme-15f`, migration yok.
 Sirada: kurum ve ajans panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
