@@ -147,7 +147,8 @@ Rehber hesaplara girilmedi; yeni veri uretilmedi.
   gorunuyor; ayni isler Kaan'in merkezindeki kartlarla ortusuyor.
 - "Teklif ver" -> `/teklif-talepleri#talep-<id>`: dogru karta iniyor. Kart ISARETLENMIYORDU
   (`:target` uygulama ici geciste calismiyor) -> kucuk istemci bileseni (`HedefVurgusu`) karti
-  isaretleyip ortaya getiriyor; ikinci derlemede bakilacak.
+  isaretleyip ortaya getiriyor; ikinci derlemede dogrulandi (kart koyu kenarli ve halkali,
+  ekranin ortasinda; `data-[hedef-vurgu]:` siniflari uretilen CSS'te var).
 - Menu: Profesyonel grubunda Merkez / Islerim / Takvim / Basvurularim (+ Kazanclar); Lumen grubu
   ayni. Hesap menusu: Panel / Islerim / Takvim / Lumen paneli / Etkinlikler.
 - Rezervasyonun geri baglantisi "Islerim" (Anlasilan sekmesi); Merkez'de "Bekleyen teklif talebi" 2
