@@ -304,8 +304,12 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     booking.cancelled_by === booking.professional_id;
   // Duzeltme 15-A (bulgu 128): musteri hesabinda rezervasyonlar "Etkinliklerim"
   // merkezinde; geri baglantisi rezervasyonun durdugu sekmeye doner.
-  const merkezeDon =
-    !teklifSekli && viewer === 'customer' && (await musteriMerkeziAcik());
+  // Duzeltme 16-B: teklif sekli rezervasyon da ALICI tarafinda merkezdedir
+  // (alici kisi ya da alici kurulusun uyesi); satici kurulus uyesi degil.
+  const aliciBakisi = teklifSekli
+    ? (isCustomer || isBuyerOrg) && !isSellerOrg
+    : viewer === 'customer';
+  const merkezeDon = aliciBakisi && (await musteriMerkeziAcik());
   // Duzeltme 15-B (bulgu 129): profesyonelin KENDI rezervasyonu "Islerim"de.
   const islerimeDon =
     !teklifSekli &&

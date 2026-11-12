@@ -65,9 +65,16 @@ const IKINCIL_DUGME =
 export function MusteriMerkezi({
   veri,
   sekme,
+  kurum = null,
 }: {
   veri: MusteriIsleri;
   sekme: string | undefined;
+  /**
+   * Duzeltme 16-B: merkez kurum panelinden acildi (kurumun kendi hesabi).
+   * "Yeni etkinlik" kurulusa baglanir; ajans teklif talepleri (RFP) ayri
+   * sayfada oldugu ustte yazar.
+   */
+  kurum?: { id: string; name: string } | null;
 }) {
   const { isler, ozet } = veri;
   const sayi: Record<IsAsamasi, number> = {
@@ -136,7 +143,14 @@ export function MusteriMerkezi({
         altNot="Talep, teklif ve rezervasyonların iş iş bir arada: teklif bekleyenler, yaklaşanlar, tamamlananlar."
         sagAlan={
           <div className="flex items-center gap-2 flex-wrap">
-            <Link href="/etkinlik-sihirbazi" className={IKINCIL_DUGME}>
+            <Link
+              href={
+                kurum
+                  ? `/etkinlik-sihirbazi?kurulus=${kurum.id}`
+                  : '/etkinlik-sihirbazi'
+              }
+              className={IKINCIL_DUGME}
+            >
               Yeni etkinlik
             </Link>
             <Link href="/teklif-topla" className={BIRINCIL_DUGME}>
@@ -149,6 +163,18 @@ export function MusteriMerkezi({
         <em className="not-italic font-medium text-brand-accent">Etkinliklerin</em>{' '}
         tek yerde
       </PanelBaslik>
+
+      {kurum && (
+        <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
+          Etkinliklerin, profesyonellerden gelen teklifler ve rezervasyonların
+          burada; onayladığın ajans tekliflerinin rezervasyonları da dahil.
+          Ajanslara açtığın teklif talepleri ve gelen ajans teklifleri ayrı
+          sayfada:{' '}
+          <Link href="/kurumsal/rfp" className="kashe-tap text-brand-ink hover:underline">
+            Teklif talepleri
+          </Link>
+        </p>
+      )}
 
       {hicYok ? (
         <div className="bg-card border border-line rounded-xl p-8 sm:p-12 text-center">

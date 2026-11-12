@@ -4,6 +4,10 @@ import { createClient } from '@/app/lib/supabase-server';
 import { getCachedUser } from '@/app/lib/auth';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCrewContext } from '@/app/lib/org-context';
+import {
+  MERKEZ_YAKLASAN_YOLU,
+  musteriMerkeziAcik,
+} from '@/app/lib/musteri-merkezi';
 import { panelMenusu } from '@/app/lib/panel-menu';
 import {
   PanelKabugu,
@@ -78,6 +82,7 @@ export default async function KurumsalPanelPage() {
 
   const { orgs } = await getCrewContext();
   const kurulus = orgs.find((o) => o.accountType === 'business') ?? null;
+  const merkezAcik = await musteriMerkeziAcik();
   if (!kurulus) redirect('/profil');
 
   const bugun = panelGunBugun();
@@ -245,7 +250,8 @@ export default async function KurumsalPanelPage() {
             onayliTutar > 0 ? `Toplam ${formatPrice(onayliTutar)}` : 'Tutar yok'
           }
           vurgu={onayliRezervasyonlar.length > 0 ? 'moss' : 'none'}
-          href="/rezervasyonlarim"
+          // Duzeltme 16-B: kurumun kendi hesabinda rezervasyonlar merkezde.
+          href={merkezAcik ? MERKEZ_YAKLASAN_YOLU : '/rezervasyonlarim'}
         />
       </KpiSatir>
 

@@ -5,7 +5,10 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
-import { musteriMerkeziAcik } from '@/app/lib/musteri-merkezi';
+import {
+  kurumPanelindeMerkez,
+  musteriMerkeziAcik,
+} from '@/app/lib/musteri-merkezi';
 import { musteriIsleri } from './musteri-isleri';
 import { MusteriMerkezi } from './musteri-merkezi';
 
@@ -83,13 +86,15 @@ export default async function EtkinliklerimPage({
   // `app/lib/musteri-merkezi.ts`). Ajans ve kurum panellerinde etkinlik
   // listesi oldugu gibi kalir.
   if (await musteriMerkeziAcik()) {
-    const [veri, merkezKabugu] = await Promise.all([
+    const [veri, merkezKabugu, kurum] = await Promise.all([
       musteriIsleri(supabase, user.id),
       panelKabukProps(),
+      // Duzeltme 16-B: kurumun kendi hesabi (kurum panelinden acildi).
+      kurumPanelindeMerkez(),
     ]);
     return (
       <PanelKabugu {...merkezKabugu}>
-        <MusteriMerkezi veri={veri} sekme={sekme} />
+        <MusteriMerkezi veri={veri} sekme={sekme} kurum={kurum} />
       </PanelKabugu>
     );
   }

@@ -36,6 +36,12 @@ import {
  *     profesyonelin "Islerim" merkezi ayni birimleri kullanir.
  *   - Etkinlige bagli talep / birim / rezervasyon etkinlik kartinin altina
  *     girer (`event_id`); ayrica kart acilmaz.
+ *   - Duzeltme 16-B: TEKLIF SEKLI rezervasyonlar (ajans teklifinin - RFP -
+ *     onayindan dogar; `quote_id` ve `professional_id` bos, karsi taraf satici
+ *     KURULUS) da okunur: alici kurulus ya da alici kisi uzerinden. Sohbet
+ *     birimine baglanmaz; etkinligi varsa etkinlik kartina (ajansin adi ve
+ *     tutariyla bir satir), yoksa kendi kartiyla gorunur. Eskiden merkezde
+ *     yoktu; kurum hesabinda rezervasyonlarin tek yeri burasi olunca eklendi.
  *
  * Yalniz OKUR; yeni DB nesnesi yok, gorunurluk mevcut RLS ile ayni. Sayilar
  * okunan satirlardan gelir (uydurma sayac yok).
@@ -45,7 +51,24 @@ type SunucuIstemcisi = Awaited<ReturnType<typeof createClient>>;
 type ProOzeti = KisiOzeti;
 type SohbetSatiri = IsSohbeti;
 type TeklifSatiri = IsTeklifSatiri;
-type RezervasyonSatiri = IsRezervasyonu;
+type RezervasyonSatiri = IsRezervasyonu & {
+  buyer_organization_id?: string | null;
+  /** Satici kurulusun adi - yalniz teklif sekli rezervasyonda dolu. */
+  saticiAdi?: string | null;
+  /** Ajans teklifinin basligi - yalniz teklif sekli rezervasyonda. */
+  teklifBasligi?: string | null;
+};
+
+/** Teklif sekli rezervasyon sorgusunun satiri (gomulu teklif ve satici). */
+type TeklifRezSatiri = IsRezervasyonu & {
+  buyer_organization_id: string | null;
+  surum: {
+    proposal: {
+      title: string | null;
+      seller: { display_name: string | null } | null;
+    } | null;
+  } | null;
+};
 type Birim = IsBirimi;
 
 type EtkinlikSatiri = {
@@ -151,6 +174,11 @@ function teklifTonu(d: QuoteStatus): IsTonu {
   return d === 'pending' ? 'vurgu' : d === 'accepted' ? 'olumlu' : 'soluk';
 }
 
+/** Uzun basligi kartta tek parcada tutmak icin kisaltir. */
+function kisalt(metin: string, sinir: number): string {
+  return metin.length > sinir ? `${metin.slice(0, sinir - 1).trimEnd()}…` : metin;
+}
+
 function proAdi(pro: ProOzeti, tamAd: boolean): string {
   if (!pro) return 'Profesyonel';
   if ((pro.role === 'agency' || pro.role === 'business') && pro.company_name) {
@@ -201,8 +229,25 @@ export async function musteriIsleri(
     ...(orgIdleri.length > 0 ? [`organization_id.in.(${orgIdleri.join(',')})`] : []),
   ].join(',');
 
-  const [etkinlikSonuc, talepSonuc, sohbetSonuc, teklifSonuc, rezSonuc] =
-    await Promise.all([
+  // Duzeltme 16-B: teklif sekli rezervasyonlar ALICI tarafindan okunur - alici
+  // kisi (kendisi / adina islem yaptigi kurum) ya da etkinliklerini gorebildigi
+  // alici kurulus. Satici kurulus uyeligi burada sayilmaz (o "Teklifler"de).
+  const aliciOrgIdleri = orgs.filter((o) => o.canViewEvents).map((o) => o.id);
+  const teklifRezSuzgeci = [
+    `customer_id.in.(${musteriIdleri.join(',')})`,
+    ...(aliciOrgIdleri.length > 0
+      ? [`buyer_organization_id.in.(${aliciOrgIdleri.join(',')})`]
+      : []),
+  ].join(',');
+
+  const [
+    etkinlikSonuc,
+    talepSonuc,
+    sohbetSonuc,
+    teklifSonuc,
+    rezSonuc,
+    teklifRezSonuc,
+  ] = await Promise.all([
       supabase
         .from('events')
         .select(
@@ -268,6 +313,27 @@ export async function musteriIsleri(
         .in('customer_id', musteriIdleri)
         .order('created_at', { ascending: false })
         .limit(300),
+      // Teklif sekli (Duzeltme 16-B). Gomme ipuclari ZORUNLU: proposals ile
+      // proposal_versions arasinda iki iliski var (ipucusuz PGRST201).
+      supabase
+        .from('bookings')
+        .select(
+          `
+          id, quote_id, conversation_id, customer_id, professional_id,
+          event_date, event_type, location, total_amount, currency, status,
+          event_id, completion_requested_at, created_at, buyer_organization_id,
+          surum:proposal_versions!bookings_proposal_version_id_fkey (
+            proposal:proposals!proposal_versions_proposal_id_fkey (
+              title,
+              seller:organizations_public!proposals_seller_organization_id_fkey (display_name)
+            )
+          )
+        `
+        )
+        .not('proposal_version_id', 'is', null)
+        .or(teklifRezSuzgeci)
+        .order('created_at', { ascending: false })
+        .limit(200),
     ]);
 
   for (const [ad, sonuc] of [
@@ -276,6 +342,7 @@ export async function musteriIsleri(
     ['sohbet', sohbetSonuc],
     ['teklif', teklifSonuc],
     ['rezervasyon', rezSonuc],
+    ['teklif rezervasyonu', teklifRezSonuc],
   ] as const) {
     if (sonuc.error) {
       console.error('[etkinliklerim merkez]', ad, sonuc.error.code, sonuc.error.message);
@@ -286,10 +353,20 @@ export async function musteriIsleri(
   const talepListesi = (talepSonuc.data ?? []) as unknown as TalepSatiri[];
   const sohbetListesi = (sohbetSonuc.data ?? []) as unknown as SohbetSatiri[];
   const teklifListesi = (teklifSonuc.data ?? []) as unknown as TeklifSatiri[];
-  // Teklif sekli rezervasyonlar (FAZ 7c, `quote_id` bos) kurulus yuzeylerinde.
-  const rezListesi = ((rezSonuc.data ?? []) as unknown as RezervasyonSatiri[]).filter(
-    (r) => !!r.quote_id
-  );
+  // Sohbet sekli: teklifin (`quote_id`) rezervasyonu. Teklif sekli olanlar
+  // (FAZ 7c, `quote_id` bos) ayri sorgudan gelir (asagida).
+  const sohbetRezListesi = (
+    (rezSonuc.data ?? []) as unknown as RezervasyonSatiri[]
+  ).filter((r) => !!r.quote_id);
+  const teklifRezListesi: RezervasyonSatiri[] = (
+    (teklifRezSonuc.data ?? []) as unknown as TeklifRezSatiri[]
+  ).map(({ surum, ...r }) => ({
+    ...r,
+    karsi: null,
+    saticiAdi: surum?.proposal?.seller?.display_name?.trim() || 'Ajans',
+    teklifBasligi: surum?.proposal?.title?.trim() || null,
+  }));
+  const rezListesi = [...sohbetRezListesi, ...teklifRezListesi];
 
   // Uyesi olunan kurumlarin adlari ("<Kurum> adina" etiketi).
   const kurumAdlari: Record<string, string> = {};
@@ -639,11 +716,15 @@ export async function musteriIsleri(
         anahtar: `rez-${r.id}`,
         tur: 'rezervasyon',
         asama,
-        baslik: proAdi(
-          r.karsi,
-          !!r.professional_id && tamAdliProlar.has(r.professional_id)
-        ),
+        // Teklif sekli (16-B): karsi taraf satici kurulus, profil degil.
+        baslik:
+          r.saticiAdi ??
+          proAdi(
+            r.karsi,
+            !!r.professional_id && tamAdliProlar.has(r.professional_id)
+          ),
         ayrinti: parcalar(
+          r.teklifBasligi ? kisalt(r.teklifBasligi, 60) : null,
           etiketle(turler, r.event_type),
           teklifTarihiMetni(r.event_date) ?? 'Tarih belirtilmedi',
           r.location?.trim()
@@ -658,7 +739,9 @@ export async function musteriIsleri(
         tutar: formatQuoteAmount(r.total_amount, r.currency),
         teklifler: [],
         kalanTeklif: 0,
-        kurulus: kurulusAdi(r.customer_id),
+        kurulus: r.buyer_organization_id
+          ? (orgAdlari[r.buyer_organization_id] ?? null)
+          : kurulusAdi(r.customer_id),
       },
       oncelik: ton === 'vurgu' ? 0 : 1,
       zaman: ms(r.created_at),
@@ -695,6 +778,25 @@ export async function musteriIsleri(
       !!c && c.talepler.length + c.birimler.length + c.rezervasyonlar.length > 0;
 
     const { satirlar, kalan, bekleyen, sonZaman } = teklifleriDiz(ciftler);
+    // Duzeltme 16-B: teklif sekli rezervasyonun sohbet teklifi yoktur; ajansin
+    // adi ve tutari kartta ayri satir olarak yazilir (yoksa yalniz
+    // "1 rezervasyon" gorunur, kimle anlasildigi yazmazdi).
+    const ajansSatirlari: IsTeklifi[] = (c?.rezervasyonlar ?? [])
+      .filter((r) => !!r.saticiAdi)
+      .map((r) => ({
+        id: `rez-${r.id}`,
+        kimden: r.saticiAdi ?? 'Ajans',
+        tutar: formatQuoteAmount(r.total_amount, r.currency),
+        durum:
+          r.status === 'cancelled'
+            ? 'İptal edildi'
+            : r.status === 'completed'
+              ? 'Tamamlandı'
+              : 'Onaylandı',
+        ton: r.status === 'cancelled' ? ('soluk' as const) : ('olumlu' as const),
+        href: `/rezervasyon/${r.id}`,
+      }));
+    const kartSatirlari = [...satirlar, ...ajansSatirlari];
     const onayli = rezler.filter((r) => r.status === 'confirmed');
     const tamamlanan = rezler.filter((r) => r.status === 'completed');
     const onayBekleyen = onayli.some((r) => !!r.completion_requested_at);
@@ -790,8 +892,9 @@ export async function musteriIsleri(
             ? { href: `/rezervasyon/${aktifRezler[0].id}`, etiket: 'Rezervasyon' }
             : null,
         tutar: null,
-        teklifler: satirlar,
-        kalanTeklif: kalan,
+        teklifler: kartSatirlari.slice(0, KART_TEKLIF_SINIRI),
+        kalanTeklif:
+          kalan + Math.max(0, kartSatirlari.length - KART_TEKLIF_SINIRI),
         kurulus: e.organization_id ? (orgAdlari[e.organization_id] ?? null) : null,
       },
       oncelik: ton === 'vurgu' ? 0 : 1,

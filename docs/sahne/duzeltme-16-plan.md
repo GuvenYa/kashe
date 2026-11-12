@@ -11,7 +11,8 @@ hesaplarda aciktir. Ajansin kendi hesabi ve kurum hesaplari eski, daginik sayfal
 Iki tur:
 
 - 16-A Ajans: ajansin kendi hesabi "Islerim" merkezini kullanir (bu tur).
-- 16-B Kurum: kurum hesabi "Etkinliklerim" merkezini kullanir (sonraki tur; once inceleme).
+- 16-B Kurum: kurumun kendi hesabi "Etkinliklerim" merkezini kullanir; ajans teklifinden dogan
+  rezervasyonlar merkeze girer.
 
 ## 16-A Ajans hesabinda "Islerim"
 
@@ -58,22 +59,63 @@ YAPILDI (13 Kas, dal `duzeltme-16a`; migration yok).
 - DENENEMEDI: ajans hesabinda rezervasyon sayfasinin "Islerim" geri baglantisi (Lumen'in sohbet
   sekli rezervasyonu yok). Kapi profesyonelle ortak; profesyonelde 15-B turunda dogrulanmisti.
 
-## 16-B Kurum hesabinda "Etkinliklerim" (PLAN - once inceleme)
+## 16-B Kurum hesabinda "Etkinliklerim" (bulgu 135)
 
-Bugun kurum hesabinda `/etkinliklerim` eski etkinlik listesidir; talepler, gelen teklifler ve
-rezervasyonlar ayri sayfalarda. Merkeze gecis icin bakilacaklar:
+Bugun kurum hesabinda `/etkinliklerim` eski etkinlik listesiydi; talepler, gelen teklifler ve
+rezervasyonlar ayri sayfalarda ("Gelen teklifler", "Rezervasyonlar"). Ayrica ajans teklifinden
+(RFP) dogan rezervasyonlar musteri merkezinde HIC gorunmuyordu - bireysel musteride de (15-A'da
+menuden "Rezervasyonlar" kalkinca yalniz "Ayri listeler"den ulasiliyordu).
 
-- Kimlik: kurum adina acilan sohbet / talep / rezervasyonlarda musteri kimligi kurumun kendisidir
-  (`on_behalf_business_id`); merkez sorgulari "kullanici + adina islem yapabildigi kurumlar"
-  kumesiyle calismali (bugun yalniz `userId`).
-- Yetki: kurum uyelerinin gorebildigi kayitlar (RLS: `has_business_role`) ile kartlarin tutarli
-  olmasi; salt izleyici uyede eylem dugmeleri.
-- RFP akisi: kurumun ajanslara actigi RFP'ler ve gelen teklifler (proposal) ayri tablolarda;
-  merkezde ayri kart turu mu, yoksa "RFP'ler" sayfasina baglanti mi - karar.
-- Menu: kurumsal grupta "Etkinlikler" + ayri "Gelen teklifler" / "Rezervasyonlar" maddeleri var
-  mi, hangileri merkeze sekme olur.
+Inceleme (13 Kas, kod + yerel veritabani):
+- Kurumsal menu: Genel bakis, Etkinlikler, Yeni etkinlik, Teklif talepleri (`/kurumsal/rfp` -
+  ajanslara acilan RFP'ler), Kisa liste, Rezervasyonlar, Gelen teklifler, Ilanlarim, Ekip,
+  Gorevler, Odemeler, Ayarlar.
+- Merkez sorgusu kurulus etkinliklerini (`organization_id`) ve adina islem yapilan kurumlarin
+  sohbet / talep / rezervasyonlarini (`teamBusinessIds`) zaten okuyor; kurum uyeleri kendi
+  rolleriyle kisisel merkezde bunlari goruyor. Eksik olan kapi ve teklif sekli rezervasyonlardi.
+- Teklif sekli rezervasyon: `booking_from_proposal` yazar; `quote_id` ve `professional_id` bos,
+  karsi taraf `seller_provider_id` / teklifin satici kurulusu, alici `buyer_organization_id` +
+  `customer_id` (teklifin alici kullanicisi), `event_id` teklifin etkinligi, durum `confirmed`.
+
+YAPILDI (13 Kas, dal `duzeltme-16b`; migration yok).
+- Kapi (`app/lib/musteri-merkezi.ts`): `musteriMerkeziAcik` kurumun KENDI hesabinda da acik (rol
+  `business` + kurum kurulusunun sahibi). `kurumPanelindeMerkez()` sayfaya kurulusu verir.
+- Veri (`app/etkinliklerim/musteri-isleri.ts`): teklif sekli rezervasyonlar ayri sorguyla okunur
+  (alici kisi ya da etkinliklerini gorebildigi alici kurulus; satici kurulus adi ve teklif basligi
+  gomulu). Sohbet birimine baglanmaz: etkinligi varsa etkinlik kartina girer ("N rezervasyon",
+  kart "Yaklasan"a gecer; ajansin adi + tutari + durumu ayri satir), yoksa kendi kartiyla gorunur
+  (baslik ajans adi, ayrintida teklif basligi). Bu parca butun merkez kullanicilarinda gecerli
+  (bireysel musteri ve kurum uyeleri dahil).
+- Menu (`app/lib/panel-menu.ts`): kurumun kendi hesabinda "Rezervasyonlar" ve "Gelen teklifler"
+  yazilmaz (merkezin sekmeleri); "Etkinlikler" merkezi acar. Uyelerin kurum grubunda iki madde
+  durur.
+- Sayfa (`app/etkinliklerim/*`): kurum hesabinda ustte not (ajans teklif talepleri ayri sayfada,
+  "Teklif talepleri" baglantisi); "Yeni etkinlik" kurulusa bagli acilir (`?kurulus=`).
+- Geri baglantilari: rezervasyon sayfasi teklif sekli rezervasyonda da alici tarafini (alici kisi
+  ya da alici kurulus uyesi) merkeze dondurur; `/kurumsal` genel bakisindaki "Onayli rezervasyon"
+  kutusu merkezin "Yaklasan" sekmesine gider. Teklif karsilastirma ve teklif topla donus yollari
+  ayni kapiyi kullandigi icin kurum hesabinda da merkeze doner.
+- Yerel deneme (sahte veri): teklif sekli rezervasyon yokken kartlar ve ozet onceki ciktiyla
+  birebir ayni; dort ornekle - etkinlige bagli onayli (kart "Teklif istenmedi"den "1 rezervasyon"a,
+  ajans satiri), etkinliksiz onayli (kendi karti, baslik 60 karakterde kisaliyor), tamamlanmis
+  etkinlikte tamamlanan (satir "Tamamlandi"), iptal (Sonuclanmayan; satici adi yoksa "Ajans").
+  tsc + eslint temiz.
+- Degismeyenler / sonraki adim: RFP'ler merkezde kart degil (not + baglanti); bekleyen ajans
+  teklifinin etkinlik kartinda "N ajans teklifi geldi" olarak gorunmesi; ajans hesabinin ALICI
+  oldugu isler (ajansin `/etkinliklerim`i eski liste); kurum uyelerinin kurum grubundaki iki madde.
+
+Onizleme turu plani: Anadolu Ilac sahibi (`sahne+kurum-anadolu-ilac@kashe.net`) - menude
+"Rezervasyonlar" / "Gelen teklifler" yok; `/etkinliklerim` merkez (not, sekmeler, kurulus
+etkinlikleri, varsa ajans teklifi rezervasyonu satiri); `/kurumsal` kutusu merkeze gidiyor;
+rezervasyon geri baglantisi; 1280 / 375 px. Deniz Erol (uye): kisisel merkez ve kurum grubu
+menusu ayni. Kaan (bireysel): sayilar ayni (teklif sekli rezervasyonu yoksa).
 
 ## Durum (13 Kas)
 
-16-A onizlemede dogrulandi: `duzeltme-16a`, migration yok.
-16-B: inceleme ve plan sonraki turda.
+16-A uretimde (13 Kas): main = sahne = 7b432ae, migration yok. Uretimde girissiz, salt okuma:
+ana sayfa aciliyor, `/islerim` ve `/ajans` girise yonlendiriyor, konsol temiz; yayin kimligi 15-F
+dogrulamasindakinden farkli (yeni yayin). Ajans hesabi uretimde DENENMEDI (giris gerekir). Sahne
+adresinde Lumen sahibi ile: menude "Islerim", `/islerim` aciliyor (ajans notu, yanit bekleyen 3,
+"Tercih: Ilker S.").
+16-B dalda: `duzeltme-16b`, migration yok; onizleme turu bekliyor. Sonra: RFP tekliflerinin
+etkinlik kartinda gorunmesi, ajansin alici oldugu isler.

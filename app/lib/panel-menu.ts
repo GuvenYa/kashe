@@ -292,8 +292,19 @@ function ajansGrubu(
   return maddeler;
 }
 
-/** Kurum (business) kurulusu grubu — bolum sirasi ajansla ayni kuralda. */
-function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
+/**
+ * Kurum (business) kurulusu grubu — bolum sirasi ajansla ayni kuralda.
+ *
+ * `kurumHesabi` (Duzeltme 16-B): kurumun KENDI hesabi. Bu hesapta
+ * "Etkinlikler" is merkezidir (`app/lib/musteri-merkezi.ts`); "Rezervasyonlar"
+ * ve "Gelen teklifler" merkezin sekmeleri oldugu icin menude yazilmaz
+ * (sayfalar yasiyor, merkezin altindaki "Ayri listeler"den acilir). Uyelerde
+ * iki madde durur.
+ */
+function kurumsalGrubu(
+  org: CrewOrg,
+  kurumHesabi = false
+): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
     { href: '/kurumsal', etiket: 'Genel bakış', ikon: 'gosterge', bolum: 'calisma' },
   ];
@@ -334,19 +345,21 @@ function kurumsalGrubu(org: CrewOrg): PanelMenuMaddesi[] {
       });
     }
   }
-  maddeler.push({
-    href: '/rezervasyonlarim',
-    etiket: 'Rezervasyonlar',
-    ikon: 'rezervasyon',
-    bolum: 'calisma',
-    oncelik: true,
-  });
-  maddeler.push({
-    href: '/teklif-taleplerim',
-    etiket: 'Gelen teklifler',
-    ikon: 'teklif',
-    bolum: 'calisma',
-  });
+  if (!kurumHesabi) {
+    maddeler.push({
+      href: '/rezervasyonlarim',
+      etiket: 'Rezervasyonlar',
+      ikon: 'rezervasyon',
+      bolum: 'calisma',
+      oncelik: true,
+    });
+    maddeler.push({
+      href: '/teklif-taleplerim',
+      etiket: 'Gelen teklifler',
+      ikon: 'teklif',
+      bolum: 'calisma',
+    });
+  }
   maddeler.push({
     href: '/ilanlarim',
     etiket: 'İlanlarım',
@@ -448,7 +461,7 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
   for (const org of kurumlar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: kurumsalGrubu(org),
+      maddeler: kurumsalGrubu(org, isletmeRolu && org.role === 'owner'),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
       baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,
