@@ -234,8 +234,9 @@ Onizleme (Ilker = Lumen ekip koordinatoru, Kaan = musteri, Lumen sahibi):
 - Turda bulunup duzeltilenler: (1) ajans menusunde "Teklif talepleri" yolu yoktu (yalniz
   bildirimden gidiliyordu) -> ajansin kendi hesabinda menuye eklendi; (2) profildeki "Uye oldugu
   ajans" kutusu tercih acikken de "Dogrudan teklif alabilir..." diyordu -> "Talepleri <Ajans>
-  uzerinden yanitlaniyor". Ikinci derlemede bakilacak; tur sonunda Ilker'in tercihi "kendim"e
-  donecek.
+  uzerinden yanitlaniyor". Ikinci derlemede ikisi de dogrulandi (Lumen sahibinin menusunde
+  "Teklif talepleri", profilde yeni metin). Tur sonunda Ilker'in tercihi "Kendim teklif veririm"e
+  donduruldu (yeniden yuklemede kalici; `/islerim`de bilgi satiri kalkti, sayilar ayni).
 - Sahne'de kalan tur verisi: Kaan - Lumen sohbetinde bir test mesaji (tercih edilen uye Ilker),
   Kaan'in Lumen'e dusen Drone Pilotu teklif topla talebi.
 
