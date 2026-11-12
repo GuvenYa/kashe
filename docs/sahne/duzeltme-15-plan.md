@@ -296,7 +296,7 @@ profesyonelin acik profili aciliyor, "Uye oldugu ajans" kutusu varsayilan metinl
 Sahne adresinde Ilker ile uyelik sayfasi (tercih "kendim") ve `/islerim` (2 / 0 / 1 / 3 / 6, bilgi
 satiri yok); Kaan ile `/etkinliklerim` (8 / 8 / 6 / 8; teklif bekleyen 7'den 8'e cikti, 15-E
 turunda Lumen'e dusen talepler listede) ve Ilker'in profili (ajans notu yok, kutu varsayilan metinle).
-14-B (30 buyuksehirde ilce listesi) dalda: `duzeltme-14b`, migration yok; ayrinti
+14-B (30 buyuksehirde ilce listesi) onizlemede dogrulandi: `duzeltme-14b`, migration yok; ayrinti
 `docs/sahne/duzeltme-12-14-plan.md` "14-B". Sirada: kurum ve ajans panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)

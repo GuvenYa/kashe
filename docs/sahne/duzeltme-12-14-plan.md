@@ -234,8 +234,10 @@ YAPILDI (12 Kas, dal `duzeltme-14b`; migration yok).
   kutu satira sigiyor. Konsol temiz.
 - Turda bulunup duzeltilen: sihirbazda adresle gelen ham yazim (`ilce=kadikoy`)
   kutuda "Kadikoy" gorunurken ozet panelinde ve kaydedilecek degerde ham
-  kaliyordu -> eslesen ilce her yerde listedeki yazimiyla kullaniliyor (ikinci
-  derlemede bakilacak).
+  kaliyordu -> eslesen ilce her yerde listedeki yazimiyla kullaniliyor. Ikinci
+  derlemede dogrulandi: `ilce=kadikoy` -> kutu, ozet paneli ve son adimdaki
+  ozet satiri "Istanbul / Kadikoy"; `ilce=Eyup` -> "Eyupsultan"; listede
+  olmayan "Moda" oldugu gibi kaliyor. Konsol temiz.
 - Turda gorulen, 14-B disi: tarihsiz yeni talep onceki isin tarihini tasiyor
   (bulgu 133, acik).
 - Sahne'de kalan tur verisi: Kaan - Ilker sohbetinde "Yeni talep #4" (dogum
