@@ -10,6 +10,7 @@ import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
 import { getCrewContext } from '@/app/lib/org-context';
+import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
 import { canOwnForBusiness } from '@/app/lib/business-write';
 
 type Props = {
@@ -300,10 +301,24 @@ export default async function RezervasyonDetayPage({ params }: Props) {
     !!booking.cancelled_by &&
     !cancelledByCustomer &&
     booking.cancelled_by === booking.professional_id;
-  const backHref =
-    teklifSekli || viewer === 'customer' ? '/rezervasyonlarim' : '/takvimim';
-  const backLabel =
-    teklifSekli || viewer === 'customer' ? 'Rezervasyonlarım' : 'Takvimim';
+  // Duzeltme 15-A (bulgu 128): musteri hesabinda rezervasyonlar "Etkinliklerim"
+  // merkezinde; geri baglantisi rezervasyonun durdugu sekmeye doner.
+  const merkezeDon =
+    !teklifSekli && viewer === 'customer' && (await musteriMerkeziAcik());
+  const backHref = merkezeDon
+    ? booking.status === 'confirmed'
+      ? `${MERKEZ_YOLU}?sekme=yaklasan`
+      : booking.status === 'completed'
+        ? `${MERKEZ_YOLU}?sekme=tamamlanan`
+        : MERKEZ_YOLU
+    : teklifSekli || viewer === 'customer'
+      ? '/rezervasyonlarim'
+      : '/takvimim';
+  const backLabel = merkezeDon
+    ? 'Etkinliklerim'
+    : teklifSekli || viewer === 'customer'
+      ? 'Rezervasyonlarım'
+      : 'Takvimim';
 
   /**
    * YORUM CAGRISI (Duzeltme 01 / #28).

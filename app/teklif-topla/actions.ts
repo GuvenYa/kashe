@@ -250,6 +250,7 @@ export async function createQuoteRequest(
   }
 
   revalidatePath('/teklif-taleplerim');
+  revalidatePath('/etkinliklerim');
   return {
     success: true,
     data: { id: newRequest.id, matched: selectedIds.length },

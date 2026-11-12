@@ -8,6 +8,8 @@ import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
 import { getTeamContext } from '@/app/lib/business-write';
 import { gosterilecekAd } from '@/app/lib/kamu-adi';
+import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
+import { etiketle } from '@/app/lib/etkinlik-turu';
 import {
   formatQuoteAmount,
   getQuoteStatusLabel,
@@ -37,6 +39,8 @@ type SohbetTeklifi = {
   conversations: {
     customer_id: string;
     professional_id: string;
+    event_type: string | null;
+    request_count: number | null;
     professional: {
       full_name: string | null;
       company_name: string | null;
@@ -142,7 +146,7 @@ export default async function TeklifTaleplerimPage() {
       id, conversation_id, total_amount, currency, status, created_at,
       expires_at, event_date, request_no,
       conversations!inner (
-        customer_id, professional_id,
+        customer_id, professional_id, event_type, request_count,
         professional:profiles!conversations_professional_id_fkey (full_name, company_name, role)
       )
     `
@@ -185,6 +189,9 @@ export default async function TeklifTaleplerimPage() {
       if (r.quote_id) rezervasyonTarihi[r.quote_id] = r.event_date;
     }
   }
+
+  // Duzeltme 15-A (bulgu 128): teklif satirinda isin adi (tur + tarih + talep no).
+  const turler = sohbetTeklifleri.length > 0 ? await etkinlikTurleri({ hepsi: true }) : [];
 
   const ownRequests = list.filter((r) => r.is_own);
   const teamRequests = list.filter((r) => !r.is_own);
@@ -318,6 +325,12 @@ export default async function TeklifTaleplerimPage() {
                   q.conversations && q.conversations.customer_id !== user.id
                     ? businessNames[q.conversations.customer_id] ?? 'Kurum'
                     : null;
+                // Sohbetin etkinlik turu EN SON talebe aittir; eski talebin
+                // teklifine yazilmaz (yanlis is adi olurdu).
+                const turAdi =
+                  (q.request_no ?? 1) === (q.conversations?.request_count ?? 1)
+                    ? etiketle(turler, q.conversations?.event_type ?? null)
+                    : null;
                 return (
                   <li key={q.id}>
                     <Link
@@ -334,6 +347,7 @@ export default async function TeklifTaleplerimPage() {
                           ) : null}
                         </p>
                         <p className="text-xs text-ink-72 mt-0.5">
+                          {turAdi ? `${turAdi} · ` : ''}
                           {tarih ?? 'Tarih belirtilmedi'}
                           {kurumAdina ? ` · ${kurumAdina} adına` : ''}
                         </p>

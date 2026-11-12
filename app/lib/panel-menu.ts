@@ -112,13 +112,20 @@ function saticiGrubu(): PanelMenuMaddesi[] {
   ];
 }
 
-/** Musteri (client) grubu. */
+/**
+ * Musteri (client) grubu.
+ *
+ * Duzeltme 15-A (bulgu 128, Fahri satir 33): "Gelen teklifler" ve
+ * "Rezervasyonlar" maddeleri KALKTI; ikisi de "Etkinliklerim" merkezinin
+ * sekmeleri oldu (teklif bekleyen / yaklasan / tamamlanan). Sayfalarin kendisi
+ * yasiyor: kartlar ve bildirimler oraya gitmeye devam eder.
+ */
 function musteriGrubu(): PanelMenuMaddesi[] {
   return [
     { href: '/profil', etiket: 'Merkez', ikon: 'gosterge', bolum: 'calisma' },
     {
       href: '/etkinliklerim',
-      etiket: 'Etkinlikler',
+      etiket: 'Etkinliklerim',
       ikon: 'etkinlik',
       bolum: 'calisma',
       oncelik: true,
@@ -128,20 +135,6 @@ function musteriGrubu(): PanelMenuMaddesi[] {
       etiket: 'İlanlarım',
       ikon: 'ilan',
       bolum: 'calisma',
-    },
-    {
-      href: '/teklif-taleplerim',
-      etiket: 'Gelen teklifler',
-      ikon: 'teklif',
-      bolum: 'calisma',
-      oncelik: true,
-    },
-    {
-      href: '/rezervasyonlarim',
-      etiket: 'Rezervasyonlar',
-      ikon: 'rezervasyon',
-      bolum: 'calisma',
-      oncelik: true,
     },
     {
       href: '/odemelerim',

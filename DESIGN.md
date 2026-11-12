@@ -582,6 +582,13 @@ Güven + Fahri, "ekip kurma sayfasındaki görüntü tüm sayfalara"). İlk taş
 - Form gönderimi `OzetSerit koyu herGenislik` içinde: özet solda, pembe eylem
   sağda. Şerit formun içinde durur (`type="submit"`), dar ekranda düğme metni
   kısalır ki şerit tek satırda kalsın.
+- `IsSekmeleri` / `IsKarti` (`app/components/panel/is-karti.tsx`, model
+  `app/lib/isler.ts`): iş merkezlerinin ortak çizimi (Düzeltme 15-A; müşteri
+  "Etkinliklerim", sırada profesyonel "İşlerim"). Sekmeler segment görünümlü
+  bağlantılardır (`?sekme=`, seçili sekmenin sayısı pembe). Kartta tür etiketi,
+  başlık, tek satır ayrıntı, sağda tutar ve durum; durum rengi dört ton:
+  `vurgu` (kullanıcıdan iş bekleniyor, pembe), `olumlu` (moss), `notr`, `soluk`.
+  Teklifler kartın altında en çok üç satır; fazlası "+N teklif daha".
 
 ---
 

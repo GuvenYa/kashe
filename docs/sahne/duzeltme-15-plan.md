@@ -28,6 +28,35 @@ gelen teklif sayisi), tiklayinca detay ve teklifler altinda.
 - "Gelen teklifler" ve "Rezervasyonlar" sayfalari kalkmaz, kartin detayina doner; menude tek madde.
 - Hizli kazanc (once): teklif kartlarina isin adi ("Dugun - 12 Aralik - Talep #2").
 
+YAPILDI (12 Kas, dal `duzeltme-15a`; onizleme turu bekliyor). Migration yok, yalniz okuma.
+- Kimde: musteri hesabi (rol `client`, ya da kurulusu olmayan `business`); olcut tek yerde
+  (`app/lib/musteri-merkezi.ts`), menudeki musteri grubuyla ayni. Kurum ve ajans panelinde
+  `/etkinliklerim` eski etkinlik listesi, menuleri ayni (ayni merkez onlara ayri turda).
+- Sayfa: ustte durum karti (acik islerin kacina teklif geldi, karar bekleyen teklif, tamamlanma
+  onayi bekleyen rezervasyon; kutular Bekleyen / Yaklasan / Tamamlanan), altinda segment sekmeler
+  (`?sekme=`; "Sonuclanmayan" yalniz doluysa) ve is kartlari. Sekme secilmediyse ilk dolu sekme.
+- Kart turleri: Etkinlik (sihirbaz), Teklif topla, Dogrudan talep, Rezervasyon. Kartta tur, baslik,
+  tek satir ayrinti (etkinlik turu, tarih, sehir / yer, talep no), durum, tutar, altinda en cok uc
+  teklif (bekleyen once) ve "Teklifleri karsilastir / Teklifi incele / Rezervasyonu ac / Etkinligi ac".
+- Birlestirme (`app/etkinliklerim/musteri-isleri.ts`): sohbetteki is birimi (sohbet, talep no);
+  teklif `request_no`, rezervasyon `quote_id` ile birime baglanir. Teklif topla talebi, alicinin
+  yanit anindan sonraki ilk teklifin birimini sahiplenir. Etkinlige bagli talep / birim /
+  rezervasyon (`event_id`) etkinlik kartina girer, ayri kart acilmaz. Teklif kabul edilince kart
+  "Yaklasan"a gecer ve rezervasyona gider; tamamlaninca "Tamamlanan".
+- Asama kurallari: bekleyen teklif varsa "N teklif geldi" (pembe, ustte); onayli rezervasyon ->
+  Yaklasan (satici tamamlanma onayi istediyse "Onayin bekleniyor", pembe); tamamlanan -> Tamamlanan;
+  iptal, kapatilan / suresi dolan talep, teklifsiz kalip tarihi gecen ya da 30 gundur sessiz
+  dogrudan talep, tarihi gecmis rezervasyonsuz etkinlik -> Sonuclanmayan.
+- Menu: musteri grubunda "Etkinlikler" -> "Etkinliklerim"; "Gelen teklifler" ve "Rezervasyonlar"
+  maddeleri kalkti. Sayfalar duruyor (merkezin altinda "Ayri listeler"; bildirim ve e-posta
+  baglantilari calisir). Rezervasyon ve teklif karsilastirma sayfalarinin geri baglantisi, teklif
+  topla sonrasi yonlendirme ve Merkez'deki iki kutu musteride merkeze gider.
+- Hizli kazanc: `/teklif-taleplerim` sohbet tekliflerinde isin turu ("Dugun · 12 Aralik 2026").
+- Ortak parcalar 15-B icin hazir: `app/lib/isler.ts` (kart modeli), `IsKarti` / `IsSekmeleri`.
+- Test: tsc + eslint temiz; birlestirme mantigi sahte veriyle (5 etkinlik, 4 talep, 9 sohbet,
+  9 teklif, 6 rezervasyon) calistirildi, 16 kart beklenen asamada. Onizlemede Kaan ile bakilacak.
+- Yan bulgu 132: musteri Merkez'inde "Gelen teklif" hep 0 idi (yanlis durum degeri), duzeltildi.
+
 ## 15-B Profesyonel: "Islerim" merkezi (satir 34)
 
 Bugun: `/teklif-talepleri`, `/tekliflerim` (Verdigim teklifler), `/rezervasyonlarim`, sohbetler.
@@ -103,6 +132,15 @@ kod + tsc / eslint ile kontrol edildi; Sahne adresinde bakilacak.
 
 Sahne'de kalan tur verisi: Kaan'in Drone Pilotu / Istanbul teklif topla talebi (alici yalniz
 Ilker), Lumen'in "Istanbul'da 80 kisilik kurumsal urun tanitimi" etkinligi (ekipsiz).
+
+## Durum (12 Kas)
+
+Ilk tur (15-C, 15-D, teklif topla gorsel dil) uretimde: main = sahne = 8edb3a2, migration yok.
+Uretimde girissiz: yeni derleme yayinda (yeni CSS siniflari var, `/kurulus/uyelik` girise
+yonlendiriyor, olmayan sayfa 404). Sahne'de Ilker ile: gecmis son tarih notu ve gecerlilik alt notu
+dogru. Durum karti puntosu (dar ekran) musteri hesabiyla sonraki turda bakilacak.
+15-A (musteri "Etkinliklerim" merkezi) dalda: `duzeltme-15a`, onizleme turu bekliyor (ayrinti
+yukarida, 15-A basligi altinda). Sirada: 15-B, 15-E, 14-B; kurum panelinde ayni merkez.
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

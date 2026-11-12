@@ -9,6 +9,7 @@ import { TeklifToplaFormu } from './teklif-topla-formu';
 import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { etkinlikTuruAnahtarlari } from '@/app/lib/etkinlik-turleri';
 import { getWritableBusinesses } from '@/app/lib/business-write';
+import { musteriMerkeziAcik, MERKEZ_BEKLEYEN_YOLU } from '@/app/lib/musteri-merkezi';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
 
 export const metadata = {
@@ -137,6 +138,9 @@ export default async function TeklifToplaPage({
           cities={orderCities(citiesResult.data || [])}
           writableBusinesses={writableBusinesses}
           canSelfCreate={canSelfCreate}
+          donusYolu={
+            (await musteriMerkeziAcik()) ? MERKEZ_BEKLEYEN_YOLU : '/teklif-taleplerim'
+          }
           onDoldur={{
             kategoriId: params.kategori ? Number(params.kategori) : null,
             sehirId: params.sehir ? Number(params.sehir) : null,

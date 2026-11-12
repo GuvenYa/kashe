@@ -5,6 +5,9 @@ import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { createClient } from '@/app/lib/supabase-server';
+import { musteriMerkeziAcik } from '@/app/lib/musteri-merkezi';
+import { musteriIsleri } from './musteri-isleri';
+import { MusteriMerkezi } from './musteri-merkezi';
 
 export const metadata = {
   title: 'Etkinliklerim — Kashe',
@@ -56,7 +59,12 @@ function tarihMetni(satir: EtkinlikSatiri): string {
   return bas + son;
 }
 
-export default async function EtkinliklerimPage() {
+export default async function EtkinliklerimPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sekme?: string }>;
+}) {
+  const { sekme } = await searchParams;
   const supabase = await createClient();
 
   const user = await getCachedUser();
@@ -69,6 +77,22 @@ export default async function EtkinliklerimPage() {
     .eq('id', user.id)
     .single();
   if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
+
+  // Duzeltme 15-A (bulgu 128): musteri hesabinda bu sayfa IS MERKEZI - talepler,
+  // gelen teklifler ve rezervasyonlar tek listede (olcut:
+  // `app/lib/musteri-merkezi.ts`). Ajans ve kurum panellerinde etkinlik
+  // listesi oldugu gibi kalir.
+  if (await musteriMerkeziAcik()) {
+    const [veri, merkezKabugu] = await Promise.all([
+      musteriIsleri(supabase, user.id),
+      panelKabukProps(),
+    ]);
+    return (
+      <PanelKabugu {...merkezKabugu}>
+        <MusteriMerkezi veri={veri} sekme={sekme} />
+      </PanelKabugu>
+    );
+  }
 
   // RLS: kendi etkinlikleri + kurulus events.view + admin
   const { data: events } = await supabase

@@ -14,6 +14,7 @@ import {
   BRIEF_OZEL_ETIKETLER,
 } from '@/app/lib/brief-anahtarlari';
 import { getTeamContext } from '@/app/lib/business-write';
+import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
 function formatBriefValue(field: BriefField, value: string): string {
@@ -191,6 +192,9 @@ export default async function TeklifKarsilastirPage({
     });
   }
 
+  // Duzeltme 15-A (bulgu 128): musteri hesabinda talepler "Etkinliklerim"de.
+  const merkezeDon = await musteriMerkeziAcik();
+
   // Gomme alanlari TEK YERDE cozulur (ucu de ayni iki nesneyi okuyordu).
   const kategoriEmbed = request.service_categories as unknown as
     | { name_tr: string; slug: string }
@@ -279,10 +283,10 @@ export default async function TeklifKarsilastirPage({
       <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
         
         <Link
-          href="/teklif-taleplerim"
+          href={merkezeDon ? MERKEZ_YOLU : '/teklif-taleplerim'}
           className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.1em] text-ink-72 hover:text-brand-ink mb-8 transition-colors"
         >
-          <span>←</span> Taleplerim
+          <span>←</span> {merkezeDon ? 'Etkinliklerim' : 'Taleplerim'}
         </Link>
 
         {isTeam && (

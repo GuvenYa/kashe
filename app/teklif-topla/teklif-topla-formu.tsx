@@ -104,12 +104,18 @@ export function TeklifToplaFormu({
   writableBusinesses = [],
   canSelfCreate = true,
   onDoldur,
+  donusYolu = '/teklif-taleplerim',
 }: {
   categories: Category[];
   cities: City[];
   writableBusinesses?: OnBehalfBusiness[];
   canSelfCreate?: boolean;
   onDoldur?: TeklifOnDoldur;
+  /**
+   * Talep gonderilince gidilecek sayfa. Musteri hesabinda "Etkinliklerim"
+   * merkezi (Duzeltme 15-A); kurum panelinde eski liste. Karar sunucuda.
+   */
+  donusYolu?: string;
 }) {
   // FAZ 10b: etkinlik turleri `event_types` tablosundan (saglayici).
   const etkinlikTurleriListesi = useEtkinlikTurleri();
@@ -334,7 +340,7 @@ export function TeklifToplaFormu({
       });
 
       if (result.success && result.data) {
-        router.push('/teklif-taleplerim');
+        router.push(donusYolu);
       } else if (!result.success) {
         setError(result.error);
         // Talep başarısızsa yüklenen dosyayı temizle

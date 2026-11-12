@@ -55,6 +55,10 @@ import { panelGunBugun, ayAraligi } from '@/app/lib/panel-gosterge-data';
 import { calcCommission, formatTRY } from '@/app/lib/premium';
 import { banaAtananGorevler } from '@/app/lib/gorev-data';
 import { gorevDurumEtiketi } from '@/app/lib/gorevler';
+import {
+  MERKEZ_BEKLEYEN_YOLU,
+  MERKEZ_YAKLASAN_YOLU,
+} from '@/app/lib/musteri-merkezi';
 
 export const metadata = {
   title: 'Profilim — Kashe',
@@ -545,8 +549,10 @@ export default async function ProfilPage() {
     ).reduce(
       (toplam, t) =>
         toplam +
+        // Bulgu 132: alici durumu 'quoted' (teklif verdi). Burada RFP
+        // davetinin degeri ('responded') yaziyordu; sayi hep 0 kaliyordu.
         (t.quote_request_recipients ?? []).filter(
-          (r) => r.status === 'responded'
+          (r) => r.status === 'quoted'
         ).length,
       0
     );
@@ -678,13 +684,13 @@ export default async function ProfilPage() {
             deger={kpiGelenTeklif}
             altNot="Taleplerine yanıt"
             vurgu={kpiGelenTeklif > 0 ? 'accent' : 'none'}
-            href="/teklif-taleplerim"
+            href={MERKEZ_BEKLEYEN_YOLU}
           />
           <KpiKutu
             etiket="Yaklaşan rezervasyon"
             deger={kpiYaklasanRezervasyon}
             altNot="Onaylı, tarihi gelmemiş"
-            href="/rezervasyonlarim"
+            href={MERKEZ_YAKLASAN_YOLU}
           />
           <KpiKutu
             etiket="Etkinlik"
