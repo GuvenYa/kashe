@@ -5,6 +5,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
 import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { EmptyState } from '@/app/components/EmptyState';
 import { RezervasyonKarti } from '@/app/rezervasyonlarim/rezervasyon-karti';
@@ -213,9 +214,12 @@ export default async function TakvimimPage() {
 
           {/* MÜSAİTLİK TAKVİMİ */}
           <section className="mb-12">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-72 mb-5">
-              Müsaitlik takvimi
-            </h2>
+            {/* Duzeltme 24-C (gorsel dil): bolum basliklari pembe cizgili
+                etiket; baslik seviyesi ekran okuyucu icin korunur. */}
+            <h2 className="sr-only">Müsaitlik takvimi</h2>
+            <div className="mb-5" aria-hidden="true">
+              <VurguEtiketi>Müsaitlik takvimi</VurguEtiketi>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6 items-start">
               <AvailabilityCalendar
                 blockedDates={blockedDates}
@@ -319,10 +323,10 @@ export default async function TakvimimPage() {
             <div className="space-y-12">
               {upcoming.length > 0 && (
                 <section>
-                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand-ink mb-5 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-ink inline-block kashe-pulse" />
-                    Yaklaşan ({upcoming.length})
-                  </h2>
+                  <h2 className="sr-only">Yaklaşan ({upcoming.length})</h2>
+                  <div className="mb-5" aria-hidden="true">
+                    <VurguEtiketi>Yaklaşan ({upcoming.length})</VurguEtiketi>
+                  </div>
                   <div className="space-y-3">
                     {upcoming.map((b) => (
                       <RezervasyonKarti
@@ -338,9 +342,10 @@ export default async function TakvimimPage() {
 
               {past.length > 0 && (
                 <section>
-                  <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-50 mb-5">
-                    Geçmiş ({past.length})
-                  </h2>
+                  <h2 className="sr-only">Geçmiş ({past.length})</h2>
+                  <div className="mb-5" aria-hidden="true">
+                    <VurguEtiketi>Geçmiş ({past.length})</VurguEtiketi>
+                  </div>
                   <div className="space-y-3">
                     {past.map((b) => (
                       <RezervasyonKarti

@@ -139,9 +139,12 @@ export function istanbulSaati(simdi: Date = new Date()): number {
  */
 export function selamlama(simdi: Date = new Date()): string {
   const saat = istanbulSaati(simdi);
+  // Duzeltme 24 (bulgu 154): gece 00 - 05 arasi "Gunaydin" yaziyordu.
+  if (saat < 5) return 'İyi geceler';
   if (saat < 12) return 'Günaydın';
   if (saat < 18) return 'İyi günler';
-  return 'İyi akşamlar';
+  if (saat < 23) return 'İyi akşamlar';
+  return 'İyi geceler';
 }
 
 /** Istanbul gunu: "YYYY-MM-DD" (bugunle karsilastirmalar icin). */

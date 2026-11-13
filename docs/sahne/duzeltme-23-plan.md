@@ -4,8 +4,8 @@ Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: 14-C karari A (gorsel dil say
 "bilinen eksikler" 9. madde (rezervasyon, sohbet ve profil paneli sirada; rezervasyon 21-B ile yapildi).
 Goc (migration) YOK.
 
-Durum: ONIZLEME TURU TAMAM (14 Kas; dal `duzeltme-23` d1685e6, derleme `dpl_8TtrrPtt265M7WgnWez3PJPjR4gt`). Turda cikan
-uc kucuk is ve test rehberi 3.2 ikinci commit ile girer, sonra uretim.
+Durum: URETIMDE (14 Kas; main = sahne = ac71c5e; uretim derlemesi `dpl_GQ8CbxvPRpr44FJY8pwk4CYc43Nk`, Sahne adresi
+`dpl_B75i3fQsdQVmK1zHvBXE5x4vWUHy`).
 
 ## 23-A Sohbet sayfasinda "Isin durumu" (bulgu 151)
 
@@ -90,6 +90,14 @@ basligi ve "Profilin yayinda" karti rehberde yok).
   - GORULMEDI: "Tamamlanma onayi bekleniyor" basligi (Sahne'de o durumda kayit yok); ikinci commit'in uc isi
     ("Etkinlik gunu geldi", "Profilin yayinda" karti, salt goruntuleyen uye) - uretim sonrasi Sahne adresinde
     bakilacak. Yerel test ikinci commit ile 70 / 70.
+- Uretim sonrasi (14 Kas):
+  - kashe.net (girissiz): Kesfet 102 kart, `fra1::fra1`.
+  - Sahne adresi, Kaan: 17 sohbetin 2'sinde "Etkinlik gunu geldi" (tarihi gelmis onayli is; ornek Eda Tekin, 14 Kasim),
+    ayni rezervasyonun sayfasi da "Etkinlik gunu geldi" diyor; 6 sohbet "Rezervasyon onayli" (ileri tarih). Merkez
+    11 / 8 / 6.
+  - Sahne adresi, Ilker: "Yapilacaklar" sutununda "Profilin yayinda" karti (uc satir tamam, ilerleme 100).
+  - GORULMEDI: profesyonel bakisinda "Etkinlik gunu geldi" satiri (Ilker'in o durumda sohbeti yok; yerel testte
+    var); salt goruntuleyen kurum uyesinde yenileme; "Tamamlanma onayi bekleniyor" basligi.
 - Sahne'de birakilan veri: Kaan - Lumen sohbetinde (`1562b136-...`) Lumen'den 6.200 TL bekleyen test teklifi
   ("Tur 23 test teklifi"; 7 gun gecerli).
 

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { IlanlarimListesi } from './ilanlarim-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
-import { PanelKabugu, PanelBaslik } from '@/app/components/panel';
+import { PanelKabugu, PanelBaslik, DurumKarti } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { getCachedUser } from '@/app/lib/auth';
 import { getTeamContext } from '@/app/lib/business-write';
@@ -138,6 +138,64 @@ export default async function IlanlarimPage({
     };
   });
 
+  /**
+   * DURUM OZETI (Duzeltme 24-A; gorsel dil). YENI SORGU YOK: sayilar yukarida
+   * okunan ilanlardan ve basvuru sayilarindan. Satirlar yalniz var olan
+   * durumu yazar (uydurma sayac yok); ilan yoksa kart cizilmez.
+   */
+  const say = (durum: string) =>
+    listingsWithCounts.filter((l) => l.status === durum).length;
+  const ozYayinda = say('published');
+  const ozOnay = say('pending_approval');
+  const ozRevizyon = say('revision');
+  const ozTaslak = say('draft');
+  const ozBasvuru = listingsWithCounts
+    .filter((l) => l.status === 'published')
+    .reduce((t, l) => t + l.application_count, 0);
+  const ozHat = ozYayinda + ozOnay + ozRevizyon + ozTaslak;
+  const ozBaslik =
+    ozRevizyon > 0
+      ? 'Revizyon istenen ilanın var'
+      : ozOnay > 0
+        ? 'İlanın onay bekliyor'
+        : ozYayinda > 0
+          ? `${ozYayinda} ilan yayında`
+          : ozTaslak > 0
+            ? 'Taslak ilanın var'
+            : 'Açık ilanın yok';
+  const ozSatirlar = [
+    ...(ozYayinda > 0
+      ? [
+          {
+            metin: `${ozYayinda} ilan yayında, ${ozBasvuru} başvuru geldi`,
+            tamam: true,
+          },
+        ]
+      : []),
+    ...(ozRevizyon > 0
+      ? [
+          {
+            metin: `${ozRevizyon} ilanda revizyon istendi: düzenleyip yeniden gönder`,
+            tamam: false,
+          },
+        ]
+      : []),
+    ...(ozOnay > 0
+      ? [{ metin: `${ozOnay} ilan yönetici onayını bekliyor`, tamam: false }]
+      : []),
+    ...(ozTaslak > 0
+      ? [{ metin: `${ozTaslak} taslak yayına gönderilmeyi bekliyor`, tamam: false }]
+      : []),
+    ...(ozHat === 0
+      ? [
+          {
+            metin: 'Kapanan ve tamamlanan ilanların aşağıdaki listede',
+            tamam: true,
+          },
+        ]
+      : []),
+  ];
+
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
   const kabuk = await panelKabukProps();
@@ -174,6 +232,22 @@ export default async function IlanlarimPage({
             <p className="text-sm text-green-800">
               {BILDIRIM_MESAJLARI[params.bildirim]}
             </p>
+          </div>
+        )}
+
+        {listingsWithCounts.length > 0 && (
+          <div className="mb-8">
+            <DurumKarti
+              baslik={ozBaslik}
+              tamam={ozHat > 0 && ozYayinda === ozHat}
+              ilerleme={ozHat > 0 ? (100 * ozYayinda) / ozHat : 0}
+              satirlar={ozSatirlar}
+              kutular={[
+                { etiket: 'Yayında', deger: ozYayinda },
+                { etiket: 'Başvuru', deger: ozBasvuru },
+                { etiket: 'Taslak', deger: ozTaslak },
+              ]}
+            />
           </div>
         )}
 
