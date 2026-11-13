@@ -355,7 +355,7 @@ ayirt eden bir isaret yok, davranis girisli talep gonderimi gerektirdigi icin ur
 (davranis onizlemede dogrulandi). Uretimde girissiz, salt okuma: ana sayfa ve profil aciliyor,
 "Teklif Al" penceresi geliyor (gonderilmedi), `/mesajlar` girise yonlendiriyor, konsol temiz.
 Sahne adresinde Ilker ile sohbet cubugu ve `/islerim` (3 / 1 / 1 / 3 / 6) onizlemedeki gibi.
-Sirada: kurum ve ajans panelinde ayni merkez -> `docs/sahne/duzeltme-16-plan.md` (16-A ajans uretimde, 16-B kurum sirada).
+Sirada: kurum ve ajans panelinde ayni merkez -> `docs/sahne/duzeltme-16-plan.md` (16-A ajans ve 16-B kurum uretimde).
 
 ## Kararlar (Fahri) - secenekler ve oneri (*)
 

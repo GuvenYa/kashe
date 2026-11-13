@@ -129,6 +129,31 @@ YAPILDI (13 Kas, dal `duzeltme-16b`; migration yok).
   etkinligine bagli ajans rezervasyonu yok; gorulen iki ornek de kendi kartiyla cikti). Bu parca
   yalniz sahte veri testinde dogrulandi.
 
+## 16-C Teklif karsilastirma sayfasi dogru teklifi gostersin (bulgu 136)
+
+15-A'nin acik maddesiydi. `/teklif-taleplerim/[id]` her alicinin sohbetindeki EN YENI teklifi
+gosteriyordu. Cift basina tek sohbet oldugu icin ayni profesyonel sonradan baska bir talebe ya da
+dogrudan bir talebe teklif verdiyse, eski talebin sayfasinda o yeni teklif gorunuyordu.
+Sahne'de goruldu (13 Kas, main): Kaan'in iki Drone Pilotu talebinin sayfasi (gercek teklifleri
+13.000 TL ve 9.000 TL; merkez kartlari dogru) Ilker'in baska ise verdigi "6.500 TL - Tur 15-F test
+teklifi"ni "En uygun" diye gosteriyor.
+
+YAPILDI (13 Kas, dal `duzeltme-16c`; migration yok).
+- `app/lib/talep-teklifleri.ts` (saf fonksiyon `talepTeklifleriniEsle`): merkezdeki eslestirmeyi
+  (`birimleriKur`) kullanir - yanit anindan onceki son teklif o talebin teklifidir, ardindan gelen
+  duzeltmeler (kabul edilene kadar) ayni ise aittir; talebin teklifi yanit biriminin en yeni
+  teklifi. Eslesmeyen sohbette (yanit zamani yazilmamis eski kayit) yedek: talep acildiktan sonra
+  verilmis ve baska talebe baglanmamis en yeni teklif; o da yoksa teklif gosterilmez.
+- `app/teklif-taleplerim/[id]/page.tsx`: teklifler bu eslestirmeyle secilir; ayni sohbetlerde
+  yanitlanmis butun talepler ek bir sorguyla okunur (bir teklif iki talebe baglanmaz). Her
+  goruntulemede sunucu kaydina yazan hata ayiklama satiri kaldirildi (yalniz hata yazilir).
+- Yerel deneme: 13 / 13 (ayni profesyonelin iki talebe yaniti, yanit sonrasi duzeltme, kabul
+  sonrasi dogrudan teklif, dakikalar arayla iki yanit, cok alici, yanit zamani bos, yedek, yedegin
+  baska talebin teklifini almamasi). tsc + eslint temiz.
+- Onizleme turu plani (Kaan): `60c983f0...` sayfasi 13.000 TL, `1d479458...` sayfasi 9.000 TL,
+  `aeb004cb...` sayfasi 14.000 TL gostermeli (hicbiri 6.500 TL degil); cok alicili bir talepte
+  siralama; kurum uyesi bakisi bozulmamali.
+
 ## Durum (13 Kas)
 
 16-A uretimde (13 Kas): main = sahne = 7b432ae, migration yok. Uretimde girissiz, salt okuma:
@@ -136,5 +161,11 @@ ana sayfa aciliyor, `/islerim` ve `/ajans` girise yonlendiriyor, konsol temiz; y
 dogrulamasindakinden farkli (yeni yayin). Ajans hesabi uretimde DENENMEDI (giris gerekir). Sahne
 adresinde Lumen sahibi ile: menude "Islerim", `/islerim` aciliyor (ajans notu, yanit bekleyen 3,
 "Tercih: Ilker S.").
-16-B onizlemede dogrulandi: `duzeltme-16b`, migration yok. Sonra: RFP tekliflerinin
+16-B uretimde (13 Kas): main = sahne = d26ef16, migration yok. Uretimde girissiz, salt okuma:
+ana sayfa aciliyor, `/etkinliklerim`, `/kurumsal`, `/rezervasyonlarim` girise yonlendiriyor, konsol
+temiz; yayin kimligi 16-A dogrulamasindakinden farkli (yeni yayin). Kurum hesabi uretimde
+DENENMEDI (giris gerekir). Sahne adresinde: Baskent Egitim sahibi ile merkez (kurum notu, menude
+iki madde yok, "Arti Bir Ajans" karti, 1 / 4 / 8 / 2); Kaan 10 / 8 / 6 / 8; Lumen (ajans)
+`/etkinliklerim` eski liste (degismedi).
+16-C dalda: `duzeltme-16c`, migration yok; onizleme turu bekliyor. Sonra: RFP tekliflerinin
 etkinlik kartinda gorunmesi, ajansin alici oldugu isler.

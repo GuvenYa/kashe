@@ -15,6 +15,8 @@ import {
 } from '@/app/lib/brief-anahtarlari';
 import { getTeamContext } from '@/app/lib/business-write';
 import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
+import { talepTeklifleriniEsle } from '@/app/lib/talep-teklifleri';
+import type { QuoteStatus } from '@/app/mesajlar/quotes-data';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
 function formatBriefValue(field: BriefField, value: string): string {
@@ -77,6 +79,16 @@ type TeklifSatiri = {
   expires_at: string;
   status: string;
   created_at: string;
+  event_date: string | null;
+  request_no: number | null;
+};
+
+/** Ayni sohbetlerde yanitlanmis talepler (eslestirme icin; Duzeltme 16-C). */
+type YanitSatiri = {
+  request_id: string;
+  conversation_id: string | null;
+  responded_at: string | null;
+  quote_requests: { id: string; created_at: string } | null;
 };
 
 type PuanSatiri = {
@@ -147,31 +159,72 @@ export default async function TeklifKarsilastirPage({
     .eq('request_id', id)
     .eq('status', 'quoted');
 
-  console.log('[teklif-detay] recipients:', quotedRecipients?.length, 'error:', recError);
+  if (recError) console.error('[teklif-detay] alicilar', recError);
 
   const recipients = (quotedRecipients || []) as unknown as AliciSatiri[];
 
-  // Her recipient'ın conversation'ındaki en güncel quote'u çek
+  // Her alicinin sohbetinden BU TALEBE ait teklif (Duzeltme 16-C).
+  // Eskiden sohbetteki en yeni teklif gosteriliyordu; ayni profesyonel sonradan
+  // baska bir talebe ya da dogrudan bir talebe teklif verdiyse bu sayfada o
+  // teklif gorunuyordu (yanlis tutar ve kapsam, yanlis siralama). Eslestirme
+  // merkezle ayni kuralda: app/lib/talep-teklifleri.ts.
   const conversationIds = recipients
     .map((r) => r.conversation_id)
     .filter((v): v is string => !!v);
 
   const quotesByConv: Record<string, TeklifSatiri> = {};
   if (conversationIds.length > 0) {
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select(
-        'id, conversation_id, total_amount, currency, services_description, expires_at, status, created_at'
-      )
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false });
+    const [{ data: quotes, error: teklifHatasi }, { data: yanitlar, error: yanitHatasi }] =
+      await Promise.all([
+        supabase
+          .from('quotes')
+          .select(
+            'id, conversation_id, total_amount, currency, services_description, expires_at, status, created_at, event_date, request_no'
+          )
+          .in('conversation_id', conversationIds)
+          .order('created_at', { ascending: false }),
+        // Ayni sohbetlerde yanitlanmis BUTUN talepler: bir teklif iki talebe
+        // baglanmaz, bu yuzden eslestirme hepsini birlikte gorur.
+        supabase
+          .from('quote_request_recipients')
+          .select(
+            'request_id, conversation_id, responded_at, quote_requests (id, created_at)'
+          )
+          .in('conversation_id', conversationIds),
+      ]);
+    if (teklifHatasi) console.error('[teklif-detay] teklifler', teklifHatasi);
+    if (yanitHatasi) console.error('[teklif-detay] yanitlar', yanitHatasi);
 
-    // Her conversation için en güncel quote (ilk gelen, desc sıralı)
-    ((quotes || []) as TeklifSatiri[]).forEach((q) => {
-      if (!quotesByConv[q.conversation_id]) {
-        quotesByConv[q.conversation_id] = q;
-      }
+    const teklifListesi = (quotes || []) as TeklifSatiri[];
+    const eslesme = talepTeklifleriniEsle({
+      talepId: request.id,
+      talepAcilis: request.created_at,
+      sohbetIdleri: conversationIds,
+      teklifler: teklifListesi.map((q) => ({
+        id: q.id,
+        conversation_id: q.conversation_id,
+        total_amount: q.total_amount,
+        currency: q.currency,
+        status: q.status as QuoteStatus,
+        created_at: q.created_at,
+        expires_at: q.expires_at,
+        event_date: q.event_date,
+        request_no: q.request_no,
+      })),
+      yanitlar: ((yanitlar || []) as unknown as YanitSatiri[])
+        .filter((y) => !!y.quote_requests)
+        .map((y) => ({
+          talepId: y.request_id,
+          talepAcilis: y.quote_requests!.created_at,
+          conversationId: y.conversation_id,
+          respondedAt: y.responded_at,
+        })),
     });
+    const teklifById = new Map(teklifListesi.map((q) => [q.id, q]));
+    for (const [sohbetId, teklifId] of eslesme) {
+      const teklif = teklifById.get(teklifId);
+      if (teklif) quotesByConv[sohbetId] = teklif;
+    }
   }
 
   // Profesyonel puanlarını ayrı sorguyla çek (nested join satır eliyordu)
