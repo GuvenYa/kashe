@@ -161,7 +161,9 @@ YAPILDI (13 Kas, dal `duzeltme-16c`; migration yok).
   "Suresi doldu" yaziyordu. Artik karar verilmis teklifte durum yazar ("Reddedildi", "Onaylandi",
   "Geri cekildi"); kabul edilip rezervasyonu iptal olan teklif merkezdeki gibi "Iptal edildi"
   (rezervasyonlar ek sorguyla okunur; aktif rezervasyonu varsa iptal sayilmaz). Ikinci derlemede
-  bakilacak.
+  dogrulandi: 13.000 TL "Iptal edildi", 9.000 TL ve 14.000 TL "Reddedildi"; konsol temiz.
+  Bekleyen teklifte kalan sure yazisi degismedi (Kaan'da bekleyen teklifli teklif topla talebi
+  yok, gercek veriyle gorulmedi).
 - Cok alicili ve teklif almis bir talep Kaan'da yok (Oyuncu talebi teklif bekliyor); siralama
   degismedi (tutara gore), gercek veriyle yeniden denenmedi.
 
@@ -178,5 +180,5 @@ temiz; yayin kimligi 16-A dogrulamasindakinden farkli (yeni yayin). Kurum hesabi
 DENENMEDI (giris gerekir). Sahne adresinde: Baskent Egitim sahibi ile merkez (kurum notu, menude
 iki madde yok, "Arti Bir Ajans" karti, 1 / 4 / 8 / 2); Kaan 10 / 8 / 6 / 8; Lumen (ajans)
 `/etkinliklerim` eski liste (degismedi).
-16-C dalda: `duzeltme-16c`, migration yok; onizleme turu bekliyor. Sonra: RFP tekliflerinin
+16-C onizlemede dogrulandi: `duzeltme-16c`, migration yok. Sonra: RFP tekliflerinin
 etkinlik kartinda gorunmesi, ajansin alici oldugu isler.
