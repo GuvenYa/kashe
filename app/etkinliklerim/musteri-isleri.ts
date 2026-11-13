@@ -1146,7 +1146,11 @@ export async function musteriIsleri(
                 ? ekip.status === 'confirmed'
                   ? 'Ekip hazır'
                   : 'Ekip kuruluyor'
-                : (ETKINLIK_DURUMU[e.status] ?? e.status);
+                : // Etkinligin kendi durumu ("Onaylandi") burada "musteri
+                  // onayladi" sanilirdi (onizleme turu 19); eksik olan yazilir.
+                  e.status === 'matching'
+                  ? ETKINLIK_DURUMU.matching
+                  : 'Ekip kurulmadı';
       ton = giden.length > 0 && !gidenTaslak ? 'soluk' : 'notr';
       ajansHatti = 'hazirlik';
     } else {

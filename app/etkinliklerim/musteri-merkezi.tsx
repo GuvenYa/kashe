@@ -204,7 +204,11 @@ export function MusteriMerkezi({
     <div className="max-w-3xl">
       <PanelBaslik
         eyebrow="Etkinliklerim"
-        altNot="Talep, teklif ve rezervasyonların iş iş bir arada: teklif bekleyenler, yaklaşanlar, tamamlananlar."
+        altNot={
+          ajans
+            ? 'Etkinliklerin iş iş bir arada: devam edenler, yaklaşanlar, tamamlananlar.'
+            : 'Talep, teklif ve rezervasyonların iş iş bir arada: teklif bekleyenler, yaklaşanlar, tamamlananlar.'
+        }
         sagAlan={
           ajans ? (
             /* Ajans teklif topla talebi acamaz; tek eylem yeni etkinlik. */

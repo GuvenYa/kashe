@@ -35,7 +35,9 @@ musteriye teklif dosyasi gonderilir -> musteri onaylar / revizyon ister. Bu turd
   - musteri onayladi -> "Yaklasan", "Musteri onayladi" (tarihi gectiyse "Tamamlanan");
   - teklif musteride -> "Devam eden", "Musteri yaniti bekleniyor";
   - teklif yok / taslak / kapandi -> "Devam eden": "Teklif hazirlaniyor", "Teklif kapandi",
-    "Ekip hazir", "Ekip kuruluyor" ya da etkinligin kendi durumu.
+    "Ekip hazir", "Ekip kuruluyor"; ekip de yoksa "Ekip kurulmadi" (eslestirme suruyorsa
+    "Eslestiriliyor"). Ilk yazimda burada etkinligin kendi durumu ("Onaylandi") yaziyordu;
+    "musteri onayladi" sanilacagi icin onizleme turunda degistirildi.
 - Ozet (`MusteriIsleri.ozet`): uc yeni sayac - musteri yaniti bekleyen, revizyon istenen,
   hazirlanan etkinlik. Ajans hattinda bekleyen kartlar musterinin "acik is / teklif geldi"
   sayimina GIRMEZ (onlar teklif beklemiyor). Ajansi olmayan hesapta uc sayac da 0.
@@ -63,13 +65,48 @@ musteri merkezinin davranisi (ajansi olmayan hesapta kartlar ve sayilar ayni).
 - Menu testi 18 / 18 (ajans sahibi + kurum uyesi, yalniz uye olan ajans rolu, kurulussuz ajans).
 - tsc + eslint temiz.
 
-## Onizleme turu 19 (dal `duzeltme-19`)
+## Onizleme turu 19 (13 Kas, dal `duzeltme-19`; Lumen sahibi + Ilker; 1280 ve 375 px)
 
-Push sonrasi doldurulacak.
+Lumen (ajansin kendi hesabi), `/etkinliklerim`:
+- Merkez acildi: baslik, tek eylem "+ Yeni etkinlik", ajans notu ("Islerim" baglantili), durum
+  karti, sekmeler "Devam eden 1 - Yaklasan 1 - Tamamlanan 3".
+- Tohum verisiyle (gercek ajans verisi):
+  - Yaklasan: "Urun lansmani - Lumen sahne ve yayin" - "Musteri onayladi"; satirlar "Beren Kara
+    - 145.800 TL - Onaylandi" ve "Ekip - 5 kisi - Onaylandi".
+  - Tamamlanan (3): giden teklifler durumlariyla (Onaylandi / Reddedildi / Suresi doldu),
+    satirlar teklif sayfasina gidiyor.
+- Tek "Devam eden" etkinlikte hat adim adim yurutuldu:
+  - ekip ve teklif yokken kart etkinligin durumunu ("Onaylandi") yaziyordu -> "Ekip kurulmadi"
+    yapildi (ikinci build);
+  - "Ekip kur" -> "Ekip kuruluyor" + "Ekip - 0 kisi - Taslak" (Ekip sekmesine gidiyor);
+  - "Teklif olustur" (taslak) -> "Teklif hazirlaniyor" + "Musteri - (tutar yok) - Taslak";
+  - teklif gonderildi (alici adi "Tur 19-A Musteri", e-posta YOK: ileti gitmedi, yalniz portal
+    baglantisi uretildi) -> "Musteri yaniti bekleniyor" + "60.000 TL - Gonderildi"; durum karti
+    "1 etkinlikte musteri yaniti bekleniyor";
+  - portal baglantisindan musteri olarak "Revizyon iste" -> kart en ustte "Revizyon istendi"
+    (vurgulu), durum karti "Revizyon bekleyen teklif var - 1 teklifte revizyon istendi".
+- 375 px: yatay tasma yok, satir etiketleri kesilmiyor.
+- "Islerim" (satici merkezi) degismedi: 3 / 0 / 0 / 0. Ajansin SATICI oldugu teklif sekli
+  rezervasyonda geri baglantisi "Rezervasyonlarim"da kaldi (merkeze donmuyor; dogru).
+
+Ilker (Lumen uyesi, rol profesyonel): `/etkinliklerim` eski liste ("Planladigin etkinlikler").
+
+Turdan cikan duzeltmeler (ikinci build): "Ekip kurulmadi" etiketi; ajans panelinde baslik
+altindaki cumle ("Etkinliklerin is is bir arada: devam edenler, yaklasanlar, tamamlananlar").
+
+Gorulmeyen: teklifin musteri tarafindan ONAYLANMASI bu turda yapilmadi (onayli durum tohum
+verisinde goruldu); birden cok ekip; "Teklif kapandi" durumu (yalniz sahte veri testinde).
+Musteri ve kurum hesaplari bu onizlemede yeniden gezilmedi (sahte veri testinde ciktilar ayni).
+Konsol hatasi yok.
+
+Sahne'de kalan tur verisi: Lumen'in "Istanbul'da 80 kisilik kurumsal urun tanitimi" etkinliginde
+taslak bir ekip (0 uye) ve "Tur 19-A Musteri" alicili, 60.000 TL, "Revizyon istendi" durumunda
+bir teklif.
 
 ## Durum (13 Kas)
 
-- 19-A: kod hazir, yerel denemeler gecti; onizleme bekliyor.
+- 19-A: onizlemede dogrulandi (dal `duzeltme-19`).
+- Turdan cikan iki metin duzeltmesi ikinci build'de; sahte veri testi yeniden gecti.
 
 ## Acik kalanlar
 
