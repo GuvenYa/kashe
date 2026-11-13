@@ -88,3 +88,35 @@ export function talepTeklifleriniEsle(girdi: {
   }
   return sonuc;
 }
+
+/**
+ * KARSILASTIRMA SAYFASINDA TEKLIFIN KARAR DURUMU (Duzeltme 17-B). Saf.
+ *
+ *   - 'onayli': musteri bu teklifi onayladi ve rezervasyonu iptal olmadi.
+ *   - 'acik'  : karar bekliyor (bekliyor + suresi dolmamis).
+ *   - 'kapali': reddedildi, geri cekildi, suresi doldu ya da onaylandiktan
+ *               sonra rezervasyonu iptal edildi.
+ *
+ * "En uygun" rozeti ve "en uygun teklifi sec" cagrisi yalniz 'acik' teklifler
+ * icindir: eskiden reddedilmis ya da suresi dolmus teklif de en dusuk tutarsa
+ * "En uygun" gorunuyordu.
+ */
+export type TeklifKarari = 'onayli' | 'acik' | 'kapali';
+
+export function teklifKarari(
+  teklif: { status: string; expires_at: string },
+  iptal: boolean,
+  simdi: Date
+): TeklifKarari {
+  if (iptal) return 'kapali';
+  if (teklif.status === 'accepted') return 'onayli';
+  if (teklif.status !== 'pending') return 'kapali';
+  return new Date(teklif.expires_at) < simdi ? 'kapali' : 'acik';
+}
+
+/** Siralama: onayli teklif en ustte, sonra karar bekleyenler, sonra kapananlar. */
+export const TEKLIF_KARAR_SIRASI: Record<TeklifKarari, number> = {
+  onayli: 0,
+  acik: 1,
+  kapali: 2,
+};

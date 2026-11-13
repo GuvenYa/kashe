@@ -42,6 +42,12 @@ import {
  *     birimine baglanmaz; etkinligi varsa etkinlik kartina (ajansin adi ve
  *     tutariyla bir satir), yoksa kendi kartiyla gorunur. Eskiden merkezde
  *     yoktu; kurum hesabinda rezervasyonlarin tek yeri burasi olunca eklendi.
+ *   - Duzeltme 17-A: ajanslara acilan TEKLIF TALEPLERI (RFP) etkinlik kartina
+ *     girer. Acik talep (gonderildi / yanit toplaniyor / degerlendirmede)
+ *     kartta bir satirdir ("2 / 3 yanit"); gelen ajans yaniti karar bekleyen
+ *     teklif sayilir ("N teklif geldi", kart "Teklif bekleyen"de en ustte),
+ *     yanitsiz acik talep "Teklif bekleniyor". Karsilastirma ve secim
+ *     `/kurumsal/rfp/[id]`de kalir; burada yalniz durum ve baglanti var.
  *
  * Yalniz OKUR; yeni DB nesnesi yok, gorunurluk mevcut RLS ile ayni. Sayilar
  * okunan satirlardan gelir (uydurma sayac yok).
@@ -57,6 +63,26 @@ type RezervasyonSatiri = IsRezervasyonu & {
   saticiAdi?: string | null;
   /** Ajans teklifinin basligi - yalniz teklif sekli rezervasyonda. */
   teklifBasligi?: string | null;
+};
+
+/** Ajanslara acilan teklif talebi (RFP); her talep bir etkinlige baglidir. */
+type RfpSatiri = {
+  id: string;
+  title: string;
+  status: string;
+  event_id: string;
+  created_at: string;
+};
+
+/** Etkinligin teklif talebi + davet / yanit sayilari. */
+type EtkinlikRfp = { rfp: RfpSatiri; davet: number; yanit: number };
+
+/** Karar bekleyen (acik) teklif talebi durumlari. */
+const ACIK_RFP_DURUMLARI = new Set(['sent', 'collecting', 'evaluating']);
+const RFP_DURUMU: Record<string, string> = {
+  sent: 'Gönderildi',
+  collecting: 'Yanıt toplanıyor',
+  evaluating: 'Değerlendirmede',
 };
 
 /** Teklif sekli rezervasyon sorgusunun satiri (gomulu teklif ve satici). */
@@ -247,6 +273,7 @@ export async function musteriIsleri(
     teklifSonuc,
     rezSonuc,
     teklifRezSonuc,
+    rfpSonuc,
   ] = await Promise.all([
       supabase
         .from('events')
@@ -334,6 +361,16 @@ export async function musteriIsleri(
         .or(teklifRezSuzgeci)
         .order('created_at', { ascending: false })
         .limit(200),
+      // Ajanslara acilan teklif talepleri (Duzeltme 17-A). Yalniz
+      // etkinliklerini gorebildigi kuruluslar; kurulusu yoksa sorgu atilmaz.
+      aliciOrgIdleri.length > 0
+        ? supabase
+            .from('rfps')
+            .select('id, title, status, event_id, created_at')
+            .in('organization_id', aliciOrgIdleri)
+            .order('created_at', { ascending: false })
+            .limit(200)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
   for (const [ad, sonuc] of [
@@ -343,6 +380,7 @@ export async function musteriIsleri(
     ['teklif', teklifSonuc],
     ['rezervasyon', rezSonuc],
     ['teklif rezervasyonu', teklifRezSonuc],
+    ['teklif talebi (rfp)', rfpSonuc],
   ] as const) {
     if (sonuc.error) {
       console.error('[etkinliklerim merkez]', ad, sonuc.error.code, sonuc.error.message);
@@ -367,6 +405,37 @@ export async function musteriIsleri(
     teklifBasligi: surum?.proposal?.title?.trim() || null,
   }));
   const rezListesi = [...sohbetRezListesi, ...teklifRezListesi];
+
+  // Teklif talepleri (RFP) etkinlige gore; davet / yanit sayilari tek sorgu
+  // (RLS: alici kendi taleplerinin davetlerini gorur).
+  const rfpListesi = (rfpSonuc.data ?? []) as unknown as RfpSatiri[];
+  const davetSayisi = new Map<string, { davet: number; yanit: number }>();
+  if (rfpListesi.length > 0) {
+    const { data: davetler, error: davetHatasi } = await supabase
+      .from('rfp_invites')
+      .select('rfp_id, status')
+      .in(
+        'rfp_id',
+        rfpListesi.map((r) => r.id)
+      );
+    if (davetHatasi) {
+      console.error('[etkinliklerim merkez] rfp davetleri', davetHatasi.code, davetHatasi.message);
+    }
+    for (const d of (davetler ?? []) as { rfp_id: string; status: string }[]) {
+      const s = davetSayisi.get(d.rfp_id) ?? { davet: 0, yanit: 0 };
+      s.davet += 1;
+      if (d.status === 'responded') s.yanit += 1;
+      davetSayisi.set(d.rfp_id, s);
+    }
+  }
+  const etkinlikRfpleri = new Map<string, EtkinlikRfp[]>();
+  for (const rfp of rfpListesi) {
+    const s = davetSayisi.get(rfp.id) ?? { davet: 0, yanit: 0 };
+    const liste = etkinlikRfpleri.get(rfp.event_id);
+    const kayit = { rfp, davet: s.davet, yanit: s.yanit };
+    if (liste) liste.push(kayit);
+    else etkinlikRfpleri.set(rfp.event_id, [kayit]);
+  }
 
   // Uyesi olunan kurumlarin adlari ("<Kurum> adina" etiketi).
   const kurumAdlari: Record<string, string> = {};
@@ -774,8 +843,14 @@ export async function musteriIsleri(
       if (!b.teklifler[0] && !b.rezervasyon && teklifsizAcik(b)) acikCocuk += 1;
     }
     rezler.push(...(c?.rezervasyonlar ?? []));
+    // Duzeltme 17-A: ajanslara acilan teklif talepleri (RFP).
+    const rfpler = etkinlikRfpleri.get(e.id) ?? [];
+    const acikRfpler = rfpler.filter((x) => ACIK_RFP_DURUMLARI.has(x.rfp.status));
+    // Yaniti gelmemis acik talep de "teklif bekleniyor"dur.
+    acikCocuk += acikRfpler.filter((x) => x.yanit === 0).length;
     const cocukVar =
-      !!c && c.talepler.length + c.birimler.length + c.rezervasyonlar.length > 0;
+      (!!c && c.talepler.length + c.birimler.length + c.rezervasyonlar.length > 0) ||
+      rfpler.length > 0;
 
     const { satirlar, kalan, bekleyen, sonZaman } = teklifleriDiz(ciftler);
     // Duzeltme 16-B: teklif sekli rezervasyonun sohbet teklifi yoktur; ajansin
@@ -796,13 +871,27 @@ export async function musteriIsleri(
         ton: r.status === 'cancelled' ? ('soluk' as const) : ('olumlu' as const),
         href: `/rezervasyon/${r.id}`,
       }));
-    const kartSatirlari = [...satirlar, ...ajansSatirlari];
+    // Acik teklif talepleri (RFP) kartta birer satir: kac ajans yanitladi,
+    // talep hangi asamada; karsilastirma sayfasina gider.
+    const rfpSatirlari: IsTeklifi[] = acikRfpler.map((x) => ({
+      id: `rfp-${x.rfp.id}`,
+      kimden: 'Ajans teklif talebi',
+      tutar: x.davet > 0 ? `${x.yanit} / ${x.davet} yanıt` : 'Davet yok',
+      durum: RFP_DURUMU[x.rfp.status] ?? x.rfp.status,
+      ton: x.yanit > 0 ? ('vurgu' as const) : ('notr' as const),
+      href: `/kurumsal/rfp/${x.rfp.id}`,
+    }));
+    const kartSatirlari = [...satirlar, ...rfpSatirlari, ...ajansSatirlari];
     const onayli = rezler.filter((r) => r.status === 'confirmed');
     const tamamlanan = rezler.filter((r) => r.status === 'completed');
     const onayBekleyen = onayli.some((r) => !!r.completion_requested_at);
     const aktifRezler = [...onayli, ...tamamlanan];
     const sonGun = e.end_date ?? e.start_date;
     const gecti = !!sonGun && sonGun < bugun;
+    // Karar bekleyen ajans yanitlari (acik taleplerde). Tarihi gecmis
+    // etkinlikte sayilmaz: talep acik unutulmus olsa da kart "Teklif
+    // bekleyen"de asili kalmasin (satiri kartta yine gorunur).
+    const ajansYaniti = gecti ? 0 : acikRfpler.reduce((n, x) => n + x.yanit, 0);
 
     let asama: IsAsamasi;
     let durum: string;
@@ -815,9 +904,9 @@ export async function musteriIsleri(
       asama = 'tamamlanan';
       durum = ETKINLIK_DURUMU.completed;
       ton = 'olumlu';
-    } else if (bekleyen > 0) {
+    } else if (bekleyen + ajansYaniti > 0) {
       asama = 'bekleyen';
-      durum = `${bekleyen} teklif geldi`;
+      durum = `${bekleyen + ajansYaniti} teklif geldi`;
       ton = 'vurgu';
     } else if (onayBekleyen) {
       asama = 'yaklasan';
@@ -904,7 +993,7 @@ export async function musteriIsleri(
         rezler.reduce((en, r) => Math.max(en, ms(r.created_at)), 0)
       ),
       gun: e.start_date,
-      bekleyenTeklif: asama === 'bekleyen' ? bekleyen : 0,
+      bekleyenTeklif: asama === 'bekleyen' ? bekleyen + ajansYaniti : 0,
       tamamlanmaOnayi: onayBekleyen,
     };
   };

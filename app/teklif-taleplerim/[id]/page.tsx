@@ -19,7 +19,11 @@ import {
 } from '@/app/lib/brief-anahtarlari';
 import { getTeamContext } from '@/app/lib/business-write';
 import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
-import { talepTeklifleriniEsle } from '@/app/lib/talep-teklifleri';
+import {
+  talepTeklifleriniEsle,
+  teklifKarari,
+  TEKLIF_KARAR_SIRASI,
+} from '@/app/lib/talep-teklifleri';
 import type { QuoteStatus } from '@/app/mesajlar/quotes-data';
 
 // brief_data değerini config alanına göre insan-okur hale getir (select→label, date→tr-TR)
@@ -290,7 +294,13 @@ export default async function TeklifKarsilastirPage({
   const categoryName = kategoriEmbed?.name_tr;
   const cityName = sehirEmbed?.name;
 
-  // Teklifleri fiyata göre sırala (düşükten yükseğe)
+  // Duzeltme 17-B: "En uygun" rozeti ve "sec" cagrisi yalniz KARAR BEKLEYEN
+  // teklifler icindir (bkz. teklifKarari). Sira: onayli teklif en ustte,
+  // sonra karar bekleyenler, sonra kapananlar; her grupta dusuk tutar once.
+  const istekAni = new Date();
+  const karar = (q: TeklifSatiri) =>
+    teklifKarari(q, iptalTeklifler.has(q.id), istekAni);
+
   const offers = recipients
     .map((r) => ({
       recipient: r,
@@ -299,9 +309,24 @@ export default async function TeklifKarsilastirPage({
     .filter(
       (o): o is { recipient: AliciSatiri; quote: TeklifSatiri } => !!o.quote
     )
-    .sort((a, b) => Number(a.quote.total_amount) - Number(b.quote.total_amount));
+    .sort(
+      (a, b) =>
+        TEKLIF_KARAR_SIRASI[karar(a.quote)] -
+          TEKLIF_KARAR_SIRASI[karar(b.quote)] ||
+        Number(a.quote.total_amount) - Number(b.quote.total_amount)
+    );
 
-  const cheapest = offers.length > 0 ? offers[0].quote.total_amount : null;
+  const acikTeklifler = offers.filter((o) => karar(o.quote) === 'acik');
+  const onayliVar = offers.some((o) => karar(o.quote) === 'onayli');
+  const cheapest =
+    acikTeklifler.length > 0 ? acikTeklifler[0].quote.total_amount : null;
+  const baslikCagrisi = onayliVar
+    ? 'Onayladığın teklif en üstte.'
+    : acikTeklifler.length > 0
+      ? 'En uygun teklifi seç, mesajlaşmaya devam et.'
+      : offers.length > 0
+        ? 'Karar bekleyen teklif kalmadı.'
+        : '';
 
   // Talep detayları — brief_data'yı kategori config'iyle çevir (config sırasıyla)
   const categorySlug = kategoriEmbed?.slug ?? null;
@@ -418,12 +443,15 @@ export default async function TeklifKarsilastirPage({
           )}
 
           <h1 className="font-display text-3xl text-ink leading-tight">
-            Gelen teklifler{' '}
+            <em className="not-italic font-medium text-brand-accent">
+              Gelen
+            </em>{' '}
+            teklifler{' '}
             <span className="text-ink-72">({offers.length})</span>
           </h1>
           <p className="mt-2 text-ink-72 text-sm">
             {request.recipient_count} profesyonele gönderildi, {offers.length}{' '}
-            teklif geldi. En uygun teklifi seç, mesajlaşmaya devam et.
+            teklif geldi. {baslikCagrisi}
           </p>
         </header>
 
@@ -447,8 +475,11 @@ export default async function TeklifKarsilastirPage({
                 pro?.company_name ||
                 gosterilecekAd(pro?.role, pro?.full_name, false) ||
                 'Profesyonel';
-              const isCheapest = quote.total_amount === cheapest;
-              const expired = new Date(quote.expires_at) < new Date();
+              const isCheapest =
+                !onayliVar &&
+                karar(quote) === 'acik' &&
+                quote.total_amount === cheapest;
+              const expired = new Date(quote.expires_at) < istekAni;
               // Duzeltme 16-C: karar verilmis teklifte DURUM yazar. Eskiden
               // yalniz sure yaziyordu; reddedilen ya da onaylanan teklif de
               // "suresi doldu" gorunuyordu.

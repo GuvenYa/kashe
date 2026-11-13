@@ -392,6 +392,22 @@ export async function submitOffer(
   if (existingConv) {
     // Zaten konuşma var — onu kullan, brief/etkinlik bilgilerini güncelle
     conversationId = existingConv.id;
+
+    // Duzeltme 17-D: onceki talep teklif aldiysa bu yanit YENI IS acar (asagida
+    // sayac artar, "Yeni talep #n" karti yazilir). Yeni is onceki isin yerini,
+    // kisi sayisini, saatini ve etkinlik bagini DEVRALMAZ (15-F ile ayni kural;
+    // teklif topla talebinde bu alanlar yok). Eskiden kaliyorlardi: kart onceki
+    // isin yeriyle yaziliyor, bu teklif onaylaninca rezervasyon onceki isin
+    // kisi sayisini (teklifte yer / saat yoksa onlari da) aliyor, talepte
+    // etkinlik bagi yoksa yeni is musteri merkezinde eski etkinligin kartina
+    // giriyordu. Onceki isin teklifi ve rezervasyonu kendi satirinda durur.
+    const { data: oncekiYanitlandi, error: yanitHatasi } = await supabase.rpc(
+      'fn_duz12_talep_yanitlandi',
+      { p_sohbet: conversationId }
+    );
+    if (yanitHatasi) console.error('[teklif] talep durumu', yanitHatasi);
+    const yeniIs = oncekiYanitlandi === true;
+
     const { error: sohbetHatasi } = await supabase
       .from('conversations')
       .update({
@@ -399,9 +415,20 @@ export async function submitOffer(
         event_type: request.event_type,
         budget_range: budgetRange,
         brief_data: request.brief_data ?? null,
-        // FAZ 4c/P3: talep bir etkinlige bagliysa sohbet de baglanir (Yol A: en son
-        // is kazanir). Talepte bag yoksa mevcut bag EZILMEZ.
-        ...(request.event_id ? { event_id: request.event_id } : {}),
+        ...(yeniIs
+          ? {
+              request_type: 'quote',
+              location: null,
+              guest_count: null,
+              start_time: null,
+              end_time: null,
+              event_id: request.event_id ?? null,
+            }
+          : // Ayni talebin yaniti. FAZ 4c/P3: talep bir etkinlige bagliysa
+            // sohbet de baglanir; talepte bag yoksa mevcut bag EZILMEZ.
+            request.event_id
+            ? { event_id: request.event_id }
+            : {}),
       })
       .eq('id', conversationId);
     if (sohbetHatasi) {

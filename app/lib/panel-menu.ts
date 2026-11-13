@@ -295,15 +295,16 @@ function ajansGrubu(
 /**
  * Kurum (business) kurulusu grubu — bolum sirasi ajansla ayni kuralda.
  *
- * `kurumHesabi` (Duzeltme 16-B): kurumun KENDI hesabi. Bu hesapta
- * "Etkinlikler" is merkezidir (`app/lib/musteri-merkezi.ts`); "Rezervasyonlar"
- * ve "Gelen teklifler" merkezin sekmeleri oldugu icin menude yazilmaz
- * (sayfalar yasiyor, merkezin altindaki "Ayri listeler"den acilir). Uyelerde
- * iki madde durur.
+ * `merkezVar` (Duzeltme 16-B, 17-C): kullanicida musteri is merkezi acik
+ * (`app/lib/musteri-merkezi.ts` ile AYNI olcut: kurumun kendi hesabi ya da
+ * musteri rolundeki uye). Bu kullanicida "Etkinlikler" is merkezidir;
+ * "Rezervasyonlar" ve "Gelen teklifler" merkezin sekmeleri oldugu icin menude
+ * yazilmaz (sayfalar yasiyor, merkezin altindaki "Ayri listeler"den acilir).
+ * Merkezi OLMAYAN uyede (profesyonel / ajans rolu) iki madde durur.
  */
 function kurumsalGrubu(
   org: CrewOrg,
-  kurumHesabi = false
+  merkezVar = false
 ): PanelMenuMaddesi[] {
   const maddeler: PanelMenuMaddesi[] = [
     { href: '/kurumsal', etiket: 'Genel bakış', ikon: 'gosterge', bolum: 'calisma' },
@@ -345,7 +346,7 @@ function kurumsalGrubu(
       });
     }
   }
-  if (!kurumHesabi) {
+  if (!merkezVar) {
     maddeler.push({
       href: '/rezervasyonlarim',
       etiket: 'Rezervasyonlar',
@@ -458,10 +459,14 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
       baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,
     });
   }
+  // Duzeltme 17-C: musteri is merkezi acik mi - `musteriMerkeziAcik` ile ayni
+  // olcut (musteri rolu, ya da bir kurumun sahibi olan isletme rolu).
+  const musteriMerkeziVar =
+    musteri || (isletmeRolu && kurumlar.some((o) => o.role === 'owner'));
   for (const org of kurumlar) {
     gruplar.push({
       baslik: org.name,
-      maddeler: kurumsalGrubu(org, isletmeRolu && org.role === 'owner'),
+      maddeler: kurumsalGrubu(org, musteriMerkeziVar),
       uyeKurulus: org.role !== 'owner',
       uyelikRolu: org.role,
       baslikHref: `/kurulus/uyelik?kurulus=${org.id}`,

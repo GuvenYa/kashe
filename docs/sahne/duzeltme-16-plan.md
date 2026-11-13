@@ -180,5 +180,8 @@ temiz; yayin kimligi 16-A dogrulamasindakinden farkli (yeni yayin). Kurum hesabi
 DENENMEDI (giris gerekir). Sahne adresinde: Baskent Egitim sahibi ile merkez (kurum notu, menude
 iki madde yok, "Arti Bir Ajans" karti, 1 / 4 / 8 / 2); Kaan 10 / 8 / 6 / 8; Lumen (ajans)
 `/etkinliklerim` eski liste (degismedi).
-16-C onizlemede dogrulandi: `duzeltme-16c`, migration yok. Sonra: RFP tekliflerinin
+16-C uretimde (13 Kas): main = sahne = 1c246ac, migration yok. Uretimde girissiz, salt okuma:
+ana sayfa aciliyor, `/teklif-taleplerim` girise yonlendiriyor, konsol temiz; yayin kimligi 16-B
+dogrulamasindakinden farkli (yeni yayin). Sayfa uretimde DENENMEDI (giris gerekir). Sahne
+adresinde Kaan ile: `60c983f0...` 13.000 TL "Iptal edildi", `1d479458...` 9.000 TL "Reddedildi". Sonra: RFP tekliflerinin
 etkinlik kartinda gorunmesi, ajansin alici oldugu isler.
