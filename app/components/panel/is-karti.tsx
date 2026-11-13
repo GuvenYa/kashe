@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BaglantiBekleme } from '@/app/components/ui/baglanti-bekleme';
 import {
   IS_TURU_ETIKETI,
   type Is,
@@ -128,6 +129,8 @@ export function IsKarti({ is }: { is: Is }) {
           className="kashe-tap text-sm font-semibold text-brand-ink hover:underline"
         >
           {is.hrefEtiketi}
+          {/* Duzeltme 21-A: hedef sayfa agir olabilir (etkinlik sayfasi 5 - 6 sn). */}
+          <BaglantiBekleme />
         </Link>
         {is.ekBaglanti && (
           <Link

@@ -8,3 +8,4 @@
 *.css  text eol=lf
 *.py   text eol=lf
 .gitattributes text eol=lf
+*.html text eol=lf

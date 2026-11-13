@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
+import { BaglantiBekleme } from '@/app/components/ui/baglanti-bekleme';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { TopNav } from '@/app/components/sections/top-nav';
 import { getCachedUser } from '@/app/lib/auth';
@@ -1396,6 +1397,9 @@ export default async function EtkinlikDetayPage({
                     {t.sayi}
                   </span>
                 )}
+                {/* Duzeltme 21-A: sekme degisimi sayfayi sunucudan yeniden
+                    ceker; gelene kadar tiklanan sekmede donen halka. */}
+                <BaglantiBekleme />
               </Link>
             );
           })}

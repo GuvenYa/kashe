@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { PanelKabugu } from '@/app/components/panel';
 import { panelKabukProps } from '@/app/lib/panel-kabuk';
 import { Eyebrow } from '@/app/components/ui/eyebrow';
+import { DurumKarti, type DurumSatiri } from '@/app/components/panel/durum-karti';
 import { RezervasyonAksiyonlari } from './aksiyonlar';
 import { getCrewContext } from '@/app/lib/org-context';
 import { musteriMerkeziAcik, MERKEZ_YOLU } from '@/app/lib/musteri-merkezi';
@@ -392,6 +393,69 @@ export default async function RezervasyonDetayPage({ params }: Props) {
 
   // D1b-2: calisma sayfasi panel kabugunda; menu ve hesap karti tek
   // yerden (app/lib/panel-kabuk.ts).
+  /**
+   * DURUM OZETI (Duzeltme 21-B, gorsel dil; 14-C karari A). Is merkezlerindeki
+   * durum kartinin ayni kalibi: rezervasyonun nerede durdugu tek bakista
+   * okunur. Yeni veri YOK; satirlar yukarida hesaplanan bayraklardan gelir.
+   * Alttaki bloklar (iptal kaydi, tamamlanma, etkinlik, tutar) degismedi.
+   */
+  const yorumYayinda = yorumCagrisi?.etiket === 'Yorumun yayında →';
+  const ozetSatirlari: DurumSatiri[] = [
+    { metin: 'Teklif onaylandı, rezervasyon oluştu', tamam: true },
+  ];
+  if (!teklifSekli) {
+    ozetSatirlari.push(
+      iletisimAcik
+        ? { metin: 'İletişim bilgileri iki taraf için açık', tamam: true }
+        : { metin: 'İletişim bilgileri kapalı', tamam: false }
+    );
+  }
+  if (booking.status === 'cancelled') {
+    ozetSatirlari.push({ metin: 'Rezervasyon iptal edildi', tamam: false });
+  } else {
+    ozetSatirlari.push(
+      booking.event_date
+        ? {
+            metin: tarihGeldi
+              ? `Etkinlik günü geldi: ${formatEventDate(booking.event_date)}`
+              : `Etkinlik günü: ${formatEventDate(booking.event_date)}`,
+            tamam: tarihGeldi,
+          }
+        : { metin: 'Etkinlik tarihi henüz belirlenmedi', tamam: false }
+    );
+    ozetSatirlari.push(
+      booking.status === 'completed'
+        ? { metin: 'İş tamamlandı', tamam: true }
+        : tamamlamaIstendi
+          ? {
+              metin: aliciBakisi
+                ? 'Tamamlandığı bildirildi; onayın bekleniyor'
+                : 'Tamamlandığı bildirildi; müşterinin onayı bekleniyor',
+              tamam: false,
+            }
+          : { metin: 'İş tamamlanınca burada işaretlenir', tamam: false }
+    );
+  }
+  if (yorumCagrisi) {
+    ozetSatirlari.push(
+      yorumYayinda
+        ? { metin: 'Yorumun yayında', tamam: true }
+        : { metin: 'Yorumun bekleniyor', tamam: false }
+    );
+  }
+  const ozetBasligi =
+    booking.status === 'cancelled'
+      ? 'Rezervasyon iptal edildi'
+      : booking.status === 'completed'
+        ? 'İş tamamlandı'
+        : tamamlamaIstendi
+          ? 'Tamamlanma onayı bekleniyor'
+          : tarihGeldi
+            ? 'Etkinlik günü geldi'
+            : 'Rezervasyon onaylı';
+  const ozetIlerleme =
+    (ozetSatirlari.filter((s) => s.tamam).length / ozetSatirlari.length) * 100;
+
   const kabuk = await panelKabukProps();
 
   return (
@@ -518,6 +582,22 @@ export default async function RezervasyonDetayPage({ params }: Props) {
                 {statusStyle.label}
               </span>
             </div>
+          </div>
+
+          {/* DURUM OZETI (Duzeltme 21-B) */}
+          <div className="mb-6">
+            <DurumKarti
+              baslik={ozetBasligi}
+              tamam={booking.status === 'completed'}
+              ilerleme={ozetIlerleme}
+              satirlar={ozetSatirlari}
+              kutular={[
+                {
+                  etiket: 'Tutar',
+                  deger: formatPrice(booking.total_amount, booking.currency),
+                },
+              ]}
+            />
           </div>
 
           {/* İPTAL DETAYI (varsa) */}

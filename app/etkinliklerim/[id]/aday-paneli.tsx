@@ -9,6 +9,7 @@ import {
   useTransition,
 } from 'react';
 import Link from 'next/link';
+import { BaglantiBekleme } from '@/app/components/ui/baglanti-bekleme';
 import { useRouter } from 'next/navigation';
 import {
   DESTEK_EPOSTA,
@@ -1036,6 +1037,7 @@ export function AdayPaneli({
                     className="kashe-tap font-display font-semibold text-brand-ink hover:underline"
                   >
                     Kendi ekibimle devam et →
+                    <BaglantiBekleme />
                   </Link>
                 </p>
               )}
@@ -1169,6 +1171,7 @@ export function AdayPaneli({
                               className="kashe-tap block text-xs text-brand-ink hover:underline"
                             >
                               Havuzdan ekle (Ekip sekmesi) →
+                              <BaglantiBekleme />
                             </Link>
                           )}
                         </div>

@@ -104,7 +104,7 @@
     <span class="pill">Sahne · test ortamı</span>
   </div>
   <div class="title">
-    <div class="eyebrow">Test rehberi · Sürüm 3.0 · 13 Kasım 2026</div>
+    <div class="eyebrow">Test rehberi · Sürüm 3.1 · 13 Kasım 2026</div>
     <h1>Kashe'yi baştan sona<br>deneyimle.</h1>
     <p class="lead">Dört rol, dört uçtan uca hikaye, bir de perde arkası: ne yaptığını, ekranda ne görmen gerektiğini ve nereye not edeceğini adım adım anlatan rehber. Teknik bilgi gerekmez; merak ve dikkat yeter.</p>
   </div>
@@ -141,12 +141,12 @@
 <section class="section">
   <div class="eyebrow">Sürüm 3 · 13 Kasım 2026</div>
   <h2>Bu sürümde ne değişti</h2>
-  <p class="lead">İlk turlarında yazdığın 35 bulgunun hepsine baktık: 32'si yapıldı, biri başladı (tasarım dili), biri kısmen yapıldı (telefonla arama), biri senden görsel bekliyor (ana sayfadaki dönen duvar). Rehberin yarısı buna göre yeniden yazıldı; önce farkları oku.</p>
+  <p class="lead">İlk turlarında yazdığın 35 bulgunun 32'si yapıldı; tasarım dili sürüyor, telefonla arama kısmen yapıldı, ana sayfa duvarı senden görsel bekliyor. Rehberin yarısı buna göre yeniden yazıldı; önce farkları oku.</p>
 
   <table>
     <thead><tr><th style="width:44%">Ne değişti</th><th style="width:26%">Nerede</th><th>Rehberde</th></tr></thead>
     <tbody>
-      <tr><td>Müşteri, kurum ve ajans için tek <b>Etkinliklerim</b> merkezi: talep, teklif ve rezervasyon iş iş tek sayfada. Menüden "Gelen teklifler" ve "Rezervasyonlar" kalktı. Kurumda etkinlik kartı ajans teklif talebini de gösterir.</td><td><code>/etkinliklerim</code></td><td>Hikaye 1, 2, 3</td></tr>
+      <tr><td>Müşteri, kurum ve ajans için tek <b>Etkinliklerim</b> merkezi: talep, teklif ve rezervasyon iş iş tek sayfada. Menüden "Gelen teklifler" ve "Rezervasyonlar" kalktı. Kurumda etkinlik kartı ajans teklif talebini, ajansta ayrı kart kurumsal RFP yanıtını gösterir.</td><td><code>/etkinliklerim</code></td><td>Hikaye 1, 2, 3</td></tr>
       <tr><td>Profesyonel ve ajans için tek <b>İşlerim</b> merkezi: Yanıt bekleyen / Teklif verdiklerim / Anlaşılan / Tamamlanan. Panelde "Beklenen gelir" ve "Toplam kazanç".</td><td><code>/islerim</code></td><td>Hikaye 1, 1b</td></tr>
       <tr><td>Kashe AI tek kutu; giriş yapmadan günde 3 soru. "Etkinliğini planla" da buraya gelir.</td><td><code>/kashe-ai</code></td><td>Isınma</td></tr>
       <tr><td>Sade üst menü, özgün logo, dikey Keşfet kartları, "Profili incele", "Kurumsal hizmet sağlayıcılar", yakın sonuç veren arama. İlanlarda 12 hazır ilan.</td><td><code>/</code>, <code>/kesfet</code></td><td>Isınma</td></tr>
@@ -155,15 +155,12 @@
       <tr><td>Teklifte tarih, saat ve yer; geçerlilikte 48 saat. Aynı kişiyle ikinci iş "Yeni talep #2" kartıyla ayrılır; dosya eki önce önizlemede bekler.</td><td><code>/mesajlar/…</code></td><td>Hikaye 1, 1b</td></tr>
       <tr><td>Tarihten önce "tamamlandı" müşteri onayı ister; iptalde uyarı ve yorum hakkı; rezervasyon sayfasında iletişim kutusu.</td><td><code>/rezervasyon/…</code></td><td>Hikaye 1</td></tr>
       <tr><td>Sihirbaza menüden yol ("Yeni etkinlik"); "ortalama", "Fiyatı belirlenemeyen roller", "Etkinliği nasıl düzenleyeceksin?".</td><td>Ajans ve kurum paneli</td><td>Hikaye 2, 3</td></tr>
-      <tr><td>Adaylar: sığan kartlar, "Seçili" işareti, hibritte ajans seçimi, "Kashe'den ara ve ekle", "Kaç kişi?".</td><td>Etkinlik → Adaylar</td><td>Hikaye 2</td></tr>
+      <tr><td>Adaylar: sığan kartlar, "Seçili" işareti, hibritte ajans seçimi, "Kashe'den ara ve ekle", "Kaç kişi?", "Kendi ekibimle devam et".</td><td>Etkinlik → Adaylar</td><td>Hikaye 2</td></tr>
       <tr><td>Ajans menüsü: "Genel bakış", "Ekip yönetimi", tek Takvim ve Kazançlar; tıklanan ajans adı, üyelik sayfası ve teklif tercihi.</td><td><code>/ajans</code>, <code>/kurulus/uyelik</code></td><td>Hikaye 2, Ek turlar</td></tr>
     </tbody>
   </table>
 
-  <div class="box tip"><div class="label">Yeniden denerken</div>Bulgu tablosundaki "Durum" sütununda her satırın karşısına ne yapıldığını yazdık. Bir düzeltmeyi denedikten sonra o hücrenin sonuna <b>doğrulandı</b> ya da <b>hala var</b> diye ekle; "hala var" dediklerine bir cümle de neyi gördüğünü yaz.</div>
-
-  <div class="box warn"><div class="label">Senin kararını bekleyenler</div>Tabloda "karar sende" ya da "top sende" diye işaretli: müşteri puanı ya da iptal geçmişi rozeti, teklifle birlikte sözleşme, aracı numarayla arama ve ana sayfa duvarı için lisansı temiz görseller.</div>
-
+  <div class="box tip"><div class="label">Yeniden denerken</div>Bulgu tablosundaki "Durum" sütununda her satırın karşısına ne yapıldığını yazdık. Bir düzeltmeyi denedikten sonra o hücrenin sonuna <b>doğrulandı</b> ya da <b>hala var</b> diye ekle; "hala var" dediklerine bir cümle de neyi gördüğünü yaz. <b>Senin kararını bekleyenler</b> tabloda "karar sende" ya da "top sende" diye işaretli: müşteri puanı ya da iptal geçmişi rozeti, teklifle birlikte sözleşme, aracı numarayla arama ve ana sayfa duvarı için lisansı temiz görseller.</div>
 </section>
 
 <!-- ============================ 1 HOS GELDIN ============================ -->
@@ -308,7 +305,7 @@
       <span class="see-inline">Üst barda ortada yalnız <span class="ui">Keşfet · İlanlar · Fiyatlandırma</span>; sağda <span class="ui">Giriş yap</span>, <span class="ui">Üye ol</span> ve koyu <span class="ui">Etkinliğini planla</span> düğmesi. Logo küçük harfli "kashe". Blog ve sayfa içi bağlantılar alt bilgiye taşındı.</span></li>
     <li data-n="2"><span class="role">anonim</span> <span class="ui">Etkinliğini planla</span>'ya bas (adres: <code>/kashe-ai</code>). Tek kutu: "<b>Ne arıyorsun?</b>". Önce tek bir rol yaz ("İstanbul'da düğün için fotoğrafçı arıyorum") → <span class="ui">Kashe AI'a sor</span>. Sonra bir etkinlik yaz ("Aralıkta İstanbul'da 150 kişilik kurumsal yılbaşı yemeği, DJ ve sunucu lazım").
       <span class="see-inline">Tek rolde "<b>Aradığın: Fotoğrafçı</b>" ve o rolden profiller; etkinlikte "Etkinliğin için önerdiklerimiz" başlığı altında rol rol adaylar. Her rolün altında <span class="ui">Bu rol için teklif topla →</span>, en altta etkinliği kurmaya götüren düğme. Giriş yapmadan günde 3 soru hakkın var; kalan hak sonucun altında yazar, dördüncüde giriş ya da üyelik ister.</span></li>
-    <li data-n="3"><span class="role">anonim</span> <code>/kesfet</code>'e geç. Solda süzgeçler: Kim (<span class="ui">Hepsi / Profesyoneller / Kurumsal hizmet sağlayıcılar</span>), Kategori, Şehir, Etkinlik türü, "Daha fazla filtre". Arama kutusuna önce "açılış", sonra "gala" yaz.
+    <li data-n="3"><span class="role">anonim</span> <code>/kesfet</code>'e geç. Solda süzgeçler: Kim (<span class="ui">Hepsi / Profesyoneller / Kurumsal hizmet sağlayıcılar</span>), Kategori, Şehir, Etkinlik türü, "Daha fazla filtre". Arama kutusuna ("İsim, rol ya da etkinlik ara") önce "açılış", sonra "gala" yaz.
       <span class="see-inline">Kartlar dikey ve fotoğraf ağırlıklı; isimler "Kerem Ö." biçiminde ve kesilmiyor. Rozetler: <span class="ui">KURUMSAL</span>, <span class="ui">PREMIUM</span>, <span class="ui">YENİ</span>. Kartın üzerine gelince kısa tanıtım ve <span class="ui">Profili incele</span> çıkar ("Teklif Al" artık profilin içinde). Arama tanıtım yazılarına ve etkinlik türlerine de bakar; birebir eşleşme yoksa yakın sonuçlar gelir, boş ekran kalmaz.</span></li>
     <li data-n="4"><span class="role">anonim</span> Bir fotoğrafçı kartına tıkla (örneğin <b>Kerem Öz</b>: <code>/p/5a4e0000-0000-4000-8000-000000010003</code>).
       <span class="see-inline">Üstte güven çipleri, sağda <span class="ui">Teklif Al</span> ve <span class="ui">Rezervasyon Talebi</span>. Bölümler her profilde aynı sırada: Hakkımda → Hizmetler ve paketler → kategori bilgileri → Deneyim → Eğitim → Ödüller → Yorumlar; üstte yapışkan bölüm şeridi. Paket ve hizmet satırlarında <span class="ui">Bu paket için teklif al</span> / <span class="ui">Bu hizmet için teklif al</span>.</span></li>
@@ -451,7 +448,7 @@
       <span class="see-inline">Roller seçilince <span class="ui">Pazar kıyası</span> kutusu: "Benzer etkinliklerde ~… TL (k/n rol)", varsa "Fiyatı belirlenemeyen roller: …" ve altında "Ortalama: pazardaki fiyatların ortanca değeri (medyan)…" açıklaması. Bu kutu geçmiş tekliflerden hesaplanır; bir ajans sahibi olarak işine yarar mı?</span></li>
     <li data-n="6"><span class="role">ajans</span> "<b>Etkinliği nasıl düzenleyeceksin?</b>" → <span class="ui">Mavi Sahne adına</span> seçili gelir (diğer seçenek "Kendi adıma"). Başlık yaz: "Sinan Bey yılbaşı partisi". <span class="ui">Onayla ve etkinliği oluştur</span>.
       <span class="see-inline">Etkinlik sayfası <span class="ui">Adaylar</span> sekmesinde açılır ve eşleştirme kendiliğinden başlar: "Profesyoneller taranıyor" → "<b>Eşleşme hazır</b>", dört onay satırı (müsaitlik, aynı şehir, bütçe uyumu, uyum puanı). Kutular: Rol 4 · Uygun aday · Ajans · Süre ("… ms").</span></li>
-    <li data-n="7"><span class="role">ajans</span> Üç yol sekmesine bak: <span class="ui">Tekil profesyonellerden ekip</span> / <span class="ui">Tüm işi ajansa ver</span> / <span class="ui">Hibrit ekip</span>. Her rol bir sütun: başlıkta aday sayısı, <span class="ui">Kaç kişi?</span> (− / +) ve "1 / 1 seçili". Aday kartında ad, şehir ve gerekçeler ("Aynı şehir · Yeni yetenek"), "X TL'den", uyum halkası (%) ve <span class="ui">Profili gör</span>. Önerilen aday küçük "Önerilen" etiketi taşır; seçtiğin kart koyu çerçeve ve "✓ Seçili" işaretiyle belli olur. Hibrit ekipte ajanslar da aynı sütunda "Ajans" rozetiyle durur ve seçilebilir. Sütunun altında <span class="ui">Kashe'den ara ve ekle</span> ve <span class="ui">Havuzdan ekle (Ekip sekmesi) →</span>. Altta yapışkan şerit: "Seçilen ekip · N seçim" ve <span class="ui">Ekibi oluştur →</span>.
+    <li data-n="7"><span class="role">ajans</span> Üç yol sekmesine bak: <span class="ui">Tekil profesyonellerden ekip</span> / <span class="ui">Tüm işi ajansa ver</span> / <span class="ui">Hibrit ekip</span>. Her rol bir sütun: başlıkta aday sayısı, <span class="ui">Kaç kişi?</span> (− / +) ve "1 / 1 seçili". Aday kartında ad, şehir ve gerekçeler ("Aynı şehir · Yeni yetenek"), "X TL'den", uyum halkası (%) ve <span class="ui">Profili gör</span>. Önerilen aday küçük "Önerilen" etiketi taşır; seçtiğin kart koyu çerçeve ve "✓ Seçili" işaretiyle belli olur. Hibrit ekipte ajanslar da aynı sütunda "Ajans" rozetiyle durur ve seçilebilir. Sütunun altında <span class="ui">Kashe'den ara ve ekle</span> ve <span class="ui">Havuzdan ekle (Ekip sekmesi) →</span>. Başlığın altındaki <span class="ui">Kendi ekibimle devam et →</span> ise adayları beğenmeyen ajans için: Ekip sekmesinde ekibini kendi havuzundan kurarsın. Altta yapışkan şerit: "Seçilen ekip · N seçim" ve <span class="ui">Ekibi oluştur →</span>.
       <span class="see-inline">Kartlar sığıyor, isimler kırılmıyor (dar ekranda sütunlar yana kayar). Bir rolde "Kaç kişi?"yi 2 yap ve ikinci adayı seç; başka bir karta tıklayınca seçimin nasıl değiştiği belli mi? Sunucu rolünde Mavi Sahne'nin kendi ekibinden kimse yok; adaylar Kashe pazaryerinden geliyor. Bir sunucu adayının adını not et (e-posta kuralı için).</span></li>
   </ol>
 
@@ -518,7 +515,7 @@
     <li data-n="26"><span class="role">müşteri</span> Sinan ile giriş yap. <code>/bildirimler</code>: "<b>Mavi Sahne rezervasyon oluşturdu: … (GG.AA.YYYY)</b>" (Rezervasyon etiketi). <span class="ui">Etkinliklerim</span> → "Yaklaşan" sekmesinde ajans teklifinden açılan rezervasyonun kartı. Teklif e-postası bir Kashe hesabıyla eşleştiği için portal onayı teklifi Sinan'ın hesabına bağladı; eşleşmeseydi müşteri belgeyi yalnız bağlantıdan görürdü. Bir müşteri olarak bunu nasıl buldun?</li>
   </ol>
 
-  <div class="box shot" id="shot-2-merkez"><div class="label">Ekran görüntüsü · Ajansın "Etkinlikler" merkezi: kartta teklif ve ekip satırları</div><img src="shots/17-ajans-etkinlikler.jpg" alt=""></div>
+  <div class="box shot" id="shot-2-merkez"><div class="label">Ekran görüntüsü · Ajansın "Etkinlikler" merkezi: etkinlik kartı (teklif ve ekip satırları) ve "RFP yanıtı" kartı</div><img src="shots/17-ajans-etkinlikler.jpg" alt=""></div>
 
   <div class="box warn"><div class="label">Bilerek böyle (şimdilik)</div>Ekip üyesi profesyonel kabul/ret veremez; portalda "Reddet" düğmesi yok; portaldan onaylayan müşteri yorum bırakamaz (yorum bir sohbet ister). Hepsi listede (Bölüm 12); yine de "nasıl olmalı" fikrin varsa yaz.</div>
 
@@ -533,7 +530,7 @@
   <h3>Ajans panelinde kısa gezinti</h3>
   <ul>
     <li><code>/ajans</code> <b>Genel bakış</b> (eski adı "Gösterge"): Açık RFP, Bekleyen teklif, Bu ay etkinlik, Aktif ekip, Açık/Gecikmiş görev, Açık fırsat; "Açık işler", "Yaklaşan etkinlikler", "Yeni etkinlik" kartı, "Ekip ve havuz", "Kazançlar", güven dökümü.</li>
-    <li><code>/etkinliklerim</code> (menüde <b>Etkinlikler</b>): ajansın merkezi. Sekmeler Devam eden / Yaklaşan / Tamamlanan; kartta müşteriye giden teklif ve ekip birer satır, sağ üstte aşama ("Revizyon istendi", "Müşteri yanıtı bekleniyor", "Müşteri onayladı"). <code>/islerim</code>: pazaryerinden ajansa gelen talepler ve sohbetten verilen teklifler.</li>
+    <li><code>/etkinliklerim</code> (menüde <b>Etkinlikler</b>): ajansın merkezi. Sekmeler Devam eden / Yaklaşan / Tamamlanan; kartta müşteriye giden teklif ve ekip birer satır, sağ üstte aşama ("Revizyon istendi", "Müşteri yanıtı bekleniyor", "Müşteri onayladı"). Kendi etkinliğine bağlı olmayan teklif dosyaları (kurumsal RFP yanıtları gibi) "RFP yanıtı" ya da "Teklif dosyası" etiketiyle ayrı karttır. <code>/islerim</code>: pazaryerinden ajansa gelen talepler ve sohbetten verilen teklifler.</li>
     <li><code>/ajans/ekipler</code> (<b>Ekip yönetimi</b>): üstte "Yeni ekip kur" (ekip bekleyen etkinlikler; yoksa "Yeni etkinlik →"), altta "Kurulan ekipler" (durum, "N üye"). <code>/ajans/teklifler</code>: durum rozetleri (Taslak · Gönderildi · Görüntülendi · Onaylandı · Revizyon istendi · Süresi doldu · Reddedildi/Kapatıldı).</li>
     <li><code>/ajans/havuz</code>: ekip + harici kişiler tek listede; <span class="ui">Harici kişi ekle</span>, ilişki/durum etiketleri; iç oran tablosu yalnız ticari yetkide.</li>
     <li><code>/ajans/musteriler</code> (CRM): "Öneri" şeridinde teklif müşterisi Sinan için "Kişi olarak ekle"; fırsat aşamaları Yeni → İletişimde → Teklif verildi → Kazanıldı/Kaybedildi.</li>
@@ -595,7 +592,7 @@
     <li data-n="11"><span class="role">ajans 1</span> Normal pencerede Mavi Sahne ile gir. <code>/bildirimler</code>: "<b>Yeni teklif talebi: Bayi toplantısı sahne ve teknik</b>" → <code>/ajans/rfp/…</code>.
       <span class="see-inline">Alıcı adı, durum "Yanıt bekliyor", "Son tarih", "Açıklama", "İstenen roller" (Rol · Adet · Zorunlu · Not). <b>Bütçe ipucu burada yok</b>; kurumun gizli bilgisi ajansa sızmıyor. Düğmeler <span class="ui">Teklif hazırla</span> / <span class="ui">Daveti reddet</span>; altta <span class="ui">Bu talebi Kashe AI'da planla →</span> talebi sihirbaza dolu taşır.</span></li>
     <li data-n="12"><span class="role">ajans 1</span> <span class="ui">Teklif hazırla</span>.
-      <span class="see-inline">Teklif editörü; başlıkta "Alıcı: Marmara Perakende Grubu", "Talep: … / Talebi gör", kalemler talepteki rollerden geldi, fiyatlar boş. Fiyatları gir, <span class="ui">Teklifi gönder →</span> → pencerede "Alıcı: Marmara Perakende Grubu (Kashe içinde görür)" → <span class="ui">Onayla ve gönder</span> → "Teklif alıcıya iletildi." Bu kez müşteri bağlantısı <b>yok</b>: RFP yanıtı kurumun hesabına gider. Listede "RFP yanıtı" rozeti.</span></li>
+      <span class="see-inline">Teklif editörü; başlıkta "Alıcı: Marmara Perakende Grubu", "Talep: … / Talebi gör", kalemler talepteki rollerden geldi, fiyatlar boş. Fiyatları gir, <span class="ui">Teklifi gönder →</span> → pencerede "Alıcı: Marmara Perakende Grubu (Kashe içinde görür)" → <span class="ui">Onayla ve gönder</span> → "Teklif alıcıya iletildi." Bu kez müşteri bağlantısı <b>yok</b>: RFP yanıtı kurumun hesabına gider. Listede "RFP yanıtı" rozeti. Sol menüden Etkinlikler: bu teklif artık merkezde "RFP yanıtı" kartı ("Müşteri yanıtı bekleniyor", "Teklifi aç →" ve "Talep").</span></li>
     <li data-n="13"><span class="role">ajans 2</span> Nova Etkinlik ile gir (aynı pencerede çıkış/giriş). <code>/ajans/rfp</code> → talep → <span class="ui">Daveti reddet</span> → "Daveti reddedeceksin; talep sahibine bildirilir. Emin misin?" → <span class="ui">Reddet</span>.
       <span class="see-inline">Rozet "Daveti reddettin".</span></li>
   </ol>
@@ -801,12 +798,11 @@
     <li>İlçe listesi 30 büyükşehirde var; diğer illerde ilçe ve mekan tek serbest kutu.</li>
     <li>Profildeki il listesi 81 ili gösterir; profesyonelin ili dışında seçim yapınca "Şehir dışı" notu çıkar.</li>
     <li>Yeni görsel dil Teklif topla, Etkinliklerim ve İşlerim'de; rezervasyon, sohbet ve profil paneli gibi detay sayfaları sırada.</li>
-    <li>Adaylar ekranında "ekip kurmadan, işi kendi ekibimle yapacağım" diyen açık bir seçenek yok (ekip kurmadan teklif hazırlamak mümkün).</li>
-    <li>Ajansın merkezi yalnız ajansın kendi hesabında; ajans üyesi etkinlikleri eski listeyle görür. Kurumsal teklif taleplerine (RFP) verilen teklifler ajansın etkinlik kartında değil, "Teklifler" sayfasında.</li>
+    <li>Ajansın merkezi yalnız ajansın kendi hesabında; ajans üyesi etkinlikleri eski listeyle görür.</li>
   </ol>
 
   <h3>Önceki sürümden kalanlar</h3>
-  <ol start="12">
+  <ol start="11">
     <li>Ekibe alınan profesyonel yalnız bildirim alır; kabul/ret veremez, etkinliği göremez; durum değişikliği ve ekipten çıkarma için bildirim yok.</li>
     <li>Portaldan onaylanan teklif yalnız teklif e-postası bir Kashe hesabıyla birebir eşleşirse o hesaba bağlanır; eşleşmezse müşteri belgeyi yalnız bağlantıdan görür. Portaldan onaylayan müşteri yorum bırakamaz.</li>
     <li>Portalda "Reddet" düğmesi yok; müşteri yalnız onaylar ya da revizyon ister.</li>

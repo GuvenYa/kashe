@@ -3,8 +3,10 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: `docs/sahne/bulgular.md` 145 (gozden gecirme) ve 144'un acik
 maddesi. Goc (migration) YOK; uc madde de uygulama katmaninda.
 
-Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-20`, derleme `dpl_2iSVXzJ6DDHVoicp6WaKpQpZTBfk`); turda bulunan metin
-duzeltmesi ikinci commit ile girer, sonra uretim.
+Durum: URETIMDE (13 Kas; main = sahne = 00fe139). Uretim derlemesi `dpl_6qxVuD8DWEek4nb1hqqpeZvPoxKL`: girissiz Kesfet'te
+yeni arama kutusu metni goruldu (uretimde girisli kontrol yapilmaz). Sahne adresi `dpl_GR1SjTvpbQUqiwiAH8G1K3oZFd4B`: Lumen ile
+"RFP yaniti" karti ve "1 iste musteri yaniti bekleniyor" satiri goruldu. Test rehberi surum 3.1'e guncellendi (bilinen
+eksiklerden iki madde kalkti, ajans merkezi gorseli yenilendi).
 
 ## 20-A Adaylar ekraninda "kendi ekibimle devam et" (Fahri satir 32; bulgu 145-a)
 
@@ -73,8 +75,7 @@ Kapsam disi: ajans UYESI eski etkinlik listesini goruyor (19-A'dan beri; merkez 
 ## Bu dala giren dokumanlar
 
 Fahri tablosu gozden gecirmesi (bulgu 145), test rehberi surum 3.0 (`docs/sahne/test-rehberi/`; `shots/03-iletisim-acik.jpg`
-artik kullanilmiyor, `git rm`), Duzeltme 19 kapanis notlari. Uretime alindiktan sonra rehberde "Bilinen eksikler"
-10 ve 11. maddeler kalkar (rehber 3.1).
+artik kullanilmiyor, silindi), Duzeltme 19 kapanis notlari. Uretimden sonra rehber 3.1 uretildi (commit bekliyor).
 
 ## Sirada
 
