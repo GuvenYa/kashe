@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: `docs/sahne/bulgular.md` 145 (gozden gecirme) ve 144'un acik
 maddesi. Goc (migration) YOK; uc madde de uygulama katmaninda.
 
-Durum: DALDA (`duzeltme-20`), onizleme turu bekliyor.
+Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-20`, derleme `dpl_2iSVXzJ6DDHVoicp6WaKpQpZTBfk`); turda bulunan metin
+duzeltmesi ikinci commit ile girer, sonra uretim.
 
 ## 20-A Adaylar ekraninda "kendi ekibimle devam et" (Fahri satir 32; bulgu 145-a)
 
@@ -56,8 +57,18 @@ Kapsam disi: ajans UYESI eski etkinlik listesini goruyor (19-A'dan beri; merkez 
   uretmiyor; ozet sayilari; rezervasyon sorgusu yalniz onayli surumlerle.
 - Eski merkez testleri (16-B, 17-A, 18-C musteri) calisti; ajans olmayan hesapta yeni kart cikmadi. `test-19a`
   ciktisinda beklenen fark: etkinliksiz / baska etkinlige bagli uc teklif artik kart.
-- Onizleme turu (yapilacak): Lumen ile merkezde "Tur 17-A ajans teklif talebi" (72.000 TL) "RFP yaniti" karti;
-  Lumen etkinliginin Adaylar sekmesinde yeni satir ve Ekip sekmesine gecis; girissiz Kesfet'te arama kutusu.
+- Onizleme turu (13 Kas, 1024 ve 375 px):
+  - 20-C: Lumen sahibinin merkezinde "RFP yaniti" karti cikti ("Tur 17-A ajans teklif talebi", Anadolu Ilac, 72.000 TL,
+    "Musteri yaniti bekleniyor", "Teklifi ac" + "Talep"); "Devam eden" 1 -> 2; 375 px'te tasma yok. Onayli / rezervasyonlu
+    bagimsiz teklif gercek veriyle GORULMEDI (yalniz `test-20c`).
+  - 20-A: Lumen etkinliginin Adaylar sekmesinde satir ve "Kendi ekibimle devam et" baglantisi; tiklayinca Ekip sekmesi
+    acildi. Gozlem: onizlemede sekme gecisi 4 - 9 saniye surdu ve bu sirada yukleniyor isareti yok (bu turun
+    degisikligi degil; ustteki sekme baglantilari da ayni sayfayi yeniden ceker).
+  - 20-B: girissiz Kesfet'te kutu "Isim, rol ya da etkinlik ara" (metin 159 px, kutu 241 px; sigiyor).
+  - Gerileme: Kaan'in merkezi 11 / 8 / 6 / 8 (Sahne adresiyle ayni), yeni kart turu yok; Lumen "Islerim" 3 / 0 / 0.
+  - Turda bulunan: ajans ozet satiri bagimsiz teklif icin "1 etkinlikte musteri yaniti bekleniyor" diyordu ->
+    "1 iste ..."; "n etkinlik hazirlik asamasinda" -> "n is ..."; baslik "Hazirlanan islerin var"; bos durum metni
+    teklif dosyalarini da anar (`app/etkinliklerim/musteri-merkezi.tsx`).
 
 ## Bu dala giren dokumanlar
 

@@ -59,7 +59,7 @@ const BOS_METIN: Record<IsAsamasi, { baslik: string; metin: string }> = {
 const AJANS_BOS_METIN: Partial<Record<IsAsamasi, { baslik: string; metin: string }>> = {
   bekleyen: {
     baslik: 'Devam eden işin yok',
-    metin: 'Hazırlanan ve müşteri yanıtı bekleyen etkinliklerin burada görünür.',
+    metin: 'Hazırlanan ve müşteri yanıtı bekleyen etkinliklerin ve teklif dosyaların burada görünür.',
   },
   yaklasan: {
     baslik: 'Yaklaşan işin yok',
@@ -152,14 +152,14 @@ export function MusteriMerkezi({
     ajansSatirlari.push(
       ozet.musteriYanitiBekleyen > 0
         ? {
-            metin: `${ozet.musteriYanitiBekleyen} etkinlikte müşteri yanıtı bekleniyor`,
+            metin: `${ozet.musteriYanitiBekleyen} işte müşteri yanıtı bekleniyor`,
             tamam: false,
           }
         : { metin: 'Müşteri yanıtı bekleyen teklif yok', tamam: true }
     );
     if (ozet.hazirlanan > 0) {
       ajansSatirlari.push({
-        metin: `${ozet.hazirlanan} etkinlik hazırlık aşamasında`,
+        metin: `${ozet.hazirlanan} iş hazırlık aşamasında`,
         tamam: false,
       });
     }
@@ -196,7 +196,7 @@ export function MusteriMerkezi({
         : ozet.musteriYanitiBekleyen > 0
           ? 'Müşteri yanıtı bekleniyor'
           : ozet.hazirlanan > 0
-            ? 'Hazırlanan etkinliklerin var'
+            ? 'Hazırlanan işlerin var'
             : musteriBasligi
       : musteriBasligi;
 
