@@ -79,13 +79,46 @@ Panel basligi (`PanelBaslik`) kullanan sayfalardan ikisinde calisma yuzeyi vurgu
 sayfalariyla ayni kaliba gecti (vurgulu kelime pembe; "Odeme gecmisi" kucuk harfle).
 Bu turda dokunulan diger sayfalar (`/teklif-topla`, `/teklif-talepleri`) kalibi zaten tasiyor.
 
-## Onizleme turu 18 (dal `duzeltme-18`)
+## Onizleme turu 18 (13 Kas, dal `duzeltme-18`; 1280 ve 375 px)
 
-Push sonrasi doldurulacak.
+18-A (Kaan + Ilker):
+- Form: sehir secilmeden satir yok. `?sehir=45&ilce=kadikoy` ile acilinca sehir Istanbul, ilce
+  "Kadikoy" (listedeki yazimla) secili geldi. Bolu secilince ilce kutusu kalkti, etiket "Ilce /
+  mekan" oldu, yazili mekan temizlendi; Istanbul'a donunce ilce bos geldi; "Tum sehirler"de satir
+  kalkti. 375 px'de uc kutu alt alta, yatay tasma yok.
+- Talep gonderildi (Drone Pilotu, Lansman, 20 Aralik 2026, Kadikoy + "Moda Sahnesi"):
+  - Musteri merkezi karti: "Lansman - 20 Aralik 2026 - Moda Sahnesi, Kadikoy, Istanbul".
+  - Karsilastirma sayfasi "Talep detaylari": "Sehir / cekim lokasyonu: Moda Sahnesi, Kadikoy,
+    Istanbul".
+  - Ilker "Teklif talepleri": ayni satir talebin kartinda.
+- Ilker "Teklif ver" ile yanit verdi (8.800 TL; mevcut sohbet, onceki talep yanitliydi):
+  sohbet basligi "Lokasyon: Moda Sahnesi, Kadikoy, Istanbul"; kart "Yeni talep #7 - Teklif topla
+  - Lansman - 20.12.2026 - Moda Sahnesi, Kadikoy, Istanbul"; Ilker `/islerim` kartinda ayni yer.
+- Sihirbazin "Teklif topla" baglantisi ilceyi tasiyor (`?tur=launch&sehir=45&ilce=kadikoy`).
+- Denenmedi: teklifin onaylanmasi (rezervasyonun yeri yalniz yerel `asama36b` ile), buyuksehir
+  olmayan ilde ucta uca gonderim, kurum adina ve ajansa giden talep.
+
+18-B (Ilker, Halil Aydin):
+- Ilker - Kaan sohbetinde "Teklif olustur": Yer kutulari Istanbul / Kadikoy / "Moda Sahnesi"
+  dolu acildi. Ilce kutusu pencerenin icinde aciliyor; aramada "besik" -> Besiktas, Enter secti
+  ve form GONDERILMEDI (Enter yalniz secim yapti). Ilce yeniden Kadikoy, mekan "Moda Sahnesi B
+  Salonu" yapilip 8.500 TL teklif gonderildi: teklif kartinda "Yer: Moda Sahnesi B Salonu,
+  Kadikoy, Istanbul".
+- Eski yazim: Halil Aydin - Deniz Erol sohbetinde konum "Istanbul / Bakirkoy"; form Istanbul /
+  Bakirkoy secili, mekan bos acildi (gonderilmedi). 375 px'de kutular sigiyor, tasma yok.
+
+18-C: `/odemelerim` "Odeme gecmisi" ("Odeme" pembe) ve `/kazanclarim` "Kazanclarim." (pembe);
+ikisi de italik degil.
+
+Konsol hatasi yok. Turdan duzeltme cikmadi.
+
+Sahne'de kalan tur verisi: Kaan'in yeni teklif topla talebi (Lansman, 20 Aralik 2026, "Moda
+Sahnesi, Kadikoy, Istanbul"); Kaan - Ilker sohbetinde "Yeni talep #7" ve bu talebe iki bekleyen
+teklif (8.800 TL; duzeltme olarak 8.500 TL, yeri "Moda Sahnesi B Salonu, Kadikoy, Istanbul").
 
 ## Durum (13 Kas)
 
-- 18-A, 18-B, 18-C: kod hazir, yerel denemeler gecti; onizleme bekliyor.
+- 18-A, 18-B, 18-C: onizlemede dogrulandi (dal `duzeltme-18`); turdan duzeltme cikmadi.
 
 ## Acik kalanlar
 
