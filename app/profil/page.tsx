@@ -1041,6 +1041,37 @@ export default async function ProfilPage() {
             </div>
           )}
 
+          {/* Duzeltme 23-B: yapilacak kalmadiysa "Yapilacaklar" sutunu BOS
+              kalmasin. Satirlar gercek kayitlardan: tamlik %100, etkinlik
+              turleri isaretli, yayin durumu (`is_published`). */}
+          {isPro &&
+            profile.primary_category_id != null &&
+            hasEventTypes &&
+            completeness >= 100 && (
+              <DurumKarti
+                baslik={
+                  profile.is_published
+                    ? 'Profilin yayında'
+                    : 'Profilin yayına hazır'
+                }
+                tamam={!!profile.is_published}
+                ilerleme={profile.is_published ? 100 : 67}
+                satirlar={[
+                  {
+                    metin: 'Yayın için gereken alanların hepsi dolu',
+                    tamam: true,
+                  },
+                  { metin: 'Etkinlik türlerin işaretli', tamam: true },
+                  {
+                    metin: profile.is_published
+                      ? 'Profilin yayında'
+                      : 'Profilin yayında değil; yayın düğmesi sayfanın altında',
+                    tamam: !!profile.is_published,
+                  },
+                ]}
+              />
+            )}
+
             </div>
 
             {/* Sag sutun — profil icerigi (yalniz profesyonel) */}

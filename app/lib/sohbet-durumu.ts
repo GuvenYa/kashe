@@ -36,6 +36,8 @@ export type SohbetRezervasyonu = {
   status: IsRezervasyonu['status'];
   completion_requested_at: string | null;
   created_at: string;
+  /** Rezervasyonun etkinlik gunu (YYYY-MM-DD ya da tam zaman). */
+  event_date?: string | null;
 };
 
 export type SohbetDurumSatiri = { metin: string; tamam: boolean };
@@ -55,6 +57,15 @@ export type SohbetDurumu = {
   talepNo: number;
 };
 
+/** Rezervasyonun etkinlik gunu (YYYY-MM-DD) ya da null. */
+function eventGunu(
+  liste: SohbetRezervasyonu[],
+  id: string | undefined
+): string | null {
+  const g = liste.find((r) => r.id === id)?.event_date;
+  return g ? g.slice(0, 10) : null;
+}
+
 const BITEN_TEKLIF: Record<string, string> = {
   declined: 'Teklif reddedildi',
   expired: 'Teklifin süresi doldu',
@@ -72,6 +83,8 @@ export function sohbetDurumu(girdi: {
   /** Yalniz musteri tarafinda: 'yok' = yorum hakki / cagrisi yok. */
   yorum: 'yok' | 'bekliyor' | 'yayinda';
   simdi: number;
+  /** Istanbul gunu (YYYY-MM-DD); verilirse "etkinlik gunu geldi" ayirt edilir. */
+  bugun?: string;
 }): SohbetDurumu {
   const { musteriTarafi, simdi } = girdi;
   const talepNo = girdi.talepSayisi ?? 1;
@@ -135,6 +148,10 @@ export function sohbetDurumu(girdi: {
   const bitti = rez?.status === 'completed';
   const onayli = rez?.status === 'confirmed';
   const onayBekliyor = onayli && !!rez?.completion_requested_at;
+  // Rezervasyon sayfasindaki kuralla ayni: gun <= bugun (Istanbul).
+  const rezGunu = eventGunu(girdi.rezervasyonlar, rez?.id);
+  const gunGeldi =
+    onayli && !!girdi.bugun && !!rezGunu && rezGunu <= girdi.bugun;
 
   // ---- Baslik ---------------------------------------------------------------
   let baslik: string;
@@ -148,6 +165,10 @@ export function sohbetDurumu(girdi: {
       ? 'Tamamlanma onayın bekleniyor'
       : 'Müşteri onayı bekleniyor';
     vurgu = musteriTarafi;
+  } else if (gunGeldi) {
+    // Tarih gecince profesyonel isi dogrudan tamamlayabilir (is ondan bekleniyor).
+    baslik = 'Etkinlik günü geldi';
+    vurgu = !musteriTarafi;
   } else if (onayli) {
     baslik = 'Rezervasyon onaylı';
   } else if (kabul) {
@@ -231,6 +252,13 @@ export function sohbetDurumu(girdi: {
         metin: musteriTarafi
           ? 'Tamamlandığı bildirildi, onayın bekleniyor'
           : 'Tamamlandığını bildirdin, müşteri onayı bekleniyor',
+        tamam: false,
+      });
+    } else if (gunGeldi) {
+      satirlar.push({
+        metin: musteriTarafi
+          ? 'Etkinlik günü geldi; iş tamamlanınca burada işaretlenir'
+          : 'Etkinlik günü geldi; işi tamamlandı olarak işaretleyebilirsin',
         tamam: false,
       });
     } else {

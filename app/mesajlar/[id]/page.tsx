@@ -12,6 +12,7 @@ import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 import { briefSatirlari } from '@/app/lib/brief-ozet';
 import { DurumKarti } from '@/app/components/panel/durum-karti';
 import { simdiMs } from '@/app/lib/premium';
+import { istanbulGunu } from '@/app/lib/tarih';
 import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import {
   sohbetDurumu,
@@ -320,7 +321,7 @@ export default async function KonusmaPage({
   const { data: convBookings } = await supabase
     .from('bookings')
     .select(
-      'id, quote_id, status, completed_at, cancelled_at, cancelled_by, customer_id, professional_id, completion_requested_at, created_at'
+      'id, quote_id, status, completed_at, cancelled_at, cancelled_by, customer_id, professional_id, completion_requested_at, created_at, event_date'
     )
     .eq('conversation_id', id);
 
@@ -442,6 +443,7 @@ export default async function KonusmaPage({
     musteriTarafi: isCustomerSide,
     yorum: yorumDurumu,
     simdi: simdiMs(),
+    bugun: istanbulGunu(),
   });
 
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)

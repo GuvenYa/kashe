@@ -369,24 +369,24 @@ export function KonusmaDetay({
               if (prev.some((m) => m.id === newMessage.id)) return prev;
               return [...prev, newMessage];
             });
-            // Duzeltme 23-A (bulgu 152): teklif ve sistem mesaji isin durumunu
-            // degistirir (yeni teklif, onay, ret, iptal, tamamlanma). Sunucu
-            // verisi yeniden okunur: teklif karti, rezervasyon koprusu,
-            // iletisim kapisi ve durum ozeti. Onceden karsi tarafin acik
-            // sohbetinde yeni teklif "Teklif yukleniyor..." yazisinda
-            // kaliyordu (sayfa elle yenilenene kadar).
-            if (
-              newMessage.message_type === 'quote' ||
-              newMessage.message_type === 'system'
-            ) {
-              router.refresh();
-            }
-            // Pasif üye okundu işaretlemez; canWrite (owner/manager) işaretler
-            if (
-              newMessage.sender_id !== currentUserId &&
-              (!isTeam || canWrite)
-            ) {
-              markConversationRead(conversationId).catch(() => {});
+            if (newMessage.sender_id !== currentUserId) {
+              if (!isTeam || canWrite) {
+                // Pasif üye okundu işaretlemez; canWrite (owner/manager) işaretler.
+                // Bu eylem `revalidatePath` cagirdigi icin sayfanin sunucu
+                // verisi de yenilenir: yeni teklif karti, rezervasyon koprusu,
+                // iletisim kutusu ve durum ozeti kendiliginden gelir
+                // (Duzeltme 23 onizleme turunda goruldu).
+                markConversationRead(conversationId).catch(() => {});
+              } else if (
+                newMessage.message_type === 'quote' ||
+                newMessage.message_type === 'system'
+              ) {
+                // Duzeltme 23-A (bulgu 152): salt goruntuleyen kurum uyesi
+                // okundu isaretlemez, sayfa verisi de yenilenmezdi; teklif
+                // karti "Teklif yukleniyor..." yazisinda, durum ozeti eski
+                // kalirdi. Isin durumunu degistiren mesajda veri yeniden okunur.
+                router.refresh();
+              }
             }
           }
         )
