@@ -256,9 +256,10 @@ export function konumBirlestir(il: string, ilce: string, mekan: string): string 
  *   "Moda sahili, Istanbul"         -> ilce "",         mekan "Moda sahili"
  *   "Mengen, Bolu" (liste yok)      -> ilce "",         mekan "Mengen"
  *
- * Il metnin SONUNDA degilse eski "Istanbul, Besiktas" yazimi denenir (il
- * basta ve ardindan virgul); o da degilse mekan bos doner (il adi mekan
- * metninin icinde gecmis olabilir - "Ankara Caddesi" -, kalan guvenle
+ * Il metnin SONUNDA degilse eski "Istanbul, Besiktas" ve "Istanbul / Sisli"
+ * yazimlari denenir (il basta ve ardindan virgul ya da egik cizgi; Duzeltme
+ * 18: ikincisi eski kayitlarda cok); o da degilse mekan bos doner (il adi
+ * mekan metninin icinde gecmis olabilir - "Ankara Caddesi" -, kalan guvenle
  * ayrilamaz).
  */
 export function konumCoz(
@@ -273,10 +274,10 @@ export function konumCoz(
   let kalan = '';
   if (kucuk.endsWith(kucukIl)) {
     kalan = metin.slice(0, metin.length - il.length);
-  } else if (kucuk.startsWith(kucukIl) && /^\s*,/.test(metin.slice(il.length))) {
+  } else if (kucuk.startsWith(kucukIl) && /^\s*[,/]/.test(metin.slice(il.length))) {
     kalan = metin.slice(il.length);
   }
-  kalan = kalan.replace(/^[,\s]+|[,\s]+$/g, '');
+  kalan = kalan.replace(/^[,/\s]+|[,/\s]+$/g, '');
 
   if (!kalan || !ilceListesi(il)) return { ilce: '', mekan: kalan };
 
@@ -293,4 +294,27 @@ export function konumCoz(
     return { ilce: bastaki, mekan: parcalar.slice(1).join(', ') };
   }
   return { ilce: '', mekan: kalan };
+}
+
+/**
+ * Kaydedilen konum metnini il + ilce + mekan KUTULARINA dagitir (Duzeltme 18,
+ * `KonumAlani`). `il` cagiranin cozdugu il adidir (`ilEslestir`).
+ *
+ * `konumCoz`dan farki: cozulemeyen metin KAYBOLMAZ. Il adi metnin icinde
+ * gecip kalan guvenle ayrilamiyorsa ("Ankara Caddesi 12") il BOS doner ve
+ * metnin tamami mekan kutusuna yazilir; aksi halde kullanici ilce sectiginde
+ * kutuda gorunmeyen eski metin sessizce silinirdi.
+ */
+export function konumKutulari(
+  ham: string | null | undefined,
+  il: string
+): { il: string; ilce: string; mekan: string } {
+  const metin = (ham ?? '').trim();
+  if (!metin || !il) return { il: '', ilce: '', mekan: metin };
+  const cozum = konumCoz(metin, il);
+  if (cozum.ilce || cozum.mekan) return { il, ...cozum };
+  // Yalniz il adi ("Istanbul", "istanbul", "Istanbul,").
+  const yalin = metin.replace(/[,/\s]+/g, ' ').trim();
+  if (aramaKatla(yalin) === aramaKatla(il)) return { il, ilce: '', mekan: '' };
+  return { il: '', ilce: '', mekan: metin };
 }

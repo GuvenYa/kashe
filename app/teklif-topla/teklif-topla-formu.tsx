@@ -15,6 +15,13 @@ import {
   type OnBehalfBusiness,
 } from '@/app/components/on-behalf-selector';
 import { BriefAlanlari } from '@/app/components/brief/brief-alanlari';
+import { IlceSecici } from '@/app/components/ui/il-secici';
+import {
+  ilceEslestir,
+  ilceListesi,
+  ilceTasi,
+  konumBirlestir,
+} from '@/app/lib/ilceler';
 import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import {
   SegmentSecici,
@@ -96,6 +103,12 @@ export type TeklifOnDoldur = {
   /** Etkinlikten gelen butce araligi (TL) — yalniz baslangic degeri. */
   butceMin?: number | null;
   butceMax?: number | null;
+  /**
+   * Duzeltme 18-A: sihirbazdan gelen ilce / semt metni. Sehir buyuksehirse ve
+   * metin listedeki bir ilceyle eslesirse ilce kutusu, aksi halde "ilce /
+   * mekan" metni bununla dolu baslar. Sehir yoksa kullanilmaz.
+   */
+  ilce?: string | null;
 };
 
 export function TeklifToplaFormu({
@@ -141,6 +154,26 @@ export function TeklifToplaFormu({
 
   const [categoryId, setCategoryId] = useState<number | ''>(gecerliKategori);
   const [cityId, setCityId] = useState<number | ''>(gecerliSehir);
+
+  /**
+   * Duzeltme 18-A: sehir secildiyse ILCE ve MEKAN da yazilabilir. Sehir 30
+   * buyuksehirden biriyse ilce listeden secilir (`app/lib/ilceler.ts`), metin
+   * alani "Mekan" olur; diger illerde tek "Ilce / mekan" metni vardir.
+   * Ikisi de istege bagli ve yalniz BILGIDIR: eslestirme sehre gore yapilir.
+   * Deger brief'in konum alanina diger formlarla ayni bicimde yazilir
+   * ("<mekan>, <ilce>, <Il>"); profesyonel yanit verince sohbetin ve dogacak
+   * rezervasyonun yeri olur (`submitOffer`).
+   */
+  const sehirAdiBul = (id: number | ''): string =>
+    id === '' ? '' : (cities.find((c) => c.id === id)?.name ?? '');
+  const ilkIlceMetni = (onDoldur?.ilce ?? '').trim().slice(0, 80);
+  const ilkIlce = ilceEslestir(ilkIlceMetni, sehirAdiBul(gecerliSehir));
+  const [ilce, setIlce] = useState(ilkIlce);
+  const [mekan, setMekan] = useState(
+    gecerliSehir !== '' && !ilkIlce ? ilkIlceMetni : ''
+  );
+  const sehirIlceleri = ilceListesi(sehirAdiBul(cityId));
+  const secilenIlce = sehirIlceleri ? ilce : '';
   const [briefValues, setBriefValues] = useState<Record<string, string>>(() => {
     // Brief alanları kategoriye göre değişir; anahtarlar sabit olduğu için
     // (event_type / event_date, bkz. brief-config) doğrudan yazılabilir.
@@ -253,6 +286,18 @@ export function TeklifToplaFormu({
       if (briefValues[`${f.key}${BRIEF_ESNEK_SONEKI}`] === '1') {
         cleanBrief[`${f.key}${BRIEF_ESNEK_SONEKI}`] = '1';
       }
+    }
+
+    // Duzeltme 18-A: ilce / mekan yazildiysa brief'in konum alanina gider.
+    // Yalniz sehir secildiyse yazilmaz (sehir zaten `city_id`de).
+    const konumAlani = briefFields.find((f) => f.legacyColumn === 'location');
+    const konumSehri = sehirAdiBul(cityId);
+    if (konumAlani && konumSehri && (secilenIlce || mekan.trim())) {
+      cleanBrief[konumAlani.key] = konumBirlestir(
+        konumSehri,
+        secilenIlce,
+        mekan
+      );
     }
 
     // Bütçe parse (Türkçe binlik ayraç temizle)
@@ -490,9 +535,16 @@ export function TeklifToplaFormu({
             </label>
             <select
               value={cityId}
-              onChange={(e) =>
-                setCityId(e.target.value ? parseInt(e.target.value, 10) : '')
-              }
+              onChange={(e) => {
+                const yeniId = e.target.value
+                  ? parseInt(e.target.value, 10)
+                  : '';
+                // Ilce ve mekan sehre baglidir: yeni sehrin listesinde
+                // olmayan ilce ve eski sehrin mekani tasinmaz.
+                setIlce(ilceTasi(sehirAdiBul(yeniId), ilce));
+                if (yeniId !== cityId) setMekan('');
+                setCityId(yeniId);
+              }}
               className={inputClass}
             >
               <option value="">Tüm şehirler</option>
@@ -506,6 +558,46 @@ export function TeklifToplaFormu({
               Şehir seçersen sadece o şehirdeki profesyonellere gider
             </p>
           </div>
+          {cityId !== '' && (
+            /* Duzeltme 18-A: ilce (buyuksehirde listeden) ve mekan. */
+            <div className="md:col-span-2">
+              <label
+                htmlFor={sehirIlceleri ? 'teklif-topla-ilce' : 'teklif-topla-mekan'}
+                className="block text-xs font-mono uppercase tracking-[0.16em] text-ink-72 mb-2"
+              >
+                {sehirIlceleri ? 'İlçe ve mekan' : 'İlçe / mekan'}
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sehirIlceleri && (
+                  <IlceSecici
+                    key={cityId}
+                    id="teklif-topla-ilce"
+                    ilceler={sehirIlceleri}
+                    deger={secilenIlce}
+                    onChange={setIlce}
+                  />
+                )}
+                <input
+                  id="teklif-topla-mekan"
+                  type="text"
+                  maxLength={80}
+                  value={mekan}
+                  onChange={(e) => setMekan(e.target.value.slice(0, 80))}
+                  aria-label={sehirIlceleri ? 'Mekan' : 'İlçe / mekan'}
+                  placeholder={
+                    sehirIlceleri
+                      ? 'Mekan (isteğe bağlı)'
+                      : 'İlçe / mekan (isteğe bağlı)'
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <p className="text-[10px] text-ink-72 mt-1 font-mono">
+                İsteğe bağlı. Profesyonellere bilgi olarak gider; talep şehre
+                göre iletilir
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

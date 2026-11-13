@@ -8,7 +8,7 @@ import {
   teklifTarihiMetni,
 } from '@/app/mesajlar/quotes-data';
 import type { Is, IsAsamasi, IsTeklifi, IsTonu } from '@/app/lib/isler';
-import { BRIEF_TERCIH_UYE_ADI } from '@/app/lib/brief-anahtarlari';
+import { BRIEF_TERCIH_UYE_ADI, briefKonumu } from '@/app/lib/brief-anahtarlari';
 import {
   birimleriKur,
   gorunenDurum,
@@ -52,6 +52,8 @@ type AliciSatiri = {
     event_date: string | null;
     event_type: string | null;
     response_deadline: string | null;
+    /** Duzeltme 18-C: ilce / mekan yazildiysa kartta sehir yerine o gorunur. */
+    brief_data: Record<string, unknown> | null;
     service_categories: { name_tr: string } | null;
     turkish_cities: { name: string } | null;
     customer: KisiOzeti;
@@ -137,7 +139,7 @@ export async function saticiIsleri(
         `
         id, status, conversation_id, created_at, responded_at,
         quote_requests (
-          id, status, created_at, event_date, event_type, response_deadline,
+          id, status, created_at, event_date, event_type, response_deadline, brief_data,
           service_categories (name_tr),
           turkish_cities (name),
           customer:profiles!quote_requests_customer_id_fkey (full_name, company_name, role)
@@ -464,7 +466,8 @@ export async function saticiIsleri(
           talep.service_categories?.name_tr,
           etiketle(turler, b?.rezervasyon?.event_type ?? talep.event_type),
           teklifTarihiMetni(gun) ?? 'Tarih belirtilmedi',
-          talep.turkish_cities?.name
+          // Duzeltme 18-C: talepte ilce / mekan varsa o ("Kadikoy, Istanbul").
+          briefKonumu(talep.brief_data) ?? talep.turkish_cities?.name
         ),
         durum: d.durum,
         ton: d.ton,

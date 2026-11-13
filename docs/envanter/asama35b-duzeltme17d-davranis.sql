@@ -2,7 +2,7 @@
 -- ASAMA 35b - Duzeltme 17-D DAVRANIS testi - YALNIZ DAL (Sahne verisi gerekir)
 --
 -- Tek islem, sonda ROLLBACK: hicbir sey kalici yazilmaz. URETIMDE CALISTIRILMAZ.
--- 17-D goc ICERMEZ; bu dosya `respondToQuoteRequest` eyleminin (app/teklif-topla/
+-- 17-D goc ICERMEZ; bu dosya `submitOffer` eyleminin (app/teklif-topla/
 -- actions.ts) MEVCUT sohbete yazdigi satirlari ayni sirayla, profesyonelin
 -- kimligiyle tekrarlar ve sonucu sinar:
 --   - onceki talep teklif almis sohbette teklif topla yaniti YENI IS acar;

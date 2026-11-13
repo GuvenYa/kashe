@@ -16,6 +16,7 @@ import {
 import { getBudgetRangeLabel } from '../data';
 import type { Quote } from '../quotes-data';
 import { QuoteModal, type TeklifVarsayilanlari } from './quote-modal';
+import type { Il } from '@/app/components/ui/il-secici';
 import { QuoteCard, SystemMessage } from './quote-message';
 import { createClient } from '@/app/lib/supabase-browser';
 import { MediaLightbox } from '@/app/components/media-lightbox';
@@ -80,6 +81,8 @@ type Props = {
   teklifVarsayilanlari: TeklifVarsayilanlari;
   /** Duzeltme 12-B: sohbetteki talep sayisi (1'den buyukse kartta "Talep #n"). */
   talepSayisi: number;
+  /** Duzeltme 18-B: teklif formundaki konum secicisi icin 81 il (yalniz teklif veren tarafta dolu). */
+  iller?: Il[];
 };
 
 type BekleyenDosya = {
@@ -190,6 +193,7 @@ export function KonusmaDetay({
   tamamlanmaZamani,
   teklifVarsayilanlari,
   talepSayisi,
+  iller = [],
 }: Props) {
   // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
   const turEtiketi = useEtkinlikTuruEtiketi();
@@ -1185,6 +1189,7 @@ export function KonusmaDetay({
           open={quoteModalOpen}
           onClose={() => setQuoteModalOpen(false)}
           varsayilan={teklifVarsayilanlari}
+          iller={iller}
         />
       )}
 

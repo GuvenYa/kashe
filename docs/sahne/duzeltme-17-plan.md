@@ -95,7 +95,7 @@ ve (talepte etkinlik yoksa) etkinlik bagi ONCEKI isten kalirdi. Sonuc:
 - Etkinlik bagi kaldigi icin yeni is musteri merkezinde eski etkinligin kartina girer.
 15-F ayni sorunu musterinin dogrudan gonderiminde cozmustu; teklif topla yaniti ayri yoldu.
 
-YAPILDI (13 Kas; `app/teklif-topla/actions.ts`, `respondToQuoteRequest`).
+YAPILDI (13 Kas; `app/teklif-topla/actions.ts`, `submitOffer`).
 - Onceki talep teklif aldiysa (`fn_duz12_talep_yanitlandi`) yanit YENI IStir: yer, kisi sayisi,
   baslangic / bitis saati temizlenir, talep turu `quote` olur, etkinlik bagi talebinkiyle
   degisir (yoksa temizlenir).
@@ -168,6 +168,11 @@ teklif.
 
 - 17-A, 17-B, 17-C, 17-D: onizlemede dogrulandi (commit 6019901).
 - Turdan cikan duzeltme (ikinci build): 17-A satir etiketi "Ajanslar" + kurum ust notu.
+- URETIMDE (13 Kas): main = sahne = 981b76e; goc yok.
+  - Sahne adresinde Anadolu Ilac ile bakildi: satir "Ajanslar - 1 / 1 yanit - Yanit toplaniyor",
+    375 px'de kesilmiyor, yatay tasma yok; ust not yeni metinle.
+  - Uretimde (girissiz): yeni deploy yuklu, `/etkinliklerim` ve `/teklif-taleplerim` girise
+    yonleniyor, konsol temiz. Dort maddenin davranisi uretimde DENENMEDI (giris gerekir).
 
 ## Acik kalanlar
 

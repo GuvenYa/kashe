@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/app/lib/supabase-server';
-import { briefVeriTemizle } from '@/app/lib/brief-anahtarlari';
+import { briefKonumu, briefVeriTemizle } from '@/app/lib/brief-anahtarlari';
 import { revalidatePath } from 'next/cache';
 import {
   QUOTE_EXPIRY_OPTIONS,
@@ -380,6 +380,11 @@ export async function submitOffer(
     ? budgetToRangeKey(butceMin, butceMax) ?? 'open'
     : null;
 
+  // Duzeltme 18-A: talepte ilce / mekan yazildiysa (brief'in konum alani,
+  // "<mekan>, <ilce>, <Il>") sohbetin yeri olur; "Yeni talep" karti ve bu
+  // teklif onaylaninca dogacak rezervasyon yeri buradan alir.
+  const talepKonumu = briefKonumu(request.brief_data);
+
   let conversationId: string;
 
   const { data: existingConv } = await supabase
@@ -418,17 +423,18 @@ export async function submitOffer(
         ...(yeniIs
           ? {
               request_type: 'quote',
-              location: null,
+              location: talepKonumu,
               guest_count: null,
               start_time: null,
               end_time: null,
               event_id: request.event_id ?? null,
             }
-          : // Ayni talebin yaniti. FAZ 4c/P3: talep bir etkinlige bagliysa
-            // sohbet de baglanir; talepte bag yoksa mevcut bag EZILMEZ.
-            request.event_id
-            ? { event_id: request.event_id }
-            : {}),
+          : {
+              // Ayni talebin yaniti: bos gelen alan eskisini EZMEZ.
+              ...(talepKonumu ? { location: talepKonumu } : {}),
+              // FAZ 4c/P3: talep bir etkinlige bagliysa sohbet de baglanir.
+              ...(request.event_id ? { event_id: request.event_id } : {}),
+            }),
       })
       .eq('id', conversationId);
     if (sohbetHatasi) {
@@ -450,7 +456,7 @@ export async function submitOffer(
         professional_id: user.id,
         event_date: request.event_date,
         event_type: request.event_type,
-        location: null,
+        location: talepKonumu,
         guest_count: null,
         budget_range: budgetRange,
         brief_data: request.brief_data ?? null,

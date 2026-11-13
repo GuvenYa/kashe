@@ -23,6 +23,8 @@ type OnDolduParams = {
   sehir?: string;
   /** ISO tarih — brief 'event_date' alanına düşer. */
   tarih?: string;
+  /** Duzeltme 18-A: ilce / semt metni (sihirbazdan); sehirle birlikte anlamli. */
+  ilce?: string;
   /** service_categories.id — YALNIZ tek değer ön-doldurulur (form tekil seçim). */
   kategori?: string;
   /** FAZ 4c/P3: events.id — talep bu etkinlige baglanir (sunucuda dogrulanir). */
@@ -151,6 +153,7 @@ export default async function TeklifToplaPage({
                 ? params.tur
                 : null,
             etkinlikTarihi: params.tarih ?? null,
+            ilce: typeof params.ilce === 'string' ? params.ilce : null,
             // FAZ 4c/P3: id istemciden geliyor ama YAZILMADAN once sunucuda
             // dogrulanir (gorunenEtkinlikId); burada yalniz forma tasinir.
             etkinlikId: await gorunenEtkinlikId(supabase, params.etkinlik),

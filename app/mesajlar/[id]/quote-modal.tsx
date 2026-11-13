@@ -12,6 +12,8 @@ import { getQuoteTemplates } from '@/app/lib/message-templates';
 import { istanbulGunu } from '@/app/lib/tarih';
 import { TarihSecici } from '@/app/components/ui/tarih-secici';
 import { SaatSecici } from '@/app/components/ui/saat-secici';
+import { KonumAlani } from '@/app/components/ui/konum-alani';
+import type { Il } from '@/app/components/ui/il-secici';
 
 const KUCUK_ALAN =
   'w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition';
@@ -36,6 +38,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   varsayilan: TeklifVarsayilanlari;
+  /** Duzeltme 18-B: 81 il - "Yer" il + ilce + mekan secicisi (bossa serbest metin). */
+  iller: Il[];
 };
 
 /** Sohbetteki tarih gecmisse formu doldurmaz (veritabani da reddeder). */
@@ -51,6 +55,7 @@ export function QuoteModal({
   open,
   onClose,
   varsayilan,
+  iller,
 }: Props) {
   const quoteTemplates = getQuoteTemplates(categorySlug);
   const router = useRouter();
@@ -242,17 +247,25 @@ export function QuoteModal({
                 </div>
               </div>
             </div>
-            <label className="block mt-2">
-              <span className="text-[11px] text-ink-72 block mb-1">Yer</span>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                maxLength={200}
-                placeholder="Örn: Kadıköy, Moda Sahnesi"
-                className="w-full px-3 py-2.5 bg-card border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition"
+            {/* Duzeltme 18-B: il listeden, buyuksehirde ilce de listeden; deger
+                musteri formlariyla ayni bicimde ("<mekan>, <ilce>, <Il>").
+                Form her aciliste yeniden kuruldugu icin (ust bilesendeki
+                `key`) kutular sohbetteki guncel konumla dolar. */}
+            <div className="mt-2">
+              <label
+                htmlFor="teklif-yer"
+                className="text-[11px] text-ink-72 block mb-1"
+              >
+                Yer
+              </label>
+              <KonumAlani
+                id="teklif-yer"
+                iller={iller}
+                deger={location}
+                onChange={setLocation}
+                kutuSinifi={KUCUK_ALAN}
               />
-            </label>
+            </div>
           </div>
 
           {/* Hizmet açıklaması */}

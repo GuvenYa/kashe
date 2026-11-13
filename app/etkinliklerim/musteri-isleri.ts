@@ -5,6 +5,7 @@ import { gosterilecekAd } from '@/app/lib/kamu-adi';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import { etiketle } from '@/app/lib/etkinlik-turu';
 import { gunAyMetni, istanbulGunu } from '@/app/lib/tarih';
+import { briefKonumu } from '@/app/lib/brief-anahtarlari';
 import {
   formatQuoteAmount,
   getQuoteStatusLabel,
@@ -123,6 +124,8 @@ type TalepSatiri = {
   event_date: string | null;
   event_type: string | null;
   event_id: string | null;
+  /** Duzeltme 18-C: ilce / mekan yazildiysa kartta sehir yerine o gorunur. */
+  brief_data: Record<string, unknown> | null;
   service_categories: { name_tr: string } | null;
   turkish_cities: { name: string } | null;
   quote_request_recipients:
@@ -294,7 +297,7 @@ export async function musteriIsleri(
         .select(
           `
           id, customer_id, status, recipient_count, created_at,
-          response_deadline, event_date, event_type, event_id,
+          response_deadline, event_date, event_type, event_id, brief_data,
           service_categories (name_tr),
           turkish_cities (name),
           quote_request_recipients (id, status, conversation_id, responded_at)
@@ -633,7 +636,8 @@ export async function musteriIsleri(
           etiketle(turler, aktifRez?.event_type ?? talep.event_type),
           teklifTarihiMetni(aktifRez?.event_date ?? talep.event_date) ??
             'Tarih belirtilmedi',
-          talep.turkish_cities?.name,
+          // Duzeltme 18-C: talepte ilce / mekan varsa o ("Kadikoy, Istanbul").
+          briefKonumu(talep.brief_data) ?? talep.turkish_cities?.name,
           // Gonderim gunu: ayni kategoriye acilan talepler birbirinden ayrilsin.
           gonderimGunu
             ? `${talep.recipient_count} profesyonele gönderildi (${gonderimGunu})`

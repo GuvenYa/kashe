@@ -254,7 +254,9 @@ export default async function OdemelerimPage() {
             eyebrow="Hesap"
             altNot="Rezervasyonların ve ödeme durumları. Tutarlar profesyonelle anlaştığın toplam bedeli gösterir."
           >
-            Ödeme Geçmişi
+            {/* Duzeltme 18-C (gorsel dil): calisma yuzeyi vurgusu. */}
+            <em className="not-italic font-medium text-brand-accent">Ödeme</em>{' '}
+            geçmişi
           </PanelBaslik>
 
           {/* Bilgi notu */}

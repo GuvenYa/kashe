@@ -65,6 +65,28 @@ export const BRIEF_ACIKLAMA_SINIRI = 120;
 const BRIEF_HIZMET_SINIRI = 200;
 
 /**
+ * Brief'in KONUM alani (Duzeltme 18-A). Butun kategori brief'leri ve varsayilan
+ * brief ayni anahtari kullanir (`brief-config.ts`, `legacyColumn: 'location'`).
+ * Deger "<mekan>, <ilce>, <Il>" bicimindedir (`app/lib/ilceler.ts`).
+ */
+export const BRIEF_KONUM_ANAHTARI = 'location';
+export const BRIEF_KONUM_SINIRI = 200;
+
+/**
+ * Brief'teki konum metni; yoksa `null`. Teklif topla yaniti bu metni sohbetin
+ * yerine yazar (`app/teklif-topla/actions.ts`, `submitOffer`). Saf fonksiyon.
+ */
+export function briefKonumu(
+  ham: Record<string, unknown> | null | undefined
+): string | null {
+  if (!ham || typeof ham !== 'object') return null;
+  const v = ham[BRIEF_KONUM_ANAHTARI];
+  if (typeof v !== 'string') return null;
+  const metin = v.trim().slice(0, BRIEF_KONUM_SINIRI);
+  return metin || null;
+}
+
+/**
  * Bu alan IL alani mi? (Duzeltme 10-D)
  *
  * Olcut ANAHTAR: `location` / `city` (ve `_city` ile bitenler). Tur `text`
@@ -118,6 +140,13 @@ export function briefVeriTemizle(
     }
     if (k === 'hizmet') {
       const metin = typeof v === 'string' ? v.trim().slice(0, BRIEF_HIZMET_SINIRI) : '';
+      if (metin) cikti[k] = metin;
+      continue;
+    }
+    if (k === BRIEF_KONUM_ANAHTARI) {
+      // Duzeltme 18-A: konum sohbetin ve rezervasyonun yerine kopyalanir;
+      // metin ve uzunluk sunucuda sabitlenir (istemci siniri 80 + il + ilce).
+      const metin = typeof v === 'string' ? v.trim().slice(0, BRIEF_KONUM_SINIRI) : '';
       if (metin) cikti[k] = metin;
       continue;
     }

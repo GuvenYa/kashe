@@ -212,7 +212,8 @@ export default async function KazanclarimPage() {
               </>
             }
           >
-            Kazançlarım
+            {/* Duzeltme 18-C (gorsel dil): calisma yuzeyi vurgusu. */}
+            <em className="not-italic font-medium text-brand-accent">Kazançlarım</em>.
           </PanelBaslik>
 
           {!isProvider ? (

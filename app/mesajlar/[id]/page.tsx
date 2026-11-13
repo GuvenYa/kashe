@@ -421,6 +421,14 @@ export default async function KonusmaPage({
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
 
+  // Duzeltme 18-B: teklif formundaki "Yer" il + ilce + mekan secicisi; il
+  // listesi yalniz teklif verebilen tarafa yuklenir.
+  const { data: illerData } =
+    isProfessional || isAssignedPro
+      ? await supabase.from('turkish_cities').select('id, name').order('name')
+      : { data: null };
+  const iller = (illerData ?? []) as { id: number; name: string }[];
+
   // Sahibi ajans mı? (atama dropdown'ı sadece ona görünür)
   const isOwnerAgency =
     conv.professional_id === user.id && conv.professional?.role === 'agency';
@@ -509,6 +517,7 @@ export default async function KonusmaPage({
                   location: conv.location,
                 }}
                 talepSayisi={conv.request_count ?? 1}
+                iller={iller}
               />
             </div>
 

@@ -399,12 +399,14 @@ export function SihirbazClient({
     const p = new URLSearchParams();
     if (tur) p.set('tur', tur);
     if (sehir) p.set('sehir', sehir);
+    // Duzeltme 18-A: ilce / semt de tasinir (teklif formu sehirle birlikte okur).
+    if (sehir && ilce) p.set('ilce', ilce);
     if (tarih) p.set('tarih', tarih);
     if (secilenKategoriler.length === 1)
       p.set('kategori', String(secilenKategoriler[0]));
     const qs = p.toString();
     return qs ? `/teklif-topla?${qs}` : '/teklif-topla';
-  }, [tur, sehir, tarih, secilenKategoriler]);
+  }, [tur, sehir, ilce, tarih, secilenKategoriler]);
 
   const turEtiketi = turler.find((t) => t.key === tur)?.name_tr ?? '';
   const sehirAdi = sehirler.find((c) => String(c.id) === sehir)?.name ?? '';
