@@ -9,6 +9,7 @@ import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCachedUser } from '@/app/lib/auth';
 import { BildirimListesi } from './bildirim-listesi';
 import { PushToggle } from './push-toggle';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 
 export const metadata = {
   title: 'Bildirimler — Kashe',
@@ -60,9 +61,9 @@ export default async function BildirimlerPage() {
       <PanelKabugu {...kabuk}>
         <div className="max-w-3xl">
             <div className="mb-10">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Bildirimler
-              </p>
+              <div className="mb-3">
+                <VurguEtiketi>Bildirimler</VurguEtiketi>
+              </div>
               <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
                 Henüz bildirim{' '}
                 <em className="not-italic font-medium text-brand-accent">

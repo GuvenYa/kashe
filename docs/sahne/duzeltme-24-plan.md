@@ -3,8 +3,8 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24), rehber 3.2
 "bilinen eksikler" 9. madde ve Duzeltme 23 turundaki gozlem (gece "Gunaydin"). Goc (migration) YOK.
 
-Durum: ONIZLEME TURU TAMAM (14 Kas; dal `duzeltme-24` 06595d7, derleme `dpl_Gh6n5Yo9vFZwXC1hkYMAXa2Brw2h`). Turda
-duzeltme cikmadi; dal oldugu gibi uretime gider.
+Durum: URETIMDE (14 Kas; main = sahne = b6478e5; uretim derlemesi `dpl_7C9u9Tx8ps1EXGkwD9uRvchpbcYv`, Sahne adresi
+`dpl_9Rr8UJfiaDTw71vnHCwy4eXXaN9u`). Turda duzeltme cikmadi; ikinci commit yalniz tur notlari.
 
 ## 24-A Ilanlarim'da durum ozeti (bulgu 155)
 
@@ -40,8 +40,9 @@ basligi ayni fonksiyonu kullanir (profesyonel / musteri merkezi, ajans ve kurum 
 
 ## Fahri'nin tablosu
 
-Tasarim satirinin (24) "Durum" hucresi uretim SONRASI guncellenecek (rezervasyon, sohbet, panel ve bu turun uc
-sayfasi); Fahri'nin hucreye ekledigi not varsa korunur.
+YAPILDI (14 Kas, uretim sonrasi): tasarim satirinin "Durum" hucresi (K24) guncellendi - dil artik Teklif topla,
+Etkinliklerim, Islerim, rezervasyon, sohbet, Ilanlarim, profil duzenleme, takvim ve panelde. Yazmadan once tablo
+okundu: Fahri hucrelere not eklememis, yeni satir yok. Geri okuma: yalniz K24 degisti, metin birebir.
 
 ## Dogrulama
 
@@ -56,6 +57,8 @@ sayfasi); Fahri'nin hucreye ekledigi not varsa korunur.
   - Takvim (Ilker): "Musaitlik takvimi", "Yaklasan (1)", "Gecmis (7)" pembe cizgili; uc h2 ekran okuyucuda duruyor.
   - Selamlama: 01:47'de Kaan ve Ilker'in panelinde "Iyi geceler". Diger saat araliklari GORULMEDI (kural dort
     satir; okunarak dogrulandi).
+- Uretim sonrasi (14 Kas, 02:00): kashe.net girissiz Kesfet 102 kart, `fra1::fra1`. Sahne adresi, Kaan: Ilanlarim
+  karti, profil duzenleme karti, "Iyi geceler", merkez 11 / 8 / 6.
 
 ## Bu dala giren dokumanlar
 

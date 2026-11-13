@@ -3,6 +3,7 @@
 import { KASHE_SAAT_DILIMI } from '@/app/lib/tarih';
 import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase-browser';
 import {
@@ -191,9 +192,8 @@ export function BildirimListesi({
       {/* Header */}
       <div className="mb-10">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-            Bildirimler
-          </p>
+          {/* Duzeltme 25-C (gorsel dil): pembe cizgili etiket. */}
+          <VurguEtiketi>Bildirimler</VurguEtiketi>
           {unreadCount > 0 && (
             <button
               type="button"
@@ -208,7 +208,7 @@ export function BildirimListesi({
         <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
           {unreadCount > 0 ? (
             <>
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 {unreadCount} yeni
               </em>{' '}
               bildirimin var.
@@ -227,9 +227,9 @@ export function BildirimListesi({
 
           return (
             <div key={groupKey}>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-                {GROUP_LABELS[groupKey]}
-              </p>
+              <div className="mb-3">
+                <VurguEtiketi>{GROUP_LABELS[groupKey]}</VurguEtiketi>
+              </div>
               <div className="bg-card border border-line rounded-lg overflow-hidden">
                 {items.map((notif, idx) => {
                   const isUnread = !notif.read_at;
