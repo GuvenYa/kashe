@@ -875,7 +875,9 @@ export async function musteriIsleri(
     // talep hangi asamada; karsilastirma sayfasina gider.
     const rfpSatirlari: IsTeklifi[] = acikRfpler.map((x) => ({
       id: `rfp-${x.rfp.id}`,
-      kimden: 'Ajans teklif talebi',
+      // Kisa etiket: 375 px'de uzun etiket "Ajans t..." diye kesiliyordu
+      // (onizleme turu 17); sayi ve durum yaninda "Ajanslar" yeterli.
+      kimden: 'Ajanslar',
       tutar: x.davet > 0 ? `${x.yanit} / ${x.davet} yanıt` : 'Davet yok',
       durum: RFP_DURUMU[x.rfp.status] ?? x.rfp.status,
       ton: x.yanit > 0 ? ('vurgu' as const) : ('notr' as const),

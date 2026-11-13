@@ -168,8 +168,8 @@ export function MusteriMerkezi({
         <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
           Etkinliklerin, profesyonellerden gelen teklifler ve rezervasyonların
           burada; onayladığın ajans tekliflerinin rezervasyonları da dahil.
-          Ajanslara açtığın teklif talepleri ve gelen ajans teklifleri ayrı
-          sayfada:{' '}
+          Ajanslara açtığın teklif talepleri etkinliğin kartında görünür;
+          ajans tekliflerini karşılaştırmak ve yeni talep açmak için:{' '}
           <Link href="/kurumsal/rfp" className="kashe-tap text-brand-ink hover:underline">
             Teklif talepleri
           </Link>

@@ -27,8 +27,11 @@ YAPILDI (13 Kas; `app/etkinliklerim/musteri-isleri.ts`).
 - Yedinci sorgu: kullanicinin etkinlik gorebildigi kuruluslarin RFP'leri (`rfps`) ve davetleri
   (`rfp_invites`; yanit = `responded`). RLS neyi gosteriyorsa o.
 - ACIK RFP (durum `sent` / `collecting` / `evaluating`) etkinlik kartinda bir satir olur:
-  "Ajans teklif talebi | <yanit> / <davet> yanit | Gonderildi / Yanit toplaniyor /
-  Degerlendirmede". Satir karsilastirma sayfasina (`/kurumsal/rfp/<id>`) gider.
+  "Ajanslar | <yanit> / <davet> yanit | Gonderildi / Yanit toplaniyor / Degerlendirmede".
+  Satir karsilastirma sayfasina (`/kurumsal/rfp/<id>`) gider. (Etiket ilk yazimda "Ajans teklif
+  talebi" idi; 375 px'de "Ajans t..." diye kesildigi icin onizleme turunda kisaltildi.)
+- Kurum hesabindaki ust not guncellendi: "Ajanslara actigin teklif talepleri etkinligin kartinda
+  gorunur; ajans tekliflerini karsilastirmak ve yeni talep acmak icin: Teklif talepleri".
 - Sayim: yanit gelmis acik RFP'nin yanitlari kartin "n teklif geldi" sayisina eklenir (kart
   "Teklif bekleyen" sekmesine girer, ozetteki "karar bekleyen teklif" sayisi artar). Yanit
   gelmemis acik RFP "Teklif bekleniyor" sayilir. Tarihi gecmis etkinlikte asama degismez (satir
@@ -107,13 +110,64 @@ yeri / 120 kisi / 18:00 - 23:00): hata dogrulandi. Yerel veride musterinin etkin
 icin etkinlik baginin temizlenmesi yalniz "bos kaldi" olarak goruldu.
 Dalda calistirmak istege bagli (Sahne SQL Editor; URETIMDE CALISTIRILMAZ).
 
-## Onizleme turu 17 (dal `duzeltme-17`)
+## Onizleme turu 17 (13 Kas, dal `duzeltme-17`, commit 6019901; 1280 ve 375 px)
 
-Push sonrasi doldurulacak.
+17-A (gercek veriyle; Anadolu Ilac sahibi + uyesi Deniz Erol + Lumen):
+- Anadolu Ilac'in ve Baskent Egitim'in RFP'si yoktu; Anadolu'nun uc etkinligi de gecmis tarihli.
+  Tur icin Anadolu adina "Tur 17-A Lansman" (13 Aralik 2026, Istanbul) etkinligi kuruldu.
+  Kart: "Teklif istenmedi" (Teklif bekleyen 5 -> 6).
+- TASLAK RFP acildi: kart degismedi, satir yok (dogru).
+- RFP Lumen'e gonderildi: kart "Teklif bekleniyor" + satir "0 / 1 yanit - Gonderildi"; satir
+  `/kurumsal/rfp/<id>` sayfasina gidiyor.
+- Lumen teklif hazirlayip gonderdi (72.000 TL): kart "1 teklif geldi" (vurgu) + satir
+  "1 / 1 yanit - Yanit toplaniyor"; ozet "1 teklif kararini bekliyor". Uye (Deniz Erol) ayni
+  karti goruyor; satirdan acilan sayfada Lumen'in teklifi var.
+- 375 px: yatay tasma yok; etiket "Ajans t..." diye kesiliyordu -> "Ajanslar" yapildi (ikinci
+  build). Onizleme sayfasinda olculdu: "Ajanslar" 51 px, yer 53 px - "Gonderildi", "Yanit
+  toplaniyor" ve "Degerlendirmede" durumlarinda kesilmiyor; 10 ve uzeri davetli ajansta
+  ("10 / 12 yanit") kesilebilir.
+- Gorulmeyen: birden cok ajans / birden cok RFP, "Degerlendirmede" durumu, gecmis tarihli
+  etkinlikte RFP (yalniz sahte veri testinde).
+
+17-B (Kaan):
+- Iptal edilmis (13.000) ve reddedilmis (9.000) teklifli taleplerde rozet ve yesil cerceve yok;
+  baslik "Karar bekleyen teklif kalmadi."
+- Onayli teklifli talepte (8.500) "Onayladigin teklif en ustte."; rozet yok.
+- Teklifsiz talepte baslik yalniz "1 profesyonele gonderildi, 0 teklif geldi."
+- Bekleyen teklifli talepte (17-D turunda dogan 7.700) "En uygun" rozeti + yesil cerceve +
+  "2 gun kaldi"; baslik "En uygun teklifi sec, mesajlasmaya devam et."
+- Baslikta "Gelen" pembe (rgb(250, 11, 150)), italik degil.
+- Gorulmeyen: ayni talepte birden cok teklif (siralama yalniz yerel testte).
+
+17-C (Deniz Erol, musteri rolunde Anadolu uyesi):
+- Kurum grubu: Genel bakis, Etkinlikler, Yeni etkinlik, Teklif talepleri, Kisa liste, Ilanlarim.
+  "Rezervasyonlar" ve "Gelen teklifler" yok. Kisisel grupta "Etkinliklerim" duruyor.
+- `/kurumsal` "Onayli rezervasyon" kutusu merkezin "Yaklasan" sekmesine gidiyor.
+- Gorulmeyen: profesyonel / ajans rolunde kurum uyesi (iki madde durmali; yalniz yerel testte).
+
+17-D (Ilker + Kaan):
+- Hazirlik: Kaan - Ilker sohbetinde guncel talep #5 (Mezuniyet, 15 Aralik, Istanbul, 30 kisi)
+  teklif almamisti; Ilker #5'e 5.500 TL teklif verdi (talep yanitlandi).
+- Ilker, Kaan'in yanitlanmamis teklif topla talebine (Lansman, tarihsiz) "Teklif ver" ile
+  7.700 TL yanit verdi. Sohbet basligi: "Tur: Lansman - Butce: Acik"; onceki isin "Lokasyon:
+  Istanbul" ve "Kisi: 30" satirlari KALKTI. Kart: "Yeni talep #6 - Teklif topla - Lansman -
+  Tarih belli degil" (yer yok). Teklif "Talep #6", yer / saat satiri yok.
+- Ilker `/islerim`: Yanit bekleyen 3 -> 1, Teklif verdiklerim 1 -> 3.
+- Kaan merkezi: teklif topla isi kendi kartinda ("1 teklif geldi - Ilker Sezer 7.700"), eski
+  bir etkinligin kartina girmedi; ozet "3 teklif kararini bekliyor".
+- Denenmedi: teklifin onaylanmasi (rezervasyonun alanlari yalniz yerel `asama35b` ile).
+
+Konsol hatasi yok.
+
+Sahne'de kalan tur verisi: Anadolu Ilac etkinligi "Tur 17-A Lansman" + RFP "Tur 17-A ajans
+teklif talebi" (Yanit toplaniyor; Lumen davetli ve yanitladi) + Lumen'in 72.000 TL teklifi;
+Kaan - Ilker sohbetinde talep #5 icin 5.500 TL ve talep #6 (teklif topla) icin 7.700 TL bekleyen
+teklif.
 
 ## Durum (13 Kas)
 
-- 17-A, 17-B, 17-C, 17-D: kod hazir, yerel denemeler gecti; onizleme bekliyor.
+- 17-A, 17-B, 17-C, 17-D: onizlemede dogrulandi (commit 6019901).
+- Turdan cikan duzeltme (ikinci build): 17-A satir etiketi "Ajanslar" + kurum ust notu.
 
 ## Acik kalanlar
 
