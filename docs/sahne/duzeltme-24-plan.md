@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24), rehber 3.2
 "bilinen eksikler" 9. madde ve Duzeltme 23 turundaki gozlem (gece "Gunaydin"). Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-24`), onizleme turu bekliyor.
+Durum: ONIZLEME TURU TAMAM (14 Kas; dal `duzeltme-24` 06595d7, derleme `dpl_Gh6n5Yo9vFZwXC1hkYMAXa2Brw2h`). Turda
+duzeltme cikmadi; dal oldugu gibi uretime gider.
 
 ## 24-A Ilanlarim'da durum ozeti (bulgu 155)
 
@@ -45,9 +46,16 @@ sayfasi); Fahri'nin hucreye ekledigi not varsa korunur.
 ## Dogrulama
 
 - `tsc --noEmit` ve `eslint` (degisen dort dosya) temiz.
-- Onizleme turu (yapilacak): Kaan ile Ilanlarim (karttaki sayilar sekme sayilariyla ayni mi), profil duzenleme
-  (Kaan'da "Hakkimda" eksigi); Ilker ile takvim ve profil duzenleme (profil tam: kart yok); panel basliginda
-  selamlama (o andaki Istanbul saatine gore); 375 px.
+- Onizleme turu (14 Kas, Istanbul 01:47):
+  - Ilanlarim (Kaan): "1 ilan yayinda", satir "1 ilan yayinda, 1 basvuru geldi", kutular 1 / 1 / 0, ilerleme 100;
+    listeyle ayni (Tumu 1, Yayinda 1, ilanda "1 basvuru"). 375 px: uc kutu yan yana (90 px), tasma yok.
+    GORULMEDI: revizyon / onay bekleyen / taslak basliklari (Kaan'da yalniz yayinda ilan var).
+  - Profil duzenleme (Kaan): pembe cizgili etiket, vurgulu "guncelle", kart "Profilini tamamla" (ilerleme 80,
+    "Hakkimda (en az 20 karakter)", Tamlik %80 / Eksik 1); 375 px tasma yok. Ilker'de (profil tam) kart yok.
+    GORULMEDI: hizmet eksigi satirindaki "Hizmetlerim" baglantisi.
+  - Takvim (Ilker): "Musaitlik takvimi", "Yaklasan (1)", "Gecmis (7)" pembe cizgili; uc h2 ekran okuyucuda duruyor.
+  - Selamlama: 01:47'de Kaan ve Ilker'in panelinde "Iyi geceler". Diger saat araliklari GORULMEDI (kural dort
+    satir; okunarak dogrulandi).
 
 ## Bu dala giren dokumanlar
 
