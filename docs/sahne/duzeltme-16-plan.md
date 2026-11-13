@@ -150,9 +150,20 @@ YAPILDI (13 Kas, dal `duzeltme-16c`; migration yok).
 - Yerel deneme: 13 / 13 (ayni profesyonelin iki talebe yaniti, yanit sonrasi duzeltme, kabul
   sonrasi dogrudan teklif, dakikalar arayla iki yanit, cok alici, yanit zamani bos, yedek, yedegin
   baska talebin teklifini almamasi). tsc + eslint temiz.
-- Onizleme turu plani (Kaan): `60c983f0...` sayfasi 13.000 TL, `1d479458...` sayfasi 9.000 TL,
-  `aeb004cb...` sayfasi 14.000 TL gostermeli (hicbiri 6.500 TL degil); cok alicili bir talepte
-  siralama; kurum uyesi bakisi bozulmamali.
+
+### Onizleme turu 16-C (13 Kas, dal `duzeltme-16c`; Kaan)
+
+- Uc talebin sayfasi dogru teklifi gosteriyor: `60c983f0...` 13.000 TL ("Guvenlik 04 turu test
+  teklifi (butce ustu)"), `1d479458...` 9.000 TL ("Guvenlik 02 turu test teklifi"), `aeb004cb...`
+  14.000 TL ("Guvenlik 04 turu test teklifi"). Hicbirinde 6.500 TL yok. Konsol temiz.
+- Turda bulunup duzeltilen: dogru teklif gorununce durum satirinin yalniz SUREYE baktigi ortaya
+  cikti - reddedilen (9.000, 14.000) ve kabul edilip rezervasyonu iptal olan (13.000) teklif
+  "Suresi doldu" yaziyordu. Artik karar verilmis teklifte durum yazar ("Reddedildi", "Onaylandi",
+  "Geri cekildi"); kabul edilip rezervasyonu iptal olan teklif merkezdeki gibi "Iptal edildi"
+  (rezervasyonlar ek sorguyla okunur; aktif rezervasyonu varsa iptal sayilmaz). Ikinci derlemede
+  bakilacak.
+- Cok alicili ve teklif almis bir talep Kaan'da yok (Oyuncu talebi teklif bekliyor); siralama
+  degismedi (tutara gore), gercek veriyle yeniden denenmedi.
 
 ## Durum (13 Kas)
 

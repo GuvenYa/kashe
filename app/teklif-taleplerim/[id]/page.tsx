@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { gosterilecekAd } from '@/app/lib/kamu-adi';
 import { TopNav } from '@/app/components/sections/top-nav';
-import { formatQuoteAmount, formatExpiresIn } from '@/app/mesajlar/quotes-data';
+import {
+  formatQuoteAmount,
+  formatExpiresIn,
+  getQuoteStatusLabel,
+} from '@/app/mesajlar/quotes-data';
 import { getBriefFields, type BriefField } from '@/app/lib/brief-config';
 import { etkinlikTurleri } from '@/app/lib/etkinlik-turleri';
 import {
@@ -90,6 +94,14 @@ type YanitSatiri = {
   responded_at: string | null;
   quote_requests: { id: string; created_at: string } | null;
 };
+
+/** Teklif kartindaki durum satiri (sinif adlari TAM yazilir). */
+const DURUM_NOTR =
+  'font-mono text-[10px] uppercase tracking-[0.14em] mt-1 text-ink-72';
+const DURUM_UYARI =
+  'font-mono text-[10px] uppercase tracking-[0.14em] mt-1 text-danger';
+const DURUM_OLUMLU =
+  'font-mono text-[10px] uppercase tracking-[0.14em] mt-1 text-moss';
 
 type PuanSatiri = {
   professional_id: string;
@@ -225,6 +237,26 @@ export default async function TeklifKarsilastirPage({
       const teklif = teklifById.get(teklifId);
       if (teklif) quotesByConv[sohbetId] = teklif;
     }
+  }
+
+  // Kabul edilip rezervasyonu IPTAL olan teklif "Onaylandi" gorunmesin
+  // (merkez kartiyla ayni soz: "Iptal edildi"). Aktif bir rezervasyonu varsa
+  // iptal sayilmaz (iptal sonrasi yeniden anlasma).
+  const secilenTeklifIdleri = Object.values(quotesByConv).map((q) => q.id);
+  const iptalTeklifler = new Set<string>();
+  if (secilenTeklifIdleri.length > 0) {
+    const { data: rezler, error: rezHatasi } = await supabase
+      .from('bookings')
+      .select('quote_id, status')
+      .in('quote_id', secilenTeklifIdleri);
+    if (rezHatasi) console.error('[teklif-detay] rezervasyonlar', rezHatasi);
+    const aktif = new Set<string>();
+    for (const r of (rezler ?? []) as { quote_id: string | null; status: string }[]) {
+      if (!r.quote_id) continue;
+      if (r.status === 'cancelled') iptalTeklifler.add(r.quote_id);
+      else aktif.add(r.quote_id);
+    }
+    for (const id of aktif) iptalTeklifler.delete(id);
   }
 
   // Profesyonel puanlarını ayrı sorguyla çek (nested join satır eliyordu)
@@ -417,6 +449,24 @@ export default async function TeklifKarsilastirPage({
                 'Profesyonel';
               const isCheapest = quote.total_amount === cheapest;
               const expired = new Date(quote.expires_at) < new Date();
+              // Duzeltme 16-C: karar verilmis teklifte DURUM yazar. Eskiden
+              // yalniz sure yaziyordu; reddedilen ya da onaylanan teklif de
+              // "suresi doldu" gorunuyordu.
+              const iptal = iptalTeklifler.has(quote.id);
+              const durumMetni = iptal
+                ? 'İptal edildi'
+                : quote.status !== 'pending'
+                  ? getQuoteStatusLabel(quote.status as QuoteStatus)
+                  : expired
+                    ? 'Süresi doldu'
+                    : formatExpiresIn(quote.expires_at);
+              const durumSinifi =
+                !iptal && quote.status === 'accepted'
+                  ? DURUM_OLUMLU
+                  : quote.status === 'expired' ||
+                      (quote.status === 'pending' && expired)
+                    ? DURUM_UYARI
+                    : DURUM_NOTR;
 
               return (
                 <div
@@ -479,13 +529,7 @@ export default async function TeklifKarsilastirPage({
                           quote.currency
                         )}
                       </p>
-                      <p
-                        className={`font-mono text-[10px] uppercase tracking-[0.14em] mt-1 ${
-                          expired ? 'text-danger' : 'text-ink-72'
-                        }`}
-                      >
-                        {expired ? 'Süresi doldu' : formatExpiresIn(quote.expires_at)}
-                      </p>
+                      <p className={durumSinifi}>{durumMetni}</p>
                     </div>
                   </div>
 
