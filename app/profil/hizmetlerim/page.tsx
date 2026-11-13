@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { HizmetlerimClient } from './hizmetlerim-client';
 import { isProfessional } from '@/app/lib/profile-helpers';
 import { fetchOwnProfile } from '@/app/lib/own-profile';
@@ -66,8 +67,9 @@ export default async function HizmetlerimPage() {
             >
               ← Profilime dön
             </Link>
-            <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+            <VurguEtiketi>Profil içeriği</VurguEtiketi>
+            <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight mt-3">
+              <em className="not-italic font-medium text-brand-accent">
                 Hizmetlerim
               </em>
             </h1>

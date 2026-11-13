@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { DurumKarti } from '@/app/components/panel/durum-karti';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { createClient } from '@/app/lib/supabase-server';
 import { DavetlerimListesi } from './davetlerim-listesi';
 import { IlanDavetleriListesi, type IlanDaveti } from './ilan-davetleri-listesi';
@@ -150,6 +152,36 @@ export default async function DavetlerimPage() {
       business: kurulusKarti(d.organization_id),
     }));
 
+  // DURUM OZETI (Duzeltme 26-B): yanit bekleyen davetler. Listelerle AYNI kural
+  // (`status === 'pending'`), yeni sorgu yok; sayilar listelerdeki "(n)" ile ayni.
+  const bekleyenSay = (liste: { status: string }[]) =>
+    liste.filter((d) => d.status === 'pending').length;
+  const ozIlan = bekleyenSay(listingInvitations);
+  const ozKurum = bekleyenSay(businessInvitations);
+  const ozAjans = bekleyenSay(invitations);
+  const ozBekleyen = ozIlan + ozKurum + ozAjans;
+  const ozToplam =
+    listingInvitations.length + businessInvitations.length + invitations.length;
+  const ozSatirlar = [
+    ...(ozIlan > 0
+      ? [{ metin: `${ozIlan} ilan daveti yanıtını bekliyor`, tamam: false }]
+      : []),
+    ...(ozKurum > 0
+      ? [
+          {
+            metin: `${ozKurum} kurumsal ekip daveti yanıtını bekliyor`,
+            tamam: false,
+          },
+        ]
+      : []),
+    ...(ozAjans > 0
+      ? [{ metin: `${ozAjans} ajans daveti yanıtını bekliyor`, tamam: false }]
+      : []),
+    ...(ozBekleyen === 0
+      ? [{ metin: 'Sonuçlanan davetlerin aşağıdaki listede', tamam: true }]
+      : []),
+  ];
+
   return (
     <>
       <TopNav />
@@ -163,11 +195,9 @@ export default async function DavetlerimPage() {
           </Link>
 
           <header className="mb-10">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Davetler
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+            <VurguEtiketi>Davetler</VurguEtiketi>
+            <h1 className="font-display text-4xl text-ink leading-tight mt-3">
+              <em className="not-italic font-medium text-brand-accent">
                 Davetlerim
               </em>
             </h1>
@@ -176,6 +206,26 @@ export default async function DavetlerimPage() {
               görebilir, kabul veya reddedebilirsin.
             </p>
           </header>
+
+          {ozToplam > 0 && (
+            <div className="mb-10">
+              <DurumKarti
+                baslik={
+                  ozBekleyen > 0
+                    ? `${ozBekleyen} davet yanıtını bekliyor`
+                    : 'Yanıt bekleyen davetin yok'
+                }
+                tamam={ozBekleyen === 0}
+                ilerleme={(100 * (ozToplam - ozBekleyen)) / ozToplam}
+                satirlar={ozSatirlar}
+                kutular={[
+                  { etiket: 'İlan', deger: ozIlan },
+                  { etiket: 'Kurum', deger: ozKurum },
+                  { etiket: 'Ajans', deger: ozAjans },
+                ]}
+              />
+            </div>
+          )}
 
           {/* İLAN DAVETLERİ (müşteri → profesyonel/ajans) */}
           {listingInvitations.length > 0 && (
@@ -188,9 +238,7 @@ export default async function DavetlerimPage() {
           {businessInvitations.length > 0 && (
             <div className="mb-12">
               <div className="mb-3">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
-                  Kurumsal ekip davetleri
-                </p>
+                <VurguEtiketi>Kurumsal ekip davetleri</VurguEtiketi>
               </div>
               <KurumsalDavetlerListesi invitations={businessInvitations} />
             </div>
@@ -198,9 +246,7 @@ export default async function DavetlerimPage() {
 
           {/* AJANS DAVETLERİ */}
           <div className="mb-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72">
-              Ajans davetleri
-            </p>
+            <VurguEtiketi>Ajans davetleri</VurguEtiketi>
           </div>
 
           {profile.role !== 'professional' && (

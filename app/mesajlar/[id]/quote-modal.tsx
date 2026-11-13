@@ -158,7 +158,7 @@ export function QuoteModal({
               Yeni teklif
             </p>
             <h2 className="font-display text-2xl text-ink">
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 Teklif
               </em>{' '}
               gönder

@@ -150,7 +150,7 @@ export function TeklifVerModal({
       >
         <div className="sticky top-0 bg-paper border-b border-line px-6 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-xl text-ink">
-            <em className="text-brand-ink not-italic italic font-medium">
+            <em className="not-italic font-medium text-brand-accent">
               {customerName}
             </em>
             {' '}için teklif ver

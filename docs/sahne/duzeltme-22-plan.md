@@ -85,7 +85,7 @@ ister). Olcum hedefin (2 saniyenin alti) altinda cikti (asagida); YAPILMADI, ger
     yuklemeden yuklemeye degisiyor (22-D). Merkez sayfalari (19 sayfa) da birebir ayni.
   - Gerileme: Kaan merkezi 11 / 8 / 6; Lumen merkezi 2 / 1 / 3.
 - Uretim sonrasi (13 Kas):
-  - kashe.net (girissiz): `x-vercel-id` = `fra1::fra1`; Kesfet 102 kart.
+  - kashe.net (girissiz): `x-vercel-id` = `fra1::fra1`; Kesfet 34 kart (102 profil baglantisi; "102 kart" yanlis sayimdi, 14 Kas duzeltildi).
   - Sahne adresi (Lumen): `fra1::fra1`; sekme gecisi dokuz geciste 726 - 1232 ms.
   - 22-D: Gorevler sekmesinde atama listesi alfabetik (Can Uysal, Enes Aksoy, Ilker Sezer, Levent Avci, Mert Sari,
     Tarik Cakir, Zehra Simsek; ardindan havuz kayitlari) ve bes yuklemede ayni sirada.

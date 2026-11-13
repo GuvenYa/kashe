@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24); Guven:
 "cevap gelene kadar tasimaya devam edelim". Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-25`), onizleme turu TAMAM (14 Kas); uretim bekliyor.
+Durum: URETIMDE (14 Kas; main = sahne = 37e3064; uretim derlemesi `dpl_GrcFmFoMt6sV9fEVNTsNu6zBpxL5`, Sahne adresi
+`dpl_4eJ2S4LektziQenFrn6cu5HEiD5Y`). Turda duzeltme cikmadi; ikinci commit tur notlari ve test rehberi 3.3.
 
 ## 25-A Basvurularim'da durum ozeti (bulgu 156)
 
@@ -65,6 +66,11 @@ YAPILDI (ikinci commit; 36 sayfa, "Bu surumde ne degisti" tek sayfa):
   - Gozlem (bu turun isi degil, onceden de boyle): 375 px'te "Tarayici bildirimleri" kartinda metin sutunu dugmenin
     yaninda cok dar kaliyor.
   - Tur sonunda onizleme adresindeki tum test hesaplarindan cikis yapildi; veri yazilmadi.
+- Uretim sonrasi (14 Kas, 02:40): kashe.net girissiz Kesfet "34 sonuc", 34 kart (102 profil baglantisi), `fra1::fra1`.
+  Sahne adresi, Lumen: Basvurularim'da kart ("1 basvurun kisa listede", 0 / 1 / 0), bildirimlerde "6 yeni" duz pembe;
+  cikis yapildi.
+- Sayim duzeltmesi: onceki uretim notlarindaki "Kesfet 102 kart" kart degil profil BAGLANTISI sayisiydi (kart basina
+  uc baglanti). Dogrusu 34 kart; 21 - 24 planlarinda duzeltildi. Sayi bu turlarda degismedi, gerileme yok.
 
 ## Bu dala giren dokumanlar
 

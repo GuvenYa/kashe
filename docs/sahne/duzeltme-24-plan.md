@@ -57,7 +57,7 @@ okundu: Fahri hucrelere not eklememis, yeni satir yok. Geri okuma: yalniz K24 de
   - Takvim (Ilker): "Musaitlik takvimi", "Yaklasan (1)", "Gecmis (7)" pembe cizgili; uc h2 ekran okuyucuda duruyor.
   - Selamlama: 01:47'de Kaan ve Ilker'in panelinde "Iyi geceler". Diger saat araliklari GORULMEDI (kural dort
     satir; okunarak dogrulandi).
-- Uretim sonrasi (14 Kas, 02:00): kashe.net girissiz Kesfet 102 kart, `fra1::fra1`. Sahne adresi, Kaan: Ilanlarim
+- Uretim sonrasi (14 Kas, 02:00): kashe.net girissiz Kesfet 34 kart (102 profil baglantisi; "102 kart" yanlis sayimdi, 14 Kas duzeltildi), `fra1::fra1`. Sahne adresi, Kaan: Ilanlarim
   karti, profil duzenleme karti, "Iyi geceler", merkez 11 / 8 / 6.
 
 ## Bu dala giren dokumanlar

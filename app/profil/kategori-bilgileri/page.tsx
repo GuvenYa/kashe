@@ -2,6 +2,7 @@ import { createClient } from '@/app/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { isProfessional } from '@/app/lib/profile-helpers';
 import { getCategoryFields } from '@/app/lib/category-fields';
 import { KategoriForm } from './kategori-form';
@@ -96,8 +97,9 @@ export default async function KategoriBilgileriPage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
             {backLink}
-            <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+            <VurguEtiketi>Profil içeriği</VurguEtiketi>
+            <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight mt-3">
+              <em className="not-italic font-medium text-brand-accent">
                 Kategori Bilgileri
               </em>
             </h1>

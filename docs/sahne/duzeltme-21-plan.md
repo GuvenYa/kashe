@@ -76,7 +76,7 @@ yontemle yeniden olculur.
 - Uretim sonrasi (13 Kas, Sahne adresi, Kaan): dort duzeltme gercek veriyle goruldu. Tamamlanmis is: bes adim da
   tamam, ilerleme 100. Iptal edilen is: ilerleme 0, iletisim satiri nedeniyle yaziyor. Onayli is: ilerleme 50.
   375 px: "4.500 TL" tek satir (yukseklik 21 px, satir 22,5 px), yatay tasma yok. Uretim (kashe.net) girissiz
-  Kesfet: 102 kart.
+  Kesfet: 34 kart (102 profil baglantisi; "102 kart" yanlis sayimdi, 14 Kas duzeltildi).
 
 ## Bu dala giren dokumanlar
 

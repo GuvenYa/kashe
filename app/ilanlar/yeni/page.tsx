@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/app/lib/supabase-server';
 import { orderCities } from '@/app/lib/city-order';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { YeniIlanFormu } from './yeni-ilan-formu';
 import { getWritableBusinesses } from '@/app/lib/business-write';
 import { gorunenEtkinlikId } from '@/app/lib/eventspec-server';
@@ -187,11 +188,9 @@ export default async function YeniIlanPage({
           </Link>
 
           <header className="mb-10">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-              Yeni ilan
-            </p>
-            <h1 className="font-display text-4xl text-ink leading-tight">
-              <em className="text-brand-ink not-italic italic font-medium">
+            <VurguEtiketi>Yeni ilan</VurguEtiketi>
+            <h1 className="font-display text-4xl text-ink leading-tight mt-3">
+              <em className="not-italic font-medium text-brand-accent">
                 Etkinliğin
               </em>{' '}
               için profesyonel ara

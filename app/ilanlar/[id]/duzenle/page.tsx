@@ -5,6 +5,7 @@ import { YeniIlanFormu } from '../../yeni/yeni-ilan-formu';
 import { canEditListing, type Listing, type ListingStatus } from '../../listings-data';
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { orderCities } from '@/app/lib/city-order';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 
 type Params = Promise<{ id: string }>;
 
@@ -91,11 +92,9 @@ export default async function IlanDuzenlePage({
         </Link>
 
         <header className="mb-10">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2">
-            Düzenle
-          </p>
-          <h1 className="font-display text-4xl text-ink leading-tight">
-            <em className="text-brand-ink not-italic italic font-medium">
+          <VurguEtiketi>İlanı düzenle</VurguEtiketi>
+          <h1 className="font-display text-4xl text-ink leading-tight mt-3">
+            <em className="not-italic font-medium text-brand-accent">
               İlanını
             </em>{' '}
             güncelle

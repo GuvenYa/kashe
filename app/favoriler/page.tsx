@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { TopNav } from '@/app/components/sections/top-nav';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { ProfileCard } from '../kesfet/profile-card';
 import { EmptyState } from '@/app/components/EmptyState';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
@@ -161,12 +162,10 @@ const user = await getCachedUser();
         <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
           <div className="max-w-3xl mx-auto">
             <div className="mb-10">
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-                Favorilerim
-              </p>
-              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight">
+              <VurguEtiketi>Favorilerim</VurguEtiketi>
+              <h1 className="font-display font-semibold text-4xl md:text-5xl text-ink tracking-tight mt-3">
                 Henüz favorin{' '}
-                <em className="text-brand-ink not-italic italic font-medium">
+                <em className="not-italic font-medium text-brand-accent">
                   yok
                 </em>
                 .
@@ -294,12 +293,10 @@ const user = await getCachedUser();
       <main className="min-h-screen bg-paper px-6 md:px-12 py-16">
         <div className="max-w-5xl mx-auto">
           <div className="mb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72 mb-3">
-              Favorilerim
-            </p>
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+            <VurguEtiketi>Favorilerim</VurguEtiketi>
+            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight mt-3">
               Kaydettiğin{' '}
-              <em className="text-brand-ink not-italic italic font-medium">
+              <em className="not-italic font-medium text-brand-accent">
                 profiller
               </em>
               .

@@ -91,7 +91,7 @@ basligi ve "Profilin yayinda" karti rehberde yok).
     ("Etkinlik gunu geldi", "Profilin yayinda" karti, salt goruntuleyen uye) - uretim sonrasi Sahne adresinde
     bakilacak. Yerel test ikinci commit ile 70 / 70.
 - Uretim sonrasi (14 Kas):
-  - kashe.net (girissiz): Kesfet 102 kart, `fra1::fra1`.
+  - kashe.net (girissiz): Kesfet 34 kart (102 profil baglantisi; "102 kart" yanlis sayimdi, 14 Kas duzeltildi), `fra1::fra1`.
   - Sahne adresi, Kaan: 17 sohbetin 2'sinde "Etkinlik gunu geldi" (tarihi gelmis onayli is; ornek Eda Tekin, 14 Kasim),
     ayni rezervasyonun sayfasi da "Etkinlik gunu geldi" diyor; 6 sohbet "Rezervasyon onayli" (ileri tarih). Merkez
     11 / 8 / 6.
