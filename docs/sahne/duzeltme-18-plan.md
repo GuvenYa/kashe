@@ -119,6 +119,13 @@ teklif (8.800 TL; duzeltme olarak 8.500 TL, yeri "Moda Sahnesi B Salonu, Kadikoy
 ## Durum (13 Kas)
 
 - 18-A, 18-B, 18-C: onizlemede dogrulandi (dal `duzeltme-18`); turdan duzeltme cikmadi.
+- URETIMDE (13 Kas): main = sahne = 82cc197; goc yok.
+  - Sahne adresinde Anadolu Ilac hesabiyla bakildi: teklif topla formu `?sehir=45&ilce=kadikoy`
+    ile ilce "Kadikoy" secili aciliyor (kurum hesabinda da ayni satir); "Kazanclarim." ve "Odeme
+    gecmisi" basliklari vurgulu; konsol temiz.
+  - Uretimde (girissiz): yeni deploy yuklu; sihirbazin "Teklif topla" baglantisi ilceyi tasiyor
+    (`/teklif-topla?tur=launch&sehir=45&ilce=kadikoy`); `/teklif-topla` ve `/kazanclarim` girise
+    yonleniyor; konsol temiz. Form, yanit ve teklif formu uretimde DENENMEDI (giris gerekir).
 
 ## Acik kalanlar
 

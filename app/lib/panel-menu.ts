@@ -460,9 +460,12 @@ export function getPanelMenu(baglam: PanelMenuBaglami): PanelMenuGrubu[] {
     });
   }
   // Duzeltme 17-C: musteri is merkezi acik mi - `musteriMerkeziAcik` ile ayni
-  // olcut (musteri rolu, ya da bir kurumun sahibi olan isletme rolu).
+  // olcut (musteri rolu, bir kurumun sahibi olan isletme rolu, ya da 19-A'dan
+  // beri bir ajansin sahibi olan ajans rolu).
   const musteriMerkeziVar =
-    musteri || (isletmeRolu && kurumlar.some((o) => o.role === 'owner'));
+    musteri ||
+    (isletmeRolu && kurumlar.some((o) => o.role === 'owner')) ||
+    (ajansRolu && ajanslar.some((o) => o.role === 'owner'));
   for (const org of kurumlar) {
     gruplar.push({
       baslik: org.name,

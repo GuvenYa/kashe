@@ -55,6 +55,18 @@ const BOS_METIN: Record<IsAsamasi, { baslik: string; metin: string }> = {
 };
 
 /** Sekmede en cok bu kadar kart (en yeniler). */
+/** Ajans panelinde (Duzeltme 19-A) iki sekmenin bos metni ajans hattina gore. */
+const AJANS_BOS_METIN: Partial<Record<IsAsamasi, { baslik: string; metin: string }>> = {
+  bekleyen: {
+    baslik: 'Devam eden işin yok',
+    metin: 'Hazırlanan ve müşteri yanıtı bekleyen etkinliklerin burada görünür.',
+  },
+  yaklasan: {
+    baslik: 'Yaklaşan işin yok',
+    metin: 'Müşterin teklifini onayladığında etkinlik burada görünür.',
+  },
+};
+
 const GOSTERIM_SINIRI = 40;
 
 const BIRINCIL_DUGME =
@@ -66,9 +78,17 @@ export function MusteriMerkezi({
   veri,
   sekme,
   kurum = null,
+  ajans = null,
 }: {
   veri: MusteriIsleri;
   sekme: string | undefined;
+  /**
+   * Duzeltme 19-A: merkez ajans panelinden acildi (ajansin kendi hesabi).
+   * Ozet satirlari ajans hattini anlatir (musteri yaniti, revizyon, hazirlik);
+   * "Yeni etkinlik" kurulusa baglanir; "Teklif topla" yoktur (ajans talep
+   * acamaz); pazaryeri islerinin "Islerim"de oldugu ustte yazar.
+   */
+  ajans?: { id: string; name: string } | null;
   /**
    * Duzeltme 16-B: merkez kurum panelinden acildi (kurumun kendi hesabi).
    * "Yeni etkinlik" kurulusa baglanir; ajans teklif talepleri (RFP) ayri
@@ -97,13 +117,14 @@ export function MusteriMerkezi({
       : (asamalar.find((a) => sayi[a] > 0) ?? 'bekleyen');
 
   const secilenler = isler.filter((is) => is.asama === secili);
+  const bosMetin = (ajans && AJANS_BOS_METIN[secili]) || BOS_METIN[secili];
   const gosterilen = secilenler.slice(0, GOSTERIM_SINIRI);
   const hicYok = isler.length === 0;
 
   const dikkat = (metin: string) => (
     <span className="text-ink font-medium">{metin}</span>
   );
-  const satirlar: DurumSatiri[] = [
+  const musteriSatirlari: DurumSatiri[] = [
     ozet.acikIs > 0
       ? {
           metin: `Açık ${ozet.acikIs} işin ${ozet.teklifGelenIs} tanesine teklif geldi`,
@@ -117,6 +138,36 @@ export function MusteriMerkezi({
         }
       : { metin: 'Karar bekleyen teklif yok', tamam: true },
   ];
+  // Duzeltme 19-A: ajans panelinde ozet AJANS HATTINI anlatir; musteri hatti
+  // satirlari yalniz gercekten is varsa eklenir (bos "teklif bekleyen yok"
+  // satirlari ajansta gurultu olurdu).
+  const ajansSatirlari: DurumSatiri[] = [];
+  if (ajans) {
+    if (ozet.revizyonIstenen > 0) {
+      ajansSatirlari.push({
+        metin: dikkat(`${ozet.revizyonIstenen} teklifte revizyon istendi`),
+        tamam: false,
+      });
+    }
+    ajansSatirlari.push(
+      ozet.musteriYanitiBekleyen > 0
+        ? {
+            metin: `${ozet.musteriYanitiBekleyen} etkinlikte müşteri yanıtı bekleniyor`,
+            tamam: false,
+          }
+        : { metin: 'Müşteri yanıtı bekleyen teklif yok', tamam: true }
+    );
+    if (ozet.hazirlanan > 0) {
+      ajansSatirlari.push({
+        metin: `${ozet.hazirlanan} etkinlik hazırlık aşamasında`,
+        tamam: false,
+      });
+    }
+  }
+  const musteriHattiVar = ozet.acikIs > 0 || ozet.kararBekleyenTeklif > 0;
+  const satirlar: DurumSatiri[] = ajans
+    ? [...ajansSatirlari, ...(musteriHattiVar ? musteriSatirlari : [])]
+    : musteriSatirlari;
   if (ozet.tamamlanmaOnayiBekleyen > 0) {
     satirlar.push({
       metin: dikkat(
@@ -125,7 +176,7 @@ export function MusteriMerkezi({
       tamam: false,
     });
   }
-  const durumBasligi =
+  const musteriBasligi =
     ozet.kararBekleyenTeklif > 0
       ? 'Kararını bekleyen teklif var'
       : ozet.tamamlanmaOnayiBekleyen > 0
@@ -135,6 +186,19 @@ export function MusteriMerkezi({
           : sayi.yaklasan > 0
             ? 'Yaklaşan işlerin hazır'
             : 'Açık işin yok';
+  // Ajans panelinde once ajans hatti: is ajansta mi, musteride mi.
+  const durumBasligi =
+    ajans &&
+    ozet.kararBekleyenTeklif === 0 &&
+    ozet.tamamlanmaOnayiBekleyen === 0
+      ? ozet.revizyonIstenen > 0
+        ? 'Revizyon bekleyen teklif var'
+        : ozet.musteriYanitiBekleyen > 0
+          ? 'Müşteri yanıtı bekleniyor'
+          : ozet.hazirlanan > 0
+            ? 'Hazırlanan etkinliklerin var'
+            : musteriBasligi
+      : musteriBasligi;
 
   return (
     <div className="max-w-3xl">
@@ -142,6 +206,16 @@ export function MusteriMerkezi({
         eyebrow="Etkinliklerim"
         altNot="Talep, teklif ve rezervasyonların iş iş bir arada: teklif bekleyenler, yaklaşanlar, tamamlananlar."
         sagAlan={
+          ajans ? (
+            /* Ajans teklif topla talebi acamaz; tek eylem yeni etkinlik. */
+            <Link
+              href={`/etkinlik-sihirbazi?kurulus=${ajans.id}`}
+              className={BIRINCIL_DUGME}
+            >
+              <span className="text-base leading-none">+</span>
+              Yeni etkinlik
+            </Link>
+          ) : (
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={
@@ -158,6 +232,7 @@ export function MusteriMerkezi({
               Teklif topla
             </Link>
           </div>
+          )
         }
       >
         <em className="not-italic font-medium text-brand-accent">Etkinliklerin</em>{' '}
@@ -176,7 +251,32 @@ export function MusteriMerkezi({
         </p>
       )}
 
-      {hicYok ? (
+      {ajans && (
+        <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
+          Etkinliklerin burada: ekibin, müşterine gönderdiğin teklif ve onay
+          durumu kartta yazar. Pazaryerinden gelen talepler ve sohbetten
+          verdiğin teklifler:{' '}
+          <Link href="/islerim" className="kashe-tap text-brand-ink hover:underline">
+            İşlerim
+          </Link>
+        </p>
+      )}
+
+      {hicYok && ajans ? (
+        <div className="bg-card border border-line rounded-xl p-8 sm:p-12 text-center">
+          <p className="font-display text-xl text-ink mb-2">Henüz etkinliğin yok</p>
+          <p className="text-ink-72 text-sm mb-6 max-w-md mx-auto">
+            Etkinliğini kur; ihtiyaç listesi hazır gelsin, ekibini adaylardan
+            seç, müşterine teklifini gönder.
+          </p>
+          <Link
+            href={`/etkinlik-sihirbazi?kurulus=${ajans.id}`}
+            className={BIRINCIL_DUGME}
+          >
+            Etkinlik sihirbazı
+          </Link>
+        </div>
+      ) : hicYok ? (
         <div className="bg-card border border-line rounded-xl p-8 sm:p-12 text-center">
           <p className="font-display text-xl text-ink mb-2">Henüz işin yok</p>
           <p className="text-ink-72 text-sm mb-6 max-w-md mx-auto">
@@ -200,7 +300,10 @@ export function MusteriMerkezi({
           <DurumKarti
             baslik={durumBasligi}
             tamam={
-              ozet.kararBekleyenTeklif === 0 && ozet.tamamlanmaOnayiBekleyen === 0
+              ozet.kararBekleyenTeklif === 0 &&
+              ozet.tamamlanmaOnayiBekleyen === 0 &&
+              // Duzeltme 19-A: revizyon istenmisse is ajanstadir.
+              ozet.revizyonIstenen === 0
             }
             ilerleme={
               ozet.acikIs > 0 ? (ozet.teklifGelenIs / ozet.acikIs) * 100 : 100
@@ -220,7 +323,10 @@ export function MusteriMerkezi({
             <IsSekmeleri
               sekmeler={asamalar.map((a) => ({
                 anahtar: a,
-                etiket: SEKME_ETIKETI[a],
+                // Ajansta "bekleyen" yalniz teklif beklemek degildir
+                // (hazirlik, musteri yaniti); sekme adi buna gore.
+                etiket:
+                  ajans && a === 'bekleyen' ? 'Devam eden' : SEKME_ETIKETI[a],
                 sayi: sayi[a],
               }))}
               secili={secili}
@@ -231,10 +337,10 @@ export function MusteriMerkezi({
           {gosterilen.length === 0 ? (
             <div className="mt-4 bg-card border border-line rounded-xl p-8 text-center">
               <p className="font-display text-lg text-ink mb-1">
-                {BOS_METIN[secili].baslik}
+                {bosMetin.baslik}
               </p>
               <p className="text-ink-72 text-sm max-w-md mx-auto">
-                {BOS_METIN[secili].metin}
+                {bosMetin.metin}
               </p>
             </div>
           ) : (
@@ -254,10 +360,10 @@ export function MusteriMerkezi({
           <p className="text-xs text-ink-72 mt-8">
             Ayrı listeler:{' '}
             <Link
-              href="/teklif-taleplerim"
+              href={ajans ? '/ajans/teklifler' : '/teklif-taleplerim'}
               className="kashe-tap text-brand-ink hover:underline"
             >
-              gelen teklifler
+              {ajans ? 'teklifler' : 'gelen teklifler'}
             </Link>
             {' · '}
             <Link

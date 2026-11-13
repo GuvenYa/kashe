@@ -87,6 +87,57 @@ const RFP_DURUMU: Record<string, string> = {
 };
 
 /** Teklif sekli rezervasyon sorgusunun satiri (gomulu teklif ve satici). */
+/**
+ * AJANS HATTI (Duzeltme 19-A). Ajansin kendi etkinliginde is sirasi musteri
+ * hattindan farklidir: ekip kurulur, musteriye teklif dosyasi gonderilir,
+ * musteri onaylar. Kartta giden teklifler ve ekip birer satirdir.
+ */
+type GidenTeklifSatiri = {
+  id: string;
+  event_id: string | null;
+  title: string | null;
+  status: string;
+  client_name: string | null;
+  created_at: string;
+  buyer: { display_name: string | null } | null;
+  current_version: { total_amount: number | string | null } | null;
+};
+type AjansEkipSatiri = {
+  id: string;
+  event_id: string | null;
+  name: string;
+  status: string;
+  updated_at: string;
+  crew_members: { status: string }[] | null;
+};
+/** Ajans hattinda bekleyen kartin turu (ozet satirlari icin). */
+type AjansHatti = 'revizyon' | 'yanit' | 'hazirlik';
+
+const GIDEN_TEKLIF_DURUMU: Record<string, string> = {
+  draft: 'Taslak',
+  sent: 'Gönderildi',
+  viewed: 'Görüntülendi',
+  approved: 'Onaylandı',
+  revision_requested: 'Revizyon istendi',
+  declined: 'Reddedildi',
+  expired: 'Süresi doldu',
+};
+/** Kartta siralama: is bekleyen once, kapananlar sonda. */
+const GIDEN_TEKLIF_SIRASI: Record<string, number> = {
+  revision_requested: 0,
+  sent: 1,
+  viewed: 1,
+  approved: 2,
+  draft: 3,
+  declined: 4,
+  expired: 4,
+};
+const AJANS_EKIP_DURUMU: Record<string, string> = {
+  draft: 'Taslak',
+  proposed: 'Önerildi',
+  confirmed: 'Onaylandı',
+};
+
 type TeklifRezSatiri = IsRezervasyonu & {
   buyer_organization_id: string | null;
   surum: {
@@ -157,6 +208,8 @@ type Sirali = {
   /** Karar bekleyen teklif sayisi (yalniz "bekleyen" asamasinda sayilir). */
   bekleyenTeklif: number;
   tamamlanmaOnayi: boolean;
+  /** Duzeltme 19-A: kart ajans hattinda bekliyorsa turu (musteri sayimina girmez). */
+  ajansHatti?: AjansHatti | null;
 };
 
 export type MusteriIsleri = {
@@ -169,6 +222,14 @@ export type MusteriIsleri = {
     teklifGelenIs: number;
     kararBekleyenTeklif: number;
     tamamlanmaOnayiBekleyen: number;
+    /**
+     * Duzeltme 19-A (ajans hatti): musterisinden yanit bekleyen, revizyon
+     * istenen ve hazirlik asamasindaki etkinlik sayilari. Ajans kurulusu
+     * olmayan hesapta ucu de 0'dir; bu kartlar `acikIs`e SAYILMAZ.
+     */
+    musteriYanitiBekleyen: number;
+    revizyonIstenen: number;
+    hazirlanan: number;
   };
 };
 
@@ -269,6 +330,16 @@ export async function musteriIsleri(
       : []),
   ].join(',');
 
+  // Duzeltme 19-A: ajans hatti - kullanicinin uyesi oldugu AJANS kuruluslari.
+  // Giden teklifler `proposals.view`, ekipler `crew.view` yetkisiyle okunur
+  // (RLS ayni kapsami verir; suzgec acik yazilir).
+  const ajansOrglari = orgs.filter((o) => o.accountType === 'agency');
+  const ajansOrgKumesi = new Set(ajansOrglari.map((o) => o.id));
+  const ajansTeklifOrglari = ajansOrglari
+    .filter((o) => o.canViewProposals)
+    .map((o) => o.id);
+  const ajansEkipOrglari = ajansOrglari.filter((o) => o.canViewCrew).map((o) => o.id);
+
   const [
     etkinlikSonuc,
     talepSonuc,
@@ -277,6 +348,8 @@ export async function musteriIsleri(
     rezSonuc,
     teklifRezSonuc,
     rfpSonuc,
+    gidenTeklifSonuc,
+    ajansEkipSonuc,
   ] = await Promise.all([
       supabase
         .from('events')
@@ -374,6 +447,30 @@ export async function musteriIsleri(
             .order('created_at', { ascending: false })
             .limit(200)
         : Promise.resolve({ data: [], error: null }),
+      // Duzeltme 19-A: ajansin musterilerine gonderdigi teklif dosyalari.
+      ajansTeklifOrglari.length > 0
+        ? supabase
+            .from('proposals')
+            .select(
+              `
+              id, event_id, title, status, client_name, created_at,
+              buyer:organizations_public!proposals_buyer_organization_id_fkey (display_name),
+              current_version:proposal_versions!proposals_current_version_fkey (total_amount)
+            `
+            )
+            .in('seller_organization_id', ajansTeklifOrglari)
+            .order('created_at', { ascending: false })
+            .limit(300)
+        : Promise.resolve({ data: [], error: null }),
+      // Duzeltme 19-A: ajansin etkinlik ekipleri (uye durumlariyla).
+      ajansEkipOrglari.length > 0
+        ? supabase
+            .from('crews')
+            .select('id, event_id, name, status, updated_at, crew_members (status)')
+            .in('organization_id', ajansEkipOrglari)
+            .order('updated_at', { ascending: false })
+            .limit(300)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
   for (const [ad, sonuc] of [
@@ -384,6 +481,8 @@ export async function musteriIsleri(
     ['rezervasyon', rezSonuc],
     ['teklif rezervasyonu', teklifRezSonuc],
     ['teklif talebi (rfp)', rfpSonuc],
+    ['giden teklif', gidenTeklifSonuc],
+    ['ajans ekibi', ajansEkipSonuc],
   ] as const) {
     if (sonuc.error) {
       console.error('[etkinliklerim merkez]', ad, sonuc.error.code, sonuc.error.message);
@@ -438,6 +537,30 @@ export async function musteriIsleri(
     const kayit = { rfp, davet: s.davet, yanit: s.yanit };
     if (liste) liste.push(kayit);
     else etkinlikRfpleri.set(rfp.event_id, [kayit]);
+  }
+
+  // Duzeltme 19-A: ajans hatti verisi etkinlige gore. Giden teklifler
+  // is-bekleyen once dizilir; ekiplerde iptal edilenler atilir, en yeni once.
+  const etkinlikGidenTeklifleri = new Map<string, GidenTeklifSatiri[]>();
+  for (const t of (gidenTeklifSonuc.data ?? []) as unknown as GidenTeklifSatiri[]) {
+    if (!t.event_id) continue;
+    const liste = etkinlikGidenTeklifleri.get(t.event_id);
+    if (liste) liste.push(t);
+    else etkinlikGidenTeklifleri.set(t.event_id, [t]);
+  }
+  for (const liste of etkinlikGidenTeklifleri.values()) {
+    liste.sort(
+      (a, b) =>
+        (GIDEN_TEKLIF_SIRASI[a.status] ?? 5) - (GIDEN_TEKLIF_SIRASI[b.status] ?? 5) ||
+        ms(b.created_at) - ms(a.created_at)
+    );
+  }
+  const etkinlikEkipleri = new Map<string, AjansEkipSatiri[]>();
+  for (const k of (ajansEkipSonuc.data ?? []) as unknown as AjansEkipSatiri[]) {
+    if (!k.event_id || k.status === 'cancelled') continue;
+    const liste = etkinlikEkipleri.get(k.event_id);
+    if (liste) liste.push(k);
+    else etkinlikEkipleri.set(k.event_id, [k]);
   }
 
   // Uyesi olunan kurumlarin adlari ("<Kurum> adina" etiketi).
@@ -887,7 +1010,60 @@ export async function musteriIsleri(
       ton: x.yanit > 0 ? ('vurgu' as const) : ('notr' as const),
       href: `/kurumsal/rfp/${x.rfp.id}`,
     }));
-    const kartSatirlari = [...satirlar, ...rfpSatirlari, ...ajansSatirlari];
+    // Duzeltme 19-A: AJANS HATTI - etkinlik kullanicinin ajans kurulusununsa
+    // musteriye giden teklif dosyalari ve ekip kartta birer satirdir.
+    const ajansEtkinligi =
+      !!e.organization_id && ajansOrgKumesi.has(e.organization_id);
+    const giden = ajansEtkinligi ? (etkinlikGidenTeklifleri.get(e.id) ?? []) : [];
+    const ekip = ajansEtkinligi ? (etkinlikEkipleri.get(e.id)?.[0] ?? null) : null;
+    const gidenSatirlari: IsTeklifi[] = giden.map((t) => {
+      const tutar = t.current_version?.total_amount;
+      return {
+        id: `giden-${t.id}`,
+        kimden: t.buyer?.display_name || t.client_name || 'Müşteri',
+        tutar:
+          tutar != null && Number(tutar) > 0
+            ? formatQuoteAmount(Number(tutar), 'TRY')
+            : '—',
+        durum: GIDEN_TEKLIF_DURUMU[t.status] ?? t.status,
+        ton:
+          t.status === 'approved'
+            ? ('olumlu' as const)
+            : t.status === 'revision_requested'
+              ? ('vurgu' as const)
+              : t.status === 'declined' || t.status === 'expired'
+                ? ('soluk' as const)
+                : ('notr' as const),
+        href: `/ajans/teklifler/${t.id}`,
+      };
+    });
+    const ekipUyeSayisi = (ekip?.crew_members ?? []).filter(
+      (u) => u.status !== 'declined' && u.status !== 'replaced'
+    ).length;
+    const ekipSatiri: IsTeklifi[] = ekip
+      ? [
+          {
+            id: `ekip-${ekip.id}`,
+            kimden: 'Ekip',
+            tutar: `${ekipUyeSayisi} kişi`,
+            durum: AJANS_EKIP_DURUMU[ekip.status] ?? ekip.status,
+            ton: ekip.status === 'confirmed' ? ('olumlu' as const) : ('notr' as const),
+            href: `/etkinliklerim/${e.id}?sekme=ekip`,
+          },
+        ]
+      : [];
+    const gidenRevizyon = giden.some((t) => t.status === 'revision_requested');
+    const gidenOnayli = giden.some((t) => t.status === 'approved');
+    const gidenAcik = giden.some((t) => t.status === 'sent' || t.status === 'viewed');
+    const gidenTaslak = giden.some((t) => t.status === 'draft');
+
+    const kartSatirlari = [
+      ...satirlar,
+      ...rfpSatirlari,
+      ...gidenSatirlari,
+      ...ekipSatiri,
+      ...ajansSatirlari,
+    ];
     const onayli = rezler.filter((r) => r.status === 'confirmed');
     const tamamlanan = rezler.filter((r) => r.status === 'completed');
     const onayBekleyen = onayli.some((r) => !!r.completion_requested_at);
@@ -902,6 +1078,8 @@ export async function musteriIsleri(
     let asama: IsAsamasi;
     let durum: string;
     let ton: IsTonu;
+    // Kart ajans hattinda bekliyorsa turu; musteri sayimina (acik is) girmez.
+    let ajansHatti: AjansHatti | null = null;
     if (e.status === 'cancelled') {
       asama = 'sonuclanmayan';
       durum = ETKINLIK_DURUMU.cancelled;
@@ -914,6 +1092,12 @@ export async function musteriIsleri(
       asama = 'bekleyen';
       durum = `${bekleyen + ajansYaniti} teklif geldi`;
       ton = 'vurgu';
+    } else if (!gecti && gidenRevizyon) {
+      // Ajans hatti: musteri revizyon istedi - is ajansta (en ustte).
+      asama = 'bekleyen';
+      durum = 'Revizyon istendi';
+      ton = 'vurgu';
+      ajansHatti = 'revizyon';
     } else if (onayBekleyen) {
       asama = 'yaklasan';
       durum = 'Onayın bekleniyor';
@@ -925,6 +1109,17 @@ export async function musteriIsleri(
       asama = gecti ? 'tamamlanan' : 'yaklasan';
       durum = gecti ? 'Tarihi geçti' : `${onayli.length} rezervasyon`;
       ton = gecti ? 'notr' : 'olumlu';
+    } else if (gidenOnayli) {
+      // Ajans hatti: musteri teklifi onayladi.
+      asama = gecti ? 'tamamlanan' : 'yaklasan';
+      durum = gecti ? 'Tarihi geçti' : 'Müşteri onayladı';
+      ton = gecti ? 'notr' : 'olumlu';
+    } else if (!gecti && gidenAcik) {
+      // Ajans hatti: teklif musteride, yanit bekleniyor.
+      asama = 'bekleyen';
+      durum = 'Müşteri yanıtı bekleniyor';
+      ton = 'notr';
+      ajansHatti = 'yanit';
     } else if (!gecti && acikCocuk > 0) {
       asama = 'bekleyen';
       durum = 'Teklif bekleniyor';
@@ -937,6 +1132,23 @@ export async function musteriIsleri(
       asama = 'yaklasan';
       durum = ETKINLIK_DURUMU[e.status];
       ton = 'olumlu';
+    } else if (ajansEtkinligi) {
+      // Ajans hatti: hazirlik - teklif henuz gitmedi (ya da kapandi).
+      asama = 'bekleyen';
+      durum =
+        e.status === 'draft'
+          ? ETKINLIK_DURUMU.draft
+          : gidenTaslak
+            ? 'Teklif hazırlanıyor'
+            : giden.length > 0
+              ? 'Teklif kapandı'
+              : ekip
+                ? ekip.status === 'confirmed'
+                  ? 'Ekip hazır'
+                  : 'Ekip kuruluyor'
+                : (ETKINLIK_DURUMU[e.status] ?? e.status);
+      ton = giden.length > 0 && !gidenTaslak ? 'soluk' : 'notr';
+      ajansHatti = 'hazirlik';
     } else {
       asama = 'bekleyen';
       durum =
@@ -1001,6 +1213,7 @@ export async function musteriIsleri(
       gun: e.start_date,
       bekleyenTeklif: asama === 'bekleyen' ? bekleyen + ajansYaniti : 0,
       tamamlanmaOnayi: onayBekleyen,
+      ajansHatti,
     };
   };
 
@@ -1038,7 +1251,13 @@ export async function musteriIsleri(
     return b.zaman - a.zaman;
   });
 
-  const bekleyenler = hepsi.filter((s) => s.is.asama === 'bekleyen');
+  // Duzeltme 19-A: ajans hattinda bekleyen kartlar musterinin "acik is"
+  // sayimina girmez (onlar teklif BEKLEMIYOR); kendi sayaclari var.
+  const bekleyenler = hepsi.filter(
+    (s) => s.is.asama === 'bekleyen' && !s.ajansHatti
+  );
+  const hatSayisi = (hat: AjansHatti): number =>
+    hepsi.filter((s) => s.ajansHatti === hat).length;
   return {
     isler: hepsi.map((s) => s.is),
     ozet: {
@@ -1046,6 +1265,9 @@ export async function musteriIsleri(
       teklifGelenIs: bekleyenler.filter((s) => s.bekleyenTeklif > 0).length,
       kararBekleyenTeklif: bekleyenler.reduce((t, s) => t + s.bekleyenTeklif, 0),
       tamamlanmaOnayiBekleyen: hepsi.filter((s) => s.tamamlanmaOnayi).length,
+      musteriYanitiBekleyen: hatSayisi('yanit'),
+      revizyonIstenen: hatSayisi('revizyon'),
+      hazirlanan: hatSayisi('hazirlik'),
     },
   };
 }
