@@ -406,7 +406,16 @@ export default async function RezervasyonDetayPage({ params }: Props) {
   if (!teklifSekli) {
     ozetSatirlari.push(
       iletisimAcik
-        ? { metin: 'İletişim bilgileri iki taraf için açık', tamam: true }
+        ? {
+            // Iptal edilen rezervasyonda iletisim, ayni iki kisi arasinda
+            // baska bir onayli / tamamlanmis is varsa acik kalir (12-I kurali);
+            // nedeni yazilmazsa satir celiskili okunuyordu (onizleme turu 21).
+            metin:
+              booking.status === 'cancelled'
+                ? 'İletişim bilgileri açık: aynı kişiyle onaylı ya da tamamlanmış başka bir işin var'
+                : 'İletişim bilgileri iki taraf için açık',
+            tamam: true,
+          }
         : { metin: 'İletişim bilgileri kapalı', tamam: false }
     );
   }
@@ -419,7 +428,9 @@ export default async function RezervasyonDetayPage({ params }: Props) {
             metin: tarihGeldi
               ? `Etkinlik günü geldi: ${formatEventDate(booking.event_date)}`
               : `Etkinlik günü: ${formatEventDate(booking.event_date)}`,
-            tamam: tarihGeldi,
+            // Erken tamamlanan iste (musteri onayiyla) gun gelmemis olsa da
+            // adim kapanmistir; yoksa biten is %80 gorunuyordu (tur 21).
+            tamam: tarihGeldi || booking.status === 'completed',
           }
         : { metin: 'Etkinlik tarihi henüz belirlenmedi', tamam: false }
     );
@@ -453,8 +464,11 @@ export default async function RezervasyonDetayPage({ params }: Props) {
           : tarihGeldi
             ? 'Etkinlik günü geldi'
             : 'Rezervasyon onaylı';
+  // Iptal edilen iste ilerleme cizgisi bos kalir (yarim dolu cizgi "suruyor" okunur).
   const ozetIlerleme =
-    (ozetSatirlari.filter((s) => s.tamam).length / ozetSatirlari.length) * 100;
+    booking.status === 'cancelled'
+      ? 0
+      : (ozetSatirlari.filter((s) => s.tamam).length / ozetSatirlari.length) * 100;
 
   const kabuk = await panelKabukProps();
 
@@ -594,7 +608,12 @@ export default async function RezervasyonDetayPage({ params }: Props) {
               kutular={[
                 {
                   etiket: 'Tutar',
-                  deger: formatPrice(booking.total_amount, booking.currency),
+                  // 375 px'te "3.000" ve "TL" iki satira bolunuyordu (tur 21).
+                  deger: (
+                    <span className="whitespace-nowrap">
+                      {formatPrice(booking.total_amount, booking.currency)}
+                    </span>
+                  ),
                 },
               ]}
             />

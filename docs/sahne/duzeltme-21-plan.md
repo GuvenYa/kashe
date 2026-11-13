@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: Duzeltme 20 onizleme turundaki gozlem (sekme gecisi yavas ve
 isaretsiz) ve 14-C karari A (gorsel dil sayfa sayfa). Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-21`), onizleme turu bekliyor.
+Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-21`, derleme `dpl_AXTARuEQpuho3JXATXQUCx3cPCSL`); turda bulunan dort
+duzeltme ikinci commit ile girer, sonra uretim.
 
 ## Olcum: etkinlik sayfasinda sekme gecisi (13 Kas, Sahne adresi, Lumen sahibi)
 
@@ -59,8 +60,19 @@ yontemle yeniden olculur.
 ## Dogrulama (bu tur)
 
 - `tsc --noEmit` ve `eslint` (degisen bes dosya) temiz.
-- Onizleme turu (yapilacak): Lumen ile sekme seridinde ve merkez kartinda isaret; Kaan ile onayli, tamamlanma onayi
-  bekleyen, tamamlanmis ve iptal edilmis rezervasyonlarda durum ozeti; 375 px.
+- Onizleme turu (13 Kas):
+  - 21-A: Lumen etkinliginde "Ekip" sekmesine tiklaninca isaret 55 ms'de cikti, 4,5 saniye durdu, sekme gelince
+    kalkti (gecis 4,6 sn); baska sekmede isaret yok; gorselde "ADAYLAR" yaninda donen halka. Bekleme sirasinda
+    yandaki sekmeler ~18 px kayiyor (kabul edildi). Kaan'in merkez kartinda baglantiya tiklaninca isaret olustu.
+  - 21-B: Kaan ile uc durum gercek veriyle: onayli ("Rezervasyon onayli", iki adim tamam, tutar 4.500 TL),
+    tamamlanmis ("Is tamamlandi", "Yorumun yayinda"), iptal ("Rezervasyon iptal edildi"; iptal kaydi blogu yerinde).
+    "Tamamlanma onayi bekleniyor" durumu icin Sahne'de kayit yok, GORULMEDI. 375 px: tasma yok.
+  - Turda bulunan ve duzeltilen: (1) erken tamamlanan iste etkinlik gunu adimi acik kaliyor, biten is %80
+    gorunuyordu -> tamamlanan iste adim kapali; (2) iptal edilen iste ilerleme cizgisi %67 doluydu -> bos; (3) iptal
+    edilen iste "Iletisim bilgileri iki taraf icin acik" celiskili okunuyordu -> nedeniyle yazar ("ayni kisiyle
+    onayli ya da tamamlanmis baska bir isin var"); (4) 375 px'te tutar kutusunda "3.000" ve "TL" iki satira
+    bolunuyordu -> tek satir.
+  - Gerileme: Kaan'in merkezi 11 / 8 / 6 / 8.
 
 ## Bu dala giren dokumanlar
 
