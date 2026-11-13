@@ -3,7 +3,7 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24); Guven:
 "cevap gelene kadar tasimaya devam edelim". Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-25`), onizleme turu bekliyor.
+Durum: DALDA (`duzeltme-25`), onizleme turu TAMAM (14 Kas); uretim bekliyor.
 
 ## 25-A Basvurularim'da durum ozeti (bulgu 156)
 
@@ -37,14 +37,34 @@ ilgili bulgu satiri. Geri okundu: bulgu sekmesi degismedi (36 satir), yanit sutu
 
 ## Test rehberi 3.3
 
-Onizleme turundan SONRA, ikinci commit ile: "bilinen eksikler" 9. madde (gorsel dil artik hangi sayfalarda) ve
-Bolum 13'e "Sorular" sekmesi notu.
+YAPILDI (ikinci commit; 36 sayfa, "Bu surumde ne degisti" tek sayfa):
+- Kapak ve degisiklik sayfasi 3.3; 3.2 satiri "3.2 ve 3.3" oldu (Ilanlarim ve Basvurularim'da durum ozeti eklendi).
+- "Yeniden denerken" kutusu ve Bolum 12 "Karar bekleyenler": sorular artik tablonun "Sorular (Fahri yanitlar)"
+  sekmesinde, yanit oraya.
+- Bolum 12 madde 9: gorsel dilin gectigi sayfalar guncel (Ilanlarim, Basvurularim, profil, takvim, bildirimler);
+  "sirada" listesi yerine "eski kalan sayfa gorursen tabloya yaz".
+- Bolum 13: "Sorular" sekmesi maddesi. Ek turlar / ilan tahtasi: Ilanlarim ve Basvurularim'daki ozet kartini
+  sekme sayilariyla karsilastirma notu.
+- Yeni ekran goruntusu yok.
 
 ## Dogrulama
 
 - `tsc --noEmit` ve `eslint` (degisen uc dosya) temiz.
-- Onizleme turu (yapilacak): Ilker ile Basvurularim (karttaki sayilar sekme sayilariyla ayni mi) ve bildirimler;
-  Kaan ile bildirimler; 375 px.
+- Onizleme turu (14 Kas, `dpl_DZNz7CBVboRW7zrp2shBeZ2CNHDA`), TAMAM:
+  - Basvurularim, Lumen (ajans; 1 basvuru kisa listede): baslik "1 basvurun kisa listede", satir "1 basvuru kisa
+    listeye alindi" (tamam), kutular 0 / 1 / 0, ilerleme 100; sekmeler Tumu 1, Kisa listede 1.
+  - Basvurularim, Selin Unal (profesyonel; 1 basvuru bekliyor): baslik "1 basvurun yanit bekliyor", satir "1 basvuru
+    ilan sahibinin yanitini bekliyor", kutular 1 / 0 / 0, ilerleme 0; sekmeler Tumu 1, Bekleyen 1.
+  - Basvurusu olmayan hesapta (Ilker Sezer, Halil Aydin) kart yok, bos durum eskisi gibi. Musteri hesabinda sayfa
+    eskisi gibi panele yonleniyor.
+  - Bildirimler: Ilker (11 yeni), Kaan (15 yeni; Bugun / Bu hafta) ve Selin ("Tumu okunmus"; Daha eski): etiketler
+    pembe cizgili, "N yeni" duz pembe.
+  - 375 px: Basvurularim (Lumen) ve bildirimler (Ilker) yatay tasma yok; uc kutu basligin altinda yan yana.
+  - GORULMEDI (Sahne'de boyle kayit yok): "N basvurun kabul edildi" ve "Acik basvurun yok" basliklari;
+    bildirimlerin bos durumu (hic bildirimi olmayan hesap bulunmadi).
+  - Gozlem (bu turun isi degil, onceden de boyle): 375 px'te "Tarayici bildirimleri" kartinda metin sutunu dugmenin
+    yaninda cok dar kaliyor.
+  - Tur sonunda onizleme adresindeki tum test hesaplarindan cikis yapildi; veri yazilmadi.
 
 ## Bu dala giren dokumanlar
 

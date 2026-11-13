@@ -104,7 +104,7 @@
     <span class="pill">Sahne · test ortamı</span>
   </div>
   <div class="title">
-    <div class="eyebrow">Test rehberi · Sürüm 3.2 · 14 Kasım 2026</div>
+    <div class="eyebrow">Test rehberi · Sürüm 3.3 · 14 Kasım 2026</div>
     <h1>Kashe'yi baştan sona<br>deneyimle.</h1>
     <p class="lead">Dört rol, dört uçtan uca hikaye, bir de perde arkası: ne yaptığını, ekranda ne görmen gerektiğini ve nereye not edeceğini adım adım anlatan rehber. Teknik bilgi gerekmez; merak ve dikkat yeter.</p>
   </div>
@@ -139,7 +139,7 @@
 
 <!-- ============================ SURUM 3 ============================ -->
 <section class="section">
-  <div class="eyebrow">Sürüm 3.2 · 14 Kasım 2026</div>
+  <div class="eyebrow">Sürüm 3.3 · 14 Kasım 2026</div>
   <h2>Bu sürümde ne değişti</h2>
   <p class="lead">İlk turlarında yazdığın 35 bulgunun 32'si yapıldı; tasarım dili sürüyor, telefonla arama kısmen yapıldı, ana sayfa duvarı senden görsel bekliyor. Rehberin yarısı buna göre yeniden yazıldı; önce farkları oku.</p>
 
@@ -156,12 +156,12 @@
       <tr><td>Tarihten önce "tamamlandı" müşteri onayı ister; iptalde uyarı ve yorum hakkı; rezervasyon sayfasında iletişim kutusu.</td><td><code>/rezervasyon/…</code></td><td>Hikaye 1</td></tr>
       <tr><td>Sihirbaza menüden yol ("Yeni etkinlik"); "ortalama", "Fiyatı belirlenemeyen roller", "Etkinliği nasıl düzenleyeceksin?".</td><td>Ajans ve kurum paneli</td><td>Hikaye 2, 3</td></tr>
       <tr><td>Adaylar: sığan kartlar, "Seçili" işareti, hibritte ajans seçimi, "Kashe'den ara ve ekle", "Kaç kişi?", "Kendi ekibimle devam et".</td><td>Etkinlik → Adaylar</td><td>Hikaye 2</td></tr>
-      <tr><td><b>3.2:</b> sohbette ve rezervasyonda <b>işin durumu</b> kartı; panelde "Profilini tamamla"; tıklanan sekmede bekleme işareti; sayfalar hızlandı.</td><td><code>/mesajlar/…</code>, <code>/profil</code></td><td>Hikaye 1</td></tr>
+      <tr><td><b>3.2 ve 3.3:</b> sohbette ve rezervasyonda <b>işin durumu</b> kartı; panelde "Profilini tamamla"; İlanlarım ve Başvurularım'da durum özeti; bekleme işareti; daha hızlı sayfalar.</td><td><code>/mesajlar/…</code>, <code>/profil</code>, <code>/basvurularim</code></td><td>Hikaye 1, Ek turlar</td></tr>
       <tr><td>Ajans menüsü: "Genel bakış", "Ekip yönetimi", tek Takvim ve Kazançlar; tıklanan ajans adı, üyelik sayfası ve teklif tercihi.</td><td><code>/ajans</code>, <code>/kurulus/uyelik</code></td><td>Hikaye 2, Ek turlar</td></tr>
     </tbody>
   </table>
 
-  <div class="box tip"><div class="label">Yeniden denerken</div>Bulgu tablosundaki "Durum" sütununda her satıra ne yapıldığını yazdık. Denedikten sonra hücrenin sonuna <b>doğrulandı</b> ya da <b>hala var</b> ekle; "hala var" ise ne gördüğünü de yaz. <b>Senin kararını bekleyenler</b> tabloda "karar sende" ya da "top sende" diye işaretli: müşteri puanı ya da iptal geçmişi rozeti, teklifle birlikte sözleşme, aracı numarayla arama ve ana sayfa duvarı için lisansı temiz görseller.</div>
+  <div class="box tip"><div class="label">Yeniden denerken</div>Bulgu tablosundaki "Durum" sütununda her satıra ne yapıldığını yazdık. Denedikten sonra hücrenin sonuna <b>doğrulandı</b> ya da <b>hala var</b> ekle; "hala var" ise ne gördüğünü de yaz. <b>Senden karar beklediğimiz beş soru</b> tablonun ikinci sekmesinde: <b>Sorular (Fahri yanıtlar)</b>. Yanıtını oradaki "Senin yanıtın" sütununa yaz.</div>
 </section>
 
 <!-- ============================ 1 HOS GELDIN ============================ -->
@@ -757,7 +757,7 @@
   <div class="box shot"><div class="label">Ekran görüntüsü · Üyelik sayfası (başka bir ajans ve üyeyle çekildi)</div><img src="shots/16-uyelik.jpg" alt=""></div>
 
   <h3>İlan tahtası (müşteri → yönetici → profesyonel)</h3>
-  <p class="small">Sahne'de 12 hazır ilan ve 18 başvuru var; istersen yeni ilan açmadan 3. adımdan başla.</p>
+  <p class="small">Sahne'de 12 hazır ilan ve 18 başvuru var; istersen yeni ilan açmadan 3. adımdan başla. İlanlarım ve Başvurularım sayfalarının üstünde artık durum özeti kartı var (örnek: "1 başvurun yanıt bekliyor"); karttaki sayıları alttaki sekmelerle karşılaştır.</p>
   <ol class="steps">
     <li data-n="1"><span class="role">müşteri</span> İrem ile <code>/ilanlar/yeni</code>: Temel bilgiler, Proje detayları, Aranan nitelikler, Çalışma koşulları, etkinlik türü, lokasyon, kişi sayısı, son başvuru tarihi, bütçe; <span class="ui">Yayınla</span> ("İlan admin onayına gönderilir…").
       <span class="see-inline"><code>/ilanlarim</code>: "İlanın onaya gönderildi. Admin onayladıktan sonra ilan tahtasında görünür ve başvuru kabul eder." Durum "Onay bekliyor".</span></li>
@@ -787,6 +787,7 @@
   <p class="lead">Bunları zaten biliyoruz; yeniden bildirmene gerek yok. Ama "bence şöyle olmalı" diyorsan o fikir çok değerli: tabloya <b>öneri</b> olarak yaz.</p>
 
   <h3>Karar bekleyenler (senin bulgularından)</h3>
+  <p class="small">Bu dört konu ve ikinci turun zamanı için sorularımız bulgu tablosunun <b>Sorular (Fahri yanıtlar)</b> sekmesinde; yanıtını oraya yaz.</p>
   <ol>
     <li>Müşteri puanı ya da "iptal geçmişi" rozeti yok; profesyonel müşteriyi yorumlayamaz. Öneri: önce yalnız profesyonele görünen iptal geçmişi.</li>
     <li>Teklifle birlikte sözleşme gönderilemiyor. Öneri: önce sistemin ürettiği "teklif özeti" PDF'i.</li>
@@ -800,7 +801,7 @@
     <li>Keşfet'te kullanıcı adı yok; isimler "Ad S." biçiminde görünür.</li>
     <li>İlçe listesi 30 büyükşehirde var; diğer illerde ilçe ve mekan tek serbest kutu.</li>
     <li>Profildeki il listesi 81 ili gösterir; profesyonelin ili dışında seçim yapınca "Şehir dışı" notu çıkar.</li>
-    <li>Yeni görsel dil Teklif topla, Etkinliklerim, İşlerim, rezervasyon ve sohbet sayfalarında; diğer detay sayfaları (profil düzenleme, ilanlar, takvim) sırada.</li>
+    <li>Yeni görsel dil Teklif topla, Etkinliklerim, İşlerim, rezervasyon, sohbet, İlanlarım, Başvurularım, profil, takvim ve bildirim sayfalarında. Gözüne eski kalan bir sayfa çarparsa tabloya yaz.</li>
     <li>Ajansın merkezi yalnız ajansın kendi hesabında; ajans üyesi etkinlikleri eski listeyle görür.</li>
   </ol>
 
@@ -835,6 +836,7 @@
     <li>Sahte verinin tuhaflıkları (isim, tarih, tutar) Tür = <b>Sahne verisi</b>.</li>
     <li><b>Durum</b> sütununu Güven doldurur: ne yapıldı, nerede görürsün, karar bekliyorsa ne bekliyor. Yeniden denediğinde hücrenin sonuna <b>doğrulandı</b> ya da <b>hala var</b> yaz.</li>
     <li>Yeni bulgularını tablonun altına eklemeye devam et; eski satırları silme.</li>
+    <li>Tablonun ikinci sekmesi <b>Sorular (Fahri yanıtlar)</b>: senden karar beklediğimiz beş soru, her birinde seçenekler ve bizim önerimiz. Yanıtını "Senin yanıtın" sütununa yaz; bulguları ilk sekmeye yazmayı sürdür.</li>
   </ul>
   <h3>Ritim</h3>
   <p>Hikaye başına bir oturum, sonunda 15 dakikalık özet: en çok neye takıldın, en çok neyi beğendin, bir şeyi değiştirebilsen ne olurdu? Her oturumdan sonra 20 dakikalık üçlü triyaj: hangisi hata, hangisi ürün kararı, hangisi sonraya. Düzeltmeler birkaç iş birikince toplu olarak aynı Sahne adresine gelir; sen yeniden denersin.</p>
