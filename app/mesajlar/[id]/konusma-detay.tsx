@@ -83,6 +83,17 @@ type Props = {
   talepSayisi: number;
   /** Duzeltme 18-B: teklif formundaki konum secicisi icin 81 il (yalniz teklif veren tarafta dolu). */
   iller?: Il[];
+  /**
+   * Duzeltme 23-A: isin durumu (sunucuda hesaplanir, `app/lib/sohbet-durumu.ts`).
+   * Genis ekranda sag sutundaki kart gosterir; burada yalniz DAR ekranda
+   * sohbetin ustunde tek satirlik serit cizilir.
+   */
+  durumOzeti?: {
+    baslik: string;
+    tamam: boolean;
+    vurgu: boolean;
+    rezervasyonId: string | null;
+  } | null;
 };
 
 type BekleyenDosya = {
@@ -194,6 +205,7 @@ export function KonusmaDetay({
   teklifVarsayilanlari,
   talepSayisi,
   iller = [],
+  durumOzeti = null,
 }: Props) {
   // FAZ 10b: etkinlik turu etiketi `event_types` tablosundan (saglayici).
   const turEtiketi = useEtkinlikTuruEtiketi();
@@ -357,6 +369,18 @@ export function KonusmaDetay({
               if (prev.some((m) => m.id === newMessage.id)) return prev;
               return [...prev, newMessage];
             });
+            // Duzeltme 23-A (bulgu 152): teklif ve sistem mesaji isin durumunu
+            // degistirir (yeni teklif, onay, ret, iptal, tamamlanma). Sunucu
+            // verisi yeniden okunur: teklif karti, rezervasyon koprusu,
+            // iletisim kapisi ve durum ozeti. Onceden karsi tarafin acik
+            // sohbetinde yeni teklif "Teklif yukleniyor..." yazisinda
+            // kaliyordu (sayfa elle yenilenene kadar).
+            if (
+              newMessage.message_type === 'quote' ||
+              newMessage.message_type === 'system'
+            ) {
+              router.refresh();
+            }
             // Pasif üye okundu işaretlemez; canWrite (owner/manager) işaretler
             if (
               newMessage.sender_id !== currentUserId &&
@@ -394,7 +418,7 @@ export function KonusmaDetay({
       }
       channelRef.current = null;
     };
-  }, [conversationId, currentUserId, other.id, isTeam, canWrite]);
+  }, [conversationId, currentUserId, other.id, isTeam, canWrite, router]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -745,6 +769,37 @@ export function KonusmaDetay({
           </div>
         )}
       </div>
+
+      {/* ISIN DURUMU — yalniz dar ekranda (Duzeltme 23-A). Genis ekranda ayni
+          bilgi sag sutundaki durum kartinda; dar ekranda o kart sohbetin
+          ALTINDA kaldigi icin baslik burada da yazilir. */}
+      {durumOzeti && (
+        <div className="md:hidden border-b border-line px-4 py-2 flex items-center justify-between gap-3">
+          <p className="text-[12px] font-medium text-ink flex items-center gap-2 min-w-0">
+            <span
+              className={
+                durumOzeti.tamam
+                  ? 'text-moss'
+                  : durumOzeti.vurgu
+                    ? 'text-brand-accent'
+                    : 'text-ink-50'
+              }
+              aria-hidden="true"
+            >
+              ●
+            </span>
+            <span className="truncate">{durumOzeti.baslik}</span>
+          </p>
+          {durumOzeti.rezervasyonId && (
+            <Link
+              href={`/rezervasyon/${durumOzeti.rezervasyonId}`}
+              className="kashe-tap shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-brand-ink hover:underline"
+            >
+              Rezervasyon →
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* ETKİNLİK ÖZETİ ÇITASI */}
       {hasBrief && (

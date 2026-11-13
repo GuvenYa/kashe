@@ -3,8 +3,8 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: Duzeltme 21 olcumu (bulgu 147: etkinlik sayfasinda sekme gecisi
 5,2 - 5,9 saniye). Goc (migration) YOK. Kullaniciya gorunen metin / duzen degisikligi YOK; yalniz hiz.
 
-Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-22` f9a46a9, derleme `dpl_Hiciwv4mmcPQkMD6q838xSic893K`). Turda
-bulunan tek kucuk is (22-D, atama listesinde sira) ikinci commit ile girer, sonra uretim.
+Durum: URETIMDE (13 Kas; main = sahne = ca3b500; uretim derlemesi `dpl_F9tvXsPUnwNFMiwkiQkPx2Pjvs4c`, Sahne adresi
+`dpl_A2A71zpWmRnYAnDSPreZGUZaEQLs`).
 
 ## Bulgu: fonksiyonlar veritabanindan uzakta calisiyor (bulgu 149)
 
@@ -84,7 +84,11 @@ ister). Olcum hedefin (2 saniyenin alti) altinda cikti (asagida); YAPILMADI, ger
     4 x 7), Kaan (kisisel etkinlik; 1 x 2). Hepsi AYNI. Tek fark gorev atama listesinin sirasiydi; eski kodda da
     yuklemeden yuklemeye degisiyor (22-D). Merkez sayfalari (19 sayfa) da birebir ayni.
   - Gerileme: Kaan merkezi 11 / 8 / 6; Lumen merkezi 2 / 1 / 3.
-  - GORULMEDI: 22-D tarayicida (ikinci commit; uretim sonrasi Sahne adresinde bakilacak).
+- Uretim sonrasi (13 Kas):
+  - kashe.net (girissiz): `x-vercel-id` = `fra1::fra1`; Kesfet 102 kart.
+  - Sahne adresi (Lumen): `fra1::fra1`; sekme gecisi dokuz geciste 726 - 1232 ms.
+  - 22-D: Gorevler sekmesinde atama listesi alfabetik (Can Uysal, Enes Aksoy, Ilker Sezer, Levent Avci, Mert Sari,
+    Tarik Cakir, Zehra Simsek; ardindan havuz kayitlari) ve bes yuklemede ayni sirada.
 - Uretim sonrasi: kashe.net girissiz Kesfet'te `x-vercel-id` ikinci kod `fra1`.
 
 ## Bu dala giren dokumanlar

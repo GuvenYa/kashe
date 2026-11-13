@@ -10,6 +10,13 @@ import type { Quote } from '../quotes-data';
 import { getTeamContext } from '@/app/lib/business-write';
 import { kurulusumunId, OWNER_SEED } from '@/app/lib/uyelik';
 import { briefSatirlari } from '@/app/lib/brief-ozet';
+import { DurumKarti } from '@/app/components/panel/durum-karti';
+import { simdiMs } from '@/app/lib/premium';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
+import {
+  sohbetDurumu,
+  type SohbetRezervasyonu,
+} from '@/app/lib/sohbet-durumu';
 
 type ConversationParticipant = {
   id: string;
@@ -313,7 +320,7 @@ export default async function KonusmaPage({
   const { data: convBookings } = await supabase
     .from('bookings')
     .select(
-      'id, quote_id, status, completed_at, cancelled_at, cancelled_by, customer_id, professional_id'
+      'id, quote_id, status, completed_at, cancelled_at, cancelled_by, customer_id, professional_id, completion_requested_at, created_at'
     )
     .eq('conversation_id', id);
 
@@ -370,6 +377,8 @@ export default async function KonusmaPage({
    * cagri iptal sistem satirinin altina asilir.
    */
   let yorumCagrisi: { href: string; etiket: string } | null = null;
+  // Duzeltme 23-A: durum ozetindeki yorum satiri ayni karardan beslenir.
+  let yorumDurumu: 'yok' | 'bekliyor' | 'yayinda' = 'yok';
   let tamamlanmaZamani: string | null = null;
   type YorumluRezervasyon = {
     status: string;
@@ -402,6 +411,7 @@ export default async function KonusmaPage({
         .eq('customer_id', musteriId)
         .limit(1);
       const yorumVar = (yorumSatirlari ?? []).length > 0;
+      yorumDurumu = yorumVar ? 'yayinda' : 'bekliyor';
       tamamlanmaZamani =
         tamamlanan.status === 'completed'
           ? tamamlanan.completed_at
@@ -417,6 +427,22 @@ export default async function KonusmaPage({
           };
     }
   }
+
+  /**
+   * ISIN DURUMU (Duzeltme 23-A; gorsel dil, bulgu 151). Sohbetin guncel isi
+   * dort adimda: talep, teklif, rezervasyon, tamamlanma. YENI SORGU YOK:
+   * teklifler ve rezervasyonlar yukarida zaten okundu (rezervasyon sorgusuna
+   * iki kolon eklendi). Kural is merkezleriyle ayni (`app/lib/sohbet-durumu.ts`).
+   */
+  const durum = sohbetDurumu({
+    sohbetId: conv.id,
+    talepSayisi: conv.request_count,
+    teklifler: Object.values(quotesById),
+    rezervasyonlar: (convBookings ?? []) as unknown as SohbetRezervasyonu[],
+    musteriTarafi: isCustomerSide,
+    yorum: yorumDurumu,
+    simdi: simdiMs(),
+  });
 
   // Profesyonel mi tespit et (teklif gönderme yetkisi — owner kalıyor)
   const isProfessional = conv.professional_id === user.id;
@@ -518,29 +544,66 @@ export default async function KonusmaPage({
                 }}
                 talepSayisi={conv.request_count ?? 1}
                 iller={iller}
+                durumOzeti={{
+                  baslik: durum.baslik,
+                  tamam: durum.tamam,
+                  vurgu: durum.vurgu,
+                  rezervasyonId: durum.rezervasyonId,
+                }}
               />
             </div>
 
-            <KarsiTarafPaneli
-              other={{
-                id: other.id,
-                full_name: karsiTarafAdi,
-                avatar_url: other.avatar_url,
-                company_name: other.company_name,
-                role: other.role,
-                bio: other.bio,
-                phone: otherContact?.phone ?? null,
-                email: otherContact?.email ?? null,
-                city: other.turkish_cities?.name ?? null,
-                last_seen_at: other.last_seen_at,
-              }}
-              viewerRole={isCustomerSide ? 'customer' : 'professional'}
-              contactUnlocked={contactUnlocked}
-              iptalNedeniyle={
-                !contactUnlocked &&
-                (convBookings ?? []).some((b) => b.status === 'cancelled')
-              }
-            />
+            {/* Sag sutun (dar ekranda sohbetin altinda): once isin durumu,
+                sonra konusulan kisi. Dar ekranda durum basligi ayrica sohbetin
+                ustundeki ince seritte (KonusmaDetay). */}
+            <div className="space-y-4 md:sticky md:top-24 md:self-start min-w-0">
+              <section aria-label="İşin durumu">
+                <VurguEtiketi>
+                  {durum.talepNo > 1
+                    ? `İşin durumu · talep #${durum.talepNo}`
+                    : 'İşin durumu'}
+                </VurguEtiketi>
+                <div className="mt-2.5">
+                  <DurumKarti
+                    baslik={durum.baslik}
+                    tamam={durum.tamam}
+                    ilerleme={durum.ilerleme}
+                    satirlar={durum.satirlar}
+                    altAlan={
+                      durum.rezervasyonId ? (
+                        <Link
+                          href={`/rezervasyon/${durum.rezervasyonId}`}
+                          className="kashe-tap text-sm font-medium text-brand-ink hover:underline"
+                        >
+                          Rezervasyonu aç →
+                        </Link>
+                      ) : undefined
+                    }
+                  />
+                </div>
+              </section>
+
+              <KarsiTarafPaneli
+                other={{
+                  id: other.id,
+                  full_name: karsiTarafAdi,
+                  avatar_url: other.avatar_url,
+                  company_name: other.company_name,
+                  role: other.role,
+                  bio: other.bio,
+                  phone: otherContact?.phone ?? null,
+                  email: otherContact?.email ?? null,
+                  city: other.turkish_cities?.name ?? null,
+                  last_seen_at: other.last_seen_at,
+                }}
+                viewerRole={isCustomerSide ? 'customer' : 'professional'}
+                contactUnlocked={contactUnlocked}
+                iptalNedeniyle={
+                  !contactUnlocked &&
+                  (convBookings ?? []).some((b) => b.status === 'cancelled')
+                }
+              />
+            </div>
           </div>
         </div>
       </main>

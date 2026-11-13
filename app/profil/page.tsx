@@ -49,7 +49,9 @@ import {
   PanelKart,
   KpiKutu,
   KpiSatir,
+  DurumKarti,
 } from '@/app/components/panel';
+import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
 import { selamlama } from '@/app/lib/tarih';
 import { panelGunBugun, ayAraligi } from '@/app/lib/panel-gosterge-data';
 import { calcCommission, formatTRY } from '@/app/lib/premium';
@@ -941,9 +943,7 @@ export default async function ProfilPage() {
           >
             <div className="space-y-5">
               {isPro && (
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
-                  Yapılacaklar
-                </p>
+                <VurguEtiketi>Yapılacaklar</VurguEtiketi>
               )}
 
           {/* ANA KATEGORİ ÇAĞRISI — kategori seçmemiş profesyonele.
@@ -1004,60 +1004,40 @@ export default async function ProfilPage() {
               </div>
             )}
 
-          {/* PROFİL TAMLIĞI — yalnız yayın gereksinimleri + yüzde */}
+          {/* PROFİL TAMLIĞI — yalnız yayın gereksinimleri + yüzde.
+              Duzeltme 23-B (gorsel dil): ortak durum karti. Yuzde ve eksik
+              listesi AYNI kaynaktan (`getCompletenessPercent`,
+              `getMissingPublishFields`); her eksik kendi duzenleme sayfasina
+              baglanir. Kart profil tamamlaninca kalkar (eskisi gibi). */}
           {completeness < 100 && (
-            <div className="mb-8 bg-card border border-line rounded-lg p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-72">
-                  Profil tamlığı
-                </p>
-                <p className="font-display font-semibold text-ink text-sm">
-                  %{completeness}
-                </p>
-              </div>
-              <div className="w-full h-2 bg-paper rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-brand-ink transition-all"
-                  style={{ width: `${completeness}%` }}
-                />
-              </div>
-
-              {missingFields.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-line">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-72 mb-2.5">
-                    Tamamlanması gerekenler
-                  </p>
-                  <ul className="space-y-1.5">
-                    {missingFields.map((field) => {
-                      // Hizmet maddesi hizmetler sayfasına, gerisi düzenleme sayfasına
-                      const href = field.toLocaleLowerCase('tr').includes('hizmet')
-                        ? '/profil/hizmetlerim'
-                        : '/profil/duzenle';
-                      return (
-                        <li key={field}>
-                          <Link
-                            href={href}
-                            className="group flex items-center gap-2.5 text-sm text-ink-72 hover:text-brand-ink transition-colors"
-                          >
-                            <span
-                              className="w-4 h-4 rounded-full border border-ink-72/40 group-hover:border-brand-ink shrink-0 transition-colors"
-                              aria-hidden="true"
-                            />
-                            <span className="flex-1">{field}</span>
-                            <span
-                              className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand-ink opacity-0 group-hover:opacity-100 transition-opacity"
-                              aria-hidden="true"
-                            >
-                              Tamamla →
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-
+            <div className="mb-8">
+              <DurumKarti
+                baslik="Profilini tamamla"
+                tamam={false}
+                ilerleme={completeness}
+                satirlar={missingFields.map((field) => {
+                  // Hizmet maddesi hizmetler sayfasına, gerisi düzenleme sayfasına
+                  const href = field.toLocaleLowerCase('tr').includes('hizmet')
+                    ? '/profil/hizmetlerim'
+                    : '/profil/duzenle';
+                  return {
+                    tamam: false,
+                    metin: (
+                      <Link
+                        href={href}
+                        className="kashe-tap hover:text-brand-ink transition-colors"
+                      >
+                        {field}
+                        <span className="text-brand-ink"> · Tamamla →</span>
+                      </Link>
+                    ),
+                  };
+                })}
+                kutular={[
+                  { etiket: 'Tamlık', deger: `%${completeness}` },
+                  { etiket: 'Eksik', deger: missingFields.length },
+                ]}
+              />
             </div>
           )}
 
@@ -1066,9 +1046,7 @@ export default async function ProfilPage() {
             {/* Sag sutun — profil icerigi (yalniz profesyonel) */}
             {isPro && (
               <div className="space-y-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-50">
-                  Profil içeriği
-                </p>
+                <VurguEtiketi>Profil içeriği</VurguEtiketi>
 
           {/* D1 — YENİ YÖNETİM KARTLARI: Deneyim & Eğitim + Kategori bilgileri (professional) */}
           {isPro && (
