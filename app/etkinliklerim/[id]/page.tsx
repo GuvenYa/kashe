@@ -177,30 +177,36 @@ export default async function EtkinlikDetayPage({
 
   // `role` D3 ile eklendi: ajans adayindaki "Teklif Al" dugmesi
   // `currentUserIsProfessional` bekliyor. Yeni sorgu acilmadi.
-  const { data: suspensionCheck } = await supabase
-    .from('profiles')
-    .select('suspended_at, role')
-    .eq('id', user.id)
-    .single();
-  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
-
-  // RLS: sahip / kurulus events.view / admin. Yetkisiz kullanici icin satir gelmez.
-  const { data } = await supabase
-    .from('events')
-    .select(
+  //
+  // Duzeltme 22-B: sayfanin okumalari uc DALGA halinde ES ZAMANLI gider
+  // (olcum ve gerekce: `docs/sahne/duzeltme-22-plan.md`). Onceden otuza yakin
+  // sorgu SIRAYLA bekleniyordu; sekme degisimi 5 - 6 saniye suruyordu.
+  // Dalga 1: aski kontrolu + etkinlik (ikisi de yalniz oturuma bagli).
+  const [{ data: suspensionCheck }, { data }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('suspended_at, role')
+      .eq('id', user.id)
+      .single(),
+    // RLS: sahip / kurulus events.view / admin. Yetkisiz kullanici icin satir gelmez.
+    supabase
+      .from('events')
+      .select(
+        `
+        *,
+        event_types (name_tr),
+        turkish_cities (name),
+        event_spec_versions (version_no),
+        event_requirements (
+          id, quantity, is_required, sort_order, notes,
+          service_roles (id, slug, name_tr, legacy_category_id)
+        )
       `
-      *,
-      event_types (name_tr),
-      turkish_cities (name),
-      event_spec_versions (version_no),
-      event_requirements (
-        id, quantity, is_required, sort_order, notes,
-        service_roles (id, slug, name_tr, legacy_category_id)
       )
-    `
-    )
-    .eq('id', id)
-    .maybeSingle();
+      .eq('id', id)
+      .maybeSingle(),
+  ]);
+  if (suspensionCheck?.suspended_at) return <SuspendedNotice />;
 
   if (!data) notFound();
   const etkinlik = data as unknown as Etkinlik;
@@ -247,7 +253,17 @@ export default async function EtkinlikDetayPage({
     } | null;
   };
 
-  const [talepRes, ilanRes, sohbetRes, rezervasyonRes] = await Promise.all([
+  // Dalga 2 (Duzeltme 22-B): yalniz etkinlik kimligine bagli okumalar birlikte:
+  // bagli kayitlar, eslestirme kosulari, kurulus baglami ve ekip.
+  const [
+    talepRes,
+    ilanRes,
+    sohbetRes,
+    rezervasyonRes,
+    kosuRes,
+    ekipBaglami,
+    ekipRes,
+  ] = await Promise.all([
     supabase
       .from('quote_requests')
       .select(
@@ -275,6 +291,21 @@ export default async function EtkinlikDetayPage({
       )
       .eq('event_id', id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('match_runs')
+      .select(
+        'id, strategy, algorithm_version, candidate_count, latency_ms, created_at'
+      )
+      .eq('event_id', id)
+      .order('created_at', { ascending: false }),
+    getCrewContext(),
+    supabase
+      .from('crews')
+      .select(
+        'id, event_id, organization_id, name, status, source_policy, objective, created_at'
+      )
+      .eq('event_id', id)
+      .order('created_at'),
   ]);
 
   const talepler = (talepRes.data ?? []) as unknown as BagliTalep[];
@@ -295,23 +326,25 @@ export default async function EtkinlikDetayPage({
   const durumUygun =
     etkinlik.status === 'confirmed' || etkinlik.status === 'matching';
 
-  const { data: kosuData, error: kosuHatasi } = await supabase
-    .from('match_runs')
-    .select(
-      'id, strategy, algorithm_version, candidate_count, latency_ms, created_at'
-    )
-    .eq('event_id', id)
-    .order('created_at', { ascending: false });
+  const { data: kosuData, error: kosuHatasi } = kosuRes;
   if (kosuHatasi) console.error('[match] kosu listesi', kosuHatasi);
 
   const kosular = (kosuData ?? []) as unknown as AdayKosu[];
   const sonKosu = kosular[0] ?? null;
   const oncekiKosular = kosular.slice(1);
 
-  let ajansAdaylari: AdayKarti[] = [];
-  let rolGruplari: AdayRolGrubu[] = [];
+  /**
+   * Aday verisi. Duzeltme 22-B: fonksiyona alindi; ekip ve kurulus
+   * okumalariyla ES ZAMANLI calisir (dalga 3). Icerde de birbirini beklemeyen
+   * okumalar birlikte gider: saglayici bilgisi + hizmet fiyati + ajans rol
+   * kapsami, ardindan sehir + kategori adlari. Kurallar ve cikti AYNI.
+   */
+  const adayBlogu = async (): Promise<{
+    ajansAdaylari: AdayKarti[];
+    rolGruplari: AdayRolGrubu[];
+  }> => {
+    if (!sonKosu) return { ajansAdaylari: [], rolGruplari: [] };
 
-  if (sonKosu) {
     const { data: adayData, error: adayHatasi } = await supabase
       .from('match_candidates')
       .select(
@@ -325,19 +358,55 @@ export default async function EtkinlikDetayPage({
     const adaylar = (adayData ?? []) as unknown as AdaySatiri[];
     const saglayiciIdleri = [...new Set(adaylar.map((a) => a.provider_id))];
 
-    // Pazaryeri bilgisi gorunumden (FAZ 2c sozlesmesi), profiles'tan DEGIL.
-    let saglayicilar: AdaySaglayici[] = [];
-    if (saglayiciIdleri.length > 0) {
-      const { data: sagData, error: sagHatasi } = await supabase
-        .from('v_providers_public')
-        .select(
-          'id, display_name, provider_slug, city_id, avatar_url, provider_type, headline, primary_category_id'
-        )
-        .in('id', saglayiciIdleri);
-      if (sagHatasi) console.error('[match] saglayici bilgisi', sagHatasi);
-      saglayicilar = (sagData ?? []) as unknown as AdaySaglayici[];
-    }
+    // D3 — baslangic fiyati: kesfet kartiyla AYNI kural (yayindaki,
+    // talep-uzerine olmayan hizmetlerin en dusuk `price_min`i). TEK toplu
+    // okuma; kart basina sorgu YOK.
+    type HizmetFiyati = {
+      price_min: number | string | null;
+      price_on_request: boolean | null;
+    };
+    // Ajans rol kapsami (13-C) yalniz ajans adayi varken sorulur.
+    const ajansAdayiVar = adaylar.some((a) => a.role_id === null);
+
+    const [sagRes, hizmetRes, kapsamRes] = await Promise.all([
+      // Pazaryeri bilgisi gorunumden (FAZ 2c sozlesmesi), profiles'tan DEGIL.
+      saglayiciIdleri.length > 0
+        ? supabase
+            .from('v_providers_public')
+            .select(
+              'id, display_name, provider_slug, city_id, avatar_url, provider_type, headline, primary_category_id'
+            )
+            .in('id', saglayiciIdleri)
+        : null,
+      saglayiciIdleri.length > 0
+        ? supabase
+            .from('services')
+            .select('provider_id, price_min, price_on_request')
+            .eq('is_active', true)
+            .in('provider_id', saglayiciIdleri)
+        : null,
+      ajansAdayiVar
+        ? supabase.rpc('fn_duz13_ajans_rol_kapsami', { p_run: sonKosu.id })
+        : null,
+    ]);
+    if (sagRes?.error) console.error('[match] saglayici bilgisi', sagRes.error);
+    if (hizmetRes?.error) console.error('[match] hizmet fiyati', hizmetRes.error);
+    if (kapsamRes?.error) console.error('[match] ajans rol kapsami', kapsamRes.error);
+
+    const saglayicilar = (sagRes?.data ?? []) as unknown as AdaySaglayici[];
     const saglayiciMap = new Map(saglayicilar.map((s) => [s.id, s]));
+
+    const hizmetMap = new Map<string, HizmetFiyati[]>();
+    for (const h of (hizmetRes?.data ?? []) as unknown as ({
+      provider_id: string;
+    } & HizmetFiyati)[]) {
+      const liste = hizmetMap.get(h.provider_id) ?? [];
+      liste.push({
+        price_min: h.price_min,
+        price_on_request: h.price_on_request,
+      });
+      hizmetMap.set(h.provider_id, liste);
+    }
 
     const sehirIdleri = [
       ...new Set(
@@ -346,44 +415,6 @@ export default async function EtkinlikDetayPage({
           .filter((v): v is number => typeof v === 'number')
       ),
     ];
-    const sehirMap = new Map<number, string>();
-    if (sehirIdleri.length > 0) {
-      const { data: sehirData } = await supabase
-        .from('turkish_cities')
-        .select('id, name')
-        .in('id', sehirIdleri);
-      for (const s of (sehirData ?? []) as { id: number; name: string }[]) {
-        sehirMap.set(s.id, s.name);
-      }
-    }
-
-    // D3 — baslangic fiyati: kesfet kartiyla AYNI kural (yayindaki,
-    // talep-uzerine olmayan hizmetlerin en dusuk `price_min`i). TEK toplu
-    // okuma; kart basina sorgu YOK.
-    type HizmetFiyati = {
-      price_min: number | string | null;
-      price_on_request: boolean | null;
-    };
-    const hizmetMap = new Map<string, HizmetFiyati[]>();
-    if (saglayiciIdleri.length > 0) {
-      const { data: hizmetData, error: hizmetHatasi } = await supabase
-        .from('services')
-        .select('provider_id, price_min, price_on_request')
-        .eq('is_active', true)
-        .in('provider_id', saglayiciIdleri);
-      if (hizmetHatasi) console.error('[match] hizmet fiyati', hizmetHatasi);
-      for (const h of (hizmetData ?? []) as unknown as ({
-        provider_id: string;
-      } & HizmetFiyati)[]) {
-        const liste = hizmetMap.get(h.provider_id) ?? [];
-        liste.push({
-          price_min: h.price_min,
-          price_on_request: h.price_on_request,
-        });
-        hizmetMap.set(h.provider_id, liste);
-      }
-    }
-
     // Ajans kartindaki "Teklif Al" brief formunu kategori belirler.
     const kategoriIdleri = [
       ...new Set(
@@ -392,15 +423,24 @@ export default async function EtkinlikDetayPage({
           .filter((v): v is number => typeof v === 'number')
       ),
     ];
+    const [sehirRes, katRes] = await Promise.all([
+      sehirIdleri.length > 0
+        ? supabase.from('turkish_cities').select('id, name').in('id', sehirIdleri)
+        : null,
+      kategoriIdleri.length > 0
+        ? supabase
+            .from('service_categories')
+            .select('id, slug')
+            .in('id', kategoriIdleri)
+        : null,
+    ]);
+    const sehirMap = new Map<number, string>();
+    for (const s of (sehirRes?.data ?? []) as { id: number; name: string }[]) {
+      sehirMap.set(s.id, s.name);
+    }
     const kategoriSlugMap = new Map<number, string>();
-    if (kategoriIdleri.length > 0) {
-      const { data: katData } = await supabase
-        .from('service_categories')
-        .select('id, slug')
-        .in('id', kategoriIdleri);
-      for (const k of (katData ?? []) as { id: number; slug: string }[]) {
-        kategoriSlugMap.set(k.id, k.slug);
-      }
+    for (const k of (katRes?.data ?? []) as { id: number; slug: string }[]) {
+      kategoriSlugMap.set(k.id, k.slug);
     }
 
     // "14 MAYIS" — rozet etiketi SUNUCUDA bicimlenir (kart tarih hesaplamaz).
@@ -445,7 +485,7 @@ export default async function EtkinlikDetayPage({
     };
 
     // Siralama DB'den (`final_rank`); filtreleme sirayi korur.
-    ajansAdaylari = adaylar.filter((a) => a.role_id === null).map(kart);
+    const ajansAdaylari = adaylar.filter((a) => a.role_id === null).map(kart);
 
     /**
      * Duzeltme 13-C (bulgu 125): hangi ajansin hangi rolu kapsadigi —
@@ -455,20 +495,16 @@ export default async function EtkinlikDetayPage({
      * kesilmez, "Tum isi ajansa ver" listesi yine var).
      */
     const ajansRolleri = new Map<number, Set<string>>();
-    if (ajansAdaylari.length > 0) {
-      const { data: kapsamData, error: kapsamHatasi } = await supabase.rpc(
-        'fn_duz13_ajans_rol_kapsami',
-        { p_run: sonKosu.id }
-      );
-      if (kapsamHatasi) console.error('[match] ajans rol kapsami', kapsamHatasi);
-      for (const k of (kapsamData ?? []) as { provider_id: string; role_id: number }[]) {
-        const kume = ajansRolleri.get(k.role_id) ?? new Set<string>();
-        kume.add(k.provider_id);
-        ajansRolleri.set(k.role_id, kume);
-      }
+    for (const k of (kapsamRes?.data ?? []) as {
+      provider_id: string;
+      role_id: number;
+    }[]) {
+      const kume = ajansRolleri.get(k.role_id) ?? new Set<string>();
+      kume.add(k.provider_id);
+      ajansRolleri.set(k.role_id, kume);
     }
 
-    rolGruplari = gereksinimler
+    const rolGruplari: AdayRolGrubu[] = gereksinimler
       .filter((g) => g.service_roles != null)
       .map((g) => ({
         roleId: g.service_roles!.id,
@@ -482,27 +518,19 @@ export default async function EtkinlikDetayPage({
           ajansRolleri.get(g.service_roles!.id)?.has(a.providerId)
         ),
       }));
-  }
+
+    return { ajansAdaylari, rolGruplari };
+  };
 
   // ---- FAZ 6/P2 — ekip ----
   // Yazim RLS ile (action'lar); burada yalniz okuma. Ekip yoksa ve sahip degilse
   // bolum render edilmez. V0: etkinlik basina TEK ekip (DB coklu ekibe izin verir).
-  const { orgs: ekipKuruluslari } = await getCrewContext();
+  const { orgs: ekipKuruluslari } = ekipBaglami;
 
-  const { data: ekipData, error: ekipHatasi } = await supabase
-    .from('crews')
-    .select(
-      'id, event_id, organization_id, name, status, source_policy, objective, created_at'
-    )
-    .eq('event_id', id)
-    .order('created_at');
+  const { data: ekipData, error: ekipHatasi } = ekipRes;
   if (ekipHatasi) console.error('[ekip] liste', ekipHatasi);
 
   const ekip = ((ekipData ?? []) as unknown as EkipSatiri[])[0] ?? null;
-
-  let ekipUyeleri: UyeKarti[] = [];
-  let kapsam: KapsamSatiri[] = [];
-  let rolBloklari: EkipRolBloku[] = [];
 
   const rolSlugAdlari: Record<string, string> = {};
   for (const g of gereksinimler) {
@@ -517,19 +545,61 @@ export default async function EtkinlikDetayPage({
   const ekipKurulusAjans =
     !!ekip?.organization_id && ekipKurulusu?.accountType === 'agency';
 
-  if (ekip) {
-    const { data: uyeData, error: uyeHatasi } = await supabase
-      .from('crew_members')
-      .select(
-        `id, crew_id, role_id, talent_record_id, provider_id, pool_origin, status,
-         is_locked, sort_order, note, match_candidate_id, created_at`
-      )
-      .eq('crew_id', ekip.id)
-      .order('sort_order')
-      .order('created_at');
-    if (uyeHatasi) console.error('[ekip] uyeler', uyeHatasi);
+  // Havuzdan ekleme: yalniz kurulus ekibi + talent.view + modul acik (RLS de kisitlar).
+  const havuzAcik =
+    !!ekip?.organization_id &&
+    !!ekipKurulusu?.canViewTalent &&
+    !!ekipKurulusu?.talentPoolEnabled;
 
-    const uyeSatirlari = (uyeData ?? []) as unknown as EkipUyesi[];
+  type HavuzKayitSatiri = {
+    id: string;
+    name: string;
+    status: string;
+    organization_talent_record_roles: { role_id: number }[] | null;
+  };
+
+  /**
+   * Ekip verisi. Duzeltme 22-B: fonksiyona alindi; aday ve kurulus
+   * okumalariyla ES ZAMANLI calisir (dalga 3). Uye listesi ile havuz kayitlari
+   * birbirini beklemez; uyelerin saglayici ve havuz adlari da birlikte okunur.
+   * `rolBloklari` aday verisine de bagli oldugu icin dalga bittikten SONRA
+   * kurulur (asagida). Kurallar ve cikti AYNI.
+   */
+  const ekipBlogu = async (): Promise<{
+    uyeSatirlari: EkipUyesi[];
+    ekipUyeleri: UyeKarti[];
+    kapsam: KapsamSatiri[];
+    havuzKayitlari: HavuzKayitSatiri[];
+  }> => {
+    if (!ekip) {
+      return { uyeSatirlari: [], ekipUyeleri: [], kapsam: [], havuzKayitlari: [] };
+    }
+
+    const [uyeRes, havuzRes] = await Promise.all([
+      supabase
+        .from('crew_members')
+        .select(
+          `id, crew_id, role_id, talent_record_id, provider_id, pool_origin, status,
+           is_locked, sort_order, note, match_candidate_id, created_at`
+        )
+        .eq('crew_id', ekip.id)
+        .order('sort_order')
+        .order('created_at'),
+      havuzAcik
+        ? supabase
+            .from('organization_talent_records')
+            .select('id, name, status, organization_talent_record_roles(role_id)')
+            .eq('organization_id', ekip.organization_id!)
+            .neq('status', 'blocked')
+            .order('name')
+        : null,
+    ]);
+    if (uyeRes.error) console.error('[ekip] uyeler', uyeRes.error);
+    if (havuzRes?.error) console.error('[ekip] havuz listesi', havuzRes.error);
+
+    const uyeSatirlari = (uyeRes.data ?? []) as unknown as EkipUyesi[];
+    const havuzKayitlari = (havuzRes?.data ??
+      []) as unknown as HavuzKayitSatiri[];
 
     // Kisi bilgisi: pazaryeri saglayicisi gorunumden, havuz kaydi adi RLS ile.
     const uyeSaglayiciIdleri = [
@@ -547,36 +617,39 @@ export default async function EtkinlikDetayPage({
       ),
     ];
 
+    const [uyeSagRes, uyeKayitRes] = await Promise.all([
+      uyeSaglayiciIdleri.length > 0
+        ? supabase
+            .from('v_providers_public')
+            .select('id, display_name, city_id')
+            .in('id', uyeSaglayiciIdleri)
+        : null,
+      uyeKayitIdleri.length > 0
+        ? supabase
+            .from('organization_talent_records')
+            .select('id, name')
+            .in('id', uyeKayitIdleri)
+        : null,
+    ]);
+
     const uyeSaglayiciMap = new Map<
       string,
       { display_name: string | null; city_id: number | null }
     >();
-    if (uyeSaglayiciIdleri.length > 0) {
-      const { data: sagData } = await supabase
-        .from('v_providers_public')
-        .select('id, display_name, city_id')
-        .in('id', uyeSaglayiciIdleri);
-      for (const s of (sagData ?? []) as {
-        id: string;
-        display_name: string | null;
-        city_id: number | null;
-      }[]) {
-        uyeSaglayiciMap.set(s.id, {
-          display_name: s.display_name,
-          city_id: s.city_id,
-        });
-      }
+    for (const s of (uyeSagRes?.data ?? []) as {
+      id: string;
+      display_name: string | null;
+      city_id: number | null;
+    }[]) {
+      uyeSaglayiciMap.set(s.id, {
+        display_name: s.display_name,
+        city_id: s.city_id,
+      });
     }
 
     const uyeKayitMap = new Map<string, string>();
-    if (uyeKayitIdleri.length > 0) {
-      const { data: kayitData } = await supabase
-        .from('organization_talent_records')
-        .select('id, name')
-        .in('id', uyeKayitIdleri);
-      for (const k of (kayitData ?? []) as { id: string; name: string }[]) {
-        uyeKayitMap.set(k.id, k.name);
-      }
+    for (const k of (uyeKayitRes?.data ?? []) as { id: string; name: string }[]) {
+      uyeKayitMap.set(k.id, k.name);
     }
 
     const uyeSehirIdleri = [
@@ -602,7 +675,7 @@ export default async function EtkinlikDetayPage({
       if (g.service_roles) rolAdiById.set(g.service_roles.id, g.service_roles.name_tr);
     }
 
-    ekipUyeleri = uyeSatirlari.map((u) => {
+    const ekipUyeleri: UyeKarti[] = uyeSatirlari.map((u) => {
       const sag = u.provider_id ? uyeSaglayiciMap.get(u.provider_id) : null;
       const kayitAdi = u.talent_record_id
         ? uyeKayitMap.get(u.talent_record_id)
@@ -630,7 +703,7 @@ export default async function EtkinlikDetayPage({
       };
     });
 
-    kapsam = gereksinimler
+    const kapsam: KapsamSatiri[] = gereksinimler
       .filter((g) => g.service_roles != null)
       .map((g) => ({
         roleId: g.service_roles!.id,
@@ -645,67 +718,17 @@ export default async function EtkinlikDetayPage({
         zorunlu: g.is_required,
       }));
 
-    // Havuzdan ekleme: yalniz kurulus ekibi + talent.view + modul acik (RLS de kisitlar).
-    const havuzAcik =
-      !!ekip.organization_id &&
-      !!ekipKurulusu?.canViewTalent &&
-      !!ekipKurulusu?.talentPoolEnabled;
-
-    type HavuzKayitSatiri = {
-      id: string;
-      name: string;
-      status: string;
-      organization_talent_record_roles: { role_id: number }[] | null;
-    };
-    let havuzKayitlari: HavuzKayitSatiri[] = [];
-    if (havuzAcik) {
-      const { data: havuzData, error: havuzHatasi } = await supabase
-        .from('organization_talent_records')
-        .select('id, name, status, organization_talent_record_roles(role_id)')
-        .eq('organization_id', ekip.organization_id!)
-        .neq('status', 'blocked')
-        .order('name');
-      if (havuzHatasi) console.error('[ekip] havuz listesi', havuzHatasi);
-      havuzKayitlari = (havuzData ?? []) as unknown as HavuzKayitSatiri[];
-    }
-
-    rolBloklari = gereksinimler
-      .filter((g) => g.service_roles != null)
-      .map((g) => {
-        const roleId = g.service_roles!.id;
-        const grup = rolGruplari.find((r) => r.roleId === roleId);
-        return {
-          roleId,
-          rolAdi: g.service_roles!.name_tr,
-          gereken: g.quantity,
-          zorunlu: g.is_required,
-          adaylar: (grup?.adaylar ?? []).map((a) => ({
-            candidateId: a.id,
-            providerId: a.providerId,
-            ad: a.ad,
-            uyum: a.uyum,
-            ekipte: uyeSatirlari.some(
-              (u) => u.role_id === roleId && u.provider_id === a.providerId
-            ),
-          })),
-          // Rolu atanmis kayitlar once, digerleri altta ("rolu yok" notuyla).
-          havuz: [...havuzKayitlari]
-            .map((k) => ({
-              recordId: k.id,
-              ad: k.name,
-              roldeVar: (k.organization_talent_record_roles ?? []).some(
-                (r) => r.role_id === roleId
-              ),
-            }))
-            .sort((a, b) => Number(b.roldeVar) - Number(a.roldeVar)),
-        };
-      });
-  }
+    return { uyeSatirlari, ekipUyeleri, kapsam, havuzKayitlari };
+  };
 
   // FAZ 7a/P1 — ekipten acilmis ilk teklif (varsa dugme yerine baglanti).
   // RLS: teklif yalniz satici kurulusta proposals.view olana gorunur.
-  let mevcutTeklif: { id: string; title: string; durum: string } | null = null;
-  if (ekip) {
+  const teklifBlogu = async (): Promise<{
+    id: string;
+    title: string;
+    durum: string;
+  } | null> => {
+    if (!ekip) return null;
     const { data: teklifData } = await supabase
       .from('proposals')
       .select('id, title, status, created_at')
@@ -717,14 +740,13 @@ export default async function EtkinlikDetayPage({
       title: string;
       status: string;
     }[])[0];
-    if (satir) {
-      mevcutTeklif = {
-        id: satir.id,
-        title: satir.title,
-        durum: TEKLIF_DURUM_ETIKETLERI[satir.status] ?? satir.status,
-      };
-    }
-  }
+    if (!satir) return null;
+    return {
+      id: satir.id,
+      title: satir.title,
+      durum: TEKLIF_DURUM_ETIKETLERI[satir.status] ?? satir.status,
+    };
+  };
 
   // FAZ 7b/P1 — etkinlik bir kurulusa aitse ve kullanici `events.manage` ise
   // ust bilgi satirinda "Teklif talebi ac" baglantisi (RFP formu o etkinlikle acilir).
@@ -768,13 +790,6 @@ export default async function EtkinlikDetayPage({
     )
       ? `/etkinliklerim/${etkinlik.id}?sekme=ekip`
       : null;
-
-  // "Teklif Al" (IletisimButton) yalniz RFP yolu YOKKEN cizilir; "kimin
-  // adina" listesi de yalniz o durumda okunur (gereksiz sorgu acilmaz).
-  const adayIletisimGerekli = ajansAdaylari.length > 0 && !rfpAcilabilir;
-  const yazilabilirIsletmeler = adayIletisimGerekli
-    ? await getWritableBusinesses()
-    : [];
 
   const ekstra = (etkinlik.extra ?? {}) as Record<string, unknown>;
   const tarihNotu =
@@ -857,30 +872,19 @@ export default async function EtkinlikDetayPage({
     deadline: string | null;
     davetler: { id: string; status: string }[] | null;
   };
-  let etkinlikRfpleri: EtkinlikRfp[] = [];
-  if (kurulusEtkinligi) {
+  const rfpBlogu = async (): Promise<EtkinlikRfp[]> => {
+    if (!kurulusEtkinligi) return [];
     const { data: rfpData, error: rfpHatasi } = await supabase
       .from('rfps')
       .select('id, title, status, deadline, davetler:rfp_invites(id, status)')
       .eq('event_id', id)
       .order('created_at', { ascending: false });
     if (rfpHatasi) console.error('[etkinlik] rfp', rfpHatasi.code, rfpHatasi.message);
-    etkinlikRfpleri = (rfpData ?? []) as unknown as EtkinlikRfp[];
-  }
+    return (rfpData ?? []) as unknown as EtkinlikRfp[];
+  };
 
   // Gorevler — modul kapisi kurulus basina.
   const gorevModulAcik = !!etkinlikKurulusu?.tasksEnabled;
-  const gorevler =
-    etkinlikKurulusu && gorevModulAcik
-      ? await gorevleriGetir({ orgId: etkinlikKurulusu.id, eventId: id })
-      : [];
-  const gorevAtananlari =
-    etkinlikKurulusu && gorevModulAcik
-      ? await atanabilirler(
-          etkinlikKurulusu.id,
-          etkinlikKurulusu.canViewTalent && etkinlikKurulusu.talentPoolEnabled
-        )
-      : [];
 
   /**
    * FAZ 8c — tedarikci sekmesi.
@@ -897,22 +901,103 @@ export default async function EtkinlikDetayPage({
     etkinlikKurulusu.suppliersEnabled &&
     etkinlikKurulusu.canViewSuppliers;
 
-  const [etkinlikTedarikcileriListesi, tedarikciSecenekListesi] =
+  /**
+   * Dalga 3 (Duzeltme 22-B): aday, ekip ve kurulus okumalari ES ZAMANLI.
+   * Hicbiri digerinin sonucunu beklemez; tek istisna "kimin adina" listesi
+   * (aday verisine bakar, bu yuzden aday sozune zincirlenir).
+   *
+   * Kosullar eskisiyle AYNI:
+   *  - "Teklif Al" (IletisimButton) yalniz RFP yolu YOKKEN cizilir; "kimin
+   *    adina" listesi de yalniz o durumda okunur (gereksiz sorgu acilmaz).
+   *  - Gorevler yalniz modul acikken; tedarikci listeleri yalniz sekme varken.
+   *  - Tutarlar yalniz `commercial.view` varken istenir; aksi halde RPC hic
+   *    cagrilmaz (gereksiz 42501 ve denetim kaydi olusmasin).
+   *  - Hesap karti TEK KAYNAK (hijyen 04): kisi adi ustte, kurulus alt satirda.
+   */
+  const adaySozu = adayBlogu();
+  const [
+    { ajansAdaylari, rolGruplari },
+    yazilabilirIsletmeler,
+    { uyeSatirlari, ekipUyeleri, kapsam, havuzKayitlari },
+    mevcutTeklif,
+    etkinlikRfpleri,
+    gorevler,
+    gorevAtananlari,
+    [etkinlikTedarikcileriListesi, tedarikciSecenekListesi],
+    tedarikciMaliyetleri,
+    menu,
+    kurulusHesabi,
+  ] = await Promise.all([
+    adaySozu,
+    adaySozu.then((a) =>
+      a.ajansAdaylari.length > 0 && !rfpAcilabilir
+        ? getWritableBusinesses()
+        : []
+    ),
+    ekipBlogu(),
+    teklifBlogu(),
+    rfpBlogu(),
+    etkinlikKurulusu && gorevModulAcik
+      ? gorevleriGetir({ orgId: etkinlikKurulusu.id, eventId: id })
+      : [],
+    etkinlikKurulusu && gorevModulAcik
+      ? atanabilirler(
+          etkinlikKurulusu.id,
+          etkinlikKurulusu.canViewTalent && etkinlikKurulusu.talentPoolEnabled
+        )
+      : [],
     tedarikciSekmesi && etkinlikKurulusu
-      ? await Promise.all([
+      ? Promise.all([
           etkinlikTedarikcileri(etkinlikKurulusu.id, id),
           etkinlikKurulusu.canManageSuppliers
             ? tedarikciSecenekleri(etkinlikKurulusu.id)
             : Promise.resolve([]),
         ])
-      : [[], []];
-
-  // Tutarlar yalniz `commercial.view` varken istenir; aksi halde RPC hic
-  // cagrilmaz (gereksiz 42501 ve denetim kaydi olusmasin).
-  const tedarikciMaliyetleri =
+      : [[], []],
     tedarikciSekmesi && etkinlikKurulusu?.canSeeRates
-      ? await tedarikciMaliyetListele(id)
-      : null;
+      ? tedarikciMaliyetListele(id)
+      : null,
+    kurulusEtkinligi ? panelMenusu() : [],
+    kurulusEtkinligi
+      ? panelKabukProps(etkinlikKurulusu!.id).then((k) => k.hesap)
+      : { ad: '', altSatir: '' },
+  ]);
+
+  // Rol bloklari iki kaynagi birlestirir: aday gruplari + ekip uyeleri / havuz.
+  let rolBloklari: EkipRolBloku[] = [];
+  if (ekip) {
+    rolBloklari = gereksinimler
+      .filter((g) => g.service_roles != null)
+      .map((g) => {
+        const roleId = g.service_roles!.id;
+        const grup = rolGruplari.find((r) => r.roleId === roleId);
+        return {
+          roleId,
+          rolAdi: g.service_roles!.name_tr,
+          gereken: g.quantity,
+          zorunlu: g.is_required,
+          adaylar: (grup?.adaylar ?? []).map((a) => ({
+            candidateId: a.id,
+            providerId: a.providerId,
+            ad: a.ad,
+            uyum: a.uyum,
+            ekipte: uyeSatirlari.some(
+              (u) => u.role_id === roleId && u.provider_id === a.providerId
+            ),
+          })),
+          // Rolu atanmis kayitlar once, digerleri altta ("rolu yok" notuyla).
+          havuz: [...havuzKayitlari]
+            .map((k) => ({
+              recordId: k.id,
+              ad: k.name,
+              roldeVar: (k.organization_talent_record_roles ?? []).some(
+                (r) => r.role_id === roleId
+              ),
+            }))
+            .sort((a, b) => Number(b.roldeVar) - Number(a.roldeVar)),
+        };
+      });
+  }
 
   const aktifTedarikciAtamasi = etkinlikTedarikcileriListesi.filter((a) =>
     AKTIF_DURUMLAR.includes(a.status)
@@ -947,11 +1032,6 @@ export default async function EtkinlikDetayPage({
     ? (sekmeParam as string)
     : 'genel';
 
-  const menu = kurulusEtkinligi ? await panelMenusu() : [];
-  // Hesap karti TEK KAYNAK (hijyen 04): kisi adi ustte, kurulus alt satirda.
-  const kurulusHesabi = kurulusEtkinligi
-    ? (await panelKabukProps(etkinlikKurulusu!.id)).hesap
-    : { ad: '', altSatir: '' };
   // Bolum JSX bloklari SABITLERE cikarildi: kisisel ve kurulus dallari ayni
   // icerigi iki kez YAZMAZ (brief: Ihtiyaclar/Adaylar/Ekip kopyalanmaz).
   const genelBloklariJsx = (

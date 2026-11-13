@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { createClient } from '@/app/lib/supabase-server';
+import { getCachedUser } from '@/app/lib/auth';
 
 /**
  * FAZ 5 — yetenek havuzu icin kurulus baglami.
@@ -40,9 +41,8 @@ export async function getTalentPoolContext(): Promise<{
 }> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Duzeltme 22-C: istek basina TEK auth cagrisi (`getCachedUser`).
+  const user = await getCachedUser();
   if (!user) return { orgs: [] };
 
   const { data, error } = await supabase
@@ -194,9 +194,8 @@ export type CrewOrg = {
 export const getCrewContext = cache(async (): Promise<{ orgs: CrewOrg[] }> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Duzeltme 22-C: istek basina TEK auth cagrisi (`getCachedUser`).
+  const user = await getCachedUser();
   if (!user) return { orgs: [] };
 
   const { data, error } = await supabase
@@ -392,9 +391,8 @@ async function tekIzinVarMi(
 ): Promise<boolean> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Duzeltme 22-C: istek basina TEK auth cagrisi (`getCachedUser`).
+  const user = await getCachedUser();
   if (!user) return false;
 
   const { data, error } = await supabase

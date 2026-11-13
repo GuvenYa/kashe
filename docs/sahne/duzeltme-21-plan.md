@@ -3,8 +3,8 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: Duzeltme 20 onizleme turundaki gozlem (sekme gecisi yavas ve
 isaretsiz) ve 14-C karari A (gorsel dil sayfa sayfa). Goc (migration) YOK.
 
-Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-21`, derleme `dpl_AXTARuEQpuho3JXATXQUCx3cPCSL`); turda bulunan dort
-duzeltme ikinci commit ile girer, sonra uretim.
+Durum: URETIMDE (13 Kas; main = sahne = c1ff8e3; uretim derlemesi `dpl_4EZi5rrQsAyUxPXxm8SuPSeE2rnK`, Sahne adresi
+`dpl_CrJEfXpjNvnNryFWxmqjT3eHoMbH`). 21-D (hizlandirma) siradaki tur: `docs/sahne/duzeltme-22-plan.md`.
 
 ## Olcum: etkinlik sayfasinda sekme gecisi (13 Kas, Sahne adresi, Lumen sahibi)
 
@@ -73,6 +73,10 @@ yontemle yeniden olculur.
     onayli ya da tamamlanmis baska bir isin var"); (4) 375 px'te tutar kutusunda "3.000" ve "TL" iki satira
     bolunuyordu -> tek satir.
   - Gerileme: Kaan'in merkezi 11 / 8 / 6 / 8.
+- Uretim sonrasi (13 Kas, Sahne adresi, Kaan): dort duzeltme gercek veriyle goruldu. Tamamlanmis is: bes adim da
+  tamam, ilerleme 100. Iptal edilen is: ilerleme 0, iletisim satiri nedeniyle yaziyor. Onayli is: ilerleme 50.
+  375 px: "4.500 TL" tek satir (yukseklik 21 px, satir 22,5 px), yatay tasma yok. Uretim (kashe.net) girissiz
+  Kesfet: 102 kart.
 
 ## Bu dala giren dokumanlar
 
