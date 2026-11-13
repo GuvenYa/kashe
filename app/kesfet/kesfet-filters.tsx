@@ -381,7 +381,10 @@ export function KesfetFilters({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="İsim ile ara..."
+          // Duzeltme 20-B: arama yalniz ada degil, kategoriye, tanitima ve
+          // etkinlik turune de bakar (Duzeltme 05 / 10); kutu bunu soylesin.
+          placeholder="İsim, rol ya da etkinlik ara"
+          aria-label="Profesyonel ara: isim, rol ya da etkinlik türü"
           className="w-full px-4 py-2.5 bg-card border border-line rounded-lg text-ink placeholder:text-ink-32 focus:outline-none focus:border-brand-ink focus:ring-2 focus:ring-brand-ink-08 transition text-sm"
         />
       </div>

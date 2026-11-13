@@ -167,10 +167,10 @@ export function SaticiMerkezi({
       {ajansHesabi && (
         <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
           Burada pazaryerinden ajansına gelen talepler, sohbetten verdiğin
-          teklifler ve rezervasyonlar görünür. Kurumsal RFP&apos;lere
-          verdiğin teklifler ayrı sayfada:{' '}
-          <Link href="/ajans/teklifler" className="kashe-tap text-brand-ink hover:underline">
-            Teklifler
+          teklifler ve rezervasyonlar görünür. Teklif dosyaların (kurumsal
+          RFP yanıtları dahil) etkinliklerinle birlikte:{' '}
+          <Link href="/etkinliklerim" className="kashe-tap text-brand-ink hover:underline">
+            Etkinlikler
           </Link>
         </p>
       )}

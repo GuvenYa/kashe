@@ -107,6 +107,14 @@ bir teklif.
 
 - 19-A: onizlemede dogrulandi (dal `duzeltme-19`).
 - Turdan cikan iki metin duzeltmesi ikinci build'de; sahte veri testi yeniden gecti.
+- URETIMDE (13 Kas): main = sahne = 9b0c514; goc yok.
+  - Sahne adresinde uc hesapla bakildi: Lumen (ajans) - yeni alt baslik cumlesi ve "Revizyon
+    istendi" karti; Anadolu Ilac (kurum) ve Kaan (musteri) - ozet, sekmeler, dugmeler ve
+    sayilar onceki ile ayni (6 / 0 / 7 / 3 ve 11 / 8 / 6 / 8). Konsol temiz.
+  - "Ekip kurulmadi" etiketi gercek veriyle GORULMEDI (Lumen'de ekipsiz acik etkinlik kalmadi;
+    yalniz sahte veri testinde).
+  - Uretimde (girissiz): yeni deploy yuklu; `/etkinliklerim` ve `/ajans` girise yonleniyor;
+    konsol temiz. Ajans merkezinin kendisi uretimde DENENMEDI (giris gerekir).
 
 ## Acik kalanlar
 

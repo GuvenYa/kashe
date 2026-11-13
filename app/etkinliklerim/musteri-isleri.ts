@@ -99,8 +99,11 @@ type GidenTeklifSatiri = {
   status: string;
   client_name: string | null;
   created_at: string;
+  /** Duzeltme 20-C: kurumun talebine (RFP) yanitsa talebin kimligi. */
+  rfp_id: string | null;
+  seller_organization_id: string | null;
   buyer: { display_name: string | null } | null;
-  current_version: { total_amount: number | string | null } | null;
+  current_version: { id: string; total_amount: number | string | null } | null;
 };
 type AjansEkipSatiri = {
   id: string;
@@ -453,9 +456,9 @@ export async function musteriIsleri(
             .from('proposals')
             .select(
               `
-              id, event_id, title, status, client_name, created_at,
+              id, event_id, rfp_id, seller_organization_id, title, status, client_name, created_at,
               buyer:organizations_public!proposals_buyer_organization_id_fkey (display_name),
-              current_version:proposal_versions!proposals_current_version_fkey (total_amount)
+              current_version:proposal_versions!proposals_current_version_fkey (id, total_amount)
             `
             )
             .in('seller_organization_id', ajansTeklifOrglari)
@@ -1221,8 +1224,136 @@ export async function musteriIsleri(
     };
   };
 
+  // Duzeltme 20-C: AJANSIN BAGIMSIZ TEKLIF DOSYALARI. Kurumun acik talebine
+  // (RFP) verilen yanit kurumun etkinligine baglidir; etkinliksiz hazirlanan
+  // teklif de olabilir. Ikisi de ajansin kendi etkinlik kartina dusmez; her
+  // biri kendi kartidir. Onaylanan teklifin asamasi rezervasyonundan okunur
+  // (teklifin kendi tarihi yok); rezervasyon henuz acilmadiysa "Yaklasan"da
+  // "Musteri onayladi" olarak durur.
+  const ajansEtkinlikIdleri = new Set(
+    etkinlikListesi
+      .filter((e) => !!e.organization_id && ajansOrgKumesi.has(e.organization_id))
+      .map((e) => e.id)
+  );
+  const bagimsizTeklifler = (
+    (gidenTeklifSonuc.data ?? []) as unknown as GidenTeklifSatiri[]
+  ).filter((t) => !t.event_id || !ajansEtkinlikIdleri.has(t.event_id));
+  const onayliSurumIdleri = bagimsizTeklifler.flatMap((t) =>
+    t.status === 'approved' && t.current_version?.id ? [t.current_version.id] : []
+  );
+  type SurumRezi = {
+    id: string;
+    status: string;
+    event_date: string | null;
+    proposal_version_id: string | null;
+  };
+  const surumRezleri = new Map<string, SurumRezi>();
+  if (onayliSurumIdleri.length > 0) {
+    const rezSonucu = await supabase
+      .from('bookings')
+      .select('id, status, event_date, proposal_version_id')
+      .in('proposal_version_id', onayliSurumIdleri)
+      .limit(300);
+    if (rezSonucu.error) {
+      console.error(
+        '[etkinliklerim merkez]',
+        'giden teklif rezervasyonu',
+        rezSonucu.error.code,
+        rezSonucu.error.message
+      );
+    }
+    for (const r of (rezSonucu.data ?? []) as unknown as SurumRezi[]) {
+      if (r.proposal_version_id) surumRezleri.set(r.proposal_version_id, r);
+    }
+  }
+  const tekilTeklifKarti = (t: GidenTeklifSatiri): Sirali => {
+    const tutar = t.current_version?.total_amount;
+    const rez = t.current_version?.id
+      ? (surumRezleri.get(t.current_version.id) ?? null)
+      : null;
+    let asama: IsAsamasi;
+    let durum: string;
+    let ton: IsTonu;
+    let ajansHatti: AjansHatti | null = null;
+    if (t.status === 'revision_requested') {
+      asama = 'bekleyen';
+      durum = 'Revizyon istendi';
+      ton = 'vurgu';
+      ajansHatti = 'revizyon';
+    } else if (t.status === 'sent' || t.status === 'viewed') {
+      asama = 'bekleyen';
+      durum = 'Müşteri yanıtı bekleniyor';
+      ton = 'notr';
+      ajansHatti = 'yanit';
+    } else if (t.status === 'draft') {
+      asama = 'bekleyen';
+      durum = 'Taslak';
+      ton = 'notr';
+      ajansHatti = 'hazirlik';
+    } else if (t.status === 'approved') {
+      if (rez?.status === 'completed') {
+        asama = 'tamamlanan';
+        durum = 'Tamamlandı';
+        ton = 'olumlu';
+      } else if (rez?.status === 'cancelled') {
+        asama = 'sonuclanmayan';
+        durum = 'İptal edildi';
+        ton = 'soluk';
+      } else if (rez?.event_date && rez.event_date < bugun) {
+        asama = 'tamamlanan';
+        durum = 'Tarihi geçti';
+        ton = 'notr';
+      } else {
+        asama = 'yaklasan';
+        durum = 'Müşteri onayladı';
+        ton = 'olumlu';
+      }
+    } else {
+      asama = 'sonuclanmayan';
+      durum = GIDEN_TEKLIF_DURUMU[t.status] ?? t.status;
+      ton = 'soluk';
+    }
+    return {
+      is: {
+        anahtar: `teklif-${t.id}`,
+        tur: t.rfp_id ? 'rfp-yaniti' : 'teklif-dosyasi',
+        asama,
+        baslik: t.title || 'Teklif',
+        ayrinti: parcalar(
+          t.buyer?.display_name || t.client_name || null,
+          rez?.event_date ? teklifTarihiMetni(rez.event_date) : null
+        ),
+        durum,
+        ton,
+        href: `/ajans/teklifler/${t.id}`,
+        hrefEtiketi: 'Teklifi aç →',
+        ekBaglanti: rez
+          ? { href: `/rezervasyon/${rez.id}`, etiket: 'Rezervasyon' }
+          : t.rfp_id
+            ? { href: `/ajans/rfp/${t.rfp_id}`, etiket: 'Talep' }
+            : null,
+        tutar:
+          tutar != null && Number(tutar) > 0
+            ? formatQuoteAmount(Number(tutar), 'TRY')
+            : null,
+        teklifler: [],
+        kalanTeklif: 0,
+        kurulus: t.seller_organization_id
+          ? (orgAdlari[t.seller_organization_id] ?? null)
+          : null,
+      },
+      oncelik: ton === 'vurgu' ? 0 : 1,
+      zaman: ms(t.created_at),
+      gun: rez?.event_date ?? null,
+      bekleyenTeklif: 0,
+      tamamlanmaOnayi: false,
+      ajansHatti,
+    };
+  };
+
   const hepsi: Sirali[] = [
     ...etkinlikListesi.map(etkinlikKarti),
+    ...bagimsizTeklifler.map(tekilTeklifKarti),
     ...ustTalepler.map(talepKarti),
     ...ustBirimler.map(birimKarti),
     ...ustRez.map(rezKarti),

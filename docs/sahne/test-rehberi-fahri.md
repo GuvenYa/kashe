@@ -1,5 +1,8 @@
 # Sahne test rehberi — Fahri icin (manuel urun incelemesi)
 
+> GUNCEL REHBER: `docs/sahne/test-rehberi/kashe-sahne-test-rehberi.pdf` (surum 3.0, 13 Kasim 2026; kaynak `test-rehberi.html`).
+> Bu dosya ilk taslaktir (3 Kasim); ekran adlari ve menuler o gunden beri degisti (Etkinliklerim / Islerim merkezleri vb.).
+
 Hazirlayan: Guven + Claude, 3 Kasim 2026. Kaynak: `docs/envanter/39-sahne-sentetik-dunya.md`, `docs/sahne/hesaplar.md`,
 `docs/sahne/bulgular.md` (onceki turlarin bulgulari, 1-38).
 

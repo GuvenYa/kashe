@@ -1022,6 +1022,23 @@ export function AdayPaneli({
                 {rolGruplari.length} rol · {toplamAday} aday · tarih, şehir ve
                 bütçe kısıtına göre puanlandı, uyum puanına göre sıralı.
               </p>
+              {/* Duzeltme 20-A (Fahri satir 32): adaylari begenmeyen ajans isi
+                  kendi ekibiyle yapabilir; yol vardi (Ekip sekmesi, havuz)
+                  ama bu ekranda yazmiyordu. Yalniz havuzu olan ajans
+                  kurulusunda (`havuzYolu`). */}
+              {havuzYolu && (
+                <p className="text-sm text-ink-72 mt-2">
+                  Adaylar uymadıysa işi kendi ekibinle de yapabilirsin: Ekip
+                  sekmesinde ekibini havuzundan kurarsın, buradan aday seçmen
+                  gerekmez.{' '}
+                  <Link
+                    href={havuzYolu}
+                    className="kashe-tap font-display font-semibold text-brand-ink hover:underline"
+                  >
+                    Kendi ekibimle devam et →
+                  </Link>
+                </p>
+              )}
             </div>
 
             <div

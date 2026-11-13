@@ -258,8 +258,9 @@ export function MusteriMerkezi({
       {ajans && (
         <p className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-72">
           Etkinliklerin burada: ekibin, müşterine gönderdiğin teklif ve onay
-          durumu kartta yazar. Pazaryerinden gelen talepler ve sohbetten
-          verdiğin teklifler:{' '}
+          durumu kartta yazar. Bir etkinliğine bağlı olmayan teklif dosyaların
+          (kurumsal RFP yanıtları gibi) ayrı kart olarak görünür. Pazaryerinden
+          gelen talepler ve sohbetten verdiğin teklifler:{' '}
           <Link href="/islerim" className="kashe-tap text-brand-ink hover:underline">
             İşlerim
           </Link>

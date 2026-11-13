@@ -21,7 +21,14 @@ export type IsAsamasi =
   | 'tamamlanan'
   | 'sonuclanmayan';
 
-export type IsTuru = 'teklif-topla' | 'talep' | 'rezervasyon' | 'etkinlik';
+export type IsTuru =
+  | 'teklif-topla'
+  | 'talep'
+  | 'rezervasyon'
+  | 'etkinlik'
+  // Duzeltme 20-C: ajansin kendi etkinligine bagli olmayan teklif dosyalari.
+  | 'teklif-dosyasi'
+  | 'rfp-yaniti';
 
 /** Durum etiketinin rengi: vurgu = kullanicidan is bekleniyor. */
 export type IsTonu = 'vurgu' | 'olumlu' | 'notr' | 'soluk';
@@ -65,6 +72,8 @@ export const IS_TURU_ETIKETI: Record<IsTuru, string> = {
   talep: 'Doğrudan talep',
   rezervasyon: 'Rezervasyon',
   etkinlik: 'Etkinlik',
+  'teklif-dosyasi': 'Teklif dosyası',
+  'rfp-yaniti': 'RFP yanıtı',
 };
 
 export const IS_ASAMALARI: readonly IsAsamasi[] = [
