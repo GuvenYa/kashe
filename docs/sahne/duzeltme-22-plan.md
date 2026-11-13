@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 13 Kasim 2026. Kaynak: Duzeltme 21 olcumu (bulgu 147: etkinlik sayfasinda sekme gecisi
 5,2 - 5,9 saniye). Goc (migration) YOK. Kullaniciya gorunen metin / duzen degisikligi YOK; yalniz hiz.
 
-Durum: DALDA (`duzeltme-22`), onizleme turu bekliyor.
+Durum: ONIZLEME TURU TAMAM (13 Kas; dal `duzeltme-22` f9a46a9, derleme `dpl_Hiciwv4mmcPQkMD6q838xSic893K`). Turda
+bulunan tek kucuk is (22-D, atama listesinde sira) ikinci commit ile girer, sonra uretim.
 
 ## Bulgu: fonksiyonlar veritabanindan uzakta calisiyor (bulgu 149)
 
@@ -54,22 +55,36 @@ YAPILDI (`app/lib/org-context.ts`): `getTalentPoolContext`, `getCrewContext` ve 
 `supabase.auth.getUser()` cagrisi yerine istek basina onbellekli `getCachedUser()` kullanir. Panel sayfalarinda
 (menu iki izin sorgusu + kurulus baglami) uc fazladan oturum dogrulamasi kalkar. Dogrulanan kullanici ayni.
 
+## 22-D Gorev atama listesinde sabit sira (bulgu 150)
+
+Onizleme karsilastirmasinda bulundu (22'den bagimsiz, eski kodda da var): `atanabilirler` uyelik sorgusunda sira
+yoktu; Gorevler sekmesindeki "atanan" listesi ayni sayfanin iki yuklemesinde farkli sirada gelebiliyordu (ornek:
+Ilker Sezer bir yuklemede ucuncu, digerinde yedinci). YAPILDI (`app/lib/gorev-data.ts`): uyeler ada gore (Turkce
+siralama), esitlikte kimlige gore dizilir. Havuz kayitlari zaten ada gore geliyordu.
+
 ## Yapilmayan: yalniz acik sekmenin verisini cekmek
 
 21 planindaki ucuncu yol (risk en buyuk: kisisel etkinlik bolumleri tek sayfada cizer, rozetler her sekmede sayi
-ister). 22-A + 22-B sonrasi olcum hedefin (2 saniyenin alti) altindaysa YAPILMAZ.
+ister). Olcum hedefin (2 saniyenin alti) altinda cikti (asagida); YAPILMADI, gerek kalmadi.
 
 ## Dogrulama
 
 - `tsc --noEmit` ve `eslint` (degisen iki dosya) temiz.
-- Onizleme turu (yapilacak):
-  - Bolge: yanit basliginda `x-vercel-id` ikinci kod `fra1`.
-  - Sure: Lumen etkinliginde (`b6398872-...`) sekme gecisi ayni yontemle (tiklama -> adres degisimi) olculur;
-    once 5,2 - 5,9 sn.
-  - Icerik: ayni etkinlikte alti sekmenin metni Sahne adresi (eski kod) ile dal onizlemesi (yeni kod) arasinda
-    karsilastirilir; ayni veritabani, fark cikmamali. Uc hesap: Lumen (ajans; adaylar + ekip dolu), Anadolu Ilac
-    (kurum), Kaan (kisisel etkinlik, sekmesiz duzen).
-  - Gerileme: merkez sayilari (Kaan 11 / 8 / 6 / 8; Lumen 2 / 1 / 3).
+- Onizleme turu (13 Kas; dal onizlemesi = yeni kod, Sahne adresi = eski kod, AYNI veritabani):
+  - Bolge: onizlemede `x-vercel-id` = `fra1::fra1`; Sahne adresinde `fra1::iad1`.
+  - Sekme gecisi (Lumen etkinligi `b6398872-...`, tiklama -> adres degisimi, dokuz gecis): 794 - 1075 ms
+    (once 5151 - 5896 ms). Hedef (2 saniyenin alti) tuttu.
+  - Sayfanin tamami (alti sekme, sunucu yaniti sonuna kadar): once 4,6 - 6,5 sn, sonra 0,7 - 1,1 sn.
+  - Diger sayfalar da hizlandi (yalniz bolge etkisi): Lumen Etkinlikler 1,7 - 2,1 -> 0,9 - 1,0 sn; ajans Genel
+    bakis 2,9 -> 1,2 sn; ajans Islerim 2,4 -> 0,9 sn; kurum Etkinliklerim 1,8 - 2,1 -> 1,0 - 1,1 sn; Kaan
+    Etkinliklerim 1,2 - 1,4 -> 0,5 - 0,7 sn; Ilker Islerim 1,3 - 1,4 -> 0,7 - 0,8 sn.
+  - Icerik: sayfanin sunucudan gelen TUM verisi (cizilen agac + istemci bilesenlerine giden ozellikler; derleme
+    kimlikleri ayiklanarak) iki adreste karsilastirildi. Dort hesap, 14 etkinlik gorunumu, 93 sayfa cizimi:
+    Lumen (ajans sahibi; 5 etkinlik x 7 sekme hali), Anadolu Ilac (kurum sahibi; 4 x 7), Ilker Sezer (Lumen uyesi;
+    4 x 7), Kaan (kisisel etkinlik; 1 x 2). Hepsi AYNI. Tek fark gorev atama listesinin sirasiydi; eski kodda da
+    yuklemeden yuklemeye degisiyor (22-D). Merkez sayfalari (19 sayfa) da birebir ayni.
+  - Gerileme: Kaan merkezi 11 / 8 / 6; Lumen merkezi 2 / 1 / 3.
+  - GORULMEDI: 22-D tarayicida (ikinci commit; uretim sonrasi Sahne adresinde bakilacak).
 - Uretim sonrasi: kashe.net girissiz Kesfet'te `x-vercel-id` ikinci kod `fra1`.
 
 ## Bu dala giren dokumanlar

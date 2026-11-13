@@ -250,6 +250,11 @@ export async function atanabilirler(
     ad: u.profiles?.full_name?.trim() || 'Kuruluş üyesi',
     altNot: ORG_ROLE_LABELS[u.role as OrgRole] ?? 'Üye',
   }));
+  // Duzeltme 22-D (bulgu 150): uyelik sorgusunda sira yoktu; atama listesi her
+  // yuklemede farkli sirada gelebiliyordu. Ada gore (Turkce), esitlikte kimlige gore.
+  uyeler.sort(
+    (a, b) => a.ad.localeCompare(b.ad, 'tr') || a.id.localeCompare(b.id)
+  );
 
   const havuz: Atanabilir[] = (
     (havuzSonuc.data ?? []) as { id: string; name: string }[]
