@@ -3,8 +3,8 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24); Guven:
 "cevap gelene kadar tasimaya devam edelim". Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-26`). Onizleme turu (14 Kas) bir bulgu cikardi (158: suresi dolan davet); duzeltmesi ikinci
-commit'te, onizlemede yeniden bakilacak.
+Durum: DALDA (`duzeltme-26`), iki onizleme turu TAMAM (14 Kas); uretim bekliyor. Ilk tur bir bulgu cikardi (158:
+suresi dolan davet); duzeltmesi ikinci commit'te, ikinci turda goruldu.
 
 ## Tarama: ne kalmisti?
 
@@ -90,13 +90,18 @@ Degisiklik yok: 3.3'teki "bilinen eksikler" 9. madde zaten "eski kalan sayfa gor
     ayni bulgu. Favorilerim (6 kart) ve ilan olustur basliklari.
   - Kaan Erol: ilan duzenle basligi ("Ilani duzenle" / "Ilanini guncelle").
   - 375 px: Portfoyum, Davetlerim, Favorilerim, ilan olustur - yatay tasma yok.
-  - GORULMEDI: Favorilerim'in bos durumu; suresi DOLMAMIS bekleyen davet (Sahne'deki bekleyen davetlerin suresi
-    gecmis; kartin "yanitini bekliyor" hali duzeltmeden onceki kodla goruldu).
+  - GORULMEDI: Favorilerim'in bos durumu.
   - Gozlem (bu turun isi degil): `/ilanlar/yeni` ve ilan duzenle sayfalarinda sekme basligi genel ("Kashe - ...")
     ve `main` etiketi yok.
   - Tur sonunda tum test hesaplarindan cikis yapildi; veri yazilmadi.
-- Ikinci commit (26-F) icin `tsc --noEmit` ve `eslint` temiz. Onizlemede yeniden bakilacak: Fatih Keskin ve Derya
-  Celik'te davet "Gecmis"te, rozet "Suresi doldu", dugme yok, kart "Yanit bekleyen davetin yok".
+- Ikinci commit (26-F) icin `tsc --noEmit` ve `eslint` temiz.
+- Ikinci onizleme turu (14 Kas, `dpl_CQpvf52vNefz3oa9MN6cuFqreqAY`, ikinci commit), TAMAM:
+  - Fatih Keskin (ajans daveti, suresi dolmus): "Gecmis davetler (1)", rozet "Suresi doldu", dugme yok; kart "Yanit
+    bekleyen davetin yok" (yesil nokta), satir "1 davetin suresi doldu; yanit verilemez", kutular 0 / 0 / 0.
+  - Derya Celik (kurumsal ekip daveti, suresi dolmus): "Gecmis (1)", rozet "Suresi doldu", dugme yok; kart ayni.
+  - Damla Demir (Lumen daveti, suresi DOLMAMIS; 3 gun kalmis): "Bekleyen davetler (1)", rozet "Bekliyor", "Reddet" /
+    "Kabul et" dugmeleri yerinde; kart "1 davet yanitini bekliyor", kutular 0 / 0 / 1. Dugmelere BASILMADI.
+  - 375 px (Fatih): yatay tasma yok. Tum hesaplardan cikis yapildi; veri yazilmadi.
 
 ## Bu dala giren dokumanlar
 
