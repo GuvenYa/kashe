@@ -3,7 +3,8 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24); Guven:
 "cevap gelene kadar tasimaya devam edelim". Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-26`), onizleme turu bekliyor.
+Durum: DALDA (`duzeltme-26`). Onizleme turu (14 Kas) bir bulgu cikardi (158: suresi dolan davet); duzeltmesi ikinci
+commit'te, onizlemede yeniden bakilacak.
 
 ## Tarama: ne kalmisti?
 
@@ -35,10 +36,12 @@ yazilirdi; diger dort sayfada ilerleme / adim yok.
 YAPILDI (`app/davetlerim/page.tsx`):
 - Ust etiket ve bolum etiketleri ("Kurumsal ekip davetleri", "Ajans davetleri") `VurguEtiketi`; baslik duz pembe.
 - Basligin altinda `DurumKarti`. YENI SORGU YOK; sayilar sayfanin zaten okudugu uc davet listesinden, listelerle
-  AYNI kuralla (`status === 'pending'`), yani listelerdeki "Bekleyen ... (n)" sayilariyla ayni.
+  AYNI kuralla (bekleyen = `pending` ve suresi dolmamis; bkz. 26-F), yani listelerdeki "Bekleyen ... (n)"
+  sayilariyla ayni.
   - Baslik: "N davet yanitini bekliyor" / "Yanit bekleyen davetin yok".
   - Satirlar yalniz var olan durumu yazar: "N ilan daveti yanitini bekliyor", "N kurumsal ekip daveti ...",
-    "N ajans daveti ..."; bekleyen yoksa tek satir ("Sonuclanan davetlerin asagidaki listede").
+    "N ajans daveti ..."; suresi dolan varsa "N davetin suresi doldu; yanit verilemez"; ikisi de yoksa tek satir
+    ("Sonuclanan davetlerin asagidaki listede").
   - Kutular: Ilan / Kurum / Ajans (bekleyen sayilari). Ilerleme = yanitlanan / toplam davet.
   - Hic davet yoksa kart cizilmez (bos durum eskisi gibi).
 
@@ -57,6 +60,19 @@ YAPILDI (`app/ilanlar/yeni/page.tsx`, `app/ilanlar/[id]/duzenle/page.tsx`): form
 YAPILDI: sohbetteki "Teklif gonder" penceresi (`app/mesajlar/[id]/quote-modal.tsx`) ve teklif taleplerindeki
 "... icin teklif ver" penceresi (`app/teklif-talepleri/teklif-ver-modal.tsx`): vurgulanan kelime duz pembe.
 
+## 26-F Suresi dolan davet "Bekleyen"de kaliyordu (bulgu 158; onizleme turunda bulundu)
+
+Sorun (bu daldan ONCE de vardi): suresi dolan kurulus daveti veritabaninda `pending` kalir (RPC suresi dolmus
+davette kabul ve reddi geri cevirir: "davetin suresi dolmus"). Davet EDEN tarafin listesi bunu biliyor
+(`isInvitationExpired`, "Suresi doldu" rozeti); davetLI tarafin sayfasi (`/davetlerim`) bilmiyordu: davet "Bekleyen
+(n)" altinda, "Bekliyor" rozeti ve calismayan "Kabul et" / "Reddet" dugmeleriyle duruyordu. Yeni ozet karti da
+ayni kuralla "1 davet yanitini bekliyor" diyordu (Fatih Keskin: Lumen daveti, 30 Eyl; Derya Celik: Anadolu Ilac
+daveti).
+
+YAPILDI (`app/davetlerim/davetlerim-listesi.tsx`, `kurumsal-davetler-listesi.tsx`, `page.tsx`): davet eden taraftaki
+kuralin aynisi. Suresi dolan davet "Gecmis" bolumune duser, rozeti "Suresi doldu", dugme yok. Ozet karti onu bekleyen
+saymaz; ayri satirda yazar. Veritabani ve RPC degismedi. Ilan davetlerinde sure alani yok; onlar eskisi gibi.
+
 ## Test rehberi
 
 Degisiklik yok: 3.3'teki "bilinen eksikler" 9. madde zaten "eski kalan sayfa gorursen tabloya yaz" diyor.
@@ -64,9 +80,23 @@ Degisiklik yok: 3.3'teki "bilinen eksikler" 9. madde zaten "eski kalan sayfa gor
 ## Dogrulama
 
 - `tsc --noEmit` ve `eslint` (degisen 12 dosya) temiz.
-- Onizleme turu (yapilacak): profesyonel hesapla bes profil icerigi sayfasi, deneyim penceresi ve Davetlerim
-  (karttaki sayilar listelerdeki "(n)" ile ayni mi); musteri hesabiyla Favorilerim ve ilan olustur / duzenle;
-  sohbette "Teklif gonder" ve teklif taleplerinde "teklif ver" pencereleri (acilir, GONDERILMEZ); 375 px.
+- Onizleme turu (14 Kas, `dpl_CPU32tAGrxRAwoywn9RUm9kMVV11`, ilk commit):
+  - Ilker Sezer: bes profil icerigi sayfasi (etiket "Profil icerigi", baslik duz pembe), deneyim ekleme penceresi
+    ("Ekle - Is Deneyimi"), sohbette "Teklif gonder" ve teklif taleplerinde "Kaan Erol icin teklif ver" pencereleri
+    (acildi, GONDERILMEDI); Davetlerim bos durum (kart yok).
+  - Fatih Keskin: Davetlerim'de kart "1 davet yanitini bekliyor", kutular 0 / 0 / 1, liste "Bekleyen davetler (1)" -
+    sayilar ayni; AMA davet "Suresi doldu" yaziyor (bulgu 158).
+  - Derya Celik (musteri): Davetlerim'de kart 0 / 1 / 0, "Kurumsal ekip davetleri" ve "Ajans davetleri" etiketleri;
+    ayni bulgu. Favorilerim (6 kart) ve ilan olustur basliklari.
+  - Kaan Erol: ilan duzenle basligi ("Ilani duzenle" / "Ilanini guncelle").
+  - 375 px: Portfoyum, Davetlerim, Favorilerim, ilan olustur - yatay tasma yok.
+  - GORULMEDI: Favorilerim'in bos durumu; suresi DOLMAMIS bekleyen davet (Sahne'deki bekleyen davetlerin suresi
+    gecmis; kartin "yanitini bekliyor" hali duzeltmeden onceki kodla goruldu).
+  - Gozlem (bu turun isi degil): `/ilanlar/yeni` ve ilan duzenle sayfalarinda sekme basligi genel ("Kashe - ...")
+    ve `main` etiketi yok.
+  - Tur sonunda tum test hesaplarindan cikis yapildi; veri yazilmadi.
+- Ikinci commit (26-F) icin `tsc --noEmit` ve `eslint` temiz. Onizlemede yeniden bakilacak: Fatih Keskin ve Derya
+  Celik'te davet "Gecmis"te, rozet "Suresi doldu", dugme yok, kart "Yanit bekleyen davetin yok".
 
 ## Bu dala giren dokumanlar
 

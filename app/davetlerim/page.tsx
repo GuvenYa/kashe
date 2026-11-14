@@ -9,13 +9,15 @@ import { IlanDavetleriListesi, type IlanDaveti } from './ilan-davetleri-listesi'
 import { KurumsalDavetlerListesi } from './kurumsal-davetler-listesi';
 import { SuspendedNotice } from '@/app/components/suspended-notice';
 import { getCachedUser } from '@/app/lib/auth';
-import type {
-  AgencyInvitation,
-  AgencyInvitationWithRelations,
+import {
+  isInvitationExpired as ajansDavetiSuresiDoldu,
+  type AgencyInvitation,
+  type AgencyInvitationWithRelations,
 } from '@/app/ajans/agency-data';
-import type {
-  BusinessInvitation,
-  BusinessInvitationWithRelations,
+import {
+  isInvitationExpired as kurumDavetiSuresiDoldu,
+  type BusinessInvitation,
+  type BusinessInvitationWithRelations,
 } from '@/app/kurumsal/business-data';
 
 export const metadata = {
@@ -152,13 +154,20 @@ export default async function DavetlerimPage() {
       business: kurulusKarti(d.organization_id),
     }));
 
-  // DURUM OZETI (Duzeltme 26-B): yanit bekleyen davetler. Listelerle AYNI kural
-  // (`status === 'pending'`), yeni sorgu yok; sayilar listelerdeki "(n)" ile ayni.
-  const bekleyenSay = (liste: { status: string }[]) =>
-    liste.filter((d) => d.status === 'pending').length;
-  const ozIlan = bekleyenSay(listingInvitations);
-  const ozKurum = bekleyenSay(businessInvitations);
-  const ozAjans = bekleyenSay(invitations);
+  // DURUM OZETI (Duzeltme 26-B): yanit bekleyen davetler. Listelerle AYNI kural,
+  // yeni sorgu yok; sayilar listelerdeki "Bekleyen ... (n)" ile ayni. Suresi dolan
+  // kurulus daveti DB'de `pending` kalir ama yanitlanamaz: bekleyen SAYILMAZ, ayri
+  // satirda yazilir.
+  const ozIlan = listingInvitations.filter((d) => d.status === 'pending').length;
+  const ozKurum = businessInvitations.filter(
+    (d) => d.status === 'pending' && !kurumDavetiSuresiDoldu(d)
+  ).length;
+  const ozAjans = invitations.filter(
+    (d) => d.status === 'pending' && !ajansDavetiSuresiDoldu(d)
+  ).length;
+  const ozSuresiDolan =
+    businessInvitations.filter((d) => kurumDavetiSuresiDoldu(d)).length +
+    invitations.filter((d) => ajansDavetiSuresiDoldu(d)).length;
   const ozBekleyen = ozIlan + ozKurum + ozAjans;
   const ozToplam =
     listingInvitations.length + businessInvitations.length + invitations.length;
@@ -177,7 +186,15 @@ export default async function DavetlerimPage() {
     ...(ozAjans > 0
       ? [{ metin: `${ozAjans} ajans daveti yanıtını bekliyor`, tamam: false }]
       : []),
-    ...(ozBekleyen === 0
+    ...(ozSuresiDolan > 0
+      ? [
+          {
+            metin: `${ozSuresiDolan} davetin süresi doldu; yanıt verilemez`,
+            tamam: false,
+          },
+        ]
+      : []),
+    ...(ozBekleyen === 0 && ozSuresiDolan === 0
       ? [{ metin: 'Sonuçlanan davetlerin aşağıdaki listede', tamam: true }]
       : []),
   ];

@@ -17,6 +17,7 @@ import {
   formatInvitationExpiry,
   canAcceptInvitation,
   canDeclineInvitation,
+  isInvitationExpired,
   type AgencyInvitationWithRelations,
 } from '@/app/ajans/agency-data';
 
@@ -26,8 +27,14 @@ type Props = {
 };
 
 export function DavetlerimListesi({ invitations, canAccept }: Props) {
-  const pending = invitations.filter((i) => i.status === 'pending');
-  const past = invitations.filter((i) => i.status !== 'pending');
+  // Duzeltme 26: suresi dolan davet DB'de 'pending' KALIR ama yanitlanamaz (RPC
+  // reddeder); davet eden taraftaki listeyle ayni kuralla "Gecmis"e duser.
+  const pending = invitations.filter(
+    (i) => i.status === 'pending' && !isInvitationExpired(i)
+  );
+  const past = invitations.filter(
+    (i) => i.status !== 'pending' || isInvitationExpired(i)
+  );
 
   if (invitations.length === 0) {
     return (
@@ -100,7 +107,10 @@ function DavetKarti({
   const agency = invitation.agency;
   const agencyName = agency?.display_name?.trim() || 'Bir ajans';
 
-  const tone = getInvitationStatusTone(invitation.status);
+  const suresiDoldu = isInvitationExpired(invitation);
+  const tone = suresiDoldu
+    ? 'neutral'
+    : getInvitationStatusTone(invitation.status);
   const badgeStyles: Record<typeof tone, string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     success: 'bg-ink-blue text-white border-ink-blue',
@@ -185,7 +195,9 @@ function DavetKarti({
         <span
           className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-[0.08em] font-medium border whitespace-nowrap ${badgeStyles[tone]}`}
         >
-          {getInvitationStatusLabel(invitation.status)}
+          {suresiDoldu
+            ? 'Süresi doldu'
+            : getInvitationStatusLabel(invitation.status)}
         </span>
       </div>
 
@@ -198,7 +210,7 @@ function DavetKarti({
           </strong>
         </span>
         <span>{formatInvitationAge(invitation.created_at)}</span>
-        {invitation.status === 'pending' && (
+        {invitation.status === 'pending' && !suresiDoldu && (
           <span>{formatInvitationExpiry(invitation.expires_at)}</span>
         )}
       </div>
@@ -251,7 +263,10 @@ function DavetKarti({
         </div>
       )}
 
-      {!showActions && invitation.status === 'pending' && !canAccept && (
+      {!showActions &&
+        invitation.status === 'pending' &&
+        !suresiDoldu &&
+        !canAccept && (
         <div className="pt-3 border-t border-line/40">
           <p className="text-xs text-ink-72 text-center italic">
             Profesyonel hesap gerek
