@@ -389,7 +389,7 @@ export default async function TeklifKarsilastirPage({
   return (
     <>
     <TopNav />
-    <div className="bg-paper min-h-screen">
+    <main className="bg-paper min-h-screen">
       <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
         
         <Link
@@ -586,7 +586,7 @@ export default async function TeklifKarsilastirPage({
           </div>
         )}
       </div>
-    </div>
+    </main>
     </>
   );
 }

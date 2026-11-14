@@ -6,8 +6,13 @@ import { canEditListing, type Listing, type ListingStatus } from '../../listings
 import { canWriteForBusiness } from '@/app/lib/business-write';
 import { orderCities } from '@/app/lib/city-order';
 import { VurguEtiketi } from '@/app/components/ui/vurgu-etiketi';
+import { TopNav } from '@/app/components/sections/top-nav';
 
 type Params = Promise<{ id: string }>;
+
+export const metadata = {
+  title: 'İlanı düzenle — Kashe',
+};
 
 export default async function IlanDuzenlePage({
   params,
@@ -82,7 +87,9 @@ export default async function IlanDuzenlePage({
   };
 
   return (
-    <div className="bg-paper min-h-screen">
+    <>
+    <TopNav />
+    <main className="bg-paper min-h-screen">
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
         <Link
           href={`/ilanlar/${id}`}
@@ -112,6 +119,7 @@ export default async function IlanDuzenlePage({
           editorIsOwner={editorIsOwner}
         />
       </div>
-    </div>
+    </main>
+    </>
   );
 }

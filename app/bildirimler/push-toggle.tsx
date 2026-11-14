@@ -77,7 +77,7 @@ export function PushToggle() {
   return (
     <div className="bg-card border border-line rounded-2xl p-5 mb-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
+        <div className="flex items-start gap-3 min-w-0 flex-1 basis-64">
           <svg
             width="22"
             height="22"

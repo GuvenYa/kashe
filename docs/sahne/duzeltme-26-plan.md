@@ -3,8 +3,9 @@
 Hazirlayan: Guven + Claude, 14 Kasim 2026. Kaynak: 14-C karari A (gorsel dil sayfa sayfa; Fahri satir 24); Guven:
 "cevap gelene kadar tasimaya devam edelim". Goc (migration) YOK.
 
-Durum: DALDA (`duzeltme-26`), iki onizleme turu TAMAM (14 Kas); uretim bekliyor. Ilk tur bir bulgu cikardi (158:
-suresi dolan davet); duzeltmesi ikinci commit'te, ikinci turda goruldu.
+Durum: URETIMDE (14 Kas; main = sahne = bd3d7b8; uretim derlemesi `dpl_AyFqLGFxvv2ECo85JqTFPkaJeTEG`, Sahne adresi
+`dpl_BD1m74CedFv5ozhZoCPbLvAyfNKz`). Ilk onizleme turu bir bulgu cikardi (158: suresi dolan davet); duzeltmesi ikinci
+commit'te, ikinci turda goruldu.
 
 ## Tarama: ne kalmisti?
 
@@ -73,6 +74,12 @@ YAPILDI (`app/davetlerim/davetlerim-listesi.tsx`, `kurumsal-davetler-listesi.tsx
 kuralin aynisi. Suresi dolan davet "Gecmis" bolumune duser, rozeti "Suresi doldu", dugme yok. Ozet karti onu bekleyen
 saymaz; ayri satirda yazar. Veritabani ve RPC degismedi. Ilan davetlerinde sure alani yok; onlar eskisi gibi.
 
+## Fahri'nin tablosu
+
+YAPILDI (14 Kas, uretim sonrasi): tasarim satirinin "Durum" hucresi (K24) guncellendi - "Tamam"; dilin gectigi
+calisma sayfalarinin tam listesi, vitrin sayfalarinin bilerek lacivert kaldigi notu. Geri okundu. Fahri hucreye not
+eklememisti. "Sorular" sekmesinde yanit sutunu (E2 - E6) hala bos.
+
 ## Test rehberi
 
 Degisiklik yok: 3.3'teki "bilinen eksikler" 9. madde zaten "eski kalan sayfa gorursen tabloya yaz" diyor.
@@ -102,6 +109,9 @@ Degisiklik yok: 3.3'teki "bilinen eksikler" 9. madde zaten "eski kalan sayfa gor
   - Damla Demir (Lumen daveti, suresi DOLMAMIS; 3 gun kalmis): "Bekleyen davetler (1)", rozet "Bekliyor", "Reddet" /
     "Kabul et" dugmeleri yerinde; kart "1 davet yanitini bekliyor", kutular 0 / 0 / 1. Dugmelere BASILMADI.
   - 375 px (Fatih): yatay tasma yok. Tum hesaplardan cikis yapildi; veri yazilmadi.
+- Uretim sonrasi (14 Kas, 03:20): kashe.net girissiz Kesfet "34 sonuc", 34 kart, `fra1::fra1`; girissiz Favorilerim
+  uyarisi lacivert (bilerek). Sahne adresi, Fatih Keskin: Davetlerim'de "Gecmis davetler (1)", "Suresi doldu", dugme
+  yok; Hizmetlerim'de "Profil icerigi" etiketi ve pembe baslik; cikis yapildi.
 
 ## Bu dala giren dokumanlar
 

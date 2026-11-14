@@ -77,7 +77,7 @@ export default async function TeklifToplaPage({
     return (
       <>
       <TopNav />
-      <div className="bg-paper min-h-screen">
+      <main className="bg-paper min-h-screen">
         <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
             Erişim yok
@@ -99,7 +99,7 @@ export default async function TeklifToplaPage({
             Profesyonelleri keşfet
           </Link>
         </div>
-      </div>
+      </main>
       </>
     );
   }
@@ -116,7 +116,7 @@ export default async function TeklifToplaPage({
   return (
     <>
     <TopNav />
-    <div className="bg-paper min-h-screen">
+    <main className="bg-paper min-h-screen">
       <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
         {/* Duzeltme 15 (gorsel dil): ekip kurma ekranindaki baslik kalibi. */}
         <header className="mb-8">
@@ -162,7 +162,7 @@ export default async function TeklifToplaPage({
           }}
         />
       </div>
-    </div>
+    </main>
     </>
   );
 }

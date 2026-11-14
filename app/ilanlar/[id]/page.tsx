@@ -18,6 +18,26 @@ import type {
 
 type Params = Promise<{ id: string }>;
 
+/**
+ * Sekme basligi (Duzeltme 27-A). Baslik herkese ayni gittigi icin yalniz YAYINDAKI
+ * ilanin adi yazilir; taslak, onay bekleyen ya da kapali ilanda genel baslik kalir.
+ * Okuma ayni sunucu istemcisiyle (RLS): sayfanin gormedigi ilani bu da gormez.
+ */
+export async function generateMetadata({ params }: { params: Params }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('listings')
+    .select('title, status')
+    .eq('id', id)
+    .maybeSingle();
+  const ilan = data as { title: string | null; status: string } | null;
+  if (!ilan || ilan.status !== 'published' || !ilan.title) {
+    return { title: 'İlan — Kashe' };
+  }
+  return { title: `${ilan.title} — Kashe` };
+}
+
 export default async function IlanDetayPage({ params }: { params: Params }) {
   const { id } = await params;
   const supabase = await createClient();

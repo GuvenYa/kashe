@@ -15,6 +15,10 @@ type YeniIlanParams = {
   kategori?: string;
 };
 
+export const metadata = {
+  title: 'Yeni ilan — Kashe',
+};
+
 export default async function YeniIlanPage({
   searchParams,
 }: {
@@ -43,7 +47,7 @@ export default async function YeniIlanPage({
     return (
       <>
         <TopNav />
-        <div className="bg-paper min-h-screen">
+        <main className="bg-paper min-h-screen">
           <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
               Hesap askıda
@@ -65,7 +69,7 @@ export default async function YeniIlanPage({
               Destek ekibine yaz
             </a>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -80,7 +84,7 @@ export default async function YeniIlanPage({
     return (
       <>
         <TopNav />
-        <div className="bg-paper min-h-screen">
+        <main className="bg-paper min-h-screen">
           <div className="max-w-2xl mx-auto px-6 md:px-12 py-20 text-center">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-brand-ink mb-4">
               Erişim yok
@@ -103,7 +107,7 @@ export default async function YeniIlanPage({
               İlanları gör
             </Link>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -178,7 +182,7 @@ export default async function YeniIlanPage({
   return (
     <>
       <TopNav />
-      <div className="bg-paper min-h-screen">
+      <main className="bg-paper min-h-screen">
         <div className="max-w-3xl mx-auto px-6 md:px-12 py-12">
           <Link
             href="/ilanlar"
@@ -210,7 +214,7 @@ export default async function YeniIlanPage({
             onDoldur={onDoldur}
           />
         </div>
-      </div>
+      </main>
     </>
   );
 }

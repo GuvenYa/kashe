@@ -247,7 +247,7 @@ export function IlanDetay({
     'inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#FA0B96] text-white rounded-lg font-display font-semibold text-sm hover:bg-[#D50880] transition-colors';
 
   return (
-    <div className="bg-paper min-h-screen pb-24 lg:pb-12">
+    <main className="bg-paper min-h-screen pb-24 lg:pb-12">
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-8 md:py-10">
         {/* Geri linki */}
         <Link
@@ -807,7 +807,7 @@ export function IlanDetay({
           onClose={() => setApplyModalOpen(false)}
         />
       )}
-    </div>
+    </main>
   );
 }
 
