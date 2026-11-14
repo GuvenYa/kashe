@@ -150,7 +150,7 @@ export default async function IlanlarPage({
   return (
     <>
       <TopNav />
-      <div className="bg-paper min-h-screen">
+      <main className="bg-paper min-h-screen">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
           {/* Header */}
           <header className="mb-10">
@@ -188,7 +188,7 @@ export default async function IlanlarPage({
             currentUserId={currentUserId}
           />
         </div>
-      </div>
+      </main>
     </>
   );
 }
